@@ -7,11 +7,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
+	"reflect"
 	"runtime"
 	"testing"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/load"
 	"github.com/shirou/gopsutil/v3/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -25,11 +28,18 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
 func skipTestOnUnsupportedOS(t *testing.T) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
+		t.Skipf("skipping test on %v", runtime.GOOS)
+	}
+}
+
+func skipTestOnUnsupportedOSAggregateMetrics(t *testing.T) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		t.Skipf("skipping test on %v", runtime.GOOS)
 	}
 }
@@ -366,7 +376,7 @@ func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 }
 
 type processHandlesMock struct {
-	handles []*processHandleMock
+	handles []processHandle
 }
 
 func (p *processHandlesMock) Pid(int) int32 {
@@ -475,6 +485,11 @@ func (p *processHandleMock) RlimitUsageWithContext(ctx context.Context, b bool) 
 	return args.Get(0).([]process.RlimitStat), args.Error(1)
 }
 
+func (p *processHandleMock) Status() ([]string, error) {
+	args := p.MethodCalled("Status")
+	return args.Get(0).([]string), args.Error(1)
+}
+
 func initDefaultsHandleMock(t mock.TestingT, handleMock *processHandleMock) {
 	if !handleMock.IsMethodCallable(t, "UsernameWithContext", mock.Anything) {
 		handleMock.On("UsernameWithContext", mock.Anything).Return("username", nil)
@@ -526,6 +541,9 @@ func initDefaultsHandleMock(t mock.TestingT, handleMock *processHandleMock) {
 	}
 	if !handleMock.IsMethodCallable(t, "ExeWithContext", mock.Anything) {
 		handleMock.On("ExeWithContext", mock.Anything).Return("processname", nil)
+	}
+	if !handleMock.IsMethodCallable(t, "Status", mock.Anything) {
+		handleMock.On("Status", mock.Anything).Return([]string{}, nil)
 	}
 }
 
@@ -631,7 +649,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
-			handles := make([]*processHandleMock, 0, len(test.names))
+			handles := make([]processHandle, 0, len(test.names))
 			for i, name := range test.names {
 				handleMock := &processHandleMock{}
 				handleMock.On("NameWithContext", mock.Anything).Return(name, nil)
@@ -689,6 +707,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		numCtxSwitchesError error
 		numFDsError         error
 		rlimitError         error
+		statusError         error
 		expectedError       string
 	}
 
@@ -865,6 +884,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("PageFaultsWithContext", mock.Anything).Return(&process.PageFaultsStat{}, test.pageFaultsError)
 			handleMock.On("NumCtxSwitchesWithContext", mock.Anything).Return(&process.NumCtxSwitchesStat{}, test.numCtxSwitchesError)
 			handleMock.On("NumFDsWithContext", mock.Anything).Return(int32(0), test.numFDsError)
+			handleMock.On("Status", mock.Anything).Return([]string{}, test.statusError)
 			handleMock.On("RlimitUsageWithContext", mock.Anything, mock.Anything).Return([]process.RlimitStat{
 				{
 					Resource: process.RLIMIT_SIGPENDING,
@@ -873,7 +893,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			}, test.rlimitError)
 
 			scraper.getProcessHandles = func(context.Context) (processHandles, error) {
-				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
+				return &processHandlesMock{handles: []processHandle{handleMock}}, nil
 			}
 
 			md, err := scraper.scrape(context.Background())
@@ -1103,7 +1123,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			}
 
 			scraper.getProcessHandles = func(context.Context) (processHandles, error) {
-				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
+				return &processHandlesMock{handles: []processHandle{handleMock}}, nil
 			}
 			md, err := scraper.scrape(context.Background())
 
@@ -1136,6 +1156,7 @@ func newErroringHandleMock() *processHandleMock {
 	handleMock.On("NumThreadsWithContext", mock.Anything).Return(int32(0), &ProcessReadError{})
 	handleMock.On("NumCtxSwitchesWithContext", mock.Anything).Return(&process.NumCtxSwitchesStat{}, &ProcessReadError{})
 	handleMock.On("NumFDsWithContext", mock.Anything).Return(int32(0), &ProcessReadError{})
+	handleMock.On("Status", mock.Anything).Return([]string{}, &ProcessReadError{})
 	return handleMock
 }
 
@@ -1165,7 +1186,7 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 		handleMock.On("PpidWithContext", mock.Anything).Return(int32(2), nil)
 
 		scraper.getProcessHandles = func(context.Context) (processHandles, error) {
-			return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
+			return &processHandlesMock{handles: []processHandle{handleMock}}, nil
 		}
 		md, err := scraper.scrape(context.Background())
 
@@ -1234,7 +1255,7 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 			initDefaultsHandleMock(t, handleMock)
 
 			scraper.getProcessHandles = func(context.Context) (processHandles, error) {
-				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
+				return &processHandlesMock{handles: []processHandle{handleMock}}, nil
 			}
 
 			// scrape the first time
@@ -1254,5 +1275,439 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 			}
 		})
 	}
+}
 
+func Test_ProcessScrapeAggregateProcessMetrics(t *testing.T) {
+	t.Parallel()
+	skipTestOnUnsupportedOSAggregateMetrics(t)
+
+	handleWithStatus := func(status ...string) *processHandleMock {
+		handleMock := &processHandleMock{}
+		handleMock.On("Status", mock.Anything).Return(status, nil)
+		initDefaultsHandleMock(t, handleMock)
+		return handleMock
+	}
+	handleWithStatusErr := func(err error) *processHandleMock {
+		handleMock := &processHandleMock{}
+		handleMock.On("Status", mock.Anything).Return([]string{}, err)
+		initDefaultsHandleMock(t, handleMock)
+		return handleMock
+	}
+
+	testCases := []struct {
+		name                         string
+		enableSystemProcessesCreated bool
+		enableSystemProcessesCount   bool
+		handles                      []processHandle
+		handlesWithErrors            []processHandle
+		expectedStatusCounts         map[metadata.AttributeStatus]int64
+		procsRunning                 int
+		procsBlocked                 int
+	}{
+		{
+			name:                         "both enabled",
+			enableSystemProcessesCreated: true,
+			enableSystemProcessesCount:   true,
+			handles: []processHandle{
+				handleWithStatus(process.Blocked),
+				handleWithStatus(process.Running),
+				handleWithStatus(process.Running),
+				handleWithStatus(process.Running),
+				handleWithStatus(process.Stop),
+			},
+			procsRunning: 3,
+			procsBlocked: 1,
+			expectedStatusCounts: map[metadata.AttributeStatus]int64{
+				metadata.AttributeStatusBlocked: 1,
+				metadata.AttributeStatusRunning: 3,
+				metadata.AttributeStatusStopped: 1,
+			},
+		},
+		{
+			name:                         "multiple statuses for one process",
+			enableSystemProcessesCreated: true,
+			enableSystemProcessesCount:   true,
+			handles: []processHandle{
+				handleWithStatus(process.Daemon, process.Running),
+				handleWithStatus(process.Stop),
+			},
+			procsRunning: 1,
+			expectedStatusCounts: map[metadata.AttributeStatus]int64{
+				metadata.AttributeStatusDaemon:  1,
+				metadata.AttributeStatusRunning: 1,
+				metadata.AttributeStatusStopped: 1,
+			},
+		},
+		{
+			name:                         "both disabled",
+			enableSystemProcessesCreated: false,
+			enableSystemProcessesCount:   false,
+		},
+		{
+			name:                         "only system.processes.created enabled",
+			enableSystemProcessesCreated: true,
+			enableSystemProcessesCount:   false,
+			handles: []processHandle{
+				handleWithStatus(process.Running),
+				handleWithStatus(process.Running),
+				handleWithStatus(process.Running),
+				handleWithStatus(process.Running),
+				handleWithStatus(process.Running),
+			},
+		},
+		{
+			name:                         "only system.processes.count enabled",
+			enableSystemProcessesCreated: false,
+			enableSystemProcessesCount:   true,
+			handles: []processHandle{
+				handleWithStatus(process.Daemon),
+				handleWithStatus(process.Idle),
+				handleWithStatus(process.Orphan),
+			},
+			expectedStatusCounts: map[metadata.AttributeStatus]int64{
+				metadata.AttributeStatusDaemon: 1,
+				metadata.AttributeStatusIdle:   1,
+				metadata.AttributeStatusOrphan: 1,
+			},
+		},
+		{
+			name:                         "handles with errors",
+			enableSystemProcessesCreated: false,
+			enableSystemProcessesCount:   true,
+			handles: []processHandle{
+				handleWithStatus(process.Daemon),
+				handleWithStatus(process.Daemon),
+			},
+			handlesWithErrors: []processHandle{
+				handleWithStatusErr(errors.New("test")),
+			},
+			procsRunning: 2,
+			expectedStatusCounts: map[metadata.AttributeStatus]int64{
+				metadata.AttributeStatusDaemon: 2,
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			allHandles := testCase.handles
+			if testCase.handlesWithErrors != nil {
+				allHandles = append(allHandles, testCase.handlesWithErrors...)
+			}
+
+			metricsBuilderConfig := metadata.DefaultMetricsBuilderConfig()
+
+			metricsBuilderConfig.Metrics.SystemProcessesCount.Enabled = testCase.enableSystemProcessesCount
+			metricsBuilderConfig.Metrics.SystemProcessesCreated.Enabled = testCase.enableSystemProcessesCreated
+
+			config := &Config{MetricsBuilderConfig: metricsBuilderConfig}
+
+			scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), config)
+			require.NoError(t, err, "Failed to create process scraper: %v", err)
+			scraper.getProcessHandles = func(context.Context) (processHandles, error) {
+				return &processHandlesMock{
+					handles: allHandles,
+				}, nil
+			}
+			scraper.getMiscStats = func(context.Context) (*load.MiscStat, error) {
+				return &load.MiscStat{
+					ProcsCreated: len(testCase.handles),
+					ProcsRunning: testCase.procsRunning,
+					ProcsBlocked: testCase.procsBlocked,
+				}, nil
+			}
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
+
+			metrics, err := scraper.scrape(context.Background())
+			require.NoError(t, err, "Failed to scrape process metrics: %v", err)
+
+			hasSystemProcessesMetric := testCase.enableSystemProcessesCreated || testCase.enableSystemProcessesCount
+
+			// The structure for the scrape payload is a resource for each handle plus a top-level resource.
+			expectedResources := len(allHandles)
+			if hasSystemProcessesMetric {
+				expectedResources++
+			}
+			require.Equal(t, expectedResources, metrics.ResourceMetrics().Len())
+
+			if hasSystemProcessesMetric {
+				// The system metrics are recorded last, so they will be in the final resource in the payload after
+				// each process resource.
+				systemProcessesMetrics := metrics.ResourceMetrics().At(len(testCase.handles)).ScopeMetrics().At(0).Metrics()
+				for i := 0; i < systemProcessesMetrics.Len(); i++ {
+					metric := systemProcessesMetrics.At(i)
+
+					if metric.Name() == "system.processes.created" {
+						require.True(t, testCase.enableSystemProcessesCreated, `expected "system.processes.created" metric not to be present`)
+						assert.True(t, testCase.enableSystemProcessesCreated)
+						assert.Equal(t, metric.Sum().DataPoints().Len(), 1)
+						assert.Equal(t, int64(len(testCase.handles)), metric.Sum().DataPoints().At(0).IntValue())
+					}
+
+					if metric.Name() == "system.processes.count" {
+						require.True(t, testCase.enableSystemProcessesCount, `expected "system.processes.count" metric not to be present`)
+						assert.True(t, testCase.enableSystemProcessesCount)
+						assertSystemProcessesCountAttributes(t, metric, testCase.expectedStatusCounts)
+					}
+				}
+			}
+		})
+	}
+}
+
+func assertSystemProcessesCountAttributes(t *testing.T, processesCountMetric pmetric.Metric, expectedValues map[metadata.AttributeStatus]int64) {
+	foundAttributes := map[metadata.AttributeStatus]bool{}
+	for status := range expectedValues {
+		foundAttributes[status] = false
+	}
+	for i := 0; i < processesCountMetric.Sum().DataPoints().Len(); i++ {
+		metric := processesCountMetric.Sum().DataPoints().At(i)
+		statusAttr, ok := metric.Attributes().Get("status")
+		assert.True(t, ok, `Expected attribute "status" not found`)
+		status, ok := metadata.MapAttributeStatus[statusAttr.Str()]
+		assert.True(t, ok, `Found invalid attribute "%s"`, statusAttr.Str())
+		expectedValue, ok := expectedValues[status]
+		if !ok {
+			// "blocked" and "running" will always be present, so if we're not expecting it, we can
+			// just ignore it for this test.
+			if status == metadata.AttributeStatusBlocked || status == metadata.AttributeStatusRunning {
+				continue
+			}
+			assert.Failf(t, `Found unexpected status attribute "%s"`, statusAttr.Str())
+		}
+		foundAttributes[status] = true
+		assert.Equal(
+			t,
+			expectedValue,
+			metric.IntValue(),
+			`expected status "%s" to have value %d, got %d`,
+			status,
+			expectedValue,
+			metric.IntValue(),
+		)
+	}
+	for status, found := range foundAttributes {
+		assert.True(t, found, `Expected status attribute "%s" not found`, status)
+	}
+}
+
+func Test_SystemProcessesCompatibilityTest(t *testing.T) {
+	t.Parallel()
+	skipTestOnUnsupportedOSAggregateMetrics(t)
+
+	handleWithStatus := func(status ...string) *processHandleMock {
+		handleMock := &processHandleMock{}
+		handleMock.On("Status", mock.Anything).Return(status, nil)
+		initDefaultsHandleMock(t, handleMock)
+		return handleMock
+	}
+
+	testCase := []struct {
+		name    string
+		handles []processHandle
+	}{
+		{
+			name: "single process",
+			handles: []processHandle{
+				handleWithStatus(process.Running),
+			},
+		},
+		{
+			name: "multiple processes",
+			handles: []processHandle{
+				handleWithStatus(process.Running),
+				handleWithStatus(process.Running),
+				handleWithStatus(process.Running),
+				handleWithStatus(process.Running),
+			},
+		},
+		{
+			name: "every status",
+			handles: (func() []processHandle {
+				handles := make([]processHandle, 0, len(charToState))
+				for char := range charToState {
+					handles = append(handles, handleWithStatus(char))
+				}
+				return handles
+			})(),
+		},
+	}
+	for _, testCase := range testCase {
+		testCase := testCase
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			assertProcessAndProcessesScrapesEqual(t, testCase.handles)
+		})
+	}
+}
+
+func Fuzz_SystemProcessesCompatibilityTest(f *testing.F) {
+	validStates := mapKeys(charToState)
+	f.Add(1)
+	f.Add(100)
+	f.Add(1000)
+	f.Fuzz(func(t *testing.T, fuzzIn int) {
+		numProcs := fuzzIn
+		if numProcs < 0 {
+			numProcs = 0
+		}
+		if numProcs > 50000 {
+			numProcs = 50000
+		}
+		handles := make([]processHandle, numProcs)
+		for i := 0; i < numProcs; i++ {
+			handleMock := &processHandleMock{}
+			initDefaultsHandleMock(t, handleMock)
+			randomState := validStates[rand.Intn(len(validStates))]
+			handleMock.On("Status", mock.Anything).Return([]string{randomState}, nil)
+			handles[i] = handleMock
+		}
+		assertProcessAndProcessesScrapesEqual(t, handles)
+	})
+}
+
+type systemProcessResults struct {
+	created      int64
+	countByState map[string]int64
+}
+
+func systemProcessResultsFromProcessesScrape(scrapeMetrics pmetric.Metrics) systemProcessResults {
+	result := systemProcessResults{}
+	metrics := scrapeMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		if metric.Name() == "system.processes.created" {
+			result.created = metric.Sum().DataPoints().At(0).IntValue()
+		}
+		if metric.Name() == "system.processes.count" {
+			result.countByState = map[string]int64{}
+			points := metric.Sum().DataPoints()
+			for k := 0; k < points.Len(); k++ {
+				dp := points.At(k)
+				status, ok := dp.Attributes().Get("status")
+				if !ok {
+					continue
+				}
+				result.countByState[status.Str()] = dp.IntValue()
+			}
+		}
+	}
+	return result
+}
+
+func systemProcessResultsFromProcessScrape(scrapeMetrics pmetric.Metrics) systemProcessResults {
+	result := systemProcessResults{}
+	// The system metrics are recorded last in the process scraper, so they will be in the final resource
+	// in the payload after each process resource.
+	resourceCount := scrapeMetrics.ResourceMetrics().Len()
+	metrics := scrapeMetrics.ResourceMetrics().At(resourceCount - 1).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < metrics.Len(); i++ {
+		metric := metrics.At(i)
+		if metric.Name() == "system.processes.created" {
+			result.created = metric.Sum().DataPoints().At(0).IntValue()
+		}
+		if metric.Name() == "system.processes.count" {
+			result.countByState = map[string]int64{}
+			points := metric.Sum().DataPoints()
+			for k := 0; k < points.Len(); k++ {
+				dp := points.At(k)
+				status, ok := dp.Attributes().Get("status")
+				if !ok {
+					continue
+				}
+				result.countByState[status.Str()] = dp.IntValue()
+			}
+		}
+	}
+	return result
+}
+
+func assertProcessAndProcessesScrapesEqual(t *testing.T, handles []processHandle) {
+	t.Helper()
+
+	ctx := context.Background()
+
+	processesScraperCfg := (&processesscraper.Factory{}).CreateDefaultConfig().(*processesscraper.Config)
+	processesScraper := processesscraper.NewProcessesScraper(
+		context.Background(),
+		receivertest.NewNopCreateSettings(),
+		processesScraperCfg,
+	)
+	processScraper, err := newProcessScraper(
+		receivertest.NewNopCreateSettings(),
+		&Config{
+			MetricsBuilderConfig: (func() metadata.MetricsBuilderConfig {
+				mbConfig := metadata.DefaultMetricsBuilderConfig()
+				mbConfig.Metrics.SystemProcessesCount.Enabled = true
+				mbConfig.Metrics.SystemProcessesCreated.Enabled = true
+				return mbConfig
+			})(),
+		},
+	)
+	require.Nil(t, err)
+
+	err = processesScraper.Start(ctx, componenttest.NewNopHost())
+	require.Nil(t, err)
+	err = processScraper.start(ctx, componenttest.NewNopHost())
+	require.Nil(t, err)
+
+	processesScraper.GetProcesses = func() ([]processesscraper.Proc, error) {
+		procHandles := make([]processesscraper.Proc, len(handles))
+		for i, handle := range handles {
+			procHandles[i] = handle.(processesscraper.Proc)
+		}
+		return procHandles, nil
+	}
+	processesScraper.GetMiscStats = miscStatFunc(handles)
+	processScraper.getProcessHandles = func(_ context.Context) (processHandles, error) {
+		return &processHandlesMock{handles: handles}, nil
+	}
+	processScraper.getMiscStats = miscStatFunc(handles)
+
+	processesMetrics, err := processesScraper.Scrape(ctx)
+	require.Nil(t, err)
+	processMetrics, err := processScraper.scrape(ctx)
+	require.Nil(t, err)
+
+	processesScrapeResults := systemProcessResultsFromProcessesScrape(processesMetrics)
+	processScrapeResults := systemProcessResultsFromProcessScrape(processMetrics)
+
+	assert.Equal(t, processesScrapeResults.created, processScrapeResults.created)
+	assert.True(t, reflect.DeepEqual(processesScrapeResults.countByState, processScrapeResults.countByState))
+}
+
+func miscStatFunc(handles []processHandle) func(context.Context) (*load.MiscStat, error) {
+	return func(context.Context) (*load.MiscStat, error) {
+		stat := &load.MiscStat{
+			ProcsCreated: len(handles),
+		}
+		for _, handle := range handles {
+			status, err := handle.Status()
+			if err != nil {
+				continue
+			}
+			for _, s := range status {
+				if s == process.Running {
+					stat.ProcsRunning++
+				}
+				if s == process.Blocked {
+					stat.ProcsBlocked++
+				}
+			}
+		}
+		return stat, nil
+	}
+}
+
+func mapKeys[K comparable, V any](m map[K]V) []K {
+	keys := make([]K, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }

@@ -27,6 +27,10 @@ all_set:
       enabled: true
     process.threads:
       enabled: true
+    system.processes.count:
+      enabled: true
+    system.processes.created:
+      enabled: true
   resource_attributes:
     process.command:
       enabled: true
@@ -69,6 +73,10 @@ none_set:
     process.signals_pending:
       enabled: false
     process.threads:
+      enabled: false
+    system.processes.count:
+      enabled: false
+    system.processes.created:
       enabled: false
   resource_attributes:
     process.command:

@@ -15,7 +15,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms)
+	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
 	if err != nil {
 		return err
 	}
@@ -38,6 +38,8 @@ type MetricsConfig struct {
 	ProcessPagingFaults        MetricConfig `mapstructure:"process.paging.faults"`
 	ProcessSignalsPending      MetricConfig `mapstructure:"process.signals_pending"`
 	ProcessThreads             MetricConfig `mapstructure:"process.threads"`
+	SystemProcessesCount       MetricConfig `mapstructure:"system.processes.count"`
+	SystemProcessesCreated     MetricConfig `mapstructure:"system.processes.created"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -81,6 +83,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		ProcessThreads: MetricConfig{
 			Enabled: false,
 		},
+		SystemProcessesCount: MetricConfig{
+			Enabled: false,
+		},
+		SystemProcessesCreated: MetricConfig{
+			Enabled: false,
+		},
 	}
 }
 
@@ -95,7 +103,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(rac)
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
 	if err != nil {
 		return err
 	}

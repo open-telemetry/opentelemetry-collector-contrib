@@ -33,7 +33,7 @@ func TestScrape(t *testing.T) {
 	type testCase struct {
 		name         string
 		getMiscStats func(context.Context) (*load.MiscStat, error)
-		getProcesses func() ([]proc, error)
+		getProcesses func() ([]Proc, error)
 		expectedErr  string
 		validate     func(*testing.T, pmetric.MetricSlice)
 	}
@@ -44,7 +44,7 @@ func TestScrape(t *testing.T) {
 	}, {
 		name:         "FakeData",
 		getMiscStats: func(ctx context.Context) (*load.MiscStat, error) { return &fakeData, nil },
-		getProcesses: func() ([]proc, error) { return fakeProcessesData, nil },
+		getProcesses: func() ([]Proc, error) { return fakeProcessesData, nil },
 		validate:     validateFakeData,
 	}, {
 		name:         "ErrorFromMiscStat",
@@ -52,11 +52,11 @@ func TestScrape(t *testing.T) {
 		expectedErr:  "err1",
 	}, {
 		name:         "ErrorFromProcesses",
-		getProcesses: func() ([]proc, error) { return nil, errors.New("err2") },
+		getProcesses: func() ([]Proc, error) { return nil, errors.New("err2") },
 		expectedErr:  "err2",
 	}, {
 		name:         "ErrorFromProcessShouldBeIgnored",
-		getProcesses: func() ([]proc, error) { return []proc{errProcess{}}, nil },
+		getProcesses: func() ([]Proc, error) { return []Proc{errProcess{}}, nil },
 	}, {
 		name:     "Validate Start Time",
 		validate: validateStartTime,
@@ -64,21 +64,21 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newProcessesScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{
+			scraper := NewProcessesScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			})
-			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			err := scraper.Start(context.Background(), componenttest.NewNopHost())
 			assert.NoError(t, err, "Failed to initialize processes scraper: %v", err)
 
 			// Override scraper methods if we are mocking out for this test case
 			if test.getMiscStats != nil {
-				scraper.getMiscStats = test.getMiscStats
+				scraper.GetMiscStats = test.getMiscStats
 			}
 			if test.getProcesses != nil {
-				scraper.getProcesses = test.getProcesses
+				scraper.GetProcesses = test.getProcesses
 			}
 
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.Scrape(context.Background())
 
 			expectedMetricCount := 0
 			if expectProcessesCountMetric {
@@ -166,7 +166,7 @@ var fakeData = load.MiscStat{
 	ProcsTotal:   30,
 }
 
-var fakeProcessesData = []proc{
+var fakeProcessesData = []Proc{
 	fakeProcess(process.Wait),
 	fakeProcess(process.Blocked), fakeProcess(process.Blocked),
 	fakeProcess(process.Running), fakeProcess(process.Running), fakeProcess(process.Running),

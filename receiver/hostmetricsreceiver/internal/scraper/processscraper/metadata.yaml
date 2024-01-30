@@ -70,6 +70,11 @@ attributes:
     type: string
     enum: [involuntary, voluntary]
 
+  status:
+    description: Breakdown status of the processes.
+    type: string
+    enum: [blocked, daemon, detached, idle, locked, orphan, paging, running, sleeping, stopped, system, unknown, zombies]
+
 metrics:
   process.cpu.time:
     enabled: true
@@ -176,7 +181,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
-  
+
   process.context_switches:
     enabled: false
     description: Number of times the process has been context switched.
@@ -197,3 +202,22 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [direction]
+
+  system.processes.created:
+    enabled: false
+    description: Total number of created processes.
+    unit: "{processes}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+
+  system.processes.count:
+    enabled: false
+    description: Total number of processes in each state.
+    unit: "{processes}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: [status]

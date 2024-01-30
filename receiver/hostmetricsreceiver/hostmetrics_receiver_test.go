@@ -210,6 +210,92 @@ func appendMapInto(m1 map[string]struct{}, m2 map[string]struct{}) {
 	}
 }
 
+func Test_ProcessesScraperDeprecationCompatibility(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("Skipping test on non-Linux platform")
+	}
+	processesConfig := &Config{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			CollectionInterval: 100 * time.Millisecond,
+		},
+		Scrapers: map[string]internal.Config{
+			processscraper.TypeStr:   scraperFactories[processscraper.TypeStr].CreateDefaultConfig(),
+			processesscraper.TypeStr: scraperFactories[processesscraper.TypeStr].CreateDefaultConfig(),
+		},
+	}
+	processConfig := &Config{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			CollectionInterval: 100 * time.Millisecond,
+		},
+		Scrapers: map[string]internal.Config{
+			processscraper.TypeStr: (&processscraper.Factory{}).CreateDefaultConfigWithSystemProcessesEnabled(),
+		},
+	}
+
+	processesSink := runScrapeForConfig(t, processesConfig)
+	processSink := runScrapeForConfig(t, processConfig)
+	assertProcessMetricShape(t, processesSink)
+	assertProcessMetricShape(t, processSink)
+}
+
+func runScrapeForConfig(t *testing.T, cfg *Config) *consumertest.MetricsSink {
+	t.Helper()
+
+	scraperFactories = factories
+	sink := new(consumertest.MetricsSink)
+
+	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
+	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
+
+	ctx, cancelFn := context.WithCancel(context.Background())
+	err = receiver.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err, "Failed to start metrics receiver: %v", err)
+	defer func() { assert.NoError(t, receiver.Shutdown(context.Background())) }()
+
+	// canceling the context provided to Start should not cancel any async processes initiated by the receiver
+	cancelFn()
+
+	const tick = 50 * time.Millisecond
+	const waitFor = 10 * time.Second
+	require.Eventuallyf(t, func() bool {
+		return len(sink.AllMetrics()) > 0
+	}, waitFor, tick, "No metrics were collected after %v", waitFor)
+
+	return sink
+}
+
+func assertProcessMetricShape(t *testing.T, sink *consumertest.MetricsSink) {
+	// Whether the metrics came from using the deprecated scraper or just the process scraper
+	// with the system.processes.* metrics enabled, the result should be the same.
+	// There will be process resources at the beginning, and at the end should be an empty
+	// resource with the `system.processes.*` metrics present.
+
+	metrics := sink.AllMetrics()[0]
+
+	// Check that all resources up until the final one are process resources.
+	for i := 0; i < metrics.ResourceMetrics().Len()-1; i++ {
+		_, ok := metrics.ResourceMetrics().At(i).Resource().Attributes().Get("process.pid")
+		assert.True(t, ok)
+	}
+
+	// Check that the final resource has the system.processes.* metrics.
+	finalResourceMetrics := metrics.ResourceMetrics().At(metrics.ResourceMetrics().Len() - 1).ScopeMetrics().At(0).Metrics()
+	found := map[string]bool{
+		"system.processes.count":   false,
+		"system.processes.created": false,
+	}
+	for i := 0; i < finalResourceMetrics.Len(); i++ {
+		metric := finalResourceMetrics.At(i)
+		if metric.Name() == "system.processes.count" {
+			found["system.processes.count"] = true
+		} else if metric.Name() == "system.processes.created" {
+			found["system.processes.created"] = true
+		}
+	}
+	assert.True(t, found["system.processes.count"])
+	assert.True(t, found["system.processes.created"])
+}
+
 const mockTypeStr = "mock"
 
 type mockConfig struct{}
@@ -404,7 +490,7 @@ func Benchmark_ScrapeSystemMetrics(b *testing.B) {
 }
 
 func Benchmark_ScrapeSystemAndProcessMetrics(b *testing.B) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
+	if runtime.GOOS != "linux" {
 		b.Skip("skipping test on non linux/windows")
 	}
 
@@ -419,6 +505,37 @@ func Benchmark_ScrapeSystemAndProcessMetrics(b *testing.B) {
 			networkscraper.TypeStr:    &networkscraper.Config{},
 			pagingscraper.TypeStr:     (&pagingscraper.Factory{}).CreateDefaultConfig(),
 			processesscraper.TypeStr:  &processesscraper.Config{},
+		},
+	}
+
+	benchmarkScrapeMetrics(b, cfg)
+}
+
+func Benchmark_ScrapeProcessMetricsWithSystemProcessMetrics(b *testing.B) {
+	if runtime.GOOS != "linux" {
+		b.Skip("skipping test on non linux")
+	}
+
+	cfg := &Config{
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
+		Scrapers: map[string]internal.Config{
+			processscraper.TypeStr: (&processscraper.Factory{}).CreateDefaultConfigWithSystemProcessesEnabled(),
+		},
+	}
+
+	benchmarkScrapeMetrics(b, cfg)
+}
+
+func Benchmark_ScrapeProcessMetricsWithDeprecatedProcessesScraper(b *testing.B) {
+	if runtime.GOOS != "linux" {
+		b.Skip("skipping test on non linux")
+	}
+
+	cfg := &Config{
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
+		Scrapers: map[string]internal.Config{
+			processscraper.TypeStr:   (&processscraper.Factory{}).CreateDefaultConfig(),
+			processesscraper.TypeStr: (&processesscraper.Factory{}).CreateDefaultConfig(),
 		},
 	}
 

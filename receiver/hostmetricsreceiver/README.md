@@ -47,8 +47,8 @@ The available scrapers are:
 | [memory]     | All                          | Memory utilization metrics                             |
 | [network]    | All                          | Network interface I/O metrics & TCP connection metrics |
 | [paging]     | All                          | Paging/Swap space utilization and I/O metrics          |
-| [processes]  | Linux, Mac                   | Process count metrics                                  |
-| [process]    | Linux, Windows, Mac          | Per process CPU, Memory, and Disk I/O metrics          |
+| [processes]  | Linux, Mac                   | DEPRECATED: Use `process` scraper                      |
+| [process]    | Linux, Windows, Mac          | Per process CPU, Memory, and Disk I/O metrics, full system process counts |
 
 [cpu]: ./internal/scraper/cpuscraper/documentation.md
 [disk]: ./internal/scraper/diskscraper/documentation.md
@@ -160,14 +160,14 @@ service:
 
 Host metrics are collected from the Linux system directories on the filesystem.
 You likely want to collect metrics about the host system and not the container.
-This is achievable by following these steps: 
+This is achievable by following these steps:
 
 #### 1. Bind mount the host filesystem
 
-The simplest configuration is to mount the entire host filesystem when running 
+The simplest configuration is to mount the entire host filesystem when running
 the container. e.g. `docker run -v /:/hostfs ...`.
 
-You can also choose which parts of the host filesystem to mount, if you know 
+You can also choose which parts of the host filesystem to mount, if you know
 exactly what you'll need. e.g. `docker run -v /proc:/hostfs/proc`.
 
 #### 2. Configure `root_path`
@@ -191,3 +191,18 @@ Currently, the hostmetrics receiver does not set any Resource attributes on the 
 export OTEL_RESOURCE_ATTRIBUTES="service.name=<the name of your service>,service.namespace=<the namespace of your service>,service.instance.id=<uuid of the instance>"
 ```
 
+## Processes scraper deprecation
+
+The `processes` scraper has been deprecated in favor of the `process` scraper. The `processes` scraper will be removed in a future release. To enable the same functionality, remove the `processes` scraper and enable the `system.processes.*` metrics in the `process` scraper:
+
+```yaml
+receivers:
+  hostmetrics:
+    scrapers:
+      process:
+        metrics:
+          system.processes.created:
+            enabled: true
+          system.processes.count:
+            enabled: true
+```

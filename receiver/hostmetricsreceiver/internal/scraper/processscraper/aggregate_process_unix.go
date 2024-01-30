@@ -4,32 +4,27 @@
 //go:build linux || darwin || freebsd || openbsd
 // +build linux darwin freebsd openbsd
 
-package processesscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
+package processscraper
 
 import (
 	"context"
-	"runtime"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/process"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
 )
 
-const enableProcessesCount = true
-const enableProcessesCreated = runtime.GOOS == "openbsd" || runtime.GOOS == "linux"
-
-func (s *Scraper) getProcessesMetadata() (processesMetadata, error) {
-	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
-	processes, err := s.GetProcesses()
-	if err != nil {
-		return processesMetadata{}, err
+func (s *scraper) getAggregateProcessMetadata(handles processHandles) (aggregateProcessMetadata, error) {
+	if !s.collectAggregateProcessMetrics() {
+		return aggregateProcessMetadata{}, nil
 	}
 
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
+
 	countByStatus := map[metadata.AttributeStatus]int64{}
-	for _, process := range processes {
-		var status []string
-		status, err = process.Status()
+	for i := 0; i < handles.Len(); i++ {
+		handle := handles.At(i)
+		status, err := handle.Status()
 		if err != nil {
 			// We expect an error in the case that a process has
 			// been terminated as we run this code.
@@ -45,17 +40,13 @@ func (s *Scraper) getProcessesMetadata() (processesMetadata, error) {
 
 	// Processes are actively changing as we run this code, so this reason
 	// the above loop will tend to underestimate process counts.
-	// getMiscStats is a single read/syscall so it should be more accurate.
-	miscStat, err := s.GetMiscStats(ctx)
+	// load.MiscWithContext is a single read/syscall so it should be more accurate.
+	miscStat, err := s.getMiscStats(ctx)
 	if err != nil {
-		return processesMetadata{}, err
+		return aggregateProcessMetadata{}, err
 	}
 
-	var procsCreated *int64
-	if enableProcessesCreated {
-		v := int64(miscStat.ProcsCreated)
-		procsCreated = &v
-	}
+	procsCreated := int64(miscStat.ProcsCreated)
 
 	countByStatus[metadata.AttributeStatusBlocked] = int64(miscStat.ProcsBlocked)
 	countByStatus[metadata.AttributeStatusRunning] = int64(miscStat.ProcsRunning)
@@ -68,7 +59,7 @@ func (s *Scraper) getProcessesMetadata() (processesMetadata, error) {
 		countByStatus[metadata.AttributeStatusUnknown] = int64(miscStat.ProcsTotal) - totalKnown
 	}
 
-	return processesMetadata{
+	return aggregateProcessMetadata{
 		countByStatus:    countByStatus,
 		processesCreated: procsCreated,
 	}, nil

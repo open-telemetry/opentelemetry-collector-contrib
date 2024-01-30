@@ -89,6 +89,7 @@ type processHandle interface {
 	PageFaultsWithContext(context.Context) (*process.PageFaultsStat, error)
 	NumCtxSwitchesWithContext(context.Context) (*process.NumCtxSwitchesStat, error)
 	NumFDsWithContext(context.Context) (int32, error)
+	Status() ([]string, error)
 	// If gatherUsed is true, the currently used value will be gathered and added to the resulting RlimitStat.
 	RlimitUsageWithContext(ctx context.Context, gatherUsed bool) ([]process.RlimitStat, error)
 }

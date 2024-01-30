@@ -120,6 +120,76 @@ var MapAttributeState = map[string]AttributeState{
 	"wait":   AttributeStateWait,
 }
 
+// AttributeStatus specifies the a value status attribute.
+type AttributeStatus int
+
+const (
+	_ AttributeStatus = iota
+	AttributeStatusBlocked
+	AttributeStatusDaemon
+	AttributeStatusDetached
+	AttributeStatusIdle
+	AttributeStatusLocked
+	AttributeStatusOrphan
+	AttributeStatusPaging
+	AttributeStatusRunning
+	AttributeStatusSleeping
+	AttributeStatusStopped
+	AttributeStatusSystem
+	AttributeStatusUnknown
+	AttributeStatusZombies
+)
+
+// String returns the string representation of the AttributeStatus.
+func (av AttributeStatus) String() string {
+	switch av {
+	case AttributeStatusBlocked:
+		return "blocked"
+	case AttributeStatusDaemon:
+		return "daemon"
+	case AttributeStatusDetached:
+		return "detached"
+	case AttributeStatusIdle:
+		return "idle"
+	case AttributeStatusLocked:
+		return "locked"
+	case AttributeStatusOrphan:
+		return "orphan"
+	case AttributeStatusPaging:
+		return "paging"
+	case AttributeStatusRunning:
+		return "running"
+	case AttributeStatusSleeping:
+		return "sleeping"
+	case AttributeStatusStopped:
+		return "stopped"
+	case AttributeStatusSystem:
+		return "system"
+	case AttributeStatusUnknown:
+		return "unknown"
+	case AttributeStatusZombies:
+		return "zombies"
+	}
+	return ""
+}
+
+// MapAttributeStatus is a helper map of string to AttributeStatus attribute value.
+var MapAttributeStatus = map[string]AttributeStatus{
+	"blocked":  AttributeStatusBlocked,
+	"daemon":   AttributeStatusDaemon,
+	"detached": AttributeStatusDetached,
+	"idle":     AttributeStatusIdle,
+	"locked":   AttributeStatusLocked,
+	"orphan":   AttributeStatusOrphan,
+	"paging":   AttributeStatusPaging,
+	"running":  AttributeStatusRunning,
+	"sleeping": AttributeStatusSleeping,
+	"stopped":  AttributeStatusStopped,
+	"system":   AttributeStatusSystem,
+	"unknown":  AttributeStatusUnknown,
+	"zombies":  AttributeStatusZombies,
+}
+
 type metricProcessContextSwitches struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -791,6 +861,110 @@ func newMetricProcessThreads(cfg MetricConfig) metricProcessThreads {
 	return m
 }
 
+type metricSystemProcessesCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.processes.count metric with initial data.
+func (m *metricSystemProcessesCount) init() {
+	m.data.SetName("system.processes.count")
+	m.data.SetDescription("Total number of processes in each state.")
+	m.data.SetUnit("{processes}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemProcessesCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, statusAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", statusAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemProcessesCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemProcessesCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemProcessesCount(cfg MetricConfig) metricSystemProcessesCount {
+	m := metricSystemProcessesCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemProcessesCreated struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.processes.created metric with initial data.
+func (m *metricSystemProcessesCreated) init() {
+	m.data.SetName("system.processes.created")
+	m.data.SetDescription("Total number of created processes.")
+	m.data.SetUnit("{processes}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemProcessesCreated) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemProcessesCreated) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemProcessesCreated) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemProcessesCreated(cfg MetricConfig) metricSystemProcessesCreated {
+	m := metricSystemProcessesCreated{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -812,6 +986,8 @@ type MetricsBuilder struct {
 	metricProcessPagingFaults        metricProcessPagingFaults
 	metricProcessSignalsPending      metricProcessSignalsPending
 	metricProcessThreads             metricProcessThreads
+	metricSystemProcessesCount       metricSystemProcessesCount
+	metricSystemProcessesCreated     metricSystemProcessesCreated
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -843,6 +1019,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricProcessPagingFaults:        newMetricProcessPagingFaults(mbc.Metrics.ProcessPagingFaults),
 		metricProcessSignalsPending:      newMetricProcessSignalsPending(mbc.Metrics.ProcessSignalsPending),
 		metricProcessThreads:             newMetricProcessThreads(mbc.Metrics.ProcessThreads),
+		metricSystemProcessesCount:       newMetricSystemProcessesCount(mbc.Metrics.SystemProcessesCount),
+		metricSystemProcessesCreated:     newMetricSystemProcessesCreated(mbc.Metrics.SystemProcessesCreated),
 	}
 	for _, op := range options {
 		op(mb)
@@ -918,6 +1096,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricProcessPagingFaults.emit(ils.Metrics())
 	mb.metricProcessSignalsPending.emit(ils.Metrics())
 	mb.metricProcessThreads.emit(ils.Metrics())
+	mb.metricSystemProcessesCount.emit(ils.Metrics())
+	mb.metricSystemProcessesCreated.emit(ils.Metrics())
 
 	for _, op := range rmo {
 		op(rm)
@@ -1001,6 +1181,16 @@ func (mb *MetricsBuilder) RecordProcessSignalsPendingDataPoint(ts pcommon.Timest
 // RecordProcessThreadsDataPoint adds a data point to process.threads metric.
 func (mb *MetricsBuilder) RecordProcessThreadsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricProcessThreads.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemProcessesCountDataPoint adds a data point to system.processes.count metric.
+func (mb *MetricsBuilder) RecordSystemProcessesCountDataPoint(ts pcommon.Timestamp, val int64, statusAttributeValue AttributeStatus) {
+	mb.metricSystemProcessesCount.recordDataPoint(mb.startTime, ts, val, statusAttributeValue.String())
+}
+
+// RecordSystemProcessesCreatedDataPoint adds a data point to system.processes.created metric.
+func (mb *MetricsBuilder) RecordSystemProcessesCreatedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemProcessesCreated.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

@@ -31,20 +31,20 @@ var metricsLength = func() int {
 	return n
 }()
 
-// scraper for Processes Metrics
-type scraper struct {
+// Scraper for Processes Metrics
+type Scraper struct {
 	settings receiver.CreateSettings
 	config   *Config
 	mb       *metadata.MetricsBuilder
 
 	// for mocking gopsutil
-	getMiscStats func(context.Context) (*load.MiscStat, error)
-	getProcesses func() ([]proc, error)
+	GetMiscStats func(context.Context) (*load.MiscStat, error)
+	GetProcesses func() ([]Proc, error)
 	bootTime     func(context.Context) (uint64, error)
 }
 
 // for mocking out gopsutil process.Process
-type proc interface {
+type Proc interface {
 	Status() ([]string, error)
 }
 
@@ -53,16 +53,16 @@ type processesMetadata struct {
 	processesCreated *int64                             // ignored if enableProcessesCreated is false
 }
 
-// newProcessesScraper creates a set of Processes related metrics
-func newProcessesScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) *scraper {
-	return &scraper{
+// NewProcessesScraper creates a set of Processes related metrics
+func NewProcessesScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) *Scraper {
+	return &Scraper{
 		settings:     settings,
 		config:       cfg,
-		getMiscStats: load.MiscWithContext,
-		getProcesses: func() ([]proc, error) {
+		GetMiscStats: load.MiscWithContext,
+		GetProcesses: func() ([]Proc, error) {
 			ctx := context.WithValue(context.Background(), common.EnvKey, cfg.EnvMap)
 			ps, err := process.ProcessesWithContext(ctx)
-			ret := make([]proc, len(ps))
+			ret := make([]Proc, len(ps))
 			for i := range ps {
 				ret[i] = ps[i]
 			}
@@ -72,7 +72,7 @@ func newProcessesScraper(_ context.Context, settings receiver.CreateSettings, cf
 	}
 }
 
-func (s *scraper) start(ctx context.Context, _ component.Host) error {
+func (s *Scraper) Start(ctx context.Context, _ component.Host) error {
 	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
@@ -83,7 +83,7 @@ func (s *scraper) start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *Scraper) Scrape(_ context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	md := pmetric.NewMetrics()

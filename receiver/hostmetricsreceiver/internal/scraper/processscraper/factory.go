@@ -33,6 +33,15 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 	}
 }
 
+func (f *Factory) CreateDefaultConfigWithSystemProcessesEnabled() internal.Config {
+	mb := metadata.DefaultMetricsBuilderConfig()
+	mb.Metrics.SystemProcessesCount.Enabled = true
+	mb.Metrics.SystemProcessesCreated.Enabled = true
+	return &Config{
+		MetricsBuilderConfig: mb,
+	}
+}
+
 // CreateMetricsScraper creates a resource scraper based on provided config.
 func (f *Factory) CreateMetricsScraper(
 	_ context.Context,

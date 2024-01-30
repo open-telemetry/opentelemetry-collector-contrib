@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v3/common"
+	"github.com/shirou/gopsutil/v3/load"
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -52,6 +53,7 @@ type scraper struct {
 	// for mocking
 	getProcessCreateTime func(p processHandle, ctx context.Context) (int64, error)
 	getProcessHandles    func(context.Context) (processHandles, error)
+	getMiscStats         func(context.Context) (*load.MiscStat, error)
 
 	handleCountManager handlecount.Manager
 }
@@ -63,6 +65,7 @@ func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper,
 		config:               cfg,
 		getProcessCreateTime: processHandle.CreateTimeWithContext,
 		getProcessHandles:    getProcessHandlesInternal,
+		getMiscStats:         load.MiscWithContext,
 		scrapeProcessDelay:   cfg.ScrapeProcessDelay,
 		ucals:                make(map[int32]*ucal.CPUUtilizationCalculator),
 		handleCountManager:   handlecount.NewManager(),
@@ -95,7 +98,11 @@ func (s *scraper) start(context.Context, component.Host) error {
 func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var errs scrapererror.ScrapeErrors
 
-	data, err := s.getProcessMetadata()
+	phs, err := s.getProcessHandles(ctx)
+	if err != nil {
+		return pmetric.NewMetrics(), err
+	}
+	data, err := s.getProcessMetadata(phs)
 	if err != nil {
 		var partialErr scrapererror.PartialScrapeError
 		if !errors.As(err, &partialErr) {
@@ -103,6 +110,10 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 
 		errs.AddPartial(partialErr.Failed, partialErr)
+	}
+	aggregateData, err := s.getAggregateProcessMetadata(phs)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf("error reading aggregate process metadata: %w", err))
 	}
 
 	presentPIDs := make(map[int32]struct{}, len(data))
@@ -164,6 +175,12 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
+	// Record system.processes metric data points. Recording at the end since they
+	// are to be at the top level and not part of a resource.
+	now := pcommon.NewTimestampFromTime(time.Now())
+	s.scrapeAndAppendSystemProcessesCount(ctx, now, aggregateData)
+	s.scrapeAndAppendSystemProcessesCreated(ctx, now, aggregateData)
+
 	return s.mb.Emit(), errs.Combine()
 }
 
@@ -171,14 +188,9 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 // for all currently running processes. If errors occur obtaining information
 // for some processes, an error will be returned, but any processes that were
 // successfully obtained will still be returned.
-func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
-	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
-	handles, err := s.getProcessHandles(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+func (s *scraper) getProcessMetadata(handles processHandles) ([]*processMetadata, error) {
 	var errs scrapererror.ScrapeErrors
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
 
 	if err := s.refreshHandleCounts(); err != nil {
 		errs.Add(err)
@@ -435,4 +447,18 @@ func (s *scraper) scrapeAndAppendSignalsPendingMetric(ctx context.Context, now p
 	}
 
 	return nil
+}
+
+func (s *scraper) scrapeAndAppendSystemProcessesCreated(ctx context.Context, now pcommon.Timestamp, data aggregateProcessMetadata) {
+	if s.config.MetricsBuilderConfig.Metrics.SystemProcessesCreated.Enabled {
+		s.mb.RecordSystemProcessesCreatedDataPoint(now, data.processesCreated)
+	}
+}
+
+func (s *scraper) scrapeAndAppendSystemProcessesCount(ctx context.Context, now pcommon.Timestamp, data aggregateProcessMetadata) {
+	if s.config.MetricsBuilderConfig.Metrics.SystemProcessesCount.Enabled {
+		for status, count := range data.countByStatus {
+			s.mb.RecordSystemProcessesCountDataPoint(now, count, status)
+		}
+	}
 }
