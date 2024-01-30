@@ -43,7 +43,7 @@ type teststep struct {
 
 func TestStatus(t *testing.T) {
 	// server and pipeline are reassigned before each test and are available for
-	// use in the teststesp
+	// use in the teststeps
 	var server *Server
 	var pipelines map[string]*testhelpers.PipelineMetadata
 
@@ -692,6 +692,7 @@ func TestStatus(t *testing.T) {
 
 			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() { require.NoError(t, server.Shutdown(context.Background())) }()
+			require.NoError(t, server.Ready())
 
 			client := &http.Client{}
 			url := fmt.Sprintf("http://%s%s", tc.settings.Endpoint, tc.settings.Status.Path)
@@ -737,6 +738,77 @@ func TestStatus(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestPipelineReady(t *testing.T) {
+	settings := &Settings{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: testutil.GetAvailableLocalAddress(t),
+		},
+		Config: PathSettings{Enabled: false},
+		Status: StatusSettings{
+			Detailed: false,
+			PathSettings: PathSettings{
+				Enabled: true,
+				Path:    "/status",
+			},
+		},
+	}
+	server := NewServer(
+		settings,
+		componenttest.NewNopTelemetrySettings(),
+		20*time.Millisecond,
+		status.NewAggregator(),
+	)
+
+	require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, server.Shutdown(context.Background())) }()
+
+	client := &http.Client{}
+	url := fmt.Sprintf("http://%s%s", settings.Endpoint, settings.Status.Path)
+	traces := testhelpers.NewPipelineMetadata("traces")
+
+	for _, ts := range []struct {
+		step               func()
+		expectedStatusCode int
+		ready              bool
+		notReady           bool
+	}{
+		{
+			step: func() {
+				testhelpers.SeedAggregator(
+					server.aggregator,
+					traces.InstanceIDs(),
+					component.StatusOK,
+				)
+			},
+			expectedStatusCode: http.StatusServiceUnavailable,
+		},
+		{
+			expectedStatusCode: http.StatusOK,
+			ready:              true,
+		},
+		{
+			expectedStatusCode: http.StatusServiceUnavailable,
+			notReady:           true,
+		},
+	} {
+		if ts.step != nil {
+			ts.step()
+		}
+
+		if ts.ready {
+			require.NoError(t, server.Ready())
+		}
+
+		if ts.notReady {
+			require.NoError(t, server.NotReady())
+		}
+
+		resp, err := client.Get(url)
+		require.NoError(t, err)
+		assert.Equal(t, ts.expectedStatusCode, resp.StatusCode)
 	}
 }
 
