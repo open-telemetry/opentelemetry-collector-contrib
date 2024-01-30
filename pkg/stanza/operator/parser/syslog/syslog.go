@@ -60,6 +60,7 @@ type BaseConfig struct {
 	Protocol                     string  `mapstructure:"protocol,omitempty"`
 	Location                     string  `mapstructure:"location,omitempty"`
 	EnableOctetCounting          bool    `mapstructure:"enable_octet_counting,omitempty"`
+	AllowSkipPriHeader           bool    `mapstructure:"allow_skip_pri_header,omitempty"`
 	NonTransparentFramingTrailer *string `mapstructure:"non_transparent_framing_trailer,omitempty"`
 }
 
@@ -109,6 +110,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		protocol:                     proto,
 		location:                     location,
 		enableOctetCounting:          c.EnableOctetCounting,
+		allowSkipPriHeader:           c.AllowSkipPriHeader,
 		nonTransparentFramingTrailer: c.NonTransparentFramingTrailer,
 	}, nil
 }
@@ -120,7 +122,11 @@ func (s *Parser) buildParseFunc() (parseFunc, error) {
 	switch s.protocol {
 	case RFC3164:
 		return func(input []byte) (sl.Message, error) {
-			return rfc3164.NewMachine(rfc3164.WithLocaleTimezone(s.location)).Parse(input)
+			parserOptions := []sl.MachineOption{rfc3164.WithLocaleTimezone(s.location)}
+			if s.allowSkipPriHeader {
+				parserOptions = append(parserOptions, rfc3164.WithAllowSkipPri())
+			}
+			return rfc3164.NewMachine(parserOptions...).Parse(input)
 		}, nil
 	case RFC5424:
 		switch {
@@ -135,7 +141,11 @@ func (s *Parser) buildParseFunc() (parseFunc, error) {
 		// Raw RFC5424 parsing
 		default:
 			return func(input []byte) (sl.Message, error) {
-				return rfc5424.NewMachine().Parse(input)
+				parserOptions := []sl.MachineOption{}
+				if s.allowSkipPriHeader {
+					parserOptions = append(parserOptions, rfc5424.WithAllowSkipPri())
+				}
+				return rfc5424.NewMachine(parserOptions...).Parse(input)
 			}, nil
 		}
 
@@ -150,6 +160,7 @@ type Parser struct {
 	protocol                     string
 	location                     *time.Location
 	enableOctetCounting          bool
+	allowSkipPriHeader           bool
 	nonTransparentFramingTrailer *string
 }
 
