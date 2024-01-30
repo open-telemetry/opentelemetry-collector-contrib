@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.93.1-0.20240129215828-1ed45ec12569
 	go.opentelemetry.io/collector/consumer v0.93.1-0.20240129215828-1ed45ec12569
 	go.opentelemetry.io/collector/exporter v0.93.1-0.20240129215828-1ed45ec12569
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240129215828-1ed45ec12569
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240130181942-9c7177496fd5
 	go.opentelemetry.io/otel/metric v1.22.0
 	go.opentelemetry.io/otel/trace v1.22.0
 	go.uber.org/zap v1.26.0
