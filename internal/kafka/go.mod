@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/IBM/sarama v1.42.1
-	github.com/aws/aws-sdk-go v1.50.4
+	github.com/aws/aws-sdk-go v1.50.6
 	github.com/stretchr/testify v1.8.4
 	github.com/xdg-go/scram v1.1.2
 	go.opentelemetry.io/collector/config/configtls v0.93.1-0.20240129215828-1ed45ec12569
