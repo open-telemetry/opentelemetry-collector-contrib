@@ -12,7 +12,7 @@ import (
 const defaultEndpoint = ":12001"
 
 type Config struct {
-	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	confighttp.HTTPServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Limit is a float that indicates the maximum number of messages repeated
 	// through the websocket by this processor in messages per second. Defaults to 1.
@@ -21,7 +21,7 @@ type Config struct {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		HTTPServerConfig: confighttp.HTTPServerConfig{
 			Endpoint: defaultEndpoint,
 		},
 		Limit: 1,

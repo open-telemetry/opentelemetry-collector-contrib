@@ -109,7 +109,7 @@ func genDefaultSearchQuery(ownertype string, ghorg string) string {
 // Returns the graphql and rest clients for GitHub.
 // By default, the graphql client will use the public GitHub API URL as will
 // the rest client. If the user has specified an endpoint in the config via the
-// inherited HTTPClientSettings, then the both clients will use that endpoint.
+// inherited HTTPClientConfig, then the both clients will use that endpoint.
 // The endpoint defined needs to be the root server.
 // See the GitHub documentation for more information.
 // https://docs.github.com/en/graphql/guides/forming-calls-with-graphql#the-graphql-endpoint
@@ -119,11 +119,11 @@ func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *gith
 	rClient = github.NewClient(ghs.client)
 	gClient = graphql.NewClient(defaultGraphURL, ghs.client)
 
-	if ghs.cfg.HTTPClientSettings.Endpoint != "" {
+	if ghs.cfg.HTTPClientConfig.Endpoint != "" {
 
 		// Given endpoint set as `https://myGHEserver.com` we need to join the path
 		// with `api/graphql`
-		gu, err := url.JoinPath(ghs.cfg.HTTPClientSettings.Endpoint, "api/graphql")
+		gu, err := url.JoinPath(ghs.cfg.HTTPClientConfig.Endpoint, "api/graphql")
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error joining graphql endpoint: %v", err)
 			return nil, nil, err
@@ -131,7 +131,7 @@ func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *gith
 		gClient = graphql.NewClient(gu, ghs.client)
 
 		// The rest client needs the endpoint to be the root of the server
-		ru := ghs.cfg.HTTPClientSettings.Endpoint
+		ru := ghs.cfg.HTTPClientConfig.Endpoint
 		rClient, err = github.NewClient(ghs.client).WithEnterpriseURLs(ru, ru)
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error creating enterprise client: %v", err)
