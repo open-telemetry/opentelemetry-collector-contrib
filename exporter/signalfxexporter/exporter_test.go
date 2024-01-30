@@ -67,18 +67,18 @@ func TestNew(t *testing.T) {
 		{
 			name: "successfully create exporter",
 			config: &Config{
-				AccessToken:        "someToken",
-				Realm:              "xyz",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
+				AccessToken:      "someToken",
+				Realm:            "xyz",
+				HTTPClientConfig: confighttp.HTTPClientConfig{Timeout: 1 * time.Second},
 			},
 		},
 		{
 			name: "create exporter with host metadata syncer",
 			config: &Config{
-				AccessToken:        "someToken",
-				Realm:              "xyz",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
-				SyncHostMetadata:   true,
+				AccessToken:      "someToken",
+				Realm:            "xyz",
+				HTTPClientConfig: confighttp.HTTPClientConfig{Timeout: 1 * time.Second},
+				SyncHostMetadata: true,
 			},
 		},
 	}
@@ -180,7 +180,7 @@ func TestConsumeMetrics(t *testing.T) {
 			assert.NoError(t, err)
 
 			cfg := &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Timeout: 1 * time.Second,
 					Headers: map[string]configopaque.String{"test_header_": "test"},
 				},
@@ -402,11 +402,11 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.HTTPClientSettings.Headers = make(map[string]configopaque.String)
+			cfg.HTTPClientConfig.Headers = make(map[string]configopaque.String)
 			for k, v := range tt.additionalHeaders {
-				cfg.HTTPClientSettings.Headers[k] = configopaque.String(v)
+				cfg.HTTPClientConfig.Headers[k] = configopaque.String(v)
 			}
-			cfg.HTTPClientSettings.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.HTTPClientConfig.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
@@ -441,9 +441,9 @@ func TestNewEventExporter(t *testing.T) {
 	assert.Nil(t, got)
 
 	cfg := &Config{
-		AccessToken:        "someToken",
-		Realm:              "xyz",
-		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
+		AccessToken:      "someToken",
+		Realm:            "xyz",
+		HTTPClientConfig: confighttp.HTTPClientConfig{Timeout: 1 * time.Second},
 	}
 
 	got, err = newEventExporter(cfg, exportertest.NewNopCreateSettings())
@@ -557,7 +557,7 @@ func TestConsumeEventData(t *testing.T) {
 			assert.NoError(t, err)
 
 			cfg := &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Timeout: 1 * time.Second,
 					Headers: map[string]configopaque.String{"test_header_": "test"},
 				},

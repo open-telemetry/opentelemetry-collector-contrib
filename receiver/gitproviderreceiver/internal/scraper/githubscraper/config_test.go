@@ -21,7 +21,7 @@ func TestConfig(t *testing.T) {
 
 	expectedConfig := &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		HTTPClientConfig: confighttp.HTTPClientConfig{
 			Timeout: 15 * time.Second,
 		},
 	}

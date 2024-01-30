@@ -115,7 +115,7 @@ func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	config := &Config{
 		Protocols: Protocols{
-			HTTP: &confighttp.HTTPServerSettings{
+			HTTP: &confighttp.HTTPServerConfig{
 				Endpoint: addr,
 			},
 		},

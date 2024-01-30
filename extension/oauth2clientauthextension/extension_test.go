@@ -316,7 +316,7 @@ func TestFailContactingOAuth(t *testing.T) {
 	assert.Contains(t, err.Error(), serverURL.String())
 
 	// Test for HTTP connections
-	setting := confighttp.HTTPClientSettings{
+	setting := confighttp.HTTPClientConfig{
 		Endpoint: "http://example.com/",
 		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
 			return oauth2Authenticator.roundTripper(next)

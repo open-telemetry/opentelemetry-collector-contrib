@@ -24,7 +24,7 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		HTTPServerConfig: confighttp.HTTPServerConfig{
 			Endpoint: "0.0.0.0:8086",
 		},
 	}
