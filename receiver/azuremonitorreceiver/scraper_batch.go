@@ -451,6 +451,7 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 										}
 									}
 									attributes["subscription"] = subscription.DisplayName
+									attributes["timegrain"] = &compositeKey.timeGrain
 									for _, metricValue := range timeseriesElement.Data {
 										s.processQueryTimeseriesData(*metricValues.ResourceID, metric, metricValue, attributes)
 									}
