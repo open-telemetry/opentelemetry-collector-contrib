@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receiv
 go 1.20
 
 require (
-	github.com/expr-lang/expr v1.15.8
+	github.com/expr-lang/expr v1.16.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.93.0
