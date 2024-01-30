@@ -7,7 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.93.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/pdata v1.0.2-0.20240130181942-9c7177496fd5
-	go.opentelemetry.io/collector/semconv v0.93.1-0.20240129215828-1ed45ec12569
+	go.opentelemetry.io/collector/semconv v0.93.1-0.20240130182548-89388addcc7f
 	go.uber.org/goleak v1.3.0
 )
 
