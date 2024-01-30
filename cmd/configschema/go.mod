@@ -178,7 +178,7 @@ require (
 
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.7.0 // indirect
-	cloud.google.com/go v0.111.0 // indirect
+	cloud.google.com/go v0.112.0 // indirect
 	cloud.google.com/go/compute v1.23.3 // indirect
 	cloud.google.com/go/compute/metadata v0.2.4-0.20230617002413-005d2dfb6b68 // indirect
 	cloud.google.com/go/iam v1.1.5 // indirect
@@ -186,7 +186,7 @@ require (
 	cloud.google.com/go/longrunning v0.5.4 // indirect
 	cloud.google.com/go/monitoring v1.17.0 // indirect
 	cloud.google.com/go/pubsub v1.34.0 // indirect
-	cloud.google.com/go/spanner v1.55.0 // indirect
+	cloud.google.com/go/spanner v1.56.0 // indirect
 	cloud.google.com/go/trace v1.10.4 // indirect
 	code.cloudfoundry.org/clock v1.0.0 // indirect
 	code.cloudfoundry.org/go-diodes v0.0.0-20211115184647-b584dd5df32c // indirect
