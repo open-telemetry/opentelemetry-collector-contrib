@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	sl "github.com/influxdata/go-syslog/v3"
-	"github.com/influxdata/go-syslog/v3/nontransparent"
-	"github.com/influxdata/go-syslog/v3/octetcounting"
-	"github.com/influxdata/go-syslog/v3/rfc3164"
-	"github.com/influxdata/go-syslog/v3/rfc5424"
+	sl "github.com/haimrubinstein/go-syslog/v3"
+	"github.com/haimrubinstein/go-syslog/v3/nontransparent"
+	"github.com/haimrubinstein/go-syslog/v3/octetcounting"
+	"github.com/haimrubinstein/go-syslog/v3/rfc3164"
+	"github.com/haimrubinstein/go-syslog/v3/rfc5424"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
