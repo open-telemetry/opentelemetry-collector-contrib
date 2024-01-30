@@ -28,9 +28,9 @@ type Config struct {
 	// Markers is the list of markers to create
 	Markers []Marker `mapstructure:"markers"`
 
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
-	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
-	configretry.BackOffConfig     `mapstructure:"retry_on_failure"`
+	confighttp.HTTPClientConfig  `mapstructure:",squash"`
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 }
 
 type Marker struct {

@@ -75,7 +75,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 		{
 			name: "Test without TLS",
 			config: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Endpoint: "localhost:1234",
 					TLSSetting: configtls.TLSClientSetting{
 						Insecure: true,
@@ -113,7 +113,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 		{
 			name: "Test with TLS",
 			config: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Endpoint: "localhost:1234",
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -158,7 +158,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 		{
 			name: "Test with TLS - default CA",
 			config: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Endpoint: "localhost:1234",
 				},
 				CollectionInterval: 10 * time.Second,
@@ -219,7 +219,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 						InsecureSkipVerify: true,
 					},
 				},
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Endpoint: defaultEndpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						Insecure: true,
@@ -266,7 +266,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 				httpConfig: httpConfig{
 					TLSEnabled: false,
 				},
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Endpoint: defaultEndpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						Insecure: true,
@@ -307,7 +307,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 				httpConfig: httpConfig{
 					TLSEnabled: false,
 				},
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Endpoint: defaultEndpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						Insecure: false,
@@ -348,7 +348,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 				httpConfig: httpConfig{
 					TLSEnabled: false,
 				},
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Endpoint: defaultEndpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						Insecure: false,

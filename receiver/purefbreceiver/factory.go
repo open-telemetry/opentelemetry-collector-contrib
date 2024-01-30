@@ -28,7 +28,7 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{},
+		HTTPClientConfig: confighttp.HTTPClientConfig{},
 		Settings: &Settings{
 			ReloadIntervals: &ReloadIntervals{
 				Array:   15 * time.Second,
