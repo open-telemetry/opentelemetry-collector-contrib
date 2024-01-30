@@ -59,7 +59,7 @@ func (c *Config) Validate() error {
 		for _, entry := range c.IgnoreResources {
 			_, err := regexp.Compile(entry)
 			if err != nil {
-				return fmt.Errorf("'%s' is not valid resource filter regular expression", entry)
+				return fmt.Errorf("%q is not valid resource filter regular expression", entry)
 			}
 		}
 	}
