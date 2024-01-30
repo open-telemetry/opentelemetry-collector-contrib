@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.93.0
 	github.com/prometheus/common v0.46.0
-	github.com/prometheus/prometheus v0.48.1
+	github.com/prometheus/prometheus v0.49.1
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/pdata v1.0.2-0.20240129215828-1ed45ec12569
 	go.opentelemetry.io/collector/semconv v0.93.1-0.20240129215828-1ed45ec12569
@@ -38,11 +38,11 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240129215828-1ed45ec12569 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
+	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231009173412-8bfb1ae86b6c // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231120223509-83a465c0220f // indirect
 	google.golang.org/grpc v1.60.1 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
