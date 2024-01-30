@@ -175,7 +175,7 @@ func setup(t *testing.T) (CorrelationClient, *httptest.Server, chan *request, *a
 	return client, server, serverCh, &forcedRespCode, &forcedRespPayload, cancel, ctx
 }
 
-func teardown(client CorrelationClient, server *httptest.Server, serverCh chan *request, ctx context.Context, cancel context.CancelFunc) {
+func teardown(ctx context.Context, client CorrelationClient, server *httptest.Server, serverCh chan *request, cancel context.CancelFunc) {
 	close(serverCh)
 	cancel()
 	<-ctx.Done()
@@ -185,7 +185,7 @@ func teardown(client CorrelationClient, server *httptest.Server, serverCh chan *
 
 func TestCorrelationClient(t *testing.T) {
 	client, server, serverCh, forcedRespCode, forcedRespPayload, cancel, ctx := setup(t)
-	defer teardown(client, server, serverCh, ctx, cancel)
+	defer teardown(ctx, client, server, serverCh, cancel)
 
 	for _, correlationType := range []Type{Service, Environment} {
 		for _, op := range []string{http.MethodPut, http.MethodDelete} {
