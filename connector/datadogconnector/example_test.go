@@ -22,6 +22,7 @@ import (
 )
 
 func TestExamples(t *testing.T) {
+	t.Setenv("DD_API_KEY", "testvalue")
 	factories := newTestComponents(t)
 	const configFile = "./examples/config.yaml"
 	_, err := otelcoltest.LoadConfigAndValidate(configFile, factories)
