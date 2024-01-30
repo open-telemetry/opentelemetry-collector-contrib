@@ -272,7 +272,7 @@ require (
 	github.com/aerospike/aerospike-client-go/v6 v6.13.0 // indirect
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
-	github.com/aliyun/aliyun-log-go-sdk v0.1.68 // indirect
+	github.com/aliyun/aliyun-log-go-sdk v0.1.69 // indirect
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/apache/arrow/go/v14 v14.0.2 // indirect
 	github.com/apache/pulsar-client-go v0.8.1 // indirect
