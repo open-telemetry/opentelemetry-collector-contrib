@@ -37,7 +37,7 @@ type RemoteSamplingConfig struct {
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
 	GRPC          *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
-	ThriftHTTP    *confighttp.HTTPServerSettings `mapstructure:"thrift_http"`
+	ThriftHTTP    *confighttp.HTTPServerConfig   `mapstructure:"thrift_http"`
 	ThriftBinary  *ProtocolUDP                   `mapstructure:"thrift_binary"`
 	ThriftCompact *ProtocolUDP                   `mapstructure:"thrift_compact"`
 }
@@ -125,7 +125,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 	// UnmarshalExact will not set struct properties to nil even if no key is provided,
 	// so set the protocol structs to nil where the keys were omitted.
-	err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
+	err := componentParser.Unmarshal(cfg)
 	if err != nil {
 		return err
 	}

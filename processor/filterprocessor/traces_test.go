@@ -135,7 +135,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 				next,
 			)
 			require.NotNil(t, fmp)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			caps := fmp.Capabilities()
 			require.True(t, caps.MutatesData)
@@ -282,7 +282,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 
 func TestFilterTraceProcessorTelemetry(t *testing.T) {
 	telemetryTest(t, "FilterTraceProcessorTelemetry", func(t *testing.T, tel testTelemetry) {
-		processor, err := newFilterSpansProcessor(processortest.NewNopCreateSettings(), &Config{
+		processor, err := newFilterSpansProcessor(tel.NewProcessorCreateSettings(), &Config{
 			Traces: TraceFilters{
 				SpanConditions: []string{
 					`name == "operationA"`,

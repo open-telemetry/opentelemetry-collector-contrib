@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
@@ -32,10 +33,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 		IngestURL: defaultIngestURL,
 		IngestKey: "",
 
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		HTTPClientConfig: confighttp.HTTPClientConfig{
 			Timeout: 5 * time.Second,
 		},
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 	})
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))

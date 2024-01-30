@@ -214,7 +214,7 @@ func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) er
 }
 
 func (se *signalfxExporter) createClient(host component.Host) (*http.Client, error) {
-	se.config.HTTPClientSettings.TLSSetting = se.config.IngestTLSSettings
+	se.config.HTTPClientConfig.TLSSetting = se.config.IngestTLSSettings
 
 	return se.config.ToClient(host, se.telemetrySettings)
 }
@@ -260,11 +260,11 @@ func buildHeaders(config *Config, version string) map[string]string {
 	// Add any custom headers from the config. They will override the pre-defined
 	// ones above in case of conflict, but, not the content encoding one since
 	// the latter one is defined according to the payload.
-	for k, v := range config.HTTPClientSettings.Headers {
+	for k, v := range config.HTTPClientConfig.Headers {
 		headers[k] = string(v)
 	}
 	// we want to control how headers are set, overriding user headers with our passthrough.
-	config.HTTPClientSettings.Headers = nil
+	config.HTTPClientConfig.Headers = nil
 
 	return headers
 }

@@ -7,3 +7,8 @@ status:
   distributions: [contrib, observiq, aws]
   codeowners:
     active: [yotamloe]
+
+tests:
+  config:
+    endpoint: "172.0.0.1:8080:"
+  expect_consumer_error: true

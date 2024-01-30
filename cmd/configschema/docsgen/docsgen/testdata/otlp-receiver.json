@@ -261,7 +261,7 @@
         },
         {
           "Name": "http",
-          "Type": "*confighttp.HTTPServerSettings",
+          "Type": "*confighttp.HTTPServerConfig",
           "Kind": "ptr",
           "Default": null,
           "Doc": "",

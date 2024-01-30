@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -51,9 +52,9 @@ func createDefaultConfig() component.Config {
 	timeout := 10 * time.Second
 
 	return &Config{
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		HTTPClientConfig: confighttp.HTTPClientConfig{
 			Timeout:              defaultHTTPTimeout,
 			MaxIdleConns:         &maxConnCount,
 			MaxIdleConnsPerHost:  &maxConnCount,
@@ -87,17 +88,17 @@ func createTracesExporter(
 	cfg := eCfg.(*Config)
 	corrCfg := cfg.Correlation
 
-	if corrCfg.HTTPClientSettings.Endpoint == "" {
+	if corrCfg.HTTPClientConfig.Endpoint == "" {
 		apiURL, err := cfg.getAPIURL()
 		if err != nil {
 			return nil, fmt.Errorf("unable to create API URL: %w", err)
 		}
-		corrCfg.HTTPClientSettings.Endpoint = apiURL.String()
+		corrCfg.HTTPClientConfig.Endpoint = apiURL.String()
 	}
 	if cfg.AccessToken == "" {
 		return nil, errors.New("access_token is required")
 	}
-	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.HTTPClientSettings.Endpoint))
+	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.HTTPClientConfig.Endpoint))
 	tracker := correlation.NewTracker(corrCfg, cfg.AccessToken, set)
 
 	return exporterhelper.NewTracesExporter(
@@ -128,7 +129,7 @@ func createMetricsExporter(
 		exp.pushMetrics,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.shutdown))
@@ -171,7 +172,7 @@ func createLogsExporter(
 		exp.pushLogs,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(expCfg.RetrySettings),
+		exporterhelper.WithRetry(expCfg.BackOffConfig),
 		exporterhelper.WithQueue(expCfg.QueueSettings),
 		exporterhelper.WithStart(exp.startLogs))
 

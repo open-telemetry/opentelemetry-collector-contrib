@@ -17,6 +17,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -176,7 +177,7 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 func (f *factory) createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings: defaulttimeoutSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 
 		API: APIConfig{
@@ -337,7 +338,7 @@ func (f *factory) createMetricsExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
 		// We use our own custom mechanism for retries, since we hit several endpoints.
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
 		// The metrics remapping code mutates data
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
@@ -434,7 +435,7 @@ func (f *factory) createTracesExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
 		// We don't do retries on traces because of deduping concerns on APM Events.
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(stop),
 	)
@@ -498,7 +499,7 @@ func (f *factory) createLogsExporter(
 		pusher,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()

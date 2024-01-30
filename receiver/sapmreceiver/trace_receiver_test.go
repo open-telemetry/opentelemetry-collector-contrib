@@ -278,7 +278,7 @@ func TestReception(t *testing.T) {
 			args: args{
 				// 1. Create the SAPM receiver aka "server"
 				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+					HTTPServerConfig: confighttp.HTTPServerConfig{
 						Endpoint: defaultEndpoint,
 					},
 				},
@@ -292,7 +292,7 @@ func TestReception(t *testing.T) {
 			name: "receive compressed sapm",
 			args: args{
 				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+					HTTPServerConfig: confighttp.HTTPServerConfig{
 						Endpoint: defaultEndpoint,
 					},
 				},
@@ -306,7 +306,7 @@ func TestReception(t *testing.T) {
 			name: "connect via TLS zstd compressed sapm",
 			args: args{
 				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+					HTTPServerConfig: confighttp.HTTPServerConfig{
 						Endpoint: tlsAddress,
 						TLSSetting: &configtls.TLSServerSetting{
 							TLSSetting: configtls.TLSSetting{
@@ -381,7 +381,7 @@ func TestAccessTokenPassthrough(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config := &Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				HTTPServerConfig: confighttp.HTTPServerConfig{
 					Endpoint: defaultEndpoint,
 				},
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{

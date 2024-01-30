@@ -216,6 +216,21 @@ func TestDefaultExtensions(t *testing.T) {
 			},
 		},
 		{
+			extension: "otlp_encoding",
+		},
+		{
+			extension: "text_encoding",
+		},
+		{
+			extension: "jaeger_encoding",
+		},
+		{
+			extension: "json_log_encoding",
+		},
+		{
+			extension: "zipkin_encoding",
+		},
+		{
 			extension: "remotetap",
 			getConfigFn: func() component.Config {
 				return extFactories["remotetap"].CreateDefaultConfig().(*remotetapextension.Config)
@@ -228,6 +243,10 @@ func TestDefaultExtensions(t *testing.T) {
 				cfg.Server.WS.Endpoint = "wss://" + endpoint
 				return cfg
 			},
+		},
+		{
+			extension:     "solarwindsapmsettings",
+			skipLifecycle: true, // Requires Solarwinds APM endpoint and token
 		},
 	}
 

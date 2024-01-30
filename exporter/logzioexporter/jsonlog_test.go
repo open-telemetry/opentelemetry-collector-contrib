@@ -70,11 +70,11 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 		},
 	}
 	for _, test := range convertLogRecordToJSONTests {
-		output := convertLogRecordToJSON(test.log, test.resource)
+		output := convertLogRecordToJSON(test.log, test.log.Attributes())
 		require.Equal(t, output, test.expected)
 	}
-
 }
+
 func TestSetTimeStamp(t *testing.T) {
 	var recordedRequests []byte
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
@@ -85,7 +85,7 @@ func TestSetTimeStamp(t *testing.T) {
 	cfg := &Config{
 		Region: "us",
 		Token:  "token",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		HTTPClientConfig: confighttp.HTTPClientConfig{
 			Endpoint:    server.URL,
 			Compression: configcompression.Gzip,
 		},

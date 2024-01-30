@@ -12,7 +12,7 @@ Each test case within the suite should create a `testbed.TestCase` and supply im
 
 ## DataFlow
 
-`testbed.TestCase` uses `LoadGenerator` and `MockBackend` to further encapsulate pluggable components. `LoadGenerator` further encapsulates `DataProvider` and `DataSender` in order to generate and send data.  `MockBackend` further encapsulate `DataReceiver` and provide consume functionality.
+`testbed.TestCase` uses `LoadGenerator` and `MockBackend` to further encapsulate pluggable components. `LoadGenerator`'s reference implementation `ProviderSender`, created via `testbed.NewLoadGenerator()` further encapsulates `DataProvider` and `DataSender` in order to generate and send data. Any type satisfying the `LoadGenerator` interface can be used with `testbed.NewLoadGeneratorTestCase()` to exercise functionality beyond the single component limitation of `ProviderSender`. `MockBackend` further encapsulates `DataReceiver` and provides consume functionality.
 
 For instance, if using the existing end-to-end test, the general dataflow can be (Note that MockBackend does not really have a consumer instance, only to make it intuitive, this diagram draws it a separate module):
 

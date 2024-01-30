@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -63,9 +64,9 @@ type HecTelemetry struct {
 
 // Config defines configuration for Splunk exporter.
 type Config struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
-	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
+	confighttp.HTTPClientConfig  `mapstructure:",squash"`
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
 	// LogDataEnabled can be used to disable sending logs by the exporter.
 	LogDataEnabled bool `mapstructure:"log_data_enabled"`
@@ -136,7 +137,7 @@ type Config struct {
 
 func (cfg *Config) getURL() (out *url.URL, err error) {
 
-	out, err = url.Parse(cfg.HTTPClientSettings.Endpoint)
+	out, err = url.Parse(cfg.HTTPClientConfig.Endpoint)
 	if err != nil {
 		return out, err
 	}
@@ -152,7 +153,7 @@ func (cfg *Config) Validate() error {
 	if !cfg.LogDataEnabled && !cfg.ProfilingDataEnabled {
 		return errors.New(`either "log_data_enabled" or "profiling_data_enabled" has to be true`)
 	}
-	if cfg.HTTPClientSettings.Endpoint == "" {
+	if cfg.HTTPClientConfig.Endpoint == "" {
 		return errors.New(`requires a non-empty "endpoint"`)
 	}
 	_, err := cfg.getURL()

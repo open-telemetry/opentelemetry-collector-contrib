@@ -60,7 +60,7 @@ func TestBearerAuthenticatorHttp(t *testing.T) {
 	resp, err := c.RoundTrip(request)
 	assert.NoError(t, err)
 	authHeaderValue := resp.Header.Get("Authorization")
-	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, cfg.BearerToken))
+	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(cfg.BearerToken)))
 
 }
 
@@ -79,7 +79,7 @@ func TestBearerAuthenticator(t *testing.T) {
 
 	md, err := credential.GetRequestMetadata(context.Background())
 	expectedMd := map[string]string{
-		"authorization": fmt.Sprintf("Bearer %s", cfg.BearerToken),
+		"authorization": fmt.Sprintf("Bearer %s", string(cfg.BearerToken)),
 	}
 	assert.Equal(t, md, expectedMd)
 	assert.NoError(t, err)

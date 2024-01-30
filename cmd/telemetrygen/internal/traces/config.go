@@ -15,12 +15,14 @@ import (
 type Config struct {
 	common.Config
 	NumTraces        int
+	NumChildSpans    int
 	PropagateContext bool
 	ServiceName      string
 	StatusCode       string
 	Batch            bool
 	LoadSize         int
-	SpanDuration     time.Duration
+
+	SpanDuration time.Duration
 }
 
 // Flags registers config flags.
@@ -30,6 +32,7 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.HTTPPath, "otlp-http-url-path", "/v1/traces", "Which URL path to write to")
 
 	fs.IntVar(&c.NumTraces, "traces", 1, "Number of traces to generate in each worker (ignored if duration is provided)")
+	fs.IntVar(&c.NumChildSpans, "child-spans", 1, "Number of child spans to generate for each trace")
 	fs.BoolVar(&c.PropagateContext, "marshal", false, "Whether to marshal trace context via HTTP headers")
 	fs.StringVar(&c.ServiceName, "service", "telemetrygen", "Service name to use")
 	fs.StringVar(&c.StatusCode, "status-code", "0", "Status code to use for the spans, one of (Unset, Error, Ok) or the equivalent integer (0,1,2)")

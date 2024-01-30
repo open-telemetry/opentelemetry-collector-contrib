@@ -62,6 +62,7 @@ body:
       - exporter/mezmo
       - exporter/opencensus
       - exporter/opensearch
+      - exporter/otelarrow
       - exporter/prometheus
       - exporter/prometheusremotewrite
       - exporter/pulsar
@@ -100,6 +101,7 @@ body:
       - extension/pprof
       - extension/remotetap
       - extension/sigv4auth
+      - extension/solarwindsapmsettings
       - extension/storage
       - extension/storage/dbstorage
       - extension/storage/filestorage
@@ -139,10 +141,12 @@ body:
       - processor/attributes
       - processor/cumulativetodelta
       - processor/datadog
+      - processor/deltatocumulative
       - processor/deltatorate
       - processor/filter
       - processor/groupbyattrs
       - processor/groupbytrace
+      - processor/interval
       - processor/k8sattributes
       - processor/logstransform
       - processor/metricsgeneration
@@ -219,6 +223,7 @@ body:
       - receiver/nsxt
       - receiver/opencensus
       - receiver/oracledb
+      - receiver/osquery
       - receiver/otlpjsonfile
       - receiver/podman
       - receiver/postgresql
@@ -255,7 +260,6 @@ body:
       - receiver/zipkin
       - receiver/zookeeper
       - testbed
-      - testbed/mockdatareceivers/mockawsxrayreceiver
       - testbed/mockdatasenders/mockdatadogagentexporter
       # End Collector components list
   - type: textarea

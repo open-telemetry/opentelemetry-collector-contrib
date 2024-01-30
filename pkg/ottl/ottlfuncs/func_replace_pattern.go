@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -36,6 +37,36 @@ func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argu
 	return replacePattern(args.Target, args.RegexPattern, args.Replacement, args.Function)
 }
 
+func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern *regexp.Regexp, fn ottl.Optional[ottl.FunctionGetter[K]], originalValStr string, replacementVal string) (string, error) {
+	var updatedString string
+	updatedString = originalValStr
+	submatches := compiledPattern.FindAllStringSubmatchIndex(updatedString, -1)
+	for _, submatch := range submatches {
+		fullMatch := originalValStr[submatch[0]:submatch[1]]
+		result := compiledPattern.ExpandString([]byte{}, replacementVal, originalValStr, submatch)
+		fnVal := fn.Get()
+		replaceValGetter := ottl.StandardStringGetter[K]{
+			Getter: func(context.Context, K) (any, error) {
+				return string(result), nil
+			},
+		}
+		replacementExpr, errNew := fnVal.Get(&replacePatternFuncArgs[K]{Input: replaceValGetter})
+		if errNew != nil {
+			return "", errNew
+		}
+		replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
+		if errNew != nil {
+			return "", errNew
+		}
+		replacementValStr, ok := replacementValRaw.(string)
+		if !ok {
+			return "", fmt.Errorf("the replacement value must be a string")
+		}
+		updatedString = strings.ReplaceAll(updatedString, fullMatch, replacementValStr)
+	}
+	return updatedString, nil
+}
+
 func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]]) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
@@ -47,36 +78,31 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replac
 		if err != nil {
 			return nil, err
 		}
-		if fn.IsEmpty() {
-			replacementVal, err = replacement.Get(ctx, tCtx)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			fnVal := fn.Get()
-			replacementExpr, errNew := fnVal.Get(&replacePatternFuncArgs[K]{Input: replacement})
-			if errNew != nil {
-				return nil, errNew
-			}
-			replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
-			if errNew != nil {
-				return nil, errNew
-			}
-			replacementValStr, ok := replacementValRaw.(string)
-			if !ok {
-				return nil, fmt.Errorf("replacement value is not a string")
-			}
-			replacementVal = replacementValStr
-		}
 		if originalVal == nil {
 			return nil, nil
 		}
+		replacementVal, err = replacement.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
 		if originalValStr, ok := originalVal.(string); ok {
 			if compiledPattern.MatchString(originalValStr) {
-				updatedStr := compiledPattern.ReplaceAllString(originalValStr, replacementVal)
-				err = target.Set(ctx, tCtx, updatedStr)
-				if err != nil {
-					return nil, err
+				if !fn.IsEmpty() {
+					var updatedString string
+					updatedString, err = applyOptReplaceFunction[K](ctx, tCtx, compiledPattern, fn, originalValStr, replacementVal)
+					if err != nil {
+						return nil, err
+					}
+					err = target.Set(ctx, tCtx, updatedString)
+					if err != nil {
+						return nil, err
+					}
+				} else {
+					updatedStr := compiledPattern.ReplaceAllString(originalValStr, replacementVal)
+					err = target.Set(ctx, tCtx, updatedStr)
+					if err != nil {
+						return nil, err
+					}
 				}
 			}
 		}

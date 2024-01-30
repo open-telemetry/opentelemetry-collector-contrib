@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -376,14 +377,14 @@ type HostMetadataConfig struct {
 	Tags []string `mapstructure:"tags"`
 }
 
-// LimitedTLSClientSetting is a subset of TLSClientSetting, see LimitedHTTPClientSettings for more details
+// LimitedTLSClientSetting is a subset of TLSClientSetting, see LimitedHTTPClientConfig for more details
 type LimitedTLSClientSettings struct {
 	// InsecureSkipVerify controls whether a client verifies the server's
 	// certificate chain and host name.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 }
 
-type LimitedHTTPClientSettings struct {
+type LimitedHTTPClientConfig struct {
 	TLSSetting LimitedTLSClientSettings `mapstructure:"tls,omitempty"`
 }
 
@@ -391,9 +392,9 @@ type LimitedHTTPClientSettings struct {
 type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 
-	LimitedHTTPClientSettings `mapstructure:",squash"`
+	LimitedHTTPClientConfig `mapstructure:",squash"`
 
 	TagsConfig `mapstructure:",squash"`
 
@@ -551,7 +552,7 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 		return err
 	}
 
-	err := configMap.Unmarshal(c, confmap.WithErrorUnused())
+	err := configMap.Unmarshal(c)
 	if err != nil {
 		return err
 	}
