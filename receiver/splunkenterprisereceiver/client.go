@@ -173,3 +173,10 @@ func (c *splunkEntClient) makeRequest(req *http.Request) (*http.Response, error)
 		return nil, errEndpointTypeNotFound
 	}
 }
+
+// Check if the splunkEntClient contains a configured endpoint for the type of scraper
+// Returns true if an entry exists, false if not.
+func (c *splunkEntClient) isConfigured(v string) bool {
+	_, ok := (*c)[v]
+	return ok
+}
