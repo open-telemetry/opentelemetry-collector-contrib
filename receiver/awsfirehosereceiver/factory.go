@@ -65,7 +65,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		RecordType: defaultRecordType,
 		HTTPServerConfig: confighttp.HTTPServerConfig{
-			Endpoint: defaultEndpoint,
+			Endpoint: localhostgate.EndpointForPort(defaultPort),
 		},
 	}
 }
