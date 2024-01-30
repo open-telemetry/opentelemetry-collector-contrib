@@ -1540,7 +1540,6 @@ func Test_SystemProcessesCompatibilityTest(t *testing.T) {
 		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-
 			assertProcessAndProcessesScrapesEqual(t, testCase.handles)
 		})
 	}
