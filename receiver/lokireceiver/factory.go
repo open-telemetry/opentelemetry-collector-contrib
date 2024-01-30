@@ -43,7 +43,7 @@ func createDefaultConfig() component.Config {
 					Transport: "tcp",
 				},
 			},
-			HTTP: &confighttp.HTTPServerSettings{
+			HTTP: &confighttp.HTTPServerConfig{
 				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 			},
 		},

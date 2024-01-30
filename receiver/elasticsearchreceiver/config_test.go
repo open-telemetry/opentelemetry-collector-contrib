@@ -167,7 +167,7 @@ func TestLoadConfig(t *testing.T) {
 				MetricsBuilderConfig: defaultMetrics,
 				Username:             "otel",
 				Password:             "password",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Timeout:  10000000000,
 					Endpoint: "http://example.com:9200",
 				},

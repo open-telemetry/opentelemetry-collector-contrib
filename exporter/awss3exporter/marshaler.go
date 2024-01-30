@@ -26,6 +26,11 @@ var (
 func newMarshaler(mType MarshalerType, logger *zap.Logger) (marshaler, error) {
 	marshaler := &s3Marshaler{logger: logger}
 	switch mType {
+	case OtlpProtobuf:
+		marshaler.logsMarshaler = &plog.ProtoMarshaler{}
+		marshaler.tracesMarshaler = &ptrace.ProtoMarshaler{}
+		marshaler.metricsMarshaler = &pmetric.ProtoMarshaler{}
+		marshaler.fileFormat = "binpb"
 	case OtlpJSON:
 		marshaler.logsMarshaler = &plog.JSONMarshaler{}
 		marshaler.tracesMarshaler = &ptrace.JSONMarshaler{}

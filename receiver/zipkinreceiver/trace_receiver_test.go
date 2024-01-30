@@ -63,7 +63,7 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				HTTPServerConfig: confighttp.HTTPServerConfig{
 					Endpoint: tt.args.address,
 				},
 			}
@@ -85,7 +85,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	_, portStr, err := net.SplitHostPort(l.Addr().String())
 	require.NoError(t, err, "failed to split listener address: %v", err)
 	cfg := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		HTTPServerConfig: confighttp.HTTPServerConfig{
 			Endpoint: "localhost:" + portStr,
 		},
 	}
@@ -133,7 +133,7 @@ func TestStartTraceReception(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			cfg := &Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				HTTPServerConfig: confighttp.HTTPServerConfig{
 					Endpoint: "localhost:0",
 				},
 			}
@@ -226,7 +226,7 @@ func TestReceiverContentTypes(t *testing.T) {
 
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				HTTPServerConfig: confighttp.HTTPServerConfig{
 					Endpoint: "",
 				},
 			}
@@ -253,7 +253,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		HTTPServerConfig: confighttp.HTTPServerConfig{
 			Endpoint: "",
 		},
 	}
@@ -275,7 +275,7 @@ func TestReceiverConsumerError(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		HTTPServerConfig: confighttp.HTTPServerConfig{
 			Endpoint: "localhost:9411",
 		},
 	}
@@ -297,7 +297,7 @@ func TestReceiverConsumerPermanentError(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		HTTPServerConfig: confighttp.HTTPServerConfig{
 			Endpoint: "localhost:9411",
 		},
 	}
@@ -423,7 +423,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 
 	next := new(consumertest.TracesSink)
 	cfg := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		HTTPServerConfig: confighttp.HTTPServerConfig{
 			Endpoint: "",
 		},
 		ParseStringTags: true,
@@ -464,7 +464,7 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 
 	cfg := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		HTTPServerConfig: confighttp.HTTPServerConfig{
 			Endpoint: "",
 		},
 		ParseStringTags: true,

@@ -51,9 +51,9 @@ func NewTracker(cfg *Config, accessToken configopaque.String, params exporter.Cr
 func newCorrelationClient(cfg *Config, accessToken configopaque.String, params exporter.CreateSettings, host component.Host) (
 	*correlationContext, error,
 ) {
-	corrURL, err := url.Parse(cfg.HTTPClientSettings.Endpoint)
+	corrURL, err := url.Parse(cfg.HTTPClientConfig.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %w", cfg.HTTPClientSettings.Endpoint, err)
+		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %w", cfg.HTTPClientConfig.Endpoint, err)
 	}
 
 	httpClient, err := cfg.ToClient(host, params.TelemetrySettings)
