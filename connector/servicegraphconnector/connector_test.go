@@ -55,7 +55,7 @@ func TestConnectorShutdown(t *testing.T) {
 	next := new(consumertest.MetricsSink)
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p := newProcessor(set, cfg)
+	p := newConnector(set, cfg)
 	p.metricsConsumer = next
 	err := p.Shutdown(context.Background())
 
@@ -72,7 +72,7 @@ func TestConnectorConsume(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	conn := newProcessor(set, cfg)
+	conn := newConnector(set, cfg)
 	conn.metricsConsumer = newMockMetricsExporter()
 
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
@@ -308,7 +308,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p := newProcessor(set, cfg)
+	p := newConnector(set, cfg)
 
 	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
@@ -360,7 +360,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 
 	reader := sdkmetric.NewManualReader()
 	set := setupTelemetry(reader)
-	p := newProcessor(set, cfg)
+	p := newConnector(set, cfg)
 
 	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
