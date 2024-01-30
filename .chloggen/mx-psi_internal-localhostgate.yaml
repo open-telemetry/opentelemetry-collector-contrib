@@ -20,6 +20,7 @@ subtext: |
     - receiver/loki
     - receiver/opencensus
     - receiver/zipkin
+    - receiver/awsfirehose
     - receiver/zookeeper
 
 # If your change doesn't affect end users or the exported elements of any package,
