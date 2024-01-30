@@ -86,6 +86,10 @@ func TestTrackerStart(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+
+			if tracker != nil {
+				assert.NoError(t, tracker.Shutdown(context.Background()))
+			}
 		})
 	}
 }
