@@ -118,6 +118,7 @@ github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbt
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
 github.com/Showmax/go-fqdn v1.0.0 h1:0rG5IbmVliNT5O19Mfuvna9LL7zlHyRfsSvBPZmF9tM=
 github.com/Showmax/go-fqdn v1.0.0/go.mod h1:SfrFBzmDCtCGrnHhoDjuvFnKsWjEQX/Q9ARZvOrJAko=
+github.com/alecthomas/participle/v2 v2.1.1 h1:hrjKESvSqGHzRb4yW1ciisFJ4p3MGYih6icjJvbsmV8=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
@@ -432,6 +433,7 @@ github.com/hashicorp/serf v0.10.1/go.mod h1:yL2t6BqATOLGc5HF7qbFkTfXoPIY0WZdWHfE
 github.com/hetznercloud/hcloud-go/v2 v2.4.0 h1:MqlAE+w125PLvJRCpAJmEwrIxoVdUdOyuFUhE/Ukbok=
 github.com/hetznercloud/hcloud-go/v2 v2.4.0/go.mod h1:l7fA5xsncFBzQTyw29/dw5Yr88yEGKKdc6BHf24ONS0=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
+github.com/iancoleman/strcase v0.3.0 h1:nTXanmYxhfFAMjZL34Ov6gkzEsSJZ5DbhxWjvSASxEI=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/imdario/mergo v0.3.5/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
 github.com/imdario/mergo v0.3.16 h1:wwQJbIsHYGMUyLSPrEq1CT16AhnhNJQ51+4fdHUnCl4=
@@ -774,6 +776,7 @@ go.opentelemetry.io/collector/consumer v0.93.1-0.20240129215828-1ed45ec12569 h1:
 go.opentelemetry.io/collector/consumer v0.93.1-0.20240129215828-1ed45ec12569/go.mod h1:6BI1qsWw89DmTjoEu/acTcvTLISt3Y0lHioUfafpsAE=
 go.opentelemetry.io/collector/exporter v0.93.1-0.20240129215828-1ed45ec12569 h1:rjrB+DIJo7ctj67GEm7dKHkA+6wxs4zOIEp5xOLLEbw=
 go.opentelemetry.io/collector/exporter v0.93.1-0.20240129215828-1ed45ec12569/go.mod h1:cufzF+FLxlTj4SeCjvyiPgR6MDhkKkcP7BAQgjoZH+4=
+go.opentelemetry.io/collector/exporter/debugexporter v0.93.1-0.20240129215828-1ed45ec12569 h1:ApBTsl10N0NQICpaTU16mCKBi2yWnVt2fobC+ERLCWs=
 go.opentelemetry.io/collector/extension v0.93.1-0.20240129215828-1ed45ec12569 h1:Gye02RzVma59xkThnq2zztP4roC2qiwTKAicRWPTVPg=
 go.opentelemetry.io/collector/extension v0.93.1-0.20240129215828-1ed45ec12569/go.mod h1:mTUTMXug92ewm4hwYMUXPoUQOeBolUTCVcpMUJ/1s70=
 go.opentelemetry.io/collector/extension/auth v0.93.1-0.20240129215828-1ed45ec12569 h1:049mP3hSm/CRp+d1TwthnhhMceJFiAxF8+avumZW5WQ=
