@@ -12,7 +12,14 @@ import (
 
 var _ component.Config = (*Config)(nil)
 
+// Config defines configuration for the Datadog connector.
 type Config struct {
+	// Traces defines the Traces specific configuration
+	Traces TracesConfig `mapstructure:"traces"`
+}
+
+// TracesConfig defines the traces specific configuration options
+type TracesConfig struct {
 	// ignored resources
 	// A blocklist of regular expressions can be provided to disable certain traces based on their resource name
 	// all entries must be surrounded by double quotes and separated by commas.
@@ -55,8 +62,8 @@ type Config struct {
 
 // Validate the configuration for errors. This is required by component.Config.
 func (c *Config) Validate() error {
-	if c.IgnoreResources != nil {
-		for _, entry := range c.IgnoreResources {
+	if c.Traces.IgnoreResources != nil {
+		for _, entry := range c.Traces.IgnoreResources {
 			_, err := regexp.Compile(entry)
 			if err != nil {
 				return fmt.Errorf("%q is not valid resource filter regular expression", entry)
@@ -64,8 +71,8 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.SpanNameRemappings != nil {
-		for key, value := range c.SpanNameRemappings {
+	if c.Traces.SpanNameRemappings != nil {
+		for key, value := range c.Traces.SpanNameRemappings {
 			if value == "" {
 				return fmt.Errorf("%q is not valid value for span name remapping", value)
 			}
@@ -75,7 +82,7 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.TraceBuffer < 0 {
+	if c.Traces.TraceBuffer < 0 {
 		return fmt.Errorf("Trace buffer must be non-negative")
 	}
 

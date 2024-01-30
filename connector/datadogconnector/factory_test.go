@@ -14,10 +14,14 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, &Config{
-		IgnoreResources: []string{},
-		TraceBuffer:     1000,
-	}, cfg, "failed to create default config")
+	assert.Equal(t,
+		&Config{
+			Traces: TracesConfig{
+				IgnoreResources: []string{},
+				TraceBuffer:     1000,
+			},
+		},
+		cfg, "failed to create default config")
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }

@@ -22,6 +22,7 @@ processors:
 
 connectors:
   datadog/connector:
+    traces:
       ## @param ignore_resources - list of strings - optional
       ## A blacklist of regular expressions can be provided to disable certain traces based on their resource name
       ## all entries must be surrounded by double quotes and separated by commas.
@@ -78,14 +79,11 @@ exporters:
     verbosity: detailed
   datadog:
     api:
-      key: "key"
+      key: ${env:DD_API_KEY}
     traces:
       trace_buffer: 100
 
 service:
-  telemetry:
-    metrics:
-      level: none
   pipelines:
     traces:
       receivers: [otlp]

@@ -19,47 +19,49 @@ func TestValidate(t *testing.T) {
 		{
 			name: "span name remapping valid",
 			cfg: &Config{
-				SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"},
+				Traces: TracesConfig{
+					SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"},
+				},
 			},
 		},
 		{
 			name: "span name remapping empty val",
-			cfg: &Config{
+			cfg: &Config{Traces: TracesConfig{
 				SpanNameRemappings: map[string]string{"oldname": ""},
-			},
-			err: "'' is not valid value for span name remapping",
+			}},
+			err: "\"\" is not valid value for span name remapping",
 		},
 		{
 			name: "span name remapping empty key",
-			cfg: &Config{
+			cfg: &Config{Traces: TracesConfig{
 				SpanNameRemappings: map[string]string{"": "newname"},
-			},
-			err: "'' is not valid key for span name remapping",
+			}},
+			err: "\"\" is not valid key for span name remapping",
 		},
 		{
 			name: "ignore resources valid",
-			cfg: &Config{
+			cfg: &Config{Traces: TracesConfig{
 				IgnoreResources: []string{"[123]"},
-			},
+			}},
 		},
 		{
 			name: "ignore resources missing bracket",
-			cfg: &Config{
+			cfg: &Config{Traces: TracesConfig{
 				IgnoreResources: []string{"[123"},
-			},
-			err: "'[123' is not valid resource filter regular expression",
+			}},
+			err: "\"[123\" is not valid resource filter regular expression",
 		},
 		{
 			name: "With trace_buffer",
-			cfg: &Config{
+			cfg: &Config{Traces: TracesConfig{
 				TraceBuffer: 10,
-			},
+			}},
 		},
 		{
 			name: "neg trace_buffer",
-			cfg: &Config{
+			cfg: &Config{Traces: TracesConfig{
 				TraceBuffer: -10,
-			},
+			}},
 			err: "Trace buffer must be non-negative",
 		},
 	}
