@@ -14,12 +14,17 @@ import (
 
 func (s *Server) statusHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pipeline := r.URL.Query().Get("pipeline")
+		if !s.isReady() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
 
+		pipeline := r.URL.Query().Get("pipeline")
 		st, ok := s.aggregator.AggregateStatus(
 			status.Scope(pipeline),
 			status.Detail(s.settings.Status.Detailed),
 		)
+
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			return
