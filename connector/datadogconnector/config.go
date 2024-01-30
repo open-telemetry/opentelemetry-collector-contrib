@@ -70,7 +70,7 @@ func (c *Config) Validate() error {
 				return fmt.Errorf("%q is not valid value for span name remapping", value)
 			}
 			if key == "" {
-				return fmt.Errorf("'%s' is not valid key for span name remapping", key)
+				return fmt.Errorf("%q is not valid key for span name remapping", key)
 			}
 		}
 	}
