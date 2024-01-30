@@ -198,8 +198,8 @@ github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRW
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/oklog/ulid/v2 v2.1.0 h1:+9lhoxAP56we25tyYETBBY1YLA2SaoLvUFgrP2miPJU=
 github.com/oklog/ulid/v2 v2.1.0/go.mod h1:rcEKHmBBKfef9DhnvX7y1HZBYxjXb0cP5ExxNsTT1QQ=
-github.com/open-telemetry/opamp-go v0.11.0 h1:+fZrbbQlJNsdpe574vd4CI9ss8CmWpOOiq5Mz6DVSoM=
-github.com/open-telemetry/opamp-go v0.11.0/go.mod h1:bk3WZ4RjbVdzsHT3gaPZscUdGvoz9Bi2+AvG8/5X824=
+github.com/open-telemetry/opamp-go v0.12.0 h1:N97R8BY5FfaB9SzG5pURrOfXQk7MT9a4RD8oERlii5o=
+github.com/open-telemetry/opamp-go v0.12.0/go.mod h1:bk3WZ4RjbVdzsHT3gaPZscUdGvoz9Bi2+AvG8/5X824=
 github.com/pborman/getopt v0.0.0-20170112200414-7148bc3a4c30/go.mod h1:85jBQOZwpVEaDAr341tbn15RS4fCAsIst0qp7i8ex1o=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
