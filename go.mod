@@ -564,7 +564,7 @@ require (
 	github.com/prometheus/prometheus v0.48.1 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/redis/go-redis/v9 v9.4.0 // indirect
-	github.com/relvacode/iso8601 v1.3.0 // indirect
+	github.com/relvacode/iso8601 v1.4.0 // indirect
 	github.com/rs/cors v1.10.1 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
