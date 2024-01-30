@@ -33,7 +33,7 @@
 //
 // To configure a consistent tail sampler in an OpenTelemetry
 // Collector using a fixed probability for all traces in an
-// "equalizing" arrangement, where the effect og sampling is
+// "equalizing" arrangement, where the effect of sampling is
 // conditioned on how much sampling has already taken place, use the
 // following pseudocode.
 //
