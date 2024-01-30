@@ -132,12 +132,24 @@ func (hc *healthCheckExtension) NotifyConfig(ctx context.Context, conf *confmap.
 // Ready implements the extension.PipelineWatcher interface.
 func (hc *healthCheckExtension) Ready() error {
 	close(hc.readyCh)
-	return nil
+	var err error
+	for _, comp := range hc.subcomponents {
+		if pw, ok := comp.(extension.PipelineWatcher); ok {
+			err = multierr.Append(err, pw.Ready())
+		}
+	}
+	return err
 }
 
 // NotReady implements the extension.PipelineWatcher interface.
 func (hc *healthCheckExtension) NotReady() error {
-	return nil
+	var err error
+	for _, comp := range hc.subcomponents {
+		if pw, ok := comp.(extension.PipelineWatcher); ok {
+			err = multierr.Append(err, pw.NotReady())
+		}
+	}
+	return err
 }
 
 func (hc *healthCheckExtension) eventLoop(ctx context.Context) {
