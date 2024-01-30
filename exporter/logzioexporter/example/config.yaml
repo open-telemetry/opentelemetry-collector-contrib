@@ -1,5 +1,6 @@
 receivers:
   opencensus:
+    endpoint: :55678
   zipkin:
     endpoint: :9411
   jaeger:
