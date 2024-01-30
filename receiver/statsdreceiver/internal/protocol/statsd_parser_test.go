@@ -72,6 +72,15 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				"c", 0, nil, nil, 0),
 		},
 		{
+			name:  "integer counter with empty tags",
+			input: "test.metric:42|c|#,,,",
+			wantMetric: testStatsDMetric(
+				"test.metric",
+				42,
+				false,
+				"c", 0, nil, nil, 0),
+		},
+		{
 			name:  "integer counter",
 			input: "test.metric:42|c",
 			wantMetric: testStatsDMetric(
