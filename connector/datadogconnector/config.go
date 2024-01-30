@@ -67,7 +67,7 @@ func (c *Config) Validate() error {
 	if c.SpanNameRemappings != nil {
 		for key, value := range c.SpanNameRemappings {
 			if value == "" {
-				return fmt.Errorf("'%s' is not valid value for span name remapping", value)
+				return fmt.Errorf("%q is not valid value for span name remapping", value)
 			}
 			if key == "" {
 				return fmt.Errorf("'%s' is not valid key for span name remapping", key)
