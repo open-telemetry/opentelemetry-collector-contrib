@@ -8,7 +8,7 @@ jobs.
 
 ## Configuration
 
-The following settings are required, omitting them will either cause your receiver to fail to compile or result in 4/5xx return codes during scraping. These must be set for each Splunk instance type (indexer, search head, or cluster master) from which you wish to pull metrics. At present, only one of each type is accepted, which if done properly should allow for deployment wide metrics to be gathered. 
+The following settings are required, omitting them will either cause your receiver to fail to compile or result in 4/5xx return codes during scraping. These must be set for each Splunk instance type (indexer, search head, or cluster master) from which you wish to pull metrics. At present, only one of each type is accepted, per configured receiver instance.
 
 * `basicauth` (from [basicauthextension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/basicauthextension)): A configured stanza for the basicauthextension.
 * `auth` (no default): String name referencing your auth extension.
