@@ -57,7 +57,6 @@ func NewFactory() connector.Factory {
 		typeStr,
 		createDefaultConfig,
 		connector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability),
-		connector.WithTracesToTraces(createTracesConnector, metadata.TracesToTracesStability),
 	)
 }
 
@@ -70,11 +69,6 @@ func createDefaultConfig() component.Config {
 		CacheLoop:           time.Minute,
 		StoreExpirationLoop: 2 * time.Second,
 	}
-}
-
-func createTracesConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, _ consumer.Traces) (connector.Traces, error) {
-	p := newConnector(params.TelemetrySettings, cfg)
-	return p, nil
 }
 
 func createTracesToMetricsConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
