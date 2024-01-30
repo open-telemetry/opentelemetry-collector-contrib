@@ -49,7 +49,7 @@ type defaultElasticsearchClient struct {
 var _ elasticsearchClient = (*defaultElasticsearchClient)(nil)
 
 func newElasticsearchClient(settings component.TelemetrySettings, c Config, h component.Host) (*defaultElasticsearchClient, error) {
-	client, err := c.HTTPClientSettings.ToClient(h, settings)
+	client, err := c.HTTPClientConfig.ToClient(h, settings)
 	if err != nil {
 		return nil, err
 	}

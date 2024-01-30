@@ -17,7 +17,7 @@ import (
 	vt "github.com/vmware/govmomi/vim25/types"
 )
 
-// vcenterClient is a client that
+// vcenterClient is a client that collects data from a vCenter endpoint.
 type vcenterClient struct {
 	moClient  *govmomi.Client
 	vimDriver *vim25.Client
@@ -80,7 +80,7 @@ func (vc *vcenterClient) Disconnect(ctx context.Context) error {
 	return nil
 }
 
-// Clusters returns the clusterComputeResources of the vSphere SDK
+// Datacenters returns the datacenterComputeResources of the vSphere SDK
 func (vc *vcenterClient) Datacenters(ctx context.Context) ([]*object.Datacenter, error) {
 	datacenters, err := vc.finder.DatacenterList(ctx, "*")
 	if err != nil {

@@ -24,13 +24,13 @@ func TestFactoryCreate(t *testing.T) {
 }
 
 func TestDefaultConfig(t *testing.T) {
-	cfg := confighttp.NewDefaultHTTPClientSettings()
+	cfg := confighttp.NewDefaultHTTPClientConfig()
 	cfg.Headers = map[string]configopaque.String{
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
 
 	expectedConf := &Config{
-		HTTPClientSettings: cfg,
+		HTTPClientConfig: cfg,
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Minute,
 			InitialDelay:       1 * time.Second,

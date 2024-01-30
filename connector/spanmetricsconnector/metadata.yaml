@@ -6,7 +6,7 @@ status:
     alpha: [traces_to_metrics]
   distributions: [contrib, sumo, grafana, splunk, liatrio]
   codeowners:
-    active: [albertteoh, portertech]
+    active: [portertech]
 
 tests:
   config:

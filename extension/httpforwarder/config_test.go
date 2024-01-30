@@ -34,10 +34,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
-				Ingress: confighttp.HTTPServerSettings{
+				Ingress: confighttp.HTTPServerConfig{
 					Endpoint: "http://localhost:7070",
 				},
-				Egress: confighttp.HTTPClientSettings{
+				Egress: confighttp.HTTPClientConfig{
 					Endpoint: "http://target/",
 					Headers: map[string]configopaque.String{
 						"otel_http_forwarder": "dev",

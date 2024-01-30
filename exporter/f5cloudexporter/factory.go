@@ -97,7 +97,7 @@ func (f *f5cloudFactory) CreateDefaultConfig() component.Config {
 
 	cfg.Headers["User-Agent"] = "opentelemetry-collector-contrib {{version}}"
 
-	cfg.HTTPClientSettings.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
+	cfg.HTTPClientConfig.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
 		ts, err := f.getTokenSource(cfg)
 		if err != nil {
 			return nil, err

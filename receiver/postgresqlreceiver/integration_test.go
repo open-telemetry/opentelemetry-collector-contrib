@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
-// +build integration
 
 package postgresqlreceiver
 
@@ -16,6 +15,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -23,9 +23,17 @@ import (
 const postgresqlPort = "5432"
 
 func TestIntegration(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, false)()
 	t.Run("single_db", integrationTest("single_db", []string{"otel"}))
 	t.Run("multi_db", integrationTest("multi_db", []string{"otel", "otel2"}))
 	t.Run("all_db", integrationTest("all_db", []string{}))
+}
+
+func TestIntegrationWithSeparateSchemaAttr(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, true)()
+	t.Run("single_db_schemaattr", integrationTest("single_db_schemaattr", []string{"otel"}))
+	t.Run("multi_db_schemaattr", integrationTest("multi_db_schemaattr", []string{"otel", "otel2"}))
+	t.Run("all_db_schemaattr", integrationTest("all_db_schemaattr", []string{}))
 }
 
 func integrationTest(name string, databases []string) func(*testing.T) {

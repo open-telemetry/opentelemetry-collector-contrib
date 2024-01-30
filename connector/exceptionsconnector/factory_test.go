@@ -48,7 +48,7 @@ func TestNewConnector(t *testing.T) {
 			traceMetricsConnector, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
 			smc := traceMetricsConnector.(*metricsConnector)
 
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.NotNil(t, smc)
 			assert.Equal(t, tc.wantDimensions, smc.dimensions)
 
@@ -56,7 +56,7 @@ func TestNewConnector(t *testing.T) {
 			traceLogsConnector, err := factory.CreateTracesToLogs(context.Background(), creationParams, cfg, consumertest.NewNop())
 			slc := traceLogsConnector.(*logsConnector)
 
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.NotNil(t, slc)
 			assert.Equal(t, tc.wantDimensions, smc.dimensions)
 		})

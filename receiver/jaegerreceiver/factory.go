@@ -78,7 +78,7 @@ func createDefaultConfig() component.Config {
 					Transport: "tcp",
 				},
 			},
-			ThriftHTTP: &confighttp.HTTPServerSettings{
+			ThriftHTTP: &confighttp.HTTPServerConfig{
 				Endpoint: defaultHTTPBindEndpoint,
 			},
 			ThriftBinary: &ProtocolUDP{
