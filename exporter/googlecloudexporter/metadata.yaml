@@ -7,3 +7,8 @@ status:
   distributions: [contrib, observiq]
   codeowners:
     active: [aabmass, dashpole, jsuereth, punya, damemi, psx95]
+
+
+tests:
+  config:
+  skip_lifecycle: true
