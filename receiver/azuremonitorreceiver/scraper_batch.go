@@ -383,14 +383,13 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 	resType := *s.resourceTypes[*subscription.SubscriptionID][resourceType]
 
 	for compositeKey, metricsByGrain := range resType.metricsByCompositeKey {
-
-		if time.Since(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
-			continue
-		}
-
 		now := time.Now().UTC()
 		metricsByGrain.metricsValuesUpdated = now
-		startTime := now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second * 2) // times 2 because for some resources, data are missing for the very latest timestamp
+
+		startTime := now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second)
+		if compositeKey.timeGrain == "PT1M" {
+			startTime = now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second) // times 2 because for some resources, data are missing for the very latest timestamp
+		}
 
 		start := 0
 		for start < len(metricsByGrain.metrics) {
