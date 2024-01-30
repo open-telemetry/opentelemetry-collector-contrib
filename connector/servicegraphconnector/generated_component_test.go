@@ -39,13 +39,6 @@ func TestComponentLifecycle(t *testing.T) {
 				return factory.CreateTracesToMetrics(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
-
-		{
-			name: "traces_to_traces",
-			createFn: func(ctx context.Context, set connector.CreateSettings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTracesToTraces(ctx, set, cfg, consumertest.NewNop())
-			},
-		},
 	}
 
 	cm, err := confmaptest.LoadConf("metadata.yaml")

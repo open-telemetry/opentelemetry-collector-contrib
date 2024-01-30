@@ -8,7 +8,6 @@
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jpkrohling](https://www.github.com/jpkrohling), [@mapno](https://www.github.com/mapno) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
-[development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [grafana]: https://github.com/grafana/agent
 [sumo]: https://github.com/SumoLogic/sumologic-otel-collector
@@ -18,7 +17,6 @@
 | [Exporter Pipeline Type] | [Receiver Pipeline Type] | [Stability Level] |
 | ------------------------ | ------------------------ | ----------------- |
 | traces | metrics | [alpha] |
-| traces | traces | [development] |
 
 [Exporter Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
