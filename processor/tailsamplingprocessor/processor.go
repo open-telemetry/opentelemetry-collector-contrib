@@ -308,11 +308,13 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 				mutators,
 				statCountTracesSampled.M(int64(1)),
 			)
-			_ = stats.RecordWithTags(
-				p.ctx,
-				mutators,
-				statCountSpansSampled.M(trace.SpanCount.Load()),
-			)
+			if isMetricStatCountSpansSampledEnabled() {
+				_ = stats.RecordWithTags(
+					p.ctx,
+					mutators,
+					statCountSpansSampled.M(trace.SpanCount.Load()),
+				)
+			}
 			metrics.decisionSampled++
 
 		case sampling.NotSampled:
@@ -322,11 +324,13 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 				mutators,
 				statCountTracesSampled.M(int64(1)),
 			)
-			_ = stats.RecordWithTags(
-				p.ctx,
-				mutators,
-				statCountSpansSampled.M(trace.SpanCount.Load()),
-			)
+			if isMetricStatCountSpansSampledEnabled() {
+				_ = stats.RecordWithTags(
+					p.ctx,
+					mutators,
+					statCountSpansSampled.M(trace.SpanCount.Load()),
+				)
+			}
 			metrics.decisionNotSampled++
 		}
 	}
