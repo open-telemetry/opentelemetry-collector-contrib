@@ -75,6 +75,7 @@ func TestFactoryDistributions(t *testing.T) {
 	err := r.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	require.Nil(t, r.resourceWatcher.osQuotaClient)
+	assert.NoError(t, r.Shutdown(context.Background()))
 
 	// openshift
 	rCfg.Distribution = "openshift"
@@ -82,6 +83,7 @@ func TestFactoryDistributions(t *testing.T) {
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	require.NotNil(t, r.resourceWatcher.osQuotaClient)
+	assert.NoError(t, r.Shutdown(context.Background()))
 }
 
 func newTestReceiver(t *testing.T, cfg *Config) *kubernetesReceiver {
