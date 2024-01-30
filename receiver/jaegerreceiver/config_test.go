@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 							Transport: "tcp",
 						},
 					},
-					ThriftHTTP: &confighttp.HTTPServerSettings{
+					ThriftHTTP: &confighttp.HTTPServerConfig{
 						Endpoint: ":3456",
 					},
 					ThriftCompact: &ProtocolUDP{
@@ -73,7 +73,7 @@ func TestLoadConfig(t *testing.T) {
 							Transport: "tcp",
 						},
 					},
-					ThriftHTTP: &confighttp.HTTPServerSettings{
+					ThriftHTTP: &confighttp.HTTPServerConfig{
 						Endpoint: defaultHTTPBindEndpoint,
 					},
 					ThriftCompact: &ProtocolUDP{
@@ -120,7 +120,7 @@ func TestLoadConfig(t *testing.T) {
 							},
 						},
 					},
-					ThriftHTTP: &confighttp.HTTPServerSettings{
+					ThriftHTTP: &confighttp.HTTPServerConfig{
 						Endpoint: ":3456",
 					},
 				},
@@ -174,7 +174,7 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "thrift-http-no-port",
 			apply: func(cfg *Config) {
-				cfg.ThriftHTTP = &confighttp.HTTPServerSettings{
+				cfg.ThriftHTTP = &confighttp.HTTPServerConfig{
 					Endpoint: "localhost:",
 				}
 			},

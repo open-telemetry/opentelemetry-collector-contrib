@@ -26,12 +26,12 @@ func TestTracesExporter_New(t *testing.T) {
 	type validate func(*testing.T, *elasticsearchTracesExporter, error)
 
 	success := func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, exporter)
 	}
 	successWithInternalModel := func(expectedModel *encodeModel) validate {
 		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.EqualValues(t, expectedModel, exporter.model)
 		}
 	}
@@ -39,7 +39,7 @@ func TestTracesExporter_New(t *testing.T) {
 	failWith := func(want error) validate {
 		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
 			require.Nil(t, exporter)
-			require.NotNil(t, err)
+			require.Error(t, err)
 			if !errors.Is(err, want) {
 				t.Fatalf("Expected error '%v', but got '%v'", want, err)
 			}
@@ -49,7 +49,7 @@ func TestTracesExporter_New(t *testing.T) {
 	failWithMessage := func(msg string) validate {
 		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
 			require.Nil(t, exporter)
-			require.NotNil(t, err)
+			require.Error(t, err)
 			require.Contains(t, err.Error(), msg)
 		}
 	}
@@ -158,11 +158,11 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 			rec.Record(docs)
 
 			data, err := docs[0].Action.MarshalJSON()
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			jsonVal := map[string]any{}
 			err = json.Unmarshal(data, &jsonVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			create := jsonVal["create"].(map[string]any)
 
@@ -198,11 +198,11 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 			rec.Record(docs)
 
 			data, err := docs[0].Action.MarshalJSON()
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			jsonVal := map[string]any{}
 			err = json.Unmarshal(data, &jsonVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			create := jsonVal["create"].(map[string]any)
 
@@ -234,11 +234,11 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 			rec.Record(docs)
 
 			data, err := docs[0].Action.MarshalJSON()
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			jsonVal := map[string]any{}
 			err = json.Unmarshal(data, &jsonVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			create := jsonVal["create"].(map[string]any)
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)

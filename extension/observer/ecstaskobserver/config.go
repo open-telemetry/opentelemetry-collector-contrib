@@ -17,7 +17,7 @@ const (
 )
 
 type Config struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	confighttp.HTTPClientConfig `mapstructure:",squash"`
 
 	// RefreshInterval determines the frequency at which the observer
 	// needs to poll for collecting new information about task containers.

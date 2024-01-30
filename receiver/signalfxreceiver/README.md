@@ -22,7 +22,7 @@ format](https://github.com/signalfx/com_signalfx_metrics_protobuf).
 format](https://github.com/signalfx/com_signalfx_metrics_protobuf/blob/master/proto/signalfx_metrics.proto#L137).
 More information about sending custom events can be found in the [SignalFx
 Developers
-Guide](https://developers.signalfx.com/ingest_data_reference.html#tag/Send-Custom-Events).
+Guide](https://dev.splunk.com/observability/reference/api/ingest_data/latest).
 
 ## Configuration
 
