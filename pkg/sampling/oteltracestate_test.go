@@ -46,13 +46,16 @@ func TestOpenTelemetryTraceStateTValueSerialize(t *testing.T) {
 	const orig = "rv:10000000000000;th:3;a:b;c:d"
 	otts, err := NewOpenTelemetryTraceState(orig)
 	require.NoError(t, err)
-	require.True(t, otts.HasTValue())
 	require.Equal(t, "3", otts.TValue())
-	require.Equal(t, 1-0x3p-4, otts.TValueThreshold().Probability())
+	tv, hasTv := otts.TValueThreshold()
+	require.True(t, hasTv)
+	require.Equal(t, 1-0x3p-4, tv.Probability())
 
-	require.True(t, otts.HasRValue())
+	require.NotEqual(t, "", otts.RValue())
 	require.Equal(t, "10000000000000", otts.RValue())
-	require.Equal(t, "10000000000000", otts.RValueRandomness().RValue())
+	rv, hasRv := otts.RValueRandomness()
+	require.True(t, hasRv)
+	require.Equal(t, "10000000000000", rv.RValue())
 
 	require.True(t, otts.HasAnyValue())
 	var w strings.Builder
@@ -65,9 +68,10 @@ func TestOpenTelemetryTraceStateZero(t *testing.T) {
 	otts, err := NewOpenTelemetryTraceState(orig)
 	require.NoError(t, err)
 	require.True(t, otts.HasAnyValue())
-	require.True(t, otts.HasTValue())
 	require.Equal(t, "0", otts.TValue())
-	require.Equal(t, 1.0, otts.TValueThreshold().Probability())
+	tv, hasTv := otts.TValueThreshold()
+	require.True(t, hasTv)
+	require.Equal(t, 1.0, tv.Probability())
 
 	var w strings.Builder
 	require.NoError(t, otts.Serialize(&w))
@@ -81,7 +85,7 @@ func TestOpenTelemetryTraceStateRValuePValue(t *testing.T) {
 	otts, err := NewOpenTelemetryTraceState(orig)
 	require.Error(t, err)
 	require.Equal(t, ErrRValueSize, err)
-	require.False(t, otts.HasRValue())
+	require.Equal(t, "", otts.RValue())
 
 	// The error is oblivious to the old r-value, but that's ok.
 	require.Contains(t, err.Error(), "14 hex digits")
@@ -97,14 +101,16 @@ func TestOpenTelemetryTraceStateTValueUpdate(t *testing.T) {
 	const orig = "rv:abcdefabcdefab"
 	otts, err := NewOpenTelemetryTraceState(orig)
 	require.NoError(t, err)
-	require.False(t, otts.HasTValue())
-	require.True(t, otts.HasRValue())
+	require.Equal(t, "", otts.TValue())
+	require.NotEqual(t, "", otts.RValue())
 
 	th, _ := TValueToThreshold("3")
 	require.NoError(t, otts.UpdateTValueWithSampling(th, "3"))
 
 	require.Equal(t, "3", otts.TValue())
-	require.Equal(t, 1-0x3p-4, otts.TValueThreshold().Probability())
+	tv, hasTv := otts.TValueThreshold()
+	require.True(t, hasTv)
+	require.Equal(t, 1-0x3p-4, tv.Probability())
 
 	const updated = "rv:abcdefabcdefab;th:3"
 	var w strings.Builder
@@ -115,8 +121,8 @@ func TestOpenTelemetryTraceStateTValueUpdate(t *testing.T) {
 func TestOpenTelemetryTraceStateRTUpdate(t *testing.T) {
 	otts, err := NewOpenTelemetryTraceState("a:b")
 	require.NoError(t, err)
-	require.False(t, otts.HasTValue())
-	require.False(t, otts.HasRValue())
+	require.Equal(t, "", otts.TValue())
+	require.Equal(t, "", otts.RValue())
 	require.True(t, otts.HasAnyValue())
 
 	th, _ := TValueToThreshold("3")
@@ -231,18 +237,8 @@ func TestParseOpenTelemetryTraceState(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-			if test.rval != ns {
-				require.True(t, otts.HasRValue())
-				require.Equal(t, test.rval, otts.RValue())
-			} else {
-				require.False(t, otts.HasRValue(), "should have no r-value: %s", otts.RValue())
-			}
-			if test.tval != ns {
-				require.True(t, otts.HasTValue())
-				require.Equal(t, test.tval, otts.TValue())
-			} else {
-				require.False(t, otts.HasTValue(), "should have no t-value: %s", otts.TValue())
-			}
+			require.Equal(t, test.rval, otts.RValue())
+			require.Equal(t, test.tval, otts.TValue())
 			var expect []KV
 			for _, ex := range test.extra {
 				k, v, _ := strings.Cut(ex, ":")

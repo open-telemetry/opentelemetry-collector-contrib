@@ -123,20 +123,19 @@ func TestParseW3CTraceState(t *testing.T) {
 				require.NoError(t, err, "%q", test.in)
 			}
 			if test.rval != ns {
-				require.True(t, w3c.HasOTelValue())
+				require.True(t, w3c.OTelValue().HasAnyValue())
 				require.True(t, w3c.HasAnyValue())
-				require.True(t, w3c.OTelValue().HasRValue())
 				require.Equal(t, test.rval, w3c.OTelValue().RValue())
 			} else {
-				require.False(t, w3c.OTelValue().HasRValue(), "should have no r-value")
+				require.Equal(t, "", w3c.OTelValue().RValue())
 			}
 			if test.tval != ns {
-				require.True(t, w3c.HasOTelValue())
+				require.True(t, w3c.OTelValue().HasAnyValue())
 				require.True(t, w3c.HasAnyValue())
-				require.True(t, w3c.OTelValue().HasTValue())
+				require.NotEqual(t, "", w3c.OTelValue().TValue())
 				require.Equal(t, test.tval, w3c.OTelValue().TValue())
 			} else {
-				require.False(t, w3c.OTelValue().HasTValue(), "should have no t-value")
+				require.Equal(t, "", w3c.OTelValue().TValue())
 			}
 			if test.extra != nil {
 				require.True(t, w3c.HasAnyValue())

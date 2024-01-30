@@ -58,7 +58,7 @@
 //		}
 //		// For an absolute probability sample, we check the incoming
 //		// tracestate to see whether it was already sampled enough.
-//		if ts.OTelValue().HasTValue() {
+//		if len(ts.OTelValue().TValue()) != 0 {
 //			// If the incoming tracestate was already sampled at
 //			// least as much as our threshold implies, then its
 //			// (rejection) threshold is higher.  If so, then no
@@ -75,8 +75,8 @@
 //		// fallback, which can be to synthesize an R-value or to assume
 //		// the TraceID has sufficient randomness.  This detail is left
 //		// out of scope.
-//		if ts.OTelValue().HasRValue() {
-//			rnd = ts.OTelValue().RValueRandomness()
+//		if rval, hasRval := ts.OTelValue().RValueRandomness(); hasRv {
+//			rnd = rval
 //		} else {
 //			rnd = TraceIDToRandomness(tid)
 //		}

@@ -80,10 +80,6 @@ var (
 // OpenTelemetry tracestate section.  Errors indicate an invalid
 // tracestate was received.
 func NewOpenTelemetryTraceState(input string) (OpenTelemetryTraceState, error) {
-	// Note: the default value has threshold == 0 and tvalue == "".
-	// It is important to recognize this as always-sample, meaning
-	// to check HasTValue() before using TValueThreshold(), since
-	// TValueThreshold() == NeverSampleThreshold when !HasTValue().
 	otts := OpenTelemetryTraceState{}
 
 	if len(input) > hardMaxOTelLength {
@@ -126,36 +122,29 @@ func NewOpenTelemetryTraceState(input string) (OpenTelemetryTraceState, error) {
 	return otts, err
 }
 
-// HasRValue indicates whether the tracestate contained an `rv` value.
-func (otts *OpenTelemetryTraceState) HasRValue() bool {
-	return otts.rvalue != ""
-}
-
-// RValue returns the `rv` value as a string or empty if !HasRValue().
+// RValue returns the R-value (key: "rv") as a string or empty if
+// there is no R-value set.
 func (otts *OpenTelemetryTraceState) RValue() string {
 	return otts.rvalue
 }
 
 // RValueRandomness returns the randomness object corresponding with
-// RValue().  Requires HasRValue().
-func (otts *OpenTelemetryTraceState) RValueRandomness() Randomness {
-	return otts.rnd
+// RValue() and a boolean indicating whether the R-value is set.
+func (otts *OpenTelemetryTraceState) RValueRandomness() (Randomness, bool) {
+	return otts.rnd, len(otts.rvalue) != 0
 }
 
-// HasTValue indicates whether the tracestate contained a `th` value.
-func (otts *OpenTelemetryTraceState) HasTValue() bool {
-	return otts.tvalue != ""
-}
-
-// TValue returns the `th` value as a string or empty if !HasTValue().
+// TValue returns the T-value (key: "th") as a string or empty if
+// there is no T-value set.
 func (otts *OpenTelemetryTraceState) TValue() string {
 	return otts.tvalue
 }
 
 // TValueThreshold returns the threshold object corresponding with
-// TValue().  Requires HasTValue().
-func (otts *OpenTelemetryTraceState) TValueThreshold() Threshold {
-	return otts.threshold
+// TValue() and a boolean (equal to len(TValue()) != 0 indicating
+// whether the T-value is valid.
+func (otts *OpenTelemetryTraceState) TValueThreshold() (Threshold, bool) {
+	return otts.threshold, len(otts.tvalue) != 0
 }
 
 // UpdateTValueWithSampling modifies the TValue of this object, which
@@ -163,7 +152,7 @@ func (otts *OpenTelemetryTraceState) TValueThreshold() Threshold {
 // inconsistency (i.e., raising sampling probability), an error is
 // returned.
 func (otts *OpenTelemetryTraceState) UpdateTValueWithSampling(sampledThreshold Threshold, encodedTValue string) error {
-	if otts.HasTValue() && ThresholdGreater(otts.threshold, sampledThreshold) {
+	if len(otts.TValue()) != 0 && ThresholdGreater(otts.threshold, sampledThreshold) {
 		return ErrInconsistentSampling
 	}
 	otts.threshold = sampledThreshold
@@ -175,7 +164,7 @@ func (otts *OpenTelemetryTraceState) UpdateTValueWithSampling(sampledThreshold T
 // This term is defined here:
 // https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/
 func (otts *OpenTelemetryTraceState) AdjustedCount() float64 {
-	if !otts.HasTValue() {
+	if len(otts.TValue()) == 0 {
 		return 0
 	}
 	return 1.0 / otts.threshold.Probability()
@@ -203,7 +192,7 @@ func (otts *OpenTelemetryTraceState) ClearRValue() {
 // HasAnyValue returns true if there are any fields in this
 // tracestate, including any extra values.
 func (otts *OpenTelemetryTraceState) HasAnyValue() bool {
-	return otts.HasRValue() || otts.HasTValue() || otts.HasExtraValues()
+	return len(otts.RValue()) != 0 || len(otts.TValue()) != 0 || len(otts.ExtraValues()) != 0
 }
 
 // Serialize encodes this TraceState object.
@@ -216,13 +205,13 @@ func (otts *OpenTelemetryTraceState) Serialize(w io.StringWriter) error {
 		}
 		cnt++
 	}
-	if otts.HasRValue() {
+	if len(otts.RValue()) != 0 {
 		sep()
 		ser.write(rValueFieldName)
 		ser.write(":")
 		ser.write(otts.RValue())
 	}
-	if otts.HasTValue() {
+	if len(otts.TValue()) != 0 {
 		sep()
 		ser.write(tValueFieldName)
 		ser.write(":")

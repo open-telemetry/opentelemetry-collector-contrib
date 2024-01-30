@@ -143,18 +143,12 @@ func NewW3CTraceState(input string) (w3c W3CTraceState, _ error) {
 // HasAnyValue indicates whether there are any values in this
 // tracestate, including extra values.
 func (w3c *W3CTraceState) HasAnyValue() bool {
-	return w3c.HasOTelValue() || w3c.HasExtraValues()
+	return w3c.OTelValue().HasAnyValue() || len(w3c.ExtraValues()) != 0
 }
 
 // OTelValue returns the OpenTelemetry tracestate value.
 func (w3c *W3CTraceState) OTelValue() *OpenTelemetryTraceState {
 	return &w3c.otts
-}
-
-// HasOTelValue indicates whether an OpenTelemetry tracestate value
-// is present in this tracestate.
-func (w3c *W3CTraceState) HasOTelValue() bool {
-	return w3c.otts.HasAnyValue()
 }
 
 // Serialize encodes this tracestate object for use as a W3C
