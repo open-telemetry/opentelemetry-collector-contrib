@@ -194,10 +194,6 @@ jobs:
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
-      - name: CheckDoc
-        run: make checkdoc
-      - name: CheckMetadata
-        run: make checkmetadata
       - name: CheckApi
         run: make checkapi
       - name: Porto

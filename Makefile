@@ -7,7 +7,6 @@ OTEL_STABLE_VERSION=main
 
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 
-COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 GROUP ?= all
@@ -358,16 +357,6 @@ build-examples:
 	GOOS=linux GOARCH=$(ARCH) $(MAKE) otelcontribcol
 	docker build -t otelcontribcol-fpm internal/buildscripts/packaging/fpm
 	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcontribcol-fpm
-
-# Verify existence of READMEs for components specified as default components in the collector.
-.PHONY: checkdoc
-checkdoc: $(CHECKFILE)
-	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
-
-# Verify existence of metadata.yaml for components specified as default components in the collector.
-.PHONY: checkmetadata
-checkmetadata: $(CHECKFILE)
-	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "metadata.yaml"
 
 .PHONY: checkapi
 checkapi:
