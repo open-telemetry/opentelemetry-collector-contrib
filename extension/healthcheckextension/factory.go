@@ -31,7 +31,7 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		HTTPServerConfig: confighttp.HTTPServerConfig{
 			Endpoint: defaultEndpoint,
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
