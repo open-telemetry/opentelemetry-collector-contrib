@@ -133,6 +133,7 @@ body:
       - pkg/pdatatest
       - pkg/pdatautil
       - pkg/resourcetotelemetry
+      - pkg/sampling
       - pkg/stanza
       - pkg/translator/azure
       - pkg/translator/jaeger

@@ -178,7 +178,7 @@ func (r *Transformer) flushLoop() {
 				if timeSinceFirstEntry < r.forceFlushTimeout {
 					continue
 				}
-				if err := r.flushSource(source, true); err != nil {
+				if err := r.flushSource(context.Background(), source, true); err != nil {
 					r.Errorf("there was error flushing combined logs %s", err)
 				}
 			}
@@ -198,7 +198,7 @@ func (r *Transformer) Stop() error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	r.flushUncombined(ctx)
+	r.flushAllSources(ctx)
 
 	close(r.chClose)
 
@@ -241,7 +241,7 @@ func (r *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	// This is the first entry in the next batch
 	case matches && r.matchIndicatesFirst():
 		// Flush the existing batch
-		err := r.flushSource(s, true)
+		err := r.flushSource(ctx, s, true)
 		if err != nil {
 			return err
 		}
@@ -251,11 +251,8 @@ func (r *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 		return nil
 	// This is the last entry in a complete batch
 	case matches && r.matchIndicatesLast():
-		fallthrough
-	// When matching on first entry, never batch partial first. Just emit immediately
-	case !matches && r.matchIndicatesFirst() && r.batchMap[s] == nil:
 		r.addToBatch(ctx, e, s)
-		return r.flushSource(s, true)
+		return r.flushSource(ctx, s, true)
 	}
 
 	// This is neither the first entry of a new log,
@@ -273,7 +270,7 @@ func (r *Transformer) matchIndicatesLast() bool {
 }
 
 // addToBatch adds the current entry to the current batch of entries that will be combined
-func (r *Transformer) addToBatch(_ context.Context, e *entry.Entry, source string) {
+func (r *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source string) {
 	batch, ok := r.batchMap[source]
 	if !ok {
 		batch = r.addNewBatch(source, e)
@@ -305,7 +302,7 @@ func (r *Transformer) addToBatch(_ context.Context, e *entry.Entry, source strin
 	batch.recombined.WriteString(s)
 
 	if (r.maxLogSize > 0 && int64(batch.recombined.Len()) > r.maxLogSize) || len(batch.entries) >= r.maxBatchSize {
-		if err := r.flushSource(source, false); err != nil {
+		if err := r.flushSource(ctx, source, false); err != nil {
 			r.Errorf("there was error flushing combined logs %s", err)
 		}
 	}
@@ -325,9 +322,22 @@ func (r *Transformer) flushUncombined(ctx context.Context) {
 	r.ticker.Reset(r.forceFlushTimeout)
 }
 
+// flushAllSources flushes all sources.
+func (r *Transformer) flushAllSources(ctx context.Context) {
+	var errs []error
+	for source := range r.batchMap {
+		if err := r.flushSource(ctx, source, true); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		r.Errorf("there was error flushing combined logs %s", errs)
+	}
+}
+
 // flushSource combines the entries currently in the batch into a single entry,
 // then forwards them to the next operator in the pipeline
-func (r *Transformer) flushSource(source string, deleteSource bool) error {
+func (r *Transformer) flushSource(ctx context.Context, source string, deleteSource bool) error {
 	batch := r.batchMap[source]
 	// Skip flushing a combined log if the batch is empty
 	if batch == nil {
@@ -355,7 +365,7 @@ func (r *Transformer) flushSource(source string, deleteSource bool) error {
 		return err
 	}
 
-	r.Write(context.Background(), base)
+	r.Write(ctx, base)
 	if deleteSource {
 		r.removeBatch(source)
 	} else {

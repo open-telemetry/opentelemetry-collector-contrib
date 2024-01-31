@@ -361,8 +361,7 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
-	mh := newAssertNoErrorHost(t)
-	require.Error(t, hcExt.Start(context.Background(), mh))
+	require.Error(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestHealthCheckMultipleStarts(t *testing.T) {
@@ -377,11 +376,10 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
-	mh := newAssertNoErrorHost(t)
-	require.NoError(t, hcExt.Start(context.Background(), mh))
+	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(context.Background())) })
 
-	require.Error(t, hcExt.Start(context.Background(), mh))
+	require.Error(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestHealthCheckMultipleShutdowns(t *testing.T) {
