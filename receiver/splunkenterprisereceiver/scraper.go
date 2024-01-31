@@ -1096,7 +1096,7 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it indexThroughput
 
 	ept := apiDict[`SplunkIndexerThroughput`]
@@ -1137,7 +1137,7 @@ func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
 	ept := apiDict[`SplunkDataIndexesExtended`]
 
@@ -1190,7 +1190,7 @@ func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
 
 	ept := apiDict[`SplunkDataIndexesExtended`]
@@ -1237,7 +1237,7 @@ func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommo
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
 
 	ept := apiDict[`SplunkDataIndexesExtended`]
@@ -1290,7 +1290,7 @@ func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Ti
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
 
 	ept := apiDict[`SplunkDataIndexesExtended`]
@@ -1343,7 +1343,7 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
 
 	ept := apiDict[`SplunkDataIndexesExtended`]
@@ -1413,7 +1413,7 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
 
 	ept := apiDict[`SplunkDataIndexesExtended`]
@@ -1476,7 +1476,7 @@ func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcomm
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IntrospectionQueues
 
 	ept := apiDict[`SplunkIntrospectionQueues`]
@@ -1524,7 +1524,7 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now 
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IntrospectionQueues
 
 	ept := apiDict[`SplunkIntrospectionQueues`]
