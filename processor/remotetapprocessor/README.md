@@ -25,6 +25,8 @@ The WebSocket processor has two configurable fields: `port` and `limit`:
 
 - `port`: The port on which the WebSocket processor listens. Optional. Defaults
   to `12001`.
+  The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:12001. This will become the default in a future release.
+
 - `limit`: The rate limit over the WebSocket in messages per second. Can be a
   float or an integer. Optional. Defaults to `1`.
 
