@@ -250,9 +250,9 @@ the resource attributes required to map to the appropriate monitored resource.
 
 **Note:** If you are not running on GCP, you still need to choose a [GCP zone or
 region](https://cloud.google.com/compute/docs/regions-zones) to send telemetry to
-by setting cloud.availability_zone or cloud.region.
+by setting `cloud.availability_zone` or `cloud.region`.
 
-If running on Kubernetes, it is recommended to additionally set k8s.pod.name,
+If running on Kubernetes, it is recommended to additionally set `k8s.pod.name`,
 `k8s.namespace.name`, and `k8s.container.name` using the `k8sattributes` processor.
 
 If you are getting "duplicate timeseries encountered" errors, it is likely because
