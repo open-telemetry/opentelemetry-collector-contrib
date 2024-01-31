@@ -3,7 +3,7 @@ FROM golang:1.22 AS build
 WORKDIR /src
 ADD . /src
 
-RUN make otelcontribcol
+RUN make genotelcontribcol otelcontribcol
 
 FROM alpine:latest as certs
 RUN apk --update add ca-certificates

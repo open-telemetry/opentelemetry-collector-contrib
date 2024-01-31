@@ -299,7 +299,7 @@ genotelcontribcol: $(BUILDER)
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
-otelcontribcol: genotelcontribcol
+otelcontribcol:
 	cd ./cmd/otelcontribcol/_build && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
