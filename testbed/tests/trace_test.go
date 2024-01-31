@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
@@ -39,8 +40,8 @@ func TestTrace10kSPS(t *testing.T) {
 	}{
 		{
 			"OpenCensus",
-			datasenders.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			datareceivers.NewOCDataReceiver(testbed.GetAvailablePort(t)),
+			datasenders.NewOCTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 39,
 				ExpectedMaxRAM: 100,
@@ -48,8 +49,8 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OTLP-gRPC",
-			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 20,
 				ExpectedMaxRAM: 100,
@@ -57,8 +58,8 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OTLP-gRPC-gzip",
-			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("gzip"),
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)).WithCompression("gzip"),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 30,
 				ExpectedMaxRAM: 100,
@@ -66,8 +67,8 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OTLP-HTTP",
-			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), ""),
-			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t), ""),
+			testbed.NewOTLPHTTPDataReceiver(testutil.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 20,
 				ExpectedMaxRAM: 100,
@@ -75,8 +76,8 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OTLP-HTTP-gzip",
-			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), "gzip"),
-			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("gzip"),
+			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t), "gzip"),
+			testbed.NewOTLPHTTPDataReceiver(testutil.GetAvailablePort(t)).WithCompression("gzip"),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 25,
 				ExpectedMaxRAM: 100,
@@ -84,8 +85,8 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OTLP-HTTP-zstd",
-			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), "zstd"),
-			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("zstd"),
+			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t), "zstd"),
+			testbed.NewOTLPHTTPDataReceiver(testutil.GetAvailablePort(t)).WithCompression("zstd"),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 22,
 				ExpectedMaxRAM: 220,
@@ -93,8 +94,8 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"SAPM",
-			datasenders.NewSapmDataSender(testbed.GetAvailablePort(t), ""),
-			datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t), ""),
+			datasenders.NewSapmDataSender(testutil.GetAvailablePort(t), ""),
+			datareceivers.NewSapmDataReceiver(testutil.GetAvailablePort(t), ""),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 32,
 				ExpectedMaxRAM: 100,
@@ -102,8 +103,8 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"SAPM-gzip",
-			datasenders.NewSapmDataSender(testbed.GetAvailablePort(t), "gzip"),
-			datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t), "gzip"),
+			datasenders.NewSapmDataSender(testutil.GetAvailablePort(t), "gzip"),
+			datareceivers.NewSapmDataReceiver(testutil.GetAvailablePort(t), "gzip"),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 35,
 				ExpectedMaxRAM: 110,
@@ -111,8 +112,8 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"SAPM-zstd",
-			datasenders.NewSapmDataSender(testbed.GetAvailablePort(t), "zstd"),
-			datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t), "zstd"),
+			datasenders.NewSapmDataSender(testutil.GetAvailablePort(t), "zstd"),
+			datareceivers.NewSapmDataReceiver(testutil.GetAvailablePort(t), "zstd"),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 32,
 				ExpectedMaxRAM: 300,
@@ -120,8 +121,8 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"Zipkin",
-			datasenders.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			datareceivers.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
+			datasenders.NewZipkinDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			datareceivers.NewZipkinDataReceiver(testutil.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 80,
 				ExpectedMaxRAM: 120,
@@ -151,11 +152,11 @@ func TestTrace10kSPS(t *testing.T) {
 }
 
 func TestTrace10kSPSJaegerGRPC(t *testing.T) {
-	port := testbed.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 	receiver := datareceivers.NewJaegerDataReceiver(port)
 	Scenario10kItemsPerSecondAlternateBackend(
 		t,
-		datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+		datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
 		receiver,
 		testbed.NewOTLPDataReceiver(port),
 		testbed.ResourceSpec{
@@ -203,8 +204,8 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 		t.Run(testConf.Name, func(t *testing.T) {
 			ScenarioTestTraceNoBackend10kSPS(
 				t,
-				testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-				testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+				testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+				testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 				testbed.ResourceSpec{ExpectedMaxCPU: 80, ExpectedMaxRAM: testConf.ExpectedMaxRAM},
 				performanceResultsSummary,
 				testConf,
@@ -417,8 +418,8 @@ func TestTraceAttributesProcessor(t *testing.T) {
 	}{
 		{
 			"OTLP",
-			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 		},
 	}
 
@@ -507,8 +508,8 @@ func TestTraceAttributesProcessor(t *testing.T) {
 }
 
 func TestTraceAttributesProcessorJaegerGRPC(t *testing.T) {
-	port := testbed.GetAvailablePort(t)
-	sender := datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
+	port := testutil.GetAvailablePort(t)
+	sender := datasenders.NewJaegerGRPCDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
 	receiver := datareceivers.NewJaegerDataReceiver(port)
 	resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
 	require.NoError(t, err)
