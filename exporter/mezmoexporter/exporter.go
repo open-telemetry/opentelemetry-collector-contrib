@@ -64,7 +64,12 @@ func (m *mezmoExporter) start(_ context.Context, host component.Host) (err error
 }
 
 func (m *mezmoExporter) stop(context.Context) (err error) {
+	if m.client == nil {
+		return nil
+	}
 	m.wg.Wait()
+	m.client.CloseIdleConnections()
+	m.client = nil
 	return nil
 }
 

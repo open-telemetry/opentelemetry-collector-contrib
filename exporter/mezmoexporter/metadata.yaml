@@ -10,4 +10,5 @@ status:
 
 tests:
   config:
+    disable_keep_alives: true
   expect_consumer_error: true
