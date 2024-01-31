@@ -37,7 +37,7 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Build Collector
-        run: make otelcontribcol
+        run: make genotelcontribcol  otelcontribcol
       - name: Upload Collector Binary
         uses: actions/upload-artifact@v4
         with:
@@ -99,7 +99,7 @@ jobs:
         run: make -j2 gomoddownload
       - name: Build Docker Image
         run: |
-          make docker-otelcontribcol
+          make genotelcontribcol  docker-otelcontribcol
       - name: export image to tar
         run: |
           docker save otelcontribcol:latest > /tmp/otelcontribcol.tar

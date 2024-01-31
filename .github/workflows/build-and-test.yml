@@ -208,10 +208,6 @@ jobs:
         run: |
           make gotidy
           git diff --exit-code || (echo 'go.mod/go.sum deps changes detected, please run "make gotidy" and commit the changes in this PR.' && exit 1)
-      - name: Gen genotelcontribcol
-        run: |
-          make genotelcontribcol
-          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make genotelcontribcol" and commit the changes in this PR.' && exit 1)
       - name: Gen genoteltestbedcol
         run: |
           make genoteltestbedcol
@@ -502,7 +498,9 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Build Collector ${{ matrix.binary }}
-        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
+        run: |
+          make genotelcontribcol
+          make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
       - name: Upload Collector Binaries
         uses: actions/upload-artifact@v4
         with:
