@@ -681,7 +681,7 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 func appendSimpleMetricWithServiceName(metric pmetric.Metrics, serviceName string, sigName string) {
 	metric.ResourceMetrics().EnsureCapacity(1)
 	rmetrics := metric.ResourceMetrics().AppendEmpty()
-	rmetrics.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceName1)
+	rmetrics.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceName)
 	rmetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(sigName)
 }
 
@@ -733,7 +733,8 @@ func benchConsumeMetrics(b *testing.B, endpointsCount int, metricsCount int) {
 	}
 
 	b.StopTimer()
-	p.Shutdown(context.Background())
+	err = p.Shutdown(context.Background())
+	require.NoError(b, err)
 }
 
 func BenchmarkConsumeMetrics_1E100T(b *testing.B) {

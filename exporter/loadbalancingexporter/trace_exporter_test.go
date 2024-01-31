@@ -581,7 +581,8 @@ func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
 	}
 
 	b.StopTimer()
-	p.Shutdown(context.Background())
+	err = p.Shutdown(context.Background())
+	require.NoError(b, err)
 }
 
 func BenchmarkConsumeTraces_1E100T(b *testing.B) {
