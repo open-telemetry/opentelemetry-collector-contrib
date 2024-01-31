@@ -25,12 +25,13 @@ func NewFactory() connector.Factory {
 		connector.WithTracesToTraces(createTracesToTracesConnector, metadata.TracesToTracesStability))
 }
 
-var _ component.Config = (*Config)(nil)
-
-type Config struct{}
-
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		Traces: TracesConfig{
+			IgnoreResources: []string{},
+			TraceBuffer:     1000,
+		},
+	}
 }
 
 // defines the consumer type of the connector

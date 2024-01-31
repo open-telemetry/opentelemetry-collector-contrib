@@ -42,7 +42,7 @@ import (
 // configuration defines the behavior and the ports that
 // the Jaeger receiver will use.
 type configuration struct {
-	CollectorHTTPSettings       confighttp.HTTPServerSettings
+	CollectorHTTPSettings       confighttp.HTTPServerConfig
 	CollectorGRPCServerSettings configgrpc.GRPCServerSettings
 
 	AgentCompactThrift ProtocolUDP
