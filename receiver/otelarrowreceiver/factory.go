@@ -6,13 +6,14 @@ package otelarrowreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
 const (
