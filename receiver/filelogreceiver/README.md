@@ -153,4 +153,43 @@ The above configuration will read logs from the "simple.log" file. Some examples
 2023-06-20 12:50:00 DEBUG This is a test debug message
 ```
 
+## Fault tolerance, recovery and proper offset tracking
 
+File offset tracking is quite crucial to ensure the quality of this receiver.
+Filelog receiver has no native support for file offset tracking however this can be achieved by using
+the proper `extentions`.
+
+Filelog receiver's persistence can be covered by the usage of the following:
+- [filestorage](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage) extension,
+to ensure that Collector's restarts do not affect the log collection and offset tracking.
+- [exporterhelper persistent-queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#persistent-queue),
+to ensure that Collector's restarts do not affect the delivery of the already collected logs.
+
+A complete example is provided bellow:
+
+```yaml
+receivers:
+  filelog:
+    include: [/var/log/busybox/simple.log]
+    storage: file_storage/filelogreceiver
+
+extensions:
+  file_storage/filelogreceiver:
+    directory: /var/lib/otelcol/file_storage/receiver
+  file_storage/otlpoutput:
+    directory: /var/lib/otelcol/file_storage/output
+
+service:
+  extensions: [file_storage/filelogreceiver, file_storage/otlpoutput]
+  pipelines:
+    logs:
+      receivers: [filelog]
+      exporters: [otlp/custom]
+      processors: []
+
+exporters:
+  otlp/custom:
+    endpoint: http://0.0.0.0:4242
+    sending_queue:
+      storage: file_storage/otlpoutput
+```
