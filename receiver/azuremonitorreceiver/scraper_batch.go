@@ -388,7 +388,7 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 
 		startTime := now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second)
 		if compositeKey.timeGrain == "PT1M" {
-			startTime = now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second) // times 2 because for some resources, data are missing for the very latest timestamp
+			startTime = now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second * 2) // times 2 because for some resources, data are missing for the very latest timestamp
 		}
 
 		start := 0
