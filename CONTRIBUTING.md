@@ -211,8 +211,6 @@ When submitting a component to the community, consider breaking it down into sep
     it.
   * The component should use [`In Development` Stability](https://github.com/open-telemetry/opentelemetry-collector#development) in its README.
   * Before submitting a PR, run the following commands from the root of the repository to ensure your new component is meeting the repo linting expectations:
-    * `make checkdoc`
-    * `make checkmetadata`
     * `make checkapi`
     * `make goporto`
     * `make crosslink`
