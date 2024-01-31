@@ -299,7 +299,7 @@ processors:
 ```
 
 **Note** It is not recommended to use these transformations with the googlecloud
-exporter in a logging pipeline.
+exporter in a logging or trace pipeline.
 
 The same method can be used for any resource attributes being filtered to metric
 labels, or metric labels which might collide with the GCP monitored resource
