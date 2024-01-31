@@ -120,20 +120,56 @@ func TestMergeMetrics(t *testing.T) {
 	require.Equal(t, expectedMetrics, mergedMetrics)
 }
 
-func BenchmarkMergeTraces(b *testing.B) {
-	trace1 := simpleTraces()
-	trace2 := simpleTraces()
+func benchMergeTraces(b *testing.B, tracesCount int) {
+	traces1 := ptrace.NewTraces()
+	traces2 := ptrace.NewTraces()
+
+	for i := 0; i < tracesCount; i++ {
+		appendSimpleTraceWithID(traces2.ResourceSpans().AppendEmpty(), [16]byte{1, 2, 3, 4})
+	}
+
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		mergeTraces(trace1, trace2)
+		mergeTraces(traces1, traces2)
 	}
 }
 
-func BenchmarkMergeMetrics(b *testing.B) {
-	metric1 := simpleMetricsWithServiceName()
-	metric2 := simpleMetricsWithServiceName()
+func BenchmarkMergeTraces_X100(b *testing.B) {
+	benchMergeTraces(b, 100)
+}
+
+func BenchmarkMergeTraces_X500(b *testing.B) {
+	benchMergeTraces(b, 500)
+}
+
+func BenchmarkMergeTraces_X1000(b *testing.B) {
+	benchMergeTraces(b, 1000)
+}
+
+func benchMergeMetrics(b *testing.B, metricsCount int) {
+	metrics1 := pmetric.NewMetrics()
+	metrics2 := pmetric.NewMetrics()
+
+	for i := 0; i < metricsCount; i++ {
+		appendSimpleMetricWithID(metrics2.ResourceMetrics().AppendEmpty(), "metrics-2")
+	}
+
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		mergeMetrics(metric1, metric2)
+		mergeMetrics(metrics1, metrics2)
 	}
+}
+
+func BenchmarkMergeMetrics_X100(b *testing.B) {
+	benchMergeMetrics(b, 100)
+}
+
+func BenchmarkMergeMetrics_X500(b *testing.B) {
+	benchMergeMetrics(b, 500)
+}
+
+func BenchmarkMergeMetrics_X1000(b *testing.B) {
+	benchMergeMetrics(b, 1000)
 }
