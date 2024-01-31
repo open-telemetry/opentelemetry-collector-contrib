@@ -1,4 +1,4 @@
-module github.com/open-telemetry/otel-arrow/collector/receiver/otelarrowreceiver
+module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver
 
 go 1.20
 
