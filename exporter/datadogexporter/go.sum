@@ -61,8 +61,8 @@ github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1 h1:WpB/QDNLpMw
 github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1/go.mod h1:wP83P5OoQ5p6ip3ScPr0BAq0BvuPAvacpEuSzyouqAI=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/DataDog/agent-payload/v5 v5.0.102 h1:X8EZQeOewahQ7N/arllAP7hCGHNScdThnGjPg5/ErN8=
-github.com/DataDog/agent-payload/v5 v5.0.102/go.mod h1:COngtbYYCncpIPiE5D93QlXDH/3VAKk10jDNwGHcMRE=
+github.com/DataDog/agent-payload/v5 v5.0.103 h1:XcDtFh8eN/Rg0l1g3q5X3joTT1mvz3kSCxK3wV5q2Us=
+github.com/DataDog/agent-payload/v5 v5.0.103/go.mod h1:COngtbYYCncpIPiE5D93QlXDH/3VAKk10jDNwGHcMRE=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.2 h1:y08IzbpFM/HBaKfgayFZe1FpcbZn6bVPXoZ++93vxv8=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.2/go.mod h1:A4nLJvxlg6BO/8/zg81til9yT0uRPuXDFMAzDMpmgn4=
 github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel h1:nBejGNIU6Jk7bPBxz2bAO+f+kahAXWBXPecebY3R+Zo=
