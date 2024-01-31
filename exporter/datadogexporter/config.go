@@ -377,14 +377,14 @@ type HostMetadataConfig struct {
 	Tags []string `mapstructure:"tags"`
 }
 
-// LimitedTLSClientSetting is a subset of TLSClientSetting, see LimitedHTTPClientSettings for more details
+// LimitedTLSClientSetting is a subset of TLSClientSetting, see LimitedHTTPClientConfig for more details
 type LimitedTLSClientSettings struct {
 	// InsecureSkipVerify controls whether a client verifies the server's
 	// certificate chain and host name.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 }
 
-type LimitedHTTPClientSettings struct {
+type LimitedHTTPClientConfig struct {
 	TLSSetting LimitedTLSClientSettings `mapstructure:"tls,omitempty"`
 }
 
@@ -394,7 +394,7 @@ type Config struct {
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 
-	LimitedHTTPClientSettings `mapstructure:",squash"`
+	LimitedHTTPClientConfig `mapstructure:",squash"`
 
 	TagsConfig `mapstructure:",squash"`
 

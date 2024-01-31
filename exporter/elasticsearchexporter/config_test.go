@@ -39,7 +39,7 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 		LogsIndex:   "logs-generic-default",
 		TracesIndex: "traces-generic-default",
 		Pipeline:    "mypipeline",
-		HTTPClientSettings: HTTPClientSettings{
+		HTTPClientConfig: HTTPClientConfig{
 			Authentication: AuthenticationSettings{
 				User:     "elastic",
 				Password: "search",
@@ -110,7 +110,7 @@ func TestLoadConfig(t *testing.T) {
 				LogsIndex:   "logs-generic-default",
 				TracesIndex: "trace_index",
 				Pipeline:    "mypipeline",
-				HTTPClientSettings: HTTPClientSettings{
+				HTTPClientConfig: HTTPClientConfig{
 					Authentication: AuthenticationSettings{
 						User:     "elastic",
 						Password: "search",
@@ -160,7 +160,7 @@ func TestLoadConfig(t *testing.T) {
 				LogsIndex:   "my_log_index",
 				TracesIndex: "traces-generic-default",
 				Pipeline:    "mypipeline",
-				HTTPClientSettings: HTTPClientSettings{
+				HTTPClientConfig: HTTPClientConfig{
 					Authentication: AuthenticationSettings{
 						User:     "elastic",
 						Password: "search",

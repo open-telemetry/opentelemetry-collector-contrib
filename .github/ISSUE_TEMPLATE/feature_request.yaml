@@ -127,6 +127,7 @@ body:
       - pkg/pdatatest
       - pkg/pdatautil
       - pkg/resourcetotelemetry
+      - pkg/sampling
       - pkg/stanza
       - pkg/translator/azure
       - pkg/translator/jaeger
@@ -141,10 +142,12 @@ body:
       - processor/attributes
       - processor/cumulativetodelta
       - processor/datadog
+      - processor/deltatocumulative
       - processor/deltatorate
       - processor/filter
       - processor/groupbyattrs
       - processor/groupbytrace
+      - processor/interval
       - processor/k8sattributes
       - processor/logstransform
       - processor/metricsgeneration

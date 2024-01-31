@@ -24,7 +24,7 @@ const (
 
 func createDefaultConfig() component.Config {
 	// Default HttpClient settings
-	httpCfg := confighttp.NewDefaultHTTPClientSettings()
+	httpCfg := confighttp.NewDefaultHTTPClientConfig()
 	httpCfg.Headers = map[string]configopaque.String{
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
@@ -35,7 +35,7 @@ func createDefaultConfig() component.Config {
 	scfg.Timeout = defaultMaxSearchWaitTime
 
 	return &Config{
-		HTTPClientSettings:        httpCfg,
+		HTTPClientConfig:          httpCfg,
 		ScraperControllerSettings: scfg,
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}

@@ -78,7 +78,7 @@ func TestReception(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	// 1. Create the Jaeger receiver aka "server"
 	config := &configuration{
-		CollectorHTTPSettings: confighttp.HTTPServerSettings{
+		CollectorHTTPSettings: confighttp.HTTPServerConfig{
 			Endpoint: addr,
 		},
 	}

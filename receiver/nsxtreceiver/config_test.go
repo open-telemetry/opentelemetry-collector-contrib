@@ -33,7 +33,7 @@ func TestMetricValidation(t *testing.T) {
 		{
 			desc: "not valid scheme",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Endpoint: "wss://not-supported-websockets",
 				},
 				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
@@ -43,7 +43,7 @@ func TestMetricValidation(t *testing.T) {
 		{
 			desc: "unparseable url",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Endpoint: "\x00",
 				},
 				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
@@ -54,7 +54,7 @@ func TestMetricValidation(t *testing.T) {
 			desc: "username not provided",
 			cfg: &Config{
 				Password: "password",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Endpoint: "http://localhost",
 				},
 				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
@@ -65,7 +65,7 @@ func TestMetricValidation(t *testing.T) {
 			desc: "password not provided",
 			cfg: &Config{
 				Username: "otelu",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Endpoint: "http://localhost",
 				},
 				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),

@@ -19,7 +19,7 @@ var (
 
 // Config defines the user provided values for the Schema Processor
 type Config struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	confighttp.HTTPClientConfig `mapstructure:",squash"`
 
 	// PreCache is a list of schema URLs that are downloaded
 	// and cached at the start of the collector runtime
