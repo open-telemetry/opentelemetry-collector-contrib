@@ -49,12 +49,24 @@ func DeleteObject(client *K8sClient, obj *unstructured.Unstructured) error {
 		resource = client.DynamicClient.Resource(gvr.Resource)
 	}
 
-	options := metav1.DeleteOptions{}
+	gracePeriod := int64(0)
 	policy := metav1.DeletePropagationForeground
-	options.PropagationPolicy = &policy
+	options := metav1.DeleteOptions{
+		GracePeriodSeconds: &gracePeriod,
+		PropagationPolicy:  &policy,
+	}
 
 	deletePolicy := metav1.DeletePropagationForeground
 	return resource.Delete(context.Background(), obj.GetName(), metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
 	})
+}
+
+func GetObject(client *dynamic.DynamicClient, gvk schema.GroupVersionKind, namespace string, name string) (*unstructured.Unstructured, error) {
+	gvr := schema.GroupVersionResource{
+		Group:    gvk.Group,
+		Version:  gvk.Version,
+		Resource: strings.ToLower(gvk.Kind + "s"),
+	}
+	return client.Resource(gvr).Namespace(namespace).Get(context.Background(), name, metav1.GetOptions{})
 }
