@@ -22,6 +22,7 @@ subtext: |
     - receiver/zipkin
     - receiver/awsfirehose
     - processor/remotetap
+    - receiver/splunk_hec
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
