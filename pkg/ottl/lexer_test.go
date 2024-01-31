@@ -100,6 +100,7 @@ func Test_lexer(t *testing.T) {
 			{"String", `"b"`},
 			{"RParen", ")"},
 		}},
+		{"string escape with mismatched backslash", `"\"`, true, nil},
 		{"Mixing case numbers and underscores", `aBCd_123E_4`, false, []result{
 			{"Lowercase", "a"},
 			{"Uppercase", "BC"},
