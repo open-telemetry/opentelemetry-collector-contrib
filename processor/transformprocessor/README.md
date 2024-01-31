@@ -310,9 +310,9 @@ Examples:
 
 ### copy_metric
 
-`copy_metruc(Optional[name], Optional[description], Optional[unit])`
+`copy_metric(Optional[name], Optional[description], Optional[unit])`
 
-The `copy_metruc` function copies the current metric, adding it to the end of the metric slice.
+The `copy_metric` function copies the current metric, adding it to the end of the metric slice.
 
 `name` is an optional string. `description` is an optional string. `unit` is an optional string.
 

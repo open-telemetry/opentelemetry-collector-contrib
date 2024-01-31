@@ -25,7 +25,7 @@ func createCopyMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 	args, ok := oArgs.(*copyMetricArguments)
 
 	if !ok {
-		return nil, fmt.Errorf("extractCountMetricFactory args must be of type *extractCountMetricArguments")
+		return nil, fmt.Errorf("createCopyMetricFunction args must be of type *copyMetricArguments")
 	}
 
 	return copyMetric(args.Name, args.Description, args.Unit)
