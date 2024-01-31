@@ -5,4 +5,4 @@
 // that need to share state between different signal types instances such as net.Listener or os.File.
 //
 // This package was copied from collector/internal/sharedcomponent.
-package sharedcomponent // import "github.com/open-telemetry/otel-arrow/collector/receiver/otelarrowreceiver/internal/sharedcomponent"
+package sharedcomponent // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/sharedcomponent"

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package sharedcomponent // import "github.com/open-telemetry/otel-arrow/collector/receiver/otelarrowreceiver/internal/sharedcomponent"
+package sharedcomponent // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/sharedcomponent"
 
 import (
 	"context"
