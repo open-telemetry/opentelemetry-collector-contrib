@@ -6,7 +6,8 @@ status:
     deprecated: [traces]
   distributions: [contrib, observiq, splunk, sumo]
   codeowners:
-    active: [albertteoh]
+    active: []
+    emeritus: [albertteoh]
 
 tests:
   config:

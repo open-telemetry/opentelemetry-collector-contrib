@@ -21,6 +21,8 @@ subtext: |
     - receiver/opencensus
     - receiver/zipkin
     - receiver/awsfirehose
+    - processor/remotetap
+    - receiver/splunk_hec
     - receiver/zookeeper
 
 # If your change doesn't affect end users or the exported elements of any package,
