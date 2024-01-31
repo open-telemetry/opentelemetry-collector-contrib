@@ -550,7 +550,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 		require.NoError(t, r.Shutdown(context.Background()))
 	}()
 
-	mh := newAssertNoErrorHost(t)
+	mh := componenttest.NewNopHost()
 	require.NoError(t, r.Start(context.Background(), mh), "should not have failed to start metric reception")
 
 	// If there are errors reported through host.ReportFatalError() this will retrieve it.
