@@ -6,7 +6,7 @@ package otelarrowreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 
-	"github.com/open-telemetry/otel-arrow/collector/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -57,16 +57,17 @@ func createTraces(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (receiver.Traces, error) {
+) (_ receiver.Traces, err error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.GetOrAdd(oCfg, func() (*otelArrowReceiver, error) {
-		return newOTelArrowReceiver(oCfg, set)
+	r := receivers.GetOrAdd(oCfg, func() (comp component.Component) {
+		comp, err = newOTelArrowReceiver(oCfg, set)
+		return
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerTraceConsumer(nextConsumer); err != nil {
+	if err = r.Unwrap().(*otelArrowReceiver).registerTraceConsumer(nextConsumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -78,16 +79,17 @@ func createMetrics(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Metrics,
-) (receiver.Metrics, error) {
+) (_ receiver.Metrics, err error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.GetOrAdd(oCfg, func() (*otelArrowReceiver, error) {
-		return newOTelArrowReceiver(oCfg, set)
+	r := receivers.GetOrAdd(oCfg, func() (comp component.Component) {
+		comp, err = newOTelArrowReceiver(oCfg, set)
+		return comp
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerMetricsConsumer(consumer); err != nil {
+	if err = r.Unwrap().(*otelArrowReceiver).registerMetricsConsumer(consumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -99,16 +101,17 @@ func createLog(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Logs,
-) (receiver.Logs, error) {
+) (_ receiver.Logs, err error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.GetOrAdd(oCfg, func() (*otelArrowReceiver, error) {
-		return newOTelArrowReceiver(oCfg, set)
+	r := receivers.GetOrAdd(oCfg, func() (comp component.Component) {
+		comp, err = newOTelArrowReceiver(oCfg, set)
+		return comp
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerLogsConsumer(consumer); err != nil {
+	if err = r.Unwrap().(*otelArrowReceiver).registerLogsConsumer(consumer); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -120,4 +123,4 @@ func createLog(
 // create separate objects, they must use one otelArrowReceiver object per configuration.
 // When the receiver is shutdown it should be removed from this map so the same configuration
 // can be recreated successfully.
-var receivers = sharedcomponent.NewSharedComponents[*Config, *otelArrowReceiver]()
+var receivers = sharedcomponent.NewSharedComponents()
