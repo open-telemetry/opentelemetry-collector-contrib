@@ -47,7 +47,7 @@ func TestNewReceiver(t *testing.T) {
 			name: "nil next Consumer",
 			args: args{
 				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+					HTTPServerConfig: confighttp.HTTPServerConfig{
 						Endpoint: ":0",
 					},
 				},
@@ -59,7 +59,7 @@ func TestNewReceiver(t *testing.T) {
 			name: "happy path",
 			args: args{
 				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+					HTTPServerConfig: confighttp.HTTPServerConfig{
 						Endpoint: ":0",
 					},
 				},
@@ -89,7 +89,7 @@ func TestCollectDServer(t *testing.T) {
 	}
 
 	config := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		HTTPServerConfig: confighttp.HTTPServerConfig{
 			Endpoint: "localhost:8081",
 		},
 	}
@@ -178,7 +178,7 @@ func TestCollectDServer(t *testing.T) {
 			sink.Reset()
 			req, err := http.NewRequest(
 				tt.HTTPMethod,
-				"http://"+config.HTTPServerSettings.Endpoint+"?"+tt.QueryParams,
+				"http://"+config.HTTPServerConfig.Endpoint+"?"+tt.QueryParams,
 				bytes.NewBuffer([]byte(tt.RequestBody)),
 			)
 			require.NoError(t, err)

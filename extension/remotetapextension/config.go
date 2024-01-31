@@ -9,12 +9,12 @@ import (
 )
 
 type Config struct {
-	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	confighttp.HTTPServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		HTTPServerConfig: confighttp.HTTPServerConfig{
 			Endpoint: "127.0.0.1:11000",
 		},
 	}

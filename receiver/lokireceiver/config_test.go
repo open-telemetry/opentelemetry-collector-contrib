@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 							Transport: "tcp",
 						},
 					},
-					HTTP: &confighttp.HTTPServerSettings{
+					HTTP: &confighttp.HTTPServerConfig{
 						Endpoint: "0.0.0.0:3500",
 					},
 				},
@@ -54,7 +54,7 @@ func TestLoadConfig(t *testing.T) {
 							Transport: "tcp",
 						},
 					},
-					HTTP: &confighttp.HTTPServerSettings{
+					HTTP: &confighttp.HTTPServerConfig{
 						Endpoint: "localhost:4500",
 					},
 				},

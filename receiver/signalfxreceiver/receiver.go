@@ -125,7 +125,7 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	// set up the listener
-	ln, err := r.config.HTTPServerSettings.ToListener()
+	ln, err := r.config.HTTPServerConfig.ToListener()
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
 	}
@@ -134,7 +134,7 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	mx.HandleFunc("/v2/datapoint", r.handleDatapointReq)
 	mx.HandleFunc("/v2/event", r.handleEventReq)
 
-	r.server, err = r.config.HTTPServerSettings.ToServer(host, r.settings.TelemetrySettings, mx)
+	r.server, err = r.config.HTTPServerConfig.ToServer(host, r.settings.TelemetrySettings, mx)
 	if err != nil {
 		return err
 	}

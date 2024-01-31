@@ -20,7 +20,7 @@ const (
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
 	GRPC *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
-	HTTP *confighttp.HTTPServerSettings `mapstructure:"http"`
+	HTTP *confighttp.HTTPServerConfig   `mapstructure:"http"`
 }
 
 // Config defines configuration for skywalking receiver.

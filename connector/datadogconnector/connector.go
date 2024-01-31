@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/component"
@@ -45,7 +46,7 @@ type connectorImp struct {
 var _ component.Component = (*connectorImp)(nil) // testing that the connectorImp properly implements the type Component interface
 
 // function to create a new connector
-func newConnector(set component.TelemetrySettings, _ component.Config, metricsConsumer consumer.Metrics, tracesConsumer consumer.Traces) (*connectorImp, error) {
+func newConnector(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics, tracesConsumer consumer.Traces) (*connectorImp, error) {
 	set.Logger.Info("Building datadog connector")
 
 	in := make(chan *pb.StatsPayload, 100)
@@ -62,13 +63,26 @@ func newConnector(set component.TelemetrySettings, _ component.Config, metricsCo
 	ctx := context.Background()
 	return &connectorImp{
 		logger:          set.Logger,
-		agent:           datadog.NewAgent(ctx, in),
+		agent:           datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(cfg.(*Config).Traces), in),
 		translator:      trans,
 		in:              in,
 		metricsConsumer: metricsConsumer,
 		tracesConsumer:  tracesConsumer,
 		exit:            make(chan struct{}),
 	}, nil
+}
+
+func getTraceAgentCfg(cfg TracesConfig) *traceconfig.AgentConfig {
+	acfg := traceconfig.New()
+	acfg.OTLPReceiver.SpanNameRemappings = cfg.SpanNameRemappings
+	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.SpanNameAsResourceName
+	acfg.Ignore["resource"] = cfg.IgnoreResources
+	acfg.ComputeStatsBySpanKind = cfg.ComputeStatsBySpanKind
+	acfg.PeerTagsAggregation = cfg.PeerTagsAggregation
+	if v := cfg.TraceBuffer; v > 0 {
+		acfg.TraceBuffer = v
+	}
+	return acfg
 }
 
 // Start implements the component.Component interface.
