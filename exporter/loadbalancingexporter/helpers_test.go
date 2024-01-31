@@ -119,3 +119,21 @@ func TestMergeMetrics(t *testing.T) {
 
 	require.Equal(t, expectedMetrics, mergedMetrics)
 }
+
+func BenchmarkMergeTraces(b *testing.B) {
+	trace1 := simpleTraces()
+	trace2 := simpleTraces()
+
+	for i := 0; i < b.N; i++ {
+		mergeTraces(trace1, trace2)
+	}
+}
+
+func BenchmarkMergeMetrics(b *testing.B) {
+	metric1 := simpleMetricsWithServiceName()
+	metric2 := simpleMetricsWithServiceName()
+
+	for i := 0; i < b.N; i++ {
+		mergeMetrics(metric1, metric2)
+	}
+}
