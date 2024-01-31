@@ -143,10 +143,7 @@ func (c *splunkEntClient) createAPIRequest(ctx context.Context, apiEndpoint stri
 	if e, ok := (*c)[eptType]; !ok {
 		return nil, errNoClientFound
 	} else {
-		u, err = url.JoinPath(e.endpoint.String(), apiEndpoint)
-		if err != nil {
-			return nil, err
-		}
+		u = e.endpoint.String() + apiEndpoint
 	}
 	req, err = http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
