@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.2-0.20240130181942-9c7177496fd5
 	go.opentelemetry.io/otel/metric v1.22.0
 	go.opentelemetry.io/otel/trace v1.22.0
+	go.uber.org/goleak v1.3.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
