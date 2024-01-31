@@ -7,9 +7,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"golang.org/x/time/rate"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 )
 
-const defaultEndpoint = ":12001"
+const defaultPort = 12001
 
 type Config struct {
 	confighttp.HTTPServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
@@ -22,7 +24,7 @@ type Config struct {
 func createDefaultConfig() component.Config {
 	return &Config{
 		HTTPServerConfig: confighttp.HTTPServerConfig{
-			Endpoint: defaultEndpoint,
+			Endpoint: localhostgate.EndpointForPort(defaultPort),
 		},
 		Limit: 1,
 	}
