@@ -172,7 +172,7 @@ processor/resourceprocessor/                             @open-telemetry/collect
 processor/routingprocessor/                              @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/schemaprocessor/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 processor/servicegraphprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
-processor/spanmetricsprocessor/                          @open-telemetry/collector-contrib-approvers @albertteoh
+processor/spanmetricsprocessor/                          @open-telemetry/collector-contrib-approvers
 processor/spanprocessor/                                 @open-telemetry/collector-contrib-approvers @boostchicken
 processor/sumologicprocessor/                            @open-telemetry/collector-contrib-approvers @aboguszewski-sumo @astencel-sumo @sumo-drosiek
 processor/tailsamplingprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling
