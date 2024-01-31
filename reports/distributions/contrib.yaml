@@ -178,6 +178,8 @@ components:
         - udplog
         - vcenter
         - wavefront
+        - webhookevent
+        - windowseventlog
         - windowsperfcounters
         - zipkin
         - zookeeper
