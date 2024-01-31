@@ -48,6 +48,13 @@ func DeleteObject(client *K8sClient, obj *unstructured.Unstructured) error {
 		// cluster-scoped resources
 		resource = client.DynamicClient.Resource(gvr.Resource)
 	}
+
+	options := metav1.DeleteOptions{}
+	policy := metav1.DeletePropagationForeground
+	if gvk.Kind == "Job" {
+		options.PropagationPolicy = &policy
+	}
+
 	deletePolicy := metav1.DeletePropagationForeground
 	return resource.Delete(context.Background(), obj.GetName(), metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
