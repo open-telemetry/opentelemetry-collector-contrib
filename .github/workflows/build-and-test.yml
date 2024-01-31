@@ -63,6 +63,9 @@ jobs:
   lint-matrix:
     strategy:
       matrix:
+        test:
+          - windows
+          - linux
         group:
           - receiver-0
           - receiver-1
@@ -103,9 +106,7 @@ jobs:
           path: ~/.cache/go-build
           key: go-lint-build-${{ matrix.group }}-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Lint
-        run: make -j2 golint GROUP=${{ matrix.group }}
-      - name: Lint with GOOS=windows
-        run: GOOS=windows make -j2 golint GROUP=${{ matrix.group }}
+        run: GOOS=${{ matrix.os }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-latest
