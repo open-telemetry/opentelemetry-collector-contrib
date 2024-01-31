@@ -294,13 +294,14 @@ chlog-update: $(CHLOGGEN)
 
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
-	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol
-	$(MAKE) --no-print-directory -C cmd/otelcontribcol fmt
+	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol/_build
+	echo "include ../../../Makefile.Common" > cmd/otelcontribcol/_build/Makefile
+	$(MAKE) -C cmd/otelcontribcol/_build fmt
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
-otelcontribcol:
-	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
+otelcontribcol: genotelcontribcol
+	cd ./cmd/otelcontribcol/_build && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
 .PHONY: genoteltestbedcol
