@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "tls"),
 			expected: &Config{
 				HTTPServerConfig: confighttp.HTTPServerConfig{
-					Endpoint: ":9943",
+					Endpoint: "0.0.0.0:9943",
 					TLSSetting: &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
 							CertFile: "/test.crt",

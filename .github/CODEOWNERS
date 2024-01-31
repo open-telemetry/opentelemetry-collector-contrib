@@ -136,6 +136,7 @@ pkg/ottl/                                                @open-telemetry/collect
 pkg/pdatatest/                                           @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
 pkg/pdatautil/                                           @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/resourcetotelemetry/                                 @open-telemetry/collector-contrib-approvers @mx-psi
+pkg/sampling/                                            @open-telemetry/collector-contrib-approvers @jmacd @kentquirk
 pkg/stanza/                                              @open-telemetry/collector-contrib-approvers @djaglowski
 pkg/translator/azure/                                    @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @atoulme @cparkins
 pkg/translator/jaeger/                                   @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @frzifus
@@ -172,7 +173,7 @@ processor/resourceprocessor/                             @open-telemetry/collect
 processor/routingprocessor/                              @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/schemaprocessor/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 processor/servicegraphprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
-processor/spanmetricsprocessor/                          @open-telemetry/collector-contrib-approvers @albertteoh
+processor/spanmetricsprocessor/                          @open-telemetry/collector-contrib-approvers
 processor/spanprocessor/                                 @open-telemetry/collector-contrib-approvers @boostchicken
 processor/sumologicprocessor/                            @open-telemetry/collector-contrib-approvers @aboguszewski-sumo @astencel-sumo @sumo-drosiek
 processor/tailsamplingprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling
