@@ -1042,11 +1042,11 @@ func unmarshallSearchReq(res *http.Response, sr *searchResponse) error {
 
 // Scrape index throughput introspection endpoint
 func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerThroughput.Enabled || !s.splunkClient.isConfigured(typeCm) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerThroughput.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it indexThroughput
 	var ept string
 
@@ -1084,11 +1084,11 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 
 // Scrape indexes extended total size
 func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled || !s.splunkClient.isConfigured(typeCm) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
 	var ept string
 
@@ -1139,11 +1139,11 @@ func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.
 
 // Scrape indexes extended total event count
 func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedEventCount.Enabled || !s.splunkClient.isConfigured(typeCm) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
 	var ept string
 
@@ -1187,11 +1187,11 @@ func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon
 
 // Scrape indexes extended total bucket count
 func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled || !s.splunkClient.isConfigured(typeCm) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
 	var ept string
 
@@ -1241,11 +1241,11 @@ func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommo
 
 // Scrape indexes extended raw size
 func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedRawSize.Enabled || !s.splunkClient.isConfigured(typeCm) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedRawSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
 	var ept string
 
@@ -1295,11 +1295,11 @@ func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Ti
 
 // Scrape indexes extended bucket event count
 func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled || !s.splunkClient.isConfigured(typeCm) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
 	var ept string
 
@@ -1366,11 +1366,11 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 
 // Scrape indexes extended bucket hot/warm count
 func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled || !s.splunkClient.isConfigured(typeCm) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
 	var ept string
 
@@ -1430,11 +1430,11 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now
 
 // Scrape introspection queues
 func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled || !s.splunkClient.isConfigured(typeCm) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IntrospectionQueues
 	var ept string
 
@@ -1479,11 +1479,11 @@ func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcomm
 
 // Scrape introspection queues bytes
 func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled || !s.splunkClient.isConfigured(typeCm) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IntrospectionQueues
 	var ept string
 
