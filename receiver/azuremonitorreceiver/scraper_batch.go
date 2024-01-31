@@ -399,60 +399,70 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 				end = len(metricsByGrain.metrics)
 			}
 			for region := range s.regionsFromSubscriptions[*subscription.SubscriptionID] {
-				clientMetrics := s.GetMetricsBatchValuesClient(region)
-				s.settings.Logger.Info("scrape", zap.String("subscription", *subscription.DisplayName), zap.String("resourceType", resourceType), zap.String("region", region))
-				response, err := clientMetrics.QueryBatch(
-					ctx,
-					*subscription.SubscriptionID,
-					resourceType,
-					metricsByGrain.metrics[start:end],
-					azquery.ResourceIDList{ResourceIDs: resType.resourceIds},
-					&azquery.MetricsBatchClientQueryBatchOptions{
-						Aggregation: to.SliceOfPtrs(
-							azquery.AggregationTypeAverage,
-							azquery.AggregationTypeMaximum,
-							azquery.AggregationTypeMinimum,
-							azquery.AggregationTypeTotal,
-							azquery.AggregationTypeCount,
-						),
-						StartTime: to.Ptr(startTime.Format(time.RFC3339)),
-						EndTime:   to.Ptr(now.Format(time.RFC3339)),
-						Interval:  to.Ptr(compositeKey.timeGrain),
-						Top:       to.Ptr(int32(s.cfg.MaximumNumberOfDimensionsInACall)), // Defaults to 10 (may be limiting results)
-					},
-				)
 
-				if err != nil {
-					s.settings.Logger.Error("failed to get Azure Metrics values data", zap.String("subscription", *subscription.SubscriptionID), zap.String("region", region), zap.String("resourceType", resourceType), zap.Error(err))
-					return
-				}
+				start_resources := 0
+				for start_resources < len(resType.resourceIds) {
 
-				start = end
-				for _, metricValues := range response.Values {
-					for _, metric := range metricValues.Values {
+					end_resources := start_resources + 50 // getBatch API is limited to 50 resources max
+					if end_resources > len(resType.resourceIds) {
+						end_resources = len(resType.resourceIds)
+					}
 
-						for _, timeseriesElement := range metric.TimeSeries {
-							if timeseriesElement.Data != nil {
-								if metricValues.ResourceID != nil {
-									res := s.resources[*subscription.SubscriptionID][*metricValues.ResourceID]
-									attributes := map[string]*string{}
-									for name, value := range res.attributes {
-										attributes[name] = value
-									}
-									for _, value := range timeseriesElement.MetadataValues {
-										name := metadataPrefix + *value.Name.Value
-										attributes[name] = value.Value
-									}
-									if s.cfg.AppendTagsAsAttributes {
-										for tagName, value := range res.tags {
-											name := tagPrefix + tagName
+					clientMetrics := s.GetMetricsBatchValuesClient(region)
+					s.settings.Logger.Info("scrape", zap.String("subscription", *subscription.DisplayName), zap.String("resourceType", resourceType), zap.String("region", region))
+					response, err := clientMetrics.QueryBatch(
+						ctx,
+						*subscription.SubscriptionID,
+						resourceType,
+						metricsByGrain.metrics[start:end],
+						azquery.ResourceIDList{ResourceIDs: resType.resourceIds[start_resources:end_resources]},
+						&azquery.MetricsBatchClientQueryBatchOptions{
+							Aggregation: to.SliceOfPtrs(
+								azquery.AggregationTypeAverage,
+								azquery.AggregationTypeMaximum,
+								azquery.AggregationTypeMinimum,
+								azquery.AggregationTypeTotal,
+								azquery.AggregationTypeCount,
+							),
+							StartTime: to.Ptr(startTime.Format(time.RFC3339)),
+							EndTime:   to.Ptr(now.Format(time.RFC3339)),
+							Interval:  to.Ptr(compositeKey.timeGrain),
+							Top:       to.Ptr(int32(s.cfg.MaximumNumberOfDimensionsInACall)), // Defaults to 10 (may be limiting results)
+						},
+					)
+
+					if err != nil {
+						s.settings.Logger.Error("failed to get Azure Metrics values data", zap.String("subscription", *subscription.SubscriptionID), zap.String("region", region), zap.String("resourceType", resourceType), zap.Error(err))
+						return
+					}
+
+					start = end
+					for _, metricValues := range response.Values {
+						for _, metric := range metricValues.Values {
+
+							for _, timeseriesElement := range metric.TimeSeries {
+								if timeseriesElement.Data != nil {
+									if metricValues.ResourceID != nil {
+										res := s.resources[*subscription.SubscriptionID][*metricValues.ResourceID]
+										attributes := map[string]*string{}
+										for name, value := range res.attributes {
 											attributes[name] = value
 										}
-									}
-									attributes["subscription"] = subscription.DisplayName
-									attributes["timegrain"] = &compositeKey.timeGrain
-									for _, metricValue := range timeseriesElement.Data {
-										s.processQueryTimeseriesData(*metricValues.ResourceID, metric, metricValue, attributes)
+										for _, value := range timeseriesElement.MetadataValues {
+											name := metadataPrefix + *value.Name.Value
+											attributes[name] = value.Value
+										}
+										if s.cfg.AppendTagsAsAttributes {
+											for tagName, value := range res.tags {
+												name := tagPrefix + tagName
+												attributes[name] = value
+											}
+										}
+										attributes["subscription"] = subscription.DisplayName
+										attributes["timegrain"] = &compositeKey.timeGrain
+										for _, metricValue := range timeseriesElement.Data {
+											s.processQueryTimeseriesData(*metricValues.ResourceID, metric, metricValue, attributes)
+										}
 									}
 								}
 							}
