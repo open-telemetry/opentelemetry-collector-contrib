@@ -13,10 +13,12 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
 
 const (
+	defaultPort               = 2181
 	defaultCollectionInterval = 10 * time.Second
 	defaultTimeout            = 10 * time.Second
 )
@@ -37,7 +39,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: cfg,
 		TCPAddr: confignet.TCPAddr{
-			Endpoint: ":2181",
+			Endpoint: localhostgate.EndpointForPort(defaultPort),
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
