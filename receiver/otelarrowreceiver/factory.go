@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -15,8 +16,6 @@ import (
 )
 
 const (
-	typeStr = "otelarrow"
-
 	defaultGRPCEndpoint = "0.0.0.0:4317"
 
 	defaultMemoryLimitMiB = 128
@@ -25,11 +24,11 @@ const (
 // NewFactory creates a new OTel-Arrow receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTraces, component.StabilityLevelStable),
-		receiver.WithMetrics(createMetrics, component.StabilityLevelStable),
-		receiver.WithLogs(createLog, component.StabilityLevelBeta))
+		receiver.WithTraces(createTraces, metadata.TracesStability),
+		receiver.WithMetrics(createMetrics, metadata.MetricsStability),
+		receiver.WithLogs(createLog, metadata.LogsStability))
 }
 
 // createDefaultConfig creates the default configuration for receiver.
