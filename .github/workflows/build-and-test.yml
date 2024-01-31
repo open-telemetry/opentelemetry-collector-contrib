@@ -395,7 +395,7 @@ jobs:
 
   cross-compile:
     runs-on: ubuntu-latest
-    needs: [unittest, integration-tests, lint]
+    needs: [setup-environment]
     strategy:
       matrix:
         os:
@@ -543,7 +543,7 @@ jobs:
 
   publish-check:
     runs-on: ubuntu-latest
-    needs: [build-package]
+    needs: [lint, unittest, integration-tests, build-package]
     steps:
       - uses: actions/checkout@v4
       - name: Download Binaries
