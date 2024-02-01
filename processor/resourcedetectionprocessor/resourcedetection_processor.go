@@ -21,7 +21,7 @@ type resourceDetectionProcessor struct {
 	resource           pcommon.Resource
 	schemaURL          string
 	override           bool
-	httpClientSettings confighttp.HTTPClientSettings
+	httpClientSettings confighttp.HTTPClientConfig
 	telemetrySettings  component.TelemetrySettings
 }
 

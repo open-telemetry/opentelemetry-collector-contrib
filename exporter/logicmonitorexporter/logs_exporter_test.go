@@ -38,7 +38,7 @@ func Test_NewLogsExporter(t *testing.T) {
 				logger *zap.Logger
 			}{
 				config: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					HTTPClientConfig: confighttp.HTTPClientConfig{
 						Endpoint: "http://example.logicmonitor.com/rest",
 					},
 					APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
@@ -68,7 +68,7 @@ func TestPushLogData(t *testing.T) {
 	defer ts.Close()
 
 	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		HTTPClientConfig: confighttp.HTTPClientConfig{
 			Endpoint: ts.URL,
 		},
 		APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},

@@ -19,6 +19,7 @@ import (
 	"github.com/signalfx/sapm-proto/sapmprotocol"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -246,9 +247,8 @@ func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) 
 	assert.NoError(t, err, "should not have failed to create the SAPM receiver")
 	t.Log("Starting")
 
-	mh := newAssertNoErrorHost(t)
-	require.NoError(t, sr.Start(context.Background(), mh), "should not have failed to start trace reception")
-	require.NoError(t, sr.Start(context.Background(), mh), "should not fail to start log on second Start call")
+	require.NoError(t, sr.Start(context.Background(), componenttest.NewNopHost()), "should not have failed to start trace reception")
+	require.NoError(t, sr.Start(context.Background(), componenttest.NewNopHost()), "should not fail to start log on second Start call")
 
 	// If there are errors reported through host.ReportFatalError() this will retrieve it.
 	<-time.After(500 * time.Millisecond)
@@ -278,8 +278,8 @@ func TestReception(t *testing.T) {
 			args: args{
 				// 1. Create the SAPM receiver aka "server"
 				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
-						Endpoint: defaultEndpoint,
+					HTTPServerConfig: confighttp.HTTPServerConfig{
+						Endpoint: "0.0.0.0:7226",
 					},
 				},
 				sapm:        &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
@@ -292,8 +292,8 @@ func TestReception(t *testing.T) {
 			name: "receive compressed sapm",
 			args: args{
 				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
-						Endpoint: defaultEndpoint,
+					HTTPServerConfig: confighttp.HTTPServerConfig{
+						Endpoint: "0.0.0.0:7226",
 					},
 				},
 				sapm:        &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
@@ -306,7 +306,7 @@ func TestReception(t *testing.T) {
 			name: "connect via TLS zstd compressed sapm",
 			args: args{
 				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+					HTTPServerConfig: confighttp.HTTPServerConfig{
 						Endpoint: tlsAddress,
 						TLSSetting: &configtls.TLSServerSetting{
 							TLSSetting: configtls.TLSSetting{
@@ -381,8 +381,8 @@ func TestAccessTokenPassthrough(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config := &Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: defaultEndpoint,
+				HTTPServerConfig: confighttp.HTTPServerConfig{
+					Endpoint: "0.0.0.0:7226",
 				},
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: tt.accessTokenPassthrough,

@@ -67,7 +67,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+					HTTPServerConfig: confighttp.HTTPServerConfig{
 						Endpoint: "localhost:1234",
 					},
 				},
@@ -536,7 +536,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
-	cfg.HTTPServerSettings.TLSSetting = &configtls.TLSServerSetting{
+	cfg.HTTPServerConfig.TLSSetting = &configtls.TLSServerSetting{
 		TLSSetting: configtls.TLSSetting{
 			CertFile: "./testdata/server.crt",
 			KeyFile:  "./testdata/server.key",
@@ -550,7 +550,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 		require.NoError(t, r.Shutdown(context.Background()))
 	}()
 
-	mh := newAssertNoErrorHost(t)
+	mh := componenttest.NewNopHost()
 	require.NoError(t, r.Start(context.Background(), mh), "should not have failed to start metric reception")
 
 	// If there are errors reported through host.ReportFatalError() this will retrieve it.

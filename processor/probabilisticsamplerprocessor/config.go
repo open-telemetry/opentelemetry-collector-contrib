@@ -43,8 +43,7 @@ type Config struct {
 	// unique log record ID. The value of the attribute is only used if the trace ID is absent or if `attribute_source` is set to `record`.
 	FromAttribute string `mapstructure:"from_attribute"`
 
-	// SamplingPriority (logs only) allows to use a log record attribute designed by the `sampling_priority` key
-	// to be used as the sampling priority of the log record.
+	// SamplingPriority (logs only) enables using a log record attribute as the sampling priority of the log record.
 	SamplingPriority string `mapstructure:"sampling_priority"`
 }
 

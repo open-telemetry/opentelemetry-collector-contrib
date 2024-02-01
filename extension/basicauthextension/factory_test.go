@@ -22,14 +22,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(actual))
 }
 
-func TestCreateExtension_DefaultConfig(t *testing.T) {
-	cfg := createDefaultConfig()
-
-	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
-	assert.Equal(t, err, errNoCredentialSource)
-	assert.Nil(t, ext)
-}
-
 func TestCreateExtension_ValidConfig(t *testing.T) {
 	cfg := &Config{
 		Htpasswd: &HtpasswdSettings{

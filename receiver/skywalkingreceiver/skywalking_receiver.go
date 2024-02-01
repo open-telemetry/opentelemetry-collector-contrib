@@ -33,7 +33,7 @@ import (
 // the Skywalking receiver will use.
 type configuration struct {
 	CollectorHTTPPort           int
-	CollectorHTTPSettings       confighttp.HTTPServerSettings
+	CollectorHTTPSettings       confighttp.HTTPServerConfig
 	CollectorGRPCPort           int
 	CollectorGRPCServerSettings configgrpc.GRPCServerSettings
 }
@@ -153,7 +153,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		go func() {
 			defer sr.goroutines.Done()
 			if errHTTP := sr.collectorServer.Serve(cln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-				host.ReportFatalError(errHTTP)
+				sr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 			}
 		}()
 	}
@@ -188,7 +188,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		go func() {
 			defer sr.goroutines.Done()
 			if errGrpc := sr.grpc.Serve(gln); !errors.Is(errGrpc, grpc.ErrServerStopped) && errGrpc != nil {
-				host.ReportFatalError(errGrpc)
+				sr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errGrpc))
 			}
 		}()
 	}

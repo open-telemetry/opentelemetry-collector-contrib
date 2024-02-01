@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build e2e
-// +build e2e
 
 package main
 
@@ -28,26 +27,30 @@ import (
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/v2"
+	clientTypes "github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/open-telemetry/opamp-go/server"
 	"github.com/open-telemetry/opamp-go/server/types"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
+
+var _ clientTypes.Logger = testLogger{}
 
 type testLogger struct {
 	t *testing.T
 }
 
-func (tl testLogger) Debugf(format string, args ...any) {
+func (tl testLogger) Debugf(_ context.Context, format string, args ...any) {
 	tl.t.Logf(format, args...)
 }
 
-func (tl testLogger) Errorf(format string, args ...any) {
+func (tl testLogger) Errorf(_ context.Context, format string, args ...any) {
 	tl.t.Logf(format, args...)
 }
 
@@ -78,12 +81,12 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 	connectedChan := make(chan bool)
 	s := server.New(testLogger{t: t})
 	onConnectedFunc := callbacks.OnConnectedFunc
-	callbacks.OnConnectedFunc = func(conn types.Connection) {
+	callbacks.OnConnectedFunc = func(ctx context.Context, conn types.Connection) {
 		agentConn.Store(conn)
 		isAgentConnected.Store(true)
 		connectedChan <- true
 		if onConnectedFunc != nil {
-			onConnectedFunc(conn)
+			onConnectedFunc(ctx, conn)
 		}
 	}
 	onConnectionCloseFunc := callbacks.OnConnectionCloseFunc
@@ -172,7 +175,7 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
-			OnMessageFunc: func(_ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				if message.EffectiveConfig != nil {
 					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
 					if config != nil {
@@ -232,7 +235,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
-			OnMessageFunc: func(_ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				if message.Health != nil {
 					healthReport.Store(message.Health)
 				}
@@ -316,7 +319,7 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
-			OnMessageFunc: func(_ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				capabilities.Store(message.Capabilities)
 
 				return &protobufs.ServerToAgent{}
@@ -369,7 +372,7 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
-			OnMessageFunc: func(_ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				if message.AgentDescription != nil {
 					agentDescription.Store(message.AgentDescription)
 				}

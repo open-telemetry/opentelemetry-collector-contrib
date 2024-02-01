@@ -41,6 +41,10 @@ func TestExamples(t *testing.T) {
 	files, err := os.ReadDir(folder)
 	require.NoError(t, err)
 	for _, f := range files {
+		if f.Name() == "kafka.yaml" {
+			// skip validation, as it requires jar file.
+			continue
+		}
 		if f.IsDir() {
 			continue
 		}

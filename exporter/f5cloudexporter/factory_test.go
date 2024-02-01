@@ -32,8 +32,8 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.HTTPClientSettings.Endpoint, "")
-	assert.Equal(t, ocfg.HTTPClientSettings.Timeout, 30*time.Second, "default timeout is 30 seconds")
+	assert.Equal(t, ocfg.HTTPClientConfig.Endpoint, "")
+	assert.Equal(t, ocfg.HTTPClientConfig.Timeout, 30*time.Second, "default timeout is 30 seconds")
 	assert.Equal(t, ocfg.RetryConfig.Enabled, true, "default retry is enabled")
 	assert.Equal(t, ocfg.RetryConfig.MaxElapsedTime, 300*time.Second, "default retry MaxElapsedTime")
 	assert.Equal(t, ocfg.RetryConfig.InitialInterval, 5*time.Second, "default retry InitialInterval")
@@ -44,7 +44,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 func TestFactory_CreateMetricsExporter(t *testing.T) {
 	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
+	cfg.HTTPClientConfig.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"
 	cfg.AuthConfig = AuthConfig{
 		CredentialFile: "testdata/empty_credential_file.json",
@@ -56,7 +56,7 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 		Version: "0.0.0",
 	}
 	oexp, err := factory.CreateMetricsExporter(context.Background(), creationParams, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 
 	require.Equal(t, configopaque.String("opentelemetry-collector-contrib 0.0.0"), cfg.Headers["User-Agent"])
@@ -75,7 +75,7 @@ func TestFactory_CreateMetricsExporterInvalidConfig(t *testing.T) {
 func TestFactory_CreateTracesExporter(t *testing.T) {
 	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
+	cfg.HTTPClientConfig.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"
 	cfg.AuthConfig = AuthConfig{
 		CredentialFile: "testdata/empty_credential_file.json",
@@ -87,7 +87,7 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 		Version: "0.0.0",
 	}
 	oexp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 
 	require.Equal(t, configopaque.String("opentelemetry-collector-contrib 0.0.0"), cfg.Headers["User-Agent"])
@@ -106,7 +106,7 @@ func Test_Factory_CreateTracesExporterInvalidConfig(t *testing.T) {
 func TestFactory_CreateLogsExporter(t *testing.T) {
 	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
+	cfg.HTTPClientConfig.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"
 	cfg.AuthConfig = AuthConfig{
 		CredentialFile: "testdata/empty_credential_file.json",
@@ -118,7 +118,7 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 		Version: "0.0.0",
 	}
 	oexp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 
 	require.Equal(t, configopaque.String("opentelemetry-collector-contrib 0.0.0"), cfg.Headers["User-Agent"])
@@ -137,7 +137,7 @@ func TestFactory_CreateLogsExporterInvalidConfig(t *testing.T) {
 func TestFactory_getTokenSourceFromConfig(t *testing.T) {
 	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
+	cfg.HTTPClientConfig.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"
 	cfg.AuthConfig = AuthConfig{
 		CredentialFile: "testdata/empty_credential_file.json",

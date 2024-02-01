@@ -49,7 +49,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
 			rb.SetOpenshiftClusterquotaUID("openshift.clusterquota.uid-val")
 			rb.SetOsDescription("os.description-val")
-			rb.SetOsVersion("os.version-val")
+			rb.SetOsType("os.type-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
@@ -246,10 +246,10 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "os.description-val", val.Str())
 			}
-			val, ok = res.Attributes().Get("os.version")
+			val, ok = res.Attributes().Get("os.type")
 			assert.Equal(t, test == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "os.version-val", val.Str())
+				assert.EqualValues(t, "os.type-val", val.Str())
 			}
 		})
 	}

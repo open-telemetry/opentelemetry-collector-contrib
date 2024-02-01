@@ -68,6 +68,7 @@ body:
       - exporter/mezmo
       - exporter/opencensus
       - exporter/opensearch
+      - exporter/otelarrow
       - exporter/prometheus
       - exporter/prometheusremotewrite
       - exporter/pulsar
@@ -106,6 +107,7 @@ body:
       - extension/pprof
       - extension/remotetap
       - extension/sigv4auth
+      - extension/solarwindsapmsettings
       - extension/storage
       - extension/storage/dbstorage
       - extension/storage/filestorage
@@ -131,6 +133,7 @@ body:
       - pkg/pdatatest
       - pkg/pdatautil
       - pkg/resourcetotelemetry
+      - pkg/sampling
       - pkg/stanza
       - pkg/translator/azure
       - pkg/translator/jaeger
@@ -145,10 +148,12 @@ body:
       - processor/attributes
       - processor/cumulativetodelta
       - processor/datadog
+      - processor/deltatocumulative
       - processor/deltatorate
       - processor/filter
       - processor/groupbyattrs
       - processor/groupbytrace
+      - processor/interval
       - processor/k8sattributes
       - processor/logstransform
       - processor/metricsgeneration
@@ -225,6 +230,7 @@ body:
       - receiver/nsxt
       - receiver/opencensus
       - receiver/oracledb
+      - receiver/osquery
       - receiver/otlpjsonfile
       - receiver/podman
       - receiver/postgresql
