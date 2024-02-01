@@ -31,12 +31,6 @@ func New[T Matchable](capacity int) *Fileset[T] {
 	return &Fileset[T]{readers: make([]T, 0, capacity)}
 }
 
-func (set *Fileset[T]) Copy() *Fileset[T] {
-	readers := make([]T, len(set.readers), cap(set.readers))
-	n := copy(readers, set.readers)
-	return &Fileset[T]{readers: readers[:n]}
-}
-
 func (set *Fileset[T]) Len() int {
 	return len(set.readers)
 }
@@ -46,9 +40,9 @@ func (set *Fileset[T]) Get() []T {
 }
 
 func (set *Fileset[T]) Pop() (T, error) {
-	// remove top n elements and return them
+	// return first element from the array and remove it
 	var val T
-	if set.Len() < 1 {
+	if len(set.readers) == 0 {
 		return val, errFilesetEmpty
 	}
 	r := set.readers[0]
@@ -64,15 +58,6 @@ func (set *Fileset[T]) Add(readers ...T) {
 func (set *Fileset[T]) Clear() {
 	// clear the underlying readers
 	set.readers = make([]T, 0, cap(set.readers))
-}
-
-func (set *Fileset[T]) Reset(readers ...T) []T {
-	// empty the underlying set and return the old array
-	arr := make([]T, len(set.readers))
-	copy(arr, set.readers)
-	set.Clear()
-	set.readers = append(set.readers, readers...)
-	return arr
 }
 
 func (set *Fileset[T]) Match(fp *fingerprint.Fingerprint, cmp func(a, b *fingerprint.Fingerprint) bool) T {

@@ -44,13 +44,6 @@ func pop[T Matchable](expectedErr error, expectedElemet T) func(t *testing.T, fi
 	}
 }
 
-func reset[T Matchable](ele ...T) func(t *testing.T, fileset *Fileset[T]) {
-	return func(t *testing.T, fileset *Fileset[T]) {
-		fileset.Reset(ele...)
-		require.Equal(t, fileset.Len(), len(ele))
-	}
-}
-
 func match[T Matchable](ele T, expect bool) func(t *testing.T, fileset *Fileset[T]) {
 	return func(t *testing.T, fileset *Fileset[T]) {
 		pr := fileset.Len()
@@ -94,7 +87,7 @@ func TestFilesetReader(t *testing.T) {
 				match(newReader([]byte("ABCDEFGHI")), true),
 				match(newReader([]byte("ABCEFGHI")), false),
 
-				reset(newReader([]byte("XYZ"))),
+				push(newReader([]byte("XYZ"))),
 				match(newReader([]byte("ABCDEF")), false),
 				match(newReader([]byte("QWERT")), false),
 				match(newReader([]byte("XYZabc")), true),
@@ -108,7 +101,7 @@ func TestFilesetReader(t *testing.T) {
 				pop(nil, newReader([]byte("QWERT"))),
 				pop(errFilesetEmpty, newReader([]byte(""))),
 
-				reset(newReader([]byte("XYZ"))),
+				push(newReader([]byte("XYZ"))),
 				pop(nil, newReader([]byte("XYZ"))),
 				pop(errFilesetEmpty, newReader([]byte(""))),
 			},

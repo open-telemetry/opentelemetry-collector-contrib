@@ -41,10 +41,6 @@ type Manager struct {
 func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
-	m.knownFiles = make([]*fileset.Fileset[*reader.Metadata], 3)
-	for i := 0; i < len(m.knownFiles); i++ {
-		m.knownFiles[i] = fileset.New[*reader.Metadata](m.maxBatchFiles / 2)
-	}
 
 	if persister != nil {
 		m.persister = persister
@@ -94,7 +90,7 @@ func (m *Manager) Stop() error {
 	m.wg.Wait()
 	m.closePreviousFiles()
 	if m.persister != nil {
-		checkpoints := make([]*reader.Metadata, 0, m.knownFiles[2].Len()*3)
+		checkpoints := make([]*reader.Metadata, 0, m.totalReaders())
 		for _, knownFiles := range m.knownFiles {
 			checkpoints = append(checkpoints, knownFiles.Get()...)
 		}
@@ -156,7 +152,7 @@ func (m *Manager) poll(ctx context.Context) {
 	// Any new files that appear should be consumed entirely
 	m.readerFactory.FromBeginning = true
 	if m.persister != nil {
-		allCheckpoints := make([]*reader.Metadata, 0, m.knownFiles[2].Len()*3+m.previousPollFiles.Len())
+		allCheckpoints := make([]*reader.Metadata, 0, m.totalReaders())
 		for _, knownFiles := range m.knownFiles {
 			allCheckpoints = append(allCheckpoints, knownFiles.Get()...)
 		}
@@ -262,4 +258,12 @@ func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader
 	// If we don't match any previously known files, create a new reader from scratch
 	m.Infow("Started watching file", "path", file.Name())
 	return m.readerFactory.NewReader(file, fp)
+}
+
+func (m *Manager) totalReaders() int {
+	total := m.previousPollFiles.Len()
+	for _, v := range m.knownFiles {
+		total += v.Len()
+	}
+	return total
 }
