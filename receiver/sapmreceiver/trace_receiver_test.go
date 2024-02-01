@@ -279,7 +279,7 @@ func TestReception(t *testing.T) {
 				// 1. Create the SAPM receiver aka "server"
 				config: &Config{
 					HTTPServerConfig: confighttp.HTTPServerConfig{
-						Endpoint: defaultEndpoint,
+						Endpoint: "0.0.0.0:7226",
 					},
 				},
 				sapm:        &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
@@ -293,7 +293,7 @@ func TestReception(t *testing.T) {
 			args: args{
 				config: &Config{
 					HTTPServerConfig: confighttp.HTTPServerConfig{
-						Endpoint: defaultEndpoint,
+						Endpoint: "0.0.0.0:7226",
 					},
 				},
 				sapm:        &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
@@ -382,7 +382,7 @@ func TestAccessTokenPassthrough(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config := &Config{
 				HTTPServerConfig: confighttp.HTTPServerConfig{
-					Endpoint: defaultEndpoint,
+					Endpoint: "0.0.0.0:7226",
 				},
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: tt.accessTokenPassthrough,

@@ -27,6 +27,7 @@ subtext: |
     - receiver/influxdb
     - receiver/zookeeper
     - receiver/signalfx
+    - receiver/sapm
     - extension/jaegerremotesampling
     - receiver/jaeger
     - receiver/skywalking
