@@ -50,15 +50,14 @@ func TestLogsRegisterConsumers(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
-	tc, idx, ok := failoverConnector.failover.getCurrentConsumer()
-	tc1 := failoverConnector.failover.GetConsumerAtIndex(1)
-	tc2 := failoverConnector.failover.GetConsumerAtIndex(2)
+	lc, _, ok := failoverConnector.failover.getCurrentConsumer()
+	lc1 := failoverConnector.failover.GetConsumerAtIndex(1)
+	lc2 := failoverConnector.failover.GetConsumerAtIndex(2)
 
 	assert.True(t, ok)
-	require.Equal(t, idx, 0)
-	require.Implements(t, (*consumer.Logs)(nil), tc)
-	require.Implements(t, (*consumer.Logs)(nil), tc1)
-	require.Implements(t, (*consumer.Logs)(nil), tc2)
+	require.Implements(t, (*consumer.Logs)(nil), lc)
+	require.Implements(t, (*consumer.Logs)(nil), lc1)
+	require.Implements(t, (*consumer.Logs)(nil), lc2)
 }
 
 func TestLogsWithValidFailover(t *testing.T) {
@@ -91,10 +90,11 @@ func TestLogsWithValidFailover(t *testing.T) {
 		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
 	}()
 
-	tr := sampleLog()
+	ld := sampleLog()
 
-	require.NoError(t, conn.ConsumeLogs(context.Background(), tr))
-	_, idx, ok := failoverConnector.failover.getCurrentConsumer()
+	require.NoError(t, conn.ConsumeLogs(context.Background(), ld))
+	_, ch, ok := failoverConnector.failover.getCurrentConsumer()
+	idx := failoverConnector.failover.pS.ChannelIndex(ch)
 	assert.True(t, ok)
 	require.Equal(t, idx, 1)
 }
@@ -131,9 +131,9 @@ func TestLogsWithFailoverError(t *testing.T) {
 		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
 	}()
 
-	tr := sampleLog()
+	ld := sampleLog()
 
-	assert.EqualError(t, conn.ConsumeLogs(context.Background(), tr), "All provided pipelines return errors")
+	assert.EqualError(t, conn.ConsumeLogs(context.Background(), ld), "All provided pipelines return errors")
 }
 
 func TestLogsWithFailoverRecovery(t *testing.T) {
@@ -166,10 +166,11 @@ func TestLogsWithFailoverRecovery(t *testing.T) {
 		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
 	}()
 
-	tr := sampleLog()
+	ld := sampleLog()
 
-	require.NoError(t, conn.ConsumeLogs(context.Background(), tr))
-	_, idx, ok := failoverConnector.failover.getCurrentConsumer()
+	require.NoError(t, conn.ConsumeLogs(context.Background(), ld))
+	_, ch, ok := failoverConnector.failover.getCurrentConsumer()
+	idx := failoverConnector.failover.pS.ChannelIndex(ch)
 
 	assert.True(t, ok)
 	require.Equal(t, idx, 1)
@@ -179,7 +180,8 @@ func TestLogsWithFailoverRecovery(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	_, idx, ok = failoverConnector.failover.getCurrentConsumer()
+	_, ch, ok = failoverConnector.failover.getCurrentConsumer()
+	idx = failoverConnector.failover.pS.ChannelIndex(ch)
 	assert.True(t, ok)
 	require.Equal(t, idx, 0)
 }
