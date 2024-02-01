@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.uber.org/zap"
@@ -66,6 +67,7 @@ func Run(c *Config, exp exporter, logger *zap.Logger) error {
 			numLogs:        c.NumLogs,
 			limitPerSecond: limit,
 			body:           c.Body,
+			severityNumber: parseSeverity(c.SeverityText),
 			totalDuration:  c.TotalDuration,
 			running:        running,
 			wg:             &wg,
@@ -81,4 +83,25 @@ func Run(c *Config, exp exporter, logger *zap.Logger) error {
 	}
 	wg.Wait()
 	return nil
+}
+
+func parseSeverity(severityText string) (severityNumber plog.SeverityNumber) {
+	switch severityText {
+	case plog.SeverityNumberTrace.String():
+		severityNumber = plog.SeverityNumberTrace
+	case plog.SeverityNumberDebug.String():
+		severityNumber = plog.SeverityNumberDebug
+	case plog.SeverityNumberInfo.String():
+		severityNumber = plog.SeverityNumberInfo
+	case plog.SeverityNumberWarn.String():
+		severityNumber = plog.SeverityNumberWarn
+	case plog.SeverityNumberError.String():
+		severityNumber = plog.SeverityNumberError
+	case plog.SeverityNumberFatal.String():
+		severityNumber = plog.SeverityNumberFatal
+	default:
+		severityNumber = plog.SeverityNumberInfo
+	}
+
+	return severityNumber
 }

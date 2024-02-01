@@ -12,8 +12,9 @@ import (
 // Config describes the test scenario.
 type Config struct {
 	common.Config
-	NumLogs int
-	Body    string
+	NumLogs      int
+	Body         string
+	SeverityText string
 }
 
 // Flags registers config flags.
@@ -24,4 +25,5 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 
 	fs.IntVar(&c.NumLogs, "logs", 1, "Number of logs to generate in each worker (ignored if duration is provided)")
 	fs.StringVar(&c.Body, "body", "the message", "Body of the log")
+	fs.StringVar(&c.SeverityText, "severity", "Info", "Severity of the log, one of: Trace, Debug, Info, Warn, Error, Fatal")
 }
