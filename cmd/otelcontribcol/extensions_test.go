@@ -244,6 +244,10 @@ func TestDefaultExtensions(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			extension:     "solarwindsapmsettings",
+			skipLifecycle: true, // Requires Solarwinds APM endpoint and token
+		},
 	}
 
 	extensionCount := 0

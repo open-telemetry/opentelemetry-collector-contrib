@@ -37,7 +37,7 @@ func TestNewApacheSparkClient(t *testing.T) {
 		{
 			desc: "Valid Configuration",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Endpoint: defaultEndpoint,
 				},
 			},

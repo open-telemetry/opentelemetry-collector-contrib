@@ -33,13 +33,13 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	defaultClientHTTPSettings := confighttp.NewDefaultHTTPClientSettings()
+	defaultClientHTTPSettings := confighttp.NewDefaultHTTPClientConfig()
 	defaultClientHTTPSettings.Timeout = defaultTimeout
 	defaultClientHTTPSettings.WriteBufferSize = 512 * 1024
 	return &Config{
 		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
 		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
-		HTTPClientSettings: defaultClientHTTPSettings,
+		HTTPClientConfig:   defaultClientHTTPSettings,
 		Format:             defaultFormat,
 		DefaultServiceName: defaultServiceName,
 	}

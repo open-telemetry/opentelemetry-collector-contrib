@@ -5,6 +5,7 @@ status:
   stability:
     beta: [metrics, logs, traces]
   distributions:
+  - core
   - contrib
   - aws
   - grafana

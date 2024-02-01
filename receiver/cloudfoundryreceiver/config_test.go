@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "one"),
 			expected: &Config{
 				RLPGateway: RLPGatewayConfig{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					HTTPClientConfig: confighttp.HTTPClientConfig{
 						Endpoint: "https://log-stream.sys.example.internal",
 						TLSSetting: configtls.TLSClientSetting{
 							InsecureSkipVerify: true,
@@ -44,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 					ShardID: "otel-test",
 				},
 				UAA: UAAConfig{
-					LimitedHTTPClientSettings: LimitedHTTPClientSettings{
+					LimitedHTTPClientConfig: LimitedHTTPClientConfig{
 						Endpoint: "https://uaa.sys.example.internal",
 						TLSSetting: LimitedTLSClientSetting{
 							InsecureSkipVerify: true,
@@ -102,17 +102,17 @@ func TestInvalidConfigValidation(t *testing.T) {
 }
 
 func TestHTTPConfigurationStructConsistency(t *testing.T) {
-	// LimitedHTTPClientSettings must have the same structure as HTTPClientSettings, but without the fields that the UAA
+	// LimitedHTTPClientConfig must have the same structure as HTTPClientConfig, but without the fields that the UAA
 	// library does not support.
-	checkTypeFieldMatch(t, "Endpoint", reflect.TypeOf(LimitedHTTPClientSettings{}), reflect.TypeOf(confighttp.HTTPClientSettings{}))
-	checkTypeFieldMatch(t, "TLSSetting", reflect.TypeOf(LimitedHTTPClientSettings{}), reflect.TypeOf(confighttp.HTTPClientSettings{}))
+	checkTypeFieldMatch(t, "Endpoint", reflect.TypeOf(LimitedHTTPClientConfig{}), reflect.TypeOf(confighttp.HTTPClientConfig{}))
+	checkTypeFieldMatch(t, "TLSSetting", reflect.TypeOf(LimitedHTTPClientConfig{}), reflect.TypeOf(confighttp.HTTPClientConfig{}))
 	checkTypeFieldMatch(t, "InsecureSkipVerify", reflect.TypeOf(LimitedTLSClientSetting{}), reflect.TypeOf(configtls.TLSClientSetting{}))
 }
 
 func loadSuccessfulConfig(t *testing.T) *Config {
 	configuration := &Config{
 		RLPGateway: RLPGatewayConfig{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			HTTPClientConfig: confighttp.HTTPClientConfig{
 				Endpoint: "https://log-stream.sys.example.internal",
 				Timeout:  time.Second * 20,
 				TLSSetting: configtls.TLSClientSetting{
@@ -122,7 +122,7 @@ func loadSuccessfulConfig(t *testing.T) *Config {
 			ShardID: "otel-test",
 		},
 		UAA: UAAConfig{
-			LimitedHTTPClientSettings: LimitedHTTPClientSettings{
+			LimitedHTTPClientConfig: LimitedHTTPClientConfig{
 				Endpoint: "https://uaa.sys.example.internal",
 				TLSSetting: LimitedTLSClientSetting{
 					InsecureSkipVerify: true,

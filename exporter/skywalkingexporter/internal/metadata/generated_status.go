@@ -10,8 +10,8 @@ import (
 
 const (
 	Type             = "skywalking"
-	MetricsStability = component.StabilityLevelBeta
-	LogsStability    = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelUnmaintained
+	LogsStability    = component.StabilityLevelUnmaintained
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
