@@ -17,7 +17,7 @@ type ReplacePatternArguments[K any] struct {
 	RegexPattern      string
 	Replacement       ottl.StringGetter[K]
 	Function          ottl.Optional[ottl.FunctionGetter[K]]
-	ReplacementFormat ottl.Optional[string]
+	ReplacementFormat ottl.Optional[ottl.StringGetter[K]]
 }
 
 type replacePatternFuncArgs[K any] struct {
@@ -38,7 +38,7 @@ func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argu
 	return replacePattern(args.Target, args.RegexPattern, args.Replacement, args.Function, args.ReplacementFormat)
 }
 
-func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern *regexp.Regexp, fn ottl.Optional[ottl.FunctionGetter[K]], originalValStr string, replacementVal string, replacementFormat ottl.Optional[string]) (string, error) {
+func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern *regexp.Regexp, fn ottl.Optional[ottl.FunctionGetter[K]], originalValStr string, replacementVal string, replacementFormat ottl.Optional[ottl.StringGetter[K]]) (string, error) {
 	var updatedString string
 	updatedString = originalValStr
 	submatches := compiledPattern.FindAllStringSubmatchIndex(updatedString, -1)
@@ -65,17 +65,21 @@ func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern
 		}
 		if !replacementFormat.IsEmpty() { // If replacementFormat is not empty, add it to the replacement value
 			formatString := replacementFormat.Get()
-			if !strings.Contains(formatString, "%s") {
-				return "", fmt.Errorf("replacementFormat must be format string with %%s")
+			formatStringVal, err := formatString.Get(ctx, tCtx)
+			if err != nil {
+				return "", err
 			}
-			replacementValStr = fmt.Sprintf(replacementFormat.Get(), replacementValStr)
+			if strings.Count(formatStringVal, "%s") > 1 || strings.Count(formatStringVal, "%") < 1 {
+				return "", fmt.Errorf("replacementFormat must be format string containing a single %%s and no other format specifiers")
+			}
+			replacementValStr = fmt.Sprintf(formatStringVal, replacementValStr)
 		}
 		updatedString = strings.ReplaceAll(updatedString, fullMatch, replacementValStr)
 	}
 	return updatedString, nil
 }
 
-func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]], replacementFormat ottl.Optional[string]) (ottl.ExprFunc[K], error) {
+func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]], replacementFormat ottl.Optional[ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to replace_pattern is not a valid pattern: %w", err)
