@@ -42,7 +42,7 @@ Tails and parses logs from files.
 | `attributes`                        | {}                                   | A map of `key: value` pairs to add to the entry's attributes.                                                                                                                                                                                                   |
 | `resource`                          | {}                                   | A map of `key: value` pairs to add to the entry's resource.                                                                                                                                                                                                     |
 | `operators`                         | []                                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details.                                                                                                                                    |
-| `storage`                           | none                                 | The ID of a storage extension to be used to store file checkpoints. File checkpoints allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage checkpoints in memory only.  |
+| `storage`                           | none                                 | The ID of a storage extension to be used to store file offsets. File offsets allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage offsets in memory only.  |
 | `header`                            | nil                                  | Specifies options for parsing header metadata. Requires that the `filelog.allowHeaderMetadataParsing` feature gate is enabled. See below for details. Must be `false` when `start_at` is set to `end`.                                                          |
 | `header.pattern`                    | required for header metadata parsing | A regex that matches every header line.                                                                                                                                                                                                                         |
 | `header.metadata_operators`         | required for header metadata parsing | A list of operators used to parse metadata from the header.                                                                                                                                                                                                     |
@@ -155,41 +155,8 @@ The above configuration will read logs from the "simple.log" file. Some examples
 
 ## Fault tolerance, recovery and proper offset tracking
 
-File offset tracking is quite crucial to ensure the quality of this receiver.
-Filelog receiver has no native support for file offset tracking however this can be achieved by using
-the proper `extentions`.
+`storage` setting allows to define the proper storage extension to be used for storing file offsets. 
+File offsets allow the receiver to pick up where it left off in the case of a collector restart. 
+If no storage extension is used, the receiver will manage offsets in memory only.
 
-Filelog receiver's persistence can be covered by the usage of the following:
-- [filestorage](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage) extension,
-to ensure that Collector's restarts do not affect the log collection and offset tracking.
-- [exporterhelper persistent-queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#persistent-queue),
-to ensure that Collector's restarts do not affect the delivery of the already collected logs.
-
-A complete example is provided bellow:
-
-```yaml
-receivers:
-  filelog:
-    include: [/var/log/busybox/simple.log]
-    storage: file_storage/filelogreceiver
-
-extensions:
-  file_storage/filelogreceiver:
-    directory: /var/lib/otelcol/file_storage/receiver
-  file_storage/otlpoutput:
-    directory: /var/lib/otelcol/file_storage/output
-
-service:
-  extensions: [file_storage/filelogreceiver, file_storage/otlpoutput]
-  pipelines:
-    logs:
-      receivers: [filelog]
-      exporters: [otlp/custom]
-      processors: []
-
-exporters:
-  otlp/custom:
-    endpoint: http://0.0.0.0:4242
-    sending_queue:
-      storage: file_storage/otlpoutput
-```
+A complete example is provided at the [Fault tolerant log collection example](../../examples/fault-tolerant-logs-collection/README.md)
