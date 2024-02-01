@@ -41,6 +41,7 @@ func TestConnectorStart(t *testing.T) {
 	// Test
 	smp := traceProcessor.(*serviceGraphConnector)
 	err = smp.Start(context.Background(), componenttest.NewNopHost())
+	defer smp.Shutdown(context.Background())
 
 	// Verify
 	assert.NoError(t, err)
