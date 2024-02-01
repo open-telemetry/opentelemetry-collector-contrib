@@ -164,6 +164,8 @@ func (m *Manager) poll(ctx context.Context) {
 			m.Errorw("save offsets", zap.Error(err))
 		}
 	}
+	// rotate at end of every poll()
+	m.rotateFilesets()
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
