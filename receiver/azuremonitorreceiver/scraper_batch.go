@@ -430,7 +430,7 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 
 					if err != nil {
 						s.settings.Logger.Error("failed to get Azure Metrics values data", zap.String("subscription", *subscription.SubscriptionID), zap.String("region", region), zap.String("resourceType", resourceType), zap.Any("metrics", metricsByGrain.metrics[start:end]), zap.Any("resources", resType.resourceIds[start_resources:end_resources]), zap.Error(err))
-						return
+						break
 					}
 
 					for _, metricValues := range response.Values {
