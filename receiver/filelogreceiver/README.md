@@ -153,10 +153,9 @@ The above configuration will read logs from the "simple.log" file. Some examples
 2023-06-20 12:50:00 DEBUG This is a test debug message
 ```
 
-## Fault tolerance, recovery and proper offset tracking
+## Offset tracking
 
 `storage` setting allows to define the proper storage extension to be used for storing file offsets. 
-File offsets allow the receiver to pick up where it left off in the case of a collector restart. 
-If no storage extension is used, the receiver will manage offsets in memory only.
-
-A complete example is provided at the [Fault tolerant log collection example](../../examples/fault-tolerant-logs-collection/README.md)
+While the storage parameter can ensure that log files are consumed accurately, it is possible that
+logs are dropped while moving downstream through other components in the collector.
+For additional resiliency, see [Fault tolerant log collection example](../../examples/fault-tolerant-logs-collection/README.md)
