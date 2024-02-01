@@ -10,7 +10,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	"os"
 	"os/exec"
 	"strconv"
 	"testing"
@@ -72,17 +71,6 @@ func teardown(cfg SplunkContainerConfig) {
 	}
 	fmt.Printf("Removed Docker image: %s\n", splunkImage)
 	fmt.Printf("Command output:\n%s\n", output)
-}
-
-func TestMain(m *testing.M) {
-	splunkContCfg := setup()
-
-	// Run the tests
-	code := m.Run()
-
-	teardown(splunkContCfg)
-	// Exit with the test result code
-	os.Exit(code)
 }
 
 func createInsecureClient() *http.Client {
@@ -223,6 +211,9 @@ func prepareTracesData(index string, source string, sourcetype string) ptrace.Tr
 }
 
 func TestSplunkHecExporterEventsToSplunk(t *testing.T) {
+	splunkContCfg := setup()
+	defer teardown(splunkContCfg)
+
 	logger := zaptest.NewLogger(t)
 	logger.Info("Test -> Splunk running at:", zap.String("host", integrationtestutils.GetConfigVariable("HOST")),
 		zap.String("uiPort", integrationtestutils.GetConfigVariable("UI_PORT")),
@@ -266,6 +257,9 @@ func TestSplunkHecExporterEventsToSplunk(t *testing.T) {
 }
 
 func TestSplunkHecExporterEventsToSplunkNonDefaultIndex(t *testing.T) {
+	splunkContCfg := setup()
+	defer teardown(splunkContCfg)
+
 	logger := zaptest.NewLogger(t)
 	logger.Info("Test -> Splunk running at:", zap.String("host", integrationtestutils.GetConfigVariable("HOST")),
 		zap.String("uiPort", integrationtestutils.GetConfigVariable("UI_PORT")),
@@ -315,6 +309,9 @@ func TestSplunkHecExporterEventsToSplunkNonDefaultIndex(t *testing.T) {
 }
 
 func TestSplunkHecExporterMetricsToSplunk(t *testing.T) {
+	splunkContCfg := setup()
+	defer teardown(splunkContCfg)
+
 	logger := zaptest.NewLogger(t)
 	logger.Info("Test -> Splunk running at:", zap.String("host", integrationtestutils.GetConfigVariable("HOST")),
 		zap.String("uiPort", integrationtestutils.GetConfigVariable("UI_PORT")),
@@ -350,6 +347,9 @@ func TestSplunkHecExporterMetricsToSplunk(t *testing.T) {
 }
 
 func TestSplunkHecExporterTracesToSplunk(t *testing.T) {
+	splunkContCfg := setup()
+	defer teardown(splunkContCfg)
+
 	logger := zaptest.NewLogger(t)
 	logger.Info("Test -> Splunk running at:", zap.String("host", integrationtestutils.GetConfigVariable("HOST")),
 		zap.String("uiPort", integrationtestutils.GetConfigVariable("UI_PORT")),
