@@ -450,9 +450,7 @@ func (s *scraper) scrapeAndAppendSignalsPendingMetric(ctx context.Context, now p
 }
 
 func (s *scraper) scrapeAndAppendSystemProcessesCreated(ctx context.Context, now pcommon.Timestamp, data aggregateProcessMetadata) {
-	if s.config.MetricsBuilderConfig.Metrics.SystemProcessesCreated.Enabled {
-		s.mb.RecordSystemProcessesCreatedDataPoint(now, data.processesCreated)
-	}
+	s.mb.RecordSystemProcessesCreatedDataPoint(now, data.processesCreated)
 }
 
 func (s *scraper) scrapeAndAppendSystemProcessesCount(ctx context.Context, now pcommon.Timestamp, data aggregateProcessMetadata) {
