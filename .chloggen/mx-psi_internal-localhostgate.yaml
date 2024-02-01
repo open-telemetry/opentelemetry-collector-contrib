@@ -27,6 +27,7 @@ subtext: |
     - receiver/influxdb
     - receiver/zookeeper
     - receiver/signalfx
+    - receiver/jaeger
     - receiver/skywalking
 
 # If your change doesn't affect end users or the exported elements of any package,
