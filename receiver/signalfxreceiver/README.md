@@ -30,6 +30,7 @@ The following settings are required:
 
 - `endpoint` (default = `0.0.0.0:9943`): Address and port that the SignalFx
   receiver should bind to.
+  The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:9943. This will become the default in a future release.
 
 The following settings are optional:
 
