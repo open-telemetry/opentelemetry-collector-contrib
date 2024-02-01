@@ -111,6 +111,8 @@ func TestValidateMetricDuplicates(t *testing.T) {
 		"container.cpu.utilization": {"docker_stats", "kubeletstats"},
 		"container.memory.rss":      {"docker_stats", "kubeletstats"},
 		"container.uptime":          {"docker_stats", "kubeletstats"},
+		"system.processes.created":  {"hostmetricsreceiver/process", "hostmetricsreceiver/processes"},
+		"system.processes.count":    {"hostmetricsreceiver/process", "hostmetricsreceiver/processes"},
 	}
 	allMetrics := map[string][]string{}
 	err := filepath.Walk("../../receiver", func(path string, info fs.FileInfo, err error) error {
