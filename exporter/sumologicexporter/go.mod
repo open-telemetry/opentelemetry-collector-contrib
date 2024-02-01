@@ -3,10 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumolo
 go 1.20
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.93.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.93.1-0.20240130182548-89388addcc7f
 	go.opentelemetry.io/collector/config/confighttp v0.93.1-0.20240130182548-89388addcc7f
 	go.opentelemetry.io/collector/config/configretry v0.93.1-0.20240130182548-89388addcc7f
+	go.opentelemetry.io/collector/confmap v0.93.1-0.20240130182548-89388addcc7f
 	go.opentelemetry.io/collector/consumer v0.93.1-0.20240130182548-89388addcc7f
 	go.opentelemetry.io/collector/exporter v0.93.1-0.20240130182548-89388addcc7f
 	go.opentelemetry.io/collector/pdata v1.0.2-0.20240130181942-9c7177496fd5
@@ -50,10 +52,10 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.93.1-0.20240130182548-89388addcc7f // indirect
 	go.opentelemetry.io/collector/config/configtls v0.93.1-0.20240130182548-89388addcc7f // indirect
 	go.opentelemetry.io/collector/config/internal v0.93.1-0.20240130182548-89388addcc7f // indirect
-	go.opentelemetry.io/collector/confmap v0.93.1-0.20240130182548-89388addcc7f // indirect
 	go.opentelemetry.io/collector/extension v0.93.1-0.20240130182548-89388addcc7f // indirect
 	go.opentelemetry.io/collector/extension/auth v0.93.1-0.20240130182548-89388addcc7f // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240130181942-9c7177496fd5 // indirect
+	go.opentelemetry.io/collector/receiver v0.93.1-0.20240130182548-89388addcc7f // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0 // indirect
 	go.opentelemetry.io/otel v1.22.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.0 // indirect
@@ -75,3 +77,11 @@ retract (
 	v0.76.1
 	v0.65.0
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
