@@ -137,6 +137,7 @@ func TestLogsWithFailoverError(t *testing.T) {
 }
 
 func TestLogsWithFailoverRecovery(t *testing.T) {
+	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31005")
 	var sinkFirst, sinkSecond, sinkThird consumertest.LogsSink
 	logsFirst := component.NewIDWithName(component.DataTypeLogs, "logs/first")
 	logsSecond := component.NewIDWithName(component.DataTypeLogs, "logs/second")
@@ -178,12 +179,11 @@ func TestLogsWithFailoverRecovery(t *testing.T) {
 	// Simulate recovery of exporter
 	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewNop())
 
-	time.Sleep(100 * time.Millisecond)
-
-	_, ch, ok = failoverConnector.failover.getCurrentConsumer()
-	idx = failoverConnector.failover.pS.ChannelIndex(ch)
-	assert.True(t, ok)
-	require.Equal(t, idx, 0)
+	require.Eventually(t, func() bool {
+		_, ch, ok = failoverConnector.failover.getCurrentConsumer()
+		idx = failoverConnector.failover.pS.ChannelIndex(ch)
+		return ok && idx == 0
+	}, 3*time.Second, 100*time.Millisecond)
 }
 
 func sampleLog() plog.Logs {

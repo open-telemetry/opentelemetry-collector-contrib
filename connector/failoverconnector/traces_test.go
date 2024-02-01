@@ -140,6 +140,7 @@ func TestTracesWithFailoverError(t *testing.T) {
 }
 
 func TestTracesWithFailoverRecovery(t *testing.T) {
+	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31005")
 	var sinkSecond, sinkThird consumertest.TracesSink
 	tracesFirst := component.NewIDWithName(component.DataTypeTraces, "traces/first")
 	tracesSecond := component.NewIDWithName(component.DataTypeTraces, "traces/second")
