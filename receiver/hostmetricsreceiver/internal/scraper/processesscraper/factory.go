@@ -37,7 +37,7 @@ func (f *Factory) CreateMetricsScraper(
 	settings receiver.CreateSettings,
 	config internal.Config,
 ) (scraperhelper.Scraper, error) {
-	settings.Logger.Warn(`processes scraping is deprecated, system.processes.created and system.processes.count metrics have been moved to the process scraper.
+	settings.Logger.Warn(`processes scraping will soon be deprecated, system.processes.created and system.processes.count metrics have been moved to the process scraper.
 	To enable them, apply the following config:
 
 	scrapers:
