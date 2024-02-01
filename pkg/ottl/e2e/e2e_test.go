@@ -518,6 +518,44 @@ func Test_e2e_converters(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
 		},
+		{
+			statement: `set(attributes["test"], "\\")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "\\")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "\\\\")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "\\\\")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "\\\\\\")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "\\\\\\")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "\\\\\\\\")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "\\\\\\\\")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "\"")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", `"`)
+			},
+		},
+		{
+			statement: `keep_keys(attributes["foo"], ["\\", "bar"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				// keep_keys should see two arguments
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("foo")
+				m.PutStr("bar", "pass")
+			},
+		},
 	}
 
 	for _, tt := range tests {

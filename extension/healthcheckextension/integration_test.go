@@ -16,12 +16,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func Test_SimpleHealthCheck(t *testing.T) {
 	f := NewFactory()
-	port := testbed.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = fmt.Sprintf("localhost:%d", port)
 	e, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
