@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 	// Endpoint and Token do not have a default value so set them directly.
 	defaultCfg := createDefaultConfig().(*Config)
 	defaultCfg.Token = "00000000-0000-0000-0000-0000000000000"
-	defaultCfg.HTTPClientSettings.Endpoint = "https://splunk:8088/services/collector"
+	defaultCfg.HTTPClientConfig.Endpoint = "https://splunk:8088/services/collector"
 
 	hundred := 100
 	idleConnTimeout := 10 * time.Second
@@ -60,7 +60,7 @@ func TestLoadConfig(t *testing.T) {
 				MaxContentLengthLogs:    2 * 1024 * 1024,
 				MaxContentLengthMetrics: 2 * 1024 * 1024,
 				MaxContentLengthTraces:  2 * 1024 * 1024,
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Timeout:  10 * time.Second,
 					Endpoint: "https://splunk:8088/services/collector",
 					TLSSetting: configtls.TLSClientSetting{
@@ -149,7 +149,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "bad url",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HTTPClientSettings.Endpoint = "cache_object:foo/bar"
+				cfg.HTTPClientConfig.Endpoint = "cache_object:foo/bar"
 				cfg.Token = "foo"
 				return cfg
 			}(),
@@ -159,7 +159,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "missing token",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HTTPClientSettings.Endpoint = "http://example.com"
+				cfg.HTTPClientConfig.Endpoint = "http://example.com"
 				return cfg
 			}(),
 			wantErr: "requires a non-empty \"token\"",
@@ -168,7 +168,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "max default content-length for logs",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HTTPClientSettings.Endpoint = "http://foo_bar.com"
+				cfg.HTTPClientConfig.Endpoint = "http://foo_bar.com"
 				cfg.MaxContentLengthLogs = maxContentLengthLogsLimit + 1
 				cfg.Token = "foo"
 				return cfg
@@ -179,7 +179,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "max default content-length for metrics",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HTTPClientSettings.Endpoint = "http://foo_bar.com"
+				cfg.HTTPClientConfig.Endpoint = "http://foo_bar.com"
 				cfg.MaxContentLengthMetrics = maxContentLengthMetricsLimit + 1
 				cfg.Token = "foo"
 				return cfg
@@ -190,7 +190,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "max default content-length for traces",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HTTPClientSettings.Endpoint = "http://foo_bar.com"
+				cfg.HTTPClientConfig.Endpoint = "http://foo_bar.com"
 				cfg.MaxContentLengthTraces = maxContentLengthTracesLimit + 1
 				cfg.Token = "foo"
 				return cfg
@@ -201,7 +201,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "max default event-size",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HTTPClientSettings.Endpoint = "http://foo_bar.com"
+				cfg.HTTPClientConfig.Endpoint = "http://foo_bar.com"
 				cfg.MaxEventSize = maxMaxEventSize + 1
 				cfg.Token = "foo"
 				return cfg

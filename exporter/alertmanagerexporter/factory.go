@@ -33,7 +33,7 @@ func createDefaultConfig() component.Config {
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		BackoffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		HTTPClientConfig: confighttp.HTTPClientConfig{
 			Endpoint:        "http://localhost:9093",
 			Timeout:         30 * time.Second,
 			Headers:         map[string]configopaque.String{},

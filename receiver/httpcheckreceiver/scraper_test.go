@@ -43,7 +43,7 @@ func TestScraperStart(t *testing.T) {
 				cfg: &Config{
 					Targets: []*targetConfig{
 						{
-							HTTPClientSettings: confighttp.HTTPClientSettings{
+							HTTPClientConfig: confighttp.HTTPClientConfig{
 								Endpoint: "http://example.com",
 								TLSSetting: configtls.TLSClientSetting{
 									TLSSetting: configtls.TLSSetting{
@@ -64,7 +64,7 @@ func TestScraperStart(t *testing.T) {
 				cfg: &Config{
 					Targets: []*targetConfig{
 						{
-							HTTPClientSettings: confighttp.HTTPClientSettings{
+							HTTPClientConfig: confighttp.HTTPClientConfig{
 								TLSSetting: configtls.TLSClientSetting{},
 								Endpoint:   "http://example.com",
 							},
@@ -159,7 +159,7 @@ func TestScaperScrape(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			if len(tc.endpoint) > 0 {
 				cfg.Targets = []*targetConfig{{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					HTTPClientConfig: confighttp.HTTPClientConfig{
 						Endpoint: tc.endpoint,
 					}},
 				}
@@ -167,7 +167,7 @@ func TestScaperScrape(t *testing.T) {
 				ms := newMockServer(t, tc.expectedResponse)
 				defer ms.Close()
 				cfg.Targets = []*targetConfig{{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					HTTPClientConfig: confighttp.HTTPClientConfig{
 						Endpoint: ms.URL,
 					}},
 				}
@@ -205,12 +205,12 @@ func TestScraperMultipleTargets(t *testing.T) {
 	defer ms2.Close()
 
 	cfg.Targets = append(cfg.Targets, &targetConfig{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		HTTPClientConfig: confighttp.HTTPClientConfig{
 			Endpoint: ms1.URL,
 		},
 	})
 	cfg.Targets = append(cfg.Targets, &targetConfig{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		HTTPClientConfig: confighttp.HTTPClientConfig{
 			Endpoint: ms2.URL,
 		},
 	})

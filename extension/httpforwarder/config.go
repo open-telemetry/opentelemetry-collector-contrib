@@ -11,8 +11,8 @@ import (
 type Config struct {
 
 	// Ingress holds config settings for HTTP server listening for requests.
-	Ingress confighttp.HTTPServerSettings `mapstructure:"ingress"`
+	Ingress confighttp.HTTPServerConfig `mapstructure:"ingress"`
 
 	// Egress holds config settings to use for forwarded requests.
-	Egress confighttp.HTTPClientSettings `mapstructure:"egress"`
+	Egress confighttp.HTTPClientConfig `mapstructure:"egress"`
 }
