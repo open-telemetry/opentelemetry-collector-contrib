@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 				AddMetricSuffixes: false,
 				Namespace:         "test-space",
 				ExternalLabels:    map[string]string{"key1": "value1", "key2": "value2"},
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				HTTPClientConfig: confighttp.HTTPClientConfig{
 					Endpoint: "localhost:8888",
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{

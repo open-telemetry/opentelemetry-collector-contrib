@@ -36,6 +36,17 @@ func TestParserInvalidType(t *testing.T) {
 	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as json array")
 }
 
+func TestParserByteFailureHeadersMismatch(t *testing.T) {
+	cfg := NewConfigWithID("test")
+	cfg.Header = "name,sev,msg"
+	op, err := cfg.Build(testutil.Logger(t))
+	require.NoError(t, err)
+	parser := op.(*Parser)
+	_, err = parser.parse("[\"stanza\",\"INFO\",\"started agent\", 42, true]")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "wrong number of fields: expected 3, found 5")
+}
+
 func TestParserJarray(t *testing.T) {
 	cases := []struct {
 		name             string
@@ -188,6 +199,32 @@ func TestParserJarray(t *testing.T) {
 			[]entry.Entry{
 				{
 					Body: []any{"stanza", "Evergreen,49508", int64(1), "555-5555", "agent"},
+				},
+			},
+			false,
+			false,
+		},
+		{
+			"parse-as-attributes-with-header",
+			func(p *Config) {
+				p.ParseTo = entry.RootableField{Field: entry.NewAttributeField()}
+				p.Header = "origin,sev,message,count,isBool"
+			},
+			[]entry.Entry{
+				{
+					Body: "[\"stanza\",\"INFO\",\"started agent\", 42, true]",
+				},
+			},
+			[]entry.Entry{
+				{
+					Body: "[\"stanza\",\"INFO\",\"started agent\", 42, true]",
+					Attributes: map[string]any{
+						"origin":  "stanza",
+						"sev":     "INFO",
+						"message": "started agent",
+						"count":   int64(42),
+						"isBool":  true,
+					},
 				},
 			},
 			false,

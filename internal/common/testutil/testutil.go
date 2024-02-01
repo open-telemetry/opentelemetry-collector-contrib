@@ -7,6 +7,7 @@ import (
 	"net"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -132,4 +133,15 @@ func SetFeatureGateForTest(t testing.TB, gate *featuregate.Gate, enabled bool) f
 	return func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), originalValue))
 	}
+}
+
+func GetAvailablePort(t testing.TB) int {
+	endpoint := GetAvailableLocalAddress(t)
+	_, port, err := net.SplitHostPort(endpoint)
+	require.NoError(t, err)
+
+	portInt, err := strconv.Atoi(port)
+	require.NoError(t, err)
+
+	return portInt
 }

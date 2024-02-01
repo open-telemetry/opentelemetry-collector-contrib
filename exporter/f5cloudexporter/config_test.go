@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 		NumConsumers: 2,
 		QueueSize:    10,
 	}
-	otlphttpCfg.HTTPClientSettings = confighttp.HTTPClientSettings{
+	otlphttpCfg.HTTPClientConfig = confighttp.HTTPClientConfig{
 		Endpoint:        "https://f5cloud",
 		ReadBufferSize:  123,
 		WriteBufferSize: 345,
@@ -66,8 +66,8 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}
 	// testing function equality is not supported in Go hence these will be ignored for this test
-	expectedCfg.HTTPClientSettings.CustomRoundTripper = nil
-	actualCfg.HTTPClientSettings.CustomRoundTripper = nil
+	expectedCfg.HTTPClientConfig.CustomRoundTripper = nil
+	actualCfg.HTTPClientConfig.CustomRoundTripper = nil
 	assert.Equal(t, expectedCfg, actualCfg)
 }
 

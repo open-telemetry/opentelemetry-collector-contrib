@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -26,8 +27,8 @@ func TestIdleMode(t *testing.T) {
 	resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
 	require.NoError(t, err)
 
-	sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
-	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+	sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+	receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 	cfg := createConfigYaml(t, sender, receiver, resultDir, nil, nil)
 	cp := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
@@ -73,8 +74,8 @@ func TestBallastMemory(t *testing.T) {
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("ballast-size-%d", test.ballastSize), func(t *testing.T) {
-			sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
-			receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+			sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+			receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 			ballastCfg := createConfigYaml(
 				t, sender, receiver, resultDir, nil,
 				map[string]string{"memory_ballast": fmt.Sprintf(ballastConfig, test.ballastSize)})

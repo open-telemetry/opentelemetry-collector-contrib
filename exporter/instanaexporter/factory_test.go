@@ -26,7 +26,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		HTTPClientConfig: confighttp.HTTPClientConfig{
 			Endpoint:        "",
 			Timeout:         30 * time.Second,
 			Headers:         map[string]configopaque.String{},
@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 
 		require.NoError(t, err)
 		assert.Equal(t, &Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			HTTPClientConfig: confighttp.HTTPClientConfig{
 				Endpoint:        "https://example.com/api/",
 				Timeout:         30 * time.Second,
 				Headers:         map[string]configopaque.String{},
@@ -74,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 
 		require.NoError(t, err)
 		assert.Equal(t, &Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			HTTPClientConfig: confighttp.HTTPClientConfig{
 				Endpoint:        "https://example.com/api/",
 				Timeout:         30 * time.Second,
 				Headers:         map[string]configopaque.String{},
@@ -100,7 +100,7 @@ func TestLoadConfig(t *testing.T) {
 
 		require.NoError(t, err)
 		assert.Equal(t, &Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			HTTPClientConfig: confighttp.HTTPClientConfig{
 				Endpoint:        "https://example.com/api/",
 				Timeout:         30 * time.Second,
 				Headers:         map[string]configopaque.String{},

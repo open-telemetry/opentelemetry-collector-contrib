@@ -43,9 +43,9 @@ func createDefaultConfig() component.Config {
 		Client:             DefaultClient,
 		GraphiteTemplate:   DefaultGraphiteTemplate,
 
-		HTTPClientSettings: createDefaultHTTPClientSettings(),
-		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
-		QueueSettings:      qs,
+		HTTPClientConfig: createDefaultHTTPClientConfig(),
+		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+		QueueSettings:    qs,
 	}
 }
 

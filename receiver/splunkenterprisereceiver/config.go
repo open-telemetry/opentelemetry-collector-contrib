@@ -22,7 +22,7 @@ var (
 )
 
 type Config struct {
-	confighttp.HTTPClientSettings           `mapstructure:",squash"`
+	confighttp.HTTPClientConfig             `mapstructure:",squash"`
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 }
@@ -46,7 +46,7 @@ func (cfg *Config) Validate() (errors error) {
 		}
 	}
 
-	if cfg.HTTPClientSettings.Auth.AuthenticatorID.Name() == "" {
+	if cfg.HTTPClientConfig.Auth.AuthenticatorID.Name() == "" {
 		errors = multierr.Append(errors, errMissingAuthExtension)
 	}
 

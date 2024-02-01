@@ -53,6 +53,15 @@ func TestConfig(t *testing.T) {
 					return p
 				}(),
 			},
+			{
+				Name: "parse_with_header_as_attributes",
+				Expect: func() *Config {
+					p := NewConfig()
+					p.ParseTo = entry.RootableField{Field: entry.NewAttributeField()}
+					p.Header = "A,B,C"
+					return p
+				}(),
+			},
 		},
 	}.Run(t)
 }
