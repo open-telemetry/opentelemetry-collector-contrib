@@ -68,7 +68,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 func (m *Manager) closePreviousFiles() {
 	// m.previousPollFiles -> m.knownFiles[-1]
 
-	for _, r := range m.previousPollFiles.Reset() {
+	for r, _ := m.previousPollFiles.Pop(); r != nil; r, _ = m.previousPollFiles.Pop() {
 		m.knownFiles[len(m.knownFiles)-1].Add(r.Close())
 	}
 }

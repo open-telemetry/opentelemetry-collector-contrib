@@ -45,18 +45,15 @@ func (set *Fileset[T]) Get() []T {
 	return set.readers
 }
 
-func (set *Fileset[T]) PopN(n int) ([]T, error) {
+func (set *Fileset[T]) Pop() (T, error) {
 	// remove top n elements and return them
-	if n <= 0 {
-		return nil, errors.New("n should be positive")
+	var val T
+	if set.Len() < 1 {
+		return val, errFilesetEmpty
 	}
-	if len(set.readers) == 0 {
-		return nil, errFilesetEmpty
-	}
-	arr := make([]T, n)
-	copy(arr, set.readers[:n])
-	set.readers = slices.Delete(set.readers, 0, n)
-	return arr, nil
+	r := set.readers[0]
+	set.readers = slices.Delete(set.readers, 0, 1)
+	return r, nil
 }
 
 func (set *Fileset[T]) Add(readers ...T) {

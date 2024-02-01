@@ -30,15 +30,14 @@ func push[T Matchable](ele ...T) func(t *testing.T, fileset *Fileset[T]) {
 	}
 }
 
-func pop[T Matchable](n int, expectedErr error, expectedElemets ...T) func(t *testing.T, fileset *Fileset[T]) {
+func pop[T Matchable](expectedErr error, expectedElemet T) func(t *testing.T, fileset *Fileset[T]) {
 	return func(t *testing.T, fileset *Fileset[T]) {
 		pr := fileset.Len()
-		el, err := fileset.PopN(n)
+		el, err := fileset.Pop()
 		if expectedErr == nil {
 			require.NoError(t, err)
-			require.ElementsMatch(t, el, expectedElemets)
-			require.Equal(t, len(el), n)
-			require.Equal(t, pr-n, fileset.Len())
+			require.Equal(t, el, expectedElemet)
+			require.Equal(t, pr-1, fileset.Len())
 		} else {
 			require.ErrorIs(t, err, expectedErr)
 		}
@@ -105,12 +104,13 @@ func TestFilesetReader(t *testing.T) {
 			name: "test_pop",
 			ops: []func(t *testing.T, fileset *Fileset[*reader.Reader]){
 				push(newReader([]byte("ABCDEF")), newReader([]byte("QWERT"))),
-				pop(2, nil, newReader([]byte("ABCDEF")), newReader([]byte("QWERT"))),
-				pop(1, errFilesetEmpty, newReader([]byte(""))),
+				pop(nil, newReader([]byte("ABCDEF"))),
+				pop(nil, newReader([]byte("QWERT"))),
+				pop(errFilesetEmpty, newReader([]byte(""))),
 
 				reset(newReader([]byte("XYZ"))),
-				pop(1, nil, newReader([]byte("XYZ"))),
-				pop(1, errFilesetEmpty, newReader([]byte(""))),
+				pop(nil, newReader([]byte("XYZ"))),
+				pop(errFilesetEmpty, newReader([]byte(""))),
 			},
 		},
 	}
