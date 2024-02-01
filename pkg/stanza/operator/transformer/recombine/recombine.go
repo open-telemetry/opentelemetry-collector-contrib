@@ -273,12 +273,11 @@ func (r *Transformer) matchIndicatesLast() bool {
 func (r *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source string) {
 	batch, ok := r.batchMap[source]
 	if !ok {
-		batch = r.addNewBatch(source, e)
 		if len(r.batchMap) >= r.maxSources {
-			r.Error("Batched source exceeds max source size. Flushing all batched logs. Consider increasing max_sources parameter")
-			r.flushUncombined(context.Background())
-			return
+			r.Error("Too many sources. Flushing all batched logs. Consider increasing max_sources parameter")
+			r.flushAllSources(ctx)
 		}
+		batch = r.addNewBatch(source, e)
 	} else {
 		// If the length of the batch is 0, this batch was flushed previously due to triggering size limit.
 		// In this case, the firstEntryObservedTime should be updated to reset the timeout
@@ -307,19 +306,6 @@ func (r *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source str
 		}
 	}
 
-}
-
-// flushUncombined flushes all the logs in the batch individually to the
-// next output in the pipeline. This is only used when there is an error
-// or at shutdown to avoid dropping the logs.
-func (r *Transformer) flushUncombined(ctx context.Context) {
-	for source := range r.batchMap {
-		for _, entry := range r.batchMap[source].entries {
-			r.Write(ctx, entry)
-		}
-		r.removeBatch(source)
-	}
-	r.ticker.Reset(r.forceFlushTimeout)
 }
 
 // flushAllSources flushes all sources.
