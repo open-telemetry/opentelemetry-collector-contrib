@@ -9,6 +9,6 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 const enableProcessesCount = false
 const enableProcessesCreated = false
 
-func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
-	return processesMetadata{}, nil
+func (s *scraper) getProcessesMetadata() (aggregateProcessMetadata, error) {
+	return aggregateProcessMetadata{}, nil
 }
