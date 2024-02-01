@@ -142,3 +142,16 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
 	return cfg
 }
+
+func TestDefaultMetricsBuilderConfigAllDisabled(t *testing.T) {
+	want := MetricsConfig{
+		DefaultMetric:            MetricConfig{Enabled: false},
+		DefaultMetricToBeRemoved: MetricConfig{Enabled: false},
+		OptionalMetric:           MetricConfig{Enabled: false},
+		OptionalMetricEmptyUnit:  MetricConfig{Enabled: false},
+	}
+	cfg := DefaultMetricsBuilderConfigAllDisabled()
+	if diff := cmp.Diff(want, cfg, cmpopts.IgnoreUnexported(MetricConfig{})); diff != "" {
+		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+	}
+}

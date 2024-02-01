@@ -120,3 +120,20 @@ func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
+
+func DefaultMetricsBuilderConfigAllDisabled() MetricsConfig {
+	return MetricsConfig{
+		DefaultMetric: MetricConfig{
+			Enabled: false,
+		},
+		DefaultMetricToBeRemoved: MetricConfig{
+			Enabled: false,
+		},
+		OptionalMetric: MetricConfig{
+			Enabled: false,
+		},
+		OptionalMetricEmptyUnit: MetricConfig{
+			Enabled: false,
+		},
+	}
+}

@@ -100,4 +100,14 @@ func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		{{- end }}
 	}
 }
+
+func DefaultMetricsBuilderConfigAllDisabled() MetricsConfig {
+	return MetricsConfig{
+		{{- range $name, $metric := .Metrics }}
+		{{ $name.Render }}: MetricConfig{
+			Enabled: false,
+		},
+		{{- end }}
+	}
+}
 {{- end }}
