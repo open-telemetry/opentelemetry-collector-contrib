@@ -29,9 +29,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(metadata.Type),
 			expected: &Config{
-				HTTPServerConfig: &confighttp.HTTPServerConfig{Endpoint: ":5778"},
+				HTTPServerConfig: &confighttp.HTTPServerConfig{Endpoint: "0.0.0.0:5778"},
 				GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
-					Endpoint:  ":14250",
+					Endpoint:  "0.0.0.0:14250",
 					Transport: "tcp",
 				}},
 				Source: Source{
@@ -44,9 +44,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
-				HTTPServerConfig: &confighttp.HTTPServerConfig{Endpoint: ":5778"},
+				HTTPServerConfig: &confighttp.HTTPServerConfig{Endpoint: "0.0.0.0:5778"},
 				GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
-					Endpoint:  ":14250",
+					Endpoint:  "0.0.0.0:14250",
 					Transport: "tcp",
 				}},
 				Source: Source{
