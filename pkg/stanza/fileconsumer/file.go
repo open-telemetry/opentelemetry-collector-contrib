@@ -42,6 +42,10 @@ func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
 
+	if _, err := m.fileMatcher.MatchFiles(); err != nil {
+		m.Warnf("finding files: %v", err)
+	}
+
 	if persister != nil {
 		m.persister = persister
 		offsets, err := checkpoint.Load(ctx, m.persister)
