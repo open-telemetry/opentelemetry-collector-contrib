@@ -6,6 +6,8 @@ package proxy // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 )
 
 // Config is the configuration for the local TCP proxy server.
@@ -43,7 +45,7 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		TCPAddr: confignet.TCPAddr{
-			Endpoint: "0.0.0.0:2000",
+			Endpoint: localhostgate.EndpointForPort(2000),
 		},
 		ProxyAddress: "",
 		TLSSetting: configtls.TLSClientSetting{

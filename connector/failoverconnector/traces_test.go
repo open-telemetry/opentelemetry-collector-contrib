@@ -50,12 +50,11 @@ func TestTracesRegisterConsumers(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
-	tc, idx, ok := failoverConnector.failover.getCurrentConsumer()
+	tc, _, ok := failoverConnector.failover.getCurrentConsumer()
 	tc1 := failoverConnector.failover.GetConsumerAtIndex(1)
 	tc2 := failoverConnector.failover.GetConsumerAtIndex(2)
 
 	assert.True(t, ok)
-	require.Equal(t, idx, 0)
 	require.Implements(t, (*consumer.Traces)(nil), tc)
 	require.Implements(t, (*consumer.Traces)(nil), tc1)
 	require.Implements(t, (*consumer.Traces)(nil), tc2)
@@ -63,9 +62,11 @@ func TestTracesRegisterConsumers(t *testing.T) {
 
 func TestTracesWithValidFailover(t *testing.T) {
 	var sinkSecond, sinkThird consumertest.TracesSink
+
 	tracesFirst := component.NewIDWithName(component.DataTypeTraces, "traces/first")
 	tracesSecond := component.NewIDWithName(component.DataTypeTraces, "traces/second")
 	tracesThird := component.NewIDWithName(component.DataTypeTraces, "traces/third")
+	noOp := consumertest.NewNop()
 
 	cfg := &Config{
 		PipelinePriority: [][]component.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
@@ -75,7 +76,7 @@ func TestTracesWithValidFailover(t *testing.T) {
 	}
 
 	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
-		tracesFirst:  new(consumertest.TracesSink),
+		tracesFirst:  noOp,
 		tracesSecond: &sinkSecond,
 		tracesThird:  &sinkThird,
 	})
@@ -94,7 +95,8 @@ func TestTracesWithValidFailover(t *testing.T) {
 	tr := sampleTrace()
 
 	require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
-	_, idx, ok := failoverConnector.failover.getCurrentConsumer()
+	_, ch, ok := failoverConnector.failover.getCurrentConsumer()
+	idx := failoverConnector.failover.pS.ChannelIndex(ch)
 	assert.True(t, ok)
 	require.Equal(t, idx, 1)
 }
@@ -104,6 +106,7 @@ func TestTracesWithFailoverError(t *testing.T) {
 	tracesFirst := component.NewIDWithName(component.DataTypeTraces, "traces/first")
 	tracesSecond := component.NewIDWithName(component.DataTypeTraces, "traces/second")
 	tracesThird := component.NewIDWithName(component.DataTypeTraces, "traces/third")
+	noOp := consumertest.NewNop()
 
 	cfg := &Config{
 		PipelinePriority: [][]component.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
@@ -113,7 +116,7 @@ func TestTracesWithFailoverError(t *testing.T) {
 	}
 
 	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
-		tracesFirst:  new(consumertest.TracesSink),
+		tracesFirst:  noOp,
 		tracesSecond: &sinkSecond,
 		tracesThird:  &sinkThird,
 	})
@@ -141,6 +144,7 @@ func TestTracesWithFailoverRecovery(t *testing.T) {
 	tracesFirst := component.NewIDWithName(component.DataTypeTraces, "traces/first")
 	tracesSecond := component.NewIDWithName(component.DataTypeTraces, "traces/second")
 	tracesThird := component.NewIDWithName(component.DataTypeTraces, "traces/third")
+	noOp := consumertest.NewNop()
 
 	cfg := &Config{
 		PipelinePriority: [][]component.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
@@ -150,7 +154,7 @@ func TestTracesWithFailoverRecovery(t *testing.T) {
 	}
 
 	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
-		tracesFirst:  new(consumertest.TracesSink),
+		tracesFirst:  noOp,
 		tracesSecond: &sinkSecond,
 		tracesThird:  &sinkThird,
 	})
@@ -169,7 +173,8 @@ func TestTracesWithFailoverRecovery(t *testing.T) {
 	tr := sampleTrace()
 
 	require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
-	_, idx, ok := failoverConnector.failover.getCurrentConsumer()
+	_, ch, ok := failoverConnector.failover.getCurrentConsumer()
+	idx := failoverConnector.failover.pS.ChannelIndex(ch)
 
 	assert.True(t, ok)
 	require.Equal(t, idx, 1)
@@ -179,7 +184,8 @@ func TestTracesWithFailoverRecovery(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	_, idx, ok = failoverConnector.failover.getCurrentConsumer()
+	_, ch, ok = failoverConnector.failover.getCurrentConsumer()
+	idx = failoverConnector.failover.pS.ChannelIndex(ch)
 	assert.True(t, ok)
 	require.Equal(t, idx, 0)
 }
