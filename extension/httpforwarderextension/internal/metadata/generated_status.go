@@ -8,18 +8,15 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-var (
-	Type = component.MustNewType("http_forwarder")
-)
-
 const (
-	ExtensionStability = component.StabilityLevelDeprecated
+	Type               = "http_forwarder"
+	ExtensionStability = component.StabilityLevelBeta
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol")
+	return settings.MeterProvider.Meter("otelcol/httpforwarder")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol")
+	return settings.TracerProvider.Tracer("otelcol/httpforwarder")
 }
