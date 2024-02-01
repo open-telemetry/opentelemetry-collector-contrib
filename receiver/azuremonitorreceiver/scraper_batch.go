@@ -387,15 +387,16 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 		metricsByGrain.metricsValuesUpdated = now
 
 		startTime := now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second * 4) // times 4 because for some resources, data are missing for the very latest timestamp. The processing will keep only the latest timestamp with data.
+		for region := range s.regionsFromSubscriptions[*subscription.SubscriptionID] {
+			clientMetrics := s.GetMetricsBatchValuesClient(region)
 
-		start := 0
-		for start < len(metricsByGrain.metrics) {
+			start := 0
+			for start < len(metricsByGrain.metrics) {
 
-			end := start + s.cfg.MaximumNumberOfMetricsInACall
-			if end > len(metricsByGrain.metrics) {
-				end = len(metricsByGrain.metrics)
-			}
-			for region := range s.regionsFromSubscriptions[*subscription.SubscriptionID] {
+				end := start + s.cfg.MaximumNumberOfMetricsInACall
+				if end > len(metricsByGrain.metrics) {
+					end = len(metricsByGrain.metrics)
+				}
 
 				start_resources := 0
 				for start_resources < len(resType.resourceIds) {
@@ -405,7 +406,6 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 						end_resources = len(resType.resourceIds)
 					}
 
-					clientMetrics := s.GetMetricsBatchValuesClient(region)
 					s.settings.Logger.Info("scrape", zap.String("subscription", *subscription.DisplayName), zap.String("resourceType", resourceType), zap.String("region", region))
 					response, err := clientMetrics.QueryBatch(
 						ctx,
@@ -433,8 +433,6 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 						return
 					}
 
-					start = end
-					start_resources = end_resources
 					for _, metricValues := range response.Values {
 						for _, metric := range metricValues.Values {
 
@@ -470,7 +468,9 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 							}
 						}
 					}
+					start_resources = end_resources
 				}
+				start = end
 			}
 		}
 	}
