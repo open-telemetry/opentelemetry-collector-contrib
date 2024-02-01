@@ -117,7 +117,6 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		batchPool: sync.Pool{
 			New: func() any {
 				return &sourceBatch{
-					entries:    []*entry.Entry{},
 					recombined: &bytes.Buffer{},
 				}
 			},
@@ -156,7 +155,8 @@ type Transformer struct {
 
 // sourceBatch contains the status info of a batch
 type sourceBatch struct {
-	entries                []*entry.Entry
+	baseEntry              *entry.Entry
+	numEntries             int
 	recombined             *bytes.Buffer
 	firstEntryObservedTime time.Time
 }
@@ -279,12 +279,10 @@ func (r *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source str
 		}
 		batch = r.addNewBatch(source, e)
 	} else {
-		// If the length of the batch is 0, this batch was flushed previously due to triggering size limit.
-		// In this case, the firstEntryObservedTime should be updated to reset the timeout
-		if len(batch.entries) == 0 {
-			batch.firstEntryObservedTime = e.ObservedTimestamp
+		batch.numEntries++
+		if r.overwriteWithOldest {
+			batch.baseEntry = e
 		}
-		batch.entries = append(batch.entries, e)
 	}
 
 	// Combine the combineField of each entry in the batch,
@@ -300,7 +298,7 @@ func (r *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source str
 	}
 	batch.recombined.WriteString(s)
 
-	if (r.maxLogSize > 0 && int64(batch.recombined.Len()) > r.maxLogSize) || len(batch.entries) >= r.maxBatchSize {
+	if (r.maxLogSize > 0 && int64(batch.recombined.Len()) > r.maxLogSize) || batch.numEntries >= r.maxBatchSize {
 		if err := r.flushSource(ctx, source); err != nil {
 			r.Errorf("there was error flushing combined logs %s", err)
 		}
@@ -330,28 +328,18 @@ func (r *Transformer) flushSource(ctx context.Context, source string) error {
 		return nil
 	}
 
-	if len(batch.entries) == 0 {
+	if batch.baseEntry == nil {
 		r.removeBatch(source)
 		return nil
 	}
 
-	// Choose which entry we want to keep the rest of the fields from
-	var base *entry.Entry
-	entries := batch.entries
-
-	if r.overwriteWithOldest {
-		base = entries[len(entries)-1]
-	} else {
-		base = entries[0]
-	}
-
 	// Set the recombined field on the entry
-	err := base.Set(r.combineField, batch.recombined.String())
+	err := batch.baseEntry.Set(r.combineField, batch.recombined.String())
 	if err != nil {
 		return err
 	}
 
-	r.Write(ctx, base)
+	r.Write(ctx, batch.baseEntry)
 	r.removeBatch(source)
 	return nil
 }
@@ -359,7 +347,8 @@ func (r *Transformer) flushSource(ctx context.Context, source string) error {
 // addNewBatch creates a new batch for the given source and adds the entry to it.
 func (r *Transformer) addNewBatch(source string, e *entry.Entry) *sourceBatch {
 	batch := r.batchPool.Get().(*sourceBatch)
-	batch.entries = append(batch.entries[:0], e)
+	batch.baseEntry = e
+	batch.numEntries = 1
 	batch.recombined.Reset()
 	batch.firstEntryObservedTime = e.ObservedTimestamp
 	r.batchMap[source] = batch
