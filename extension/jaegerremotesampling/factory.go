@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 )
 
 // NewFactory creates a factory for the jaeger remote sampling extension.
@@ -31,11 +32,11 @@ func NewFactory() extension.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		HTTPServerConfig: &confighttp.HTTPServerConfig{
-			Endpoint: ":5778",
+			Endpoint: localhostgate.EndpointForPort(5778),
 		},
 		GRPCServerSettings: &configgrpc.GRPCServerSettings{
 			NetAddr: confignet.NetAddr{
-				Endpoint:  ":14250",
+				Endpoint:  localhostgate.EndpointForPort(14250),
 				Transport: "tcp",
 			},
 		},
