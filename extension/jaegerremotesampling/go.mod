@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/jaegertracing/jaeger v1.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.93.0
 	github.com/stretchr/testify v1.8.4
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector/component v0.93.1-0.20240130182548-89388addcc7f
@@ -90,3 +91,5 @@ retract (
 	v0.76.1
 	v0.65.0
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

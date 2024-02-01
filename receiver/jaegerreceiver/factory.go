@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/metadata"
 )
 
@@ -28,11 +29,11 @@ const (
 	protoThriftBinary  = "thrift_binary"
 	protoThriftCompact = "thrift_compact"
 
-	// Default endpoints to bind to.
-	defaultGRPCBindEndpoint          = "0.0.0.0:14250"
-	defaultHTTPBindEndpoint          = "0.0.0.0:14268"
-	defaultThriftCompactBindEndpoint = "0.0.0.0:6831"
-	defaultThriftBinaryBindEndpoint  = "0.0.0.0:6832"
+	// Default ports to bind to.
+	defaultGRPCPort          = 14250
+	defaultHTTPPort          = 14268
+	defaultThriftCompactPort = 6831
+	defaultThriftBinaryPort  = 6832
 )
 
 var disableJaegerReceiverRemoteSampling = featuregate.GlobalRegistry().MustRegister(
@@ -74,19 +75,19 @@ func createDefaultConfig() component.Config {
 		Protocols: Protocols{
 			GRPC: &configgrpc.GRPCServerSettings{
 				NetAddr: confignet.NetAddr{
-					Endpoint:  defaultGRPCBindEndpoint,
+					Endpoint:  localhostgate.EndpointForPort(defaultGRPCPort),
 					Transport: "tcp",
 				},
 			},
 			ThriftHTTP: &confighttp.HTTPServerConfig{
-				Endpoint: defaultHTTPBindEndpoint,
+				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 			},
 			ThriftBinary: &ProtocolUDP{
-				Endpoint:        defaultThriftBinaryBindEndpoint,
+				Endpoint:        localhostgate.EndpointForPort(defaultThriftBinaryPort),
 				ServerConfigUDP: defaultServerConfigUDP(),
 			},
 			ThriftCompact: &ProtocolUDP{
-				Endpoint:        defaultThriftCompactBindEndpoint,
+				Endpoint:        localhostgate.EndpointForPort(defaultThriftCompactPort),
 				ServerConfigUDP: defaultServerConfigUDP(),
 			},
 		},
