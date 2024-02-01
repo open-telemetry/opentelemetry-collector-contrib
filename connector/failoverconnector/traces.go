@@ -74,7 +74,7 @@ func newTracesToTraces(set connector.CreateSettings, cfg component.Config, trace
 		return nil, errors.New("consumer is not of type TracesRouter")
 	}
 
-	failover := newFailoverRouter[consumer.Traces](tr.Consumer, config, done) // temp add type spec to resolve linter issues
+	failover := newFailoverRouter[consumer.Traces](tr.Consumer, config, done)
 	err := failover.registerConsumers()
 	if err != nil {
 		return nil, err

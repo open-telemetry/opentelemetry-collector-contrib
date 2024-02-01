@@ -74,7 +74,7 @@ func newLogsToLogs(set connector.CreateSettings, cfg component.Config, logs cons
 		return nil, errors.New("consumer is not of type LogsRouter")
 	}
 
-	failover := newFailoverRouter[consumer.Logs](lr.Consumer, config, done) // temp add type spec to resolve linter issues
+	failover := newFailoverRouter[consumer.Logs](lr.Consumer, config, done)
 	err := failover.registerConsumers()
 	if err != nil {
 		return nil, err
