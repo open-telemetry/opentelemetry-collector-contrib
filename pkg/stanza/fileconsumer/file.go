@@ -223,6 +223,7 @@ func (m *Manager) makeReaders(paths []string) {
 		}
 
 		// Exclude duplicate paths with the same content. This can happen when files are
+		// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
 		if r := m.activeFiles.Match(fp, fileset.Equal); r != nil {
 			// re-add the reader as Match() removes duplicates
 			m.activeFiles.Add(r)
