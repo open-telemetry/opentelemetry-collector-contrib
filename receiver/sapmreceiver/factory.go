@@ -16,12 +16,13 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver/internal/metadata"
 )
 
 const (
-	// Default endpoints to bind to.
-	defaultEndpoint = ":7276"
+	// Default port to bind to.
+	defaultPort = 7276
 )
 
 // NewFactory creates a factory for SAPM receiver.
@@ -35,7 +36,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		HTTPServerConfig: confighttp.HTTPServerConfig{
-			Endpoint: defaultEndpoint,
+			Endpoint: localhostgate.EndpointForPort(defaultPort),
 		},
 	}
 }
