@@ -245,12 +245,15 @@ The complete mapping logic can be found [here](https://github.com/GoogleCloudPla
 That may be the most helpful reference if you want to map to a specific monitored
 resource.
 
+#### On GCP
+
 If running on GCP, using the GCP resource detector, as shown above, will populate
 the resource attributes required to map to the appropriate monitored resource.
 
-**Note:** If you are not running on GCP, you still need to choose a [GCP zone or
+#### Off GCP
+If you are not running on GCP, you still need to choose a [GCP zone or
 region](https://cloud.google.com/compute/docs/regions-zones) to send telemetry to
-by setting `cloud.availability_zone` or `cloud.region`.
+by setting `cloud.availability_zone` or `cloud.region`. In addition, you should use the detector associated with other cloud providers, if applicable.
 
 If running on Kubernetes, it is recommended to additionally set `k8s.pod.name`,
 `k8s.namespace.name`, and `k8s.container.name` using the `k8sattributes` processor.
