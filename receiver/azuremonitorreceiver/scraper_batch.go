@@ -463,7 +463,6 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 												s.processQueryTimeseriesData(*metricValues.ResourceID, metric, metricValue, attributes)
 												break
 											}
-											s.settings.Logger.Warn("No metric values found for resource.", zap.Any("metricValues", metricValues))
 										}
 									}
 								}
