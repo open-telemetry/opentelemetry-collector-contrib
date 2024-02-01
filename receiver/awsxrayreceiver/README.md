@@ -63,6 +63,8 @@ The TCP address and port on which this receiver listens for calls from the X-Ray
 
 Default: `0.0.0.0:2000`
 
+The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:2000. This will become the default in a future release.
+
 ### proxy_address (Optional)
 Defines the proxy address that the local TCP server forwards HTTP requests to AWS X-Ray backend through. If left unconfigured, requests will be sent directly.
 
