@@ -236,6 +236,8 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
+		// Read from channel so that the goroutine running the send operation can exit successfully
+		_ = <-capture.receivedRequest
 		assert.NoError(t, exporter.Shutdown(context.Background()))
 	}()
 
@@ -1396,6 +1398,9 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	assert.NoError(t, err)
 	// The exporter's name is "" while generating default params
 	assert.EqualError(t, exporter.Start(context.Background(), componenttest.NewNopHost()), ": heartbeat on startup failed: HTTP 403 \"Forbidden\"")
+	// Read from channel so that the goroutine running the send operation can exit successfully
+	_ = <-capture.receivedRequest
+	assert.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 func TestHeartbeatStartupPass_Disabled(t *testing.T) {
@@ -1431,6 +1436,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 func TestHeartbeatStartupPass(t *testing.T) {
@@ -1466,6 +1472,9 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	// Read from channel so that the goroutine running the send operation can exit successfully
+	_ = <-capture.receivedRequest
+	assert.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 type badJSON struct {
