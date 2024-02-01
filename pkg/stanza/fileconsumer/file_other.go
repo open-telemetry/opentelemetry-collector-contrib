@@ -9,7 +9,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 )
 
@@ -20,7 +19,7 @@ func (m *Manager) preConsume(ctx context.Context) {
 	lostReaders := make([]*reader.Reader, 0, m.previousPollFiles.Len())
 OUTER:
 	for _, oldReader := range m.previousPollFiles.Get() {
-		for _, newReader := range m.activeFiles.Get() {
+		for _, newReader := range m.currentPollFiles.Get() {
 			if newReader.Fingerprint.StartsWith(oldReader.Fingerprint) {
 				continue OUTER
 			}
@@ -56,8 +55,6 @@ OUTER:
 func (m *Manager) postConsume() {
 	m.closePreviousFiles()
 
-	// m.previousFiles -> m.activeFiles
-	// m.activeFiles will be reset
-	m.previousPollFiles = m.activeFiles
-	m.activeFiles = fileset.New[*reader.Reader](m.maxBatchFiles / 2)
+	// m.currentPollFiles -> m.previousPollFiles
+	m.previousPollFiles = m.currentPollFiles
 }

@@ -175,7 +175,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, spli
 		pollInterval:      c.PollInterval,
 		maxBatchFiles:     c.MaxConcurrentFiles / 2,
 		maxBatches:        c.MaxBatches,
-		activeFiles:       fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
+		currentPollFiles:  fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
 		previousPollFiles: fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
 		knownFiles:        knownFiles,
 	}, nil

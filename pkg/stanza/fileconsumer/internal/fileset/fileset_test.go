@@ -85,12 +85,13 @@ func TestFilesetReader(t *testing.T) {
 
 				// match() removes the matched item and returns it
 				match(newReader([]byte("ABCDEFGHI")), true),
-				match(newReader([]byte("ABCEFGHI")), false),
+				match(newReader([]byte("ABCDEFGHI")), false),
 
 				push(newReader([]byte("XYZ"))),
 				match(newReader([]byte("ABCDEF")), false),
-				match(newReader([]byte("QWERT")), false),
+				match(newReader([]byte("QWERT")), true), // should still be present
 				match(newReader([]byte("XYZabc")), true),
+				pop(errFilesetEmpty, newReader([]byte(""))),
 			},
 		},
 		{

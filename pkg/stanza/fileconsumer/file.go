@@ -33,7 +33,7 @@ type Manager struct {
 	maxBatches    int
 	maxBatchFiles int
 
-	activeFiles       *fileset.Fileset[*reader.Reader]
+	currentPollFiles  *fileset.Fileset[*reader.Reader]
 	previousPollFiles *fileset.Fileset[*reader.Reader]
 	knownFiles        []*fileset.Fileset[*reader.Metadata]
 }
@@ -51,7 +51,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 		if len(offsets) > 0 {
 			m.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
 			m.readerFactory.FromBeginning = true
-			m.knownFiles[len(m.knownFiles)-1].Add(offsets...)
+			m.knownFiles[0].Add(offsets...)
 		}
 	}
 
@@ -65,7 +65,7 @@ func (m *Manager) closePreviousFiles() {
 	// m.previousPollFiles -> m.knownFiles[-1]
 
 	for r, _ := m.previousPollFiles.Pop(); r != nil; r, _ = m.previousPollFiles.Pop() {
-		m.knownFiles[len(m.knownFiles)-1].Add(r.Close())
+		m.knownFiles[0].Add(r.Close())
 	}
 }
 
@@ -74,8 +74,6 @@ func (m *Manager) rotateFilesets() {
 	// m.knownFiles[0] -> m.knownFiles[1] -> m.knownFiles[2]
 	copy(m.knownFiles[1:], m.knownFiles)
 	m.knownFiles[0] = fileset.New[*reader.Metadata](m.maxBatchFiles / 2)
-	}
-	m.knownFiles[len(m.knownFiles)-1] = fileset.New[*reader.Metadata](m.maxBatchFiles / 2)
 }
 
 // Stop will stop the file monitoring process
@@ -127,7 +125,7 @@ func (m *Manager) poll(ctx context.Context) {
 	// Get the list of paths on disk
 	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
-		m.Debugf("finding files: %v", err)
+		m.Warnf("finding files: %v", err)
 	}
 	m.Debugf("matched files", zap.Strings("paths", matches))
 
@@ -173,7 +171,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 
 	// read new readers to end
 	var wg sync.WaitGroup
-	for _, r := range m.activeFiles.Get() {
+	for _, r := range m.currentPollFiles.Get() {
 		wg.Add(1)
 		go func(r *reader.Reader) {
 			defer wg.Done()
@@ -214,7 +212,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
 func (m *Manager) makeReaders(paths []string) {
-	m.activeFiles.Clear()
+	m.currentPollFiles = fileset.New[*reader.Reader](m.maxBatchFiles / 2)
 	for _, path := range paths {
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
@@ -223,9 +221,9 @@ func (m *Manager) makeReaders(paths []string) {
 
 		// Exclude duplicate paths with the same content. This can happen when files are
 		// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
-		if r := m.activeFiles.Match(fp, fileset.Equal); r != nil {
+		if r := m.currentPollFiles.Match(fp, fileset.Equal); r != nil {
 			// re-add the reader as Match() removes duplicates
-			m.activeFiles.Add(r)
+			m.currentPollFiles.Add(r)
 			if err := file.Close(); err != nil {
 				m.Debugw("problem closing file", zap.Error(err))
 			}
@@ -238,7 +236,7 @@ func (m *Manager) makeReaders(paths []string) {
 			continue
 		}
 
-		m.activeFiles.Add(r)
+		m.currentPollFiles.Add(r)
 	}
 }
 
@@ -249,7 +247,7 @@ func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader
 	}
 
 	// Iterate backwards to match newest first
-	for i := len(m.knownFiles) - 1; i >= 0; i-- {
+	for i := 0; i < len(m.knownFiles); i++ {
 		if oldMetadata := m.knownFiles[i].Match(fp, fileset.StartsWith); oldMetadata != nil {
 			return m.readerFactory.NewReaderFromMetadata(file, oldMetadata)
 		}

@@ -8,7 +8,6 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 )
 
@@ -17,7 +16,7 @@ func (m *Manager) preConsume(_ context.Context, _ []*reader.Reader) {
 
 // On windows, we close files immediately after reading because they cannot be moved while open.
 func (m *Manager) postConsume(readers []*reader.Reader) {
-	m.previousPollFiles = m.activeFiles
+	// m.currentPollFiles -> m.previousPollFiles
+	m.previousPollFiles = m.currentPollFiles
 	m.closePreviousFiles()
-	m.activeFiles = fileset.New[*reader.Reader](m.maxBatchFiles / 2)
 }

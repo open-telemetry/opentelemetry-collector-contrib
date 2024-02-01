@@ -55,11 +55,6 @@ func (set *Fileset[T]) Add(readers ...T) {
 	set.readers = append(set.readers, readers...)
 }
 
-func (set *Fileset[T]) Clear() {
-	// clear the underlying readers
-	set.readers = make([]T, 0, cap(set.readers))
-}
-
 func (set *Fileset[T]) Match(fp *fingerprint.Fingerprint, cmp func(a, b *fingerprint.Fingerprint) bool) T {
 	var val T
 	for idx, r := range set.readers {
