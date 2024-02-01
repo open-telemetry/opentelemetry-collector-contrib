@@ -251,6 +251,7 @@ If running on GCP, using the GCP resource detector, as shown above, will populat
 the resource attributes required to map to the appropriate monitored resource.
 
 #### Off GCP
+
 If you are not running on GCP, you still need to choose a [GCP zone or
 region](https://cloud.google.com/compute/docs/regions-zones) to send telemetry to
 by setting `cloud.availability_zone` or `cloud.region`. In addition, you should use the detector associated with other cloud providers, if applicable.
