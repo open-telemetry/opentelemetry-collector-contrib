@@ -27,6 +27,7 @@ subtext: |
     - receiver/influxdb
     - receiver/zookeeper
     - receiver/signalfx
+    - extension/awsproxy
     - receiver/sapm
     - extension/jaegerremotesampling
     - receiver/jaeger
