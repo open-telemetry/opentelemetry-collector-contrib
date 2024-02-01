@@ -230,11 +230,15 @@ func handlePayload(req *http.Request) (tp []*pb.TracerPayload, err error) {
 			return nil, err
 		}
 
+		traceChunks := traceChunksFromTraces(traces)
+		appVersion := appVersionFromTraceChunks(traceChunks)
+
 		tracerPayload := &pb.TracerPayload{
 			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
 			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
-			Chunks:          traceChunksFromTraces(traces),
+			Chunks:          traceChunks,
+			AppVersion:      appVersion,
 		}
 		tracerPayloads = append(tracerPayloads, tracerPayload)
 
@@ -269,11 +273,14 @@ func handlePayload(req *http.Request) (tp []*pb.TracerPayload, err error) {
 		if err = decodeRequest(req, &traces); err != nil {
 			return nil, err
 		}
+		traceChunks := traceChunksFromTraces(traces)
+		appVersion := appVersionFromTraceChunks(traceChunks)
 		tracerPayload := &pb.TracerPayload{
 			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
 			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
-			Chunks:          traceChunksFromTraces(traces),
+			Chunks:          traceChunks,
+			AppVersion:      appVersion,
 		}
 		tracerPayloads = append(tracerPayloads, tracerPayload)
 	}
@@ -340,6 +347,19 @@ func traceChunksFromTraces(traces pb.Traces) []*pb.TraceChunk {
 	}
 
 	return traceChunks
+}
+
+func appVersionFromTraceChunks(traces []*pb.TraceChunk) string {
+	appVersion := ""
+	for _, trace := range traces {
+		for _, span := range trace.Spans {
+			if span != nil && span.Meta["version"] != "" {
+				appVersion = span.Meta["version"]
+				return appVersion
+			}
+		}
+	}
+	return appVersion
 }
 
 func getMediaType(req *http.Request) string {
