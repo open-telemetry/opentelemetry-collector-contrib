@@ -386,10 +386,7 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 		now := time.Now().UTC()
 		metricsByGrain.metricsValuesUpdated = now
 
-		startTime := now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second)
-		if compositeKey.timeGrain == "PT1M" {
-			startTime = now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second * 2) // times 2 because for some resources, data are missing for the very latest timestamp
-		}
+		startTime := now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second * 4) // times 4 because for some resources, data are missing for the very latest timestamp. The processing will keep only the latest timestamp with data.
 
 		start := 0
 		for start < len(metricsByGrain.metrics) {
@@ -460,8 +457,13 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 										}
 										attributes["subscription"] = subscription.DisplayName
 										attributes["timegrain"] = &compositeKey.timeGrain
-										for _, metricValue := range timeseriesElement.Data {
-											s.processQueryTimeseriesData(*metricValues.ResourceID, metric, metricValue, attributes)
+										for i := len(timeseriesElement.Data) - 1; i >= 0; i-- { // reverse for loop because newest timestamp is at the end of the slice
+											metricValue := timeseriesElement.Data[i]
+											if metricValue.Average != nil {
+												s.processQueryTimeseriesData(*metricValues.ResourceID, metric, metricValue, attributes)
+												break
+											}
+											s.settings.Logger.Warn("No metric values found for resource.", zap.Any("metricValues", metricValues))
 										}
 									}
 								}
