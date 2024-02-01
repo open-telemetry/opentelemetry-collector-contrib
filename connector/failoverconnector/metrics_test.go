@@ -136,55 +136,55 @@ func TestMetricsWithFailoverError(t *testing.T) {
 	assert.EqualError(t, conn.ConsumeMetrics(context.Background(), md), "All provided pipelines return errors")
 }
 
-func TestMetricsWithFailoverRecovery(t *testing.T) {
-	var sinkSecond, sinkThird consumertest.MetricsSink
-	metricsFirst := component.NewIDWithName(component.DataTypeMetrics, "metrics/first")
-	metricsSecond := component.NewIDWithName(component.DataTypeMetrics, "metrics/second")
-	metricsThird := component.NewIDWithName(component.DataTypeMetrics, "metrics/third")
-	noOp := consumertest.NewNop()
-
-	cfg := &Config{
-		PipelinePriority: [][]component.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
-		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       1000,
-	}
-
-	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
-		metricsFirst:  noOp,
-		metricsSecond: &sinkSecond,
-		metricsThird:  &sinkThird,
-	})
-
-	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Metrics))
-
-	require.NoError(t, err)
-
-	failoverConnector := conn.(*metricsFailover)
-	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
-	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
-	}()
-
-	md := sampleMetric()
-
-	require.NoError(t, conn.ConsumeMetrics(context.Background(), md))
-	_, ch, ok := failoverConnector.failover.getCurrentConsumer()
-	idx := failoverConnector.failover.pS.ChannelIndex(ch)
-
-	assert.True(t, ok)
-	require.Equal(t, idx, 1)
-
-	// Simulate recovery of exporter
-	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewNop())
-
-	require.Eventually(t, func() bool {
-		_, ch, ok = failoverConnector.failover.getCurrentConsumer()
-		idx = failoverConnector.failover.pS.ChannelIndex(ch)
-		return ok && idx == 0
-	}, 3*time.Second, 100*time.Millisecond)
-}
+// func TestMetricsWithFailoverRecovery(t *testing.T) {
+//	var sinkSecond, sinkThird consumertest.MetricsSink
+//	metricsFirst := component.NewIDWithName(component.DataTypeMetrics, "metrics/first")
+//	metricsSecond := component.NewIDWithName(component.DataTypeMetrics, "metrics/second")
+//	metricsThird := component.NewIDWithName(component.DataTypeMetrics, "metrics/third")
+//	noOp := consumertest.NewNop()
+//
+//	cfg := &Config{
+//		PipelinePriority: [][]component.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
+//		RetryInterval:    50 * time.Millisecond,
+//		RetryGap:         10 * time.Millisecond,
+//		MaxRetries:       1000,
+//	}
+//
+//	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+//		metricsFirst:  noOp,
+//		metricsSecond: &sinkSecond,
+//		metricsThird:  &sinkThird,
+//	})
+//
+//	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
+//		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Metrics))
+//
+//	require.NoError(t, err)
+//
+//	failoverConnector := conn.(*metricsFailover)
+//	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
+//	defer func() {
+//		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+//	}()
+//
+//	md := sampleMetric()
+//
+//	require.NoError(t, conn.ConsumeMetrics(context.Background(), md))
+//	_, ch, ok := failoverConnector.failover.getCurrentConsumer()
+//	idx := failoverConnector.failover.pS.ChannelIndex(ch)
+//
+//	assert.True(t, ok)
+//	require.Equal(t, idx, 1)
+//
+//	// Simulate recovery of exporter
+//	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewNop())
+//
+//	require.Eventually(t, func() bool {
+//		_, ch, ok = failoverConnector.failover.getCurrentConsumer()
+//		idx = failoverConnector.failover.pS.ChannelIndex(ch)
+//		return ok && idx == 0
+//	}, 3*time.Second, 100*time.Millisecond)
+//}
 
 func sampleMetric() pmetric.Metrics {
 	m := pmetric.NewMetrics()

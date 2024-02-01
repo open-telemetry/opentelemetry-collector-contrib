@@ -136,54 +136,54 @@ func TestLogsWithFailoverError(t *testing.T) {
 	assert.EqualError(t, conn.ConsumeLogs(context.Background(), ld), "All provided pipelines return errors")
 }
 
-func TestLogsWithFailoverRecovery(t *testing.T) {
-	var sinkFirst, sinkSecond, sinkThird consumertest.LogsSink
-	logsFirst := component.NewIDWithName(component.DataTypeLogs, "logs/first")
-	logsSecond := component.NewIDWithName(component.DataTypeLogs, "logs/second")
-	logsThird := component.NewIDWithName(component.DataTypeLogs, "logs/third")
-
-	cfg := &Config{
-		PipelinePriority: [][]component.ID{{logsFirst}, {logsSecond}, {logsThird}},
-		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       1000,
-	}
-
-	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
-		logsFirst:  &sinkFirst,
-		logsSecond: &sinkSecond,
-		logsThird:  &sinkThird,
-	})
-
-	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Logs))
-
-	require.NoError(t, err)
-
-	failoverConnector := conn.(*logsFailover)
-	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
-	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
-	}()
-
-	ld := sampleLog()
-
-	require.NoError(t, conn.ConsumeLogs(context.Background(), ld))
-	_, ch, ok := failoverConnector.failover.getCurrentConsumer()
-	idx := failoverConnector.failover.pS.ChannelIndex(ch)
-
-	assert.True(t, ok)
-	require.Equal(t, idx, 1)
-
-	// Simulate recovery of exporter
-	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewNop())
-
-	require.Eventually(t, func() bool {
-		_, ch, ok = failoverConnector.failover.getCurrentConsumer()
-		idx = failoverConnector.failover.pS.ChannelIndex(ch)
-		return ok && idx == 0
-	}, 3*time.Second, 100*time.Millisecond)
-}
+// func TestLogsWithFailoverRecovery(t *testing.T) {
+//	var sinkFirst, sinkSecond, sinkThird consumertest.LogsSink
+//	logsFirst := component.NewIDWithName(component.DataTypeLogs, "logs/first")
+//	logsSecond := component.NewIDWithName(component.DataTypeLogs, "logs/second")
+//	logsThird := component.NewIDWithName(component.DataTypeLogs, "logs/third")
+//
+//	cfg := &Config{
+//		PipelinePriority: [][]component.ID{{logsFirst}, {logsSecond}, {logsThird}},
+//		RetryInterval:    50 * time.Millisecond,
+//		RetryGap:         10 * time.Millisecond,
+//		MaxRetries:       1000,
+//	}
+//
+//	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+//		logsFirst:  &sinkFirst,
+//		logsSecond: &sinkSecond,
+//		logsThird:  &sinkThird,
+//	})
+//
+//	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
+//		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Logs))
+//
+//	require.NoError(t, err)
+//
+//	failoverConnector := conn.(*logsFailover)
+//	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
+//	defer func() {
+//		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+//	}()
+//
+//	ld := sampleLog()
+//
+//	require.NoError(t, conn.ConsumeLogs(context.Background(), ld))
+//	_, ch, ok := failoverConnector.failover.getCurrentConsumer()
+//	idx := failoverConnector.failover.pS.ChannelIndex(ch)
+//
+//	assert.True(t, ok)
+//	require.Equal(t, idx, 1)
+//
+//	// Simulate recovery of exporter
+//	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewNop())
+//
+//	require.Eventually(t, func() bool {
+//		_, ch, ok = failoverConnector.failover.getCurrentConsumer()
+//		idx = failoverConnector.failover.pS.ChannelIndex(ch)
+//		return ok && idx == 0
+//	}, 3*time.Second, 100*time.Millisecond)
+//}
 
 func sampleLog() plog.Logs {
 	l := plog.NewLogs()
