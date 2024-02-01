@@ -178,7 +178,7 @@ func (r *Transformer) flushLoop() {
 				if timeSinceFirstEntry < r.forceFlushTimeout {
 					continue
 				}
-				if err := r.flushSource(context.Background(), source, true); err != nil {
+				if err := r.flushSource(context.Background(), source); err != nil {
 					r.Errorf("there was error flushing combined logs %s", err)
 				}
 			}
@@ -241,7 +241,7 @@ func (r *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	// This is the first entry in the next batch
 	case matches && r.matchIndicatesFirst():
 		// Flush the existing batch
-		err := r.flushSource(ctx, s, true)
+		err := r.flushSource(ctx, s)
 		if err != nil {
 			return err
 		}
@@ -252,7 +252,7 @@ func (r *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	// This is the last entry in a complete batch
 	case matches && r.matchIndicatesLast():
 		r.addToBatch(ctx, e, s)
-		return r.flushSource(ctx, s, true)
+		return r.flushSource(ctx, s)
 	}
 
 	// This is neither the first entry of a new log,
@@ -302,7 +302,7 @@ func (r *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source str
 	batch.recombined.WriteString(s)
 
 	if (r.maxLogSize > 0 && int64(batch.recombined.Len()) > r.maxLogSize) || len(batch.entries) >= r.maxBatchSize {
-		if err := r.flushSource(ctx, source, false); err != nil {
+		if err := r.flushSource(ctx, source); err != nil {
 			r.Errorf("there was error flushing combined logs %s", err)
 		}
 	}
@@ -326,7 +326,7 @@ func (r *Transformer) flushUncombined(ctx context.Context) {
 func (r *Transformer) flushAllSources(ctx context.Context) {
 	var errs []error
 	for source := range r.batchMap {
-		if err := r.flushSource(ctx, source, true); err != nil {
+		if err := r.flushSource(ctx, source); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -337,7 +337,7 @@ func (r *Transformer) flushAllSources(ctx context.Context) {
 
 // flushSource combines the entries currently in the batch into a single entry,
 // then forwards them to the next operator in the pipeline
-func (r *Transformer) flushSource(ctx context.Context, source string, deleteSource bool) error {
+func (r *Transformer) flushSource(ctx context.Context, source string) error {
 	batch := r.batchMap[source]
 	// Skip flushing a combined log if the batch is empty
 	if batch == nil {
@@ -366,13 +366,7 @@ func (r *Transformer) flushSource(ctx context.Context, source string, deleteSour
 	}
 
 	r.Write(ctx, base)
-	if deleteSource {
-		r.removeBatch(source)
-	} else {
-		batch.entries = batch.entries[:0]
-		batch.recombined.Reset()
-	}
-
+	r.removeBatch(source)
 	return nil
 }
 
