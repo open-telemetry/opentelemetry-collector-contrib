@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -39,9 +40,10 @@ func TestWithTracesMarshalers_err(t *testing.T) {
 	tracesMarshaler := &customTraceMarshaler{encoding: "unknown"}
 	f := NewFactory(withTracesMarshalers(tracesMarshaler))
 	r, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	require.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	// no available broker
 	require.Error(t, err)
-	assert.Nil(t, r)
 }
 
 func TestCreateTracesExporter_err(t *testing.T) {
@@ -50,9 +52,10 @@ func TestCreateTracesExporter_err(t *testing.T) {
 
 	f := pulsarExporterFactory{tracesMarshalers: tracesMarshalers()}
 	r, err := f.createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	require.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	// no available broker
 	require.Error(t, err)
-	assert.Nil(t, r)
 }
 
 func TestCreateMetricsExporter_err(t *testing.T) {
@@ -60,9 +63,10 @@ func TestCreateMetricsExporter_err(t *testing.T) {
 	cfg.Endpoint = ""
 
 	mf := pulsarExporterFactory{metricsMarshalers: metricsMarshalers()}
-	mr, err := mf.createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	r, err := mf.createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	require.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
-	assert.Nil(t, mr)
 }
 
 func TestCreateLogsExporter_err(t *testing.T) {
@@ -70,7 +74,8 @@ func TestCreateLogsExporter_err(t *testing.T) {
 	cfg.Endpoint = ""
 
 	mf := pulsarExporterFactory{logsMarshalers: logsMarshalers()}
-	mr, err := mf.createLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	r, err := mf.createLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	require.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
-	assert.Nil(t, mr)
 }

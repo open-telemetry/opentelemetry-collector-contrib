@@ -158,6 +158,7 @@ func TestTransformer(t *testing.T) {
 				cfg.IsFirstEntry = "$body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.OverwriteWith = "newest"
+				cfg.ForceFlushTimeout = 100 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -166,9 +167,7 @@ func TestTransformer(t *testing.T) {
 				entryWithBody(t2, "test4"),
 			},
 			[]*entry.Entry{
-				entryWithBody(t1, "test2"),
-				entryWithBody(t2, "test3"),
-				entryWithBody(t2, "test4"),
+				entryWithBody(t1, "test2\ntest3\ntest4"),
 			},
 		},
 		{
@@ -176,25 +175,26 @@ func TestTransformer(t *testing.T) {
 			func() *Config {
 				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
-				cfg.IsFirstEntry = "body == 'file1'"
+				cfg.IsFirstEntry = "body == 'start'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.OverwriteWith = "oldest"
+				cfg.ForceFlushTimeout = 100 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "file3", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "file2", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "file2", map[string]string{"file.path": "file2"}),
-				entryWithBodyAttr(t2, "file3", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "more1a", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t2, "more1b", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t2, "start", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t2, "more2a", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t2, "more2b", map[string]string{"file.path": "file2"}),
 			},
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "file1\nfile3", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "file1\nfile2", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "file2", map[string]string{"file.path": "file2"}),
-				entryWithBodyAttr(t2, "file3", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t1, "start\nmore1a", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t2, "start\nmore1b", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t2, "start", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t2, "more2a\nmore2b", map[string]string{"file.path": "file2"}),
 			},
 		},
 		{
@@ -507,9 +507,7 @@ func TestTransformer(t *testing.T) {
 				require.NoError(t, recombine.Process(context.Background(), e))
 			}
 
-			for _, expected := range tc.expectedOutput {
-				fake.ExpectEntry(t, expected)
-			}
+			fake.ExpectEntries(t, tc.expectedOutput)
 
 			select {
 			case e := <-fake.Received:
@@ -747,14 +745,21 @@ func TestSourceBatchDelete(t *testing.T) {
 	next := entry.New()
 	next.Timestamp = time.Now()
 	next.Body = "next"
-	start.AddAttribute("file.path", "file1")
+	next.AddAttribute("file.path", "file1")
+
+	expect := entry.New()
+	expect.ObservedTimestamp = start.ObservedTimestamp
+	expect.Timestamp = start.Timestamp
+	expect.AddAttribute("file.path", "file1")
+	expect.Body = "start\nnext"
 
 	ctx := context.Background()
 
 	require.NoError(t, recombine.Process(ctx, start))
 	require.NoError(t, recombine.Process(ctx, next))
 	require.Equal(t, 1, len(recombine.batchMap))
-	require.NoError(t, recombine.flushSource("file1", true))
+	require.NoError(t, recombine.flushSource(ctx, "file1", true))
 	require.Equal(t, 0, len(recombine.batchMap))
+	fake.ExpectEntry(t, expect)
 	require.NoError(t, recombine.Stop())
 }
