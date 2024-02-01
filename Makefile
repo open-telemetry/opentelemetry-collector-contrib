@@ -23,20 +23,25 @@ EX_CMD=-not -path "./cmd/*"
 # NONROOT_MODS includes ./* dirs (excludes . dir)
 NONROOT_MODS := $(shell find . $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 
-RECEIVER_MODS_0 := $(shell find ./receiver/[a-k]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-RECEIVER_MODS_1 := $(shell find ./receiver/[l-z]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-RECEIVER_MODS := $(RECEIVER_MODS_0) $(RECEIVER_MODS_1)
+RECEIVER_MODS_0 := $(shell find ./receiver/[a-f]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+RECEIVER_MODS_1 := $(shell find ./receiver/[g-o]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+RECEIVER_MODS_2 := $(shell find ./receiver/[p]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) # Prometheus is special and gets its own section.
+RECEIVER_MODS_3 := $(shell find ./receiver/[q-z]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+RECEIVER_MODS := $(RECEIVER_MODS_0) $(RECEIVER_MODS_1) $(RECEIVER_MODS_2) $(RECEIVER_MODS_3)
 PROCESSOR_MODS := $(shell find ./processor/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-EXPORTER_MODS := $(shell find ./exporter/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXPORTER_MODS_0 := $(shell find ./exporter/[a-m]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXPORTER_MODS_1 := $(shell find ./exporter/[n-z]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXPORTER_MODS := $(EXPORTER_MODS_0) $(EXPORTER_MODS_1)
 EXTENSION_MODS := $(shell find ./extension/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 CONNECTOR_MODS := $(shell find ./connector/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 INTERNAL_MODS := $(shell find ./internal/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 PKG_MODS := $(shell find ./pkg/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-CMD_MODS := $(shell find ./cmd/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+CMD_MODS_0 := $(shell find ./cmd/[a-m]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+CMD_MODS_1 := $(shell find ./cmd/[n-z]* $(FIND_MOD_ARGS) -not -path "./cmd/otelcontribcol/*" -exec $(TO_MOD_DIR) )
+CMD_MODS := $(CMD_MODS_0) $(CMD_MODS_1)
 OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(EX_PKG) $(EX_CMD) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) $(PWD)
 ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(CONNECTOR_MODS) $(INTERNAL_MODS) $(PKG_MODS) $(CMD_MODS) $(OTHER_MODS)
 
-# find -exec dirname cannot be used to process multiple matching patterns
 FIND_INTEGRATION_TEST_MODS={ find . -type f -name "*integration_test.go" & find . -type f -name "*e2e_test.go" -not -path "./testbed/*"; }
 INTEGRATION_MODS := $(shell $(FIND_INTEGRATION_TEST_MODS) | xargs $(TO_MOD_DIR) | uniq)
 
@@ -52,14 +57,18 @@ all-modules:
 all-groups:
 	@echo "receiver-0: $(RECEIVER_MODS_0)"
 	@echo "\nreceiver-1: $(RECEIVER_MODS_1)"
+	@echo "\nreceiver-2: $(RECEIVER_MODS_2)"
+	@echo "\nreceiver-3: $(RECEIVER_MODS_3)"
 	@echo "\nreceiver: $(RECEIVER_MODS)"
 	@echo "\nprocessor: $(PROCESSOR_MODS)"
-	@echo "\nexporter: $(EXPORTER_MODS)"
+	@echo "\nexporter-0: $(EXPORTER_MODS_0)"
+	@echo "\nexporter-1: $(EXPORTER_MODS_1)"
 	@echo "\nextension: $(EXTENSION_MODS)"
 	@echo "\nconnector: $(CONNECTOR_MODS)"
 	@echo "\ninternal: $(INTERNAL_MODS)"
 	@echo "\npkg: $(PKG_MODS)"
-	@echo "\ncmd: $(CMD_MODS)"
+	@echo "\ncmd-0: $(CMD_MODS_0)"
+	@echo "\ncmd-1: $(CMD_MODS_1)"
 	@echo "\nother: $(OTHER_MODS)"
 
 .PHONY: all
@@ -107,6 +116,10 @@ gotest:
 gotest-with-cover:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-cover"
 	$(GOCMD) tool covdata textfmt -i=./coverage/unit -o ./$(GROUP)-coverage.txt
+
+.PHONY: gointegration-test
+gointegration-test:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="mod-integration-test"
 
 .PHONY: gofmt
 gofmt:
@@ -164,11 +177,23 @@ for-receiver-0-target: $(RECEIVER_MODS_0)
 .PHONY: for-receiver-1-target
 for-receiver-1-target: $(RECEIVER_MODS_1)
 
+.PHONY: for-receiver-2-target
+for-receiver-2-target: $(RECEIVER_MODS_2)
+
+.PHONY: for-receiver-3-target
+for-receiver-3-target: $(RECEIVER_MODS_3)
+
 .PHONY: for-processor-target
 for-processor-target: $(PROCESSOR_MODS)
 
 .PHONY: for-exporter-target
 for-exporter-target: $(EXPORTER_MODS)
+
+.PHONY: for-exporter-0-target
+for-exporter-0-target: $(EXPORTER_MODS_0)
+
+.PHONY: for-exporter-1-target
+for-exporter-1-target: $(EXPORTER_MODS_1)
 
 .PHONY: for-extension-target
 for-extension-target: $(EXTENSION_MODS)
@@ -184,6 +209,12 @@ for-pkg-target: $(PKG_MODS)
 
 .PHONY: for-cmd-target
 for-cmd-target: $(CMD_MODS)
+
+.PHONY: for-cmd-0-target
+for-cmd-0-target: $(CMD_MODS_0)
+
+.PHONY: for-cmd-1-target
+for-cmd-1-target: $(CMD_MODS_1)
 
 .PHONY: for-other-target
 for-other-target: $(OTHER_MODS)
