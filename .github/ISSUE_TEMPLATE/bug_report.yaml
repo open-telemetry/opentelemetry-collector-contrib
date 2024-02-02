@@ -111,6 +111,7 @@ body:
       - extension/storage
       - extension/storage/dbstorage
       - extension/storage/filestorage
+      - extension/sumologic
       - internal/aws
       - internal/collectd
       - internal/core
@@ -124,6 +125,7 @@ body:
       - internal/metadataproviders
       - internal/sharedcomponent
       - internal/splunk
+      - internal/sqlquery
       - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal
@@ -168,7 +170,6 @@ body:
       - processor/resourcedetection/internal/openshift
       - processor/routing
       - processor/schema
-      - processor/servicegraph
       - processor/span
       - processor/spanmetrics
       - processor/sumologic
