@@ -88,7 +88,7 @@ func sendToCollector(endpoint string, contentType string, contentEncoding string
 func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 	config := &Config{
 		Protocols: Protocols{
-			GRPC: &configgrpc.GRPCServerSettings{
+			GRPC: &configgrpc.ServerConfig{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: "tcp",

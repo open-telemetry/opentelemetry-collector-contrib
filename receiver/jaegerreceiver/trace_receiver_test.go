@@ -141,7 +141,7 @@ func TestPortsNotOpen(t *testing.T) {
 func TestGRPCReception(t *testing.T) {
 	// prepare
 	config := &configuration{
-		CollectorGRPCServerSettings: configgrpc.GRPCServerSettings{
+		CollectorServerConfig: configgrpc.ServerConfig{
 			NetAddr: confignet.NetAddr{
 				Endpoint:  testutil.GetAvailableLocalAddress(t),
 				Transport: "tcp",
@@ -195,7 +195,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 		},
 	}
 
-	grpcServerSettings := configgrpc.GRPCServerSettings{
+	grpcServerSettings := configgrpc.ServerConfig{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
 			Transport: "tcp",
@@ -337,7 +337,7 @@ func grpcFixture(t *testing.T, t1 time.Time, d1, d2 time.Duration) *api_v2.PostS
 
 func TestSampling(t *testing.T) {
 	config := &configuration{
-		CollectorGRPCServerSettings: configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
+		CollectorServerConfig: configgrpc.ServerConfig{NetAddr: confignet.NetAddr{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
 			Transport: "tcp",
 		}},

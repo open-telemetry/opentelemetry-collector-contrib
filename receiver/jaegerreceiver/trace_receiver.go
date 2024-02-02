@@ -43,7 +43,7 @@ import (
 // the Jaeger receiver will use.
 type configuration struct {
 	CollectorHTTPSettings       confighttp.ServerConfig
-	CollectorGRPCServerSettings configgrpc.GRPCServerSettings
+	CollectorGRPCServerSettings configgrpc.ServerConfig
 
 	AgentCompactThrift ProtocolUDP
 	AgentBinaryThrift  ProtocolUDP

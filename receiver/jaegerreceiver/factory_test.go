@@ -39,7 +39,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the jaeger receiver to be created
-	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
+	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: "tcp",
@@ -80,7 +80,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
+	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: "tcp",
@@ -97,7 +97,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
+	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: "tcp",

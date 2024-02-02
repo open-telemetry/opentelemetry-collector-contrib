@@ -30,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewID(metadata.Type),
 			expected: &Config{
 				ServerConfig: &confighttp.ServerConfig{Endpoint: "0.0.0.0:5778"},
-				GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
+				GRPCServerSettings: &configgrpc.ServerConfig{NetAddr: confignet.NetAddr{
 					Endpoint:  "0.0.0.0:14250",
 					Transport: "tcp",
 				}},
@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
 				ServerConfig: &confighttp.ServerConfig{Endpoint: "0.0.0.0:5778"},
-				GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
+				GRPCServerSettings: &configgrpc.ServerConfig{NetAddr: confignet.NetAddr{
 					Endpoint:  "0.0.0.0:14250",
 					Transport: "tcp",
 				}},
@@ -86,14 +86,14 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "no sources",
 			cfg: Config{
-				GRPCServerSettings: &configgrpc.GRPCServerSettings{},
+				GRPCServerSettings: &configgrpc.ServerConfig{},
 			},
 			expected: errNoSources,
 		},
 		{
 			desc: "too many sources",
 			cfg: Config{
-				GRPCServerSettings: &configgrpc.GRPCServerSettings{},
+				GRPCServerSettings: &configgrpc.ServerConfig{},
 				Source: Source{
 					Remote: &configgrpc.ClientConfig{},
 					File:   "/tmp/some-file",
