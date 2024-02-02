@@ -29,3 +29,7 @@ func (i Ident) Hash() hash.Hash64 {
 func (i Ident) String() string {
 	return strconv.FormatUint(i.Hash().Sum64(), 16)
 }
+
+func (i Ident) Metric() metrics.Ident {
+	return i.metric
+}

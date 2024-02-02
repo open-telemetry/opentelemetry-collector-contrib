@@ -42,21 +42,35 @@ func (a *Accumulator[D]) Aggregate(id streams.Ident, dp D) (D, error) {
 	}
 
 	aggr, ok := a.dps[id]
+
+	// new series: reset
 	if !ok {
 		return reset()
 	}
-
-	// different start time violates single-writer principle, reset counter
-	if dp.StartTimestamp() != aggr.StartTimestamp() {
+	// belongs to older series: drop
+	if dp.StartTimestamp() < aggr.StartTimestamp() {
+		return aggr, ErrOlderStart{Start: aggr.StartTimestamp(), Sample: dp.StartTimestamp()}
+	}
+	// belongs to later series: reset
+	if dp.StartTimestamp() > aggr.StartTimestamp() {
 		return reset()
 	}
-
+	// out of order: drop
 	if dp.Timestamp() <= aggr.Timestamp() {
-		return dp, ErrOutOfOrder{Last: aggr.Timestamp(), Sample: aggr.Timestamp()}
+		return aggr, ErrOutOfOrder{Last: aggr.Timestamp(), Sample: dp.Timestamp()}
 	}
 
 	a.dps[id] = aggr.Add(dp)
 	return a.dps[id], nil
+}
+
+type ErrOlderStart struct {
+	Start  pcommon.Timestamp
+	Sample pcommon.Timestamp
+}
+
+func (e ErrOlderStart) Error() string {
+	return fmt.Sprintf("dropped sample with st=%s, because series only starts at st=%s", e.Sample, e.Start)
 }
 
 type ErrOutOfOrder struct {
@@ -65,5 +79,5 @@ type ErrOutOfOrder struct {
 }
 
 func (e ErrOutOfOrder) Error() string {
-	return fmt.Sprintf("out of order: sample at t=%s, but series already at t=%s", e.Sample, e.Last)
+	return fmt.Sprintf("out of order: dropped sample at t=%s, because series is already at t=%s", e.Sample, e.Last)
 }

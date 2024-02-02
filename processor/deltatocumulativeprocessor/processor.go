@@ -66,7 +66,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 		case pmetric.MetricTypeSum:
 			sum := m.Sum()
 			if sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
-				err := streams.Update[data.Number](metrics.Sum(m), p.nums)
+				err := streams.Aggregate[data.Number](metrics.Sum(m), p.nums)
 				errs = errors.Join(errs, err)
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			}
