@@ -79,7 +79,7 @@ func createDefaultConfig() component.Config {
 					Transport: "tcp",
 				},
 			},
-			ThriftHTTP: &confighttp.HTTPServerConfig{
+			ThriftHTTP: &confighttp.ServerConfig{
 				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 			},
 			ThriftBinary: &ProtocolUDP{

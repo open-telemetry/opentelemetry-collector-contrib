@@ -47,7 +47,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithoutCheckCollectorPipeline",
 			config: Config{
-				HTTPServerConfig: confighttp.HTTPServerConfig{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -74,7 +74,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithCustomizedPathWithoutCheckCollectorPipeline",
 			config: Config{
-				HTTPServerConfig: confighttp.HTTPServerConfig{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -97,7 +97,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithBothCustomResponseBodyWithoutCheckCollectorPipeline",
 			config: Config{
-				HTTPServerConfig: confighttp.HTTPServerConfig{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -124,7 +124,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithHealthyCustomResponseBodyWithoutCheckCollectorPipeline",
 			config: Config{
-				HTTPServerConfig: confighttp.HTTPServerConfig{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -151,7 +151,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithUnhealthyCustomResponseBodyWithoutCheckCollectorPipeline",
 			config: Config{
-				HTTPServerConfig: confighttp.HTTPServerConfig{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -178,7 +178,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithCheckCollectorPipeline",
 			config: Config{
-				HTTPServerConfig: confighttp.HTTPServerConfig{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: checkCollectorPipelineSettings{
@@ -219,7 +219,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithCustomPathWithCheckCollectorPipeline",
 			config: Config{
-				HTTPServerConfig: confighttp.HTTPServerConfig{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: checkCollectorPipelineSettings{
@@ -260,7 +260,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithCustomStaticResponseBodyWithCheckCollectorPipeline",
 			config: Config{
-				HTTPServerConfig: confighttp.HTTPServerConfig{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: checkCollectorPipelineSettings{
@@ -353,7 +353,7 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	defer ln.Close()
 
 	config := Config{
-		HTTPServerConfig: confighttp.HTTPServerConfig{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: endpoint,
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -366,7 +366,7 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 
 func TestHealthCheckMultipleStarts(t *testing.T) {
 	config := Config{
-		HTTPServerConfig: confighttp.HTTPServerConfig{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -384,7 +384,7 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 
 func TestHealthCheckMultipleShutdowns(t *testing.T) {
 	config := Config{
-		HTTPServerConfig: confighttp.HTTPServerConfig{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -401,7 +401,7 @@ func TestHealthCheckMultipleShutdowns(t *testing.T) {
 
 func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 	config := Config{
-		HTTPServerConfig: confighttp.HTTPServerConfig{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),

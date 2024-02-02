@@ -94,7 +94,7 @@ func TestValidate(t *testing.T) {
 			name: "TLS settings are valid",
 			cfg: &Config{
 				API: APIConfig{Key: "notnull"},
-				LimitedHTTPClientConfig: LimitedHTTPClientConfig{
+				LimitedClientConfig: LimitedClientConfig{
 					TLSSetting: LimitedTLSClientSettings{
 						InsecureSkipVerify: true,
 					},

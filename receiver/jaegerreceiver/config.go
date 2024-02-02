@@ -37,7 +37,7 @@ type RemoteSamplingConfig struct {
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
 	GRPC          *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
-	ThriftHTTP    *confighttp.HTTPServerConfig   `mapstructure:"thrift_http"`
+	ThriftHTTP    *confighttp.ServerConfig       `mapstructure:"thrift_http"`
 	ThriftBinary  *ProtocolUDP                   `mapstructure:"thrift_binary"`
 	ThriftCompact *ProtocolUDP                   `mapstructure:"thrift_compact"`
 }

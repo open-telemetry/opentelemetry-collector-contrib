@@ -141,7 +141,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "opensearch",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["opensearch"].CreateDefaultConfig().(*opensearchexporter.Config)
-				cfg.HTTPClientConfig = confighttp.HTTPClientConfig{
+				cfg.ClientConfig = confighttp.ClientConfig{
 					Endpoint: "http://" + endpoint,
 				}
 				return cfg
@@ -266,7 +266,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "alertmanager",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["alertmanager"].CreateDefaultConfig().(*alertmanagerexporter.Config)
-				cfg.HTTPClientConfig = confighttp.HTTPClientConfig{
+				cfg.ClientConfig = confighttp.ClientConfig{
 					Endpoint: "http://" + endpoint,
 				}
 				cfg.GeneratorURL = "opentelemetry-collector"

@@ -31,7 +31,7 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerConfig: &confighttp.HTTPServerConfig{
+		ServerConfig: &confighttp.ServerConfig{
 			Endpoint: localhostgate.EndpointForPort(5778),
 		},
 		GRPCServerSettings: &configgrpc.GRPCServerSettings{

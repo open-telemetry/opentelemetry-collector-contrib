@@ -33,7 +33,7 @@ import (
 // the Skywalking receiver will use.
 type configuration struct {
 	CollectorHTTPPort           int
-	CollectorHTTPSettings       confighttp.HTTPServerConfig
+	CollectorHTTPSettings       confighttp.ServerConfig
 	CollectorGRPCPort           int
 	CollectorGRPCServerSettings configgrpc.GRPCServerSettings
 }
