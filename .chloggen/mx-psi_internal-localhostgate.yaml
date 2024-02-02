@@ -20,6 +20,7 @@ subtext: |
     - extension/awsproxy
     - extension/health_check
     - extension/jaegerremotesampling
+    - internal/aws/proxy
     - processor/remotetap
     - receiver/awsfirehose
     - receiver/awsxray

@@ -18,7 +18,7 @@ The Docker observer extension is a [Receiver Creator](../../../receiver/receiver
 container endpoints discovered through the Docker API. Only containers that are in the state of `Running` and not `Paused` will emit endpoints.
 This observer watches the Docker engine's stream of events to dynamically create, update, and remove endpoints as events are processed.
 
-Requires Docker API Version 1.22+.
+Requires Docker API Version 1.24+.
 
 The collector will need permissions to access the Docker Engine API, specifically it will need
 read access to the Docker socket (default `unix:///var/run/docker.sock`).
@@ -33,8 +33,8 @@ extensions:
     endpoint: my/path/to/docker.sock
     # list of container image names to exclude
     excluded_images: ['redis', 'another_image_name']
-    # client API version, default to 1.22
-    api_version: 1.24
+    # client API version, default to 1.24
+    api_version: 1.25
     # max amount of time to wait for a response from Docker API , default to 5s
     timeout: 15s
 
@@ -67,7 +67,7 @@ default: `5s`
 
 The client API version. If using one with a terminating zero, input as a string to prevent undesired truncation (e.g. `"1.40"` instead of `1.40`, which is parsed as `1.4`).
 
-default: `1.22`
+default: `1.24`
 
 ### `excluded_images`
 
