@@ -39,7 +39,7 @@ func TestSendTraces(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: endpoint,
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
@@ -81,7 +81,7 @@ func TestSendTraces(t *testing.T) {
 func TestSendTraces_NoBackend(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: "localhost:56569",
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
@@ -105,7 +105,7 @@ func TestSendTraces_NoBackend(t *testing.T) {
 func TestSendTraces_AfterStop(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: "localhost:56569",
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
@@ -138,7 +138,7 @@ func TestSendMetrics(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: endpoint,
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
@@ -178,7 +178,7 @@ func TestSendMetrics(t *testing.T) {
 func TestSendMetrics_NoBackend(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: "localhost:56569",
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,
@@ -202,7 +202,7 @@ func TestSendMetrics_NoBackend(t *testing.T) {
 func TestSendMetrics_AfterStop(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: "localhost:56569",
 		TLSSetting: configtls.TLSClientSetting{
 			Insecure: true,

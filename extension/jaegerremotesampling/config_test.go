@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 					Transport: "tcp",
 				}},
 				Source: Source{
-					Remote: &configgrpc.GRPCClientSettings{
+					Remote: &configgrpc.ClientConfig{
 						Endpoint: "jaeger-collector:14250",
 					},
 				},
@@ -95,7 +95,7 @@ func TestValidate(t *testing.T) {
 			cfg: Config{
 				GRPCServerSettings: &configgrpc.GRPCServerSettings{},
 				Source: Source{
-					Remote: &configgrpc.GRPCClientSettings{},
+					Remote: &configgrpc.ClientConfig{},
 					File:   "/tmp/some-file",
 				},
 			},

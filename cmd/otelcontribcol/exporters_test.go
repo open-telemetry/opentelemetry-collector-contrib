@@ -127,7 +127,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "opencensus",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["opencensus"].CreateDefaultConfig().(*opencensusexporter.Config)
-				cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+				cfg.ClientConfig = configgrpc.ClientConfig{
 					Endpoint: endpoint,
 				}
 				// disable queue/retry to validate passing the test data synchronously
@@ -152,7 +152,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "otlp",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["otlp"].CreateDefaultConfig().(*otlpexporter.Config)
-				cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+				cfg.ClientConfig = configgrpc.ClientConfig{
 					Endpoint: endpoint,
 				}
 				// disable queue/retry to validate passing the test data synchronously

@@ -99,7 +99,7 @@ func TestRemote(t *testing.T) {
 			cfg := testConfig()
 			cfg.GRPCServerSettings.NetAddr.Endpoint = "127.0.0.1:0"
 			cfg.Source.ReloadInterval = tc.reloadInterval
-			cfg.Source.Remote = &configgrpc.GRPCClientSettings{
+			cfg.Source.Remote = &configgrpc.ClientConfig{
 				Endpoint: fmt.Sprintf("127.0.0.1:%d", lis.Addr().(*net.TCPAddr).Port),
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure: true, // test only

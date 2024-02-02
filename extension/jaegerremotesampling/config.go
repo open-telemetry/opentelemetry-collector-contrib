@@ -30,7 +30,7 @@ type Config struct {
 
 type Source struct {
 	// Remote defines the remote location for the file
-	Remote *configgrpc.GRPCClientSettings `mapstructure:"remote"`
+	Remote *configgrpc.ClientConfig `mapstructure:"remote"`
 
 	// File specifies a local file as the strategies source
 	File string `mapstructure:"file"`

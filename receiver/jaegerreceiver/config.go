@@ -28,10 +28,10 @@ const (
 
 // RemoteSamplingConfig defines config key for remote sampling fetch endpoint
 type RemoteSamplingConfig struct {
-	HostEndpoint                  string        `mapstructure:"host_endpoint"`
-	StrategyFile                  string        `mapstructure:"strategy_file"`
-	StrategyFileReloadInterval    time.Duration `mapstructure:"strategy_file_reload_interval"`
-	configgrpc.GRPCClientSettings `mapstructure:",squash"`
+	HostEndpoint               string        `mapstructure:"host_endpoint"`
+	StrategyFile               string        `mapstructure:"strategy_file"`
+	StrategyFileReloadInterval time.Duration `mapstructure:"strategy_file_reload_interval"`
+	configgrpc.ClientConfig    `mapstructure:",squash"`
 }
 
 // Protocols is the configuration for the supported protocols.
