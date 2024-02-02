@@ -55,7 +55,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				GRPCServerSettings: defaultGRPCSettings,
+				ServerConfig: defaultGRPCSettings,
 			},
 		},
 		{
@@ -115,7 +115,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				GRPCServerSettings: defaultGRPCSettings,
+				ServerConfig: defaultGRPCSettings,
 			},
 		},
 		{
