@@ -102,7 +102,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.93.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor v0.93.0
@@ -854,8 +853,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcent
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver => ../../receiver/statsdreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter => ../../exporter/prometheusremotewriteexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor => ../../processor/servicegraphprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor => ../../processor/groupbytraceprocessor
 

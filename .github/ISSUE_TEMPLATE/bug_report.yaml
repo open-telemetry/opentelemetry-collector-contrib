@@ -170,7 +170,6 @@ body:
       - processor/resourcedetection/internal/openshift
       - processor/routing
       - processor/schema
-      - processor/servicegraph
       - processor/span
       - processor/spanmetrics
       - processor/sumologic

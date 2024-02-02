@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package servicegraphprocessor
+package servicegraphconnector
 
 import (
 	"context"
@@ -14,19 +14,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/processor/processortest"
 	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -34,54 +29,9 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func TestProcessorStart(t *testing.T) {
-	// Create otlp exporters.
-	otlpID, mexp, texp := newOTLPExporters(t)
-
-	for _, tc := range []struct {
-		name            string
-		exporter        component.Component
-		metricsExporter string
-		wantErrorMsg    string
-	}{
-		{"export to active otlp metrics exporter", mexp, "otlp", ""},
-		{"unable to find configured exporter in active exporter list", mexp, "prometheus", "failed to find metrics exporter: 'prometheus'; please configure metrics_exporter from one of: [otlp]"},
-		{"export to active otlp traces exporter should error", texp, "otlp", "the exporter \"otlp\" isn't a metrics exporter"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			// Prepare
-			exporters := map[component.DataType]map[component.ID]component.Component{
-				component.DataTypeMetrics: {
-					otlpID: tc.exporter,
-				},
-			}
-
-			// Create servicegraph processor
-			factory := NewFactory()
-			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.MetricsExporter = tc.metricsExporter
-
-			procCreationParams := processortest.NewNopCreateSettings()
-			traceProcessor, err := factory.CreateTracesProcessor(context.Background(), procCreationParams, cfg, consumertest.NewNop())
-			require.NoError(t, err)
-
-			// Test
-			smp := traceProcessor.(*serviceGraphProcessor)
-			err = smp.Start(context.Background(), newMockHost(exporters))
-
-			// Verify
-			if tc.wantErrorMsg != "" {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
 func TestConnectorStart(t *testing.T) {
 	// Create servicegraph processor
-	factory := NewConnectorFactoryFunc("servicegraph", component.StabilityLevelAlpha)
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	procCreationParams := connectortest.NewNopCreateSettings()
@@ -89,25 +39,9 @@ func TestConnectorStart(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test
-	smp := traceProcessor.(*serviceGraphProcessor)
+	smp := traceProcessor.(*serviceGraphConnector)
 	err = smp.Start(context.Background(), componenttest.NewNopHost())
-
-	// Verify
-	assert.NoError(t, err)
-}
-
-func TestProcessorShutdown(t *testing.T) {
-	// Prepare
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-
-	// Test
-	next := new(consumertest.TracesSink)
-	set := componenttest.NewNopTelemetrySettings()
-	set.Logger = zaptest.NewLogger(t)
-	p := newProcessor(set, cfg)
-	p.tracesConsumer = next
-	err := p.Shutdown(context.Background())
+	defer require.NoError(t, smp.Shutdown(context.Background()))
 
 	// Verify
 	assert.NoError(t, err)
@@ -115,151 +49,19 @@ func TestProcessorShutdown(t *testing.T) {
 
 func TestConnectorShutdown(t *testing.T) {
 	// Prepare
-	factory := NewConnectorFactoryFunc("servicegraph", component.StabilityLevelAlpha)
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	// Test
 	next := new(consumertest.MetricsSink)
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p := newProcessor(set, cfg)
+	p := newConnector(set, cfg)
 	p.metricsConsumer = next
 	err := p.Shutdown(context.Background())
 
 	// Verify
 	assert.NoError(t, err)
-}
-
-func TestProcessorConsume(t *testing.T) {
-	for _, tc := range []struct {
-		name          string
-		cfg           *Config
-		gates         []*featuregate.Gate
-		sampleTraces  ptrace.Traces
-		verifyMetrics func(t *testing.T, md pmetric.Metrics)
-	}{
-		{
-			name: "traces with client and server span",
-			cfg: &Config{
-				MetricsExporter: "mock",
-				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
-				Store: StoreConfig{
-					MaxItems: 10,
-					TTL:      time.Nanosecond,
-				},
-			},
-			sampleTraces:  buildSampleTrace(t, "val"),
-			verifyMetrics: verifyHappyCaseMetrics,
-		},
-		{
-			name: "incomplete traces with virtual server span",
-			cfg: &Config{
-				MetricsExporter: "mock",
-				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
-				Store: StoreConfig{
-					MaxItems: 10,
-					TTL:      time.Nanosecond,
-				},
-			},
-			gates:        []*featuregate.Gate{virtualNodeFeatureGate},
-			sampleTraces: incompleteClientTraces(),
-			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
-				v, ok := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Get("server")
-				assert.True(t, ok)
-				assert.Equal(t, "127.10.10.1", v.Str())
-			},
-		},
-		{
-			name: "incomplete traces with virtual client span",
-			cfg: &Config{
-				MetricsExporter: "mock",
-				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
-				Store: StoreConfig{
-					MaxItems: 10,
-					TTL:      time.Nanosecond,
-				},
-			},
-			gates:        []*featuregate.Gate{virtualNodeFeatureGate},
-			sampleTraces: incompleteServerTraces(false),
-			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
-				v, ok := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Get("client")
-				assert.True(t, ok)
-				assert.Equal(t, "user", v.Str())
-			},
-		},
-		{
-			name: "incomplete traces with client span lost",
-			cfg: &Config{
-				MetricsExporter: "mock",
-				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
-				Store: StoreConfig{
-					MaxItems: 10,
-					TTL:      time.Nanosecond,
-				},
-			},
-			gates:        []*featuregate.Gate{virtualNodeFeatureGate},
-			sampleTraces: incompleteServerTraces(true),
-			verifyMetrics: func(t *testing.T, md pmetric.Metrics) {
-				assert.Equal(t, 0, md.MetricCount())
-			},
-		},
-		{
-			name: "complete traces with legacy latency metrics",
-			cfg: &Config{
-				MetricsExporter: "mock",
-				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
-				Store: StoreConfig{
-					MaxItems: 10,
-					TTL:      time.Nanosecond,
-				},
-			}, sampleTraces: buildSampleTrace(t, "val"),
-			gates:         []*featuregate.Gate{virtualNodeFeatureGate, legacyLatencyUnitMsFeatureGate},
-			verifyMetrics: verifyHappyCaseMetricsWithDuration(1000),
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			// Set feature gates
-			for _, gate := range tc.gates {
-				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
-			}
-
-			// Prepare
-			set := componenttest.NewNopTelemetrySettings()
-			set.Logger = zaptest.NewLogger(t)
-			p := newProcessor(set, tc.cfg)
-			p.tracesConsumer = consumertest.NewNop()
-
-			metricsExporter := newMockMetricsExporter()
-
-			mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
-				component.DataTypeMetrics: {
-					component.NewID("mock"): metricsExporter,
-				},
-			})
-
-			// Start processor
-			assert.NoError(t, p.Start(context.Background(), mHost))
-
-			// Test & verify
-			// The assertion is part of verifyHappyCaseMetrics func.
-			assert.NoError(t, p.ConsumeTraces(context.Background(), tc.sampleTraces))
-			time.Sleep(time.Second * 2)
-
-			// Force collection
-			p.store.Expire()
-			md, err := p.buildMetrics()
-			assert.NoError(t, err)
-			tc.verifyMetrics(t, md)
-
-			// Shutdown the processor
-			assert.NoError(t, p.Shutdown(context.Background()))
-
-			// Unset feature gates
-			for _, gate := range tc.gates {
-				require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
-			}
-		})
-	}
 }
 
 func TestConnectorConsume(t *testing.T) {
@@ -271,7 +73,7 @@ func TestConnectorConsume(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	conn := newProcessor(set, cfg)
+	conn := newConnector(set, cfg)
 	conn.metricsConsumer = newMockMetricsExporter()
 
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
@@ -289,45 +91,6 @@ func TestConnectorConsume(t *testing.T) {
 
 	// Shutdown the connector
 	assert.NoError(t, conn.Shutdown(context.Background()))
-}
-
-func TestProcessor_MetricsFlushInterval(t *testing.T) {
-	// Prepare
-	set := componenttest.NewNopTelemetrySettings()
-	set.Logger = zaptest.NewLogger(t)
-	p := newProcessor(set, &Config{
-		MetricsExporter: "mock",
-		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
-		Store: StoreConfig{
-			MaxItems: 10,
-			TTL:      time.Nanosecond,
-		},
-		MetricsFlushInterval: 2 * time.Second,
-	})
-	p.tracesConsumer = consumertest.NewNop()
-
-	metricsExporter := newMockMetricsExporter()
-	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
-			component.NewID("mock"): metricsExporter,
-		},
-	})
-
-	// Start processor
-	assert.NoError(t, p.Start(context.Background(), mHost))
-
-	// Push traces
-	assert.NoError(t, p.ConsumeTraces(context.Background(), buildSampleTrace(t, "val")))
-
-	// Metrics are not immediately flushed
-	assert.Len(t, metricsExporter.getMetrics(), 0)
-
-	// Metrics are flushed after 2 seconds
-	assert.Eventuallyf(t, func() bool { return len(metricsExporter.getMetrics()) == 1 }, 5*time.Second, 100*time.Millisecond, "metrics are not flushed")
-	verifyHappyCaseMetrics(t, metricsExporter.getMetrics()[0])
-
-	// Shutdown the processor
-	assert.NoError(t, p.Shutdown(context.Background()))
 }
 
 func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) {
@@ -448,69 +211,6 @@ func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	return traces
 }
 
-func incompleteClientTraces() ptrace.Traces {
-	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
-	tEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
-
-	traces := ptrace.NewTraces()
-
-	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().PutStr(semconv.AttributeServiceName, "some-client-service")
-
-	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
-	anotherTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
-	anotherClientSpanID := pcommon.SpanID([8]byte{1, 2, 3, 4, 4, 3, 2, 1})
-	clientSpanNoServerSpan := scopeSpans.Spans().AppendEmpty()
-	clientSpanNoServerSpan.SetName("client span")
-	clientSpanNoServerSpan.SetSpanID(anotherClientSpanID)
-	clientSpanNoServerSpan.SetTraceID(anotherTraceID)
-	clientSpanNoServerSpan.SetKind(ptrace.SpanKindClient)
-	clientSpanNoServerSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
-	clientSpanNoServerSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
-	clientSpanNoServerSpan.Attributes().PutStr(semconv.AttributeNetSockPeerAddr, "127.10.10.1") // Attribute selected as dimension for metrics
-
-	return traces
-}
-
-func incompleteServerTraces(withParentSpan bool) ptrace.Traces {
-	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
-	tEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
-
-	traces := ptrace.NewTraces()
-
-	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().PutStr(semconv.AttributeServiceName, "some-server-service")
-	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
-	anotherTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	serverSpanNoClientSpan := scopeSpans.Spans().AppendEmpty()
-	serverSpanNoClientSpan.SetName("server span")
-	serverSpanNoClientSpan.SetSpanID([8]byte{0x19, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26})
-	if withParentSpan {
-		serverSpanNoClientSpan.SetParentSpanID([8]byte{0x27, 0x28, 0x29, 0x30, 0x31, 0x32, 0x33, 0x34})
-	}
-	serverSpanNoClientSpan.SetTraceID(anotherTraceID)
-	serverSpanNoClientSpan.SetKind(ptrace.SpanKindServer)
-	serverSpanNoClientSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
-	serverSpanNoClientSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
-	return traces
-}
-
-func newOTLPExporters(t *testing.T) (component.ID, exporter.Metrics, exporter.Traces) {
-	otlpExpFactory := otlpexporter.NewFactory()
-	otlpID := component.NewID("otlp")
-	otlpConfig := &otlpexporter.Config{
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
-			Endpoint: "example.com:1234",
-		},
-	}
-	expCreationParams := exportertest.NewNopCreateSettings()
-	mexp, err := otlpExpFactory.CreateMetricsExporter(context.Background(), expCreationParams, otlpConfig)
-	require.NoError(t, err)
-	texp, err := otlpExpFactory.CreateTracesExporter(context.Background(), expCreationParams, otlpConfig)
-	require.NoError(t, err)
-	return otlpID, mexp, texp
-}
-
 type mockHost struct {
 	component.Host
 	exps map[component.DataType]map[component.ID]component.Component
@@ -551,14 +251,8 @@ func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metri
 	return nil
 }
 
-func (m *mockMetricsExporter) getMetrics() []pmetric.Metrics {
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
-	return m.md
-}
-
 func TestUpdateDurationMetrics(t *testing.T) {
-	p := serviceGraphProcessor{
+	p := serviceGraphConnector{
 		reqTotal:                             make(map[string]int64),
 		reqFailedTotal:                       make(map[string]int64),
 		reqServerDurationSecondsSum:          make(map[string]float64),
@@ -615,8 +309,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p := newProcessor(set, cfg)
-	p.tracesConsumer = consumertest.NewNop()
+	p := newConnector(set, cfg)
 
 	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
@@ -668,8 +361,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 
 	reader := sdkmetric.NewManualReader()
 	set := setupTelemetry(reader)
-	p := newProcessor(set, cfg)
-	p.tracesConsumer = consumertest.NewNop()
+	p := newConnector(set, cfg)
 
 	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
