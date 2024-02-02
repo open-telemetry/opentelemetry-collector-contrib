@@ -1143,7 +1143,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.NoError(t, longFile.Close())
 
 	// Verify we have no checkpointed files
-	require.Equal(t, 0, operator.knownFiles[0].Len()+operator.knownFiles[1].Len())
+	require.Equal(t, 0, operator.totalReaders())
 
 	// Wait until the only line in the short file and
 	// at least one line from the long file have been consumed

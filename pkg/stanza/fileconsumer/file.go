@@ -66,7 +66,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 }
 
 func (m *Manager) closePreviousFiles() {
-	// m.previousPollFiles -> m.knownFiles[-1]
+	// m.previousPollFiles -> m.knownFiles[0]
 
 	for r, _ := m.previousPollFiles.Pop(); r != nil; r, _ = m.previousPollFiles.Pop() {
 		m.knownFiles[0].Add(r.Close())
@@ -264,8 +264,8 @@ func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader
 
 func (m *Manager) totalReaders() int {
 	total := m.previousPollFiles.Len()
-	for _, v := range m.knownFiles {
-		total += v.Len()
+	for i := 0; i < len(m.knownFiles); i++ {
+		total += m.knownFiles[i].Len()
 	}
 	return total
 }

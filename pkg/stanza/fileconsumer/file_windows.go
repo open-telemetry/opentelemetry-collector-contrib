@@ -11,7 +11,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 )
 
-func (m *Manager) preConsume(_ context.Context, _ []*reader.Reader) {
+func (m *Manager) preConsume(_ context.Context) {
 }
 
 // On windows, we close files immediately after reading because they cannot be moved while open.
