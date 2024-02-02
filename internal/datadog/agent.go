@@ -43,7 +43,7 @@ type TraceAgent struct {
 // ConnectorPerformanceFeatureGate uses optimized code paths for the Datadog Connector.
 var ConnectorPerformanceFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"connector.datadogconnector.performance",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Datadog Connector will use optimized code"),
 )
 
