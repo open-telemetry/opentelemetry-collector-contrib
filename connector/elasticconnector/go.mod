@@ -1,4 +1,4 @@
-module github.com/tommyers-elastic/opentelemetry-collector-contrib/connector/elasticconnector
+module github.com/ishleenk17/opentelemetry-collector-contrib/connector/elasticconnector
 
 go 1.21.1
 

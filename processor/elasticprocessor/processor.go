@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/tommyers-elastic/opentelemetry-collector-contrib/processor/elasticprocessor/internal/hostmetrics"
+	"github.com/ishleenk17/opentelemetry-collector-contrib/processor/elasticprocessor/internal/hostmetrics"
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"

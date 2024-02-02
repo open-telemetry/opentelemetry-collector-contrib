@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/tommyers-elastic/opentelemetry-collector-contrib/connector/elasticconnector/internal/datastream"
-	"github.com/tommyers-elastic/opentelemetry-collector-contrib/connector/elasticconnector/internal/hostmetrics"
+	"github.com/ishleenk17/opentelemetry-collector-contrib/connector/elasticconnector/internal/datastream"
+	"github.com/ishleenk17/opentelemetry-collector-contrib/connector/elasticconnector/internal/hostmetrics"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"

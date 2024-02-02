@@ -1,4 +1,4 @@
-module github.com/tommyers-elastic/opentelemetry-collector-contrib/processor/elasticprocessor
+module github.com/ishleenk17/opentelemetry-collector-contrib/processor/elasticprocessor
 
 go 1.21.1
 
@@ -39,3 +39,5 @@ require (
 	google.golang.org/grpc v1.60.1 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 )
+
+replace github.com/ishleenk17/opentelemetry-collector-contrib/processor/elasticprocessor => github.com/ishleenk17/opentelemetry-collector-contrib/processor/elasticprocessor v0.0.0-20240202115851-4f9f7a38b8bd
