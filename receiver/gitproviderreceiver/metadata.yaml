@@ -88,3 +88,7 @@ metrics:
     gauge:
       value_type: int
     attributes: [repository.name, branch.name]
+
+tests:
+  config:
+

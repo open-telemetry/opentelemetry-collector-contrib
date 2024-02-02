@@ -381,15 +381,22 @@ func TestTransformer(t *testing.T) {
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.MaxSources = 1
+				cfg.OverwriteWith = "oldest"
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "end", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "start1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1.Add(10*time.Millisecond), "middle1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t2, "start2", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t2.Add(10*time.Millisecond), "middle2", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t2.Add(20*time.Millisecond), "end2", map[string]string{"file.path": "file2"}),
 			},
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "end", map[string]string{"file.path": "file1"}),
+				// First entry is booted before end comes in, but partial recombination should occur
+				entryWithBodyAttr(t1.Add(10*time.Millisecond), "start1\nmiddle1", map[string]string{"file.path": "file1"}),
+				// Second entry is flushed automatically when end comes in
+				entryWithBodyAttr(t2.Add(20*time.Millisecond), "start2\nmiddle2\nend2", map[string]string{"file.path": "file2"}),
 			},
 		},
 		{
@@ -591,7 +598,7 @@ func BenchmarkRecombine(b *testing.B) {
 		for _, e := range entries {
 			require.NoError(b, recombine.Process(ctx, e))
 		}
-		recombine.flushUncombined(ctx)
+		recombine.flushAllSources(ctx)
 	}
 }
 
@@ -630,7 +637,7 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 		require.NoError(b, recombine.Process(ctx, next))
 		require.NoError(b, recombine.Process(ctx, start))
 		require.NoError(b, recombine.Process(ctx, next))
-		recombine.flushUncombined(ctx)
+		recombine.flushAllSources(ctx)
 	}
 
 }
