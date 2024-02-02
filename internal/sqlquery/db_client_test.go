@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package sqlqueryreceiver
+package sqlquery // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 
 import (
 	"context"
@@ -16,12 +16,12 @@ import (
 )
 
 func TestDBSQLClient_SingleRow(t *testing.T) {
-	cl := dbSQLClient{
-		db:     fakeDB{rowVals: [][]any{{42, 123.4, "hello", true, []uint8{52, 46, 49}}}},
-		logger: zap.NewNop(),
-		sql:    "",
+	cl := DbSQLClient{
+		Db:     fakeDB{rowVals: [][]any{{42, 123.4, "hello", true, []uint8{52, 46, 49}}}},
+		Logger: zap.NewNop(),
+		SQL:    "",
 	}
-	rows, err := cl.queryRows(context.Background())
+	rows, err := cl.QueryRows(context.Background())
 	require.NoError(t, err)
 	assert.Len(t, rows, 1)
 	assert.EqualValues(t, map[string]string{
@@ -34,15 +34,15 @@ func TestDBSQLClient_SingleRow(t *testing.T) {
 }
 
 func TestDBSQLClient_MultiRow(t *testing.T) {
-	cl := dbSQLClient{
-		db: fakeDB{rowVals: [][]any{
+	cl := DbSQLClient{
+		Db: fakeDB{rowVals: [][]any{
 			{42, 123.4, "hello", true, []uint8{52, 46, 49}},
 			{43, 123.5, "goodbye", false, []uint8{52, 46, 50}},
 		}},
-		logger: zap.NewNop(),
-		sql:    "",
+		Logger: zap.NewNop(),
+		SQL:    "",
 	}
-	rows, err := cl.queryRows(context.Background())
+	rows, err := cl.QueryRows(context.Background())
 	require.NoError(t, err)
 	assert.Len(t, rows, 2)
 	assert.EqualValues(t, map[string]string{
@@ -62,14 +62,14 @@ func TestDBSQLClient_MultiRow(t *testing.T) {
 }
 
 func TestDBSQLClient_Nulls(t *testing.T) {
-	cl := dbSQLClient{
-		db: fakeDB{rowVals: [][]any{
+	cl := DbSQLClient{
+		Db: fakeDB{rowVals: [][]any{
 			{42, nil, 111}, // NULLs from the DB map to nil here
 		}},
-		logger: zap.NewNop(),
-		sql:    "",
+		Logger: zap.NewNop(),
+		SQL:    "",
 	}
-	rows, err := cl.queryRows(context.Background())
+	rows, err := cl.QueryRows(context.Background())
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, errNullValueWarning))
 	assert.Len(t, rows, 1)
@@ -80,15 +80,15 @@ func TestDBSQLClient_Nulls(t *testing.T) {
 }
 
 func TestDBSQLClient_Nulls_MultiRow(t *testing.T) {
-	cl := dbSQLClient{
-		db: fakeDB{rowVals: [][]any{
+	cl := DbSQLClient{
+		Db: fakeDB{rowVals: [][]any{
 			{42, nil},
 			{43, nil},
 		}},
-		logger: zap.NewNop(),
-		sql:    "",
+		Logger: zap.NewNop(),
+		SQL:    "",
 	}
-	rows, err := cl.queryRows(context.Background())
+	rows, err := cl.QueryRows(context.Background())
 	assert.Error(t, err)
 	errs := multierr.Errors(err)
 	for _, err := range errs {
@@ -144,19 +144,4 @@ type fakeCol struct {
 
 func (c fakeCol) Name() string {
 	return c.name
-}
-
-type fakeDBClient struct {
-	requestCounter int
-	stringMaps     [][]stringMap
-	err            error
-}
-
-func (c *fakeDBClient) queryRows(context.Context, ...any) ([]stringMap, error) {
-	if c.err != nil {
-		return nil, c.err
-	}
-	idx := c.requestCounter
-	c.requestCounter++
-	return c.stringMaps[idx], nil
 }

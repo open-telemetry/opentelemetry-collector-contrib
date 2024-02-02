@@ -756,9 +756,8 @@ func TestSourceBatchDelete(t *testing.T) {
 	ctx := context.Background()
 
 	require.NoError(t, recombine.Process(ctx, start))
-	require.NoError(t, recombine.Process(ctx, next))
 	require.Equal(t, 1, len(recombine.batchMap))
-	require.NoError(t, recombine.flushSource(ctx, "file1", true))
+	require.NoError(t, recombine.Process(ctx, next))
 	require.Equal(t, 0, len(recombine.batchMap))
 	fake.ExpectEntry(t, expect)
 	require.NoError(t, recombine.Stop())

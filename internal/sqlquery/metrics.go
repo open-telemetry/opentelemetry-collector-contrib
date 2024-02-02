@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
+package sqlquery // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
-func rowToMetric(row stringMap, cfg MetricCfg, dest pmetric.Metric, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) error {
+func rowToMetric(row StringMap, cfg MetricCfg, dest pmetric.Metric, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) error {
 	dest.SetName(cfg.MetricName)
 	dest.SetDescription(cfg.Description)
 	dest.SetUnit(cfg.Unit)
