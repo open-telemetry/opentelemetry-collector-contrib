@@ -144,7 +144,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 									},
 								},
 							},
-							ClientConfig: configutil.ClientConfig{
+							HTTPClientConfig: configutil.HTTPClientConfig{
 								TLSConfig: configutil.TLSConfig{
 									CAFile:             "./testdata/test_cert.pem",
 									InsecureSkipVerify: true,
@@ -249,7 +249,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 									},
 								},
 							},
-							ClientConfig: configutil.ClientConfig{
+							HTTPClientConfig: configutil.HTTPClientConfig{
 								TLSConfig: configutil.TLSConfig{
 									CAFile:             "./testdata/test_cert.pem",
 									InsecureSkipVerify: true,
@@ -381,7 +381,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 									},
 								},
 							},
-							ClientConfig: configutil.ClientConfig{
+							HTTPClientConfig: configutil.HTTPClientConfig{
 								TLSConfig: configutil.TLSConfig{
 									CAFile: "./testdata/test_cert.pem",
 								},
