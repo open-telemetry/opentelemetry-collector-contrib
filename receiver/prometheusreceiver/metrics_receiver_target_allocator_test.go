@@ -222,7 +222,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 					Interval:    10 * time.Second,
 					CollectorID: "collector-1",
 					HTTPSDConfig: &PromHTTPSDConfig{
-						ClientConfig: commonconfig.ClientConfig{
+						HTTPClientConfig: commonconfig.HTTPClientConfig{
 							BasicAuth: &commonconfig.BasicAuth{
 								Username: "user",
 								Password: "aPassword",
@@ -316,8 +316,8 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 					Interval:    10 * time.Second,
 					CollectorID: "collector-1",
 					HTTPSDConfig: &PromHTTPSDConfig{
-						ClientConfig:    commonconfig.ClientConfig{},
-						RefreshInterval: model.Duration(60 * time.Second),
+						HTTPClientConfig: commonconfig.HTTPClientConfig{},
+						RefreshInterval:  model.Duration(60 * time.Second),
 					},
 				},
 			},
@@ -428,8 +428,8 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 					Interval:    10 * time.Second,
 					CollectorID: "collector-1",
 					HTTPSDConfig: &PromHTTPSDConfig{
-						ClientConfig:    commonconfig.ClientConfig{},
-						RefreshInterval: model.Duration(60 * time.Second),
+						HTTPClientConfig: commonconfig.HTTPClientConfig{},
+						RefreshInterval:  model.Duration(60 * time.Second),
 					},
 				},
 			},
@@ -470,8 +470,8 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 					Interval:    50 * time.Millisecond,
 					CollectorID: "collector-1",
 					HTTPSDConfig: &PromHTTPSDConfig{
-						ClientConfig:    commonconfig.ClientConfig{},
-						RefreshInterval: model.Duration(60 * time.Second),
+						HTTPClientConfig: commonconfig.HTTPClientConfig{},
+						RefreshInterval:  model.Duration(60 * time.Second),
 					},
 				},
 			},
@@ -515,7 +515,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 
 				// are http configs applied?
 				sdConfig := provider.Config().(*promHTTP.SDConfig)
-				require.Equal(t, tc.cfg.TargetAllocator.HTTPSDConfig.ClientConfig, sdConfig.ClientConfig)
+				require.Equal(t, tc.cfg.TargetAllocator.HTTPSDConfig.HTTPClientConfig, sdConfig.HTTPClientConfig)
 
 				for _, group := range refresh {
 					found := false
