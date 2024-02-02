@@ -84,7 +84,7 @@ func TestScraper(t *testing.T) {
 	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
 
 	cfg := &Config{
-		HTTPClientConfig: confighttp.HTTPClientConfig{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: ts.URL,
 			Auth: &configauth.Authentication{
 				AuthenticatorID: component.NewID("basicauth/client"),

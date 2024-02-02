@@ -48,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				AccessToken: "testToken",
 				Realm:       "ap0",
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout:              10 * time.Second,
 					Headers:              nil,
 					MaxIdleConns:         &hundred,
@@ -85,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 				DeltaTranslationTTL: 3600,
 				ExcludeProperties:   nil,
 				Correlation: &correlation.Config{
-					HTTPClientConfig: confighttp.HTTPClientConfig{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: "",
 						Timeout:  5 * time.Second,
 					},
@@ -111,7 +111,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				AccessToken: "testToken",
 				Realm:       "us1",
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout: 2 * time.Second,
 					Headers: map[string]configopaque.String{
 						"added-entry": "added value",
@@ -244,7 +244,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Correlation: &correlation.Config{
-					HTTPClientConfig: confighttp.HTTPClientConfig{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: "",
 						Timeout:  5 * time.Second,
 					},
@@ -494,9 +494,9 @@ func TestConfigValidateErrors(t *testing.T) {
 		{
 			name: "Negative Timeout",
 			cfg: &Config{
-				Realm:            "us0",
-				AccessToken:      "access_token",
-				HTTPClientConfig: confighttp.HTTPClientConfig{Timeout: -1 * time.Second},
+				Realm:        "us0",
+				AccessToken:  "access_token",
+				ClientConfig: confighttp.ClientConfig{Timeout: -1 * time.Second},
 			},
 		},
 		{

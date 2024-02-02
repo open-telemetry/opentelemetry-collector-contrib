@@ -19,7 +19,7 @@ import (
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
-		HTTPServerConfig: confighttp.HTTPServerConfig{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "0.0.0.0:13133",
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),

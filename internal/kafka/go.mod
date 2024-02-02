@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.50.7
 	github.com/stretchr/testify v1.8.4
 	github.com/xdg-go/scram v1.1.2
-	go.opentelemetry.io/collector/config/configtls v0.93.1-0.20240130182548-89388addcc7f
+	go.opentelemetry.io/collector/config/configtls v0.93.1-0.20240202170612-7abb9622312d
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )
@@ -34,7 +34,8 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.93.1-0.20240130182548-89388addcc7f // indirect
+	go.opentelemetry.io/collector/config/configopaque v0.93.1-0.20240202170612-7abb9622312d // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240202163303-26c157e3bffb // indirect
 	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect

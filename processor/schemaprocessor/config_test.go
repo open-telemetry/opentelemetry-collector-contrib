@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, &Config{
-		HTTPClientConfig: confighttp.NewDefaultHTTPClientConfig(),
+		ClientConfig: confighttp.NewDefaultClientConfig(),
 		Prefetch: []string{
 			"https://opentelemetry.io/schemas/1.9.0",
 		},

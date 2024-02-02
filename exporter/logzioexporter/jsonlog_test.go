@@ -85,7 +85,7 @@ func TestSetTimeStamp(t *testing.T) {
 	cfg := &Config{
 		Region: "us",
 		Token:  "token",
-		HTTPClientConfig: confighttp.HTTPClientConfig{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint:    server.URL,
 			Compression: configcompression.Gzip,
 		},

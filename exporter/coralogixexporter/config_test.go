@@ -45,19 +45,19 @@ func TestLoadConfig(t *testing.T) {
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version
 				SubSystem:       "SUBSYSTEM_NAME",
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-				DomainSettings: configgrpc.GRPCClientSettings{
+				DomainSettings: configgrpc.ClientConfig{
 					Compression: configcompression.Gzip,
 				},
-				Metrics: configgrpc.GRPCClientSettings{
+				Metrics: configgrpc.ClientConfig{
 					Endpoint:        "https://",
 					Compression:     configcompression.Gzip,
 					WriteBufferSize: 512 * 1024,
 				},
-				Logs: configgrpc.GRPCClientSettings{
+				Logs: configgrpc.ClientConfig{
 					Endpoint:    "https://",
 					Compression: configcompression.Gzip,
 				},
-				Traces: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.ClientConfig{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					Compression: configcompression.Gzip,
 					TLSSetting: configtls.TLSClientSetting{
@@ -71,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 					WaitForReady:    false,
 					BalancerName:    "",
 				},
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: "https://",
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting:         configtls.TLSSetting{},
@@ -100,19 +100,19 @@ func TestLoadConfig(t *testing.T) {
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version
 				SubSystem:       "SUBSYSTEM_NAME",
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-				DomainSettings: configgrpc.GRPCClientSettings{
+				DomainSettings: configgrpc.ClientConfig{
 					Compression: configcompression.Gzip,
 				},
-				Metrics: configgrpc.GRPCClientSettings{
+				Metrics: configgrpc.ClientConfig{
 					Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					Compression:     configcompression.Gzip,
 					WriteBufferSize: 512 * 1024,
 				},
-				Logs: configgrpc.GRPCClientSettings{
+				Logs: configgrpc.ClientConfig{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					Compression: configcompression.Gzip,
 				},
-				Traces: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.ClientConfig{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					Compression: configcompression.Gzip,
 					TLSSetting: configtls.TLSClientSetting{
@@ -128,7 +128,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				AppNameAttributes:   []string{"service.namespace", "k8s.namespace.name"},
 				SubSystemAttributes: []string{"service.name", "k8s.deployment.name", "k8s.statefulset.name", "k8s.daemonset.name", "k8s.cronjob.name", "k8s.job.name", "k8s.container.name"},
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: "https://",
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting:         configtls.TLSSetting{},

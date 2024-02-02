@@ -47,7 +47,7 @@ func TestExtension(t *testing.T) {
 		{
 			name: "No additional headers",
 			config: &Config{
-				Ingress: confighttp.HTTPServerConfig{
+				Ingress: confighttp.ServerConfig{
 					Endpoint: listenAt,
 				},
 			},
@@ -68,10 +68,10 @@ func TestExtension(t *testing.T) {
 		{
 			name: "With additional headers",
 			config: &Config{
-				Ingress: confighttp.HTTPServerConfig{
+				Ingress: confighttp.ServerConfig{
 					Endpoint: listenAt,
 				},
-				Egress: confighttp.HTTPClientConfig{
+				Egress: confighttp.ClientConfig{
 					Headers: map[string]configopaque.String{
 						"key": "value",
 					},
@@ -90,10 +90,10 @@ func TestExtension(t *testing.T) {
 		{
 			name: "Error code from backend",
 			config: &Config{
-				Ingress: confighttp.HTTPServerConfig{
+				Ingress: confighttp.ServerConfig{
 					Endpoint: listenAt,
 				},
-				Egress: confighttp.HTTPClientConfig{
+				Egress: confighttp.ClientConfig{
 					Headers: map[string]configopaque.String{
 						"key": "value",
 					},
@@ -110,10 +110,10 @@ func TestExtension(t *testing.T) {
 		{
 			name: "Error making request at forwarder",
 			config: &Config{
-				Ingress: confighttp.HTTPServerConfig{
+				Ingress: confighttp.ServerConfig{
 					Endpoint: listenAt,
 				},
-				Egress: confighttp.HTTPClientConfig{
+				Egress: confighttp.ClientConfig{
 					Headers: map[string]configopaque.String{
 						"key": "value",
 					},
@@ -130,7 +130,7 @@ func TestExtension(t *testing.T) {
 		{
 			name: "Invalid config - HTTP Client creation fails",
 			config: &Config{
-				Egress: confighttp.HTTPClientConfig{
+				Egress: confighttp.ClientConfig{
 					Endpoint: "localhost:9090",
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -145,7 +145,7 @@ func TestExtension(t *testing.T) {
 		{
 			name: "Error on Startup",
 			config: &Config{
-				Ingress: confighttp.HTTPServerConfig{
+				Ingress: confighttp.ServerConfig{
 					Endpoint: "invalid", // to mock error setting up listener.
 				},
 			},

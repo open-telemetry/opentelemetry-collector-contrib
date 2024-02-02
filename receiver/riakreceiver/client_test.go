@@ -35,7 +35,7 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Invalid HTTP config",
 			cfg: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -49,7 +49,7 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Valid Configuration",
 			cfg: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					TLSSetting: configtls.TLSClientSetting{},
 					Endpoint:   defaultEndpoint,
 				},
