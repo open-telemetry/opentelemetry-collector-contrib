@@ -19,6 +19,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/metadata"
 )
@@ -26,8 +27,8 @@ import (
 type logsReceiver struct {
 	config           *Config
 	settings         receiver.CreateSettings
-	createConnection dbProviderFunc
-	createClient     clientProviderFunc
+	createConnection sqlquery.DbProviderFunc
+	createClient     sqlquery.ClientProviderFunc
 	queryReceivers   []*logsQueryReceiver
 	nextConsumer     consumer.Logs
 
@@ -43,8 +44,8 @@ type logsReceiver struct {
 func newLogsReceiver(
 	config *Config,
 	settings receiver.CreateSettings,
-	sqlOpenerFunc sqlOpenerFunc,
-	createClient clientProviderFunc,
+	sqlOpenerFunc sqlquery.SQLOpenerFunc,
+	createClient sqlquery.ClientProviderFunc,
 	nextConsumer consumer.Logs,
 ) (*logsReceiver, error) {
 
@@ -199,14 +200,14 @@ func (receiver *logsReceiver) stopCollecting() {
 
 type logsQueryReceiver struct {
 	id           string
-	query        Query
-	createDb     dbProviderFunc
-	createClient clientProviderFunc
+	query        sqlquery.Query
+	createDb     sqlquery.DbProviderFunc
+	createClient sqlquery.ClientProviderFunc
 	logger       *zap.Logger
-	telemetry    TelemetryConfig
+	telemetry    sqlquery.TelemetryConfig
 
 	db            *sql.DB
-	client        dbClient
+	client        sqlquery.DbClient
 	trackingValue string
 	// TODO: Extract persistence into its own component
 	storageClient           storage.Client
@@ -215,11 +216,11 @@ type logsQueryReceiver struct {
 
 func newLogsQueryReceiver(
 	id string,
-	query Query,
-	dbProviderFunc dbProviderFunc,
-	clientProviderFunc clientProviderFunc,
+	query sqlquery.Query,
+	dbProviderFunc sqlquery.DbProviderFunc,
+	clientProviderFunc sqlquery.ClientProviderFunc,
 	logger *zap.Logger,
-	telemetry TelemetryConfig,
+	telemetry sqlquery.TelemetryConfig,
 	storageClient storage.Client,
 ) *logsQueryReceiver {
 	queryReceiver := &logsQueryReceiver{
@@ -246,7 +247,7 @@ func (queryReceiver *logsQueryReceiver) start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to open db connection: %w", err)
 	}
-	queryReceiver.client = queryReceiver.createClient(dbWrapper{queryReceiver.db}, queryReceiver.query.SQL, queryReceiver.logger, queryReceiver.telemetry)
+	queryReceiver.client = queryReceiver.createClient(sqlquery.DbWrapper{Db: queryReceiver.db}, queryReceiver.query.SQL, queryReceiver.logger, queryReceiver.telemetry)
 
 	queryReceiver.trackingValue = queryReceiver.retrieveTrackingValue(ctx)
 
@@ -273,13 +274,13 @@ func (queryReceiver *logsQueryReceiver) retrieveTrackingValue(ctx context.Contex
 func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs, error) {
 	logs := plog.NewLogs()
 
-	var rows []stringMap
+	var rows []sqlquery.StringMap
 	var err error
 	observedAt := pcommon.NewTimestampFromTime(time.Now())
 	if queryReceiver.query.TrackingColumn != "" {
-		rows, err = queryReceiver.client.queryRows(ctx, queryReceiver.trackingValue)
+		rows, err = queryReceiver.client.QueryRows(ctx, queryReceiver.trackingValue)
 	} else {
-		rows, err = queryReceiver.client.queryRows(ctx)
+		rows, err = queryReceiver.client.QueryRows(ctx)
 	}
 	if err != nil {
 		return logs, fmt.Errorf("error getting rows: %w", err)
@@ -300,7 +301,7 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 	return logs, nil
 }
 
-func (queryReceiver *logsQueryReceiver) storeTrackingValue(ctx context.Context, row stringMap) error {
+func (queryReceiver *logsQueryReceiver) storeTrackingValue(ctx context.Context, row sqlquery.StringMap) error {
 	if queryReceiver.query.TrackingColumn == "" {
 		return nil
 	}
@@ -314,7 +315,7 @@ func (queryReceiver *logsQueryReceiver) storeTrackingValue(ctx context.Context, 
 	return nil
 }
 
-func rowToLog(row stringMap, config LogsCfg, logRecord plog.LogRecord) {
+func rowToLog(row sqlquery.StringMap, config sqlquery.LogsCfg, logRecord plog.LogRecord) {
 	logRecord.Body().SetStr(row[config.BodyColumn])
 }
 

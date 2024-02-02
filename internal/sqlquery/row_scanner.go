@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
+package sqlquery // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 
 import (
 	"errors"
@@ -52,8 +52,8 @@ func (rs *rowScanner) scan(sqlRows rows) error {
 	return sqlRows.Scan(rs.scanTarget...)
 }
 
-func (rs *rowScanner) toStringMap() (stringMap, error) {
-	out := stringMap{}
+func (rs *rowScanner) toStringMap() (StringMap, error) {
+	out := StringMap{}
 	var errs error
 	for k, f := range rs.cols {
 		s, err := f()

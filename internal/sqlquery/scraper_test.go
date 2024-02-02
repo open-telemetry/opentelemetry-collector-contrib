@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package sqlqueryreceiver
+package sqlquery // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 
 import (
 	"context"
@@ -19,8 +19,8 @@ import (
 )
 
 func TestScraper_ErrorOnStart(t *testing.T) {
-	scrpr := scraper{
-		dbProviderFunc: func() (*sql.DB, error) {
+	scrpr := Scraper{
+		DbProviderFunc: func() (*sql.DB, error) {
 			return nil, errors.New("oops")
 		},
 	}
@@ -29,25 +29,25 @@ func TestScraper_ErrorOnStart(t *testing.T) {
 }
 
 func TestScraper_ClientErrorOnScrape(t *testing.T) {
-	client := &fakeDBClient{
-		err: errors.New("oops"),
+	client := &FakeDBClient{
+		Err: errors.New("oops"),
 	}
-	scrpr := scraper{
-		client: client,
+	scrpr := Scraper{
+		Client: client,
 	}
 	_, err := scrpr.Scrape(context.Background())
 	require.Error(t, err)
 }
 
 func TestScraper_RowToMetricErrorOnScrape_Float(t *testing.T) {
-	client := &fakeDBClient{
-		stringMaps: [][]stringMap{
+	client := &FakeDBClient{
+		StringMaps: [][]StringMap{
 			{{"myfloat": "blah"}},
 		},
 	}
-	scrpr := scraper{
-		client: client,
-		query: Query{
+	scrpr := Scraper{
+		Client: client,
+		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.float",
 				ValueColumn: "myfloat",
@@ -62,14 +62,14 @@ func TestScraper_RowToMetricErrorOnScrape_Float(t *testing.T) {
 }
 
 func TestScraper_RowToMetricErrorOnScrape_Int(t *testing.T) {
-	client := &fakeDBClient{
-		stringMaps: [][]stringMap{
+	client := &FakeDBClient{
+		StringMaps: [][]StringMap{
 			{{"myint": "blah"}},
 		},
 	}
-	scrpr := scraper{
-		client: client,
-		query: Query{
+	scrpr := Scraper{
+		Client: client,
+		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.int",
 				ValueColumn: "myint",
@@ -84,15 +84,15 @@ func TestScraper_RowToMetricErrorOnScrape_Int(t *testing.T) {
 }
 
 func TestScraper_RowToMetricMultiErrorsOnScrape(t *testing.T) {
-	client := &fakeDBClient{
-		stringMaps: [][]stringMap{{
+	client := &FakeDBClient{
+		StringMaps: [][]StringMap{{
 			{"myint": "foo"},
 			{"myint": "bar"},
 		}},
 	}
-	scrpr := scraper{
-		client: client,
-		query: Query{
+	scrpr := Scraper{
+		Client: client,
+		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.col",
 				ValueColumn: "mycol",
@@ -107,15 +107,15 @@ func TestScraper_RowToMetricMultiErrorsOnScrape(t *testing.T) {
 }
 
 func TestScraper_SingleRow_MultiMetrics(t *testing.T) {
-	scrpr := scraper{
-		client: &fakeDBClient{
-			stringMaps: [][]stringMap{{{
+	scrpr := Scraper{
+		Client: &FakeDBClient{
+			StringMaps: [][]StringMap{{{
 				"count":    "42",
 				"foo_name": "baz",
 				"bar_name": "quux",
 			}}},
 		},
-		query: Query{
+		Query: Query{
 			Metrics: []MetricCfg{
 				{
 					MetricName:       "my.metric.1",
@@ -178,8 +178,8 @@ func TestScraper_SingleRow_MultiMetrics(t *testing.T) {
 }
 
 func TestScraper_MultiRow(t *testing.T) {
-	client := &fakeDBClient{
-		stringMaps: [][]stringMap{{
+	client := &FakeDBClient{
+		StringMaps: [][]StringMap{{
 			{
 				"count": "42",
 				"genre": "action",
@@ -190,9 +190,9 @@ func TestScraper_MultiRow(t *testing.T) {
 			},
 		}},
 	}
-	scrpr := scraper{
-		client: client,
-		query: Query{
+	scrpr := Scraper{
+		Client: client,
+		Query: Query{
 			Metrics: []MetricCfg{
 				{
 					MetricName:       "movie.genre",
@@ -224,15 +224,15 @@ func TestScraper_MultiRow(t *testing.T) {
 }
 
 func TestScraper_MultiResults_CumulativeSum(t *testing.T) {
-	client := &fakeDBClient{
-		stringMaps: [][]stringMap{
+	client := &FakeDBClient{
+		StringMaps: [][]StringMap{
 			{{"count": "42"}},
 			{{"count": "43"}},
 		},
 	}
-	scrpr := scraper{
-		client: client,
-		query: Query{
+	scrpr := Scraper{
+		Client: client,
+		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "transaction.count",
 				ValueColumn: "count",
@@ -247,15 +247,15 @@ func TestScraper_MultiResults_CumulativeSum(t *testing.T) {
 }
 
 func TestScraper_MultiResults_DeltaSum(t *testing.T) {
-	client := &fakeDBClient{
-		stringMaps: [][]stringMap{
+	client := &FakeDBClient{
+		StringMaps: [][]StringMap{
 			{{"count": "42"}},
 			{{"count": "43"}},
 		},
 	}
-	scrpr := scraper{
-		client: client,
-		query: Query{
+	scrpr := Scraper{
+		Client: client,
+		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "transaction.count",
 				ValueColumn: "count",
@@ -269,7 +269,7 @@ func TestScraper_MultiResults_DeltaSum(t *testing.T) {
 	assertTransactionCount(t, scrpr, 43, pmetric.AggregationTemporalityDelta)
 }
 
-func assertTransactionCount(t *testing.T, scrpr scraper, expected int, agg pmetric.AggregationTemporality) {
+func assertTransactionCount(t *testing.T, scrpr Scraper, expected int, agg pmetric.AggregationTemporality) {
 	metrics, err := scrpr.Scrape(context.Background())
 	require.NoError(t, err)
 	metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
@@ -284,14 +284,14 @@ func assertTransactionCount(t *testing.T, scrpr scraper, expected int, agg pmetr
 }
 
 func TestScraper_Float(t *testing.T) {
-	client := &fakeDBClient{
-		stringMaps: [][]stringMap{
+	client := &FakeDBClient{
+		StringMaps: [][]StringMap{
 			{{"myfloat": "123.4"}},
 		},
 	}
-	scrpr := scraper{
-		client: client,
-		query: Query{
+	scrpr := Scraper{
+		Client: client,
+		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.float",
 				ValueColumn: "myfloat",
@@ -308,14 +308,14 @@ func TestScraper_Float(t *testing.T) {
 }
 
 func TestScraper_DescriptionAndUnit(t *testing.T) {
-	client := &fakeDBClient{
-		stringMaps: [][]stringMap{
+	client := &FakeDBClient{
+		StringMaps: [][]StringMap{
 			{{"mycol": "123"}},
 		},
 	}
-	scrpr := scraper{
-		client: client,
-		query: Query{
+	scrpr := Scraper{
+		Client: client,
+		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.name",
 				ValueColumn: "mycol",
@@ -334,10 +334,10 @@ func TestScraper_DescriptionAndUnit(t *testing.T) {
 func TestScraper_FakeDB_Warnings(t *testing.T) {
 	db := fakeDB{rowVals: [][]any{{42, nil}}}
 	logger := zap.NewNop()
-	scrpr := scraper{
-		client: newDbClient(db, "", logger, TelemetryConfig{}),
-		logger: logger,
-		query: Query{
+	scrpr := Scraper{
+		Client: NewDbClient(db, "", logger, TelemetryConfig{}),
+		Logger: logger,
+		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.name",
 				ValueColumn: "col_0",
@@ -353,10 +353,10 @@ func TestScraper_FakeDB_Warnings(t *testing.T) {
 func TestScraper_FakeDB_MultiRows_Warnings(t *testing.T) {
 	db := fakeDB{rowVals: [][]any{{42, nil}, {43, nil}}}
 	logger := zap.NewNop()
-	scrpr := scraper{
-		client: newDbClient(db, "", logger, TelemetryConfig{}),
-		logger: logger,
-		query: Query{
+	scrpr := Scraper{
+		Client: NewDbClient(db, "", logger, TelemetryConfig{}),
+		Logger: logger,
+		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.col.0",
 				ValueColumn: "col_0",
@@ -374,10 +374,10 @@ func TestScraper_FakeDB_MultiRows_Warnings(t *testing.T) {
 func TestScraper_FakeDB_MultiRows_Error(t *testing.T) {
 	db := fakeDB{rowVals: [][]any{{42, nil}, {43, nil}}}
 	logger := zap.NewNop()
-	scrpr := scraper{
-		client: newDbClient(db, "", logger, TelemetryConfig{}),
-		logger: logger,
-		query: Query{
+	scrpr := Scraper{
+		Client: NewDbClient(db, "", logger, TelemetryConfig{}),
+		Logger: logger,
+		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.col.0",
 				ValueColumn: "col_0",
@@ -395,14 +395,14 @@ func TestScraper_FakeDB_MultiRows_Error(t *testing.T) {
 	_, err := scrpr.Scrape(context.Background())
 	// We expect an error here not directly because of the NULL values but because
 	// the column was also requested in Query.Metrics[1] but wasn't found. It's just
-	// a partial scrape error though so it shouldn't cause a scraper shutdown.
+	// a partial scrape error though so it shouldn't cause a Scraper shutdown.
 	assert.Error(t, err)
 	assert.True(t, scrapererror.IsPartialScrapeError(err))
 }
 
 func TestScraper_StartAndTSColumn(t *testing.T) {
-	client := &fakeDBClient{
-		stringMaps: [][]stringMap{{
+	client := &FakeDBClient{
+		StringMaps: [][]StringMap{{
 			{
 				"mycol":   "42",
 				"StartTs": "1682417791",
@@ -410,9 +410,9 @@ func TestScraper_StartAndTSColumn(t *testing.T) {
 			},
 		}},
 	}
-	scrpr := scraper{
-		client: client,
-		query: Query{
+	scrpr := Scraper{
+		Client: client,
+		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:    "my.name",
 				ValueColumn:   "mycol",
@@ -431,17 +431,17 @@ func TestScraper_StartAndTSColumn(t *testing.T) {
 }
 
 func TestScraper_StartAndTS_ErrorOnColumnNotFound(t *testing.T) {
-	client := &fakeDBClient{
-		stringMaps: [][]stringMap{{
+	client := &FakeDBClient{
+		StringMaps: [][]StringMap{{
 			{
 				"mycol":   "42",
 				"StartTs": "1682417791",
 			},
 		}},
 	}
-	scrpr := scraper{
-		client: client,
-		query: Query{
+	scrpr := Scraper{
+		Client: client,
+		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:    "my.name",
 				ValueColumn:   "mycol",
@@ -457,17 +457,17 @@ func TestScraper_StartAndTS_ErrorOnColumnNotFound(t *testing.T) {
 }
 
 func TestScraper_StartAndTS_ErrorOnParse(t *testing.T) {
-	client := &fakeDBClient{
-		stringMaps: [][]stringMap{{
+	client := &FakeDBClient{
+		StringMaps: [][]StringMap{{
 			{
 				"mycol":   "42",
 				"StartTs": "blah",
 			},
 		}},
 	}
-	scrpr := scraper{
-		client: client,
-		query: Query{
+	scrpr := Scraper{
+		Client: client,
+		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:    "my.name",
 				ValueColumn:   "mycol",
