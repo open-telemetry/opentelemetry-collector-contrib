@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.93.0
-	github.com/relvacode/iso8601 v1.3.0
+	github.com/relvacode/iso8601 v1.4.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.93.1-0.20240202170612-7abb9622312d
 	go.opentelemetry.io/collector/confmap v0.93.1-0.20240202170612-7abb9622312d
