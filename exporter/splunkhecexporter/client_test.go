@@ -1394,8 +1394,10 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
-	// The exporter's name is "" while generating default params
-	assert.EqualError(t, exporter.Start(context.Background(), componenttest.NewNopHost()), ": heartbeat on startup failed: HTTP 403 \"Forbidden\"")
+	assert.EqualError(t,
+		exporter.Start(context.Background(), componenttest.NewNopHost()),
+		fmt.Sprintf("%s: heartbeat on startup failed: HTTP 403 \"Forbidden\"", params.ID.Type()),
+	)
 }
 
 func TestHeartbeatStartupPass_Disabled(t *testing.T) {
