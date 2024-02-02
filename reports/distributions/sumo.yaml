@@ -39,6 +39,7 @@ components:
         - oidc
         - pprof
         - sigv4auth
+        - sumologic
     processor:
         - attributes
         - cumulativetodelta

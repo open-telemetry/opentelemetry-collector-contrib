@@ -97,6 +97,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight
