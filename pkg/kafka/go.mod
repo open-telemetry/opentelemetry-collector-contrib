@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/IBM/sarama v1.42.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.92.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.93.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/config/configtls v0.93.1-0.20240130182548-89388addcc7f
 )
