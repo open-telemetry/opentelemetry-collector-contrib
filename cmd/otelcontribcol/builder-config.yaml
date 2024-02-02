@@ -44,9 +44,9 @@ extensions:
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.93.1-0.20240129215828-7abb9622312d
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.93.1-0.20240129215828-7abb9622312d
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.93.1-0.20240129215828-7abb9622312d
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.93.1-0.20240202170612-7abb9622312d
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.93.1-0.20240202170612-7abb9622312d
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.93.1-0.20240202170612-7abb9622312d
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.93.0
@@ -94,8 +94,8 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.93.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.93.1-0.20240129215828-7abb9622312d
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.93.1-0.20240129215828-7abb9622312d
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.93.1-0.20240202170612-7abb9622312d
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.93.1-0.20240202170612-7abb9622312d
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.93.0
@@ -120,7 +120,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor v0.93.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.93.1-0.20240129215828-7abb9622312d
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.93.1-0.20240202170612-7abb9622312d
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.93.0
