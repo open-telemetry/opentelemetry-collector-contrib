@@ -33,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "one"),
 			expected: &Config{
-				HTTPServerConfig: confighttp.HTTPServerConfig{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:12345",
 				},
 				Timeout:          50 * time.Second,

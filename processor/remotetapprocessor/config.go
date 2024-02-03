@@ -14,7 +14,7 @@ import (
 const defaultPort = 12001
 
 type Config struct {
-	confighttp.HTTPServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Limit is a float that indicates the maximum number of messages repeated
 	// through the websocket by this processor in messages per second. Defaults to 1.
@@ -23,7 +23,7 @@ type Config struct {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerConfig: confighttp.HTTPServerConfig{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: localhostgate.EndpointForPort(defaultPort),
 		},
 		Limit: 1,

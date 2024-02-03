@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Dataset:   "ngnix",
 				Namespace: "eu",
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: sampleEndpoint,
 					Timeout:  2 * time.Minute,
 					Headers: map[string]configopaque.String{

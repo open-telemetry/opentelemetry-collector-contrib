@@ -39,7 +39,7 @@ func createDefaultConfig() component.Config {
 		Token:         "",
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-		HTTPClientConfig: confighttp.HTTPClientConfig{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
 			Timeout:  30 * time.Second,
 			Headers:  map[string]configopaque.String{},
@@ -78,11 +78,11 @@ func getListenerURL(region string) string {
 func generateEndpoint(cfg *Config) (string, error) {
 	defaultURL := fmt.Sprintf("%s/?token=%s", getListenerURL(""), string(cfg.Token))
 	switch {
-	case cfg.HTTPClientConfig.Endpoint != "":
-		return cfg.HTTPClientConfig.Endpoint, nil
+	case cfg.ClientConfig.Endpoint != "":
+		return cfg.ClientConfig.Endpoint, nil
 	case cfg.Region != "":
 		return fmt.Sprintf("%s/?token=%s", getListenerURL(cfg.Region), string(cfg.Token)), nil
-	case cfg.HTTPClientConfig.Endpoint == "" && cfg.Region == "":
+	case cfg.ClientConfig.Endpoint == "" && cfg.Region == "":
 		return defaultURL, errors.New("failed to generate endpoint, Endpoint or Region must be set")
 	default:
 		return defaultURL, nil
