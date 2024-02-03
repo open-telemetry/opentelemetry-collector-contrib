@@ -7,7 +7,7 @@ import (
 
 func addProcessMetrics(metrics pmetric.MetricSlice, dataset string) error {
 	var timestamp pcommon.Timestamp
-	var threads, memUsage int64
+	var threads, memUsage, memVirtual int64
 	var memUtil float64
 
 	for i := 0; i < metrics.Len(); i++ {
@@ -24,6 +24,10 @@ func addProcessMetrics(metrics pmetric.MetricSlice, dataset string) error {
 			dp := metric.Sum().DataPoints().At(0)
 			timestamp = dp.Timestamp()
 			memUsage = dp.IntValue()
+		} else if metric.Name() == "process.memory.virtual" {
+			dp := metric.Sum().DataPoints().At(0)
+			timestamp = dp.Timestamp()
+			memVirtual = dp.IntValue()
 		}
 	}
 
@@ -47,6 +51,12 @@ func addProcessMetrics(metrics pmetric.MetricSlice, dataset string) error {
 			name:      "system.process.memory.rss.bytes",
 			timestamp: timestamp,
 			intValue:  &memUsage,
+		},
+		metric{
+			dataType:  Sum,
+			name:      "system.process.memory.size",
+			timestamp: timestamp,
+			intValue:  &memVirtual,
 		},
 	)
 

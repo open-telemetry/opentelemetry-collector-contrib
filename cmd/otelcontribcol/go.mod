@@ -2,7 +2,9 @@
 
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol
 
-go 1.20
+go 1.21.1
+
+toolchain go1.21.3
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.92.0
@@ -458,6 +460,7 @@ require (
 	github.com/influxdata/influxdb-observability/otel2influx v0.5.8 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.9 // indirect
+	github.com/ishleenk17/opentelemetry-collector-contrib/processor/elasticprocessor v0.0.0-20240202135626-8edbe8e87e08 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.14.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
