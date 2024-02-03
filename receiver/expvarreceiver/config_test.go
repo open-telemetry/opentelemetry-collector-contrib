@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 					InitialDelay:       time.Second,
 					Timeout:            time.Second * 5,
 				},
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost:8000/custom/path",
 					Timeout:  time.Second * 5,
 				},

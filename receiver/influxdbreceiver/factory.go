@@ -27,7 +27,7 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerConfig: confighttp.HTTPServerConfig{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: localhostgate.EndpointForPort(defaultPort),
 		},
 	}

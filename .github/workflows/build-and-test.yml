@@ -69,13 +69,17 @@ jobs:
         group:
           - receiver-0
           - receiver-1
+          - receiver-2
+          - receiver-3
           - processor
-          - exporter
+          - exporter-0
+          - exporter-1
           - extension
           - connector
           - internal
           - pkg
-          - cmd
+          - cmd-0
+          - cmd-1
           - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -130,12 +134,17 @@ jobs:
         group:
           - receiver-0
           - receiver-1
+          - receiver-2
+          - receiver-3
           - processor
-          - exporter
+          - exporter-0
+          - exporter-1
           - extension
           - connector
           - internal
           - pkg
+          - cmd-0
+          - cmd-1
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -231,13 +240,17 @@ jobs:
         group:
           - receiver-0
           - receiver-1
+          - receiver-2
+          - receiver-3
           - processor
-          - exporter
+          - exporter-0
+          - exporter-1
           - extension
           - connector
           - internal
           - pkg
-          - cmd
+          - cmd-0
+          - cmd-1
           - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -312,7 +325,23 @@ jobs:
           attempt_limit: 10
           attempt_delay: 15000
 
-  integration-tests:
+  integration-tests-matrix:
+    strategy:
+      matrix:
+        group:
+          - receiver-0
+          - receiver-1
+          - receiver-2
+          - receiver-3
+          - processor
+          - exporter-0
+          - exporter-1
+          - extension
+          - connector
+          - internal
+          - pkg
+          - cmd-0
+          - cmd-1
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
@@ -331,7 +360,24 @@ jobs:
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Run Integration Tests
-        run: make integration-test
+        run: make gointegration-test GROUP=${{ matrix.group }}
+
+  integration-tests:
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    runs-on: ubuntu-latest
+    needs: [ setup-environment, integration-tests-matrix ]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.integration-tests-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.integration-tests-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi
 
   correctness-traces:
     runs-on: ubuntu-latest

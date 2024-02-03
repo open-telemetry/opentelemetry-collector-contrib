@@ -67,7 +67,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					HTTPServerConfig: confighttp.HTTPServerConfig{
+					ServerConfig: confighttp.ServerConfig{
 						Endpoint: "localhost:1234",
 					},
 				},
@@ -536,7 +536,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
-	cfg.HTTPServerConfig.TLSSetting = &configtls.TLSServerSetting{
+	cfg.ServerConfig.TLSSetting = &configtls.TLSServerSetting{
 		TLSSetting: configtls.TLSSetting{
 			CertFile: "./testdata/server.crt",
 			KeyFile:  "./testdata/server.key",

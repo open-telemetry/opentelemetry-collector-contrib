@@ -39,7 +39,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the jaeger receiver to be created
-	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
+	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: "tcp",
@@ -80,7 +80,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
+	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: "tcp",
@@ -90,14 +90,14 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, "0.0.0.0:14250", r.(*jReceiver).config.CollectorGRPCServerSettings.NetAddr.Endpoint, "grpc port should be default")
+	assert.Equal(t, "0.0.0.0:14250", r.(*jReceiver).config.GRPCServerConfig.NetAddr.Endpoint, "grpc port should be default")
 }
 
 func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
+	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: "tcp",
@@ -119,7 +119,7 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.HTTPServerConfig{
+	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.ServerConfig{
 		Endpoint: "0.0.0.0:14268",
 		TLSSetting: &configtls.TLSServerSetting{
 			TLSSetting: configtls.TLSSetting{
@@ -143,7 +143,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, "0.0.0.0:14268", r.(*jReceiver).config.CollectorHTTPSettings.Endpoint, "http port should be default")
+	assert.Equal(t, "0.0.0.0:14268", r.(*jReceiver).config.HTTPServerConfig.Endpoint, "http port should be default")
 }
 
 func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {

@@ -203,6 +203,13 @@ func TestBuildConfig(t *testing.T) {
 			},
 			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--dmesg"},
 		},
+		{
+			Name: "all",
+			Config: func(cfg *Config) {
+				cfg.All = true
+			},
+			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--all"},
+		},
 	}
 
 	for _, tt := range testCases {
