@@ -44,6 +44,6 @@ func createTracesToMetricsConnector(_ context.Context, params connector.CreateSe
 	return c, nil
 }
 
-func createTracesToTracesConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (connector.Traces, error) {
+func createTracesToTracesConnector(_ context.Context, params connector.CreateSettings, _ component.Config, nextConsumer consumer.Traces) (connector.Traces, error) {
 	return newTraceToTraceConnector(params.Logger, nextConsumer), nil
 }

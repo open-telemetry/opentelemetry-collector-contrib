@@ -85,10 +85,8 @@ func getTraceAgentCfg(cfg TracesConfig) *traceconfig.AgentConfig {
 // Start implements the component.Component interface.
 func (c *connectorImp) Start(_ context.Context, _ component.Host) error {
 	c.logger.Info("Starting datadogconnector")
-	if c.metricsConsumer != nil {
-		c.agent.Start()
-		go c.run()
-	}
+	c.agent.Start()
+	go c.run()
 	return nil
 }
 
@@ -110,9 +108,7 @@ func (c *connectorImp) Capabilities() consumer.Capabilities {
 }
 
 func (c *connectorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
-	if c.metricsConsumer != nil {
-		c.agent.Ingest(ctx, traces)
-	}
+	c.agent.Ingest(ctx, traces)
 	return nil
 }
 
