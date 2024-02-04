@@ -24,7 +24,6 @@ import (
 // connectorImp is the schema for connector
 type connectorImp struct {
 	metricsConsumer consumer.Metrics // the next component in the pipeline to ingest metrics after connector
-	tracesConsumer  consumer.Traces  // the next component in the pipeline to ingest traces after connector
 	logger          *zap.Logger
 
 	// agent specifies the agent used to ingest traces and output APM Stats.
@@ -46,14 +45,8 @@ type connectorImp struct {
 var _ component.Component = (*connectorImp)(nil) // testing that the connectorImp properly implements the type Component interface
 
 // function to create a new connector
-func newConnector(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics, tracesConsumer consumer.Traces) (*connectorImp, error) {
-	set.Logger.Info("Building datadog connector")
-	if metricsConsumer == nil {
-		set.Logger.Info("No metrics consumer set, connector will be a no-op for traces pipeline")
-		return &connectorImp{
-			logger: set.Logger,
-		}, nil
-	}
+func newConnector(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics) (*connectorImp, error) {
+	set.Logger.Info("Building datadog connector for traces to metrics")
 	in := make(chan *pb.StatsPayload, 100)
 	set.MeterProvider = noop.NewMeterProvider() // disable metrics for the connector
 	attributesTranslator, err := attributes.NewTranslator(set)
@@ -72,7 +65,6 @@ func newConnector(set component.TelemetrySettings, cfg component.Config, metrics
 		translator:      trans,
 		in:              in,
 		metricsConsumer: metricsConsumer,
-		tracesConsumer:  tracesConsumer,
 		exit:            make(chan struct{}),
 	}, nil
 }
@@ -103,10 +95,9 @@ func (c *connectorImp) Start(_ context.Context, _ component.Host) error {
 // Shutdown implements the component.Component interface.
 func (c *connectorImp) Shutdown(context.Context) error {
 	c.logger.Info("Shutting down datadog connector")
-	if c.metricsConsumer != nil {
-		// stop the agent and wait for the run loop to exit
-		c.agent.Stop()
-	}
+	c.logger.Info("Stopping datadog agent")
+	// stop the agent and wait for the run loop to exit
+	c.agent.Stop()
 	c.exit <- struct{}{} // signal exit
 	<-c.exit             // wait for close
 	return nil
@@ -115,15 +106,12 @@ func (c *connectorImp) Shutdown(context.Context) error {
 // Capabilities implements the consumer interface.
 // tells use whether the component(connector) will mutate the data passed into it. if set to true the connector does modify the data
 func (c *connectorImp) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true} // ConsumeTraces puts a new attribute _dd.stats_computed
+	return consumer.Capabilities{MutatesData: false}
 }
 
 func (c *connectorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
 	if c.metricsConsumer != nil {
 		c.agent.Ingest(ctx, traces)
-	}
-	if c.tracesConsumer != nil {
-		return c.tracesConsumer.ConsumeTraces(ctx, traces)
 	}
 	return nil
 }

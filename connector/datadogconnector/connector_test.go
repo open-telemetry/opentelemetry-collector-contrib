@@ -17,7 +17,6 @@ var _ component.Component = (*connectorImp)(nil) // testing that the connectorIm
 
 // create test to create a connector, check that basic code compiles
 func TestNewConnector(t *testing.T) {
-
 	factory := NewFactory()
 
 	creationParams := connectortest.NewNopCreateSettings()
@@ -28,10 +27,17 @@ func TestNewConnector(t *testing.T) {
 
 	_, ok := traceToMetricsConnector.(*connectorImp)
 	assert.True(t, ok) // checks if the created connector implements the connectorImp struct
+}
+
+func TestTraceToTraceConnector(t *testing.T) {
+	factory := NewFactory()
+
+	creationParams := connectortest.NewNopCreateSettings()
+	cfg := factory.CreateDefaultConfig().(*Config)
 
 	traceToTracesConnector, err := factory.CreateTracesToTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
-	_, ok = traceToTracesConnector.(*connectorImp)
+	_, ok := traceToTracesConnector.(*traceToTraceConnector)
 	assert.True(t, ok) // checks if the created connector implements the connectorImp struct
 }
