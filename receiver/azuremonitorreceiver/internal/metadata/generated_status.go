@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("azuremonitor")
+)
+
 const (
-	Type             = "azuremonitor"
 	MetricsStability = component.StabilityLevelDevelopment
 )
 

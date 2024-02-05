@@ -49,7 +49,7 @@ func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rC
 	}
 
 	sshcheckScraper := newScraper(cfg, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, sshcheckScraper.scrape, scraperhelper.WithStart(sshcheckScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), sshcheckScraper.scrape, scraperhelper.WithStart(sshcheckScraper.start))
 	if err != nil {
 		return nil, err
 	}

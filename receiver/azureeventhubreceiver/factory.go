@@ -15,9 +15,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
-const (
+var (
 	// The receiver scope name
-	receiverScopeName = "otelcol/" + metadata.Type + "receiver"
+	receiverScopeName = "otelcol/" + metadata.Type.String() + "receiver"
 )
 
 var (

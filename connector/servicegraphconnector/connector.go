@@ -110,17 +110,17 @@ func newConnector(set component.TelemetrySettings, config component.Config) *ser
 	meter := metadata.Meter(set)
 
 	droppedSpan, _ := meter.Int64Counter(
-		processorhelper.BuildCustomMetricName(metadata.Type, "dropped_spans"),
+		processorhelper.BuildCustomMetricName(metadata.Type.String(), "dropped_spans"),
 		metric.WithDescription("Number of spans dropped when trying to add edges"),
 		metric.WithUnit("1"),
 	)
 	totalEdges, _ := meter.Int64Counter(
-		processorhelper.BuildCustomMetricName(metadata.Type, "total_edges"),
+		processorhelper.BuildCustomMetricName(metadata.Type.String(), "total_edges"),
 		metric.WithDescription("Total number of unique edges"),
 		metric.WithUnit("1"),
 	)
 	expiredEdges, _ := meter.Int64Counter(
-		processorhelper.BuildCustomMetricName(metadata.Type, "expired_edges"),
+		processorhelper.BuildCustomMetricName(metadata.Type.String(), "expired_edges"),
 		metric.WithDescription("Number of edges that expired before finding its matching span"),
 		metric.WithUnit("1"),
 	)
