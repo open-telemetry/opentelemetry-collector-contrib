@@ -35,13 +35,13 @@ func parseKeyValue[K any](target ottl.StringGetter[K], d ottl.Optional[string], 
 		delimiter = d.Get()
 	}
 
-	pair_delimiter := " "
+	pairDelimiter := " "
 	if !p.IsEmpty() {
-		pair_delimiter = p.Get()
+		pairDelimiter = p.Get()
 	}
 
-	if pair_delimiter == delimiter {
-		return nil, fmt.Errorf("pair delimiter \"%s\" cannot be equal to delimiter \"%s\"", pair_delimiter, delimiter)
+	if pairDelimiter == delimiter {
+		return nil, fmt.Errorf("pair delimiter \"%s\" cannot be equal to delimiter \"%s\"", pairDelimiter, delimiter)
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
@@ -54,7 +54,7 @@ func parseKeyValue[K any](target ottl.StringGetter[K], d ottl.Optional[string], 
 			return nil, fmt.Errorf("cannot parse from empty target")
 		}
 
-		pairs, err := splitString(source, pair_delimiter)
+		pairs, err := splitPairs(source, pairDelimiter)
 		if err != nil {
 			return nil, fmt.Errorf("splitting pairs failed: %w", err)
 		}
@@ -76,18 +76,17 @@ func parseKeyValue[K any](target ottl.StringGetter[K], d ottl.Optional[string], 
 	}, nil
 }
 
-// splitString will split the input on the delimiter and return the resulting slice.
+// splitPairs will split the input on the pairDelimiter and return the resulting slice.
 // `strings.Split` is not used because it does not respect quotes and will split if the delimiter appears in a quoted value
-func splitString(input, delimiter string) ([]string, error) {
+func splitPairs(input, pairDelimiter string) ([]string, error) {
 	var result []string
-	quoteType := ""
-	inQuotes := false
 	currentPair := ""
-	delimiterLength := len(delimiter)
+	delimiterLength := len(pairDelimiter)
+	quoteChar := "" // "" means we are not in quotes
 
 	i := 0
 	for i < len(input) {
-		if !inQuotes && i+delimiterLength <= len(input) && input[i:i+delimiterLength] == delimiter {
+		if quoteChar == "" && i+delimiterLength <= len(input) && input[i:i+delimiterLength] == pairDelimiter {
 			if currentPair == "" {
 				i++
 				continue
@@ -97,21 +96,20 @@ func splitString(input, delimiter string) ([]string, error) {
 			i += delimiterLength
 			continue
 		} else if input[i] == '"' || input[i] == '\'' {
-			if inQuotes {
-				if quoteType == string(input[i]) {
-					inQuotes = !inQuotes
+			if quoteChar != "" {
+				if quoteChar == string(input[i]) {
+					quoteChar = ""
 				}
 			} else {
-				quoteType = string(input[i])
-				inQuotes = !inQuotes
+				quoteChar = string(input[i])
 			}
 		}
 		currentPair += string(input[i])
 		i++
 	}
 
-	if inQuotes {
-		return nil, fmt.Errorf("never reached end of a quoted value, failed to parse input")
+	if quoteChar != "" {
+		return nil, fmt.Errorf("never reached end of a quoted value")
 	}
 
 	if currentPair != "" {
