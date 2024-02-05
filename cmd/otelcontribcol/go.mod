@@ -130,7 +130,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereceiver v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.94.0
@@ -1015,8 +1014,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../../pkg/translator/prometheusremotewrite
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver => ../../receiver/filelogreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereceiver => ../../receiver/filereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ../../exporter/signalfxexporter
 

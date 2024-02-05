@@ -118,7 +118,6 @@ components:
         - docker_stats
         - elasticsearch
         - expvar
-        - file
         - filelog
         - filestats
         - flinkmetrics

@@ -203,7 +203,6 @@ receiver/dockerstatsreceiver/                            @open-telemetry/collect
 receiver/elasticsearchreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @BinaryFissionGames
 receiver/expvarreceiver/                                 @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 receiver/filelogreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski
-receiver/filereceiver/                                   @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/filestatsreceiver/                              @open-telemetry/collector-contrib-approvers @atoulme
 receiver/flinkmetricsreceiver/                           @open-telemetry/collector-contrib-approvers @JonathanWamsley @djaglowski
 receiver/fluentforwardreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax
@@ -280,12 +279,12 @@ testbed/mockdatasenders/mockdatadogagentexporter/        @open-telemetry/collect
 # List of distribution maintainers for OpenTelemetry Collector Contrib
 #
 #####################################################
-reports/distributions/core.yaml     @open-telemetry/collector-contrib-approvers 
-reports/distributions/contrib.yaml  @open-telemetry/collector-contrib-approvers 
-reports/distributions/aws.yaml      @open-telemetry/collector-contrib-approvers 
-reports/distributions/grafana.yaml  @open-telemetry/collector-contrib-approvers 
-reports/distributions/observiq.yaml @open-telemetry/collector-contrib-approvers 
-reports/distributions/redhat.yaml   @open-telemetry/collector-contrib-approvers 
+reports/distributions/core.yaml     @open-telemetry/collector-contrib-approvers
+reports/distributions/contrib.yaml  @open-telemetry/collector-contrib-approvers
+reports/distributions/aws.yaml      @open-telemetry/collector-contrib-approvers
+reports/distributions/grafana.yaml  @open-telemetry/collector-contrib-approvers
+reports/distributions/observiq.yaml @open-telemetry/collector-contrib-approvers
+reports/distributions/redhat.yaml   @open-telemetry/collector-contrib-approvers
 reports/distributions/splunk.yaml   @open-telemetry/collector-contrib-approvers @atoulme @crobert-1 @dmitryax @hughesjj @jeffreyc-splunk @jinja2 @jvoravong @panotti @rmfitzpatrick @samiura
 reports/distributions/sumo.yaml     @open-telemetry/collector-contrib-approvers @aboguszewski-sumo @astencel-sumo @kkujawa-sumo @rnishtala-sumo @sumo-drosiek @swiatekm-sumo
 reports/distributions/liatrio.yaml  @open-telemetry/collector-contrib-approvers @adrielp
@@ -293,5 +292,5 @@ reports/distributions/liatrio.yaml  @open-telemetry/collector-contrib-approvers 
 
 ## UNMAINTAINED components
 
-exporter/alibabacloudlogserviceexporter/                 @open-telemetry/collector-contrib-approvers 
-exporter/skywalkingexporter/                             @open-telemetry/collector-contrib-approvers 
+exporter/alibabacloudlogserviceexporter/                 @open-telemetry/collector-contrib-approvers
+exporter/skywalkingexporter/                             @open-telemetry/collector-contrib-approvers
