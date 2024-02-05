@@ -15,7 +15,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.94.0
@@ -288,6 +288,8 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage => ../../extension/storage/filestorage
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
