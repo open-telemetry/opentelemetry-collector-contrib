@@ -1,4 +1,7 @@
-package testbed
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 type DataConnector interface {
 	// GenConfigYAMLStr generates a config string to place in receiver part of collector config
