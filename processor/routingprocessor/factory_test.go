@@ -139,7 +139,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T) {
 	otlpExporterFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: "example.com:1234",
 		},
 	}

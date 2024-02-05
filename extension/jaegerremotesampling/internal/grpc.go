@@ -33,7 +33,7 @@ type grpcServer interface {
 // NewGRPC returns a new sampling gRPC Server.
 func NewGRPC(
 	telemetry component.TelemetrySettings,
-	settings configgrpc.GRPCServerSettings,
+	settings configgrpc.ServerConfig,
 	strategyStore strategystore.StrategyStore,
 ) (*SamplingGRPCServer, error) {
 	if strategyStore == nil {
@@ -50,7 +50,7 @@ func NewGRPC(
 // SamplingGRPCServer implements component.Component to make the life cycle easy to manage.
 type SamplingGRPCServer struct {
 	telemetry     component.TelemetrySettings
-	settings      configgrpc.GRPCServerSettings
+	settings      configgrpc.ServerConfig
 	strategyStore strategystore.StrategyStore
 
 	grpcServer grpcServer

@@ -9,14 +9,14 @@ import (
 )
 
 const (
-	Type            = "servicegraph"
-	TracesStability = component.StabilityLevelDeprecated
+	Type               = "sumologic"
+	ExtensionStability = component.StabilityLevelDevelopment
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/servicegraph")
+	return settings.MeterProvider.Meter("otelcol/sumologic")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/servicegraph")
+	return settings.TracerProvider.Tracer("otelcol/sumologic")
 }
