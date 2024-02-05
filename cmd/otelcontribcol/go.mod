@@ -87,7 +87,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.93.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.93.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.93.0
@@ -1107,8 +1106,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpj
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor => ../../processor/redactionprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling => ../../extension/jaegerremotesampling
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor => ../../processor/datadogprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver => ../../receiver/sshcheckreceiver
 
