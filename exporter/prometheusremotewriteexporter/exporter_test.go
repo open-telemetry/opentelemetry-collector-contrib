@@ -36,11 +36,11 @@ import (
 // Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_NewPRWExporter(t *testing.T) {
 	cfg := &Config{
-		TimeoutSettings:  exporterhelper.TimeoutSettings{},
-		BackOffConfig:    configretry.BackOffConfig{},
-		Namespace:        "",
-		ExternalLabels:   map[string]string{},
-		HTTPClientConfig: confighttp.HTTPClientConfig{Endpoint: ""},
+		TimeoutSettings: exporterhelper.TimeoutSettings{},
+		BackOffConfig:   configretry.BackOffConfig{},
+		Namespace:       "",
+		ExternalLabels:  map[string]string{},
+		ClientConfig:    confighttp.ClientConfig{Endpoint: ""},
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
@@ -107,7 +107,7 @@ func Test_NewPRWExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg.HTTPClientConfig.Endpoint = tt.endpoint
+			cfg.ClientConfig.Endpoint = tt.endpoint
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
@@ -159,7 +159,7 @@ func Test_Start(t *testing.T) {
 		returnErrorOnStartUp bool
 		set                  exporter.CreateSettings
 		endpoint             string
-		clientSettings       confighttp.HTTPClientConfig
+		clientSettings       confighttp.ClientConfig
 	}{
 		{
 			name:           "success_case",
@@ -168,7 +168,7 @@ func Test_Start(t *testing.T) {
 			concurrency:    5,
 			externalLabels: map[string]string{"Key1": "Val1"},
 			set:            set,
-			clientSettings: confighttp.HTTPClientConfig{Endpoint: "https://some.url:9411/api/prom/push"},
+			clientSettings: confighttp.ClientConfig{Endpoint: "https://some.url:9411/api/prom/push"},
 		},
 		{
 			name:                 "invalid_tls",
@@ -178,7 +178,7 @@ func Test_Start(t *testing.T) {
 			externalLabels:       map[string]string{"Key1": "Val1"},
 			set:                  set,
 			returnErrorOnStartUp: true,
-			clientSettings: confighttp.HTTPClientConfig{
+			clientSettings: confighttp.ClientConfig{
 				Endpoint: "https://some.url:9411/api/prom/push",
 				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
@@ -198,7 +198,7 @@ func Test_Start(t *testing.T) {
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
-			cfg.HTTPClientConfig = tt.clientSettings
+			cfg.ClientConfig = tt.clientSettings
 
 			prwe, err := newPRWExporter(cfg, tt.set)
 			assert.NoError(t, err)
@@ -344,7 +344,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	}
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPClientConfig.Endpoint = endpoint.String()
+	cfg.ClientConfig.Endpoint = endpoint.String()
 	cfg.RemoteWriteQueue.NumConsumers = 1
 	cfg.BackOffConfig = configretry.BackOffConfig{
 		Enabled:         true,
@@ -686,7 +686,7 @@ func Test_PushMetrics(t *testing.T) {
 					}
 					cfg := &Config{
 						Namespace: "",
-						HTTPClientConfig: confighttp.HTTPClientConfig{
+						ClientConfig: confighttp.ClientConfig{
 							Endpoint: server.URL,
 							// We almost read 0 bytes, so no need to tune ReadBufferSize.
 							ReadBufferSize:  0,
@@ -872,7 +872,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := &Config{
 		Namespace: "test_ns",
-		HTTPClientConfig: confighttp.HTTPClientConfig{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: prweServer.URL,
 		},
 		RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},

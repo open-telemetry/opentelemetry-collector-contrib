@@ -33,7 +33,7 @@ func TestNewCouchDBClient(t *testing.T) {
 	t.Run("Invalid config", func(t *testing.T) {
 		couchdbClient, err := newCouchDBClient(
 			&Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -109,7 +109,7 @@ func TestGet(t *testing.T) {
 		url := ts.URL + "/_node/_local/_stats/couchdb"
 		couchdbClient, err := newCouchDBClient(
 			&Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: url,
 				},
 				Username: "unauthorized",
@@ -182,7 +182,7 @@ func TestBuildReq(t *testing.T) {
 	couchdbClient := couchDBClient{
 		client: &http.Client{},
 		cfg: &Config{
-			HTTPClientConfig: confighttp.HTTPClientConfig{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: defaultEndpoint,
 			},
 			Username: "otelu",
@@ -204,7 +204,7 @@ func TestBuildBadReq(t *testing.T) {
 	couchdbClient := couchDBClient{
 		client: &http.Client{},
 		cfg: &Config{
-			HTTPClientConfig: confighttp.HTTPClientConfig{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: defaultEndpoint,
 			},
 		},

@@ -116,7 +116,7 @@ func generateParseToArrayFunc(pool *fastjson.ParserPool) parseFunc {
 				// Nested objects handled as a string since this parser doesn't support nested headers
 				parsedValues[i] = jArray[i].String()
 			default:
-				return nil, errors.New("failed to parse entry: " + string(jArray[i].MarshalTo(nil)))
+				return nil, errors.New("failed to parse entry")
 			}
 		}
 
@@ -159,7 +159,7 @@ func generateParseToMapFunc(pool *fastjson.ParserPool, header []string) parseFun
 				// Nested objects handled as a string since this parser doesn't support nested headers
 				parsedValues[header[i]] = jArray[i].String()
 			default:
-				return nil, errors.New("failed to parse entry: " + string(jArray[i].MarshalTo(nil)))
+				return nil, errors.New("failed to parse entry")
 			}
 		}
 

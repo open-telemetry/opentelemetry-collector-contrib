@@ -72,7 +72,7 @@ func newTracesExporter(
 			params.BuildInfo,
 			cfg.Metrics.TCPAddr.Endpoint,
 			cfg.TimeoutSettings,
-			cfg.LimitedHTTPClientConfig.TLSSetting.InsecureSkipVerify)
+			cfg.LimitedClientConfig.TLSSetting.InsecureSkipVerify)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
@@ -196,7 +196,7 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
 	acfg.ReceiverPort = 0 // disable HTTP receiver
 	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
-	acfg.SkipSSLValidation = cfg.LimitedHTTPClientConfig.TLSSetting.InsecureSkipVerify
+	acfg.SkipSSLValidation = cfg.LimitedClientConfig.TLSSetting.InsecureSkipVerify
 	acfg.ComputeStatsBySpanKind = cfg.Traces.ComputeStatsBySpanKind
 	acfg.PeerServiceAggregation = cfg.Traces.PeerServiceAggregation
 	acfg.PeerTagsAggregation = cfg.Traces.PeerTagsAggregation

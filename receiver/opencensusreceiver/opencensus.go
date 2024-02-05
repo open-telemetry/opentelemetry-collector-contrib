@@ -36,7 +36,7 @@ type ocReceiver struct {
 	serverHTTP         *http.Server
 	gatewayMux         *gatewayruntime.ServeMux
 	corsOrigins        []string
-	grpcServerSettings configgrpc.GRPCServerSettings
+	grpcServerSettings configgrpc.ServerConfig
 
 	traceReceiver   *octrace.Receiver
 	metricsReceiver *ocmetrics.Receiver

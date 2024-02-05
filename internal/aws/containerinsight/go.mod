@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240130181942-9c7177496fd5
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240202163303-26c157e3bffb
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.26.0
 )
