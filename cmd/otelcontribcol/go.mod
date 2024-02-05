@@ -460,7 +460,7 @@ require (
 	github.com/influxdata/influxdb-observability/otel2influx v0.5.8 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.9 // indirect
-	github.com/ishleenk17/opentelemetry-collector-contrib/processor/elasticprocessor v0.0.0-20240205053831-6d9a005cfe4b // indirect
+	github.com/ishleenk17/opentelemetry-collector-contrib/processor/elasticprocessor v0.0.0-20240205083941-fe8dcc2508bb // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.14.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
