@@ -50,7 +50,7 @@ func (r *staticResolver) start(ctx context.Context) error {
 	return err
 }
 
-func (r *staticResolver) shutdown(ctx context.Context) error {
+func (r *staticResolver) shutdown(context.Context) error {
 	r.endpoints = nil
 
 	r.mx.Lock()

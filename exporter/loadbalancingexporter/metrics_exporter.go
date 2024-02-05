@@ -76,10 +76,10 @@ func (e *metricExporterImp) Start(ctx context.Context, host component.Host) erro
 }
 
 func (e *metricExporterImp) Shutdown(ctx context.Context) error {
-	e.loadBalancer.Shutdown(ctx)
+	err := e.loadBalancer.Shutdown(ctx)
 	e.stopped = true
 	e.shutdownWg.Wait()
-	return nil
+	return err
 }
 
 func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
