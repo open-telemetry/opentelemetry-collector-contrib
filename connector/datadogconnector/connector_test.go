@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
-var _ component.Component = (*connectorImp)(nil) // testing that the connectorImp properly implements the type Component interface
+var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
 
 // create test to create a connector, check that basic code compiles
 func TestNewConnector(t *testing.T) {
@@ -25,7 +25,7 @@ func TestNewConnector(t *testing.T) {
 	traceToMetricsConnector, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 
-	_, ok := traceToMetricsConnector.(*connectorImp)
+	_, ok := traceToMetricsConnector.(*traceToMetricConnector)
 	assert.True(t, ok) // checks if the created connector implements the connectorImp struct
 }
 

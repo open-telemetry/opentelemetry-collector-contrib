@@ -21,8 +21,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
-// connectorImp is the schema for connector
-type connectorImp struct {
+// traceToMetricConnector is the schema for connector
+type traceToMetricConnector struct {
 	metricsConsumer consumer.Metrics // the next component in the pipeline to ingest metrics after connector
 	logger          *zap.Logger
 
@@ -42,10 +42,10 @@ type connectorImp struct {
 	exit chan struct{}
 }
 
-var _ component.Component = (*connectorImp)(nil) // testing that the connectorImp properly implements the type Component interface
+var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
 
 // function to create a new connector
-func newConnector(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics) (*connectorImp, error) {
+func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics) (*traceToMetricConnector, error) {
 	set.Logger.Info("Building datadog connector for traces to metrics")
 	in := make(chan *pb.StatsPayload, 100)
 	set.MeterProvider = noop.NewMeterProvider() // disable metrics for the connector
@@ -59,7 +59,7 @@ func newConnector(set component.TelemetrySettings, cfg component.Config, metrics
 	}
 
 	ctx := context.Background()
-	return &connectorImp{
+	return &traceToMetricConnector{
 		logger:          set.Logger,
 		agent:           datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(cfg.(*Config).Traces), in),
 		translator:      trans,
@@ -83,7 +83,7 @@ func getTraceAgentCfg(cfg TracesConfig) *traceconfig.AgentConfig {
 }
 
 // Start implements the component.Component interface.
-func (c *connectorImp) Start(_ context.Context, _ component.Host) error {
+func (c *traceToMetricConnector) Start(_ context.Context, _ component.Host) error {
 	c.logger.Info("Starting datadogconnector")
 	c.agent.Start()
 	go c.run()
@@ -91,7 +91,7 @@ func (c *connectorImp) Start(_ context.Context, _ component.Host) error {
 }
 
 // Shutdown implements the component.Component interface.
-func (c *connectorImp) Shutdown(context.Context) error {
+func (c *traceToMetricConnector) Shutdown(context.Context) error {
 	c.logger.Info("Shutting down datadog connector")
 	c.logger.Info("Stopping datadog agent")
 	// stop the agent and wait for the run loop to exit
@@ -103,18 +103,18 @@ func (c *connectorImp) Shutdown(context.Context) error {
 
 // Capabilities implements the consumer interface.
 // tells use whether the component(connector) will mutate the data passed into it. if set to true the connector does modify the data
-func (c *connectorImp) Capabilities() consumer.Capabilities {
+func (c *traceToMetricConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (c *connectorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
+func (c *traceToMetricConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
 	c.agent.Ingest(ctx, traces)
 	return nil
 }
 
 // run awaits incoming stats resulting from the agent's ingestion, converts them
 // to metrics and flushes them using the configured metrics exporter.
-func (c *connectorImp) run() {
+func (c *traceToMetricConnector) run() {
 	defer close(c.exit)
 	for {
 		select {
