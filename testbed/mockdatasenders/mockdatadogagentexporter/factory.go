@@ -31,7 +31,7 @@ func NewFactory() exporter.Factory {
 // CreateDefaultConfig creates the default configuration for DDAPM Exporter
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPClientConfig: confighttp.HTTPClientConfig{Endpoint: "localhost:8126"},
+		ClientConfig: confighttp.ClientConfig{Endpoint: "localhost:8126"},
 	}
 }
 

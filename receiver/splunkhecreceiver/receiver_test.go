@@ -83,7 +83,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					HTTPServerConfig: confighttp.HTTPServerConfig{
+					ServerConfig: confighttp.ServerConfig{
 						Endpoint: "localhost:1234",
 					},
 				},
@@ -143,7 +143,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					HTTPServerConfig: confighttp.HTTPServerConfig{
+					ServerConfig: confighttp.ServerConfig{
 						Endpoint: "localhost:1234",
 					},
 				},

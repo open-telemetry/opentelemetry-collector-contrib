@@ -36,6 +36,7 @@ type Config struct {
 	Identifiers []string      `mapstructure:"identifiers,omitempty"`
 	Grep        string        `mapstructure:"grep,omitempty"`
 	Dmesg       bool          `mapstructure:"dmesg,omitempty"`
+	All         bool          `mapstructure:"all,omitempty"`
 }
 
 type MatchConfig map[string]string

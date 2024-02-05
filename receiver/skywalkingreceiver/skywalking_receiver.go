@@ -33,9 +33,9 @@ import (
 // the Skywalking receiver will use.
 type configuration struct {
 	CollectorHTTPPort           int
-	CollectorHTTPSettings       confighttp.HTTPServerConfig
+	CollectorHTTPSettings       confighttp.ServerConfig
 	CollectorGRPCPort           int
-	CollectorGRPCServerSettings configgrpc.GRPCServerSettings
+	CollectorGRPCServerSettings configgrpc.ServerConfig
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Skywaking.
