@@ -148,26 +148,20 @@ func TestCorrelationEmptyEnvironment(t *testing.T) {
 	a := New(log.Nil, 5*time.Minute, correlationClient, hostIDDims, true, DefaultDimsToSyncSource)
 	wg.Wait() // wait for the initial fetch of hostIDDims to complete
 
-	// for each container level ID we're going to perform a GET to check for an environment
-	wg.Add(len(containerLevelIDDims))
 	a.AddSpansGeneric(context.Background(), fakeSpanList{
 		{tags: mergeStringMaps(hostIDDims, containerLevelIDDims)},
 		{tags: mergeStringMaps(hostIDDims, containerLevelIDDims)},
 		{tags: mergeStringMaps(hostIDDims, containerLevelIDDims)},
 	})
 
-	wg.Wait() // wait for the gets to complete to check for existing tenant environment values
-
-	// there shouldn't be any active tenant environments.  None of the spans had environments on them,
-	// and we don't actively fetch and store environments from the back end.  That's kind of the whole point of this
-	// the workaround this is testing.
-	assert.Equal(t, int64(0), a.tenantEnvironmentCache.ActiveCount, "tenantEnvironmentCache is not properly tracked")
-	// ensure we only have 1 entry per container / pod id
-	assert.Equal(t, int64(len(containerLevelIDDims)), a.tenantEmptyEnvironmentCache.ActiveCount, "tenantEmptyEnvironmentCount is not properly tracked")
-	// len(hostIDDims) * len(containerLevelIDDims)
-	assert.Equal(t, int64(len(containerLevelIDDims)+len(hostIDDims)), atomic.LoadInt64(&correlationClient.getCounter), "")
-	// 1 DELETE * len(containerLevelIDDims)
-	assert.Equal(t, len(containerLevelIDDims), len(correlationClient.getCorrelations()), "")
+	cors := correlationClient.getCorrelations()
+	assert.Equal(t, 4, len(cors), "expected 4 correlations to be made")
+	for _, c := range cors {
+		assert.Contains(t, []string{"container_id", "kubernetes_pod_uid", "host", "AWSUniqueId"}, c.DimName)
+		assert.Contains(t, []string{"test", "randomAWSUniqueId", "testk8sPodUID", "testContainerID"}, c.DimValue)
+		assert.Equal(t, correlations.Type("environment"), c.Type)
+		assert.Equal(t, fallbackEnvironment, c.Value)
+	}
 }
 
 func TestCorrelationUpdates(t *testing.T) {
