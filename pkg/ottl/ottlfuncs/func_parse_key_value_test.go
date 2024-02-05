@@ -55,6 +55,20 @@ func Test_parseKeyValue(t *testing.T) {
 			},
 		},
 		{
+			name: "embedded double quotes in single quoted value",
+			target: ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					return `a=b c='this is a "co ol" value'`, nil
+				},
+			},
+			delimiter:      ottl.Optional[string]{},
+			pair_delimiter: ottl.Optional[string]{},
+			expected: map[string]any{
+				"a": "b",
+				"c": "this is a \"co ol\" value",
+			},
+		},
+		{
 			name: "double quotes",
 			target: ottl.StandardStringGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (any, error) {
@@ -187,6 +201,20 @@ hello!!world  `, nil
 				"k3": "v3=",
 			},
 		},
+		{
+			name: "double quotes",
+			target: ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					return `a=b c='this is a "cool" value'`, nil
+				},
+			},
+			delimiter:      ottl.Optional[string]{},
+			pair_delimiter: ottl.Optional[string]{},
+			expected: map[string]any{
+				"a": "b",
+				"c": "this is a \"cool\" value",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -224,6 +252,10 @@ func Test_parseKeyValue_equal_delimiters(t *testing.T) {
 	delimiter := ottl.NewTestingOptional[string]("=")
 	pair_delimiter := ottl.NewTestingOptional[string]("=")
 	_, err := parseKeyValue[any](target, delimiter, pair_delimiter)
+	assert.Error(t, err)
+
+	delimiter = ottl.NewTestingOptional[string](" ")
+	_, err = parseKeyValue[any](target, delimiter, ottl.Optional[string]{})
 	assert.Error(t, err)
 }
 
@@ -264,6 +296,18 @@ func Test_parseKeyValue_bad_split(t *testing.T) {
 	delimiter := ottl.NewTestingOptional[string]("=")
 	pair_delimiter := ottl.NewTestingOptional[string]("!")
 	exprFunc, err := parseKeyValue[any](target, delimiter, pair_delimiter)
+	assert.NoError(t, err)
+	_, err = exprFunc(context.Background(), nil)
+	assert.Error(t, err)
+}
+
+func Test_parseKeyValue_mismatch_quotes(t *testing.T) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
+			return `k1=v1 k2='v2"`, nil
+		},
+	}
+	exprFunc, err := parseKeyValue[any](target, ottl.Optional[string]{}, ottl.Optional[string]{})
 	assert.NoError(t, err)
 	_, err = exprFunc(context.Background(), nil)
 	assert.Error(t, err)
