@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processorhelper"
 	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
@@ -84,6 +83,10 @@ type serviceGraphConnector struct {
 	shutdownCh chan any
 }
 
+func customMetricName(name string) string {
+	return "connector/" + metadata.Type + "/" + name
+}
+
 func newConnector(set component.TelemetrySettings, config component.Config) *serviceGraphConnector {
 	pConfig := config.(*Config)
 
@@ -110,17 +113,17 @@ func newConnector(set component.TelemetrySettings, config component.Config) *ser
 	meter := metadata.Meter(set)
 
 	droppedSpan, _ := meter.Int64Counter(
-		processorhelper.BuildCustomMetricName(metadata.Type, "dropped_spans"),
+		customMetricName("dropped_spans"),
 		metric.WithDescription("Number of spans dropped when trying to add edges"),
 		metric.WithUnit("1"),
 	)
 	totalEdges, _ := meter.Int64Counter(
-		processorhelper.BuildCustomMetricName(metadata.Type, "total_edges"),
+		customMetricName("total_edges"),
 		metric.WithDescription("Total number of unique edges"),
 		metric.WithUnit("1"),
 	)
 	expiredEdges, _ := meter.Int64Counter(
-		processorhelper.BuildCustomMetricName(metadata.Type, "expired_edges"),
+		customMetricName("expired_edges"),
 		metric.WithDescription("Number of edges that expired before finding its matching span"),
 		metric.WithUnit("1"),
 	)
