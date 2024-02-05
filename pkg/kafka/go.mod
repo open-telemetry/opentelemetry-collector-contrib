@@ -6,7 +6,7 @@ require (
 	github.com/IBM/sarama v1.42.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.93.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/config/configtls v0.93.1-0.20240130182548-89388addcc7f
+	go.opentelemetry.io/collector/config/configtls v0.93.1-0.20240202170612-7abb9622312d
 )
 
 require (
@@ -33,7 +33,8 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.93.1-0.20240130182548-89388addcc7f // indirect
+	go.opentelemetry.io/collector/config/configopaque v0.93.1-0.20240202170612-7abb9622312d // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
