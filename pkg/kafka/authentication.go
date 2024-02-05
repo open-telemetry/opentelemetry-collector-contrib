@@ -11,8 +11,8 @@ import (
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/config/configtls"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/awsmsk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/awsmsk"
 )
 
 // Authentication defines authentication.
