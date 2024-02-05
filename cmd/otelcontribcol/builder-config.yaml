@@ -6,8 +6,8 @@ dist:
   otelcol_version: 0.93.0
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.93.1-0.20240202170612-7abb9622312d
-  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.93.1-0.20240202170612-7abb9622312d
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.93.1-0.20240205121451-f5a7315cf88e
+  - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.93.1-0.20240205121451-f5a7315cf88e
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.93.0
@@ -44,9 +44,9 @@ extensions:
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.93.1-0.20240202170612-7abb9622312d
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.93.1-0.20240202170612-7abb9622312d
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.93.1-0.20240202170612-7abb9622312d
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.93.1-0.20240205121451-f5a7315cf88e
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.93.1-0.20240205121451-f5a7315cf88e
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.93.1-0.20240205121451-f5a7315cf88e
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.93.0
@@ -94,8 +94,8 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.93.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.93.1-0.20240202170612-7abb9622312d
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.93.1-0.20240202170612-7abb9622312d
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.93.1-0.20240205121451-f5a7315cf88e
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.93.1-0.20240205121451-f5a7315cf88e
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.93.0
@@ -119,7 +119,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor v0.93.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.93.1-0.20240202170612-7abb9622312d
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.93.1-0.20240205121451-f5a7315cf88e
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.93.0
@@ -209,7 +209,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.93.0
 
 connectors:
-  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.93.1-0.20240202170612-7abb9622312d
+  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.93.1-0.20240205121451-f5a7315cf88e
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.93.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.93.0
