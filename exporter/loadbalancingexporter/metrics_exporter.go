@@ -75,7 +75,8 @@ func (e *metricExporterImp) Start(ctx context.Context, host component.Host) erro
 	return e.loadBalancer.Start(ctx, host)
 }
 
-func (e *metricExporterImp) Shutdown(context.Context) error {
+func (e *metricExporterImp) Shutdown(ctx context.Context) error {
+	e.loadBalancer.Shutdown(ctx)
 	e.stopped = true
 	e.shutdownWg.Wait()
 	return nil

@@ -172,9 +172,10 @@ func endpointFound(endpoint string, endpoints []string) bool {
 	return false
 }
 
-func (lb *loadBalancerImp) Shutdown(context.Context) error {
+func (lb *loadBalancerImp) Shutdown(ctx context.Context) error {
+	err := lb.res.shutdown(ctx)
 	lb.stopped = true
-	return nil
+	return err
 }
 
 func (lb *loadBalancerImp) Endpoint(identifier []byte) string {
