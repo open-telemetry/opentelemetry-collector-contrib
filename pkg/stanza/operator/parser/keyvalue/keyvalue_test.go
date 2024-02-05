@@ -110,6 +110,15 @@ func TestBuild(t *testing.T) {
 			true,
 		},
 		{
+			"pair-delimiter-equals-default-delimiter",
+			func() *Config {
+				cfg := basicConfig()
+				cfg.Delimiter = " "
+				return cfg
+			}(),
+			true,
+		},
+		{
 			"unset-delimiter",
 			func() *Config {
 				cfg := basicConfig()
@@ -503,7 +512,7 @@ key=value`,
 			false,
 		},
 		{
-			"quoted-value-contains-delimiter",
+			"quoted-value-contains-whitespace-delimiter",
 			func(kv *Config) {},
 			&entry.Entry{
 				Body: `msg="Message successfully sent at 2023-12-04 06:47:31.204222276 +0000 UTC m=+5115.932279346"`,
@@ -572,6 +581,77 @@ key=value`,
 			false,
 			true,
 		},
+		{
+			"custom pair delimiter in quoted value",
+			func(kv *Config) {
+				kv.PairDelimiter = "_"
+			},
+			&entry.Entry{
+				Body: `a=b_c="d_e"`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"a": "b",
+					"c": "d_e",
+				},
+				Body: `a=b_c="d_e"`,
+			},
+			false,
+			false,
+		},
+		{
+			"embedded double quotes in single quoted value",
+			func(kv *Config) {},
+			&entry.Entry{
+				Body: `a=b c='this is a "co ol" value'`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"a": "b",
+					"c": "this is a \"co ol\" value",
+				},
+				Body: `a=b c='this is a "co ol" value'`,
+			},
+			false,
+			false,
+		},
+		{
+			"leading and trailing pair delimiter w/o quotes",
+			func(kv *Config) {},
+			&entry.Entry{
+				Body: "   k1=v1   k2==v2       k3=v3= ",
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"k1": "v1",
+					"k2": "=v2",
+					"k3": "v3=",
+				},
+				Body: "   k1=v1   k2==v2       k3=v3= ",
+			},
+			false,
+			false,
+		},
+		{
+			"complicated delimiters",
+			func(kv *Config) {
+				kv.Delimiter = "@*"
+				kv.PairDelimiter = "_!_"
+			},
+			&entry.Entry{
+				Body: `k1@*v1_!_k2@**v2_!__k3@@*v3__`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"k1":   "v1",
+					"k2":   "*v2",
+					"_k3@": "v3__",
+				},
+				Body: `k1@*v1_!_k2@**v2_!__k3@@*v3__`,
+			},
+			false,
+			false,
+		},
 	}
 
 	for _, tc := range cases {
@@ -601,31 +681,6 @@ key=value`,
 			}
 			require.NoError(t, err)
 			fake.ExpectEntry(t, tc.expect)
-		})
-	}
-}
-
-func TestSplitStringByWhitespace(t *testing.T) {
-	cases := []struct {
-		name   string
-		intput string
-		output []string
-	}{
-		{
-			"simple",
-			"k=v a=b x=\" y \" job=\"software engineering\"",
-			[]string{
-				"k=v",
-				"a=b",
-				"x=\" y \"",
-				"job=\"software engineering\"",
-			},
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.output, splitStringByWhitespace(tc.intput))
 		})
 	}
 }
