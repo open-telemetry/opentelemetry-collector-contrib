@@ -66,7 +66,7 @@ func newCloudFoundryReceiver(
 }
 
 func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host) error {
-	tokenProvider, tokenErr := newUAATokenProvider(cfr.settings.Logger, cfr.config.UAA.LimitedHTTPClientConfig, cfr.config.UAA.Username, string(cfr.config.UAA.Password))
+	tokenProvider, tokenErr := newUAATokenProvider(cfr.settings.Logger, cfr.config.UAA.LimitedClientConfig, cfr.config.UAA.Username, string(cfr.config.UAA.Password))
 	if tokenErr != nil {
 		return fmt.Errorf("create cloud foundry UAA token provider: %w", tokenErr)
 	}
@@ -74,7 +74,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 	streamFactory, streamErr := newEnvelopeStreamFactory(
 		cfr.settings,
 		tokenProvider,
-		cfr.config.RLPGateway.HTTPClientConfig,
+		cfr.config.RLPGateway.ClientConfig,
 		host,
 	)
 	if streamErr != nil {

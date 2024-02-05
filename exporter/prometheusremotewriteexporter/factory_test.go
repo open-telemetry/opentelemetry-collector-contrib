@@ -27,9 +27,9 @@ func Test_createDefaultConfig(t *testing.T) {
 func Test_createMetricsExporter(t *testing.T) {
 
 	invalidConfig := createDefaultConfig().(*Config)
-	invalidConfig.HTTPClientConfig = confighttp.HTTPClientConfig{}
+	invalidConfig.ClientConfig = confighttp.ClientConfig{}
 	invalidTLSConfig := createDefaultConfig().(*Config)
-	invalidTLSConfig.HTTPClientConfig.TLSSetting = configtls.TLSClientSetting{
+	invalidTLSConfig.ClientConfig.TLSSetting = configtls.TLSClientSetting{
 		TLSSetting: configtls.TLSSetting{
 			CAFile:   "non-existent file",
 			CertFile: "",

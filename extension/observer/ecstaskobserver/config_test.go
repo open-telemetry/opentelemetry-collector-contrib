@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "with-endpoint"),
 			expected: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://a.valid.url:1234/path",
 				},
 				PortLabels:      []string{"ECS_TASK_OBSERVER_PORT"},

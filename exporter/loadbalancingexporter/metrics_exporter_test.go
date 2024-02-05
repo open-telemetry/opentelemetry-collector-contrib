@@ -420,9 +420,9 @@ func TestBuildExporterConfigUnknown(t *testing.T) {
 	exporterCfg := buildExporterConfig(c.(*Config), "the-endpoint")
 
 	// verify
-	grpcSettings := defaultCfg.GRPCClientSettings
+	grpcSettings := defaultCfg.ClientConfig
 	grpcSettings.Endpoint = "the-endpoint"
-	assert.Equal(t, grpcSettings, exporterCfg.GRPCClientSettings)
+	assert.Equal(t, grpcSettings, exporterCfg.ClientConfig)
 
 	assert.Equal(t, defaultCfg.TimeoutSettings, exporterCfg.TimeoutSettings)
 	assert.Equal(t, defaultCfg.QueueConfig, exporterCfg.QueueConfig)

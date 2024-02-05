@@ -18,8 +18,8 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	// prepare and test
 	expected := &Config{
-		HTTPServerConfig: &confighttp.HTTPServerConfig{Endpoint: "0.0.0.0:5778"},
-		GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
+		HTTPServerConfig: &confighttp.ServerConfig{Endpoint: "0.0.0.0:5778"},
+		GRPCServerConfig: &configgrpc.ServerConfig{NetAddr: confignet.NetAddr{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: "tcp",
 		}},

@@ -85,8 +85,8 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 		}
 	}
 
-	if jrse.cfg.GRPCServerSettings != nil {
-		grpcServer, err := internal.NewGRPC(jrse.telemetry, *jrse.cfg.GRPCServerSettings, jrse.samplingStore)
+	if jrse.cfg.GRPCServerConfig != nil {
+		grpcServer, err := internal.NewGRPC(jrse.telemetry, *jrse.cfg.GRPCServerConfig, jrse.samplingStore)
 		if err != nil {
 			return fmt.Errorf("error while creating the gRPC server: %w", err)
 		}

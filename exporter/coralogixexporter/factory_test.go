@@ -88,7 +88,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "UseSecure",
 			config: &Config{
-				Traces: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						Insecure: false,
@@ -99,7 +99,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "Keepalive",
 			config: &Config{
-				Traces: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 					Keepalive: &configgrpc.KeepaliveClientConfig{
 						Time:                30 * time.Second,
@@ -112,7 +112,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "NoneCompression",
 			config: &Config{
-				Traces: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
 					Compression: "none",
 				},
@@ -121,7 +121,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "GzipCompression",
 			config: &Config{
-				Traces: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
 					Compression: configcompression.Gzip,
 				},
@@ -130,7 +130,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "SnappyCompression",
 			config: &Config{
-				Traces: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
 					Compression: configcompression.Snappy,
 				},
@@ -139,7 +139,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "ZstdCompression",
 			config: &Config{
-				Traces: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
 					Compression: configcompression.Zstd,
 				},
@@ -148,7 +148,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "Headers",
 			config: &Config{
-				Traces: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 					Headers: map[string]configopaque.String{
 						"hdr1": "val1",
@@ -160,7 +160,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "NumConsumers",
 			config: &Config{
-				Traces: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 				},
 			},
@@ -168,7 +168,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "CertPemFileError",
 			config: &Config{
-				Traces: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -183,7 +183,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			name: "UseDomain",
 			config: &Config{
 				Domain: "localhost",
-				DomainSettings: configgrpc.GRPCClientSettings{
+				DomainSettings: configgrpc.ClientConfig{
 					TLSSetting: configtls.TLSClientSetting{
 						Insecure: false,
 					},

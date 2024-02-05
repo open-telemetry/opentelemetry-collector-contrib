@@ -29,13 +29,13 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(metadata.Type),
 			expected: &Config{
-				HTTPServerConfig: &confighttp.HTTPServerConfig{Endpoint: "0.0.0.0:5778"},
-				GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
+				HTTPServerConfig: &confighttp.ServerConfig{Endpoint: "0.0.0.0:5778"},
+				GRPCServerConfig: &configgrpc.ServerConfig{NetAddr: confignet.NetAddr{
 					Endpoint:  "0.0.0.0:14250",
 					Transport: "tcp",
 				}},
 				Source: Source{
-					Remote: &configgrpc.GRPCClientSettings{
+					Remote: &configgrpc.ClientConfig{
 						Endpoint: "jaeger-collector:14250",
 					},
 				},
@@ -44,8 +44,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
-				HTTPServerConfig: &confighttp.HTTPServerConfig{Endpoint: "0.0.0.0:5778"},
-				GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
+				HTTPServerConfig: &confighttp.ServerConfig{Endpoint: "0.0.0.0:5778"},
+				GRPCServerConfig: &configgrpc.ServerConfig{NetAddr: confignet.NetAddr{
 					Endpoint:  "0.0.0.0:14250",
 					Transport: "tcp",
 				}},
@@ -86,16 +86,16 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "no sources",
 			cfg: Config{
-				GRPCServerSettings: &configgrpc.GRPCServerSettings{},
+				GRPCServerConfig: &configgrpc.ServerConfig{},
 			},
 			expected: errNoSources,
 		},
 		{
 			desc: "too many sources",
 			cfg: Config{
-				GRPCServerSettings: &configgrpc.GRPCServerSettings{},
+				GRPCServerConfig: &configgrpc.ServerConfig{},
 				Source: Source{
-					Remote: &configgrpc.GRPCClientSettings{},
+					Remote: &configgrpc.ClientConfig{},
 					File:   "/tmp/some-file",
 				},
 			},

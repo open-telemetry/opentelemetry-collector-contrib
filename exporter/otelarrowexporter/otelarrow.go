@@ -51,7 +51,7 @@ func newExporter(cfg component.Config, set exporter.CreateSettings, _ streamClie
 func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
 	// TODO: Implementation: the following is a placeholder used
 	// to satisfy gRPC configuration-related configuration errors.
-	if _, err = e.config.GRPCClientSettings.ToClientConn(ctx, host, e.settings.TelemetrySettings); err != nil {
+	if _, err = e.config.ClientConfig.ToClientConn(ctx, host, e.settings.TelemetrySettings); err != nil {
 		return err
 	}
 	return nil
