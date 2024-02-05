@@ -15,7 +15,7 @@ var scraperToElasticDataset = map[string]string{
 	"memory":     "system.memory",
 	"network":    "system.network",
 	"paging":     "system.memory",
-	"processes":  "system.process",
+	"processes":  "system.process.summary",
 	"process":    "system.process",
 }
 
