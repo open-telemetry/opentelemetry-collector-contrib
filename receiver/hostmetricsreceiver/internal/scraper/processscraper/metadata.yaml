@@ -47,7 +47,7 @@ resource_attributes:
     enabled: true
     type: string
   process.cgroup:
-    description: cgroup associated with the process.
+    description: cgroup associated with the process (Linux only).
     enabled: false
     type: string
 
