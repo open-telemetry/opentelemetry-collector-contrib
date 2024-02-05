@@ -980,6 +980,8 @@ github.com/influxdata/line-protocol/v2 v2.2.1 h1:EAPkqJ9Km4uAxtMRgUubJyqAr6zgWM0
 github.com/influxdata/line-protocol/v2 v2.2.1/go.mod h1:DmB3Cnh+3oxmG6LOBIxce4oaL4CPj3OmMPgvauXh+tM=
 github.com/ionos-cloud/sdk-go/v6 v6.1.9 h1:Iq3VIXzeEbc8EbButuACgfLMiY5TPVWUPNrF+Vsddo4=
 github.com/ionos-cloud/sdk-go/v6 v6.1.9/go.mod h1:EzEgRIDxBELvfoa/uBN0kOQaqovLjUWEB7iW4/Q+t4k=
+github.com/ishleenk17/opentelemetry-collector-contrib/processor/elasticprocessor v0.0.0-20240203071249-1d18877c8eeb h1:De6AZyMQNMH+TKs4TCIt2d8Gl1EG0JxZ6ryTr26J7pg=
+github.com/ishleenk17/opentelemetry-collector-contrib/processor/elasticprocessor v0.0.0-20240203071249-1d18877c8eeb/go.mod h1:EDhNj/4y/IGUH0EHt0zG9rNF/AyTxuTD3EgnEvc5l7k=
 github.com/jackc/chunkreader v1.0.0/go.mod h1:RT6O25fNZIuasFJRyZ4R/Y2BbhasbmZXF9QQ7T3kePo=
 github.com/jackc/chunkreader/v2 v2.0.0/go.mod h1:odVSm741yZoC3dpHEUXIqA9tQRhFrgOHwnPIn9lDKlk=
 github.com/jackc/chunkreader/v2 v2.0.1 h1:i+RDz65UE+mmpjTfyz0MoVTnzeYxroil2G82ki7MGG8=
