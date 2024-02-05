@@ -7,8 +7,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.50.2
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.2
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240202163303-26c157e3bffb
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240202163303-26c157e3bffb
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240205121451-f5a7315cf88e
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240205121451-f5a7315cf88e
 )
 
 require (

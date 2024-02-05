@@ -642,8 +642,8 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.93.1-0.20240202170612-7abb9622312d // indirect
 	go.opentelemetry.io/collector/extension/ballastextension v0.93.1-0.20240202170612-7abb9622312d // indirect
 	go.opentelemetry.io/collector/extension/zpagesextension v0.93.1-0.20240202170612-7abb9622312d // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240202163303-26c157e3bffb // indirect
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240202163303-26c157e3bffb // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240205121451-f5a7315cf88e // indirect
+	go.opentelemetry.io/collector/pdata v1.0.2-0.20240205121451-f5a7315cf88e // indirect
 	go.opentelemetry.io/collector/processor v0.93.1-0.20240202170612-7abb9622312d // indirect
 	go.opentelemetry.io/collector/processor/batchprocessor v0.93.1-0.20240202170612-7abb9622312d // indirect
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.93.1-0.20240202170612-7abb9622312d // indirect
