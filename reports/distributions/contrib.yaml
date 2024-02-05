@@ -76,7 +76,6 @@ components:
     processor:
         - attributes
         - cumulativetodelta
-        - datadog
         - deltatorate
         - experimental_metricsgeneration
         - filter
@@ -90,7 +89,6 @@ components:
         - resource
         - resourcedetection
         - routing
-        - servicegraph
         - span
         - spanmetrics
         - sumologic
@@ -178,6 +176,8 @@ components:
         - udplog
         - vcenter
         - wavefront
+        - webhookevent
+        - windowseventlog
         - windowsperfcounters
         - zipkin
         - zookeeper

@@ -7,3 +7,9 @@ status:
   distributions: [contrib, observiq]
   codeowners:
     active: [povilasv, matej-g]
+
+tests:
+  config:
+    domain: "coralogix.com"
+    private_key: "xxx"
+  expect_consumer_error: true

@@ -69,7 +69,7 @@ func TestScraper(t *testing.T) {
 				CollectionInterval: defaultCollectionInterval,
 			},
 				ApplicationNames: []string{"local-123", "local-987"},
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
 				},
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -216,7 +216,7 @@ func TestScraper(t *testing.T) {
 				CollectionInterval: defaultCollectionInterval,
 			},
 				ApplicationNames: []string{"streaming-example"},
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
 				},
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),

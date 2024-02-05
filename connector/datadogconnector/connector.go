@@ -21,10 +21,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
-// connectorImp is the schema for connector
-type connectorImp struct {
+// traceToMetricConnector is the schema for connector
+type traceToMetricConnector struct {
 	metricsConsumer consumer.Metrics // the next component in the pipeline to ingest metrics after connector
-	tracesConsumer  consumer.Traces  // the next component in the pipeline to ingest traces after connector
 	logger          *zap.Logger
 
 	// agent specifies the agent used to ingest traces and output APM Stats.
@@ -43,12 +42,11 @@ type connectorImp struct {
 	exit chan struct{}
 }
 
-var _ component.Component = (*connectorImp)(nil) // testing that the connectorImp properly implements the type Component interface
+var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
 
 // function to create a new connector
-func newConnector(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics, tracesConsumer consumer.Traces) (*connectorImp, error) {
-	set.Logger.Info("Building datadog connector")
-
+func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics) (*traceToMetricConnector, error) {
+	set.Logger.Info("Building datadog connector for traces to metrics")
 	in := make(chan *pb.StatsPayload, 100)
 	set.MeterProvider = noop.NewMeterProvider() // disable metrics for the connector
 	attributesTranslator, err := attributes.NewTranslator(set)
@@ -61,13 +59,12 @@ func newConnector(set component.TelemetrySettings, cfg component.Config, metrics
 	}
 
 	ctx := context.Background()
-	return &connectorImp{
+	return &traceToMetricConnector{
 		logger:          set.Logger,
 		agent:           datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(cfg.(*Config).Traces), in),
 		translator:      trans,
 		in:              in,
 		metricsConsumer: metricsConsumer,
-		tracesConsumer:  tracesConsumer,
 		exit:            make(chan struct{}),
 	}, nil
 }
@@ -86,18 +83,18 @@ func getTraceAgentCfg(cfg TracesConfig) *traceconfig.AgentConfig {
 }
 
 // Start implements the component.Component interface.
-func (c *connectorImp) Start(_ context.Context, _ component.Host) error {
+func (c *traceToMetricConnector) Start(_ context.Context, _ component.Host) error {
 	c.logger.Info("Starting datadogconnector")
 	c.agent.Start()
-	if c.metricsConsumer != nil {
-		go c.run()
-	}
+	go c.run()
 	return nil
 }
 
 // Shutdown implements the component.Component interface.
-func (c *connectorImp) Shutdown(context.Context) error {
+func (c *traceToMetricConnector) Shutdown(context.Context) error {
 	c.logger.Info("Shutting down datadog connector")
+	c.logger.Info("Stopping datadog agent")
+	// stop the agent and wait for the run loop to exit
 	c.agent.Stop()
 	c.exit <- struct{}{} // signal exit
 	<-c.exit             // wait for close
@@ -106,21 +103,18 @@ func (c *connectorImp) Shutdown(context.Context) error {
 
 // Capabilities implements the consumer interface.
 // tells use whether the component(connector) will mutate the data passed into it. if set to true the connector does modify the data
-func (c *connectorImp) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true} // ConsumeTraces puts a new attribute _dd.stats_computed
+func (c *traceToMetricConnector) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
 }
 
-func (c *connectorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
+func (c *traceToMetricConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
 	c.agent.Ingest(ctx, traces)
-	if c.tracesConsumer != nil {
-		return c.tracesConsumer.ConsumeTraces(ctx, traces)
-	}
 	return nil
 }
 
 // run awaits incoming stats resulting from the agent's ingestion, converts them
 // to metrics and flushes them using the configured metrics exporter.
-func (c *connectorImp) run() {
+func (c *traceToMetricConnector) run() {
 	defer close(c.exit)
 	for {
 		select {

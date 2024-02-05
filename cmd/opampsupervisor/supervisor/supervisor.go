@@ -358,26 +358,26 @@ func (s *Supervisor) startOpAMP() error {
 		TLSConfig:      tlsConfig,
 		InstanceUid:    s.instanceID.String(),
 		Callbacks: types.CallbacksStruct{
-			OnConnectFunc: func() {
+			OnConnectFunc: func(_ context.Context) {
 				s.logger.Debug("Connected to the server.")
 			},
-			OnConnectFailedFunc: func(err error) {
+			OnConnectFailedFunc: func(_ context.Context, err error) {
 				s.logger.Error("Failed to connect to the server", zap.Error(err))
 			},
-			OnErrorFunc: func(err *protobufs.ServerErrorResponse) {
+			OnErrorFunc: func(_ context.Context, err *protobufs.ServerErrorResponse) {
 				s.logger.Error("Server returned an error response", zap.String("message", err.ErrorMessage))
 			},
 			OnMessageFunc: s.onMessage,
-			OnOpampConnectionSettingsFunc: func(ctx context.Context, settings *protobufs.OpAMPConnectionSettings) error {
+			OnOpampConnectionSettingsFunc: func(_ context.Context, settings *protobufs.OpAMPConnectionSettings) error {
 				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043
 				s.logger.Debug("Received ConnectionSettings request")
 				return nil
 			},
-			OnOpampConnectionSettingsAcceptedFunc: func(settings *protobufs.OpAMPConnectionSettings) {
+			OnOpampConnectionSettingsAcceptedFunc: func(_ context.Context, settings *protobufs.OpAMPConnectionSettings) {
 				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043
 				s.logger.Debug("ConnectionSettings accepted")
 			},
-			OnCommandFunc: func(command *protobufs.ServerToAgentCommand) error {
+			OnCommandFunc: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 				cmdType := command.GetType()
 				if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
 					// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21077
@@ -385,10 +385,10 @@ func (s *Supervisor) startOpAMP() error {
 				}
 				return nil
 			},
-			SaveRemoteConfigStatusFunc: func(ctx context.Context, status *protobufs.RemoteConfigStatus) {
+			SaveRemoteConfigStatusFunc: func(_ context.Context, status *protobufs.RemoteConfigStatus) {
 				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
 			},
-			GetEffectiveConfigFunc: func(ctx context.Context) (*protobufs.EffectiveConfig, error) {
+			GetEffectiveConfigFunc: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
 				return s.createEffectiveConfigMsg(), nil
 			},
 		},

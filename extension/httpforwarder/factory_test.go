@@ -39,13 +39,13 @@ func TestFactory(t *testing.T) {
 		},
 		{
 			name:           "Invalid config",
-			config:         &Config{Egress: confighttp.HTTPClientConfig{Endpoint: "123.456.7.89:9090"}},
+			config:         &Config{Egress: confighttp.ClientConfig{Endpoint: "123.456.7.89:9090"}},
 			wantErr:        true,
 			wantErrMessage: "enter a valid URL for 'egress.endpoint': parse \"123.456.7.89:9090\": first path segment in URL cannot",
 		},
 		{
 			name:   "Valid config",
-			config: &Config{Egress: confighttp.HTTPClientConfig{Endpoint: "localhost:9090"}},
+			config: &Config{Egress: confighttp.ClientConfig{Endpoint: "localhost:9090"}},
 		},
 	}
 	for _, test := range tests {

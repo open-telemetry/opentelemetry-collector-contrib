@@ -30,7 +30,7 @@ var (
 // Config is the configuration for the elasticsearch receiver
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confighttp.HTTPClientConfig             `mapstructure:",squash"`
+	confighttp.ClientConfig                 `mapstructure:",squash"`
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// Nodes defines the nodes to scrape.

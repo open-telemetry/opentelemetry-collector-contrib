@@ -111,13 +111,13 @@ func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error
 	}
 
 	var err error
-	fmr.server, err = fmr.config.HTTPServerConfig.ToServer(host, fmr.settings.TelemetrySettings, fmr)
+	fmr.server, err = fmr.config.ServerConfig.ToServer(host, fmr.settings.TelemetrySettings, fmr)
 	if err != nil {
 		return err
 	}
 
 	var listener net.Listener
-	listener, err = fmr.config.HTTPServerConfig.ToListener()
+	listener, err = fmr.config.ServerConfig.ToListener()
 	if err != nil {
 		return err
 	}

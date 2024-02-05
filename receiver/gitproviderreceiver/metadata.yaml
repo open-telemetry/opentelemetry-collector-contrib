@@ -50,3 +50,6 @@ metrics:
       gauge:
           value_type: int
       attributes: [repository.name]
+
+tests:
+  config:
