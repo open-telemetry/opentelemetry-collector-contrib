@@ -125,7 +125,7 @@ func newMetricsExporter(
 
 // start starts the exporter
 func (se *sumologicexporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := se.config.HTTPClientConfig.ToClient(host, se.settings)
+	client, err := se.config.ClientConfig.ToClient(host, se.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}

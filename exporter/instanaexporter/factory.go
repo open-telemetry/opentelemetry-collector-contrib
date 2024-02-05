@@ -32,7 +32,7 @@ func NewFactory() exporter.Factory {
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPClientConfig: confighttp.HTTPClientConfig{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint:        "",
 			Timeout:         30 * time.Second,
 			Headers:         map[string]configopaque.String{},

@@ -12,11 +12,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 var (
@@ -269,7 +270,9 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			inputMetrics := someComplexMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2)
 			inputHistogramMetrics := someComplexHistogramMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2, 2)
 
-			gap := createGroupByAttrsProcessor(zap.NewNop(), tt.groupByKeys)
+			tel := setupTelemetry()
+			gap, err := createGroupByAttrsProcessor(tel.NewProcessorCreateSettings(), tt.groupByKeys)
+			require.NoError(t, err)
 
 			processedLogs, err := gap.processLogs(context.Background(), inputLogs)
 			assert.NoError(t, err)
@@ -369,6 +372,22 @@ func TestComplexAttributeGrouping(t *testing.T) {
 				}
 			}
 
+			expected := expectedMetrics{}
+			if tt.shouldMoveCommonGroupedAttr {
+				expected.mDistLogGroups = int64(tt.outputResourceCount)
+				expected.mNumGroupedLogs = int64(tt.outputTotalRecordsCount)
+
+				expected.mDistMetricGroups = int64(tt.outputResourceCount)
+				expected.mNumGroupedMetrics = 4 * int64(tt.outputTotalRecordsCount)
+
+				expected.mDistSpanGroups = int64(tt.outputResourceCount)
+				expected.mNumGroupedSpans = int64(tt.outputTotalRecordsCount)
+			} else {
+				expected.mNumNonGroupedLogs = int64(tt.outputTotalRecordsCount)
+				expected.mNumNonGroupedMetrics = 4 * int64(tt.outputTotalRecordsCount)
+				expected.mNumNonGroupedSpans = int64(tt.outputTotalRecordsCount)
+			}
+			tel.assertMetrics(t, expected)
 		})
 	}
 }
@@ -416,7 +435,8 @@ func TestAttributeGrouping(t *testing.T) {
 			histogramMetrics := someHistogramMetrics(attrMap, 1, tt.count)
 			exponentialHistogramMetrics := someExponentialHistogramMetrics(attrMap, 1, tt.count)
 
-			gap := createGroupByAttrsProcessor(zap.NewNop(), tt.groupByKeys)
+			gap, err := createGroupByAttrsProcessor(processortest.NewNopCreateSettings(), tt.groupByKeys)
+			require.NoError(t, err)
 
 			expectedResource := prepareResource(attrMap, tt.groupByKeys)
 			expectedAttributes := filterAttributeMap(attrMap, tt.nonGroupedKeys)
@@ -727,7 +747,8 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	datapoint.Attributes().PutStr("id", "eth0")
 
 	// Perform the test
-	gap := createGroupByAttrsProcessor(zap.NewNop(), []string{"host.name"})
+	gap, err := createGroupByAttrsProcessor(processortest.NewNopCreateSettings(), []string{"host.name"})
+	require.NoError(t, err)
 
 	processedMetrics, err := gap.processMetrics(context.Background(), metrics)
 	assert.NoError(t, err)
@@ -811,7 +832,8 @@ func TestCompacting(t *testing.T) {
 	assert.Equal(t, 100, logs.ResourceLogs().Len())
 	assert.Equal(t, 100, metrics.ResourceMetrics().Len())
 
-	gap := createGroupByAttrsProcessor(zap.NewNop(), []string{})
+	gap, err := createGroupByAttrsProcessor(processortest.NewNopCreateSettings(), []string{})
+	require.NoError(t, err)
 
 	processedSpans, err := gap.processTraces(context.Background(), spans)
 	assert.NoError(t, err)
@@ -869,7 +891,8 @@ func BenchmarkCompacting(bb *testing.B) {
 	for _, run := range runs {
 		bb.Run(fmt.Sprintf("instrumentation_library_count=%d, spans_per_library_count=%d", run.ilCount, run.spanCount), func(b *testing.B) {
 			spans := someSpans(attrMap, run.ilCount, run.spanCount)
-			gap := createGroupByAttrsProcessor(zap.NewNop(), []string{})
+			gap, err := createGroupByAttrsProcessor(processortest.NewNopCreateSettings(), []string{})
+			require.NoError(b, err)
 
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {

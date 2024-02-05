@@ -79,7 +79,7 @@ func TestStartAndShutdown(t *testing.T) {
 	port := 12800
 	config := &configuration{
 		CollectorHTTPPort: port,
-		CollectorHTTPSettings: confighttp.HTTPServerConfig{
+		CollectorHTTPSettings: confighttp.ServerConfig{
 			Endpoint: fmt.Sprintf(":%d", port),
 		},
 	}
@@ -134,7 +134,7 @@ func TestGRPCReception(t *testing.T) {
 func TestHttpReception(t *testing.T) {
 	config := &configuration{
 		CollectorHTTPPort: 12800,
-		CollectorHTTPSettings: confighttp.HTTPServerConfig{
+		CollectorHTTPSettings: confighttp.ServerConfig{
 			Endpoint: fmt.Sprintf(":%d", 12800),
 		},
 	}

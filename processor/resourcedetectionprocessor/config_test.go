@@ -27,7 +27,7 @@ import (
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
-	cfg := confighttp.NewDefaultHTTPClientConfig()
+	cfg := confighttp.NewDefaultClientConfig()
 	cfg.Timeout = 2 * time.Second
 	openshiftConfig := detectorCreateDefaultConfig()
 	openshiftConfig.OpenShiftConfig = openshift.Config{
@@ -69,65 +69,65 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "openshift"),
 			expected: &Config{
-				Detectors:        []string{"openshift"},
-				DetectorConfig:   openshiftConfig,
-				HTTPClientConfig: cfg,
-				Override:         false,
+				Detectors:      []string{"openshift"},
+				DetectorConfig: openshiftConfig,
+				ClientConfig:   cfg,
+				Override:       false,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "gcp"),
 			expected: &Config{
-				Detectors:        []string{"env", "gcp"},
-				HTTPClientConfig: cfg,
-				Override:         false,
-				DetectorConfig:   detectorCreateDefaultConfig(),
+				Detectors:      []string{"env", "gcp"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: detectorCreateDefaultConfig(),
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "ec2"),
 			expected: &Config{
-				Detectors:        []string{"env", "ec2"},
-				DetectorConfig:   ec2Config,
-				HTTPClientConfig: cfg,
-				Override:         false,
+				Detectors:      []string{"env", "ec2"},
+				DetectorConfig: ec2Config,
+				ClientConfig:   cfg,
+				Override:       false,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "system"),
 			expected: &Config{
-				Detectors:        []string{"env", "system"},
-				DetectorConfig:   systemConfig,
-				HTTPClientConfig: cfg,
-				Override:         false,
-				Attributes:       []string{"a", "b"},
+				Detectors:      []string{"env", "system"},
+				DetectorConfig: systemConfig,
+				ClientConfig:   cfg,
+				Override:       false,
+				Attributes:     []string{"a", "b"},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "heroku"),
 			expected: &Config{
-				Detectors:        []string{"env", "heroku"},
-				HTTPClientConfig: cfg,
-				Override:         false,
-				DetectorConfig:   detectorCreateDefaultConfig(),
+				Detectors:      []string{"env", "heroku"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: detectorCreateDefaultConfig(),
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "lambda"),
 			expected: &Config{
-				Detectors:        []string{"env", "lambda"},
-				HTTPClientConfig: cfg,
-				Override:         false,
-				DetectorConfig:   detectorCreateDefaultConfig(),
+				Detectors:      []string{"env", "lambda"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: detectorCreateDefaultConfig(),
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "resourceattributes"),
 			expected: &Config{
-				Detectors:        []string{"system", "ec2"},
-				HTTPClientConfig: cfg,
-				Override:         false,
-				DetectorConfig:   resourceAttributesConfig,
+				Detectors:      []string{"system", "ec2"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: resourceAttributesConfig,
 			},
 		},
 		{

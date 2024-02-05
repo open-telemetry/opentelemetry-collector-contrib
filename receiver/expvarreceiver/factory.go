@@ -58,7 +58,7 @@ func newMetricsReceiver(
 func newDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-		HTTPClientConfig: confighttp.HTTPClientConfig{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: defaultEndpoint,
 			Timeout:  defaultTimeout,
 		},

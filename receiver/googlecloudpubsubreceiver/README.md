@@ -23,8 +23,8 @@ The following configuration options are supported:
 * `subscription` (Required): The subscription name to receive OTLP data from. The subscription name  should be a 
   fully qualified resource name (eg: `projects/otel-project/subscriptions/otlp`).
 * `encoding` (Optional): The encoding that will be used to received data from the subscription. This can either be
-  `otlp_proto_trace`, `otlp_proto_metric`, `otlp_proto_log`, or `raw_text` (see `encoding`).  This will only be used as 
-  a fallback, when no `content-type` attribute is present.
+  `otlp_proto_trace`, `otlp_proto_metric`, `otlp_proto_log`, `cloud_logging`, or `raw_text` (see `encoding`).  This will
+  only be used as a fallback, when no `content-type` attribute is present.
 * `compression` (Optional): The compression that will be used on received data from the subscription. When set it can 
   only be `gzip`. This will only be used as a fallback, when no `content-encoding` attribute is present.
 * `endpoint` (Optional): Override the default Pubsub Endpoint, useful when connecting to the PubSub emulator instance
@@ -46,20 +46,29 @@ You should not need to set the encoding of the subscription as the receiver will
 by looking at the `ce-type` and `content-type` attributes of the message. Only when those attributes are not set 
 must the `encoding` field in the configuration be set. 
 
-| ce-type] | ce-datacontenttype | encoding | description |
-| --- | --- | --- | --- |
-| org.opentelemetry.otlp.traces.v1 | application/protobuf |  | Decode OTLP trace message |
-| org.opentelemetry.otlp.metrics.v1 | application/protobuf |  | Decode OTLP metric message |
-| org.opentelemetry.otlp.logs.v1 | application/json |  | Decode OTLP log message |
-| - | - | otlp_proto_trace | Decode OTLP trace message |
-| - | - | otlp_proto_metric | Decode OTLP trace message |
-| - | - | otlp_proto_log | Decode OTLP trace message |
-| - | - | raw_text | Wrap in an OTLP log message |
+| ce-type                           | ce-datacontenttype   | encoding          | description                                    |
+|-----------------------------------|----------------------|-------------------|------------------------------------------------|
+| org.opentelemetry.otlp.traces.v1  | application/protobuf |                   | Decode OTLP trace message                      |
+| org.opentelemetry.otlp.metrics.v1 | application/protobuf |                   | Decode OTLP metric message                     |
+| org.opentelemetry.otlp.logs.v1    | application/json     |                   | Decode OTLP log message                        |
+| -                                 | -                    | otlp_proto_trace  | Decode OTLP trace message                      |
+| -                                 | -                    | otlp_proto_metric | Decode OTLP trace message                      |
+| -                                 | -                    | otlp_proto_log    | Decode OTLP trace message                      |
+| -                                 | -                    | cloud_logging     | Decode [Cloud Logging] [LogEntry] message type |
+| -                                 | -                    | raw_text          | Wrap in an OTLP log message                    |
 
 When the `encoding` configuration is set, the attributes on the message are ignored.
 
-The receiver can be used for ingesting arbitrary text message on a Pubsub subscription and wrap them in OTLP Log
-message, making it a convenient way to ingest log lines from Pubsub.
+With `cloud_logging`, the receiver can be used to bring Cloud Logging messages into an OpenTelemetry pipeline. You'll
+first need to [set up a logging sink][sink-docs] with a Pub/Sub topic as its destination. Note that the `cloud_logging`
+integration is considered **alpha** as the semantic convention on some of the conversion are not stabilized yet.
+
+With `raw_text`, the receiver can be used for ingesting arbitrary text message on a Pubsub subscription, wrapping them
+in OTLP Log messages, making it a convenient way to ingest raw log lines from Pubsub.
+
+[Cloud Logging]: https://cloud.google.com/logging
+[LogEntry]: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry
+[sink-docs]: https://cloud.google.com/logging/docs/export/configure_export_v2#creating_sink
 
 ## Pubsub subscription
 

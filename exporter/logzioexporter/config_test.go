@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.BackOffConfig.MaxInterval = 5 * time.Second
 	expected.QueueSettings = exporterhelper.NewDefaultQueueSettings()
 	expected.QueueSettings.Enabled = false
-	expected.HTTPClientConfig = confighttp.HTTPClientConfig{
+	expected.ClientConfig = confighttp.ClientConfig{
 		Endpoint: "",
 		Timeout:  30 * time.Second,
 		Headers:  map[string]configopaque.String{},
@@ -67,7 +67,7 @@ func TestDefaultLoadConfig(t *testing.T) {
 	}
 	expected.BackOffConfig = configretry.NewDefaultBackOffConfig()
 	expected.QueueSettings = exporterhelper.NewDefaultQueueSettings()
-	expected.HTTPClientConfig = confighttp.HTTPClientConfig{
+	expected.ClientConfig = confighttp.ClientConfig{
 		Endpoint: "",
 		Timeout:  30 * time.Second,
 		Headers:  map[string]configopaque.String{},
@@ -88,7 +88,7 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 		CustomEndpoint: "https://api.example.com",
 		QueueMaxLength: 10,
 		DrainInterval:  10,
-		HTTPClientConfig: confighttp.HTTPClientConfig{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
 			Timeout:  10 * time.Second,
 			Headers:  map[string]configopaque.String{},
@@ -112,7 +112,7 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 		DrainInterval:  10,
 		BackOffConfig:  configretry.NewDefaultBackOffConfig(),
 		QueueSettings:  exporterhelper.NewDefaultQueueSettings(),
-		HTTPClientConfig: confighttp.HTTPClientConfig{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "https://api.example.com",
 			Timeout:  10 * time.Second,
 			Headers:  map[string]configopaque.String{},
