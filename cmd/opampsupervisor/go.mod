@@ -11,8 +11,8 @@ require (
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/open-telemetry/opamp-go v0.12.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/config/configtls v0.93.1-0.20240202170612-7abb9622312d
-	go.opentelemetry.io/collector/semconv v0.93.1-0.20240202170612-7abb9622312d
+	go.opentelemetry.io/collector/config/configtls v0.93.1-0.20240205121451-f5a7315cf88e
+	go.opentelemetry.io/collector/semconv v0.93.1-0.20240205121451-f5a7315cf88e
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.26.0
 )
@@ -27,8 +27,8 @@ require (
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.93.1-0.20240202170612-7abb9622312d // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240202163303-26c157e3bffb // indirect
+	go.opentelemetry.io/collector/config/configopaque v0.93.1-0.20240205121451-f5a7315cf88e // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240205121451-f5a7315cf88e // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
