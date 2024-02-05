@@ -11,7 +11,6 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.2-0.20240202163303-26c157e3bffb
 	go.opentelemetry.io/collector/semconv v0.93.1-0.20240202170612-7abb9622312d
 	go.uber.org/goleak v1.3.0
-	go.uber.org/multierr v1.11.0
 )
 
 require (
@@ -24,6 +23,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.2-0.20240202163303-26c157e3bffb // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
