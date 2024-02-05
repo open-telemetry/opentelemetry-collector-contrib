@@ -7,7 +7,7 @@ status:
     development: [logs]
   distributions: [contrib, splunk, observiq, sumo]
   codeowners:
-    active: [dmitryax, pmcollins]
+    active: [dmitryax, pmcollins, crobert-1]
 
 tests:
   config:
