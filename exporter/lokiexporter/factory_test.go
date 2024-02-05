@@ -21,7 +21,7 @@ const (
 func TestExporter_new(t *testing.T) {
 	t.Run("with valid config", func(t *testing.T) {
 		config := &Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: validEndpoint,
 			},
 		}
@@ -33,7 +33,7 @@ func TestExporter_new(t *testing.T) {
 
 func TestExporter_startReturnsNillWhenValidConfig(t *testing.T) {
 	config := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: validEndpoint,
 		},
 	}
@@ -45,10 +45,10 @@ func TestExporter_startReturnsNillWhenValidConfig(t *testing.T) {
 
 func TestExporter_startReturnsErrorWhenInvalidHttpClientSettings(t *testing.T) {
 	config := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
 			CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-				return nil, fmt.Errorf("this causes HTTPClientSettings.ToClient() to error")
+				return nil, fmt.Errorf("this causes ClientConfig.ToClient() to error")
 			},
 		},
 	}
@@ -60,7 +60,7 @@ func TestExporter_startReturnsErrorWhenInvalidHttpClientSettings(t *testing.T) {
 
 func TestExporter_stopAlwaysReturnsNil(t *testing.T) {
 	config := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: validEndpoint,
 		},
 	}

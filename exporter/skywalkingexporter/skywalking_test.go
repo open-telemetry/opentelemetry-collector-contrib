@@ -31,7 +31,7 @@ func TestSwExporter(t *testing.T) {
 	server, addr, handler := initializeGRPCTestServer(t, grpc.MaxConcurrentStreams(10))
 	tt := &Config{
 		NumStreams: 10,
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: addr.String(),
 			TLSSetting: configtls.TLSClientSetting{
 				Insecure: true,
@@ -104,7 +104,7 @@ func TestSwExporter(t *testing.T) {
 	server, addr, handler2 := initializeGRPCTestServerMetric(t, grpc.MaxConcurrentStreams(10))
 	tt = &Config{
 		NumStreams: 10,
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: addr.String(),
 			TLSSetting: configtls.TLSClientSetting{
 				Insecure: true,

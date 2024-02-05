@@ -20,8 +20,8 @@ const (
 
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
-	GRPC *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
-	HTTP *confighttp.HTTPServerSettings `mapstructure:"http"`
+	GRPC *configgrpc.ServerConfig `mapstructure:"grpc"`
+	HTTP *confighttp.ServerConfig `mapstructure:"http"`
 }
 
 // Config defines configuration for the lokireceiver receiver.

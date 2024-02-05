@@ -113,6 +113,10 @@ func (c Config) buildArgs() ([]string, error) {
 		args = append(args, matches...)
 	}
 
+	if c.All {
+		args = append(args, "--all")
+	}
+
 	return args, nil
 }
 

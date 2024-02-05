@@ -31,7 +31,7 @@ func (s *remoteObserverExtension) Start(_ context.Context, host component.Host) 
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.FS(htmlContent)))
-	s.server, err = s.config.HTTPServerSettings.ToServer(host, s.settings.TelemetrySettings, mux)
+	s.server, err = s.config.ServerConfig.ToServer(host, s.settings.TelemetrySettings, mux)
 	if err != nil {
 		return err
 	}

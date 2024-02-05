@@ -5,13 +5,10 @@ components:
     connector:
         - count
         - datadog
-        - exceptions
-        - failover
         - routing
         - servicegraph
         - spanmetrics
     exporter:
-        - alertmanager
         - alibabacloud_logservice
         - awscloudwatchlogs
         - awsemf
@@ -44,7 +41,6 @@ components:
         - mezmo
         - opencensus
         - opensearch
-        - otelarrow
         - prometheus
         - prometheusremotewrite
         - pulsar
@@ -80,7 +76,6 @@ components:
     processor:
         - attributes
         - cumulativetodelta
-        - datadog
         - deltatorate
         - experimental_metricsgeneration
         - filter
@@ -94,7 +89,6 @@ components:
         - resource
         - resourcedetection
         - routing
-        - servicegraph
         - span
         - spanmetrics
         - sumologic
@@ -106,7 +100,6 @@ components:
         - apache
         - apachespark
         - awscloudwatch
-        - awscloudwatchmetrics
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
@@ -167,7 +160,6 @@ components:
         - receiver_creator
         - redis
         - riak
-        - saphana
         - sapm
         - signalfx
         - skywalking
@@ -184,6 +176,8 @@ components:
         - udplog
         - vcenter
         - wavefront
+        - webhookevent
+        - windowseventlog
         - windowsperfcounters
         - zipkin
         - zookeeper

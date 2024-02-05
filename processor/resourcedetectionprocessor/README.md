@@ -400,6 +400,7 @@ processors:
 
   * cloud.provider ("azure")
   * cloud.platform ("azure_aks")
+  * k8s.cluster.name
 
 ```yaml
 processors:
@@ -408,6 +409,34 @@ processors:
     timeout: 2s
     override: false
 ```
+
+#### Cluster Name
+
+Cluster name detection is disabled by default, and can be enabled with the
+following configuration:
+
+```yaml
+processors:
+  resourcedetection/aks:
+    detectors: [aks]
+    timeout: 2s
+    override: false
+    aks:
+      resource_attributes:
+        k8s.cluster.name: true
+```
+
+Azure AKS cluster name is derived from the Azure Instance Metadata Service's (IMDS) infrastructure resource group field. This field contains the resource group and name of the cluster, separated by underscores. e.g: `MC_<resource group>_<cluster name>_<location>`.
+
+Example:
+  - Resource group: my-resource-group
+  - Cluster name:   my-cluster
+  - Location:       eastus
+  - Generated name: MC_my-resource-group_my-cluster_eastus
+
+The cluster name is detected if it does not contain underscores and if a custom infrastructure resource group name was not used.
+
+If accurate parsing cannot be performed, the infrastructure resource group value is returned. This value can be used to uniquely identify the cluster, as Azure will not allow users to create multiple clusters with the same infrastructure resource group name.
 
 ### Consul
 

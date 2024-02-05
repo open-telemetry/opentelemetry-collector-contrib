@@ -18,7 +18,7 @@ const (
 
 // Config defines configuration for the Splunk HEC receiver.
 type Config struct {
-	confighttp.HTTPServerSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 	// RawPath for raw data collection, default is '/services/collector/raw'

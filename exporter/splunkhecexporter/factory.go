@@ -63,7 +63,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		LogDataEnabled:       true,
 		ProfilingDataEnabled: true,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Timeout:              defaultHTTPTimeout,
 			IdleConnTimeout:      &defaultIdleConnTimeout,
 			MaxIdleConnsPerHost:  &defaultMaxConns,

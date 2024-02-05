@@ -132,7 +132,7 @@ func TestStart(t *testing.T) {
 	t.Run("start fail", func(t *testing.T) {
 		f := NewFactory()
 		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.HTTPClientSettings.TLSSetting.CAFile = "/non/existent"
+		cfg.ClientConfig.TLSSetting.CAFile = "/non/existent"
 		cfg.Username = "otelu"
 		cfg.Password = "otelp"
 		require.NoError(t, component.ValidateConfig(cfg))
@@ -158,7 +158,7 @@ func TestMetricSettings(t *testing.T) {
 		CouchdbHttpdViews:         metadata.MetricConfig{Enabled: false},
 	}
 	cfg := &Config{
-		HTTPClientSettings:   confighttp.HTTPClientSettings{},
+		ClientConfig:         confighttp.ClientConfig{},
 		MetricsBuilderConfig: mbc,
 	}
 	scraper := newCouchdbScraper(receivertest.NewNopCreateSettings(), cfg)

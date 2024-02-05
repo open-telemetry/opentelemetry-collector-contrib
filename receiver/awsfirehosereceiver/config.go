@@ -11,10 +11,10 @@ import (
 )
 
 type Config struct {
-	// HTTPServerSettings is used to set up the Firehose delivery
+	// ServerConfig is used to set up the Firehose delivery
 	// endpoint. The Firehose delivery stream expects an HTTPS
 	// endpoint, so TLSSettings must be used to enable that.
-	confighttp.HTTPServerSettings `mapstructure:",squash"`
+	confighttp.ServerConfig `mapstructure:",squash"`
 	// RecordType is the key used to determine which unmarshaler to use
 	// when receiving the requests.
 	RecordType string `mapstructure:"record_type"`

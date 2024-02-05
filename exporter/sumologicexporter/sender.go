@@ -97,7 +97,7 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.config.HTTPClientSettings.Endpoint, data)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.config.ClientConfig.Endpoint, data)
 	if err != nil {
 		return err
 	}

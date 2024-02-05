@@ -88,7 +88,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
@@ -100,7 +99,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
@@ -380,11 +378,9 @@ func Components() (otelcol.Factories, error) {
 		resourceprocessor.NewFactory(),
 		routingprocessor.NewFactory(),
 		tailsamplingprocessor.NewFactory(),
-		servicegraphprocessor.NewFactory(),
 		spanmetricsprocessor.NewFactory(),
 		spanprocessor.NewFactory(),
 		cumulativetodeltaprocessor.NewFactory(),
-		datadogprocessor.NewFactory(),
 		deltatorateprocessor.NewFactory(),
 		transformprocessor.NewFactory(),
 	}

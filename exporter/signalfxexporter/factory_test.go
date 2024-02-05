@@ -102,7 +102,7 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	config := &Config{
 		AccessToken: "testToken",
 		Realm:       "us1",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Timeout: 2 * time.Second,
 			Headers: map[string]configopaque.String{
 				"added-entry": "added value",
