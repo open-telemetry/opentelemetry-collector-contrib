@@ -22,7 +22,7 @@ type Client interface {
 }
 
 // NewClientProvider creates the default rest client provider
-func NewClientProvider(baseURL url.URL, clientSettings confighttp.HTTPClientSettings, host component.Host, settings component.TelemetrySettings) ClientProvider {
+func NewClientProvider(baseURL url.URL, clientSettings confighttp.ClientConfig, host component.Host, settings component.TelemetrySettings) ClientProvider {
 	return &defaultClientProvider{
 		baseURL:        baseURL,
 		clientSettings: clientSettings,
@@ -38,7 +38,7 @@ type ClientProvider interface {
 
 type defaultClientProvider struct {
 	baseURL        url.URL
-	clientSettings confighttp.HTTPClientSettings
+	clientSettings confighttp.ClientConfig
 	host           component.Host
 	settings       component.TelemetrySettings
 }
@@ -54,7 +54,7 @@ func (dcp *defaultClientProvider) BuildClient() (Client, error) {
 
 func defaultClient(
 	baseURL url.URL,
-	clientSettings confighttp.HTTPClientSettings,
+	clientSettings confighttp.ClientConfig,
 	host component.Host,
 	settings component.TelemetrySettings,
 ) (*clientImpl, error) {

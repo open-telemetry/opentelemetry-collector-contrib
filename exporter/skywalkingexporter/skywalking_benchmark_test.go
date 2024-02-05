@@ -126,7 +126,7 @@ func doInit(numStream int, t *testing.T) (*swExporter, *grpc.Server, *mockLogHan
 			NumConsumers: 1,
 			QueueSize:    1000,
 		},
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: addr.String(),
 			TLSSetting: configtls.TLSClientSetting{
 				Insecure: true,

@@ -9,3 +9,6 @@ status:
   - sumo
   codeowners:
     active: [mar4uk, jpkrohling]
+
+tests:
+  config:

@@ -25,6 +25,7 @@ The following settings can be optionally configured:
 - `replication` (default = class: SimpleStrategy, replication_factor: 1): The strategy of
   replication. https://cassandra.apache.org/doc/4.1/cassandra/architecture/dynamo.html#replication-strategy
 - `compression` (default = LZ4Compressor): https://cassandra.apache.org/doc/latest/cassandra/operating/compression.html
+- `auth` (default = username: "", password: "") Authorization for the Cassandra.
 
 ## Example
 
@@ -41,4 +42,7 @@ exporters:
       replication_factor: 1
     compression:
       algorithm: "ZstdCompressor"
+    auth:
+      username: "your-username"
+      password: "your-password"
 ```

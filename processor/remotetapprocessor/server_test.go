@@ -22,7 +22,7 @@ import (
 
 func TestSocketConnectionLogs(t *testing.T) {
 	cfg := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:12001",
 		},
 	}
@@ -59,7 +59,7 @@ func TestSocketConnectionLogs(t *testing.T) {
 
 func TestSocketConnectionMetrics(t *testing.T) {
 	cfg := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:12002",
 		},
 	}
@@ -94,7 +94,7 @@ func TestSocketConnectionMetrics(t *testing.T) {
 
 func TestSocketConnectionTraces(t *testing.T) {
 	cfg := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:12003",
 		},
 	}

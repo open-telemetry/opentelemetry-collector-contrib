@@ -232,6 +232,8 @@ type ResourceAttributesConfig struct {
 	ContainerID                  ResourceAttributeConfig `mapstructure:"container.id"`
 	ContainerImageName           ResourceAttributeConfig `mapstructure:"container.image.name"`
 	ContainerImageTag            ResourceAttributeConfig `mapstructure:"container.image.tag"`
+	ContainerRuntime             ResourceAttributeConfig `mapstructure:"container.runtime"`
+	ContainerRuntimeVersion      ResourceAttributeConfig `mapstructure:"container.runtime.version"`
 	K8sContainerName             ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sCronjobName               ResourceAttributeConfig `mapstructure:"k8s.cronjob.name"`
 	K8sCronjobUID                ResourceAttributeConfig `mapstructure:"k8s.cronjob.uid"`
@@ -262,6 +264,8 @@ type ResourceAttributesConfig struct {
 	K8sStatefulsetUID            ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
 	OpenshiftClusterquotaName    ResourceAttributeConfig `mapstructure:"openshift.clusterquota.name"`
 	OpenshiftClusterquotaUID     ResourceAttributeConfig `mapstructure:"openshift.clusterquota.uid"`
+	OsDescription                ResourceAttributeConfig `mapstructure:"os.description"`
+	OsType                       ResourceAttributeConfig `mapstructure:"os.type"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -274,6 +278,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		ContainerImageTag: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		ContainerRuntime: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ContainerRuntimeVersion: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		K8sContainerName: ResourceAttributeConfig{
 			Enabled: true,
@@ -364,6 +374,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		OpenshiftClusterquotaUID: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		OsDescription: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		OsType: ResourceAttributeConfig{
+			Enabled: false,
 		},
 	}
 }

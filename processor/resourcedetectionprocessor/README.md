@@ -400,6 +400,7 @@ processors:
 
   * cloud.provider ("azure")
   * cloud.platform ("azure_aks")
+  * k8s.cluster.name
 
 ```yaml
 processors:
@@ -408,6 +409,34 @@ processors:
     timeout: 2s
     override: false
 ```
+
+#### Cluster Name
+
+Cluster name detection is disabled by default, and can be enabled with the
+following configuration:
+
+```yaml
+processors:
+  resourcedetection/aks:
+    detectors: [aks]
+    timeout: 2s
+    override: false
+    aks:
+      resource_attributes:
+        k8s.cluster.name: true
+```
+
+Azure AKS cluster name is derived from the Azure Instance Metadata Service's (IMDS) infrastructure resource group field. This field contains the resource group and name of the cluster, separated by underscores. e.g: `MC_<resource group>_<cluster name>_<location>`.
+
+Example:
+  - Resource group: my-resource-group
+  - Cluster name:   my-cluster
+  - Location:       eastus
+  - Generated name: MC_my-resource-group_my-cluster_eastus
+
+The cluster name is detected if it does not contain underscores and if a custom infrastructure resource group name was not used.
+
+If accurate parsing cannot be performed, the infrastructure resource group value is returned. This value can be used to uniquely identify the cluster, as Azure will not allow users to create multiple clusters with the same infrastructure resource group name.
 
 ### Consul
 
@@ -547,7 +576,7 @@ See: [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetr
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gce", "gke", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
@@ -603,11 +632,6 @@ resourcedetection:
 ## Ordering
 
 Note that if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.platform` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
-
-### GCP
-
-* gke
-* gce
 
 ### AWS
 

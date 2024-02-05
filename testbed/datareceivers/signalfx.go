@@ -35,7 +35,7 @@ func NewSFxMetricsDataReceiver(port int) *SFxMetricsDataReceiver {
 // Start the receiver.
 func (sr *SFxMetricsDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ consumer.Logs) error {
 	config := signalfxreceiver.Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: fmt.Sprintf("127.0.0.1:%d", sr.Port),
 		},
 	}

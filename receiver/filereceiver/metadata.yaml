@@ -6,4 +6,5 @@ status:
     development: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [pmcollins, djaglowski]
+    active: [djaglowski]
+    emeritus: [pmcollins]
