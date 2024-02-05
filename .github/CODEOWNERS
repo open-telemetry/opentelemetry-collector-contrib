@@ -28,7 +28,7 @@ confmap/provider/s3provider/                             @open-telemetry/collect
 connector/countconnector/                                @open-telemetry/collector-contrib-approvers @djaglowski @jpkrohling
 connector/datadogconnector/                              @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13
 connector/exceptionsconnector/                           @open-telemetry/collector-contrib-approvers @jpkrohling @marctc
-connector/failoverconnector/                             @open-telemetry/collector-contrib-approvers @akats7 @djaglowski @fatsheep9146
+connector/failoverconnector/                             @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
 connector/routingconnector/                              @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 connector/servicegraphconnector/                         @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
 connector/spanmetricsconnector/                          @open-telemetry/collector-contrib-approvers @portertech
@@ -75,7 +75,6 @@ exporter/pulsarexporter/                                 @open-telemetry/collect
 exporter/sapmexporter/                                   @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
 exporter/sentryexporter/                                 @open-telemetry/collector-contrib-approvers @AbhiPrasad
 exporter/signalfxexporter/                               @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1
-exporter/skywalkingexporter/                             @open-telemetry/collector-contrib-approvers
 exporter/splunkhecexporter/                              @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 exporter/sumologicexporter/                              @open-telemetry/collector-contrib-approvers @sumo-drosiek
 exporter/syslogexporter/                                 @open-telemetry/collector-contrib-approvers @kkujawa-sumo @rnishtala-sumo @astencel-sumo
@@ -138,7 +137,7 @@ pkg/ottl/                                                @open-telemetry/collect
 pkg/pdatatest/                                           @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
 pkg/pdatautil/                                           @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/resourcetotelemetry/                                 @open-telemetry/collector-contrib-approvers @mx-psi
-pkg/sampling/                                            @open-telemetry/collector-contrib-approvers @jmacd @kentquirk
+pkg/sampling/                                            @open-telemetry/collector-contrib-approvers @kentquirk @jmacd
 pkg/stanza/                                              @open-telemetry/collector-contrib-approvers @djaglowski
 pkg/translator/azure/                                    @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @atoulme @cparkins
 pkg/translator/jaeger/                                   @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @frzifus
@@ -165,7 +164,7 @@ processor/metricsgenerationprocessor/                    @open-telemetry/collect
 processor/metricstransformprocessor/                     @open-telemetry/collector-contrib-approvers @dmitryax
 processor/probabilisticsamplerprocessor/                 @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/redactionprocessor/                            @open-telemetry/collector-contrib-approvers @dmitryax @mx-psi @TylerHelmuth
-processor/remotetapprocessor/                            @open-telemetry/collector-contrib-approvers @pmcollins
+processor/remotetapprocessor/                            @open-telemetry/collector-contrib-approvers @atoulme
 processor/resourcedetectionprocessor/                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 processor/resourcedetectionprocessor/internal/azure/     @open-telemetry/collector-contrib-approvers @mx-psi
 processor/resourcedetectionprocessor/internal/heroku/    @open-telemetry/collector-contrib-approvers @atoulme
@@ -294,3 +293,4 @@ reports/distributions/liatrio.yaml  @open-telemetry/collector-contrib-approvers 
 ## UNMAINTAINED components
 
 exporter/alibabacloudlogserviceexporter/                 @open-telemetry/collector-contrib-approvers 
+exporter/skywalkingexporter/                             @open-telemetry/collector-contrib-approvers 
