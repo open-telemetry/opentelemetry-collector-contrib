@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package credentials
+package credentials // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
 
 import (
 	"encoding/json"
@@ -10,12 +10,11 @@ import (
 	"os"
 	"path"
 
-	"github.com/hashicorp/go-multierror"
 	"go.uber.org/zap"
 )
 
 const (
-	DefaultCollectorCredentialsDirectory = ".sumologic-otel-collector/"
+	DefaultCollectorDataDirectory = ".sumologic-otel-collector/"
 )
 
 func GetDefaultCollectorCredentialsDirectory() (string, error) {
@@ -24,7 +23,7 @@ func GetDefaultCollectorCredentialsDirectory() (string, error) {
 		return "", err
 	}
 
-	return path.Join(home, DefaultCollectorCredentialsDirectory), nil
+	return path.Join(home, DefaultCollectorDataDirectory), nil
 }
 
 // LocalFsStore implements Store interface and can be used to store and retrieve
@@ -75,7 +74,7 @@ func NewLocalFsStore(opts ...LocalFsStoreOpt) (Store, error) {
 // Check checks if collector credentials can be found under a name being a hash
 // of provided key inside collectorCredentialsDirectory.
 func (cr LocalFsStore) Check(key string) bool {
-	f := func(hasher Hasher, key string) bool {
+	f := func(_ Hasher, key string) bool {
 		filenameHash, err := HashKeyToFilename(key)
 		if err != nil {
 			return false
@@ -87,20 +86,13 @@ func (cr LocalFsStore) Check(key string) bool {
 		return true
 	}
 
-	if f(_getHasher(), key) {
-		return true
-	}
-	if f(_getDeprecatedHasher(), key) {
-		return true
-	}
-
-	return false
+	return f(_getHasher(), key)
 }
 
 // Get retrieves collector credentials stored in local file system and then
 // decrypts it using a hash of provided key.
 func (cr LocalFsStore) Get(key string) (CollectorCredentials, error) {
-	f := func(hasher Hasher, key string) (CollectorCredentials, error) {
+	f := func(_ Hasher, key string) (CollectorCredentials, error) {
 		filenameHash, err := HashKeyToFilename(key)
 		if err != nil {
 			return CollectorCredentials{}, err
@@ -140,15 +132,13 @@ func (cr LocalFsStore) Get(key string) (CollectorCredentials, error) {
 		return credentialsInfo, nil
 	}
 
-	if creds, err := f(_getHasher(), key); err == nil {
-		return creds, nil
+	creds, err := f(_getHasher(), key)
+
+	if err != nil {
+		return CollectorCredentials{}, err
 	}
 
-	creds, err := f(_getDeprecatedHasher(), key)
-	if err == nil {
-		return creds, nil
-	}
-	return CollectorCredentials{}, err
+	return creds, nil
 }
 
 // Store stores collector credentials in a file in directory as specified
@@ -159,7 +149,7 @@ func (cr LocalFsStore) Store(key string, creds CollectorCredentials) error {
 		return err
 	}
 
-	f := func(hasher Hasher, key string, creds CollectorCredentials) error {
+	f := func(_ Hasher, key string, creds CollectorCredentials) error {
 		filenameHash, err := HashKeyToFilename(key)
 		if err != nil {
 			return err
@@ -167,7 +157,7 @@ func (cr LocalFsStore) Store(key string, creds CollectorCredentials) error {
 		path := path.Join(cr.collectorCredentialsDirectory, filenameHash)
 		collectorCreds, err := json.Marshal(creds)
 		if err != nil {
-			return fmt.Errorf("failed marshalling collector credentials: %w", err)
+			return fmt.Errorf("failed marshaling collector credentials: %w", err)
 		}
 
 		encKey, err := HashKeyToEncryptionKey(key)
@@ -193,15 +183,12 @@ func (cr LocalFsStore) Store(key string, creds CollectorCredentials) error {
 		return nil
 	}
 
-	if err := f(_getHasher(), key, creds); err == nil {
-		return nil
+	err := f(_getHasher(), key, creds)
+	if err != nil {
+		return err
 	}
 
-	err := f(_getDeprecatedHasher(), key, creds)
-	if err == nil {
-		return nil
-	}
-	return err
+	return nil
 }
 
 func (cr LocalFsStore) Delete(key string) error {
@@ -229,15 +216,12 @@ func (cr LocalFsStore) Delete(key string) error {
 		return nil
 	}
 
-	var errResult error
-	if err := f(_getHasher(), key); err != nil {
-		errResult = multierror.Append(errResult, err)
-	}
-	if err := f(_getDeprecatedHasher(), key); err != nil {
-		errResult = multierror.Append(errResult, err)
+	err := f(_getHasher(), key)
+	if err != nil {
+		return err
 	}
 
-	return errResult
+	return nil
 }
 
 // Validate checks if the store is operating correctly

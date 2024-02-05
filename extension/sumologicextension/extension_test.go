@@ -5,7 +5,6 @@ package sumologicextension // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"crypto/md5"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
@@ -100,9 +99,9 @@ func TestBasicStart(t *testing.T) {
 
 			// register
 			case 1:
-				require.Equal(t, registerUrl, req.URL.Path)
+				require.Equal(t, registerURL, req.URL.Path)
 				_, err := w.Write([]byte(`{
-					"collectorCredentialId": "collectorId",
+					"collectorCredentialID": "collectorId",
 					"collectorCredentialKey": "collectorKey",
 					"collectorId": "id"
 				}`))
@@ -112,12 +111,12 @@ func TestBasicStart(t *testing.T) {
 
 			// metadata
 			case 2:
-				assert.Equal(t, metadataUrl, req.URL.Path)
+				assert.Equal(t, metadataURL, req.URL.Path)
 				w.WriteHeader(200)
 
 			// heartbeat
 			case 3:
-				assert.Equal(t, heartbeatUrl, req.URL.Path)
+				assert.Equal(t, heartbeatURL, req.URL.Path)
 				w.WriteHeader(204)
 
 			// should not produce any more requests
@@ -141,9 +140,9 @@ func TestBasicStart(t *testing.T) {
 	se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID("sumologic"), "1.0.0")
 	require.NoError(t, err)
 	require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NotEmpty(t, se.registrationInfo.CollectorCredentialId)
+	assert.NotEmpty(t, se.registrationInfo.CollectorCredentialID)
 	assert.NotEmpty(t, se.registrationInfo.CollectorCredentialKey)
-	assert.NotEmpty(t, se.registrationInfo.CollectorId)
+	assert.NotEmpty(t, se.registrationInfo.CollectorID)
 	require.NoError(t, se.Shutdown(context.Background()))
 }
 
@@ -162,9 +161,9 @@ func TestStoreCredentials(t *testing.T) {
 
 				// register
 				case 1:
-					require.Equal(t, registerUrl, req.URL.Path)
+					require.Equal(t, registerURL, req.URL.Path)
 					_, err := w.Write([]byte(`{
-						"collectorCredentialId": "collectorId",
+						"collectorCredentialID": "collectorId",
 						"collectorCredentialKey": "collectorKey",
 						"collectorId": "id"
 					}`))
@@ -174,12 +173,12 @@ func TestStoreCredentials(t *testing.T) {
 
 				// metadata
 				case 2:
-					assert.Equal(t, metadataUrl, req.URL.Path)
+					assert.Equal(t, metadataURL, req.URL.Path)
 					w.WriteHeader(200)
 
 				// heartbeat
 				case 3:
-					assert.Equal(t, heartbeatUrl, req.URL.Path)
+					assert.Equal(t, heartbeatURL, req.URL.Path)
 					w.WriteHeader(204)
 
 				// should not produce any more requests
@@ -302,12 +301,6 @@ func TestStoreCredentials(t *testing.T) {
 		require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
 		require.NoError(t, se.Shutdown(context.Background()))
 		require.FileExists(t, credsPath)
-
-		// Don't create md5 hashed credentials files anymore
-		fileNameMd5, err := credentials.HashKeyToFilenameWith(md5.New(), key)
-		require.NoError(t, err)
-		credsPathMd5 := path.Join(dir, fileNameMd5)
-		require.NoFileExists(t, credsPathMd5)
 	})
 }
 
@@ -323,12 +316,12 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 				switch reqNum {
 				// heartbeat
 				case 1:
-					require.Equal(t, heartbeatUrl, req.URL.Path)
+					require.Equal(t, heartbeatURL, req.URL.Path)
 					w.WriteHeader(204)
 
 				// metadata
 				case 2:
-					require.Equal(t, metadataUrl, req.URL.Path)
+					require.Equal(t, metadataURL, req.URL.Path)
 					w.WriteHeader(200)
 
 				// should not produce any more requests
@@ -372,9 +365,9 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 		store.Store(hashKey, credentials.CollectorCredentials{
 			CollectorName: "collector_name",
 			Credentials: api.OpenRegisterResponsePayload{
-				CollectorCredentialId:  "collectorId",
+				CollectorCredentialID:  "collectorId",
 				CollectorCredentialKey: "collectorKey",
-				CollectorId:            "id",
+				CollectorID:            "id",
 			},
 		}),
 	)
@@ -392,12 +385,6 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 	require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, se.Shutdown(context.Background()))
 	require.FileExists(t, credsPath)
-
-	// Don't create md5 hashed credentials files anymore
-	fileNameMd5, err := credentials.HashKeyToFilenameWith(md5.New(), hashKey)
-	require.NoError(t, err)
-	credsPathMd5 := path.Join(dir, fileNameMd5)
-	require.NoFileExists(t, credsPathMd5)
 
 	require.EqualValues(t, atomic.LoadInt32(&reqCount), 2)
 }
@@ -417,9 +404,9 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 
 				// register
 				case 1:
-					require.Equal(t, registerUrl, req.URL.Path)
+					require.Equal(t, registerURL, req.URL.Path)
 					_, err := w.Write([]byte(`{
-						"collectorCredentialId": "collectorId",
+						"collectorCredentialID": "collectorId",
 						"collectorCredentialKey": "collectorKey",
 						"collectorId": "id"
 					}`))
@@ -429,12 +416,12 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 
 				// metadata
 				case 2:
-					assert.Equal(t, metadataUrl, req.URL.Path)
+					assert.Equal(t, metadataURL, req.URL.Path)
 					w.WriteHeader(200)
 
 				// heartbeat
 				case 3:
-					assert.Equal(t, heartbeatUrl, req.URL.Path)
+					assert.Equal(t, heartbeatURL, req.URL.Path)
 					w.WriteHeader(204)
 
 				// should not produce any more requests
@@ -521,14 +508,14 @@ func TestRegisterEmptyCollectorName(t *testing.T) {
 
 			// register
 			case 1:
-				require.Equal(t, registerUrl, req.URL.Path)
+				require.Equal(t, registerURL, req.URL.Path)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
 					"collector didn't send correct Authorization header with registration request")
 
-				_, err := w.Write([]byte(`{
-					"collectorCredentialId": "aaaaaaaaaaaaaaaaaaaa",
+				_, err = w.Write([]byte(`{
+					"collectorCredentialID": "aaaaaaaaaaaaaaaaaaaa",
 					"collectorCredentialKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					"collectorId": "000000000FFFFFFF"
 				}`))
@@ -538,12 +525,12 @@ func TestRegisterEmptyCollectorName(t *testing.T) {
 
 			// metadata
 			case 2:
-				assert.Equal(t, metadataUrl, req.URL.Path)
+				assert.Equal(t, metadataURL, req.URL.Path)
 				w.WriteHeader(200)
 
 			// heartbeat
 			case 3:
-				assert.Equal(t, heartbeatUrl, req.URL.Path)
+				assert.Equal(t, heartbeatURL, req.URL.Path)
 				w.WriteHeader(204)
 
 			// should not produce any more requests
@@ -589,14 +576,14 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 
 			// register
 			case 1:
-				require.Equal(t, registerUrl, req.URL.Path)
+				require.Equal(t, registerURL, req.URL.Path)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
 					"collector didn't send correct Authorization header with registration request")
 
-				_, err := w.Write([]byte(`{
-					"collectorCredentialId": "aaaaaaaaaaaaaaaaaaaa",
+				_, err = w.Write([]byte(`{
+					"collectorCredentialID": "aaaaaaaaaaaaaaaaaaaa",
 					"collectorCredentialKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					"collectorId": "000000000FFFFFFF",
 					"collectorName": "hostname-test-123456123123"
@@ -607,19 +594,19 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 
 			// metadata
 			case 2:
-				assert.Equal(t, metadataUrl, req.URL.Path)
+				assert.Equal(t, metadataURL, req.URL.Path)
 				w.WriteHeader(200)
 
 			// register again because force registration was set
 			case 3:
-				require.Equal(t, registerUrl, req.URL.Path)
+				require.Equal(t, registerURL, req.URL.Path)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
 					"collector didn't send correct Authorization header with registration request")
 
-				_, err := w.Write([]byte(`{
-					"collectorCredentialId": "aaaaaaaaaaaaaaaaaaaa",
+				_, err = w.Write([]byte(`{
+					"collectorCredentialID": "aaaaaaaaaaaaaaaaaaaa",
 					"collectorCredentialKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					"collectorId": "000000000FFFFFFF",
 					"collectorName": "hostname-test-123456123123"
@@ -630,7 +617,7 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 
 			// metadata
 			case 4:
-				assert.Equal(t, metadataUrl, req.URL.Path)
+				assert.Equal(t, metadataURL, req.URL.Path)
 				w.WriteHeader(200)
 
 			// should not produce any more requests
@@ -683,14 +670,14 @@ func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 
 			// register
 			case 1:
-				require.Equal(t, registerUrl, req.URL.Path)
+				require.Equal(t, registerURL, req.URL.Path)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
 					"collector didn't send correct Authorization header with registration request")
 
 				_, err := w.Write([]byte(`{
-					"collectorCredentialId": "aaaaaaaaaaaaaaaaaaaa",
+					"collectorCredentialID": "aaaaaaaaaaaaaaaaaaaa",
 					"collectorCredentialKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					"collectorId": "000000000FFFFFFF"
 				}`))
@@ -700,12 +687,12 @@ func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 
 			// metadata
 			case 2:
-				assert.Equal(t, metadataUrl, req.URL.Path)
+				assert.Equal(t, metadataURL, req.URL.Path)
 				w.WriteHeader(200)
 
 			// heartbeat
 			case 3:
-				assert.Equal(t, heartbeatUrl, req.URL.Path)
+				assert.Equal(t, heartbeatURL, req.URL.Path)
 				w.WriteHeader(204)
 
 			// should not produce any more requests
@@ -751,8 +738,8 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 			CollectorName: "test-name",
 			Credentials: api.OpenRegisterResponsePayload{
 				CollectorName:          "test-name",
-				CollectorId:            "test-id",
-				CollectorCredentialId:  "test-credential-id",
+				CollectorID:            "test-id",
+				CollectorCredentialID:  "test-credential-id",
 				CollectorCredentialKey: "test-credential-key",
 			},
 			APIBaseURL: url,
@@ -787,10 +774,10 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// heatbeat
 						case 1:
-							require.NotEqual(t, registerUrl, req.URL.Path,
+							require.NotEqual(t, registerURL, req.URL.Path,
 								"collector shouldn't call the register API when credentials locally retrieved")
 
-							assert.Equal(t, heartbeatUrl, req.URL.Path)
+							assert.Equal(t, heartbeatURL, req.URL.Path)
 
 							authHeader := req.Header.Get("Authorization")
 							token := base64.StdEncoding.EncodeToString(
@@ -803,7 +790,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// metadata
 						case 2:
-							assert.Equal(t, metadataUrl, req.URL.Path)
+							assert.Equal(t, metadataURL, req.URL.Path)
 							w.WriteHeader(200)
 
 						// should not produce any more requests
@@ -835,10 +822,10 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// failing heatbeat
 						case 1:
-							require.NotEqual(t, registerUrl, req.URL.Path,
+							require.NotEqual(t, registerURL, req.URL.Path,
 								"collector shouldn't call the register API when credentials locally retrieved")
 
-							assert.Equal(t, heartbeatUrl, req.URL.Path)
+							assert.Equal(t, heartbeatURL, req.URL.Path)
 
 							authHeader := req.Header.Get("Authorization")
 							token := base64.StdEncoding.EncodeToString(
@@ -851,10 +838,10 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// successful heatbeat
 						case 2:
-							require.NotEqual(t, registerUrl, req.URL.Path,
+							require.NotEqual(t, registerURL, req.URL.Path,
 								"collector shouldn't call the register API when credentials locally retrieved")
 
-							assert.Equal(t, heartbeatUrl, req.URL.Path)
+							assert.Equal(t, heartbeatURL, req.URL.Path)
 
 							authHeader := req.Header.Get("Authorization")
 							token := base64.StdEncoding.EncodeToString(
@@ -867,7 +854,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// metadata
 						case 3:
-							assert.Equal(t, metadataUrl, req.URL.Path)
+							assert.Equal(t, metadataURL, req.URL.Path)
 							w.WriteHeader(200)
 
 						// should not produce any more requests
@@ -899,10 +886,10 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// failing heatbeat
 						case 1:
-							require.NotEqual(t, registerUrl, req.URL.Path,
+							require.NotEqual(t, registerURL, req.URL.Path,
 								"collector shouldn't call the register API when credentials locally retrieved")
 
-							assert.Equal(t, heartbeatUrl, req.URL.Path)
+							assert.Equal(t, heartbeatURL, req.URL.Path)
 
 							authHeader := req.Header.Get("Authorization")
 							token := base64.StdEncoding.EncodeToString(
@@ -915,14 +902,14 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// register
 						case 2:
-							require.Equal(t, registerUrl, req.URL.Path)
+							require.Equal(t, registerURL, req.URL.Path)
 
 							authHeader := req.Header.Get("Authorization")
 							assert.Equal(t, "Bearer dummy_install_token", authHeader,
 								"collector didn't send correct Authorization header with registration request")
 
 							_, err := w.Write([]byte(`{
-							"collectorCredentialId": "aaaaaaaaaaaaaaaaaaaa",
+							"collectorCredentialID": "aaaaaaaaaaaaaaaaaaaa",
 							"collectorCredentialKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 							"collectorId": "000000000FFFFFFF"
 						}`))
@@ -967,14 +954,14 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// register
 						case 1:
-							require.Equal(t, registerUrl, req.URL.Path)
+							require.Equal(t, registerURL, req.URL.Path)
 
 							authHeader := req.Header.Get("Authorization")
 							assert.Equal(t, "Bearer dummy_install_token", authHeader,
 								"collector didn't send correct Authorization header with registration request")
 
 							_, err := w.Write([]byte(`{
-							"collectorCredentialId": "aaaaaaaaaaaaaaaaaaaa",
+							"collectorCredentialID": "aaaaaaaaaaaaaaaaaaaa",
 							"collectorCredentialKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 							"collectorId": "000000000FFFFFFF"
 						}`))
@@ -1054,11 +1041,11 @@ func TestRegisterEmptyCollectorNameWithBackoff(t *testing.T) {
 			// TODO Add payload verification - verify if collectorName is set properly
 			reqNum := atomic.AddInt32(&reqCount, 1)
 
-			switch true {
+			switch {
 
 			// register
 			case reqNum <= retriesLimit:
-				require.Equal(t, registerUrl, req.URL.Path)
+				require.Equal(t, registerURL, req.URL.Path)
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
@@ -1068,8 +1055,8 @@ func TestRegisterEmptyCollectorNameWithBackoff(t *testing.T) {
 					w.WriteHeader(http.StatusTooManyRequests)
 				} else {
 
-					_, err := w.Write([]byte(`{
-						"collectorCredentialId": "aaaaaaaaaaaaaaaaaaaa",
+					_, err = w.Write([]byte(`{
+						"collectorCredentialID": "aaaaaaaaaaaaaaaaaaaa",
 						"collectorCredentialKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 						"collectorId": "000000000FFFFFFF"
 					}`))
@@ -1080,12 +1067,12 @@ func TestRegisterEmptyCollectorNameWithBackoff(t *testing.T) {
 
 			// metadata
 			case reqNum == retriesLimit+1:
-				assert.Equal(t, metadataUrl, req.URL.Path)
+				assert.Equal(t, metadataURL, req.URL.Path)
 				w.WriteHeader(200)
 
 			// heartbeat
 			case reqNum == retriesLimit+2:
-				assert.Equal(t, heartbeatUrl, req.URL.Path)
+				assert.Equal(t, heartbeatURL, req.URL.Path)
 				w.WriteHeader(204)
 
 			// should not produce any more requests
@@ -1124,14 +1111,14 @@ func TestRegisterEmptyCollectorNameUnrecoverableError(t *testing.T) {
 	srv := httptest.NewServer(func() http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			// TODO Add payload verification - verify if collectorName is set properly
-			require.Equal(t, registerUrl, req.URL.Path)
+			require.Equal(t, registerURL, req.URL.Path)
 
 			authHeader := req.Header.Get("Authorization")
 			assert.Equal(t, "Bearer dummy_install_token", authHeader,
 				"collector didn't send correct Authorization header with registration request")
 
 			w.WriteHeader(http.StatusNotFound)
-			_, err := w.Write([]byte(`{
+			_, err = w.Write([]byte(`{
 				"id": "XXXXX-XXXXX-XXXXX",
 				"errors": [
 					{
@@ -1144,7 +1131,8 @@ func TestRegisterEmptyCollectorNameUnrecoverableError(t *testing.T) {
 		})
 	}())
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
+	var dir string
+	dir, err = os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
 	t.Cleanup(func() {
 		srv.Close()
 		os.RemoveAll(dir)
@@ -1176,7 +1164,7 @@ func TestRegistrationRedirect(t *testing.T) {
 
 			// register
 			case 1:
-				require.Equal(t, registerUrl, req.URL.Path)
+				require.Equal(t, registerURL, req.URL.Path)
 
 				authHeader := req.Header.Get("Authorization")
 
@@ -1184,7 +1172,7 @@ func TestRegistrationRedirect(t *testing.T) {
 					"collector didn't send correct Authorization header with registration request")
 
 				_, err := w.Write([]byte(`{
-					"collectorCredentialId": "aaaaaaaaaaaaaaaaaaaa",
+					"collectorCredentialID": "aaaaaaaaaaaaaaaaaaaa",
 					"collectorCredentialKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					"collectorId": "000000000FFFFFFF"
 				}`))
@@ -1194,27 +1182,27 @@ func TestRegistrationRedirect(t *testing.T) {
 
 			// metadata
 			case 2:
-				assert.Equal(t, metadataUrl, req.URL.Path)
+				assert.Equal(t, metadataURL, req.URL.Path)
 				w.WriteHeader(200)
 
 			// heartbeat
 			case 3:
-				assert.Equal(t, heartbeatUrl, req.URL.Path)
+				assert.Equal(t, heartbeatURL, req.URL.Path)
 				w.WriteHeader(204)
 
 			// heartbeat
 			case 4:
-				assert.Equal(t, heartbeatUrl, req.URL.Path)
+				assert.Equal(t, heartbeatURL, req.URL.Path)
 				w.WriteHeader(204)
 
 			// metadata
 			case 5:
-				assert.Equal(t, metadataUrl, req.URL.Path)
+				assert.Equal(t, metadataURL, req.URL.Path)
 				w.WriteHeader(200)
 
 			// heartbeat
 			case 6:
-				assert.Equal(t, heartbeatUrl, req.URL.Path)
+				assert.Equal(t, heartbeatURL, req.URL.Path)
 				w.WriteHeader(204)
 
 			// should not produce any more requests
@@ -1234,7 +1222,7 @@ func TestRegistrationRedirect(t *testing.T) {
 
 			// register
 			case 1:
-				require.Equal(t, registerUrl, req.URL.Path)
+				require.Equal(t, registerURL, req.URL.Path)
 				http.Redirect(w, req, destSrv.URL, http.StatusMovedPermanently)
 
 			// should not produce any more requests
@@ -1309,14 +1297,14 @@ func TestCollectorReregistersAfterHTTPUnathorizedFromHeartbeat(t *testing.T) {
 
 			t.Logf("request: (#%d) %s", reqNum, req.URL.Path)
 			handlerRegister := func() {
-				require.Equal(t, registerUrl, req.URL.Path, "request num 1")
+				require.Equal(t, registerURL, req.URL.Path, "request num 1")
 
 				authHeader := req.Header.Get("Authorization")
 				assert.Equal(t, "Bearer dummy_install_token", authHeader,
 					"collector didn't send correct Authorization header with registration request")
 
 				_, err := w.Write([]byte(`{
-					"collectorCredentialId": "aaaaaaaaaaaaaaaaaaaa",
+					"collectorCredentialID": "aaaaaaaaaaaaaaaaaaaa",
 					"collectorCredentialKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					"collectorId": "000000000FFFFFFF",
 					"collectorName": "hostname-test-123456123123"
@@ -1329,32 +1317,32 @@ func TestCollectorReregistersAfterHTTPUnathorizedFromHeartbeat(t *testing.T) {
 			switch reqNum {
 			// register
 			case 1:
-				assert.Equal(t, registerUrl, req.URL.Path)
+				assert.Equal(t, registerURL, req.URL.Path)
 				handlerRegister()
 
 			// metadata
 			case 2:
-				assert.Equal(t, metadataUrl, req.URL.Path)
+				assert.Equal(t, metadataURL, req.URL.Path)
 				w.WriteHeader(200)
 
 			// heartbeat
 			case 3:
-				assert.Equal(t, heartbeatUrl, req.URL.Path)
+				assert.Equal(t, heartbeatURL, req.URL.Path)
 				w.WriteHeader(204)
 
 			// heartbeat
 			case 4:
-				assert.Equal(t, heartbeatUrl, req.URL.Path)
+				assert.Equal(t, heartbeatURL, req.URL.Path)
 				// return unauthorized to mimic collector being removed from API
 				w.WriteHeader(http.StatusUnauthorized)
 
 			// register
 			case 5:
-				assert.Equal(t, registerUrl, req.URL.Path)
+				assert.Equal(t, registerURL, req.URL.Path)
 				handlerRegister()
 
 			default:
-				assert.Equal(t, heartbeatUrl, req.URL.Path)
+				assert.Equal(t, heartbeatURL, req.URL.Path)
 				w.WriteHeader(204)
 			}
 		})
@@ -1408,7 +1396,7 @@ func TestRegistrationRequestPayload(t *testing.T) {
 			switch reqNum {
 			// register
 			case 1:
-				require.Equal(t, registerUrl, req.URL.Path)
+				require.Equal(t, registerURL, req.URL.Path)
 
 				var reqPayload api.OpenRegisterRequestPayload
 				require.NoError(t, json.NewDecoder(req.Body).Decode(&reqPayload))
@@ -1417,7 +1405,7 @@ func TestRegistrationRequestPayload(t *testing.T) {
 				require.Equal(t, "my description", reqPayload.Description)
 				require.Equal(t, "my category/", reqPayload.Category)
 				require.EqualValues(t,
-					map[string]interface{}{
+					map[string]any{
 						"field1": "value1",
 						"field2": "value2",
 					},
@@ -1430,7 +1418,7 @@ func TestRegistrationRequestPayload(t *testing.T) {
 					"collector didn't send correct Authorization header with registration request")
 
 				_, err = w.Write([]byte(`{
-					"collectorCredentialId": "mycredentialID",
+					"collectorCredentialID": "mycredentialID",
 					"collectorCredentialKey": "mycredentialKey",
 					"collectorId": "0000000001231231",
 					"collectorName": "otc-test-123456123123"
@@ -1438,7 +1426,7 @@ func TestRegistrationRequestPayload(t *testing.T) {
 				require.NoError(t, err)
 			// metadata
 			case 2:
-				assert.Equal(t, metadataUrl, req.URL.Path)
+				assert.Equal(t, metadataURL, req.URL.Path)
 				w.WriteHeader(200)
 			}
 
@@ -1462,7 +1450,7 @@ func TestRegistrationRequestPayload(t *testing.T) {
 	cfg.Clobber = true
 	cfg.CollectorDescription = "my description"
 	cfg.CollectorCategory = "my category/"
-	cfg.CollectorFields = map[string]interface{}{
+	cfg.CollectorFields = map[string]any{
 		"field1": "value1",
 		"field2": "value2",
 	}
@@ -1512,7 +1500,7 @@ func TestCreateCredentialsHeader(t *testing.T) {
 	_, err = se.CreateCredentialsHeader()
 	require.Error(t, err)
 
-	se.registrationInfo.CollectorCredentialId = "test-credential-id"
+	se.registrationInfo.CollectorCredentialID = "test-credential-id"
 	se.registrationInfo.CollectorCredentialKey = "test-credential-key"
 
 	h, err := se.CreateCredentialsHeader()
@@ -1526,7 +1514,7 @@ func TestCreateCredentialsHeader(t *testing.T) {
 }
 
 func TestGetHostIpAddress(t *testing.T) {
-	ip, err := getHostIpAddress()
+	ip, err := baseURL()
 	require.NoError(t, err)
 	require.NotEmpty(t, ip)
 }
@@ -1536,14 +1524,14 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 
 	srv := httptest.NewServer(func() http.HandlerFunc {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			require.Equal(t, metadataUrl, req.URL.Path)
+			require.Equal(t, metadataURL, req.URL.Path)
 
 			var reqPayload api.OpenMetadataRequestPayload
 			require.NoError(t, json.NewDecoder(req.Body).Decode(&reqPayload))
 			require.NotEmpty(t, reqPayload.HostDetails.Name)
 			require.NotEmpty(t, reqPayload.HostDetails.OsName)
 			require.NotEmpty(t, reqPayload.HostDetails.OsVersion)
-			require.NotEmpty(t, reqPayload.NetworkDetails.HostIpAddress)
+			require.NotEmpty(t, reqPayload.NetworkDetails.HostIPAddress)
 			require.EqualValues(t, reqPayload.HostDetails.Environment, "EKS-1.20.2")
 			require.EqualValues(t, reqPayload.CollectorDetails.RunningVersion, "1.0.0")
 			require.EqualValues(t, reqPayload.TagDetails["team"], "A")
@@ -1566,7 +1554,7 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 	cfg.CollectorEnvironment = "EKS-1.20.2"
 	cfg.CollectorDescription = "my description"
 	cfg.CollectorCategory = "my category/"
-	cfg.CollectorFields = map[string]interface{}{
+	cfg.CollectorFields = map[string]any{
 		"team": "A",
 		"app":  "linux",
 	}

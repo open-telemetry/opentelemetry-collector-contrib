@@ -23,7 +23,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	homePath, err := os.UserHomeDir()
 	require.NoError(t, err)
-	defaultCredsPath := path.Join(homePath, credentials.DefaultCollectorCredentialsDirectory)
+	defaultCredsPath := path.Join(homePath, credentials.DefaultCollectorDataDirectory)
 	assert.Equal(t, &Config{
 		HeartBeatInterval:             DefaultHeartbeatInterval,
 		APIBaseURL:                    DefaultAPIBaseURL,

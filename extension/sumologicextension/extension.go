@@ -38,10 +38,10 @@ type SumologicExtension struct {
 	collectorName string
 	buildVersion  string
 
-	// The lock around baseUrl is needed because sumologicexporter is using
+	// The lock around baseURL is needed because sumologicexporter is using
 	// it as base URL for API requests and this access has to be coordinated.
-	baseUrlLock sync.RWMutex
-	baseUrl     string
+	baseURLLock sync.RWMutex
+	baseURL     string
 
 	credsNotifyLock   sync.Mutex
 	credsNotifyUpdate chan struct{}
@@ -66,13 +66,13 @@ type SumologicExtension struct {
 }
 
 const (
-	heartbeatUrl = "/api/v1/collector/heartbeat"
-	metadataUrl  = "/api/v1/otCollectors/metadata"
-	registerUrl  = "/api/v1/collector/register"
+	heartbeatURL = "/api/v1/collector/heartbeat"
+	metadataURL  = "/api/v1/otCollectors/metadata"
+	registerURL  = "/api/v1/collector/register"
 
-	collectorIdField           = "collector_id"
+	collectorIDField           = "collector_id"
 	collectorNameField         = "collector_name"
-	collectorCredentialIdField = "collector_credential_id"
+	collectorCredentialIDField = "collector_credential_id"
 
 	stickySessionKey = "AWSALB"
 )
@@ -148,7 +148,7 @@ func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, bu
 	return &SumologicExtension{
 		collectorName:     collectorName,
 		buildVersion:      buildVersion,
-		baseUrl:           strings.TrimSuffix(conf.APIBaseURL, "/"),
+		baseURL:           strings.TrimSuffix(conf.APIBaseURL, "/"),
 		credsNotifyUpdate: make(chan struct{}),
 		conf:              conf,
 		origLogger:        logger,
@@ -194,7 +194,7 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 	// Add logger fields based on actual collector name and ID.
 	se.logger = se.origLogger.With(
 		zap.String(collectorNameField, colCreds.Credentials.CollectorName),
-		zap.String(collectorIdField, colCreds.Credentials.CollectorId),
+		zap.String(collectorIDField, colCreds.Credentials.CollectorID),
 	)
 
 	if se.updateMetadata {
@@ -225,8 +225,8 @@ func (se *SumologicExtension) validateCredentials(
 	colCreds credentials.CollectorCredentials,
 ) error {
 	se.logger.Info("Validating collector credentials...",
-		zap.String(collectorCredentialIdField, colCreds.Credentials.CollectorCredentialId),
-		zap.String(collectorIdField, colCreds.Credentials.CollectorId),
+		zap.String(collectorCredentialIDField, colCreds.Credentials.CollectorCredentialID),
+		zap.String(collectorIDField, colCreds.Credentials.CollectorID),
 	)
 
 	if err := se.injectCredentials(colCreds); err != nil {
@@ -239,13 +239,14 @@ func (se *SumologicExtension) validateCredentials(
 	for {
 		err = se.sendHeartbeatWithHTTPClient(ctx, se.httpClient)
 
-		if err == errUnauthorizedHeartbeat || err == nil {
+		if errors.Is(err, errUnauthorizedHeartbeat) || err == nil {
 			return err
 		}
 
 		nbo := se.backOff.NextBackOff()
+		var backOffErr *backoff.PermanentError
 		// Return error if backoff reaches the limit or uncoverable error is spotted
-		if _, ok := err.(*backoff.PermanentError); nbo == se.backOff.Stop || ok {
+		if ok := errors.As(err, &backOffErr); nbo == se.backOff.Stop || ok {
 			return err
 		}
 
@@ -289,7 +290,7 @@ func (se *SumologicExtension) injectCredentials(colCreds credentials.CollectorCr
 
 func (se *SumologicExtension) getHTTPClient(
 	httpClientSettings confighttp.HTTPClientSettings,
-	regInfo api.OpenRegisterResponsePayload,
+	_ api.OpenRegisterResponsePayload,
 ) (*http.Client, error) {
 	httpClient, err := httpClientSettings.ToClient(
 		se.host,
@@ -332,7 +333,7 @@ func (se *SumologicExtension) getCredentials(ctx context.Context) (credentials.C
 			}
 
 			// We are unable to confirm if credentials are valid or not as we do not have (clear) response from the API
-			if errV != errUnauthorizedHeartbeat {
+			if !errors.Is(errV, errUnauthorizedHeartbeat) {
 				return credentials.CollectorCredentials{}, errV
 			}
 
@@ -340,7 +341,7 @@ func (se *SumologicExtension) getCredentials(ctx context.Context) (credentials.C
 			// might have been removed in Sumo.
 			// Fall back to removing the credentials and recreating them by registering
 			// the collector.
-			if err := se.credentialsStore.Delete(se.hashKey); err != nil {
+			if err = se.credentialsStore.Delete(se.hashKey); err != nil {
 				se.logger.Error(
 					"Unable to delete old collector credentials", zap.Error(err),
 				)
@@ -348,7 +349,7 @@ func (se *SumologicExtension) getCredentials(ctx context.Context) (credentials.C
 
 			se.logger.Info("Locally stored credentials invalid. Trying to re-register...",
 				zap.String(collectorNameField, colCreds.Credentials.CollectorName),
-				zap.String(collectorIdField, colCreds.Credentials.CollectorId),
+				zap.String(collectorIDField, colCreds.Credentials.CollectorID),
 				zap.Error(errV),
 			)
 		} else {
@@ -385,7 +386,7 @@ func (se *SumologicExtension) getCredentialsByRegistering(ctx context.Context) (
 
 // getLocalCredentials returns the credentials retrieved from local credentials
 // storage in case they are available there.
-func (se *SumologicExtension) getLocalCredentials(ctx context.Context) (credentials.CollectorCredentials, error) {
+func (se *SumologicExtension) getLocalCredentials(_ context.Context) (credentials.CollectorCredentials, error) {
 	colCreds, err := se.credentialsStore.Get(se.hashKey)
 	if err != nil {
 		return credentials.CollectorCredentials{},
@@ -396,7 +397,7 @@ func (se *SumologicExtension) getLocalCredentials(ctx context.Context) (credenti
 
 	se.collectorName = colCreds.CollectorName
 	if colCreds.APIBaseURL != "" {
-		se.SetBaseUrl(colCreds.APIBaseURL)
+		se.SetBaseURL(colCreds.APIBaseURL)
 	}
 
 	return colCreds, nil
@@ -405,11 +406,11 @@ func (se *SumologicExtension) getLocalCredentials(ctx context.Context) (credenti
 // registerCollector registers the collector using registration API and returns
 // the obtained collector credentials.
 func (se *SumologicExtension) registerCollector(ctx context.Context, collectorName string) (credentials.CollectorCredentials, error) {
-	u, err := url.Parse(se.BaseUrl())
+	u, err := url.Parse(se.BaseURL())
 	if err != nil {
 		return credentials.CollectorCredentials{}, err
 	}
-	u.Path = registerUrl
+	u.Path = registerURL
 
 	hostname, err := getHostname(se.logger)
 	if err != nil {
@@ -459,7 +460,7 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 	} else if res.StatusCode == 301 {
 		// Use the URL from Location header for subsequent requests.
 		u := strings.TrimSuffix(res.Header.Get("Location"), "/")
-		se.SetBaseUrl(u)
+		se.SetBaseURL(u)
 		se.logger.Info("Redirected to a different deployment",
 			zap.String("url", u),
 		)
@@ -478,7 +479,7 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 	return credentials.CollectorCredentials{
 		CollectorName: collectorName,
 		Credentials:   resp,
-		APIBaseURL:    se.BaseUrl(),
+		APIBaseURL:    se.BaseURL(),
 	}, nil
 }
 
@@ -528,7 +529,7 @@ func (se *SumologicExtension) registerCollectorWithBackoff(ctx context.Context, 
 		if err == nil {
 			se.logger = se.origLogger.With(
 				zap.String(collectorNameField, creds.Credentials.CollectorName),
-				zap.String(collectorIdField, creds.Credentials.CollectorId),
+				zap.String(collectorIDField, creds.Credentials.CollectorID),
 			)
 			se.logger.Info("Collector registration finished successfully")
 
@@ -536,8 +537,9 @@ func (se *SumologicExtension) registerCollectorWithBackoff(ctx context.Context, 
 		}
 
 		nbo := se.backOff.NextBackOff()
+		var backOffErr *backoff.PermanentError
 		// Return error if backoff reaches the limit or uncoverable error is spotted
-		if _, ok := err.(*backoff.PermanentError); nbo == se.backOff.Stop || ok {
+		if ok := errors.As(err, &backOffErr); nbo == se.backOff.Stop || ok {
 			return credentials.CollectorCredentials{}, fmt.Errorf("collector registration failed: %w", err)
 		}
 
@@ -553,7 +555,7 @@ func (se *SumologicExtension) registerCollectorWithBackoff(ctx context.Context, 
 }
 
 func (se *SumologicExtension) heartbeatLoop() {
-	if se.registrationInfo.CollectorCredentialId == "" || se.registrationInfo.CollectorCredentialKey == "" {
+	if se.registrationInfo.CollectorCredentialID == "" || se.registrationInfo.CollectorCredentialKey == "" {
 		se.logger.Error("Collector not registered, cannot send heartbeat")
 		return
 	}
@@ -581,7 +583,8 @@ func (se *SumologicExtension) heartbeatLoop() {
 			if err != nil {
 				if errors.Is(err, errUnauthorizedHeartbeat) {
 					se.logger.Warn("Heartbeat request unauthorized, re-registering the collector")
-					colCreds, err := se.getCredentialsByRegistering(ctx)
+					var colCreds credentials.CollectorCredentials
+					colCreds, err = se.getCredentialsByRegistering(ctx)
 					if err != nil {
 						se.logger.Error("Heartbeat error, cannot register the collector", zap.Error(err))
 						continue
@@ -596,7 +599,7 @@ func (se *SumologicExtension) heartbeatLoop() {
 					// Overwrite old logger fields with new collector name and ID.
 					se.logger = se.origLogger.With(
 						zap.String(collectorNameField, colCreds.Credentials.CollectorName),
-						zap.String(collectorIdField, colCreds.Credentials.CollectorId),
+						zap.String(collectorIDField, colCreds.Credentials.CollectorID),
 					)
 
 				} else {
@@ -630,7 +633,7 @@ func (e ErrorAPI) Error() string {
 }
 
 func (se *SumologicExtension) sendHeartbeatWithHTTPClient(ctx context.Context, httpClient *http.Client) error {
-	u, err := url.Parse(se.BaseUrl() + heartbeatUrl)
+	u, err := url.Parse(se.BaseURL() + heartbeatURL)
 	if err != nil {
 		return fmt.Errorf("unable to parse heartbeat URL %w", err)
 	}
@@ -673,7 +676,7 @@ func (se *SumologicExtension) sendHeartbeatWithHTTPClient(ctx context.Context, h
 	return nil
 }
 
-func getHostIpAddress() (string, error) {
+func baseURL() (string, error) {
 	// This doesn't connect, we just need the connection object.
 	c, err := net.Dial("udp", "255.255.255.255:53")
 	if err != nil {
@@ -725,8 +728,8 @@ func filteredProcessList() ([]string, error) {
 	return pl, nil
 }
 
-func discoverTags() (map[string]interface{}, error) {
-	t := map[string]interface{}{
+func discoverTags() (map[string]any, error) {
+	t := map[string]any{
 		"sumo.disco.enabled": "true",
 	}
 
@@ -743,7 +746,7 @@ func discoverTags() (map[string]interface{}, error) {
 }
 
 func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, httpClient *http.Client) error {
-	u, err := url.Parse(se.BaseUrl() + metadataUrl)
+	u, err := url.Parse(se.BaseURL() + metadataURL)
 	if err != nil {
 		return fmt.Errorf("unable to parse metadata URL %w", err)
 	}
@@ -758,12 +761,12 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 		return err
 	}
 
-	ip, err := getHostIpAddress()
+	ip, err := baseURL()
 	if err != nil {
 		return err
 	}
 
-	td := map[string]interface{}{}
+	td := map[string]any{}
 
 	if se.conf.DiscoverCollectorTags {
 		td, err = discoverTags()
@@ -788,7 +791,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 			RunningVersion: se.buildVersion,
 		},
 		NetworkDetails: api.OpenMetadataNetworkDetails{
-			HostIpAddress: ip,
+			HostIPAddress: ip,
 		},
 		TagDetails: td,
 	}); err != nil {
@@ -853,8 +856,9 @@ func (se *SumologicExtension) updateMetadataWithBackoff(ctx context.Context) err
 		se.logger.Warn(fmt.Sprintf("collector metadata update failed: %s", err))
 
 		nbo := se.backOff.NextBackOff()
+		var backOffErr *backoff.PermanentError
 		// Return error if backoff reaches the limit or uncoverable error is spotted
-		if _, ok := err.(*backoff.PermanentError); nbo == se.backOff.Stop || ok {
+		if ok := errors.As(err, &backOffErr); nbo == se.backOff.Stop || ok {
 			return fmt.Errorf("collector metadata update failed: %w", err)
 		}
 
@@ -874,19 +878,19 @@ func (se *SumologicExtension) ComponentID() component.ID {
 }
 
 func (se *SumologicExtension) CollectorID() string {
-	return se.registrationInfo.CollectorId
+	return se.registrationInfo.CollectorID
 }
 
-func (se *SumologicExtension) BaseUrl() string {
-	se.baseUrlLock.RLock()
-	defer se.baseUrlLock.RUnlock()
-	return se.baseUrl
+func (se *SumologicExtension) BaseURL() string {
+	se.baseURLLock.RLock()
+	defer se.baseURLLock.RUnlock()
+	return se.baseURL
 }
 
-func (se *SumologicExtension) SetBaseUrl(baseUrl string) {
-	se.baseUrlLock.Lock()
-	se.baseUrl = baseUrl
-	se.baseUrlLock.Unlock()
+func (se *SumologicExtension) SetBaseURL(baseURL string) {
+	se.baseURLLock.Lock()
+	se.baseURL = baseURL
+	se.baseURLLock.Unlock()
 }
 
 func (se *SumologicExtension) StickySessionCookie() string {
@@ -928,7 +932,7 @@ func (se *SumologicExtension) WatchCredentialKey(ctx context.Context, old string
 // credentials. This function is for components that do not make use of the
 // RoundTripper or have an HTTP request to build upon.
 func (se *SumologicExtension) CreateCredentialsHeader() (http.Header, error) {
-	id, key := se.registrationInfo.CollectorCredentialId, se.registrationInfo.CollectorCredentialKey
+	id, key := se.registrationInfo.CollectorCredentialID, se.registrationInfo.CollectorCredentialKey
 
 	if id == "" || key == "" {
 		return nil, errors.New("collector credentials are not set")
@@ -950,7 +954,7 @@ func (se *SumologicExtension) CreateCredentialsHeader() (http.Header, error) {
 // [1]: https://github.com/open-telemetry/opentelemetry-collector/blob/2e84285efc665798d76773b9901727e8836e9d8f/config/configauth/clientauth.go#L34-L39
 func (se *SumologicExtension) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return roundTripper{
-		collectorCredentialId:     se.registrationInfo.CollectorCredentialId,
+		collectorCredentialID:     se.registrationInfo.CollectorCredentialID,
 		collectorCredentialKey:    se.registrationInfo.CollectorCredentialKey,
 		addStickySessionCookie:    se.addStickySessionCookie,
 		updateStickySessionCookie: se.updateStickySessionCookie,
@@ -991,7 +995,7 @@ func (se *SumologicExtension) updateStickySessionCookie(resp *http.Response) {
 }
 
 type roundTripper struct {
-	collectorCredentialId     string
+	collectorCredentialID     string
 	collectorCredentialKey    string
 	addStickySessionCookie    func(*http.Request)
 	updateStickySessionCookie func(*http.Response)
@@ -999,7 +1003,7 @@ type roundTripper struct {
 }
 
 func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	addCollectorCredentials(req, rt.collectorCredentialId, rt.collectorCredentialKey)
+	addCollectorCredentials(req, rt.collectorCredentialID, rt.collectorCredentialKey)
 	rt.addStickySessionCookie(req)
 	resp, err := rt.base.RoundTrip(req)
 	if err != nil {
@@ -1009,9 +1013,9 @@ func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
-func addCollectorCredentials(req *http.Request, collectorCredentialId string, collectorCredentialKey string) {
+func addCollectorCredentials(req *http.Request, collectorCredentialID string, collectorCredentialKey string) {
 	token := base64.StdEncoding.EncodeToString(
-		[]byte(collectorCredentialId + ":" + collectorCredentialKey),
+		[]byte(collectorCredentialID + ":" + collectorCredentialKey),
 	)
 
 	// Delete the existing Authorization header so prevent sending both the old one
@@ -1023,7 +1027,7 @@ func addCollectorCredentials(req *http.Request, collectorCredentialId string, co
 func addClientCredentials(req *http.Request, credentials accessCredentials) {
 	var authHeaderValue string
 	if credentials.InstallationToken != "" {
-		authHeaderValue = fmt.Sprintf("Bearer %s", credentials.InstallationToken)
+		authHeaderValue = fmt.Sprintf("Bearer %s", string(credentials.InstallationToken))
 	}
 
 	req.Header.Del("Authorization")

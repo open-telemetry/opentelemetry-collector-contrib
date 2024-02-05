@@ -1,22 +1,17 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package credentials
+package credentials // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
 
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/md5"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
 )
-
-func _getDeprecatedHasher() Hasher {
-	return md5.New()
-}
 
 func _getHasher() Hasher {
 	return sha256.New()
@@ -70,7 +65,7 @@ func HashKeyToEncryptionKeyWith(hasher Hasher, key string) ([]byte, error) {
 
 // encrypt encrypts provided byte slice with AES using the encryption key.
 func encrypt(data []byte, encryptionKey []byte) ([]byte, error) {
-	f := func(hasher Hasher, data []byte, encryptionKey []byte) ([]byte, error) {
+	f := func(_ Hasher, data []byte, encryptionKey []byte) ([]byte, error) {
 		block, err := aes.NewCipher(encryptionKey)
 		if err != nil {
 			return nil, err
@@ -87,20 +82,18 @@ func encrypt(data []byte, encryptionKey []byte) ([]byte, error) {
 		return ciphertext, nil
 	}
 
-	if ret, err := f(_getHasher(), data, encryptionKey); err == nil {
-		return ret, nil
+	ret, err := f(_getHasher(), data, encryptionKey)
+
+	if err != nil {
+		return ret, err
 	}
 
-	ret, err := f(_getDeprecatedHasher(), data, encryptionKey)
-	if err == nil {
-		return ret, nil
-	}
-	return nil, err
+	return ret, nil
 }
 
 // decrypt decrypts provided byte slice with AES using the encryptionKey.
 func decrypt(data []byte, encryptionKey []byte) ([]byte, error) {
-	f := func(hasher Hasher, data []byte, encryptionKey []byte) ([]byte, error) {
+	f := func(_ Hasher, data []byte, encryptionKey []byte) ([]byte, error) {
 		block, err := aes.NewCipher(encryptionKey)
 		if err != nil {
 			return nil, fmt.Errorf("unable tocreate new aes cipher: %w", err)
@@ -121,13 +114,11 @@ func decrypt(data []byte, encryptionKey []byte) ([]byte, error) {
 		return plaintext, nil
 	}
 
-	if ret, err := f(_getHasher(), data, encryptionKey); err == nil {
-		return ret, nil
+	ret, err := f(_getHasher(), data, encryptionKey)
+
+	if err != nil {
+		return ret, err
 	}
 
-	ret, err := f(_getDeprecatedHasher(), data, encryptionKey)
-	if err == nil {
-		return ret, nil
-	}
-	return nil, err
+	return ret, nil
 }

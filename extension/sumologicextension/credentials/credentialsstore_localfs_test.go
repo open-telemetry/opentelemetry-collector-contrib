@@ -29,9 +29,9 @@ func TestCredentialsStoreLocalFs(t *testing.T) {
 	creds := CollectorCredentials{
 		CollectorName: "name",
 		Credentials: api.OpenRegisterResponsePayload{
-			CollectorCredentialId:  "credentialId",
+			CollectorCredentialID:  "credentialId",
 			CollectorCredentialKey: "credentialKey",
-			CollectorId:            "id",
+			CollectorID:            "id",
 		},
 	}
 

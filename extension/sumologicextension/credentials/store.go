@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package credentials
+package credentials // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/api"
