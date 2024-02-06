@@ -4,8 +4,6 @@
 package dataconnectors // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/dataconnectors"
 
 import (
-	"fmt"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -21,11 +19,11 @@ func NewRoutingDataConnector(receiverDataType string) *RoutingDataConnector {
 
 func (rc *RoutingDataConnector) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
-	return fmt.Sprintf(`
+	return `
   routing:
     table:
       - statement: route()
-        pipelines: [traces/out]`)
+        pipelines: [traces/out]`
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.

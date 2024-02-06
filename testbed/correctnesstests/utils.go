@@ -55,12 +55,11 @@ func CreateConfigYaml(
 		pipeline1 = "logs"
 	default:
 		t.Error("Invalid DataSender type")
-	}	
+	}
 
-	if (connector != nil) {
-		var pipeline2 string
-		pipeline2 = connector.GetReceiverType()
-		
+	if connector != nil {
+		pipeline2 := connector.GetReceiverType()
+
 		format := `
 receivers:%v
 exporters:%v
@@ -139,14 +138,14 @@ service:
 
 // PipelineDef holds the information necessary to run a single testbed configuration.
 type PipelineDef struct {
-	Receiver         string
-	Exporter         string
-	Connector		 string
-	TestName         string
-	DataSender       testbed.DataSender
-	DataReceiver     testbed.DataReceiver
-	DataConnector	 testbed.DataConnector
-	ResourceSpec     testbed.ResourceSpec
+	Receiver      string
+	Exporter      string
+	Connector     string
+	TestName      string
+	DataSender    testbed.DataSender
+	DataReceiver  testbed.DataReceiver
+	DataConnector testbed.DataConnector
+	ResourceSpec  testbed.ResourceSpec
 }
 
 // LoadPictOutputPipelineDefs generates a slice of PipelineDefs from the passed-in generated PICT file. The
