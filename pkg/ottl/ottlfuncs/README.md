@@ -401,6 +401,7 @@ Available Converters:
 - [Minutes](#minutes)
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
+- [ParseCSV](#parsecsv)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
 - [Seconds](#seconds)
