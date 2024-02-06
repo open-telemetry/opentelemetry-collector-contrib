@@ -830,7 +830,7 @@ Examples:
 - `ParseCSV(attributes["csv_line"], attributes["csv_headers"], delimiter="|", headerDelimiter=",", mode="lazyQuotes")`
 
 
-- `ParseCSV(body, "phone|name|email", mode="ignoreQuotes")`
+- `ParseCSV("\"555-555-5556,Joe Smith\",joe.smith@example.com", "phone,name,email", mode="ignoreQuotes")`
 
 ### ParseJSON
 
