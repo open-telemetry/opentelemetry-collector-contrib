@@ -26,7 +26,7 @@ import (
 
 func TestFactory(t *testing.T) {
 	f := NewFactory()
-	require.Equal(t, component.Type("k8s_cluster"), f.Type())
+	require.Equal(t, metadata.Type, f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	rCfg, ok := cfg.(*Config)
@@ -64,7 +64,7 @@ func TestFactory(t *testing.T) {
 
 func TestFactoryDistributions(t *testing.T) {
 	f := NewFactory()
-	require.Equal(t, component.Type("k8s_cluster"), f.Type())
+	require.Equal(t, metadata.Type, f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	rCfg, ok := cfg.(*Config)
