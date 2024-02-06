@@ -43,7 +43,7 @@ func TestExpiration(t *testing.T) {
 	correlationClient := &correlationTestClient{}
 
 	hostIDDims := map[string]string{"host": "test", "AWSUniqueId": "randomAWSUniqueId"}
-	a := New(log.Nil, 5*time.Minute, correlationClient, hostIDDims, true, DefaultDimsToSyncSource)
+	a := New(log.Nil, 5*time.Minute, correlationClient, hostIDDims, DefaultDimsToSyncSource)
 	setTime(a, time.Unix(100, 0))
 
 	a.AddSpansGeneric(context.Background(), fakeSpanList{
@@ -145,7 +145,7 @@ func TestCorrelationEmptyEnvironment(t *testing.T) {
 	hostIDDims := map[string]string{"host": "test", "AWSUniqueId": "randomAWSUniqueId"}
 	wg.Add(len(hostIDDims))
 	containerLevelIDDims := map[string]string{"kubernetes_pod_uid": "testk8sPodUID", "container_id": "testContainerID"}
-	a := New(log.Nil, 5*time.Minute, correlationClient, hostIDDims, true, DefaultDimsToSyncSource)
+	a := New(log.Nil, 5*time.Minute, correlationClient, hostIDDims, DefaultDimsToSyncSource)
 	wg.Wait() // wait for the initial fetch of hostIDDims to complete
 
 	a.AddSpansGeneric(context.Background(), fakeSpanList{
@@ -181,7 +181,7 @@ func TestCorrelationUpdates(t *testing.T) {
 	hostIDDims := map[string]string{"host": "test", "AWSUniqueId": "randomAWSUniqueId"}
 	wg.Add(len(hostIDDims))
 	containerLevelIDDims := map[string]string{"kubernetes_pod_uid": "testk8sPodUID", "container_id": "testContainerID"}
-	a := New(log.Nil, 5*time.Minute, correlationClient, hostIDDims, true, DefaultDimsToSyncSource)
+	a := New(log.Nil, 5*time.Minute, correlationClient, hostIDDims, DefaultDimsToSyncSource)
 	wg.Wait()
 	assert.Equal(t, int64(1), a.hostServiceCache.ActiveCount, "activeServiceCount is not properly tracked")
 	assert.Equal(t, int64(1), a.hostEnvironmentCache.ActiveCount, "activeEnvironmentCount is not properly tracked")
