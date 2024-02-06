@@ -202,17 +202,17 @@ hello!!world  `, nil
 			},
 		},
 		{
-			name: "double quotes",
+			name: " embedded double quotes end single quoted value",
 			target: ottl.StandardStringGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (any, error) {
-					return `a=b c='this is a "cool" value'`, nil
+					return `a=b c='this is a "co ol"'`, nil
 				},
 			},
 			delimiter:      ottl.Optional[string]{},
 			pair_delimiter: ottl.Optional[string]{},
 			expected: map[string]any{
 				"a": "b",
-				"c": "this is a \"cool\" value",
+				"c": "this is a \"co ol\"",
 			},
 		},
 	}
