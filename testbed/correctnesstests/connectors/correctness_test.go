@@ -28,9 +28,9 @@ func TestGoldenData(t *testing.T) {
 `,
 	}
 	sampleTest := correctnesstests.PipelineDef{
-		TestName: "test routing",
-		Receiver: "otlp",
-		Exporter: "otlp",
+		TestName:  "test routing",
+		Receiver:  "otlp",
+		Exporter:  "otlp",
 		Connector: "routing",
 	}
 
