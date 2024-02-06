@@ -157,6 +157,13 @@ func TestParserInvalidType(t *testing.T) {
 	require.Contains(t, err.Error(), "type []int cannot be parsed as key value pairs")
 }
 
+func TestParserEmptyInput(t *testing.T) {
+	parser := newTestParser(t)
+	_, err := parser.parse("")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "parse from field body is empty")
+}
+
 func TestKVImplementations(t *testing.T) {
 	require.Implements(t, (*operator.Operator)(nil), new(Parser))
 }
@@ -616,6 +623,22 @@ key=value`,
 			false,
 		},
 		{
+			"embedded double quotes end single quoted value",
+			func(kv *Config) {},
+			&entry.Entry{
+				Body: `a=b c='this is a "co ol"'`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"a": "b",
+					"c": "this is a \"co ol\"",
+				},
+				Body: `a=b c='this is a "co ol"'`,
+			},
+			false,
+			false,
+		},
+		{
 			"leading and trailing pair delimiter w/o quotes",
 			func(kv *Config) {},
 			&entry.Entry{
@@ -650,6 +673,18 @@ key=value`,
 				Body: `k1@*v1_!_k2@**v2_!__k3@@*v3__`,
 			},
 			false,
+			false,
+		},
+		{
+			"unclosed quotes",
+			func(kv *Config) {},
+			&entry.Entry{
+				Body: `k1='v1' k2='v2`,
+			},
+			&entry.Entry{
+				Body: `k1='v1' k2='v2`,
+			},
+			true,
 			false,
 		},
 	}

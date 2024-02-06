@@ -113,8 +113,8 @@ func (kv *Parser) parser(input string, delimiter string, pairDelimiter string) (
 			continue
 		}
 
-		key := strings.TrimSpace(strings.Trim(m[0], "\"'"))
-		value := strings.TrimSpace(strings.Trim(m[1], "\"'"))
+		key := strings.TrimSpace(m[0])
+		value := strings.TrimSpace(m[1])
 
 		parsed[key] = value
 	}
@@ -130,36 +130,34 @@ func splitPairs(input, pairDelimiter string) ([]string, error) {
 	delimiterLength := len(pairDelimiter)
 	quoteChar := "" // "" means we are not in quotes
 
-	i := 0
-	for i < len(input) {
-		if quoteChar == "" && i+delimiterLength <= len(input) && input[i:i+delimiterLength] == pairDelimiter {
-			if currentPair == "" {
-				i++
+	for i := 0; i < len(input); i++ {
+		if quoteChar == "" && i+delimiterLength <= len(input) && input[i:i+delimiterLength] == pairDelimiter { // delimiter
+			if currentPair == "" { // leading || trailing delimiter; ignore
 				continue
 			}
 			result = append(result, currentPair)
 			currentPair = ""
-			i += delimiterLength
+			i += delimiterLength - 1
 			continue
-		} else if input[i] == '"' || input[i] == '\'' {
-			if quoteChar != "" {
-				if quoteChar == string(input[i]) {
-					quoteChar = ""
-				}
-			} else {
-				quoteChar = string(input[i])
-			}
 		}
+
+		if quoteChar == "" && (input[i] == '"' || input[i] == '\'') { // start of quote
+			quoteChar = string(input[i])
+			continue
+		}
+		if string(input[i]) == quoteChar { // end of quote
+			quoteChar = ""
+			continue
+		}
+
 		currentPair += string(input[i])
-		i++
 	}
 
-	if quoteChar != "" {
+	if quoteChar != "" { // check for closed quotes
 		return nil, fmt.Errorf("never reached end of a quoted value")
 	}
-
-	if currentPair != "" {
-		result = append(result, currentPair)
+	if currentPair != "" { // avoid adding empty value bc of a trailing delimiter
+		return append(result, currentPair), nil
 	}
 
 	return result, nil
