@@ -29,7 +29,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			TLSSetting: configtls.TLSClientSetting{},
 			Endpoint:   defaultEndpoint,
 			Timeout:    1 * time.Minute,

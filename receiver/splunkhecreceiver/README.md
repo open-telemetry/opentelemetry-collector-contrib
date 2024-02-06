@@ -30,6 +30,8 @@ The following settings are required:
 * `endpoint` (default = `0.0.0.0:8088`): Address and port that the Splunk HEC
   receiver should bind to.
 
+The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:8088. This will become the default in a future release.
+
 The following settings are optional:
 
 * `access_token_passthrough` (default = `false`): Whether to preserve incoming
