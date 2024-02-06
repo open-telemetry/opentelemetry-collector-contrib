@@ -80,9 +80,9 @@ func newCorrelationClient(cfg *Config, accessToken configopaque.String, params e
 	}, nil
 }
 
-// AddSpans processes the provided spans to correlate the services and environment observed
+// ProcessTraces processes the provided spans to correlate the services and environment observed
 // to the resources (host, pods, etc.) emitting the spans.
-func (cor *Tracker) AddSpans(ctx context.Context, traces ptrace.Traces) error {
+func (cor *Tracker) ProcessTraces(ctx context.Context, traces ptrace.Traces) error {
 	if cor == nil || traces.ResourceSpans().Len() == 0 {
 		return nil
 	}
@@ -116,7 +116,7 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces ptrace.Traces) error {
 	})
 
 	if cor.traceTracker != nil {
-		cor.traceTracker.AddSpansGeneric(ctx, spanListWrap{traces.ResourceSpans()})
+		cor.traceTracker.ProcessTraces(ctx, traces)
 	}
 
 	return nil
