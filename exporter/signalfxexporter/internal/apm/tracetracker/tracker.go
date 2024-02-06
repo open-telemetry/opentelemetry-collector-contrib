@@ -7,7 +7,6 @@ package tracetracker // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -29,15 +28,10 @@ var DefaultDimsToSyncSource = map[string]string{
 // spans passed through ProcessSpans.  It supports expiry of service names if
 // they are not seen for a certain amount of time.
 type ActiveServiceTracker struct {
-	dpCacheLock sync.Mutex
-
 	log log.Logger
 
 	// hostIDDims is the map of key/values discovered by the agent that identify the host
 	hostIDDims map[string]string
-
-	// sendTraceHostCorrelationMetrics turns metric emission on and off
-	sendTraceHostCorrelationMetrics bool
 
 	// hostServiceCache is a cache of services associated with the host
 	hostServiceCache *TimeoutCache
@@ -56,9 +50,6 @@ type ActiveServiceTracker struct {
 	// for more information
 	tenantEmptyEnvironmentCache *TimeoutCache
 
-	// cache of service names to generate datapoints for
-	dpCache map[string]struct{}
-
 	timeNow func() time.Time
 
 	// correlationClient is the client used for updating infrastructure correlation properties
@@ -70,21 +61,6 @@ type ActiveServiceTracker struct {
 	// Map of dimensions to sync to with the key being the span attribute to lookup and the value being
 	// the dimension to sync to.
 	dimsToSyncSource map[string]string
-}
-
-// addServiceToDPCache creates a datapoint for the given service in the dpCache.
-func (a *ActiveServiceTracker) addServiceToDPCache(service string) {
-	a.dpCacheLock.Lock()
-	defer a.dpCacheLock.Unlock()
-
-	a.dpCache[service] = struct{}{}
-}
-
-// removeServiceFromDPCache removes the datapoint for the given service from the dpCache
-func (a *ActiveServiceTracker) removeServiceFromDPCache(service string) {
-	a.dpCacheLock.Lock()
-	delete(a.dpCache, service)
-	a.dpCacheLock.Unlock()
 }
 
 // LoadHostIDDimCorrelations asynchronously retrieves all known correlations from the backend
@@ -101,11 +77,6 @@ func (a *ActiveServiceTracker) LoadHostIDDimCorrelations() {
 					// Note that only the value is set for the host service cache because we only track services for the host
 					// therefore there we don't need to include the dim key and value on the cache key
 					if isNew := a.hostServiceCache.UpdateOrCreate(&CacheKey{value: service}, a.timeNow()); isNew {
-						if a.sendTraceHostCorrelationMetrics {
-							// create datapoint for service
-							a.addServiceToDPCache(service)
-						}
-
 						a.log.WithFields(log.Fields{"service": service}).Debug("Tracking service name from trace span")
 					}
 				}
@@ -129,22 +100,19 @@ func New(
 	timeout time.Duration,
 	correlationClient correlations.CorrelationClient,
 	hostIDDims map[string]string,
-	sendTraceHostCorrelationMetrics bool,
 	dimsToSyncSource map[string]string,
 ) *ActiveServiceTracker {
 	a := &ActiveServiceTracker{
-		log:                             log,
-		hostIDDims:                      hostIDDims,
-		hostServiceCache:                NewTimeoutCache(timeout),
-		hostEnvironmentCache:            NewTimeoutCache(timeout),
-		tenantServiceCache:              NewTimeoutCache(timeout),
-		tenantEnvironmentCache:          NewTimeoutCache(timeout),
-		tenantEmptyEnvironmentCache:     NewTimeoutCache(timeout),
-		dpCache:                         make(map[string]struct{}),
-		correlationClient:               correlationClient,
-		sendTraceHostCorrelationMetrics: sendTraceHostCorrelationMetrics,
-		timeNow:                         time.Now,
-		dimsToSyncSource:                dimsToSyncSource,
+		log:                         log,
+		hostIDDims:                  hostIDDims,
+		hostServiceCache:            NewTimeoutCache(timeout),
+		hostEnvironmentCache:        NewTimeoutCache(timeout),
+		tenantServiceCache:          NewTimeoutCache(timeout),
+		tenantEnvironmentCache:      NewTimeoutCache(timeout),
+		tenantEmptyEnvironmentCache: NewTimeoutCache(timeout),
+		correlationClient:           correlationClient,
+		timeNow:                     time.Now,
+		dimsToSyncSource:            dimsToSyncSource,
 	}
 	a.LoadHostIDDimCorrelations()
 
@@ -258,11 +226,6 @@ func (a *ActiveServiceTracker) processService(span Span, now time.Time) {
 			}
 		}
 
-		if a.sendTraceHostCorrelationMetrics {
-			// create datapoint for service
-			a.addServiceToDPCache(service)
-		}
-
 		a.log.WithFields(log.Fields{"service": service}).Debug("Tracking service name from trace span")
 	}
 
@@ -307,10 +270,6 @@ func (a *ActiveServiceTracker) Purge() {
 			}, func(cor *correlations.Correlation) {
 				a.hostServiceCache.Delete(purged)
 			})
-		}
-		// remove host/service correlation metric from tracker
-		if a.sendTraceHostCorrelationMetrics {
-			a.removeServiceFromDPCache(purged.value)
 		}
 
 		a.log.WithFields(log.Fields{"serviceName": purged.value}).Debug("No longer tracking service name from trace span")
