@@ -125,7 +125,7 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	// set up the listener
-	ln, err := r.config.HTTPServerConfig.ToListener()
+	ln, err := r.config.ServerConfig.ToListener()
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
 	}
@@ -134,7 +134,7 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	mx.HandleFunc("/v2/datapoint", r.handleDatapointReq)
 	mx.HandleFunc("/v2/event", r.handleEventReq)
 
-	r.server, err = r.config.HTTPServerConfig.ToServer(host, r.settings.TelemetrySettings, mx)
+	r.server, err = r.config.ServerConfig.ToServer(host, r.settings.TelemetrySettings, mx)
 	if err != nil {
 		return err
 	}
@@ -233,7 +233,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 	}
 
 	if len(msg.Datapoints) == 0 {
-		r.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, nil)
+		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, nil)
 		_, _ = resp.Write(okRespBody)
 		return
 	}
@@ -254,7 +254,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 	}
 
 	err = r.metricsConsumer.ConsumeMetrics(ctx, md)
-	r.obsrecv.EndMetricsOp(ctx, metadata.Type, len(msg.Datapoints), err)
+	r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(msg.Datapoints), err)
 
 	r.writeResponse(ctx, resp, err)
 }
@@ -279,7 +279,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	}
 
 	if len(msg.Events) == 0 {
-		r.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, nil)
+		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, nil)
 		_, _ = resp.Write(okRespBody)
 		return
 	}
@@ -298,7 +298,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	err := r.logsConsumer.ConsumeLogs(ctx, ld)
 	r.obsrecv.EndMetricsOp(
 		ctx,
-		metadata.Type,
+		metadata.Type.String(),
 		len(msg.Events),
 		err)
 
@@ -327,7 +327,7 @@ func (r *sfxReceiver) failRequest(
 	// Use the same pattern as strings.Builder String().
 	msg := *(*string)(unsafe.Pointer(&jsonResponse))
 
-	r.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, err)
+	r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
 	r.settings.Logger.Debug(
 		"SignalFx receiver request failed",
 		zap.Int("http_status_code", httpStatusCode),

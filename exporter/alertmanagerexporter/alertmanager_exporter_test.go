@@ -333,7 +333,7 @@ func TestAlertManagerPostAlert(t *testing.T) {
 	}
 }
 
-func TestHTTPClientConfig(t *testing.T) {
+func TestClientConfig(t *testing.T) {
 	endpoint := "http://" + testutil.GetAvailableLocalAddress(t)
 	fmt.Println(endpoint)
 	tests := []struct {
@@ -345,7 +345,7 @@ func TestHTTPClientConfig(t *testing.T) {
 		{
 			name: "UseSecure",
 			config: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						Insecure: false,
@@ -356,7 +356,7 @@ func TestHTTPClientConfig(t *testing.T) {
 		{
 			name: "Headers",
 			config: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
 					Headers: map[string]configopaque.String{
 						"hdr1": "val1",
@@ -368,7 +368,7 @@ func TestHTTPClientConfig(t *testing.T) {
 		{
 			name: "CaCert",
 			config: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -381,7 +381,7 @@ func TestHTTPClientConfig(t *testing.T) {
 		{
 			name: "CertPemFileError",
 			config: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{

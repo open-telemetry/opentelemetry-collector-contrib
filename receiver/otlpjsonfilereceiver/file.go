@@ -78,13 +78,13 @@ func createLogsReceiver(_ context.Context, settings receiver.CreateSettings, con
 		var l plog.Logs
 		l, err = logsUnmarshaler.UnmarshalLogs(token)
 		if err != nil {
-			obsrecv.EndLogsOp(ctx, metadata.Type, 0, err)
+			obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, err)
 		} else {
 			logRecordCount := l.LogRecordCount()
 			if logRecordCount != 0 {
 				err = logs.ConsumeLogs(ctx, l)
 			}
-			obsrecv.EndLogsOp(ctx, metadata.Type, logRecordCount, err)
+			obsrecv.EndLogsOp(ctx, metadata.Type.String(), logRecordCount, err)
 		}
 		return nil
 	})
@@ -111,12 +111,12 @@ func createMetricsReceiver(_ context.Context, settings receiver.CreateSettings, 
 		var m pmetric.Metrics
 		m, err = metricsUnmarshaler.UnmarshalMetrics(token)
 		if err != nil {
-			obsrecv.EndMetricsOp(ctx, metadata.Type, 0, err)
+			obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
 		} else {
 			if m.ResourceMetrics().Len() != 0 {
 				err = metrics.ConsumeMetrics(ctx, m)
 			}
-			obsrecv.EndMetricsOp(ctx, metadata.Type, m.MetricCount(), err)
+			obsrecv.EndMetricsOp(ctx, metadata.Type.String(), m.MetricCount(), err)
 		}
 		return nil
 	})
@@ -143,12 +143,12 @@ func createTracesReceiver(_ context.Context, settings receiver.CreateSettings, c
 		var t ptrace.Traces
 		t, err = tracesUnmarshaler.UnmarshalTraces(token)
 		if err != nil {
-			obsrecv.EndTracesOp(ctx, metadata.Type, 0, err)
+			obsrecv.EndTracesOp(ctx, metadata.Type.String(), 0, err)
 		} else {
 			if t.ResourceSpans().Len() != 0 {
 				err = traces.ConsumeTraces(ctx, t)
 			}
-			obsrecv.EndTracesOp(ctx, metadata.Type, t.SpanCount(), err)
+			obsrecv.EndTracesOp(ctx, metadata.Type.String(), t.SpanCount(), err)
 		}
 		return nil
 	})

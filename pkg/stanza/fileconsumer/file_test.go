@@ -859,7 +859,6 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 
 	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
-	operator.movingAverageMatches = 10
 
 	temps := make([]*os.File, 0, initFiles+moreFiles)
 	for i := 0; i < initFiles; i++ {
@@ -1144,7 +1143,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.NoError(t, longFile.Close())
 
 	// Verify we have no checkpointed files
-	require.Equal(t, 0, len(operator.knownFiles))
+	require.Equal(t, 0, operator.totalReaders())
 
 	// Wait until the only line in the short file and
 	// at least one line from the long file have been consumed
@@ -1286,7 +1285,7 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	operator.wg.Wait()
 	if runtime.GOOS != "windows" {
 		// On windows, we never keep files in previousPollFiles, so we don't expect to see them here
-		require.Len(t, operator.previousPollFiles, 1)
+		require.Equal(t, operator.previousPollFiles.Len(), 1)
 	}
 
 	// keep append data to file1 and file2

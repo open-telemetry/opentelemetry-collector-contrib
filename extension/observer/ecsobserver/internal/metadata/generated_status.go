@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("ecs_observer")
+)
+
 const (
-	Type               = "ecs_observer"
 	ExtensionStability = component.StabilityLevelBeta
 )
 

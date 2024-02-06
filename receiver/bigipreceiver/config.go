@@ -28,7 +28,7 @@ const defaultEndpoint = "https://localhost:443"
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confighttp.HTTPClientConfig             `mapstructure:",squash"`
+	confighttp.ClientConfig                 `mapstructure:",squash"`
 	Username                                string              `mapstructure:"username"`
 	Password                                configopaque.String `mapstructure:"password"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`

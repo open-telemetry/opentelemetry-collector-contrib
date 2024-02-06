@@ -138,7 +138,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 			})
 			require.NoError(t, err)
 			ctx := obsrecv.StartMetricsOp(seg.Ctx)
-			obsrecv.EndTracesOp(ctx, metadata.Type, 1, nil)
+			obsrecv.EndTracesOp(ctx, metadata.Type.String(), 1, nil)
 			return open && randString.String() == string(seg.Payload)
 		default:
 			return false

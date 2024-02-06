@@ -7,3 +7,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [sumo-drosiek]
+
+tests:
+  config:
+  skip_lifecycle: true

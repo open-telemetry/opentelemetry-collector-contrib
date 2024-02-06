@@ -7,12 +7,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -33,6 +35,9 @@ func testFactory(t *testing.T, opts ...testFactoryOpt) (*Factory, *emittest.Sink
 		trimFunc:           trim.Whitespace,
 		flushPeriod:        defaultFlushPeriod,
 		sinkCallBufferSize: 100,
+		attributes: attrs.Resolver{
+			IncludeFileName: true,
+		},
 	}
 	for _, opt := range opts {
 		opt(cfg)
@@ -98,4 +103,46 @@ func withSinkBufferSize(n int) testFactoryOpt {
 	return func(c *testFactoryCfg) {
 		c.sinkCallBufferSize = n
 	}
+}
+
+func fromEnd() testFactoryOpt {
+	return func(c *testFactoryCfg) {
+		c.fromBeginning = false
+	}
+}
+
+func TestStartAt(t *testing.T) {
+	tempDir := t.TempDir()
+	temp := filetest.OpenTemp(t, tempDir)
+	content := "some text\n"
+	_, err := temp.WriteString(content)
+	require.NoError(t, err)
+
+	f, _ := testFactory(t, withFingerprintSize(len(content)*2))
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err := f.NewReader(temp, fp)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), r.Offset)
+
+	f, _ = testFactory(t, withFingerprintSize(len(content)/2), fromEnd())
+	fp, err = f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err = f.NewReader(temp, fp)
+	require.NoError(t, err)
+	assert.Equal(t, int64(len(content)), r.Offset)
+
+	f, _ = testFactory(t, withFingerprintSize(len(content)/2))
+	fp, err = f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err = f.NewReader(temp, fp)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), r.Offset)
+
+	f, _ = testFactory(t, withFingerprintSize(len(content)/2), fromEnd())
+	fp, err = f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err = f.NewReader(temp, fp)
+	require.NoError(t, err)
+	assert.Equal(t, int64(len(content)), r.Offset)
 }

@@ -42,7 +42,7 @@ Tails and parses logs from files.
 | `attributes`                        | {}                                   | A map of `key: value` pairs to add to the entry's attributes.                                                                                                                                                                                                   |
 | `resource`                          | {}                                   | A map of `key: value` pairs to add to the entry's resource.                                                                                                                                                                                                     |
 | `operators`                         | []                                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details.                                                                                                                                    |
-| `storage`                           | none                                 | The ID of a storage extension to be used to store file checkpoints. File checkpoints allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage checkpoints in memory only.  |
+| `storage`                           | none                                 | The ID of a storage extension to be used to store file offsets. File offsets allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage offsets in memory only.  |
 | `header`                            | nil                                  | Specifies options for parsing header metadata. Requires that the `filelog.allowHeaderMetadataParsing` feature gate is enabled. See below for details. Must be `false` when `start_at` is set to `end`.                                                          |
 | `header.pattern`                    | required for header metadata parsing | A regex that matches every header line.                                                                                                                                                                                                                         |
 | `header.metadata_operators`         | required for header metadata parsing | A list of operators used to parse metadata from the header.                                                                                                                                                                                                     |
@@ -153,4 +153,9 @@ The above configuration will read logs from the "simple.log" file. Some examples
 2023-06-20 12:50:00 DEBUG This is a test debug message
 ```
 
+## Offset tracking
 
+`storage` setting allows to define the proper storage extension to be used for storing file offsets. 
+While the storage parameter can ensure that log files are consumed accurately, it is possible that
+logs are dropped while moving downstream through other components in the collector.
+For additional resiliency, see [Fault tolerant log collection example](../../examples/fault-tolerant-logs-collection/README.md)

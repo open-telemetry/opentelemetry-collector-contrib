@@ -6,7 +6,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -27,18 +26,6 @@ type assertNoErrorHost struct {
 }
 
 var _ component.Host = (*assertNoErrorHost)(nil)
-
-// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
-func newAssertNoErrorHost(t *testing.T) component.Host {
-	return &assertNoErrorHost{
-		componenttest.NewNopHost(),
-		t,
-	}
-}
-
-func (aneh *assertNoErrorHost) ReportFatalError(err error) {
-	assert.NoError(aneh, err)
-}
 
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
@@ -89,10 +76,10 @@ func TestComponentLifecycle(t *testing.T) {
 
 			c, err := test.createFn(context.Background(), processortest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
-			host := newAssertNoErrorHost(t)
+			host := componenttest.NewNopHost()
 			err = c.Start(context.Background(), host)
 			require.NoError(t, err)
-			assert.NotPanics(t, func() {
+			require.NotPanics(t, func() {
 				switch e := c.(type) {
 				case processor.Logs:
 					logs := testdata.GenerateLogsManyLogRecordsSameResource(2)
@@ -114,7 +101,7 @@ func TestComponentLifecycle(t *testing.T) {
 					err = e.ConsumeTraces(context.Background(), traces)
 				}
 			})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})

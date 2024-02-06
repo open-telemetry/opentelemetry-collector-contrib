@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -22,6 +24,7 @@ func TestNewFactory(t *testing.T) {
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
 		receiver.CreateSettings{
+			ID: component.NewID(metadata.Type),
 			TelemetrySettings: component.TelemetrySettings{
 				TracerProvider: nooptrace.NewTracerProvider(),
 				MeterProvider:  noopmetric.NewMeterProvider(),
