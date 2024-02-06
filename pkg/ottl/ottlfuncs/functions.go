@@ -56,6 +56,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewMinutesFactory[K](),
 		NewNanosecondsFactory[K](),
 		NewNowFactory[K](),
+		NewParseCSVFactory[K](),
 		NewParseJSONFactory[K](),
 		NewParseKeyValueFactory[K](),
 		NewSecondsFactory[K](),
