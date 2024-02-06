@@ -102,11 +102,8 @@ func TestDBStorageClient(t *testing.T) {
 		// Override the Batch method with a custom implementation
 		testClient.batchOverride = func(ctx context.Context, ops ...storage.Operation) error {
 			for _, op := range ops {
-				switch op.Type {
-				case storage.Set:
-					if op.Key == "key5" {
-						return errors.New("intentional error")
-					}
+				if op.Type == storage.Set && op.Key == "key5" {
+					return errors.New("intentional error")
 				}
 			}
 			return testClient.dbStorageClient.Batch(ctx, ops...)

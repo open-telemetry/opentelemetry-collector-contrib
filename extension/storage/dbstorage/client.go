@@ -98,12 +98,12 @@ func (c *dbStorageClient) Batch(ctx context.Context, ops ...storage.Operation) e
 		case storage.Delete:
 			err = c.Delete(ctx, op.Key)
 		default:
-			tx.Rollback()
+			_ = tx.Rollback()
 			return errors.New("wrong operation type")
 		}
 
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			return err
 		}
 	}
