@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("mezmo")
+)
+
 const (
-	Type          = "mezmo"
 	LogsStability = component.StabilityLevelBeta
 )
 

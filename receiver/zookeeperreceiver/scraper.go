@@ -42,7 +42,7 @@ type zookeeperMetricsScraper struct {
 }
 
 func (z *zookeeperMetricsScraper) Name() string {
-	return metadata.Type
+	return metadata.Type.String()
 }
 
 func newZookeeperMetricsScraper(settings receiver.CreateSettings, config *Config) (*zookeeperMetricsScraper, error) {
