@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("awscloudwatch")
+)
+
 const (
-	Type          = "awscloudwatch"
 	LogsStability = component.StabilityLevelAlpha
 )
 

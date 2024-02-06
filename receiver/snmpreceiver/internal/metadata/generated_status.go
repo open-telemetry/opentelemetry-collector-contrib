@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("snmp")
+)
+
 const (
-	Type             = "snmp"
 	MetricsStability = component.StabilityLevelAlpha
 )
 

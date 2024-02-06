@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("iis")
+)
+
 const (
-	Type             = "iis"
 	MetricsStability = component.StabilityLevelBeta
 )
 
