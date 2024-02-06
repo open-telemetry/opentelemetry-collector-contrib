@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func TestSuccessfulScrape(t *testing.T) {
+func TestEmptyScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "sa"
 	cfg.Password = "password"
@@ -31,11 +31,23 @@ func TestSuccessfulScrape(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 
 	// Ensure there aren't any scrapers when all metrics are disabled.
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIoReadLatency.Enabled = false
 	scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
-	assert.NotEmpty(t, scrapers)
+	assert.Empty(t, scrapers)
+}
+
+func TestSuccessfulScrape(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "sa"
+	cfg.Password = "password"
+	cfg.Port = 1433
+	cfg.Server = "0.0.0.0"
+	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	assert.NoError(t, cfg.Validate())
 
 	// Ensure all metrics are received when all are enabled.
-	scrapers = setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIoReadLatency.Enabled = true
+	scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
 	assert.NotNil(t, scrapers)
 
 	for _, scraper := range scrapers {
@@ -75,6 +87,7 @@ func TestScrapeInvalidQuery(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 
 	// Ensure all metrics are received when all are enabled.
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIoReadLatency.Enabled = true
 	scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
 	assert.NotNil(t, scrapers)
 
