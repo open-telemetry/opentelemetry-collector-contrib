@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("zipkin_encoding")
+)
+
 const (
-	Type               = "zipkin_encoding"
 	ExtensionStability = component.StabilityLevelDevelopment
 )
 

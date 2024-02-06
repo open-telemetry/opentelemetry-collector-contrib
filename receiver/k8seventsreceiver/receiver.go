@@ -112,7 +112,7 @@ func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
 
 		ctx := kr.obsrecv.StartLogsOp(kr.ctx)
 		consumerErr := kr.logsConsumer.ConsumeLogs(ctx, ld)
-		kr.obsrecv.EndLogsOp(ctx, metadata.Type, 1, consumerErr)
+		kr.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 1, consumerErr)
 	}
 }
 
