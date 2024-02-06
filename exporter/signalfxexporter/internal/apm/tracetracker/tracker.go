@@ -7,8 +7,11 @@ package tracetracker // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"strings"
-	"sync/atomic"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/log"
@@ -54,9 +57,6 @@ type ActiveServiceTracker struct {
 
 	// correlationClient is the client used for updating infrastructure correlation properties
 	correlationClient correlations.CorrelationClient
-
-	// Internal metrics
-	spansProcessed int64
 
 	// Map of dimensions to sync to with the key being the span attribute to lookup and the value being
 	// the dimension to sync to.
@@ -119,29 +119,35 @@ func New(
 	return a
 }
 
-// AddSpansGeneric accepts a list of trace spans and uses them to update the
+// ProcessTraces accepts a list of trace spans and uses them to update the
 // current list of active services.  This is thread-safe.
-func (a *ActiveServiceTracker) AddSpansGeneric(_ context.Context, spans SpanList) {
+func (a *ActiveServiceTracker) ProcessTraces(_ context.Context, traces ptrace.Traces) {
 	// Take current time once since this is a system call.
 	now := a.timeNow()
 
-	for i := 0; i < spans.Len(); i++ {
-		a.processEnvironment(spans.At(i), now)
-		a.processService(spans.At(i), now)
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		a.processEnvironment(traces.ResourceSpans().At(i).Resource(), now)
+		a.processService(traces.ResourceSpans().At(i).Resource(), now)
 	}
-
-	// Protected by lock above
-	atomic.AddInt64(&a.spansProcessed, int64(spans.Len()))
 }
 
-func (a *ActiveServiceTracker) processEnvironment(span Span, now time.Time) {
-	if span.NumTags() == 0 {
+func (a *ActiveServiceTracker) processEnvironment(res pcommon.Resource, now time.Time) {
+	attrs := res.Attributes()
+	if attrs.Len() == 0 {
 		return
 	}
-	environment, environmentFound := span.Environment()
 
-	// If spans are coming in with no environment, we use the same fallback value that is being set on the backend.
-	if !environmentFound || strings.TrimSpace(environment) == "" {
+	// Determine the environment value from the incoming spans.
+	// First check "deployment.environment" attribute.
+	// Then, try "environment" attribute (SignalFx schema).
+	// Otherwise, use the same fallback value as set on the backend.
+	var environment string
+	if env, ok := attrs.Get(conventions.AttributeDeploymentEnvironment); ok {
+		environment = env.Str()
+	} else if env, ok = attrs.Get("environment"); ok {
+		environment = env.Str()
+	}
+	if strings.TrimSpace(environment) == "" {
 		environment = fallbackEnvironment
 	}
 
@@ -175,19 +181,19 @@ func (a *ActiveServiceTracker) processEnvironment(span Span, now time.Time) {
 	for sourceAttr, dimName := range a.dimsToSyncSource {
 		sourceAttr := sourceAttr
 		dimName := dimName
-		if dimValue, ok := span.Tag(sourceAttr); ok {
+		if val, ok := attrs.Get(sourceAttr); ok {
 			// Note that the value is not set on the cache key.  We only send the first environment received for a
 			// given pod/container, and we never delete the values set on the container/pod dimension.
 			// So we only need to cache the dim name and dim value that have been associated with an environment.
-			if exists := a.tenantEnvironmentCache.UpdateIfExists(&CacheKey{dimName: dimName, dimValue: dimValue}, now); !exists {
+			if exists := a.tenantEnvironmentCache.UpdateIfExists(&CacheKey{dimName: dimName, dimValue: val.Str()}, now); !exists {
 				a.correlationClient.Correlate(&correlations.Correlation{
 					Type:     correlations.Environment,
 					DimName:  dimName,
-					DimValue: dimValue,
+					DimValue: val.Str(),
 					Value:    environment,
 				}, func(cor *correlations.Correlation, err error) {
 					if err == nil {
-						a.tenantEnvironmentCache.UpdateOrCreate(&CacheKey{dimName: dimName, dimValue: dimValue}, now)
+						a.tenantEnvironmentCache.UpdateOrCreate(&CacheKey{dimName: dimName, dimValue: val.Str()}, now)
 					}
 				})
 			}
@@ -195,9 +201,10 @@ func (a *ActiveServiceTracker) processEnvironment(span Span, now time.Time) {
 	}
 }
 
-func (a *ActiveServiceTracker) processService(span Span, now time.Time) {
+func (a *ActiveServiceTracker) processService(res pcommon.Resource, now time.Time) {
 	// Can't do anything if the spans don't have a local service name
-	service, ok := span.ServiceName()
+	serviceNameAttr, ok := res.Attributes().Get(conventions.AttributeServiceName)
+	service := serviceNameAttr.Str()
 	if !ok || service == "" {
 		return
 	}
@@ -234,19 +241,19 @@ func (a *ActiveServiceTracker) processService(span Span, now time.Time) {
 	for sourceAttr, dimName := range a.dimsToSyncSource {
 		sourceAttr := sourceAttr
 		dimName := dimName
-		if dimValue, ok := span.Tag(sourceAttr); ok {
+		if val, ok := res.Attributes().Get(sourceAttr); ok {
 			// Note that the value is not set on the cache key.  We only send the first service received for a
 			// given pod/container, and we never delete the values set on the container/pod dimension.
 			// So we only need to cache the dim name and dim value that have been associated with a service.
-			if exists := a.tenantServiceCache.UpdateIfExists(&CacheKey{dimName: dimName, dimValue: dimValue}, now); !exists {
+			if exists := a.tenantServiceCache.UpdateIfExists(&CacheKey{dimName: dimName, dimValue: val.Str()}, now); !exists {
 				a.correlationClient.Correlate(&correlations.Correlation{
 					Type:     correlations.Service,
 					DimName:  dimName,
-					DimValue: dimValue,
+					DimValue: val.Str(),
 					Value:    service,
 				}, func(cor *correlations.Correlation, err error) {
 					if err == nil {
-						a.tenantServiceCache.UpdateOrCreate(&CacheKey{dimName: dimName, dimValue: dimValue}, now)
+						a.tenantServiceCache.UpdateOrCreate(&CacheKey{dimName: dimName, dimValue: val.Str()}, now)
 					}
 				})
 			}

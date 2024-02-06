@@ -12,6 +12,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/log"
@@ -26,17 +29,15 @@ func advanceTime(a *ActiveServiceTracker, minutes int64) {
 	a.timeNow = func() time.Time { return newNow }
 }
 
-// mergeStringMaps merges n maps with a later map's keys overriding earlier maps
-func mergeStringMaps(maps ...map[string]string) map[string]string {
-	ret := map[string]string{}
-
+// newResourceWithAttrs creates a new resource with the given attributes.
+func newResourceWithAttrs(maps ...map[string]string) pcommon.Resource {
+	res := pcommon.NewResource()
 	for _, m := range maps {
 		for k, v := range m {
-			ret[k] = v
+			res.Attributes().PutStr(k, v)
 		}
 	}
-
-	return ret
+	return res
 }
 
 func TestExpiration(t *testing.T) {
@@ -46,32 +47,24 @@ func TestExpiration(t *testing.T) {
 	a := New(log.Nil, 5*time.Minute, correlationClient, hostIDDims, DefaultDimsToSyncSource)
 	setTime(a, time.Unix(100, 0))
 
-	a.AddSpansGeneric(context.Background(), fakeSpanList{
-		{
-			serviceName: "one",
-			tags:        mergeStringMaps(hostIDDims, map[string]string{"environment": "environment1"}),
-		},
-		{
-			serviceName: "two",
-			tags:        mergeStringMaps(hostIDDims, map[string]string{"environment": "environment2"}),
-		},
-		{
-			serviceName: "three",
-			tags:        mergeStringMaps(hostIDDims, map[string]string{"environment": "environment3"}),
-		},
-	})
+	fakeTraces := ptrace.NewTraces()
+	newResourceWithAttrs(hostIDDims, map[string]string{conventions.AttributeServiceName: "one", "environment": "environment1"}).
+		CopyTo(fakeTraces.ResourceSpans().AppendEmpty().Resource())
+	newResourceWithAttrs(hostIDDims, map[string]string{conventions.AttributeServiceName: "two", "environment": "environment2"}).
+		CopyTo(fakeTraces.ResourceSpans().AppendEmpty().Resource())
+	newResourceWithAttrs(hostIDDims, map[string]string{conventions.AttributeServiceName: "three", "environment": "environment3"}).
+		CopyTo(fakeTraces.ResourceSpans().AppendEmpty().Resource())
+	a.ProcessTraces(context.Background(), fakeTraces)
 
 	assert.Equal(t, int64(3), a.hostServiceCache.ActiveCount, "activeServiceCount is not properly tracked")
 	assert.Equal(t, int64(3), a.hostEnvironmentCache.ActiveCount, "activeEnvironmentCount is not properly tracked")
 
 	advanceTime(a, 4)
 
-	a.AddSpansGeneric(context.Background(), fakeSpanList{
-		{
-			serviceName: "two",
-			tags:        mergeStringMaps(hostIDDims, map[string]string{"environment": "environment2"}),
-		},
-	})
+	fakeTraces = ptrace.NewTraces()
+	newResourceWithAttrs(hostIDDims, map[string]string{conventions.AttributeServiceName: "two", "environment": "environment2"}).
+		CopyTo(fakeTraces.ResourceSpans().AppendEmpty().Resource())
+	a.ProcessTraces(context.Background(), fakeTraces)
 
 	advanceTime(a, 2)
 	a.Purge()
@@ -148,11 +141,12 @@ func TestCorrelationEmptyEnvironment(t *testing.T) {
 	a := New(log.Nil, 5*time.Minute, correlationClient, hostIDDims, DefaultDimsToSyncSource)
 	wg.Wait() // wait for the initial fetch of hostIDDims to complete
 
-	a.AddSpansGeneric(context.Background(), fakeSpanList{
-		{tags: mergeStringMaps(hostIDDims, containerLevelIDDims)},
-		{tags: mergeStringMaps(hostIDDims, containerLevelIDDims)},
-		{tags: mergeStringMaps(hostIDDims, containerLevelIDDims)},
-	})
+	fakeTraces := ptrace.NewTraces()
+	fakeResource := newResourceWithAttrs(hostIDDims, containerLevelIDDims)
+	fakeResource.CopyTo(fakeTraces.ResourceSpans().AppendEmpty().Resource())
+	fakeResource.CopyTo(fakeTraces.ResourceSpans().AppendEmpty().Resource())
+	fakeResource.CopyTo(fakeTraces.ResourceSpans().AppendEmpty().Resource())
+	a.ProcessTraces(context.Background(), fakeTraces)
 
 	cors := correlationClient.getCorrelations()
 	assert.Equal(t, 4, len(cors), "expected 4 correlations to be made")
@@ -194,20 +188,14 @@ func TestCorrelationUpdates(t *testing.T) {
 
 	setTime(a, time.Unix(100, 0))
 
-	a.AddSpansGeneric(context.Background(), fakeSpanList{
-		{
-			serviceName: "one",
-			tags:        mergeStringMaps(hostIDDims, mergeStringMaps(containerLevelIDDims, map[string]string{"environment": "environment1"})),
-		},
-		{
-			serviceName: "two",
-			tags:        mergeStringMaps(hostIDDims, mergeStringMaps(containerLevelIDDims, map[string]string{"environment": "environment2"})),
-		},
-		{
-			serviceName: "three",
-			tags:        mergeStringMaps(hostIDDims, mergeStringMaps(containerLevelIDDims, map[string]string{"environment": "environment3"})),
-		},
-	})
+	fakeTraces := ptrace.NewTraces()
+	newResourceWithAttrs(containerLevelIDDims, map[string]string{conventions.AttributeServiceName: "one", "environment": "environment1"}).
+		CopyTo(fakeTraces.ResourceSpans().AppendEmpty().Resource())
+	newResourceWithAttrs(containerLevelIDDims, map[string]string{conventions.AttributeServiceName: "two", "environment": "environment2"}).
+		CopyTo(fakeTraces.ResourceSpans().AppendEmpty().Resource())
+	newResourceWithAttrs(containerLevelIDDims, map[string]string{conventions.AttributeServiceName: "three", "environment": "environment3"}).
+		CopyTo(fakeTraces.ResourceSpans().AppendEmpty().Resource())
+	a.ProcessTraces(context.Background(), fakeTraces)
 
 	assert.Equal(t, int64(3), a.hostServiceCache.ActiveCount, "activeServiceCount is not properly tracked")
 	assert.Equal(t, int64(3), a.hostEnvironmentCache.ActiveCount, "activeEnvironmentCount is not properly tracked")
