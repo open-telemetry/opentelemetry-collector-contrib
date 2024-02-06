@@ -18,8 +18,8 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.2-0.20240205121451-f5a7315cf88e
 	go.opentelemetry.io/collector/receiver v0.93.1-0.20240205121451-f5a7315cf88e
 	go.opentelemetry.io/collector/semconv v0.93.1-0.20240205121451-f5a7315cf88e
-	go.opentelemetry.io/otel/metric v1.22.0
-	go.opentelemetry.io/otel/trace v1.22.0
+	go.opentelemetry.io/otel/metric v1.23.0
+	go.opentelemetry.io/otel/trace v1.23.0
 	go.uber.org/zap v1.26.0
 )
 
@@ -67,7 +67,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.93.1-0.20240205121451-f5a7315cf88e // indirect
-	go.opentelemetry.io/otel v1.22.0 // indirect
+	go.opentelemetry.io/otel v1.23.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.22.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.22.0 // indirect

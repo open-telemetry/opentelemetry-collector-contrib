@@ -13,7 +13,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.93.1-0.20240205121451-f5a7315cf88e
 	go.opentelemetry.io/collector/pdata v1.0.2-0.20240205121451-f5a7315cf88e
-	go.opentelemetry.io/otel/trace v1.22.0
+	go.opentelemetry.io/otel/trace v1.23.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc
@@ -43,9 +43,9 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.93.1-0.20240205121451-f5a7315cf88e // indirect
 	go.opentelemetry.io/collector/confmap v0.93.1-0.20240205121451-f5a7315cf88e // indirect
-	go.opentelemetry.io/otel v1.22.0 // indirect
+	go.opentelemetry.io/otel v1.23.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.0 // indirect
-	go.opentelemetry.io/otel/metric v1.22.0 // indirect
+	go.opentelemetry.io/otel/metric v1.23.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.22.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.22.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
