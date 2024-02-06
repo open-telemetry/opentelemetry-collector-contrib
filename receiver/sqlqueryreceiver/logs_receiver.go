@@ -161,7 +161,7 @@ func (receiver *logsReceiver) collect() {
 	if logRecordCount > 0 {
 		ctx := receiver.obsrecv.StartLogsOp(context.Background())
 		err := receiver.nextConsumer.ConsumeLogs(context.Background(), allLogs)
-		receiver.obsrecv.EndLogsOp(ctx, metadata.Type, logRecordCount, err)
+		receiver.obsrecv.EndLogsOp(ctx, metadata.Type.String(), logRecordCount, err)
 		if err != nil {
 			receiver.settings.Logger.Error("failed to send logs: %w", zap.Error(err))
 		}
