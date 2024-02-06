@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter
 
-go 1.20
+go 1.21
 
 require (
 	github.com/getsentry/sentry-go v0.26.0

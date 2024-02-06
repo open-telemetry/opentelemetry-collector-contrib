@@ -2,7 +2,7 @@
 
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol
 
-go 1.20
+go 1.21
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.94.0

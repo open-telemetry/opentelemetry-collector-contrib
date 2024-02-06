@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter
 
-go 1.20
+go 1.21
 
 require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.45.0
