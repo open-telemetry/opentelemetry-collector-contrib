@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("datadog")
+)
+
 const (
-	Type                     = "datadog"
 	TracesToMetricsStability = component.StabilityLevelBeta
 	TracesToTracesStability  = component.StabilityLevelBeta
 )

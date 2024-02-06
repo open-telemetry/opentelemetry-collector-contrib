@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("headers_setter")
+)
+
 const (
-	Type               = "headers_setter"
 	ExtensionStability = component.StabilityLevelAlpha
 )
 
