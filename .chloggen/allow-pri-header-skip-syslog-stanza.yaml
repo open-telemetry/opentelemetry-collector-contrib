@@ -7,7 +7,7 @@ change_type: bug_fix
 component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Replace influxdata/go-syslog with haimrubinstein/go-syslog, and add 'allow_skip_pri_header' flag to syslog setting."
+note: "Add 'allow_skip_pri_header' flag to syslog setting."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [30397]
