@@ -26,7 +26,7 @@ type Config struct {
 	Endpoint string `mapstructure:"endpoint"`
 	// Username is the authentication username.
 	Username string `mapstructure:"username"`
-	// Username is the authentication password.
+	// Password is the authentication password.
 	Password configopaque.String `mapstructure:"password"`
 	// Database is the database name to export.
 	Database string `mapstructure:"database"`
