@@ -7,7 +7,7 @@ change_type: bug_fix
 component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fixed a bug in the Key Value Parser that could arise when using a custom pair delimiter.
+note: Fixed a bug in the keyvalue_parser where quoted values could be split if they contained a delimited.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [31034]
