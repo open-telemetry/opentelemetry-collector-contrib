@@ -803,7 +803,7 @@ Examples:
 
 `ParseCSV(target, headers, Optional[delimiter], Optional[headerDelimiter], Optional[mode])`
 
-The `ParseCSV` Converter returns a `pcommon.Map` struct that contains the result of parsing the target string as CSV. The resultant map is structured such that it is a mapping of field name -> field value.
+The `ParseCSV` Converter returns a `pcommon.Map` struct that contains the result of parsing the `target` string as CSV. The resultant map is structured such that it is a mapping of field name -> field value.
 
 `target` is a Getter that returns a string. This string should be a CSV row. if `target` is not a properly formatted CSV row, or if the number of fields in `target` does not match the number of fields in `headers`, `ParseCSV` will return an error.
 
