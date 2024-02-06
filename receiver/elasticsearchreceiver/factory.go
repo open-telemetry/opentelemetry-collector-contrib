@@ -62,7 +62,7 @@ func createMetricsReceiver(
 	}
 	es := newElasticSearchScraper(params, c)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type, es.scrape, scraperhelper.WithStart(es.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), es.scrape, scraperhelper.WithStart(es.start))
 	if err != nil {
 		return nil, err
 	}
