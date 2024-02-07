@@ -11,6 +11,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/status"
 )
 
+type healthyFunc func(*component.StatusEvent) bool
+
+func (f healthyFunc) isHealthy(ev *component.StatusEvent) bool {
+	if f != nil {
+		return f(ev)
+	}
+	return true
+}
+
+type serializationOptions struct {
+	verbose          bool
+	includeStartTime bool
+	startTimestamp   *time.Time
+	healthyFunc      healthyFunc
+}
+
 type serializableStatus struct {
 	StartTimestamp *time.Time `json:"start_time,omitempty"`
 	*SerializableEvent
@@ -43,13 +59,9 @@ func (ev *SerializableEvent) Status() component.Status {
 	return component.StatusNone
 }
 
-func toSerializableEvent(
-	ev *component.StatusEvent,
-	now time.Time,
-	recoveryDuration time.Duration,
-) *SerializableEvent {
+func toSerializableEvent(ev *component.StatusEvent, isHealthy bool) *SerializableEvent {
 	se := &SerializableEvent{
-		Healthy:      isHealthy(ev, now, recoveryDuration),
+		Healthy:      isHealthy,
 		StatusString: ev.Status().String(),
 		Timestamp:    ev.Timestamp(),
 	}
@@ -61,45 +73,33 @@ func toSerializableEvent(
 
 func toSerializableStatus(
 	st *status.AggregateStatus,
-	startTimestamp time.Time,
-	recoveryDuration time.Duration,
+	opts *serializationOptions,
 ) *serializableStatus {
-	now := time.Now()
 	s := &serializableStatus{
-		StartTimestamp:    &startTimestamp,
-		SerializableEvent: toSerializableEvent(st.StatusEvent, now, recoveryDuration),
+		SerializableEvent: toSerializableEvent(
+			st.StatusEvent,
+			opts.healthyFunc.isHealthy(st.StatusEvent),
+		),
 		ComponentStatuses: make(map[string]*serializableStatus),
 	}
 
+	if opts.includeStartTime {
+		s.StartTimestamp = opts.startTimestamp
+		opts.includeStartTime = false
+	}
+
+	childrenHealthy := true
 	for k, cs := range st.ComponentStatusMap {
-		s.ComponentStatuses[k] = toComponentSerializableStatus(cs, now, recoveryDuration)
+		sst := toSerializableStatus(cs, opts)
+		childrenHealthy = childrenHealthy && sst.Healthy
+		if opts.verbose {
+			s.ComponentStatuses[k] = sst
+		}
+	}
+
+	if len(st.ComponentStatusMap) > 0 {
+		s.Healthy = childrenHealthy
 	}
 
 	return s
-}
-
-func toComponentSerializableStatus(
-	st *status.AggregateStatus,
-	now time.Time,
-	recoveryDuration time.Duration,
-) *serializableStatus {
-	s := &serializableStatus{
-		SerializableEvent: toSerializableEvent(st.StatusEvent, now, recoveryDuration),
-		ComponentStatuses: make(map[string]*serializableStatus),
-	}
-
-	for k, cs := range st.ComponentStatusMap {
-		s.ComponentStatuses[k] = toComponentSerializableStatus(cs, now, recoveryDuration)
-	}
-
-	return s
-}
-
-func isHealthy(ev *component.StatusEvent, now time.Time, recoveryDuration time.Duration) bool {
-	if ev.Status() == component.StatusRecoverableError &&
-		now.Before(ev.Timestamp().Add(recoveryDuration)) {
-		return true
-	}
-
-	return !component.StatusIsError(ev.Status())
 }

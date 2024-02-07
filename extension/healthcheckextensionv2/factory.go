@@ -40,12 +40,9 @@ func createDefaultConfig() component.Config {
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: defaultEndpoint,
 			},
-			Status: http.StatusSettings{
-				Detailed: true,
-				PathSettings: http.PathSettings{
-					Enabled: true,
-					Path:    "/",
-				},
+			Status: http.PathSettings{
+				Enabled: true,
+				Path:    "/",
 			},
 		},
 	}

@@ -26,12 +26,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: defaultEndpoint,
 			},
-			Status: http.StatusSettings{
-				Detailed: true,
-				PathSettings: http.PathSettings{
-					Enabled: true,
-					Path:    "/",
-				},
+			Status: http.PathSettings{
+				Enabled: true,
+				Path:    "/",
 			},
 			Config: http.PathSettings{},
 		},

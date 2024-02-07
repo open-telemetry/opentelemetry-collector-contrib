@@ -19,7 +19,7 @@ func (s *Server) Check(
 	_ context.Context,
 	req *healthpb.HealthCheckRequest,
 ) (*healthpb.HealthCheckResponse, error) {
-	st, ok := s.aggregator.AggregateStatus(status.Scope(req.Service), status.ExcludeSubtrees)
+	st, ok := s.aggregator.AggregateStatus(status.Scope(req.Service))
 	if !ok {
 		return nil, grpcstatus.Error(codes.NotFound, "unknown service")
 	}
@@ -30,7 +30,7 @@ func (s *Server) Check(
 }
 
 func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_WatchServer) error {
-	sub := s.aggregator.Subscribe(status.Scope(req.Service), status.ExcludeSubtrees)
+	sub := s.aggregator.Subscribe(status.Scope(req.Service))
 	defer s.aggregator.Unsubscribe(sub)
 
 	var lastServingStatus healthpb.HealthCheckResponse_ServingStatus = -1
