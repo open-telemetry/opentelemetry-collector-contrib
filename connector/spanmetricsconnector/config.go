@@ -67,6 +67,10 @@ type Config struct {
 	// MetricsEmitInterval is the time period between when metrics are flushed or emitted to the configured MetricsExporter.
 	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
 
+	// MetricsExpiration is the time period after which metrics are considered stale and will no longer be exported.
+	// Default value (0) means that the metrics will never expire.
+	MetricsExpiration time.Duration `mapstructure:"metrics_expiration"`
+
 	// Namespace is the namespace of the metrics emitted by the connector.
 	Namespace string `mapstructure:"namespace"`
 
