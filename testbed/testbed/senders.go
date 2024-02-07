@@ -78,7 +78,7 @@ func (dsb *DataSenderBase) Flush() {
 
 type otlpHTTPDataSender struct {
 	DataSenderBase
-	compression configcompression.CompressionType
+	compression configcompression.Type
 }
 
 func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphttpexporter.Config {
@@ -114,7 +114,7 @@ type otlpHTTPTraceDataSender struct {
 }
 
 // NewOTLPHTTPTraceDataSender creates a new TraceDataSender for OTLP/HTTP traces exporter.
-func NewOTLPHTTPTraceDataSender(host string, port int, compression configcompression.CompressionType) TraceDataSender {
+func NewOTLPHTTPTraceDataSender(host string, port int, compression configcompression.Type) TraceDataSender {
 	return &otlpHTTPTraceDataSender{
 		otlpHTTPDataSender: otlpHTTPDataSender{
 			DataSenderBase: DataSenderBase{
