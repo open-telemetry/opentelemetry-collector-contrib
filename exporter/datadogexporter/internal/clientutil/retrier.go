@@ -9,20 +9,20 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 )
 
 type Retrier struct {
-	cfg      exporterhelper.RetrySettings
+	cfg      configretry.BackOffConfig
 	logger   *zap.Logger
 	scrubber scrub.Scrubber
 }
 
-func NewRetrier(logger *zap.Logger, settings exporterhelper.RetrySettings, scrubber scrub.Scrubber) *Retrier {
+func NewRetrier(logger *zap.Logger, settings configretry.BackOffConfig, scrubber scrub.Scrubber) *Retrier {
 	return &Retrier{
 		cfg:      settings,
 		logger:   logger,

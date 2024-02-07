@@ -21,14 +21,14 @@ func TestScopePathGetSetter(t *testing.T) {
 	newAttrs.PutStr("hello", "world")
 	tests := []struct {
 		name     string
-		path     []ottl.Field
+		path     ottl.Path[*instrumentationScopeContext]
 		orig     any
 		newVal   any
 		modified func(is pcommon.InstrumentationScope)
 	}{
 		{
 			name:   "instrumentation_scope",
-			path:   []ottl.Field{},
+			path:   nil,
 			orig:   refIS,
 			newVal: pcommon.NewInstrumentationScope(),
 			modified: func(is pcommon.InstrumentationScope) {
@@ -37,10 +37,8 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "instrumentation_scope name",
-			path: []ottl.Field{
-				{
-					Name: "name",
-				},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "name",
 			},
 			orig:   refIS.Name(),
 			newVal: "newname",
@@ -50,10 +48,8 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "instrumentation_scope version",
-			path: []ottl.Field{
-				{
-					Name: "version",
-				},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "version",
 			},
 			orig:   refIS.Version(),
 			newVal: "next",
@@ -63,10 +59,8 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-				},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "attributes",
 			},
 			orig:   refIS.Attributes(),
 			newVal: newAttrs,
@@ -76,13 +70,11 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("str"),
-						},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[*instrumentationScopeContext]{
+					&TestKey[*instrumentationScopeContext]{
+						S: ottltest.Strp("str"),
 					},
 				},
 			},
@@ -94,10 +86,8 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "dropped_attributes_count",
-			path: []ottl.Field{
-				{
-					Name: "dropped_attributes_count",
-				},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "dropped_attributes_count",
 			},
 			orig:   int64(10),
 			newVal: int64(20),
@@ -107,13 +97,11 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("bool"),
-						},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[*instrumentationScopeContext]{
+					&TestKey[*instrumentationScopeContext]{
+						S: ottltest.Strp("bool"),
 					},
 				},
 			},
@@ -125,13 +113,11 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("int"),
-						},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[*instrumentationScopeContext]{
+					&TestKey[*instrumentationScopeContext]{
+						S: ottltest.Strp("int"),
 					},
 				},
 			},
@@ -143,13 +129,11 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("double"),
-						},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[*instrumentationScopeContext]{
+					&TestKey[*instrumentationScopeContext]{
+						S: ottltest.Strp("double"),
 					},
 				},
 			},
@@ -161,13 +145,11 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("bytes"),
-						},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[*instrumentationScopeContext]{
+					&TestKey[*instrumentationScopeContext]{
+						S: ottltest.Strp("bytes"),
 					},
 				},
 			},
@@ -179,13 +161,11 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array empty",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_empty"),
-						},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[*instrumentationScopeContext]{
+					&TestKey[*instrumentationScopeContext]{
+						S: ottltest.Strp("arr_empty"),
 					},
 				},
 			},
@@ -200,13 +180,11 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_str"),
-						},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[*instrumentationScopeContext]{
+					&TestKey[*instrumentationScopeContext]{
+						S: ottltest.Strp("arr_str"),
 					},
 				},
 			},
@@ -222,13 +200,11 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_bool"),
-						},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[*instrumentationScopeContext]{
+					&TestKey[*instrumentationScopeContext]{
+						S: ottltest.Strp("arr_bool"),
 					},
 				},
 			},
@@ -244,13 +220,11 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_int"),
-						},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[*instrumentationScopeContext]{
+					&TestKey[*instrumentationScopeContext]{
+						S: ottltest.Strp("arr_int"),
 					},
 				},
 			},
@@ -266,13 +240,11 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_float"),
-						},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[*instrumentationScopeContext]{
+					&TestKey[*instrumentationScopeContext]{
+						S: ottltest.Strp("arr_float"),
 					},
 				},
 			},
@@ -288,13 +260,11 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_bytes"),
-						},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[*instrumentationScopeContext]{
+					&TestKey[*instrumentationScopeContext]{
+						S: ottltest.Strp("arr_bytes"),
 					},
 				},
 			},
@@ -310,19 +280,17 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes nested",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("slice"),
-						},
-						{
-							Int: ottltest.Intp(0),
-						},
-						{
-							String: ottltest.Strp("map"),
-						},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[*instrumentationScopeContext]{
+					&TestKey[*instrumentationScopeContext]{
+						S: ottltest.Strp("slice"),
+					},
+					&TestKey[*instrumentationScopeContext]{
+						I: ottltest.Intp(0),
+					},
+					&TestKey[*instrumentationScopeContext]{
+						S: ottltest.Strp("map"),
 					},
 				},
 			},
@@ -338,19 +306,17 @@ func TestScopePathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes nested new values",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("new"),
-						},
-						{
-							Int: ottltest.Intp(2),
-						},
-						{
-							Int: ottltest.Intp(0),
-						},
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[*instrumentationScopeContext]{
+					&TestKey[*instrumentationScopeContext]{
+						S: ottltest.Strp("new"),
+					},
+					&TestKey[*instrumentationScopeContext]{
+						I: ottltest.Intp(2),
+					},
+					&TestKey[*instrumentationScopeContext]{
+						I: ottltest.Intp(0),
 					},
 				},
 			},

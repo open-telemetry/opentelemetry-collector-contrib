@@ -21,7 +21,7 @@ import (
 var errConfigNotActiveDirectory = fmt.Errorf("config is not valid for the '%s' receiver", metadata.Type)
 
 func createMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params receiver.CreateSettings,
 	rConf component.Config,
 	consumer consumer.Metrics,

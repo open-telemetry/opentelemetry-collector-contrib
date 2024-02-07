@@ -24,7 +24,7 @@ OTTL Contexts define how you access the fields on a piece of telemetry. See the 
 | Telemetry               | OTTL Context                                                                                                                               |
 |-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
 | `Resource`              | [Resource](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlresource/README.md)           |
-| `Instrumentation Scope` | [Instrumentation Scode](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlscope/README.md) |
+| `Instrumentation Scope` | [Instrumentation Scope](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlscope/README.md) |
 | `Span`                  | [Span](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspan/README.md)                   |
 | `Span Event`            | [SpanEvent](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlspanevent/README.md)         |
 | `Metric`                | [Metric](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/contexts/ottlmetric/README.md)               |

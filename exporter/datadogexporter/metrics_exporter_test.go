@@ -19,10 +19,12 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -302,15 +304,18 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
-
+			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
 			exp, err := newMetricsExporter(
 				context.Background(),
 				exportertest.NewNopCreateSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				&once,
+				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
 				&statsRecorder,
 				reporter,
+				nil,
 			)
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")
@@ -614,7 +619,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			expectedErr:           nil,
 		},
 		{
-			metrics: createTestMetricsWithStats(),
+			metrics: createTestMetricsWithStats(t),
 			source: source.Source{
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
@@ -691,14 +696,18 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
+			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
 			exp, err := newMetricsExporter(
 				context.Background(),
 				exportertest.NewNopCreateSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				&once,
+				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
 				&statsRecorder,
 				reporter,
+				nil,
 			)
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")
@@ -744,17 +753,20 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 	}
 }
 
-func createTestMetricsWithStats() pmetric.Metrics {
+func createTestMetricsWithStats(t *testing.T) pmetric.Metrics {
 	md := createTestMetrics(map[string]string{
 		conventions.AttributeDeploymentEnvironment: "dev",
 		"custom_attribute":                         "custom_value",
 	})
 	dest := md.ResourceMetrics()
-	logger, _ := zap.NewDevelopment()
-	trans, err := metrics.NewTranslator(logger)
-	if err != nil {
-		panic(err)
-	}
+	set := componenttest.NewNopTelemetrySettings()
+	var err error
+	set.Logger, err = zap.NewDevelopment()
+	require.NoError(t, err)
+	attributesTranslator, err := attributes.NewTranslator(set)
+	require.NoError(t, err)
+	trans, err := metrics.NewTranslator(set, attributesTranslator)
+	require.NoError(t, err)
 	src := trans.
 		StatsPayloadToMetrics(&pb.StatsPayload{Stats: testutil.StatsPayloads}).
 		ResourceMetrics()

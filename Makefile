@@ -232,10 +232,17 @@ mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) generate ./...
 	cd cmd/mdatagen && $(GOCMD) test ./...
 
-.PHONY: gengithub
-gengithub:
+.PHONY: githubgen-install
+githubgen-install:
 	cd cmd/githubgen && $(GOCMD) install .
+
+.PHONY: gengithub
+gengithub: githubgen-install
 	githubgen
+
+.PHONY: gendistributions
+gendistributions: githubgen-install
+	githubgen distributions
 
 .PHONY: update-codeowners
 update-codeowners: gengithub generate

@@ -39,8 +39,9 @@ func TestNewTracesReceiver_version_err(t *testing.T) {
 	}
 	unmarshaler := defaultTracesUnmarshalers()[c.Encoding]
 	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	require.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
-	assert.Nil(t, r)
 }
 
 func TestNewTracesReceiver_encoding_err(t *testing.T) {
@@ -71,9 +72,9 @@ func TestNewTracesReceiver_err_auth_type(t *testing.T) {
 	}
 	unmarshaler := defaultTracesUnmarshalers()[c.Encoding]
 	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
-	assert.Error(t, err)
+	require.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.Contains(t, err.Error(), "failed to load TLS config")
-	assert.Nil(t, r)
 }
 
 func TestNewTracesReceiver_initial_offset_err(t *testing.T) {
@@ -83,8 +84,9 @@ func TestNewTracesReceiver_initial_offset_err(t *testing.T) {
 	}
 	unmarshaler := defaultTracesUnmarshalers()[c.Encoding]
 	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	require.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
-	assert.Nil(t, r)
 	assert.EqualError(t, err, errInvalidInitialOffset.Error())
 }
 
@@ -304,8 +306,9 @@ func TestNewMetricsReceiver_version_err(t *testing.T) {
 	}
 	unmarshaler := defaultMetricsUnmarshalers()[c.Encoding]
 	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	require.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
-	assert.Nil(t, r)
 }
 
 func TestNewMetricsReceiver_encoding_err(t *testing.T) {
@@ -313,9 +316,8 @@ func TestNewMetricsReceiver_encoding_err(t *testing.T) {
 		Encoding: "foo",
 	}
 	unmarshaler := defaultMetricsUnmarshalers()[c.Encoding]
-	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	_, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
 	require.Error(t, err)
-	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 }
 
@@ -336,9 +338,10 @@ func TestNewMetricsExporter_err_auth_type(t *testing.T) {
 	}
 	unmarshaler := defaultMetricsUnmarshalers()[c.Encoding]
 	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	require.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
-	assert.Nil(t, r)
 }
 
 func TestNewMetricsReceiver_initial_offset_err(t *testing.T) {
@@ -348,20 +351,10 @@ func TestNewMetricsReceiver_initial_offset_err(t *testing.T) {
 	}
 	unmarshaler := defaultMetricsUnmarshalers()[c.Encoding]
 	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	require.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
-	assert.Nil(t, r)
 	assert.EqualError(t, err, errInvalidInitialOffset.Error())
-}
-
-func TestMetricsReceiverStart(t *testing.T) {
-	c := kafkaMetricsConsumer{
-		nextConsumer:  consumertest.NewNop(),
-		settings:      receivertest.NewNopCreateSettings(),
-		consumerGroup: &testConsumerGroup{},
-	}
-
-	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, c.Shutdown(context.Background()))
 }
 
 func TestMetricsReceiverStartConsume(t *testing.T) {
@@ -567,8 +560,9 @@ func TestNewLogsReceiver_version_err(t *testing.T) {
 	}
 	unmarshaler := defaultLogsUnmarshalers("Test Version", zap.NewNop())[c.Encoding]
 	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	require.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
-	assert.Nil(t, r)
 }
 
 func TestNewLogsReceiver_encoding_err(t *testing.T) {
@@ -599,9 +593,10 @@ func TestNewLogsExporter_err_auth_type(t *testing.T) {
 	}
 	unmarshaler := defaultLogsUnmarshalers("Test Version", zap.NewNop())[c.Encoding]
 	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	require.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
-	assert.Nil(t, r)
 }
 
 func TestNewLogsReceiver_initial_offset_err(t *testing.T) {
@@ -611,8 +606,9 @@ func TestNewLogsReceiver_initial_offset_err(t *testing.T) {
 	}
 	unmarshaler := defaultLogsUnmarshalers("Test Version", zap.NewNop())[c.Encoding]
 	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	require.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
-	assert.Nil(t, r)
 	assert.EqualError(t, err, errInvalidInitialOffset.Error())
 }
 
@@ -653,6 +649,7 @@ func TestLogsReceiver_error(t *testing.T) {
 		nextConsumer:  consumertest.NewNop(),
 		settings:      settings,
 		consumerGroup: &testConsumerGroup{err: expectedErr},
+		config:        *createDefaultConfig().(*Config),
 	}
 
 	require.NoError(t, c.Start(context.Background(), componenttest.NewNopHost()))

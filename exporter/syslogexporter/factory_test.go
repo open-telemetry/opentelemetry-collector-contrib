@@ -10,6 +10,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -31,7 +32,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 			NumConsumers: 10,
 			QueueSize:    1000,
 		},
-		RetrySettings: exporterhelper.RetrySettings{
+		BackOffConfig: configretry.BackOffConfig{
 			Enabled:             true,
 			InitialInterval:     5 * time.Second,
 			RandomizationFactor: backoff.DefaultRandomizationFactor,

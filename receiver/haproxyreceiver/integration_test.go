@@ -30,9 +30,11 @@ func TestIntegration(t *testing.T) {
 			testcontainers.ContainerRequest{
 				Image:        "docker.io/library/haproxy:2.8.1",
 				ExposedPorts: []string{haproxyPort},
-				Mounts: testcontainers.ContainerMounts{
-					testcontainers.BindMount(cfgPath, "/usr/local/etc/haproxy/haproxy.cfg"),
-				},
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      cfgPath,
+					ContainerFilePath: "/usr/local/etc/haproxy/haproxy.cfg",
+					FileMode:          700,
+				}},
 			}),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {

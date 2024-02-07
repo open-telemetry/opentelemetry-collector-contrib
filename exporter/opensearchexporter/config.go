@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -28,7 +29,7 @@ const (
 // Config defines configuration for OpenSearch exporter.
 type Config struct {
 	confighttp.HTTPClientSettings  `mapstructure:"http"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	MappingsSettings               `mapstructure:"mapping"`
 
