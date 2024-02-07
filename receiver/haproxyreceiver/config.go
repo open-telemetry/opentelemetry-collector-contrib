@@ -13,13 +13,13 @@ import (
 )
 
 type Config struct {
-	confighttp.HTTPClientConfig             `mapstructure:",squash"`
+	confighttp.ClientConfig                 `mapstructure:",squash"`
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 }
 
 func (c Config) Validate() error {
-	if c.HTTPClientConfig.Endpoint == "" {
+	if c.ClientConfig.Endpoint == "" {
 		return errors.New("'endpoint' cannot be empty")
 	}
 	return nil

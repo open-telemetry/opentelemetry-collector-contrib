@@ -5,8 +5,8 @@ go 1.20
 require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/pdata v1.0.2-0.20240130181942-9c7177496fd5
-	go.opentelemetry.io/collector/semconv v0.93.1-0.20240130182548-89388addcc7f
+	go.opentelemetry.io/collector/pdata v1.1.0
+	go.opentelemetry.io/collector/semconv v0.94.0
 	go.uber.org/goleak v1.3.0
 	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
 )

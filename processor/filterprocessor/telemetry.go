@@ -36,12 +36,12 @@ func newfilterProcessorTelemetry(set processor.CreateSettings) (*filterProcessor
 	processorID := set.ID.String()
 
 	fpt := &filterProcessorTelemetry{
-		processorAttr: []attribute.KeyValue{attribute.String(metadata.Type, processorID)},
+		processorAttr: []attribute.KeyValue{attribute.String(metadata.Type.String(), processorID)},
 		exportCtx:     context.Background(),
 	}
 
 	counter, err := metadata.Meter(set.TelemetrySettings).Int64Counter(
-		processorhelper.BuildCustomMetricName(metadata.Type, "datapoints.filtered"),
+		processorhelper.BuildCustomMetricName(metadata.Type.String(), "datapoints.filtered"),
 		metric.WithDescription("Number of metric data points dropped by the filter processor"),
 		metric.WithUnit("1"),
 	)
@@ -51,7 +51,7 @@ func newfilterProcessorTelemetry(set processor.CreateSettings) (*filterProcessor
 	fpt.datapointsFiltered = counter
 
 	counter, err = metadata.Meter(set.TelemetrySettings).Int64Counter(
-		processorhelper.BuildCustomMetricName(metadata.Type, "logs.filtered"),
+		processorhelper.BuildCustomMetricName(metadata.Type.String(), "logs.filtered"),
 		metric.WithDescription("Number of logs dropped by the filter processor"),
 		metric.WithUnit("1"),
 	)
@@ -61,7 +61,7 @@ func newfilterProcessorTelemetry(set processor.CreateSettings) (*filterProcessor
 	fpt.logsFiltered = counter
 
 	counter, err = metadata.Meter(set.TelemetrySettings).Int64Counter(
-		processorhelper.BuildCustomMetricName(metadata.Type, "spans.filtered"),
+		processorhelper.BuildCustomMetricName(metadata.Type.String(), "spans.filtered"),
 		metric.WithDescription("Number of spans dropped by the filter processor"),
 		metric.WithUnit("1"),
 	)

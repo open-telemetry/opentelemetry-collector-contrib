@@ -8,14 +8,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
 func Test_NewFactory(t *testing.T) {
 	f := NewFactory()
-	assert.Equal(t, component.Type("azureeventhub"), f.Type())
+	assert.Equal(t, metadata.Type, f.Type())
 }
 
 func Test_NewLogsReceiver(t *testing.T) {

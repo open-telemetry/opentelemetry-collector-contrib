@@ -45,7 +45,7 @@ func newLogProcessor(settings component.TelemetrySettings, config component.Conf
 
 	meter := settings.MeterProvider.Meter(scopeName + nameSep + "logs")
 	nonRoutedLogRecordsCounter, err := meter.Int64Counter(
-		metadata.Type+metricSep+processorKey+metricSep+nonRoutedLogRecordsKey,
+		metadata.Type.String()+metricSep+processorKey+metricSep+nonRoutedLogRecordsKey,
 		metric.WithDescription("Number of log records that were not routed to some or all exporters"),
 	)
 	if err != nil {

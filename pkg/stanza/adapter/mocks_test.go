@@ -56,7 +56,9 @@ func (o *UnstartableOperator) Process(_ context.Context, _ *entry.Entry) error {
 	return nil
 }
 
-const testType = "test"
+const testTypeStr = "test"
+
+var testType = component.MustNewType(testTypeStr)
 
 type TestConfig struct {
 	BaseConfig `mapstructure:",squash"`

@@ -36,7 +36,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 	otlpExpFactory := otlpexporter.NewFactory()
 	otlpID := component.NewID("otlp")
 	otlpConfig := &otlpexporter.Config{
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: "example.com:1234",
 		},
 	}

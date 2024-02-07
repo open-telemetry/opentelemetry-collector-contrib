@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("tail_sampling")
+)
+
 const (
-	Type            = "tail_sampling"
 	TracesStability = component.StabilityLevelBeta
 )
 

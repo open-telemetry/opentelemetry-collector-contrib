@@ -28,7 +28,7 @@ type V1Compatibility struct {
 
 // Config defines configuration for the InfluxDB exporter.
 type Config struct {
-	confighttp.HTTPClientConfig  `mapstructure:",squash"`
+	confighttp.ClientConfig      `mapstructure:",squash"`
 	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 

@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("nsxt")
+)
+
 const (
-	Type             = "nsxt"
 	MetricsStability = component.StabilityLevelAlpha
 )
 

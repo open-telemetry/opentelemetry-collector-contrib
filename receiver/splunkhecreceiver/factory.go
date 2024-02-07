@@ -37,7 +37,7 @@ func NewFactory() receiver.Factory {
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerConfig: confighttp.HTTPServerConfig{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: localhostgate.EndpointForPort(defaultPort),
 		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{},
