@@ -236,7 +236,7 @@ jobs:
   unittest-matrix:
     strategy:
       matrix:
-        go-version: ["~1.21.5", "~1.20.12"] # 1.20 is interpreted as 1.2 without quotes
+        go-version: ["~1.22", "~1.21.5", "~1.20.12"] # 1.20 is interpreted as 1.2 without quotes
         group:
           - receiver-0
           - receiver-1
