@@ -17,21 +17,22 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/status"
 )
 
 type Server struct {
-	telemetry        component.TelemetrySettings
-	settings         *Settings
-	recoveryDuration time.Duration
-	mux              *http.ServeMux
-	serverHTTP       *http.Server
-	colconf          atomic.Value
-	aggregator       *status.Aggregator
-	startTimestamp   time.Time
-	readyCh          chan struct{}
-	notReadyCh       chan struct{}
-	doneCh           chan struct{}
+	telemetry      component.TelemetrySettings
+	settings       *Settings
+	strategy       healthStrategy
+	mux            *http.ServeMux
+	serverHTTP     *http.Server
+	colconf        atomic.Value
+	aggregator     *status.Aggregator
+	startTimestamp time.Time
+	readyCh        chan struct{}
+	notReadyCh     chan struct{}
+	doneCh         chan struct{}
 }
 
 var _ component.Component = (*Server)(nil)
@@ -40,18 +41,26 @@ var _ extension.PipelineWatcher = (*Server)(nil)
 
 func NewServer(
 	settings *Settings,
+	componentHealthSettings *common.ComponentHealthSettings,
 	telemetry component.TelemetrySettings,
-	recoveryDuration time.Duration,
 	aggregator *status.Aggregator,
 ) *Server {
+	now := time.Now()
 	srv := &Server{
-		telemetry:        telemetry,
-		settings:         settings,
-		aggregator:       aggregator,
-		recoveryDuration: recoveryDuration,
-		readyCh:          make(chan struct{}),
-		notReadyCh:       make(chan struct{}),
-		doneCh:           make(chan struct{}),
+		telemetry:  telemetry,
+		settings:   settings,
+		strategy:   &defaultHealthStrategy{startTimestamp: &now},
+		aggregator: aggregator,
+		readyCh:    make(chan struct{}),
+		notReadyCh: make(chan struct{}),
+		doneCh:     make(chan struct{}),
+	}
+
+	if componentHealthSettings != nil {
+		srv.strategy = &componentHealthStrategy{
+			settings:       componentHealthSettings,
+			startTimestamp: &now,
+		}
 	}
 
 	srv.mux = http.NewServeMux()

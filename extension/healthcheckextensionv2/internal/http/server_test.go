@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/status"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/testhelpers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -48,24 +50,22 @@ func TestStatus(t *testing.T) {
 	var pipelines map[string]*testhelpers.PipelineMetadata
 
 	tests := []struct {
-		name      string
-		settings  *Settings
-		pipelines map[string]*testhelpers.PipelineMetadata
-		teststeps []teststep
+		name                    string
+		settings                *Settings
+		componentHealthSettings *common.ComponentHealthSettings
+		pipelines               map[string]*testhelpers.PipelineMetadata
+		teststeps               []teststep
 	}{
 		{
-			name: "Collector Status",
+			name: "overall status - default strategy",
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				Config: PathSettings{Enabled: false},
-				Status: StatusSettings{
-					Detailed: false,
-					PathSettings: PathSettings{
-						Enabled: true,
-						Path:    "/status",
-					},
+				Status: PathSettings{
+					Enabled: true,
+					Path:    "/status",
 				},
 			},
 			pipelines: testhelpers.NewPipelines("traces"),
@@ -78,10 +78,6 @@ func TestStatus(t *testing.T) {
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusStarting,
-					},
 				},
 				{
 					step: func() {
@@ -90,6 +86,448 @@ func TestStatus(t *testing.T) {
 							pipelines["traces"].InstanceIDs(),
 							component.StatusOK,
 						)
+						require.NoError(t, server.Ready())
+					},
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusOK,
+					},
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							pipelines["traces"].ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusRecoverableError,
+						err:     assert.AnError,
+					},
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							pipelines["traces"].ExporterID,
+							component.NewStatusEvent(component.StatusOK),
+						)
+					},
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusOK,
+					},
+				},
+				{
+					step: func() {
+						require.NoError(t, server.NotReady())
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
+			},
+		},
+		{
+			name: "overall status - default strategy - verbose",
+			settings: &Settings{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: testutil.GetAvailableLocalAddress(t),
+				},
+				Config: PathSettings{Enabled: false},
+				Status: PathSettings{
+					Enabled: true,
+					Path:    "/status",
+				},
+			},
+			pipelines: testhelpers.NewPipelines("traces"),
+			teststeps: []teststep{
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					queryParams:        "verbose",
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusOK,
+						)
+						require.NoError(t, server.Ready())
+					},
+					queryParams:        "verbose",
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusOK,
+						nestedStatus: map[string]*componentStatusExpectation{
+							"pipeline:traces": {
+								healthy: true,
+								status:  component.StatusOK,
+								nestedStatus: map[string]*componentStatusExpectation{
+									"receiver:traces/in": {
+										healthy: true,
+										status:  component.StatusOK,
+									},
+									"processor:batch": {
+										healthy: true,
+										status:  component.StatusOK,
+									},
+									"exporter:traces/out": {
+										healthy: true,
+										status:  component.StatusOK,
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							pipelines["traces"].ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					queryParams:        "verbose",
+					eventually:         true,
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusRecoverableError,
+						err:     assert.AnError,
+						nestedStatus: map[string]*componentStatusExpectation{
+							"pipeline:traces": {
+								healthy: true,
+								status:  component.StatusRecoverableError,
+								err:     assert.AnError,
+								nestedStatus: map[string]*componentStatusExpectation{
+									"receiver:traces/in": {
+										healthy: true,
+										status:  component.StatusOK,
+									},
+									"processor:batch": {
+										healthy: true,
+										status:  component.StatusOK,
+									},
+									"exporter:traces/out": {
+										healthy: true,
+										status:  component.StatusRecoverableError,
+										err:     assert.AnError,
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							pipelines["traces"].ExporterID,
+							component.NewStatusEvent(component.StatusOK),
+						)
+					},
+					queryParams:        "verbose",
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusOK,
+						nestedStatus: map[string]*componentStatusExpectation{
+							"pipeline:traces": {
+								healthy: true,
+								status:  component.StatusOK,
+								nestedStatus: map[string]*componentStatusExpectation{
+									"receiver:traces/in": {
+										healthy: true,
+										status:  component.StatusOK,
+									},
+									"processor:batch": {
+										healthy: true,
+										status:  component.StatusOK,
+									},
+									"exporter:traces/out": {
+										healthy: true,
+										status:  component.StatusOK,
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					step: func() {
+						require.NoError(t, server.NotReady())
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
+			},
+		},
+		{
+			name: "pipeline status - default strategy",
+			settings: &Settings{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: testutil.GetAvailableLocalAddress(t),
+				},
+				Config: PathSettings{Enabled: false},
+				Status: PathSettings{
+					Enabled: true,
+					Path:    "/status",
+				},
+			},
+			pipelines: testhelpers.NewPipelines("traces"),
+			teststeps: []teststep{
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					queryParams:        "pipeline=traces",
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusOK,
+						)
+						require.NoError(t, server.Ready())
+					},
+					queryParams:        "pipeline=traces",
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusOK,
+					},
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							pipelines["traces"].ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					queryParams:        "pipeline=traces",
+					eventually:         true,
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusRecoverableError,
+						err:     assert.AnError,
+					},
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							pipelines["traces"].ExporterID,
+							component.NewStatusEvent(component.StatusOK),
+						)
+					},
+					queryParams:        "pipeline=traces",
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusOK,
+					},
+				},
+				{
+					step: func() {
+						require.NoError(t, server.NotReady())
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					queryParams:        "pipeline=traces&verbose",
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
+			},
+		},
+		{
+			name: "pipeline status - default strategy - verbose",
+			settings: &Settings{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: testutil.GetAvailableLocalAddress(t),
+				},
+				Config: PathSettings{Enabled: false},
+				Status: PathSettings{
+					Enabled: true,
+					Path:    "/status",
+				},
+			},
+			pipelines: testhelpers.NewPipelines("traces"),
+			teststeps: []teststep{
+				{
+					step: func() {
+						testhelpers.SeedAggregator(server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					queryParams:        "pipeline=traces&verbose",
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusOK,
+						)
+						require.NoError(t, server.Ready())
+					},
+					queryParams:        "pipeline=traces&verbose",
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusOK,
+						nestedStatus: map[string]*componentStatusExpectation{
+							"receiver:traces/in": {
+								healthy: true,
+								status:  component.StatusOK,
+							},
+							"processor:batch": {
+								healthy: true,
+								status:  component.StatusOK,
+							},
+							"exporter:traces/out": {
+								healthy: true,
+								status:  component.StatusOK,
+							},
+						},
+					},
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							pipelines["traces"].ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					queryParams:        "pipeline=traces&verbose",
+					eventually:         true,
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusRecoverableError,
+						err:     assert.AnError,
+						nestedStatus: map[string]*componentStatusExpectation{
+							"receiver:traces/in": {
+								healthy: true,
+								status:  component.StatusOK,
+							},
+							"processor:batch": {
+								healthy: true,
+								status:  component.StatusOK,
+							},
+							"exporter:traces/out": {
+								healthy: true,
+								status:  component.StatusRecoverableError,
+								err:     assert.AnError,
+							},
+						},
+					},
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							pipelines["traces"].ExporterID,
+							component.NewStatusEvent(component.StatusOK),
+						)
+					},
+					queryParams:        "pipeline=traces&verbose",
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusOK,
+						nestedStatus: map[string]*componentStatusExpectation{
+							"receiver:traces/in": {
+								healthy: true,
+								status:  component.StatusOK,
+							},
+							"processor:batch": {
+								healthy: true,
+								status:  component.StatusOK,
+							},
+							"exporter:traces/out": {
+								healthy: true,
+								status:  component.StatusOK,
+							},
+						},
+					},
+				},
+				{
+					step: func() {
+						require.NoError(t, server.NotReady())
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					queryParams:        "pipeline=traces&verbose",
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
+			},
+		},
+		{
+			name: "overall status - component health stategy",
+			settings: &Settings{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: testutil.GetAvailableLocalAddress(t),
+				},
+				Config: PathSettings{Enabled: false},
+				Status: PathSettings{
+					Enabled: true,
+					Path:    "/status",
+				},
+			},
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanentErrors:   true,
+				IncludeRecoverableErrors: true,
+				RecoveryDuration:         20 * time.Millisecond,
+			},
+			pipelines: testhelpers.NewPipelines("traces"),
+			teststeps: []teststep{
+				{
+					step: func() {
+						testhelpers.SeedAggregator(server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusOK,
+						)
+						require.NoError(t, server.Ready())
 					},
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
@@ -125,22 +563,35 @@ func TestStatus(t *testing.T) {
 						status:  component.StatusOK,
 					},
 				},
+				{
+					step: func() {
+						require.NoError(t, server.NotReady())
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
 			},
 		},
 		{
-			name: "Collector Status - Detailed",
+			name: "overall status - component health strategy - verbose",
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				Config: PathSettings{Enabled: false},
-				Status: StatusSettings{
-					Detailed: true,
-					PathSettings: PathSettings{
-						Enabled: true,
-						Path:    "/status",
-					},
+				Status: PathSettings{
+					Enabled: true,
+					Path:    "/status",
 				},
+			},
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanentErrors:   true,
+				IncludeRecoverableErrors: true,
+				RecoveryDuration:         20 * time.Millisecond,
 			},
 			pipelines: testhelpers.NewPipelines("traces"),
 			teststeps: []teststep{
@@ -152,31 +603,8 @@ func TestStatus(t *testing.T) {
 							component.StatusStarting,
 						)
 					},
+					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusStarting,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusStarting,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-								},
-							},
-						},
-					},
 				},
 				{
 					step: func() {
@@ -185,7 +613,9 @@ func TestStatus(t *testing.T) {
 							pipelines["traces"].InstanceIDs(),
 							component.StatusOK,
 						)
+						require.NoError(t, server.Ready())
 					},
+					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
@@ -219,6 +649,7 @@ func TestStatus(t *testing.T) {
 							component.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
+					queryParams:        "verbose",
 					eventually:         true,
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
@@ -256,6 +687,7 @@ func TestStatus(t *testing.T) {
 							component.NewStatusEvent(component.StatusOK),
 						)
 					},
+					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
@@ -282,22 +714,279 @@ func TestStatus(t *testing.T) {
 						},
 					},
 				},
+				{
+					step: func() {
+						require.NoError(t, server.NotReady())
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
 			},
 		},
 		{
-			name: "Pipeline Status",
+			name: "overall status - component health strategy - exclude permanent",
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				Config: PathSettings{Enabled: false},
-				Status: StatusSettings{
-					Detailed: false,
-					PathSettings: PathSettings{
-						Enabled: true,
-						Path:    "/status",
+				Status: PathSettings{
+					Enabled: true,
+					Path:    "/status",
+				},
+			},
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanentErrors:   false,
+				IncludeRecoverableErrors: true,
+				RecoveryDuration:         20 * time.Millisecond,
+			},
+			pipelines: testhelpers.NewPipelines("traces"),
+			teststeps: []teststep{
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusOK,
+						)
+						require.NoError(t, server.Ready())
+					},
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusOK,
 					},
 				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							pipelines["traces"].ReceiverID,
+							component.NewPermanentErrorEvent(assert.AnError),
+						)
+						server.aggregator.RecordStatus(
+							pipelines["traces"].ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					eventually:         true,
+					expectedStatusCode: http.StatusInternalServerError,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: false,
+						status:  component.StatusPermanentError,
+						err:     assert.AnError,
+					},
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							pipelines["traces"].ExporterID,
+							component.NewStatusEvent(component.StatusOK),
+						)
+					},
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusPermanentError,
+					},
+				},
+				{
+					step: func() {
+						require.NoError(t, server.NotReady())
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
+			},
+		},
+		{
+			name: "overall status - component health strategy - exclude permanent - verbose",
+			settings: &Settings{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: testutil.GetAvailableLocalAddress(t),
+				},
+				Config: PathSettings{Enabled: false},
+				Status: PathSettings{
+					Enabled: true,
+					Path:    "/status",
+				},
+			},
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanentErrors:   false,
+				IncludeRecoverableErrors: true,
+				RecoveryDuration:         20 * time.Millisecond,
+			},
+			pipelines: testhelpers.NewPipelines("traces"),
+			teststeps: []teststep{
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					queryParams:        "verbose",
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusOK,
+						)
+						require.NoError(t, server.Ready())
+					},
+					queryParams:        "verbose",
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusOK,
+						nestedStatus: map[string]*componentStatusExpectation{
+							"pipeline:traces": {
+								healthy: true,
+								status:  component.StatusOK,
+								nestedStatus: map[string]*componentStatusExpectation{
+									"receiver:traces/in": {
+										healthy: true,
+										status:  component.StatusOK,
+									},
+									"processor:batch": {
+										healthy: true,
+										status:  component.StatusOK,
+									},
+									"exporter:traces/out": {
+										healthy: true,
+										status:  component.StatusOK,
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							pipelines["traces"].ReceiverID,
+							component.NewPermanentErrorEvent(assert.AnError),
+						)
+						server.aggregator.RecordStatus(
+							pipelines["traces"].ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					queryParams:        "verbose",
+					eventually:         true,
+					expectedStatusCode: http.StatusInternalServerError,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: false,
+						status:  component.StatusPermanentError,
+						err:     assert.AnError,
+						nestedStatus: map[string]*componentStatusExpectation{
+							"pipeline:traces": {
+								healthy: false,
+								status:  component.StatusPermanentError,
+								err:     assert.AnError,
+								nestedStatus: map[string]*componentStatusExpectation{
+									"receiver:traces/in": {
+										healthy: true,
+										status:  component.StatusPermanentError,
+									},
+									"processor:batch": {
+										healthy: true,
+										status:  component.StatusOK,
+									},
+									"exporter:traces/out": {
+										healthy: false,
+										status:  component.StatusRecoverableError,
+										err:     assert.AnError,
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							pipelines["traces"].ExporterID,
+							component.NewStatusEvent(component.StatusOK),
+						)
+					},
+					queryParams:        "verbose",
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusPermanentError,
+						nestedStatus: map[string]*componentStatusExpectation{
+							"pipeline:traces": {
+								healthy: true,
+								status:  component.StatusPermanentError,
+								nestedStatus: map[string]*componentStatusExpectation{
+									"receiver:traces/in": {
+										healthy: true,
+										status:  component.StatusPermanentError,
+									},
+									"processor:batch": {
+										healthy: true,
+										status:  component.StatusOK,
+									},
+									"exporter:traces/out": {
+										healthy: true,
+										status:  component.StatusOK,
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					step: func() {
+						require.NoError(t, server.NotReady())
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
+			},
+		},
+		{
+			name: "pipeline status - component health strategy",
+			settings: &Settings{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: testutil.GetAvailableLocalAddress(t),
+				},
+				Config: PathSettings{Enabled: false},
+				Status: PathSettings{
+					Enabled: true,
+					Path:    "/status",
+				},
+			},
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanentErrors:   true,
+				IncludeRecoverableErrors: true,
+				RecoveryDuration:         20 * time.Millisecond,
 			},
 			pipelines: testhelpers.NewPipelines("traces"),
 			teststeps: []teststep{
@@ -311,10 +1000,6 @@ func TestStatus(t *testing.T) {
 					},
 					queryParams:        "pipeline=traces",
 					expectedStatusCode: http.StatusServiceUnavailable,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusStarting,
-					},
 				},
 				{
 					step: func() {
@@ -323,6 +1008,7 @@ func TestStatus(t *testing.T) {
 							pipelines["traces"].InstanceIDs(),
 							component.StatusOK,
 						)
+						require.NoError(t, server.Ready())
 					},
 					queryParams:        "pipeline=traces",
 					expectedStatusCode: http.StatusOK,
@@ -361,22 +1047,36 @@ func TestStatus(t *testing.T) {
 						status:  component.StatusOK,
 					},
 				},
+				{
+					step: func() {
+						require.NoError(t, server.NotReady())
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					queryParams:        "pipeline=traces&verbose",
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
 			},
 		},
 		{
-			name: "Pipeline Status - Detailed",
+			name: "pipeline status - component health strategy - verbose",
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				Config: PathSettings{Enabled: false},
-				Status: StatusSettings{
-					Detailed: true,
-					PathSettings: PathSettings{
-						Enabled: true,
-						Path:    "/status",
-					},
+				Status: PathSettings{
+					Enabled: true,
+					Path:    "/status",
 				},
+			},
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanentErrors:   true,
+				IncludeRecoverableErrors: true,
+				RecoveryDuration:         20 * time.Millisecond,
 			},
 			pipelines: testhelpers.NewPipelines("traces"),
 			teststeps: []teststep{
@@ -387,26 +1087,8 @@ func TestStatus(t *testing.T) {
 							component.StatusStarting,
 						)
 					},
-					queryParams:        "pipeline=traces",
+					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusStarting,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"receiver:traces/in": {
-								healthy: true,
-								status:  component.StatusStarting,
-							},
-							"processor:batch": {
-								healthy: true,
-								status:  component.StatusStarting,
-							},
-							"exporter:traces/out": {
-								healthy: true,
-								status:  component.StatusStarting,
-							},
-						},
-					},
 				},
 				{
 					step: func() {
@@ -415,8 +1097,9 @@ func TestStatus(t *testing.T) {
 							pipelines["traces"].InstanceIDs(),
 							component.StatusOK,
 						)
+						require.NoError(t, server.Ready())
 					},
-					queryParams:        "pipeline=traces",
+					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
@@ -444,7 +1127,7 @@ func TestStatus(t *testing.T) {
 							component.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
-					queryParams:        "pipeline=traces",
+					queryParams:        "pipeline=traces&verbose",
 					eventually:         true,
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
@@ -475,7 +1158,7 @@ func TestStatus(t *testing.T) {
 							component.NewStatusEvent(component.StatusOK),
 						)
 					},
-					queryParams:        "pipeline=traces",
+					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
@@ -496,27 +1179,42 @@ func TestStatus(t *testing.T) {
 						},
 					},
 				},
+				{
+					step: func() {
+						require.NoError(t, server.NotReady())
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							pipelines["traces"].InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					queryParams:        "pipeline=traces&verbose",
+					expectedStatusCode: http.StatusServiceUnavailable,
+				},
 			},
 		},
 		{
-			name: "Multiple Pipelines",
+			name: "multiple pipelines - component health strategy - verbose",
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				Config: PathSettings{Enabled: false},
-				Status: StatusSettings{
-					Detailed: true,
-					PathSettings: PathSettings{
-						Enabled: true,
-						Path:    "/status",
-					},
+				Status: PathSettings{
+					Enabled: true,
+					Path:    "/status",
 				},
+			},
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanentErrors:   true,
+				IncludeRecoverableErrors: true,
+				RecoveryDuration:         20 * time.Millisecond,
 			},
 			pipelines: testhelpers.NewPipelines("traces", "metrics"),
 			teststeps: []teststep{
 				{
 					step: func() {
+						require.NoError(t, server.Ready())
 						// traces will be StatusOK
 						testhelpers.SeedAggregator(
 							server.aggregator,
@@ -534,6 +1232,7 @@ func TestStatus(t *testing.T) {
 							component.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
+					queryParams:        "verbose",
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
@@ -582,7 +1281,7 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
+					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
@@ -604,7 +1303,7 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=metrics",
+					queryParams:        "pipeline=metrics&verbose",
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
@@ -630,24 +1329,22 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "Pipeline Non-existent",
+			name: "pipeline non-existent",
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				Config: PathSettings{Enabled: false},
-				Status: StatusSettings{
-					Detailed: false,
-					PathSettings: PathSettings{
-						Enabled: true,
-						Path:    "/status",
-					},
+				Status: PathSettings{
+					Enabled: true,
+					Path:    "/status",
 				},
 			},
 			pipelines: testhelpers.NewPipelines("traces"),
 			teststeps: []teststep{
 				{
 					step: func() {
+						require.NoError(t, server.Ready())
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							pipelines["traces"].InstanceIDs(),
@@ -660,16 +1357,14 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "Status Disabled",
+			name: "status disabled",
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				Config: PathSettings{Enabled: false},
-				Status: StatusSettings{
-					PathSettings: PathSettings{
-						Enabled: false,
-					},
+				Status: PathSettings{
+					Enabled: false,
 				},
 			},
 			teststeps: []teststep{
@@ -685,14 +1380,13 @@ func TestStatus(t *testing.T) {
 			pipelines = tc.pipelines
 			server = NewServer(
 				tc.settings,
+				tc.componentHealthSettings,
 				componenttest.NewNopTelemetrySettings(),
-				20*time.Millisecond,
 				status.NewAggregator(),
 			)
 
 			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() { require.NoError(t, server.Shutdown(context.Background())) }()
-			require.NoError(t, server.Ready())
 
 			client := &http.Client{}
 			url := fmt.Sprintf("http://%s%s", tc.settings.Endpoint, tc.settings.Status.Path)
@@ -729,7 +1423,7 @@ func TestStatus(t *testing.T) {
 					st := &serializableStatus{}
 					require.NoError(t, json.Unmarshal(body, st))
 
-					if tc.settings.Status.Detailed {
+					if strings.Contains(ts.queryParams, "verbose") {
 						assertStatusDetailed(t, ts.expectedComponentStatus, st)
 						continue
 					}
@@ -741,77 +1435,6 @@ func TestStatus(t *testing.T) {
 	}
 }
 
-func TestPipelineReady(t *testing.T) {
-	settings := &Settings{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: testutil.GetAvailableLocalAddress(t),
-		},
-		Config: PathSettings{Enabled: false},
-		Status: StatusSettings{
-			Detailed: false,
-			PathSettings: PathSettings{
-				Enabled: true,
-				Path:    "/status",
-			},
-		},
-	}
-	server := NewServer(
-		settings,
-		componenttest.NewNopTelemetrySettings(),
-		20*time.Millisecond,
-		status.NewAggregator(),
-	)
-
-	require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() { require.NoError(t, server.Shutdown(context.Background())) }()
-
-	client := &http.Client{}
-	url := fmt.Sprintf("http://%s%s", settings.Endpoint, settings.Status.Path)
-	traces := testhelpers.NewPipelineMetadata("traces")
-
-	for _, ts := range []struct {
-		step               func()
-		expectedStatusCode int
-		ready              bool
-		notReady           bool
-	}{
-		{
-			step: func() {
-				testhelpers.SeedAggregator(
-					server.aggregator,
-					traces.InstanceIDs(),
-					component.StatusOK,
-				)
-			},
-			expectedStatusCode: http.StatusServiceUnavailable,
-		},
-		{
-			expectedStatusCode: http.StatusOK,
-			ready:              true,
-		},
-		{
-			expectedStatusCode: http.StatusServiceUnavailable,
-			notReady:           true,
-		},
-	} {
-		if ts.step != nil {
-			ts.step()
-		}
-
-		if ts.ready {
-			require.NoError(t, server.Ready())
-		}
-
-		if ts.notReady {
-			require.NoError(t, server.NotReady())
-		}
-
-		resp, err := client.Get(url)
-		require.NoError(t, err)
-		assert.Equal(t, ts.expectedStatusCode, resp.StatusCode)
-	}
-}
-
 func assertStatusDetailed(
 	t *testing.T,
 	expected *componentStatusExpectation,
@@ -819,7 +1442,7 @@ func assertStatusDetailed(
 ) {
 	assert.Equal(t, expected.healthy, actual.Healthy)
 	assert.Equal(t, expected.status, actual.Status())
-	assert.Equal(t, !component.StatusIsError(expected.status), actual.Healthy)
+	assert.Equal(t, expected.healthy, actual.Healthy)
 	if expected.err != nil {
 		assert.Equal(t, expected.err.Error(), actual.Error)
 	}
@@ -836,7 +1459,7 @@ func assertNestedStatus(
 		require.True(t, ok, "status for key: %s not found", k)
 		assert.Equal(t, expectation.healthy, st.Healthy)
 		assert.Equal(t, expectation.status, st.Status())
-		assert.Equal(t, !component.StatusIsError(expectation.status), st.Healthy)
+		assert.Equal(t, expectation.healthy, st.Healthy)
 		if expectation.err != nil {
 			assert.Equal(t, expectation.err.Error(), st.Error)
 		}
@@ -850,7 +1473,7 @@ func assertStatusSimple(
 	actual *serializableStatus,
 ) {
 	assert.Equal(t, expected.status, actual.Status())
-	assert.Equal(t, !component.StatusIsError(expected.status), actual.Healthy)
+	assert.Equal(t, expected.healthy, actual.Healthy)
 	if expected.err != nil {
 		assert.Equal(t, expected.err.Error(), actual.Error)
 	}
@@ -881,10 +1504,8 @@ func TestConfig(t *testing.T) {
 					Enabled: true,
 					Path:    "/config",
 				},
-				Status: StatusSettings{
-					PathSettings: PathSettings{
-						Enabled: false,
-					},
+				Status: PathSettings{
+					Enabled: false,
 				},
 			},
 			expectedStatusCode: http.StatusServiceUnavailable,
@@ -900,10 +1521,8 @@ func TestConfig(t *testing.T) {
 					Enabled: true,
 					Path:    "/config",
 				},
-				Status: StatusSettings{
-					PathSettings: PathSettings{
-						Enabled: false,
-					},
+				Status: PathSettings{
+					Enabled: false,
 				},
 			},
 			setup: func() {
@@ -921,10 +1540,8 @@ func TestConfig(t *testing.T) {
 				Config: PathSettings{
 					Enabled: false,
 				},
-				Status: StatusSettings{
-					PathSettings: PathSettings{
-						Enabled: false,
-					},
+				Status: PathSettings{
+					Enabled: false,
 				},
 			},
 			expectedStatusCode: http.StatusNotFound,
@@ -934,8 +1551,8 @@ func TestConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			server = NewServer(
 				tc.settings,
+				&common.ComponentHealthSettings{},
 				componenttest.NewNopTelemetrySettings(),
-				20*time.Millisecond,
 				status.NewAggregator(),
 			)
 

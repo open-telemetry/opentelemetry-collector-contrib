@@ -35,14 +35,6 @@ func (s Scope) toKey() string {
 	return pipelinePrefix + string(s)
 }
 
-// Detail specifies whether or not to include subtrees with an AggregateStatus
-type Detail bool
-
-const (
-	IncludeSubtrees Detail = true
-	ExcludeSubtrees Detail = false
-)
-
 // AggregateStatus contains a map of child AggregateStatuses and an embedded component.StatusEvent.
 // It can be used to represent a single, top-level status when the ComponentStatusMap is empty,
 // or a nested structure when map is non-empty.
@@ -52,24 +44,76 @@ type AggregateStatus struct {
 	ComponentStatusMap map[string]*AggregateStatus
 }
 
-func (a *AggregateStatus) clone(detail Detail) *AggregateStatus {
+// Remove
+func (a *AggregateStatus) Ready() bool {
+	if len(a.ComponentStatusMap) == 0 &&
+		(a.Status() == component.StatusStarting ||
+			a.Status() == component.StatusStopping ||
+			a.Status() == component.StatusStopped ||
+			a.Status() == component.StatusNone) {
+		return false
+	}
+	for _, st := range a.ComponentStatusMap {
+		if !st.Ready() {
+			return false
+		}
+	}
+	return true
+}
+
+// TODO: Remove
+func (a *AggregateStatus) ActiveRecoverable() (*component.StatusEvent, bool) {
+	//return early if not permanent, fatal, recoverable
+	var ev *component.StatusEvent
+	result := a.activeRecoverable(ev)
+	return result, result != nil
+}
+
+func (a *AggregateStatus) activeRecoverable(curr *component.StatusEvent) *component.StatusEvent {
+	if len(a.ComponentStatusMap) == 0 &&
+		a.Status() == component.StatusRecoverableError &&
+		(curr == nil || a.Timestamp().Before(curr.Timestamp())) {
+		curr = a.StatusEvent
+	}
+	for _, st := range a.ComponentStatusMap {
+		curr = st.activeRecoverable(curr)
+	}
+	return curr
+}
+
+func (a *AggregateStatus) clone() *AggregateStatus {
 	st := &AggregateStatus{
 		StatusEvent: a.StatusEvent,
 	}
 
-	if detail == IncludeSubtrees && len(a.ComponentStatusMap) > 0 {
+	if len(a.ComponentStatusMap) > 0 {
 		st.ComponentStatusMap = make(map[string]*AggregateStatus, len(a.ComponentStatusMap))
 		for k, cs := range a.ComponentStatusMap {
-			st.ComponentStatusMap[k] = cs.clone(detail)
+			st.ComponentStatusMap[k] = cs.clone()
 		}
 	}
 
 	return st
 }
 
-type subscription struct {
-	statusCh chan *AggregateStatus
-	detail   Detail
+func ActiveRecoverable(st *AggregateStatus) (*component.StatusEvent, bool) {
+	if !component.StatusIsError(st.Status()) {
+		return nil, false
+	}
+	result := activeRecoverable(st, nil)
+	return result, result != nil
+}
+
+func activeRecoverable(st *AggregateStatus, curr *component.StatusEvent) *component.StatusEvent {
+	if len(st.ComponentStatusMap) == 0 &&
+		st.Status() == component.StatusRecoverableError &&
+		(curr == nil || st.Timestamp().Before(curr.Timestamp())) {
+		curr = st.StatusEvent
+	}
+	for _, cst := range st.ComponentStatusMap {
+		curr = activeRecoverable(cst, curr)
+	}
+	return curr
 }
 
 // Aggregator records individual status events for components and aggregates statuses for the
@@ -77,7 +121,7 @@ type subscription struct {
 type Aggregator struct {
 	mu              sync.RWMutex
 	aggregateStatus *AggregateStatus
-	subscriptions   map[string][]*subscription
+	subscriptions   map[string][]chan *AggregateStatus
 }
 
 // NewAggregator returns a *status.Aggregator.
@@ -87,7 +131,7 @@ func NewAggregator() *Aggregator {
 			StatusEvent:        &component.StatusEvent{},
 			ComponentStatusMap: make(map[string]*AggregateStatus),
 		},
-		subscriptions: make(map[string][]*subscription),
+		subscriptions: make(map[string][]chan *AggregateStatus),
 	}
 }
 
@@ -95,12 +139,12 @@ func NewAggregator() *Aggregator {
 // overall (ScopeAll), extensions (ScopeExtensions), or a pipeline by name. Detail specifies whether
 // or not subtrees should be returned with the *AggregateStatus. The boolean return value indicates
 // whether or not the scope was found.
-func (a *Aggregator) AggregateStatus(scope Scope, detail Detail) (*AggregateStatus, bool) {
+func (a *Aggregator) AggregateStatus(scope Scope) (*AggregateStatus, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	if scope == ScopeAll {
-		return a.aggregateStatus.clone(detail), true
+		return a.aggregateStatus.clone(), true
 	}
 
 	st, ok := a.aggregateStatus.ComponentStatusMap[scope.toKey()]
@@ -108,7 +152,7 @@ func (a *Aggregator) AggregateStatus(scope Scope, detail Detail) (*AggregateStat
 		return nil, false
 	}
 
-	return st.clone(detail), true
+	return st.clone(), true
 }
 
 // RecordStatus stores and aggregates a StatusEvent for the given component instance.
@@ -156,7 +200,7 @@ func (a *Aggregator) RecordStatus(source *component.InstanceID, event *component
 // It is possible to subscribe to a pipeline that has not yet reported. An initial nil
 // will be sent on the channel and events will start streaming if and when it starts reporting.
 // Detail specifies whether or not subtrees should be returned with the *AggregateStatus.
-func (a *Aggregator) Subscribe(scope Scope, detail Detail) <-chan *AggregateStatus {
+func (a *Aggregator) Subscribe(scope Scope) <-chan *AggregateStatus {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -166,15 +210,12 @@ func (a *Aggregator) Subscribe(scope Scope, detail Detail) <-chan *AggregateStat
 		st = st.ComponentStatusMap[key]
 	}
 
-	sub := &subscription{
-		statusCh: make(chan *AggregateStatus, 1),
-		detail:   detail,
-	}
+	statusCh := make(chan *AggregateStatus, 1)
 
-	a.subscriptions[key] = append(a.subscriptions[key], sub)
-	sub.statusCh <- st
+	a.subscriptions[key] = append(a.subscriptions[key], statusCh)
+	statusCh <- st
 
-	return sub.statusCh
+	return statusCh
 }
 
 // Unbsubscribe removes a stream from further status updates.
@@ -184,7 +225,7 @@ func (a *Aggregator) Unsubscribe(statusCh <-chan *AggregateStatus) {
 
 	for scope, subs := range a.subscriptions {
 		for i, sub := range subs {
-			if sub.statusCh == statusCh {
+			if sub == statusCh {
 				a.subscriptions[scope] = append(subs[:i], subs[i+1:]...)
 				return
 			}
@@ -199,7 +240,7 @@ func (a *Aggregator) Close() {
 
 	for _, subs := range a.subscriptions {
 		for _, sub := range subs {
-			close(sub.statusCh)
+			close(sub)
 		}
 	}
 }
@@ -208,10 +249,10 @@ func (a *Aggregator) notifySubscribers(scope Scope, status *AggregateStatus) {
 	for _, sub := range a.subscriptions[scope.toKey()] {
 		// clear unread events
 		select {
-		case <-sub.statusCh:
+		case <-sub:
 		default:
 		}
-		sub.statusCh <- status.clone(sub.detail)
+		sub <- status.clone()
 	}
 }
 

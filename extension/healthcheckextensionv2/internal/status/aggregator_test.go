@@ -4,9 +4,11 @@
 package status_test
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,54 +18,54 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/testhelpers"
 )
 
-func TestAggregateStatus(t *testing.T) {
-	agg := status.NewAggregator()
-	traces := testhelpers.NewPipelineMetadata("traces")
+// func TestAggregateStatus(t *testing.T) {
+// 	agg := status.NewAggregator()
+// 	traces := testhelpers.NewPipelineMetadata("traces")
 
-	t.Run("zero value", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(status.ScopeAll, status.ExcludeSubtrees)
-		require.True(t, ok)
-		assert.Equal(t, component.StatusNone, st.Status())
-	})
+// 	t.Run("zero value", func(t *testing.T) {
+// 		st, ok := agg.AggregateStatus(status.ScopeAll, status.ExcludeSubtrees)
+// 		require.True(t, ok)
+// 		assert.Equal(t, component.StatusNone, st.Status())
+// 	})
 
-	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
+// 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
 
-	t.Run("pipeline statuses all successful", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(status.ScopeAll, status.ExcludeSubtrees)
-		require.True(t, ok)
-		assert.Equal(t, component.StatusOK, st.Status())
-	})
+// 	t.Run("pipeline statuses all successful", func(t *testing.T) {
+// 		st, ok := agg.AggregateStatus(status.ScopeAll, status.ExcludeSubtrees)
+// 		require.True(t, ok)
+// 		assert.Equal(t, component.StatusOK, st.Status())
+// 	})
 
-	agg.RecordStatus(
-		traces.ExporterID,
-		component.NewRecoverableErrorEvent(assert.AnError),
-	)
+// 	agg.RecordStatus(
+// 		traces.ExporterID,
+// 		component.NewRecoverableErrorEvent(assert.AnError),
+// 	)
 
-	t.Run("pipeline with recoverable error", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(status.ScopeAll, status.ExcludeSubtrees)
-		require.True(t, ok)
-		assertErrorEventsMatch(t,
-			component.StatusRecoverableError,
-			assert.AnError,
-			st,
-		)
-	})
+// 	t.Run("pipeline with recoverable error", func(t *testing.T) {
+// 		st, ok := agg.AggregateStatus(status.ScopeAll, status.ExcludeSubtrees)
+// 		require.True(t, ok)
+// 		assertErrorEventsMatch(t,
+// 			component.StatusRecoverableError,
+// 			assert.AnError,
+// 			st,
+// 		)
+// 	})
 
-	agg.RecordStatus(
-		traces.ExporterID,
-		component.NewPermanentErrorEvent(assert.AnError),
-	)
+// 	agg.RecordStatus(
+// 		traces.ExporterID,
+// 		component.NewPermanentErrorEvent(assert.AnError),
+// 	)
 
-	t.Run("pipeline with permanent error", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(status.ScopeAll, status.ExcludeSubtrees)
-		require.True(t, ok)
-		assertErrorEventsMatch(t,
-			component.StatusPermanentError,
-			assert.AnError,
-			st,
-		)
-	})
-}
+// 	t.Run("pipeline with permanent error", func(t *testing.T) {
+// 		st, ok := agg.AggregateStatus(status.ScopeAll, status.ExcludeSubtrees)
+// 		require.True(t, ok)
+// 		assertErrorEventsMatch(t,
+// 			component.StatusPermanentError,
+// 			assert.AnError,
+// 			st,
+// 		)
+// 	})
+// }
 
 func TestAggregateStatusDetailed(t *testing.T) {
 	agg := status.NewAggregator()
@@ -71,7 +73,7 @@ func TestAggregateStatusDetailed(t *testing.T) {
 	tracesKey := toPipelineKey(traces.PipelineID)
 
 	t.Run("zero value", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(status.ScopeAll, status.IncludeSubtrees)
+		st, ok := agg.AggregateStatus(status.ScopeAll)
 		require.True(t, ok)
 		assertEventsMatch(t, component.StatusNone, st)
 		assert.Empty(t, st.ComponentStatusMap)
@@ -81,7 +83,7 @@ func TestAggregateStatusDetailed(t *testing.T) {
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
 
 	t.Run("pipeline statuses all successful", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(status.ScopeAll, status.IncludeSubtrees)
+		st, ok := agg.AggregateStatus(status.ScopeAll)
 		require.True(t, ok)
 
 		// The top-level status and pipeline status match.
@@ -101,7 +103,7 @@ func TestAggregateStatusDetailed(t *testing.T) {
 	)
 
 	t.Run("pipeline with exporter error", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(status.ScopeAll, status.IncludeSubtrees)
+		st, ok := agg.AggregateStatus(status.ScopeAll)
 		require.True(t, ok)
 		// The top-level status and pipeline status match.
 		assertErrorEventsMatch(
@@ -128,48 +130,48 @@ func TestAggregateStatusDetailed(t *testing.T) {
 
 }
 
-func TestPipelineAggregateStatus(t *testing.T) {
-	agg := status.NewAggregator()
-	traces := testhelpers.NewPipelineMetadata("traces")
+// func TestPipelineAggregateStatus(t *testing.T) {
+// 	agg := status.NewAggregator()
+// 	traces := testhelpers.NewPipelineMetadata("traces")
 
-	t.Run("non existent pipeline", func(t *testing.T) {
-		st, ok := agg.AggregateStatus("doesnotexist", status.ExcludeSubtrees)
-		require.Nil(t, st)
-		require.False(t, ok)
-	})
+// 	t.Run("non existent pipeline", func(t *testing.T) {
+// 		st, ok := agg.AggregateStatus("doesnotexist", status.ExcludeSubtrees)
+// 		require.Nil(t, st)
+// 		require.False(t, ok)
+// 	})
 
-	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
+// 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
 
-	t.Run("pipeline exists / status successful", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(
-			status.Scope(traces.PipelineID.String()),
-			status.ExcludeSubtrees,
-		)
-		require.True(t, ok)
-		assertEventsMatch(t, component.StatusOK, st)
-	})
+// 	t.Run("pipeline exists / status successful", func(t *testing.T) {
+// 		st, ok := agg.AggregateStatus(
+// 			status.Scope(traces.PipelineID.String()),
+// 			status.ExcludeSubtrees,
+// 		)
+// 		require.True(t, ok)
+// 		assertEventsMatch(t, component.StatusOK, st)
+// 	})
 
-	agg.RecordStatus(
-		traces.ExporterID,
-		component.NewRecoverableErrorEvent(assert.AnError),
-	)
+// 	agg.RecordStatus(
+// 		traces.ExporterID,
+// 		component.NewRecoverableErrorEvent(assert.AnError),
+// 	)
 
-	t.Run("pipeline exists / exporter error", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(
-			status.Scope(traces.PipelineID.String()),
-			status.ExcludeSubtrees,
-		)
-		require.True(t, ok)
-		assertErrorEventsMatch(t, component.StatusRecoverableError, assert.AnError, st)
-	})
-}
+// 	t.Run("pipeline exists / exporter error", func(t *testing.T) {
+// 		st, ok := agg.AggregateStatus(
+// 			status.Scope(traces.PipelineID.String()),
+// 			status.ExcludeSubtrees,
+// 		)
+// 		require.True(t, ok)
+// 		assertErrorEventsMatch(t, component.StatusRecoverableError, assert.AnError, st)
+// 	})
+// }
 
 func TestPipelineAggregateStatusDetailed(t *testing.T) {
 	agg := status.NewAggregator()
 	traces := testhelpers.NewPipelineMetadata("traces")
 
 	t.Run("non existent pipeline", func(t *testing.T) {
-		st, ok := agg.AggregateStatus("doesnotexist", status.IncludeSubtrees)
+		st, ok := agg.AggregateStatus("doesnotexist")
 		require.Nil(t, st)
 		require.False(t, ok)
 	})
@@ -177,10 +179,7 @@ func TestPipelineAggregateStatusDetailed(t *testing.T) {
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
 
 	t.Run("pipeline exists / status successful", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(
-			status.Scope(traces.PipelineID.String()),
-			status.IncludeSubtrees,
-		)
+		st, ok := agg.AggregateStatus(status.Scope(traces.PipelineID.String()))
 		require.True(t, ok)
 
 		// Top-level status matches
@@ -193,10 +192,7 @@ func TestPipelineAggregateStatusDetailed(t *testing.T) {
 	agg.RecordStatus(traces.ExporterID, component.NewRecoverableErrorEvent(assert.AnError))
 
 	t.Run("pipeline exists / exporter error", func(t *testing.T) {
-		st, ok := agg.AggregateStatus(
-			status.Scope(traces.PipelineID.String()),
-			status.IncludeSubtrees,
-		)
+		st, ok := agg.AggregateStatus(status.Scope(traces.PipelineID.String()))
 		require.True(t, ok)
 
 		// Top-level status matches
@@ -222,9 +218,9 @@ func TestStreaming(t *testing.T) {
 	traces := testhelpers.NewPipelineMetadata("traces")
 	metrics := testhelpers.NewPipelineMetadata("metrics")
 
-	traceEvents := agg.Subscribe(status.Scope(traces.PipelineID.String()), status.ExcludeSubtrees)
-	metricEvents := agg.Subscribe(status.Scope(metrics.PipelineID.String()), status.ExcludeSubtrees)
-	allEvents := agg.Subscribe(status.ScopeAll, status.ExcludeSubtrees)
+	traceEvents := agg.Subscribe(status.Scope(traces.PipelineID.String()))
+	metricEvents := agg.Subscribe(status.Scope(metrics.PipelineID.String()))
+	allEvents := agg.Subscribe(status.ScopeAll)
 
 	assert.Nil(t, <-traceEvents)
 	assert.Nil(t, <-metricEvents)
@@ -278,7 +274,7 @@ func TestStreamingDetailed(t *testing.T) {
 	traces := testhelpers.NewPipelineMetadata("traces")
 	tracesKey := toPipelineKey(traces.PipelineID)
 
-	allEvents := agg.Subscribe(status.ScopeAll, status.IncludeSubtrees)
+	allEvents := agg.Subscribe(status.ScopeAll)
 
 	t.Run("zero value", func(t *testing.T) {
 		st := <-allEvents
@@ -408,4 +404,52 @@ func toComponentKey(id *component.InstanceID) string {
 
 func toPipelineKey(id component.ID) string {
 	return fmt.Sprintf("pipeline:%s", id.String())
+}
+
+func TestSearch(t *testing.T) {
+	agg := status.NewAggregator()
+	defer agg.Close()
+
+	traces := testhelpers.NewPipelineMetadata("traces")
+	metrics := testhelpers.NewPipelineMetadata("metrics")
+
+	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
+	testhelpers.SeedAggregator(agg, metrics.InstanceIDs(), component.StatusStarting)
+
+	agg.RecordStatus(
+		traces.ExporterID,
+		component.NewPermanentErrorEvent(errors.New("it's perm")),
+	)
+	agg.RecordStatus(
+		traces.ReceiverID,
+		component.NewRecoverableErrorEvent(errors.New("first recoverable")),
+	)
+	time.Sleep(20 * time.Millisecond)
+	agg.RecordStatus(
+		traces.ProcessorID,
+		component.NewRecoverableErrorEvent(errors.New("second recoverable")),
+	)
+
+	stAll, _ := agg.AggregateStatus(status.ScopeAll)
+	assert.False(t, stAll.Ready())
+
+	reAll, found := stAll.ActiveRecoverable()
+	assert.NotNil(t, reAll)
+	assert.True(t, found)
+	assert.Equal(t, reAll.Err().Error(), "first recoverable")
+
+	stTraces, _ := agg.AggregateStatus(status.Scope("traces"))
+	assert.True(t, stTraces.Ready())
+
+	reTr, found := stTraces.ActiveRecoverable()
+	assert.NotNil(t, reTr)
+	assert.True(t, found)
+	assert.Equal(t, reTr.Err().Error(), "first recoverable")
+
+	stMetrics, _ := agg.AggregateStatus(status.Scope("metrics"))
+	assert.False(t, stMetrics.Ready())
+
+	reMt, found := stMetrics.ActiveRecoverable()
+	assert.Nil(t, reMt)
+	assert.False(t, found)
 }

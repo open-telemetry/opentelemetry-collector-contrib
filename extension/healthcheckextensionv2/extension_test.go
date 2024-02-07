@@ -32,7 +32,7 @@ func TestComponentStatus(t *testing.T) {
 	ext := newExtension(context.Background(), *cfg, extensiontest.NewNopCreateSettings())
 
 	// Status before Start will be StatusNone
-	st, ok := ext.aggregator.AggregateStatus(status.ScopeAll, false)
+	st, ok := ext.aggregator.AggregateStatus(status.ScopeAll)
 	require.True(t, ok)
 	assert.Equal(t, st.StatusEvent.Status(), component.StatusNone)
 
@@ -53,7 +53,7 @@ func TestComponentStatus(t *testing.T) {
 	// Note the use of assert.Eventually here and throughout this test is because
 	// status events are processed asynchronously in the background.
 	assert.Eventually(t, func() bool {
-		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, false)
+		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll)
 		require.True(t, ok)
 		return st.StatusEvent.Status() == component.StatusStarting
 	}, time.Second, 10*time.Millisecond)
@@ -61,7 +61,7 @@ func TestComponentStatus(t *testing.T) {
 	require.NoError(t, ext.Ready())
 
 	assert.Eventually(t, func() bool {
-		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, false)
+		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll)
 		require.True(t, ok)
 		return st.StatusEvent.Status() == component.StatusOK
 	}, time.Second, 10*time.Millisecond)
@@ -72,7 +72,7 @@ func TestComponentStatus(t *testing.T) {
 	}
 
 	assert.Eventually(t, func() bool {
-		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, false)
+		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll)
 		require.True(t, ok)
 		return st.StatusEvent.Status() == component.StatusStopping
 	}, time.Second, 10*time.Millisecond)
@@ -85,7 +85,7 @@ func TestComponentStatus(t *testing.T) {
 		ext.ComponentStatusChanged(id, component.NewStatusEvent(component.StatusStopped))
 	}
 
-	st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, false)
+	st, ok = ext.aggregator.AggregateStatus(status.ScopeAll)
 	require.True(t, ok)
 	assert.Equal(t, component.StatusStopping, st.StatusEvent.Status())
 }
