@@ -28,27 +28,43 @@ Check the [`go install` reference](https://go.dev/ref/mod#go-install) to install
 
 First, you'll need an OpenTelemetry Collector to receive the telemetry data. Follow the project's instructions for a detailed setting up guide. The following configuration file should be sufficient:
 
+config.yaml:
 ```yaml
 receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: localhost:4317
+        endpoint: 0.0.0.0:4317
 
 processors:
+  batch:
 
 exporters:
   debug:
+    verbosity: detailed
 
 service:
   pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
     traces:
-      receivers:
-      - otlp
-      processors: []
-      exporters:
-      - debug
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
 ```
+
+Starting OpenTelemetry collector via docker:
+```
+docker run -p 4317:4317 -v $(pwd)/config.yaml:/etc/otelcol-contrib/config.yaml ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.86.0
+```
+
+Other options for running the collector are documented here https://opentelemetry.io/docs/collector/getting-started/
 
 Once the OpenTelemetry Collector instance is up and running, run `telemetrygen` for your desired telemetry:
 
@@ -65,3 +81,15 @@ telemetrygen traces --otlp-insecure --traces 1
 ```
 
 Check `telemetrygen traces --help` for all the options.
+
+### Logs
+
+```console
+telemetrygen logs --duration 5s --otlp-insecure
+```
+
+### Metrics
+
+```console
+telemetrygen metrics --duration 5s --otlp-insecure
+```

@@ -20,9 +20,11 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 )
 
@@ -43,6 +45,7 @@ func Components() (
 		jaegerreceiver.NewFactory(),
 		opencensusreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
+		syslogreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),
 	)
 	errs = multierr.Append(errs, err)
@@ -52,6 +55,7 @@ func Components() (
 		opencensusexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
+		syslogexporter.NewFactory(),
 		zipkinexporter.NewFactory(),
 	)
 	errs = multierr.Append(errs, err)

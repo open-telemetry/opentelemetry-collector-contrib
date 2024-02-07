@@ -6,6 +6,7 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -20,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
@@ -220,10 +220,10 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 
 	var sl sketches.SketchSeriesList
 	var sp []*pb.ClientStatsPayload
+	var errs []error
 	if isMetricExportV2Enabled() {
 		var ms []datadogV2.MetricSeries
 		ms, sl, sp = consumer.(*metrics.Consumer).All(exp.getPushTime(), exp.params.BuildInfo, tags, metadata)
-		err = nil
 		if len(ms) > 0 {
 			exp.params.Logger.Debug("exporting native Datadog payload", zap.Any("metric", ms))
 			_, experr := exp.retrier.DoWithRetries(ctx, func(context.Context) error {
@@ -231,18 +231,17 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 				_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: ms}, *clientutil.GZipSubmitMetricsOptionalParameters)
 				return clientutil.WrapError(merr, httpresp)
 			})
-			err = multierr.Append(err, experr)
+			errs = append(errs, experr)
 		}
 	} else {
 		var ms []zorkian.Metric
 		ms, sl, sp = consumer.(*metrics.ZorkianConsumer).All(exp.getPushTime(), exp.params.BuildInfo, tags)
-		err = nil
 		if len(ms) > 0 {
 			exp.params.Logger.Debug("exporting Zorkian Datadog payload", zap.Any("metric", ms))
 			_, experr := exp.retrier.DoWithRetries(ctx, func(context.Context) error {
 				return exp.client.PostMetrics(ms)
 			})
-			err = multierr.Append(err, experr)
+			errs = append(errs, experr)
 		}
 	}
 
@@ -251,7 +250,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 		_, experr := exp.retrier.DoWithRetries(ctx, func(ctx context.Context) error {
 			return exp.pushSketches(ctx, sl)
 		})
-		err = multierr.Append(err, experr)
+		errs = append(errs, experr)
 	}
 
 	if len(sp) > 0 {
@@ -262,5 +261,5 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 		}
 	}
 
-	return err
+	return errors.Join(errs...)
 }

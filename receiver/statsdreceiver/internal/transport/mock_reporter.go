@@ -33,7 +33,7 @@ func (m *MockReporter) OnMetricsProcessed(_ context.Context, _ int, _ error) {
 	m.wgMetricsProcessed.Done()
 }
 
-func (m *MockReporter) OnDebugf(_ string, _ ...interface{}) {
+func (m *MockReporter) OnDebugf(_ string, _ ...any) {
 }
 
 // WaitAllOnMetricsProcessedCalls blocks until the number of expected calls

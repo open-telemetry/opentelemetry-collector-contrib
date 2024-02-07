@@ -16,6 +16,7 @@ This exporter sends metrics, logs and trace data to
   [Azure Data Explorer](https://docs.microsoft.com/en-us/azure/data-explorer),
   [Azure Synapse Data Explorer](https://docs.microsoft.com/en-us/azure/synapse-analytics/data-explorer/data-explorer-overview) and
   [Real time analytics in Fabric](https://learn.microsoft.com/en-us/fabric/real-time-analytics/overview)
+
 ## Configuration
 
 The following settings are required:
@@ -78,6 +79,17 @@ exporters:
     traces_table_json_mapping: "oteltraces_mapping"
     # Type of ingestion managed or queued
     ingestion_type : "managed"
+    #other available exporter helper options, see more here: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md
+    # timeout: 10s
+    # sending_queue:
+    #   enabled: true
+    #   num_consumers: 2
+    #   queue_size: 10
+    # retry_on_failure:
+    #   enabled: true
+    #   initial_interval: 10s
+    #   max_interval: 60s
+    #   max_elapsed_time: 10m
 ```
 
 ## Attribute mapping
@@ -193,3 +205,24 @@ with ( docstring = "Histo sum count processing function", folder = "UpdatePolicy
 .alter table HistoData policy update 
 @'[{ "IsEnabled": true, "Source": "RawMetricsData","Query": "ExtractHistoCountColumns()", "IsTransactional": false, "PropagateIngestionProperties": false}]'
 ```
+
+### Opentelemetry Exporter Helper Configurations
+
+The ADX exporter now includes support for Opentelemetry exporter helper configurations. This feature allows you to leverage the exporter helper capabilities(retries, timeout etc.) provided natively by Otel. Read more [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
+
+Please note that this configuration is not enabled by default. To utilize the Opentelemetry exporter helper, you will need to add it manually to the configuration.
+
+#### Example Configuration
+
+```yaml
+# Example Opentelemetry Exporter Configuration
+  timeout: 10s
+  sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 10
+  retry_on_failure:
+      enabled: true
+      initial_interval: 10s
+      max_interval: 60s
+      max_elapsed_time: 10m

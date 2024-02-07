@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	errMaxSearchWaitTimeExceeded = errors.New("Maximum search wait time exceeded for metric")
+	errMaxSearchWaitTimeExceeded = errors.New("maximum search wait time exceeded for metric")
 )
 
 type splunkScraper struct {
@@ -43,9 +43,12 @@ func newSplunkMetricsScraper(params receiver.CreateSettings, cfg *Config) splunk
 }
 
 // Create a client instance and add to the splunkScraper
-func (s *splunkScraper) start(_ context.Context, _ component.Host) (err error) {
-	c := newSplunkEntClient(s.conf)
-	s.splunkClient = &c
+func (s *splunkScraper) start(_ context.Context, h component.Host) (err error) {
+	client, err := newSplunkEntClient(s.conf, h, s.settings)
+	if err != nil {
+		return err
+	}
+	s.splunkClient = client
 	return nil
 }
 
@@ -105,7 +108,6 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
 			errs.Add(err)
-			return
 		}
 		res.Body.Close()
 
@@ -119,7 +121,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 			time.Sleep(2 * time.Second)
 		}
 
-		if time.Since(start) > s.conf.MaxSearchWaitTime {
+		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
 			errs.Add(errMaxSearchWaitTimeExceeded)
 			return
 		}

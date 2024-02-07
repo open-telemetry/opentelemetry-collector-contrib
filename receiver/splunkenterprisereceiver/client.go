@@ -5,41 +5,31 @@ package splunkenterprisereceiver // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
-	"crypto/tls"
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 type splunkEntClient struct {
-	endpoint  *url.URL
-	client    *http.Client
-	basicAuth string
+	client   *http.Client
+	endpoint *url.URL
 }
 
-func newSplunkEntClient(cfg *Config) splunkEntClient {
-	// tls party
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+func newSplunkEntClient(cfg *Config, h component.Host, s component.TelemetrySettings) (*splunkEntClient, error) {
+	client, err := cfg.HTTPClientSettings.ToClient(h, s)
+	if err != nil {
+		return nil, err
 	}
-
-	client := &http.Client{Transport: tr}
 
 	endpoint, _ := url.Parse(cfg.Endpoint)
 
-	// build and encode our auth string. Do this work once to avoid rebuilding the
-	// auth header every time we make a new request
-	authString := fmt.Sprintf("%s:%s", cfg.Username, cfg.Password)
-	auth64 := base64.StdEncoding.EncodeToString([]byte(authString))
-	basicAuth := fmt.Sprintf("Basic %s", auth64)
-
-	return splunkEntClient{
-		client:    client,
-		endpoint:  endpoint,
-		basicAuth: basicAuth,
-	}
+	return &splunkEntClient{
+		client:   client,
+		endpoint: endpoint,
+	}, nil
 }
 
 // For running ad hoc searches only
@@ -59,10 +49,6 @@ func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse)
 			return nil, err
 		}
 
-		// Required headers
-		req.Header.Add("Authorization", c.basicAuth)
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
 		return req, nil
 	}
 	path := fmt.Sprintf("/services/search/jobs/%s/results", *sr.Jobid)
@@ -72,10 +58,6 @@ func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse)
 	if err != nil {
 		return nil, err
 	}
-
-	// Required headers
-	req.Header.Add("Authorization", c.basicAuth)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	return req, nil
 }
@@ -87,10 +69,6 @@ func (c *splunkEntClient) createAPIRequest(ctx context.Context, apiEndpoint stri
 	if err != nil {
 		return nil, err
 	}
-
-	// Required headers
-	req.Header.Add("Authorization", c.basicAuth)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	return req, nil
 }

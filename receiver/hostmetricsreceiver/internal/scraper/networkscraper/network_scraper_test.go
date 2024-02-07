@@ -25,7 +25,7 @@ import (
 func TestScrape(t *testing.T) {
 	type testCase struct {
 		name                    string
-		config                  Config
+		config                  *Config
 		bootTimeFunc            func(context.Context) (uint64, error)
 		ioCountersFunc          func(context.Context, bool) ([]net.IOCountersStat, error)
 		connectionsFunc         func(context.Context, string) ([]net.ConnectionStat, error)
@@ -43,7 +43,7 @@ func TestScrape(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "Standard",
-			config: Config{
+			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectConntrakMetrics:   true,
@@ -51,7 +51,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name: "Standard with direction removed",
-			config: Config{
+			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectConntrakMetrics:   true,
@@ -59,7 +59,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name: "Validate Start Time",
-			config: Config{
+			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			bootTimeFunc:            func(context.Context) (uint64, error) { return 100, nil },
@@ -69,7 +69,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name: "Include Filter that matches nothing",
-			config: Config{
+			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				Include:              MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
 			},
@@ -78,7 +78,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name: "Invalid Include Filter",
-			config: Config{
+			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				Include:              MatchConfig{Interfaces: []string{"test"}},
 			},
@@ -87,7 +87,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name: "Invalid Exclude Filter",
-			config: Config{
+			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				Exclude:              MatchConfig{Interfaces: []string{"test"}},
 			},
@@ -96,12 +96,14 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name:                    "Boot Time Error",
+			config:                  &Config{},
 			bootTimeFunc:            func(context.Context) (uint64, error) { return 0, errors.New("err1") },
 			initializationErr:       "err1",
 			expectConnectionsMetric: true,
 		},
 		{
 			name:                    "IOCounters Error",
+			config:                  &Config{},
 			ioCountersFunc:          func(context.Context, bool) ([]net.IOCountersStat, error) { return nil, errors.New("err2") },
 			expectedErr:             "failed to read network IO stats: err2",
 			expectedErrCount:        networkMetricsLen,
@@ -109,14 +111,14 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name:             "Connections Error",
-			config:           Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
+			config:           &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
 			connectionsFunc:  func(context.Context, string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") },
 			expectedErr:      "failed to read TCP connections: err3",
 			expectedErrCount: connectionsMetricsLen,
 		},
 		{
 			name: "Conntrack error ignored if metric disabled",
-			config: Config{
+			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(), // conntrack metrics are disabled by default
 			},
 			conntrackFunc:           func(ctx context.Context) ([]net.FilterStat, error) { return nil, errors.New("conntrack failed") },
@@ -125,10 +127,10 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name: "Connections metrics is disabled",
-			config: func() Config {
+			config: func() *Config {
 				cfg := Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
 				cfg.MetricsBuilderConfig.Metrics.SystemNetworkConnections.Enabled = false
-				return cfg
+				return &cfg
 			}(),
 			connectionsFunc: func(ctx context.Context, s string) ([]net.ConnectionStat, error) {
 				panic("should not be called")
@@ -139,7 +141,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newNetworkScraper(context.Background(), receivertest.NewNopCreateSettings(), &test.config)
+			scraper, err := newNetworkScraper(context.Background(), receivertest.NewNopCreateSettings(), test.config)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}

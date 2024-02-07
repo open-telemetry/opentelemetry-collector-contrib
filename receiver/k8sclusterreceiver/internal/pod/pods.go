@@ -41,7 +41,8 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 			NodeName: pod.Spec.NodeName,
 		},
 		Status: corev1.PodStatus{
-			Phase: pod.Status.Phase,
+			Phase:    pod.Status.Phase,
+			QOSClass: pod.Status.QOSClass,
 		},
 	}
 	for _, cs := range pod.Status.ContainerStatuses {
@@ -76,7 +77,7 @@ func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.
 	rb.SetK8sNodeName(pod.Spec.NodeName)
 	rb.SetK8sPodName(pod.Name)
 	rb.SetK8sPodUID(string(pod.UID))
-	rb.SetOpencensusResourcetype("k8s")
+	rb.SetK8sPodQosClass(string(pod.Status.QOSClass))
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	for _, c := range pod.Spec.Containers {

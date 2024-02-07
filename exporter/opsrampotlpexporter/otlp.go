@@ -46,8 +46,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
-var tokenRenewInProgress bool
-var credentials Credentials
+var (
+	tokenRenewInProgress bool
+	credentials          Credentials
+)
 
 type opsrampOTLPExporter struct {
 	// Input configuration.
@@ -103,7 +105,6 @@ type Person struct {
 }
 
 func getAuthToken(cfg SecuritySettings) (string, error) {
-
 	if tokenRenewInProgress {
 		for tokenRenewInProgress {
 			time.Sleep(time.Second * 5)
@@ -114,7 +115,7 @@ func getAuthToken(cfg SecuritySettings) (string, error) {
 	tokenRenewInProgress = true
 	client := &http.Client{}
 	data := url.Values{}
-	data.Set("client_id", cfg.ClientId)
+	data.Set("client_id", cfg.ClientID)
 	data.Set("client_secret", cfg.ClientSecret)
 	data.Set("grant_type", grantType)
 	request, err := http.NewRequest("POST", cfg.OAuthServiceURL, bytes.NewBufferString(data.Encode()))
@@ -124,7 +125,6 @@ func getAuthToken(cfg SecuritySettings) (string, error) {
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := client.Do(request)
-
 	if err != nil {
 		return "", err
 	}
@@ -138,13 +138,11 @@ func getAuthToken(cfg SecuritySettings) (string, error) {
 		return "", err
 	}
 	return credentials.AccessToken, nil
-
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (err error) {
-
 	if e.clientConn, err = e.config.GRPCClientSettings.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
 		return err
 	}
@@ -178,8 +176,8 @@ func (e *opsrampOTLPExporter) pushTraces(ctx context.Context, td ptrace.Traces) 
 	if err != nil {
 		st := status.Convert(err)
 		if st.Code() == codes.Unauthenticated {
-			if err := e.updateExpiredToken(); err != nil {
-				return fmt.Errorf("couldn't retreive new token instead of expired: %w", err)
+			if err = e.updateExpiredToken(); err != nil {
+				return fmt.Errorf("couldn't retrieve new token instead of expired: %w", err)
 			}
 			_, err = e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
 			if err != nil {
@@ -194,10 +192,26 @@ func (e *opsrampOTLPExporter) pushTraces(ctx context.Context, td ptrace.Traces) 
 func (e *opsrampOTLPExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 	_, err := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
+	// trying to get new access token in case of expiration
+	if err != nil {
+		st := status.Convert(err)
+		if st.Code() == codes.Unauthenticated {
+			if err = e.updateExpiredToken(); err != nil {
+				return fmt.Errorf("couldn't retrieve new token instead of expired: %w", err)
+			}
+
+			_, err = e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
+			if err != nil {
+				return err
+			}
+		}
+		return processError(err)
+	}
+
 	return processError(err)
 }
 
-func (e *opsrampOTLPExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
+func (e *opsrampOTLPExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	if ld.LogRecordCount() <= 0 {
 		return nil
 	}
@@ -215,13 +229,12 @@ func (e *opsrampOTLPExporter) pushLogs(ctx context.Context, ld plog.Logs) error 
 	req := plogotlp.NewExportRequestFromLogs(ld)
 
 	_, err := e.logExporter.Export(e.enhanceContext(context.Background()), req, e.callOptions...)
-
 	// trying to get new access token in case of expiration
 	if err != nil {
 		st := status.Convert(err)
 		if st.Code() == codes.Unauthenticated {
-			if err := e.updateExpiredToken(); err != nil {
-				return fmt.Errorf("couldn't retreive new token instead of expired: %w", err)
+			if err = e.updateExpiredToken(); err != nil {
+				return fmt.Errorf("couldn't retrieve new token instead of expired: %w", err)
 			}
 
 			_, err = e.logExporter.Export(e.enhanceContext(context.Background()), req, e.callOptions...)
@@ -336,7 +349,6 @@ func getThrottleDuration(t *errdetails.RetryInfo) time.Duration {
 }
 
 func (e *opsrampOTLPExporter) applyMasking(ld plog.Logs) {
-
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		resLogs := ld.ResourceLogs().At(i)
 		for k := 0; k < resLogs.ScopeLogs().Len(); k++ {
@@ -350,7 +362,6 @@ func (e *opsrampOTLPExporter) applyMasking(ld plog.Logs) {
 			}
 		}
 	}
-
 }
 
 func (e *opsrampOTLPExporter) skipExpired(ld plog.Logs) {

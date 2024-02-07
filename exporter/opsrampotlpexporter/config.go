@@ -33,7 +33,7 @@ type MaskingSettings struct {
 
 type SecuritySettings struct {
 	OAuthServiceURL string `mapstructure:"oauth_service_url"`
-	ClientId        string `mapstructure:"client_id"`
+	ClientID        string `mapstructure:"client_id"`
 	ClientSecret    string `mapstructure:"client_secret"`
 }
 
@@ -49,7 +49,7 @@ func (s *SecuritySettings) Validate() error {
 		return errors.New("oauth service url missed")
 	}
 
-	if len(s.ClientId) == 0 {
+	if len(s.ClientID) == 0 {
 		return errors.New("client_id missed")
 	}
 

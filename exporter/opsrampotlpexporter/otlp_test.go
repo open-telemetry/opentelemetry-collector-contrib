@@ -229,7 +229,7 @@ func TestSendTraces(t *testing.T) {
 	}
 	cfg.Security = SecuritySettings{
 		OAuthServiceURL: "https://asura.opsramp.net/auth/oauth/token?agent=true",
-		ClientId:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
+		ClientID:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
 	set := exportertest.NewNopCreateSettings()
@@ -325,7 +325,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Security = SecuritySettings{
 				OAuthServiceURL: "https://asura.opsramp.net/auth/oauth/token?agent=true",
-				ClientId:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
+				ClientID:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 				ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 			}
 			cfg.GRPCClientSettings = test.gRPCClientSettings
@@ -385,7 +385,7 @@ func TestSendMetrics(t *testing.T) {
 	}
 	cfg.Security = SecuritySettings{
 		OAuthServiceURL: "https://asura.opsramp.net/auth/oauth/token?agent=true",
-		ClientId:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
+		ClientID:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
 	set := exportertest.NewNopCreateSettings()
@@ -463,7 +463,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	}
 	cfg.Security = SecuritySettings{
 		OAuthServiceURL: "https://asura.opsramp.net/auth/oauth/token?agent=true",
-		ClientId:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
+		ClientID:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
 
@@ -526,7 +526,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	}
 	cfg.Security = SecuritySettings{
 		OAuthServiceURL: "https://asura.opsramp.net/auth/oauth/token?agent=true",
-		ClientId:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
+		ClientID:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
 	set := exportertest.NewNopCreateSettings()
@@ -582,7 +582,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 	}
 	cfg.Security = SecuritySettings{
 		OAuthServiceURL: "https://asura.opsramp.net/auth/oauth/token?agent=true",
-		ClientId:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
+		ClientID:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
 	set := exportertest.NewNopCreateSettings()
@@ -665,7 +665,7 @@ func TestSendLogData(t *testing.T) {
 	}
 	cfg.Security = SecuritySettings{
 		OAuthServiceURL: "https://asura.opsramp.net/auth/oauth/token?agent=true",
-		ClientId:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
+		ClientID:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
 	set := exportertest.NewNopCreateSettings()
@@ -729,7 +729,7 @@ func TestRegexp(t *testing.T) {
 func TestGetAuthToken(t *testing.T) {
 	cfg := SecuritySettings{
 		OAuthServiceURL: "https://asura.opsramp.net/auth/oauth/token?agent=true",
-		ClientId:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
+		ClientID:        "mamRxRJB796HYtWYxqeDzeEXCKSswnsr",
 		ClientSecret:    "Da2achZqvHF7tKDaSP3FCkHE2PKcY6twRxwZEnEYQHc5GADgHy5VZDBxdeKhNbrw",
 	}
 	token, err := getAuthToken(cfg)
@@ -738,7 +738,6 @@ func TestGetAuthToken(t *testing.T) {
 }
 
 func TestSkipExpiredLogs(t *testing.T) {
-
 	half := 30 * time.Minute
 	tests := []struct {
 		name       string
@@ -775,7 +774,6 @@ func TestSkipExpiredLogs(t *testing.T) {
 			assert.Equal(t, ld.LogRecordCount(), tt.expected)
 		})
 	}
-
 }
 
 func generateTestEntries() plog.Logs {
@@ -790,5 +788,4 @@ func generateTestEntries() plog.Logs {
 	}
 
 	return ld
-
 }

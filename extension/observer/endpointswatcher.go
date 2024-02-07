@@ -57,7 +57,7 @@ func (ew *EndpointsWatcher) ListAndWatch(notify Notify) {
 					return
 				case <-ticker.C:
 					var toNotify []NotifyID
-					ew.toNotify.Range(func(notifyID, _ interface{}) bool {
+					ew.toNotify.Range(func(notifyID, _ any) bool {
 						toNotify = append(toNotify, notifyID.(NotifyID))
 						return true
 					})

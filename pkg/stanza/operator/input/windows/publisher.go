@@ -36,6 +36,10 @@ func (p *Publisher) Open(provider string) error {
 	return nil
 }
 
+func (p *Publisher) Valid() bool {
+	return p.handle != 0
+}
+
 // Close will close the publisher handle.
 func (p *Publisher) Close() error {
 	if p.handle == 0 {

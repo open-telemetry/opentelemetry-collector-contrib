@@ -15,6 +15,7 @@
 | [Exporter Pipeline Type] | [Receiver Pipeline Type] | [Stability Level] |
 | ------------------------ | ------------------------ | ----------------- |
 | traces | metrics | [beta] |
+| traces | traces | [beta] |
 
 [Exporter Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
@@ -91,7 +92,7 @@ service:
      exporters: [datadog/connector]
 
    traces/2: # this pipeline uses sampling
-     receivers: [otlp]
+     receivers: [datadog/connector]
      processors: [batch, probabilistic_sampler]
      exporters: [datadog]
 

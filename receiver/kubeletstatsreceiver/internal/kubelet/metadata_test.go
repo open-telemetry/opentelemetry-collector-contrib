@@ -66,13 +66,13 @@ func TestSetExtraLabels(t *testing.T) {
 		metadata  Metadata
 		args      []string
 		wantError string
-		want      map[string]interface{}
+		want      map[string]any
 	}{
 		{
 			name:     "no_labels",
 			metadata: NewMetadata([]MetadataLabel{}, nil, nil),
 			args:     []string{"uid", "container.id", "container"},
-			want:     map[string]interface{}{},
+			want:     map[string]any{},
 		},
 		{
 			name: "set_container_id_valid",
@@ -100,7 +100,7 @@ func TestSetExtraLabels(t *testing.T) {
 				},
 			}, nil),
 			args: []string{"uid-1234", "container.id", "container1"},
-			want: map[string]interface{}{
+			want: map[string]any{
 				string(MetadataLabelContainerID): "test-container",
 			},
 		},
@@ -130,7 +130,7 @@ func TestSetExtraLabels(t *testing.T) {
 				},
 			}, nil),
 			args: []string{"uid-1234", "container.id", "init-container1"},
-			want: map[string]interface{}{
+			want: map[string]any{
 				string(MetadataLabelContainerID): "test-init-container",
 			},
 		},
@@ -236,7 +236,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 		name string
 		vs   v1.VolumeSource
 		args []string
-		want map[string]interface{}
+		want map[string]any
 	}{
 		{
 			name: "hostPath",
@@ -244,7 +244,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				HostPath: &v1.HostPathVolumeSource{},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k8s.volume.type": "hostPath",
 			},
 		},
@@ -254,7 +254,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				ConfigMap: &v1.ConfigMapVolumeSource{},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k8s.volume.type": "configMap",
 			},
 		},
@@ -264,7 +264,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				EmptyDir: &v1.EmptyDirVolumeSource{},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k8s.volume.type": "emptyDir",
 			},
 		},
@@ -274,7 +274,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				Secret: &v1.SecretVolumeSource{},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k8s.volume.type": "secret",
 			},
 		},
@@ -284,7 +284,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				DownwardAPI: &v1.DownwardAPIVolumeSource{},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k8s.volume.type": "downwardAPI",
 			},
 		},
@@ -296,7 +296,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k8s.volume.type":                "persistentVolumeClaim",
 				"k8s.persistentvolumeclaim.name": "claim-name",
 			},
@@ -311,7 +311,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k8s.volume.type": "awsElasticBlockStore",
 				"aws.volume.id":   "volume_id",
 				"fs.type":         "fs_type",
@@ -328,7 +328,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k8s.volume.type": "gcePersistentDisk",
 				"gce.pd.name":     "pd_name",
 				"fs.type":         "fs_type",
@@ -344,7 +344,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 				},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k8s.volume.type":          "glusterfs",
 				"glusterfs.endpoints.name": "endspoints_name",
 				"glusterfs.path":           "path",
@@ -354,7 +354,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 			name: "unsupported type",
 			vs:   v1.VolumeSource{},
 			args: []string{"uid-1234", "k8s.volume.type"},
-			want: map[string]interface{}{},
+			want: map[string]any{},
 		},
 	}
 	for _, tt := range tests {

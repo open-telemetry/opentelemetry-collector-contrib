@@ -7,6 +7,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opsrampotlpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/batchmemlimitprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/scrubbingprocessor"
+	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/forwardconnector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
@@ -22,6 +24,12 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
@@ -51,6 +59,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
@@ -340,6 +349,7 @@ func Components() (otelcol.Factories, error) {
 		lokiexporter.NewFactory(),
 		mezmoexporter.NewFactory(),
 		opencensusexporter.NewFactory(),
+		opensearchexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
 		opsrampotlpexporter.NewFactory(),
@@ -387,6 +397,20 @@ func Components() (otelcol.Factories, error) {
 		batchmemlimitprocessor.NewFactory(),
 	}
 	factories.Processors, err = processor.MakeFactoryMap(processors...)
+	if err != nil {
+		return otelcol.Factories{}, err
+	}
+
+	connectors := []connector.Factory{
+		forwardconnector.NewFactory(),
+		countconnector.NewFactory(),
+		datadogconnector.NewFactory(),
+		exceptionsconnector.NewFactory(),
+		routingconnector.NewFactory(),
+		servicegraphconnector.NewFactory(),
+		spanmetricsconnector.NewFactory(),
+	}
+	factories.Connectors, err = connector.MakeFactoryMap(connectors...)
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
