@@ -76,7 +76,6 @@ components:
     processor:
         - attributes
         - cumulativetodelta
-        - datadog
         - deltatorate
         - experimental_metricsgeneration
         - filter

@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("googlemanagedprometheus")
+)
+
 const (
-	Type             = "googlemanagedprometheus"
 	MetricsStability = component.StabilityLevelBeta
 )
 

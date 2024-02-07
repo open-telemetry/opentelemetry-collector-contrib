@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("solace")
+)
+
 const (
-	Type            = "solace"
 	TracesStability = component.StabilityLevelBeta
 )
 
