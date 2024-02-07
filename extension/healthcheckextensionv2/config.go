@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/grpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/http"
 )
@@ -20,9 +21,10 @@ var (
 // Config has the configuration for the extension enabling the health check
 // extension, used to report the health status of the service.
 type Config struct {
-	RecoveryDuration time.Duration  `mapstructure:"recovery_duration"`
-	GRPCSettings     *grpc.Settings `mapstructure:"grpc"`
-	HTTPSettings     *http.Settings `mapstructure:"http"`
+	ComponentHealthSettings *common.ComponentHealthSettings `mapstructure:"component_health"`
+	RecoveryDuration        time.Duration                   `mapstructure:"recovery_duration"`
+	GRPCSettings            *grpc.Settings                  `mapstructure:"grpc"`
+	HTTPSettings            *http.Settings                  `mapstructure:"http"`
 }
 
 func (c *Config) Validate() error {

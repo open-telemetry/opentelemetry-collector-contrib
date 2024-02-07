@@ -57,8 +57,8 @@ func newExtension(
 	if config.HTTPSettings != nil {
 		srvHTTP := http.NewServer(
 			config.HTTPSettings,
+			config.ComponentHealthSettings,
 			set.TelemetrySettings,
-			config.RecoveryDuration,
 			aggregator,
 		)
 		comps = append(comps, srvHTTP)
