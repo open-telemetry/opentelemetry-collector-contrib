@@ -341,8 +341,8 @@ func (v *vcenterMetricScraper) collectVMs(
 		rp, _ := vm.ResourcePool(ctx)
 
 		if rp != nil {
-			rpCompute, err := rp.Owner(ctx)
-			if err != nil {
+			rpCompute, rpErr := rp.Owner(ctx)
+			if rpErr != nil {
 				errs.AddPartial(1, err)
 				return
 			}
