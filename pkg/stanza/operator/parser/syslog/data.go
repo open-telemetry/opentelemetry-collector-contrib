@@ -70,14 +70,12 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 			},
 			&entry.Entry{
 				Timestamp:    time.Date(ts.Year(), ts.Month(), ts.Day(), ts.Hour(), ts.Minute(), ts.Second(), 0, location["utc"]),
-				Severity:     entry.Fatal,
-				SeverityText: "emerg",
+				Severity:     entry.Default,
+				SeverityText: "",
 				Attributes: map[string]any{
 					"appname":  "apache_server",
-					"facility": 0,
 					"hostname": "1.2.3.4",
 					"message":  "test message",
-					"priority": 0,
 				},
 				Body: fmt.Sprintf("%s 1.2.3.4 apache_server: test message", ts.Format("Jan _2 15:04:05")),
 			},
@@ -215,15 +213,13 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 			},
 			&entry.Entry{
 				Timestamp:    time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.UTC),
-				Severity:     entry.Fatal,
-				SeverityText: "emerg",
+				Severity:     entry.Default,
+				SeverityText: "",
 				Attributes: map[string]any{
 					"appname":  "SecureAuth0",
-					"facility": 0,
 					"hostname": "192.168.2.132",
 					"message":  "Found the user for retrieving user's profile",
 					"msg_id":   "ID52020",
-					"priority": 0,
 					"proc_id":  "23108",
 					"structured_data": map[string]any{
 						"SecureAuth@27389": map[string]any{
