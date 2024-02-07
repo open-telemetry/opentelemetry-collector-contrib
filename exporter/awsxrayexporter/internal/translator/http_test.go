@@ -33,6 +33,24 @@ func TestClientSpanWithURLAttribute(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
 }
 
+func TestClientSpanWithURLAttributeStable(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[AttributeHTTPRequestMethod] = "GET"
+	attributes[AttributeURLFull] = "https://api.example.com/users/junit"
+	attributes[AttributeHTTPResponseStatusCode] = 200
+	span := constructHTTPClientSpan(attributes)
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.NotNil(t, httpData)
+	assert.NotNil(t, filtered)
+	w := testWriters.borrow()
+	require.NoError(t, w.Encode(httpData))
+	jsonStr := w.String()
+	testWriters.release(w)
+	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+}
+
 func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
@@ -40,6 +58,27 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes[conventions.AttributeHTTPHost] = "api.example.com"
 	attributes[conventions.AttributeHTTPTarget] = "/users/junit"
 	attributes[conventions.AttributeHTTPStatusCode] = 200
+	attributes["user.id"] = "junit"
+	span := constructHTTPClientSpan(attributes)
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.NotNil(t, httpData)
+	assert.NotNil(t, filtered)
+	w := testWriters.borrow()
+	require.NoError(t, w.Encode(httpData))
+	jsonStr := w.String()
+	testWriters.release(w)
+	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+}
+
+func TestClientSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[AttributeHTTPRequestMethod] = "GET"
+	attributes[AttributeURLSchema] = "https"
+	attributes[AttributeServerAddress] = "api.example.com"
+	attributes[AttributeURLPath] = "/users/junit"
+	attributes[AttributeHTTPResponseStatusCode] = 200
 	attributes["user.id"] = "junit"
 	span := constructHTTPClientSpan(attributes)
 
@@ -79,10 +118,49 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
 }
 
+func TestClientSpanWithPeerAttributesStable(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[AttributeHTTPRequestMethod] = "GET"
+	attributes[AttributeURLSchema] = "http"
+	attributes[conventions.AttributeNetPeerName] = "kb234.example.com"
+	attributes[conventions.AttributeNetPeerPort] = 8080
+	attributes[conventions.AttributeNetPeerIP] = "10.8.17.36"
+	attributes[conventions.AttributeHTTPTarget] = "/users/junit"
+	attributes[conventions.AttributeHTTPStatusCode] = 200
+	span := constructHTTPClientSpan(attributes)
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.NotNil(t, httpData)
+	assert.NotNil(t, filtered)
+
+	assert.Equal(t, "10.8.17.36", *httpData.Request.ClientIP)
+
+	w := testWriters.borrow()
+	require.NoError(t, w.Encode(httpData))
+	jsonStr := w.String()
+	testWriters.release(w)
+	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
+}
+
 func TestClientSpanWithHttpPeerAttributes(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPClientIP] = "1.2.3.4"
 	attributes[conventions.AttributeNetPeerIP] = "10.8.17.36"
+	span := constructHTTPClientSpan(attributes)
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.NotNil(t, httpData)
+	assert.NotNil(t, filtered)
+
+	assert.Equal(t, "1.2.3.4", *httpData.Request.ClientIP)
+}
+
+func TestClientSpanWithHttpPeerAttributesStable(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[AttributeClientAddress] = "1.2.3.4"
+	attributes[AttributeNetworkPeerAddress] = "10.8.17.36"
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -100,6 +178,25 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 	attributes[conventions.AttributeNetPeerIP] = "10.8.17.36"
 	attributes[conventions.AttributeNetPeerPort] = "8080"
 	attributes[conventions.AttributeHTTPTarget] = "/users/junit"
+	span := constructHTTPClientSpan(attributes)
+
+	filtered, httpData := makeHTTP(span)
+	assert.NotNil(t, httpData)
+	assert.NotNil(t, filtered)
+	w := testWriters.borrow()
+	require.NoError(t, w.Encode(httpData))
+	jsonStr := w.String()
+	testWriters.release(w)
+	assert.True(t, strings.Contains(jsonStr, "http://10.8.17.36:8080/users/junit"))
+}
+
+func TestClientSpanWithPeerIp4AttributesStable(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[AttributeHTTPRequestMethod] = "GET"
+	attributes[AttributeURLSchema] = "http"
+	attributes[AttributeNetworkPeerAddress] = "10.8.17.36"
+	attributes[AttributeClientPort] = "8080"
+	attributes[AttributeURLPath] = "/users/junit"
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -131,6 +228,25 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "https://2001:db8:85a3::8a2e:370:7334/users/junit"))
 }
 
+func TestClientSpanWithPeerIp6AttributesStable(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[AttributeHTTPRequestMethod] = "GET"
+	attributes[AttributeURLSchema] = "https"
+	attributes[AttributeNetworkPeerAddress] = "2001:db8:85a3::8a2e:370:7334"
+	attributes[AttributeClientPort] = "443"
+	attributes[AttributeURLPath] = "/users/junit"
+	span := constructHTTPClientSpan(attributes)
+
+	filtered, httpData := makeHTTP(span)
+	assert.NotNil(t, httpData)
+	assert.NotNil(t, filtered)
+	w := testWriters.borrow()
+	require.NoError(t, w.Encode(httpData))
+	jsonStr := w.String()
+	testWriters.release(w)
+	assert.True(t, strings.Contains(jsonStr, "https://2001:db8:85a3::8a2e:370:7334/users/junit"))
+}
+
 func TestServerSpanWithURLAttribute(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
@@ -138,6 +254,26 @@ func TestServerSpanWithURLAttribute(t *testing.T) {
 	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
 	attributes[conventions.AttributeHTTPUserAgent] = "PostmanRuntime/7.21.0"
 	attributes[conventions.AttributeHTTPStatusCode] = 200
+	span := constructHTTPServerSpan(attributes)
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.NotNil(t, httpData)
+	assert.NotNil(t, filtered)
+	w := testWriters.borrow()
+	require.NoError(t, w.Encode(httpData))
+	jsonStr := w.String()
+	testWriters.release(w)
+	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+}
+
+func TestServerSpanWithURLAttributeStable(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[AttributeHTTPRequestMethod] = "GET"
+	attributes[AttributeURLFull] = "https://api.example.com/users/junit"
+	attributes[AttributeClientAddress] = "192.168.15.32"
+	attributes[AttributeUserAgentOriginal] = "PostmanRuntime/7.21.0"
+	attributes[AttributeHTTPResponseStatusCode] = 200
 	span := constructHTTPServerSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -172,6 +308,27 @@ func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
 }
 
+func TestServerSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[AttributeHTTPRequestMethod] = "GET"
+	attributes[AttributeURLSchema] = "https"
+	attributes[AttributeServerAddress] = "api.example.com"
+	attributes[AttributeURLPath] = "/users/junit"
+	attributes[AttributeClientAddress] = "192.168.15.32"
+	attributes[AttributeHTTPResponseStatusCode] = 200
+	span := constructHTTPServerSpan(attributes)
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.NotNil(t, httpData)
+	assert.NotNil(t, filtered)
+	w := testWriters.borrow()
+	require.NoError(t, w.Encode(httpData))
+	jsonStr := w.String()
+	testWriters.release(w)
+	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+}
+
 func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
@@ -181,6 +338,28 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 	attributes[conventions.AttributeHTTPTarget] = "/users/junit"
 	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
 	attributes[conventions.AttributeHTTPStatusCode] = 200
+	span := constructHTTPServerSpan(attributes)
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.NotNil(t, httpData)
+	assert.NotNil(t, filtered)
+	w := testWriters.borrow()
+	require.NoError(t, w.Encode(httpData))
+	jsonStr := w.String()
+	testWriters.release(w)
+	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+}
+
+func TestServerSpanWithSchemeServernamePortTargetAttributesStable(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[AttributeHTTPRequestMethod] = "GET"
+	attributes[AttributeURLSchema] = "https"
+	attributes[AttributeServerAddress] = "api.example.com"
+	attributes[AttributeServerPort] = 443
+	attributes[AttributeURLPath] = "/users/junit"
+	attributes[AttributeClientAddress] = "192.168.15.32"
+	attributes[AttributeHTTPResponseStatusCode] = 200
 	span := constructHTTPServerSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -218,6 +397,30 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
 }
 
+func TestServerSpanWithSchemeNamePortTargetAttributesStable(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[AttributeHTTPRequestMethod] = "GET"
+	attributes[AttributeURLSchema] = "http"
+	attributes[AttributeServerAddress] = "kb234.example.com"
+	attributes[AttributeServerPort] = 8080
+	attributes[AttributeURLPath] = "/users/junit"
+	attributes[AttributeClientAddress] = "192.168.15.32"
+	attributes[AttributeHTTPResponseStatusCode] = 200
+	span := constructHTTPServerSpan(attributes)
+	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
+	timeEvents.CopyTo(span.Events())
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.NotNil(t, httpData)
+	assert.NotNil(t, filtered)
+	w := testWriters.borrow()
+	require.NoError(t, w.Encode(httpData))
+	jsonStr := w.String()
+	testWriters.release(w)
+	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
+}
+
 func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
@@ -228,6 +431,66 @@ func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 	attributes[conventions.AttributeNetHostPort] = 443
 	attributes[conventions.AttributeNetPeerPort] = 8080
 	attributes[conventions.AttributeHTTPStatusCode] = 200
+	span := constructHTTPServerSpan(attributes)
+	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
+	timeEvents.CopyTo(span.Events())
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.Nil(t, httpData.Request.URL)
+	assert.Equal(t, "192.168.15.32", *httpData.Request.ClientIP)
+	assert.Equal(t, "GET", *httpData.Request.Method)
+	assert.Equal(t, "PostmanRuntime/7.21.0", *httpData.Request.UserAgent)
+	contentLength := *httpData.Response.ContentLength.(*int64)
+	assert.Equal(t, int64(12452), contentLength)
+	assert.Equal(t, int64(200), *httpData.Response.Status)
+	assert.NotNil(t, filtered)
+}
+
+func TestSpanWithNotEnoughHTTPRequestURLAttributesStable(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[AttributeHTTPRequestMethod] = "GET"
+	attributes[AttributeURLSchema] = "http"
+	attributes[AttributeClientAddress] = "192.168.15.32"
+	attributes[AttributeUserAgentOriginal] = "PostmanRuntime/7.21.0"
+	attributes[AttributeURLPath] = "/users/junit"
+	attributes[AttributeServerPort] = 443
+	attributes[AttributeClientPort] = 8080
+	attributes[AttributeHTTPResponseStatusCode] = 200
+	span := constructHTTPServerSpan(attributes)
+	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
+	timeEvents.CopyTo(span.Events())
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.Nil(t, httpData.Request.URL)
+	assert.Equal(t, "192.168.15.32", *httpData.Request.ClientIP)
+	assert.Equal(t, "GET", *httpData.Request.Method)
+	assert.Equal(t, "PostmanRuntime/7.21.0", *httpData.Request.UserAgent)
+	contentLength := *httpData.Response.ContentLength.(*int64)
+	assert.Equal(t, int64(12452), contentLength)
+	assert.Equal(t, int64(200), *httpData.Response.Status)
+	assert.NotNil(t, filtered)
+}
+
+func TestSpanWithNotEnoughHTTPRequestURLAttributesDuplicated(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[AttributeHTTPRequestMethod] = "GET"
+	attributes[conventions.AttributeHTTPScheme] = "http"
+	attributes[AttributeURLSchema] = "http"
+	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
+	attributes[AttributeClientAddress] = "192.168.15.32"
+	attributes[conventions.AttributeHTTPUserAgent] = "PostmanRuntime/7.21.0"
+	attributes[AttributeUserAgentOriginal] = "PostmanRuntime/7.21.0"
+	attributes[conventions.AttributeHTTPTarget] = "/users/junit"
+	attributes[AttributeURLPath] = "/users/junit"
+	attributes[conventions.AttributeNetHostPort] = 443
+	attributes[AttributeServerPort] = 443
+	attributes[conventions.AttributeNetPeerPort] = 8080
+	attributes[AttributeClientPort] = 8080
+	attributes[conventions.AttributeHTTPStatusCode] = 200
+	attributes[AttributeHTTPResponseStatusCode] = 200
 	span := constructHTTPServerSpan(attributes)
 	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
 	timeEvents.CopyTo(span.Events())

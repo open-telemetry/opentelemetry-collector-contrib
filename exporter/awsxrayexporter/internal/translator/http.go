@@ -14,6 +14,20 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
+const (
+	AttributeHTTPRequestMethod      = "http.request.method"
+	AttributeHTTPResponseStatusCode = "http.response.status_code"
+	AttributeServerAddress          = "server.address"
+	AttributeServerPort             = "server.port"
+	AttributeNetworkPeerAddress     = "network.peer.address"
+	AttributeClientAddress          = "client.address"
+	AttributeClientPort             = "client.port"
+	AttributeURLSchema              = "url.scheme"
+	AttributeURLFull                = "url.full"
+	AttributeURLPath                = "url.path"
+	AttributeUserAgentOriginal      = "user_agent.original"
+)
+
 func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 	var (
 		info = awsxray.HTTPData{
@@ -33,62 +47,63 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 
 	span.Attributes().Range(func(key string, value pcommon.Value) bool {
 		switch key {
-		case conventions.AttributeHTTPMethod:
+		case conventions.AttributeHTTPMethod, AttributeHTTPRequestMethod:
 			info.Request.Method = awsxray.String(value.Str())
 			hasHTTP = true
-		case conventions.AttributeHTTPClientIP:
+		case conventions.AttributeHTTPClientIP, AttributeClientAddress:
+			//urlParts[conventions.AttributeHTTPClientIP] = value.Str()
 			info.Request.ClientIP = awsxray.String(value.Str())
 			info.Request.XForwardedFor = aws.Bool(true)
 			hasHTTP = true
-		case conventions.AttributeHTTPUserAgent:
+		case conventions.AttributeHTTPUserAgent, AttributeUserAgentOriginal:
 			info.Request.UserAgent = awsxray.String(value.Str())
 			hasHTTP = true
-		case conventions.AttributeHTTPStatusCode:
+		case conventions.AttributeHTTPStatusCode, AttributeHTTPResponseStatusCode:
 			info.Response.Status = aws.Int64(value.Int())
 			hasHTTP = true
-		case conventions.AttributeHTTPURL:
+		case conventions.AttributeHTTPURL, AttributeURLFull:
+			urlParts[conventions.AttributeHTTPURL] = value.Str()
+			hasHTTP = true
+			hasHTTPRequestURLAttributes = true
+		case conventions.AttributeHTTPScheme, AttributeURLSchema:
+			urlParts[conventions.AttributeHTTPScheme] = value.Str()
+			hasHTTP = true
+		case conventions.AttributeHTTPHost, AttributeServerAddress:
+			urlParts[conventions.AttributeHTTPHost] = value.Str()
+			hasHTTP = true
+			hasHTTPRequestURLAttributes = true
+		case conventions.AttributeHTTPTarget, AttributeURLPath:
+			urlParts[conventions.AttributeHTTPTarget] = value.Str()
+			hasHTTP = true
+		case conventions.AttributeHTTPServerName: // Deprecated, use `server.address`
 			urlParts[key] = value.Str()
 			hasHTTP = true
 			hasHTTPRequestURLAttributes = true
-		case conventions.AttributeHTTPScheme:
-			urlParts[key] = value.Str()
+		case conventions.AttributeNetHostPort, AttributeServerPort:
+			urlParts[conventions.AttributeNetHostPort] = value.Str()
 			hasHTTP = true
-		case conventions.AttributeHTTPHost:
+			if len(urlParts[conventions.AttributeNetHostPort]) == 0 {
+				urlParts[conventions.AttributeNetHostPort] = strconv.FormatInt(value.Int(), 10)
+			}
+		case conventions.AttributeHostName: // Deprecated, use `server.address`
 			urlParts[key] = value.Str()
-			hasHTTP = true
 			hasHTTPRequestURLAttributes = true
-		case conventions.AttributeHTTPTarget:
+		case conventions.AttributeNetHostName: // Deprecated, use `server.address`
 			urlParts[key] = value.Str()
-			hasHTTP = true
-		case conventions.AttributeHTTPServerName:
-			urlParts[key] = value.Str()
-			hasHTTP = true
 			hasHTTPRequestURLAttributes = true
-		case conventions.AttributeNetHostPort:
+		case conventions.AttributeNetPeerName: // Deprecated, use `client.address`
 			urlParts[key] = value.Str()
-			hasHTTP = true
-			if len(urlParts[key]) == 0 {
+		case conventions.AttributeNetPeerPort, AttributeClientPort:
+			urlParts[conventions.AttributeNetPeerPort] = value.Str()
+			if len(urlParts[conventions.AttributeNetPeerPort]) == 0 {
 				urlParts[key] = strconv.FormatInt(value.Int(), 10)
 			}
-		case conventions.AttributeHostName:
-			urlParts[key] = value.Str()
-			hasHTTPRequestURLAttributes = true
-		case conventions.AttributeNetHostName:
-			urlParts[key] = value.Str()
-			hasHTTPRequestURLAttributes = true
-		case conventions.AttributeNetPeerName:
-			urlParts[key] = value.Str()
-		case conventions.AttributeNetPeerPort:
-			urlParts[key] = value.Str()
-			if len(urlParts[key]) == 0 {
-				urlParts[key] = strconv.FormatInt(value.Int(), 10)
-			}
-		case conventions.AttributeNetPeerIP:
+		case conventions.AttributeNetPeerIP, AttributeNetworkPeerAddress:
 			// Prefer HTTP forwarded information (AttributeHTTPClientIP) when present.
 			if info.Request.ClientIP == nil {
 				info.Request.ClientIP = awsxray.String(value.Str())
 			}
-			urlParts[key] = value.Str()
+			urlParts[conventions.AttributeNetPeerIP] = value.Str()
 			hasHTTPRequestURLAttributes = true
 		default:
 			filtered[key] = value
@@ -193,7 +208,12 @@ func constructServerURL(urlParts map[string]string) string {
 	if !ok {
 		scheme = "http"
 	}
-	port := ""
+
+	port, ok := urlParts[conventions.AttributeNetHostPort]
+	if !ok {
+		port = ""
+	}
+
 	host, ok := urlParts[conventions.AttributeHTTPHost]
 	if !ok {
 		host, ok = urlParts[conventions.AttributeHTTPServerName]
@@ -202,10 +222,6 @@ func constructServerURL(urlParts map[string]string) string {
 			if !ok {
 				host = urlParts[conventions.AttributeHostName]
 			}
-		}
-		port, ok = urlParts[conventions.AttributeNetHostPort]
-		if !ok {
-			port = ""
 		}
 	}
 	url = scheme + "://" + host
