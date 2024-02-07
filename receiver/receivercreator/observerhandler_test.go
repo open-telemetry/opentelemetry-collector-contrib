@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/otelcol"
@@ -440,23 +441,18 @@ func (r *mockRunner) shutdown(rcvr component.Component) error {
 	return r.lastError
 }
 
-var _ component.Host = (*mockHost)(nil)
-
 type mockHost struct {
+	component.Host
 	t         *testing.T
 	factories otelcol.Factories
 }
 
-func newMockHost(t *testing.T) *mockHost {
+func newMockHost(t *testing.T, host component.Host) *mockHost {
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 	factories.Receivers["with.endpoint"] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 	factories.Receivers["without.endpoint"] = &nopWithoutEndpointFactory{Factory: receivertest.NewNopFactory()}
-	return &mockHost{t: t, factories: factories}
-}
-
-func (m *mockHost) ReportFatalError(err error) {
-	m.t.Fatal("ReportFatalError", err)
+	return &mockHost{t: t, factories: factories, Host: host}
 }
 
 func (m *mockHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
@@ -475,11 +471,15 @@ func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]compon
 }
 
 func newMockRunner(t *testing.T) *mockRunner {
+	cs := receivertest.NewNopCreateSettings()
+	cs.TelemetrySettings.ReportStatus = func(event *component.StatusEvent) {
+		require.NoError(t, event.Err())
+	}
 	return &mockRunner{
 		receiverRunner: receiverRunner{
-			params:      receivertest.NewNopCreateSettings(),
+			params:      cs,
 			idNamespace: component.NewIDWithName("some.type", "some.name"),
-			host:        newMockHost(t),
+			host:        newMockHost(t, componenttest.NewNopHost()),
 		},
 	}
 }

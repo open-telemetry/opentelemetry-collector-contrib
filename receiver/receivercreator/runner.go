@@ -41,7 +41,7 @@ func newReceiverRunner(params rcvr.CreateSettings, host component.Host) *receive
 		logger:      params.Logger,
 		params:      params,
 		idNamespace: params.ID,
-		host:        &loggingHost{host, params.Logger},
+		host:        host,
 		receivers:   map[string]*wrappedReceiver{},
 		lock:        &sync.Mutex{},
 	}

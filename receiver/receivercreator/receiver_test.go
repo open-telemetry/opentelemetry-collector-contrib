@@ -5,7 +5,6 @@ package receivercreator
 
 import (
 	"context"
-	"errors"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -22,8 +21,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
-	"go.uber.org/zap"
-	zapObserver "go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
@@ -117,17 +114,4 @@ func TestMockedEndToEnd(t *testing.T) {
 
 	// TODO: Will have to rework once receivers are started asynchronously to Start().
 	assert.Len(t, mockConsumer.AllMetrics(), 2)
-}
-
-func TestLoggingHost(t *testing.T) {
-	core, obs := zapObserver.New(zap.ErrorLevel)
-	host := &loggingHost{
-		Host:   componenttest.NewNopHost(),
-		logger: zap.New(core),
-	}
-	host.ReportFatalError(errors.New("runtime error"))
-	require.Equal(t, 1, obs.Len())
-	log := obs.All()[0]
-	assert.Equal(t, "receiver reported a fatal error", log.Message)
-	assert.Equal(t, "runtime error", log.ContextMap()["error"])
 }
