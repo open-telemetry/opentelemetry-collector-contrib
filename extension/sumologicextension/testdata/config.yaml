@@ -16,7 +16,7 @@ receivers:
 processors:
 
 exporters:
-  logging:
+  debug:
     verbosity: detailed
 
 service:
@@ -25,4 +25,4 @@ service:
     metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [logging]
+      exporters: [debug]
