@@ -64,6 +64,11 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 	return val, ok
 }
 
+// Remove removes a key from the cache if it exists.
+func (c *Cache[K, V]) Remove(key K) bool {
+	return c.lru.Remove(key)
+}
+
 // Len returns the number of items in the cache.
 func (c *Cache[K, V]) Len() int {
 	return c.lru.Len()
