@@ -44,3 +44,7 @@ elasticsearch/logstash_format:
   endpoints: [http://localhost:9200]
   logstash_format:
     enabled: true
+elasticsearch/raw:
+  endpoints: [http://localhost:9200]
+  mapping:
+    mode: raw

@@ -85,6 +85,10 @@ func TestLoadConfig(t *testing.T) {
 	defaultLogstashFormatCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
 	defaultLogstashFormatCfg.(*Config).LogstashFormat.Enabled = true
 
+	defaultRawCfg := createDefaultConfig()
+	defaultRawCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
+	defaultRawCfg.(*Config).Mapping.Mode = "raw"
+
 	tests := []struct {
 		configFile string
 		id         component.ID
@@ -199,6 +203,11 @@ func TestLoadConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "logstash_format"),
 			configFile: "config.yaml",
 			expected:   defaultLogstashFormatCfg,
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "raw"),
+			configFile: "config.yaml",
+			expected:   defaultRawCfg,
 		},
 	}
 

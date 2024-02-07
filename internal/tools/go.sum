@@ -219,6 +219,8 @@ github.com/go-toolsmith/strparse v1.1.0 h1:GAioeZUK9TGxnLS+qfdqNbA4z0SSm5zVNtCQi
 github.com/go-toolsmith/strparse v1.1.0/go.mod h1:7ksGy58fsaQkGQlY8WVoBFNyEPMGuJin1rfoPS4lBSQ=
 github.com/go-toolsmith/typep v1.1.0 h1:fIRYDyF+JywLfqzyhdiHzRop/GQDxxNhLGQ6gFUNHus=
 github.com/go-toolsmith/typep v1.1.0/go.mod h1:fVIw+7zjdsMxDA3ITWnH1yOiw1rnTQKCsF/sk2H/qig=
+github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 h1:TQcrn6Wq+sKGkpyPvppOz99zsMBaUOKXq6HSv655U1c=
+github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1/go.mod h1:oJDH3BJKyqBA2TXFhDsKDGDTlndYOZ6rGS0BRZIxGhM=
 github.com/go-xmlfmt/xmlfmt v1.1.2 h1:Nea7b4icn8s57fTx1M5AI4qQT5HEM3rVUO8MuE6g80U=
 github.com/go-xmlfmt/xmlfmt v1.1.2/go.mod h1:aUCEOzzezBEjDBbFBoSiya/gduyIiWYRP6CnSFIV8AM=
 github.com/gobwas/glob v0.2.3 h1:A4xDbljILXROh+kObIiy5kIaPYD8e96x1tgBhUI5J+Y=
@@ -387,8 +389,8 @@ github.com/knadh/koanf/providers/file v0.1.0 h1:fs6U7nrV58d3CFAFh8VTde8TM262ObYf
 github.com/knadh/koanf/providers/file v0.1.0/go.mod h1:rjJ/nHQl64iYCtAW2QQnF0eSmDEX/YZ/eNFj5yR6BvA=
 github.com/knadh/koanf/providers/fs v0.1.0 h1:9Hln9GS3bWTItAnGVFYyfkoAIxAFq7pvlF64pTNiDdQ=
 github.com/knadh/koanf/providers/fs v0.1.0/go.mod h1:Cva1yH8NBxkEeVZx8CUmF5TunbgO72E+GwqDbqpP2sE=
-github.com/knadh/koanf/v2 v2.0.1 h1:1dYGITt1I23x8cfx8ZnldtezdyaZtfAuRtIFOiRzK7g=
-github.com/knadh/koanf/v2 v2.0.1/go.mod h1:ZeiIlIDXTE7w1lMT6UVcNiRAS2/rCeLn/GdLNvY1Dus=
+github.com/knadh/koanf/v2 v2.0.2 h1:sEZzPW2rVWSahcYILNq/syJdEyRafZIG0l9aWwL86HA=
+github.com/knadh/koanf/v2 v2.0.2/go.mod h1:HN9uZ+qFAejH1e4G41gnoffIanINWQuONLXiV7kir6k=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/konsorten/go-windows-terminal-sequences v1.0.3/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515/go.mod h1:+0opPa2QZZtGFBFZlji/RkVcI2GknAs/DXo4wKdlNEc=
@@ -655,8 +657,8 @@ go.opentelemetry.io/build-tools/issuegenerator v0.12.0 h1:KRP7aSUR9JoqNwv+Pp595v
 go.opentelemetry.io/build-tools/issuegenerator v0.12.0/go.mod h1:G71Og7dZJoIC+MjuY1InQ/oeAOkM1S5Nv6CCnlOdqns=
 go.opentelemetry.io/build-tools/multimod v0.12.1-0.20240108171606-a2b17e6d6e63 h1:/k1/akmYXP+ZRoHoNCbmLpluR7l1+Y+9mBL0kuIwjks=
 go.opentelemetry.io/build-tools/multimod v0.12.1-0.20240108171606-a2b17e6d6e63/go.mod h1:EGWcKkk7JQzxREP7M23rWiRK+RZioVOFRdM1KW6pnJc=
-go.opentelemetry.io/collector/cmd/builder v0.93.1-0.20240205121451-f5a7315cf88e h1:KXe1lET2ydYxPIfGb7x/hz8KF7rFsMyedPRUcHrA/2c=
-go.opentelemetry.io/collector/cmd/builder v0.93.1-0.20240205121451-f5a7315cf88e/go.mod h1:PZfoFOWMKq9tFC6YQfiU5vG/Q4prdm05zwatfyQyY+Q=
+go.opentelemetry.io/collector/cmd/builder v0.94.0 h1:0exwBoesiQZHYFeTfLGV7iuFm1qCEW3pcmJCtQYePxE=
+go.opentelemetry.io/collector/cmd/builder v0.94.0/go.mod h1:/6WdMtDEB2C86KwYgoAAScA6kpVOQlbPV56qkke9zvQ=
 go.tmz.dev/musttag v0.7.2 h1:1J6S9ipDbalBSODNT5jCep8dhZyMr4ttnjQagmGYR5s=
 go.tmz.dev/musttag v0.7.2/go.mod h1:m6q5NiiSKMnQYokefa2xGoyoXnrswCbJ0AWYzf4Zs28=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=

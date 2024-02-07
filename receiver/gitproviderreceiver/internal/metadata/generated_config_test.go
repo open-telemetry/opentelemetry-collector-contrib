@@ -26,9 +26,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					GitRepositoryBranchCount:      MetricConfig{Enabled: true},
-					GitRepositoryContributorCount: MetricConfig{Enabled: true},
-					GitRepositoryCount:            MetricConfig{Enabled: true},
+					GitRepositoryBranchCount:             MetricConfig{Enabled: true},
+					GitRepositoryContributorCount:        MetricConfig{Enabled: true},
+					GitRepositoryCount:                   MetricConfig{Enabled: true},
+					GitRepositoryPullRequestApprovedTime: MetricConfig{Enabled: true},
+					GitRepositoryPullRequestMergedCount:  MetricConfig{Enabled: true},
+					GitRepositoryPullRequestMergedTime:   MetricConfig{Enabled: true},
+					GitRepositoryPullRequestOpenCount:    MetricConfig{Enabled: true},
+					GitRepositoryPullRequestOpenTime:     MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					GitVendorName:    ResourceAttributeConfig{Enabled: true},
@@ -40,9 +45,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					GitRepositoryBranchCount:      MetricConfig{Enabled: false},
-					GitRepositoryContributorCount: MetricConfig{Enabled: false},
-					GitRepositoryCount:            MetricConfig{Enabled: false},
+					GitRepositoryBranchCount:             MetricConfig{Enabled: false},
+					GitRepositoryContributorCount:        MetricConfig{Enabled: false},
+					GitRepositoryCount:                   MetricConfig{Enabled: false},
+					GitRepositoryPullRequestApprovedTime: MetricConfig{Enabled: false},
+					GitRepositoryPullRequestMergedCount:  MetricConfig{Enabled: false},
+					GitRepositoryPullRequestMergedTime:   MetricConfig{Enabled: false},
+					GitRepositoryPullRequestOpenCount:    MetricConfig{Enabled: false},
+					GitRepositoryPullRequestOpenTime:     MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					GitVendorName:    ResourceAttributeConfig{Enabled: false},
