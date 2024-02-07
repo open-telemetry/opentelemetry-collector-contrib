@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -711,20 +710,18 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 	require.NoError(t, recombine.Start(nil))
 	require.NoError(t, recombine.Process(ctx, e))
 
-	quit := make(chan int)
-	var stopWG sync.WaitGroup
-	stopWG.Add(1)
+	done := make(chan struct{})
+	ticker := time.NewTicker(cfg.ForceFlushTimeout / 2)
 	go func() {
-		defer stopWG.Done()
-
 		next := entry.New()
 		next.Timestamp = time.Now()
 		next.Body = "next"
 		for {
 			select {
-			case <-quit:
+			case <-done:
+				ticker.Stop()
 				return
-			case <-time.After(cfg.ForceFlushTimeout / 2):
+			case <-ticker.C:
 				require.NoError(t, recombine.Process(ctx, next))
 
 			}
@@ -738,8 +735,7 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 		t.FailNow()
 	}
 	require.NoError(t, recombine.Stop())
-	quit <- 0
-	stopWG.Wait()
+	close(done)
 }
 
 func TestSourceBatchDelete(t *testing.T) {
