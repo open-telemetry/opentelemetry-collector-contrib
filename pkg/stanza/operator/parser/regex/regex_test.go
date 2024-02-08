@@ -60,6 +60,9 @@ func TestParserInvalidType(t *testing.T) {
 
 func TestParserCache(t *testing.T) {
 	parser := newTestParser(t, "^(?P<key>cache)", 200)
+	defer func() {
+		require.NoError(t, parser.Stop())
+	}()
 	_, err := parser.parse([]int{})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as regex")
@@ -134,6 +137,10 @@ func TestParserRegex(t *testing.T) {
 
 			op, err := cfg.Build(testutil.Logger(t))
 			require.NoError(t, err)
+
+			defer func() {
+				require.NoError(t, op.Stop())
+			}()
 
 			fake := testutil.NewFakeOutput(t)
 			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
