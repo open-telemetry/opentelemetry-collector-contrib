@@ -250,7 +250,10 @@ docker-otelcontribcol:
 
 .PHONY: docker-telemetrygen
 docker-telemetrygen:
-	COMPONENT=telemetrygen $(MAKE) docker-component
+	GOOS=linux GOARCH=$(GOARCH) $(MAKE) telemetrygen
+	cp bin/telemetrygen_* cmd/telemetrygen/
+	cd cmd/telemetrygen && docker build --platform linux/$(GOARCH) -t telemetrygen:latest .
+	rm cmd/telemetrygen/telemetrygen_*
 
 .PHONY: generate
 generate: install-tools

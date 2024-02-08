@@ -30,16 +30,16 @@ import (
 )
 
 func TestConnectorStart(t *testing.T) {
-	// Create servicegraph processor
+	// Create servicegraph connector
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	procCreationParams := connectortest.NewNopCreateSettings()
-	traceProcessor, err := factory.CreateTracesToMetrics(context.Background(), procCreationParams, cfg, consumertest.NewNop())
+	traceConnector, err := factory.CreateTracesToMetrics(context.Background(), procCreationParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
 	// Test
-	smp := traceProcessor.(*serviceGraphConnector)
+	smp := traceConnector.(*serviceGraphConnector)
 	err = smp.Start(context.Background(), componenttest.NewNopHost())
 	defer require.NoError(t, smp.Shutdown(context.Background()))
 
@@ -313,7 +313,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 
 	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
-			component.NewID("mock"): mockMetricsExporter,
+			component.MustNewID("mock"): mockMetricsExporter,
 		},
 	})
 
@@ -335,7 +335,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	td = buildSampleTrace(t, "second")
 	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
 
-	// Shutdown the processor
+	// Shutdown the connector
 	assert.NoError(t, p.Shutdown(context.Background()))
 }
 
@@ -365,7 +365,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 
 	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
-			component.NewID("mock"): mockMetricsExporter,
+			component.MustNewID("mock"): mockMetricsExporter,
 		},
 	})
 
@@ -387,7 +387,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	td = buildSampleTrace(t, "second")
 	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
 
-	// Shutdown the processor
+	// Shutdown the connector
 	assert.NoError(t, p.Shutdown(context.Background()))
 
 	rm := metricdata.ResourceMetrics{}
@@ -397,7 +397,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	require.Len(t, sm.Metrics, 1)
 	got := sm.Metrics[0]
 	want := metricdata.Metrics{
-		Name:        "processor/servicegraph/total_edges",
+		Name:        "connector/servicegraph/total_edges",
 		Description: "Total number of unique edges",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{

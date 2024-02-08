@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("json_log_encoding")
+)
+
 const (
-	Type               = "json_log_encoding"
 	ExtensionStability = component.StabilityLevelDevelopment
 )
 

@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("receiver_creator")
+)
+
 const (
-	Type             = "receiver_creator"
 	LogsStability    = component.StabilityLevelAlpha
 	TracesStability  = component.StabilityLevelAlpha
 	MetricsStability = component.StabilityLevelBeta

@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("basicauth")
+)
+
 const (
-	Type               = "basicauth"
 	ExtensionStability = component.StabilityLevelBeta
 )
 
