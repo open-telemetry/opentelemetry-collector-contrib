@@ -123,7 +123,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: &Config{
 				Traces: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
-					Compression: configcompression.Gzip,
+					Compression: configcompression.TypeGzip,
 				},
 			},
 		},
@@ -132,7 +132,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: &Config{
 				Traces: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
-					Compression: configcompression.Snappy,
+					Compression: configcompression.TypeSnappy,
 				},
 			},
 		},
@@ -141,7 +141,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: &Config{
 				Traces: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
-					Compression: configcompression.Zstd,
+					Compression: configcompression.TypeZstd,
 				},
 			},
 		},
