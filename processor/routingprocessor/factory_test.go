@@ -152,10 +152,10 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
-			component.NewID("otlp/traces"): otlpTracesExporter,
+			component.MustNewID("otlp/traces"): otlpTracesExporter,
 		},
 		component.DataTypeMetrics: {
-			component.NewID("otlp/metrics"): otlpMetricsExporter,
+			component.MustNewID("otlp/metrics"): otlpMetricsExporter,
 		},
 	})
 

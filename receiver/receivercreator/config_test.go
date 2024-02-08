@@ -105,7 +105,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				WatchObservers: []component.ID{
-					component.NewID("mock_observer"),
+					component.MustNewID("mock_observer"),
 					component.NewIDWithName("mock_observer", "with_name"),
 				},
 				ResourceAttributes: map[observer.EndpointType]map[string]string{

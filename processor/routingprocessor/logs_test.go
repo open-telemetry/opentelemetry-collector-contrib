@@ -41,7 +41,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeLogs: {
-			component.NewID("otlp"):              defaultExp,
+			component.MustNewID("otlp"):              defaultExp,
 			component.NewIDWithName("otlp", "2"): lExp,
 		},
 	})
@@ -133,7 +133,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeLogs: {
-			component.NewID("otlp"):              defaultExp,
+			component.MustNewID("otlp"):              defaultExp,
 			component.NewIDWithName("otlp", "2"): lExp,
 		},
 	})
@@ -188,7 +188,7 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeLogs: {
-			component.NewID("otlp"):              defaultExp,
+			component.MustNewID("otlp"):              defaultExp,
 			component.NewIDWithName("otlp", "2"): lExp,
 		},
 	})
@@ -232,7 +232,7 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeLogs: {
-			component.NewID("otlp"):              defaultExp,
+			component.MustNewID("otlp"):              defaultExp,
 			component.NewIDWithName("otlp", "2"): lExp,
 		},
 	})
@@ -286,7 +286,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeLogs: {
-			component.NewID("otlp"):              defaultExp,
+			component.MustNewID("otlp"):              defaultExp,
 			component.NewIDWithName("otlp", "1"): firstExp,
 			component.NewIDWithName("otlp", "2"): secondExp,
 		},
@@ -408,7 +408,7 @@ func TestLogsAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeLogs: {
-			component.NewID("otlp"):              defaultExp,
+			component.MustNewID("otlp"):              defaultExp,
 			component.NewIDWithName("otlp", "1"): firstExp,
 		},
 	})
