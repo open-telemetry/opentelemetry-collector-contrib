@@ -48,7 +48,7 @@ func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 
 	go func() {
 		if errHTTP := h.server.Serve(listener); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			host.ReportFatalError(errHTTP)
+			h.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
