@@ -53,9 +53,9 @@ func createMockServer() *httptest.Server {
 		switch r.URL.String() {
 		case "/services/server/introspection/indexer?output_mode=json":
 			mockIndexerThroughput(w, r)
-		case "/services/data/indexes-extended?output_mode=json&count=-1":
+		case "/services/data/indexes-extended":
 			mockIndexesExtended(w, r)
-		case "/services/server/introspection/queues?output_mode=json&count=-1":
+		case "/services/server/introspection/queues":
 			mockIntrospectionQueues(w, r)
 		default:
 			http.NotFoundHandler().ServeHTTP(w, r)

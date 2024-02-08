@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -52,38 +53,76 @@ func (s *splunkScraper) start(_ context.Context, h component.Host) (err error) {
 	return nil
 }
 
+// listens to the error channel and combines errors sent from different metric scrape functions,
+// returning the concatinated error list should context timeout or a nil error value is sent in the
+// channel signifying the end of a scrape cycle
+func errorListener(ctx context.Context, eQueue <-chan error, eOut chan<- *scrapererror.ScrapeErrors) {
+	errs := &scrapererror.ScrapeErrors{}
+
+	for {
+		select {
+		// context timeout
+		case <-ctx.Done():
+			eOut <- errs
+			return
+		case err, ok := <-eQueue:
+			// shutdown
+			if err == nil || !ok {
+				eOut <- errs
+				return
+				// or add an error to errs
+			} else {
+				errs.Add(err)
+			}
+		}
+	}
+}
+
 // The big one: Describes how all scraping tasks should be performed. Part of the scraper interface
 func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	errs := &scrapererror.ScrapeErrors{}
+	var wg sync.WaitGroup
+	errChan := make(chan error, 9)
+	errOut := make(chan *scrapererror.ScrapeErrors)
+	var errs *scrapererror.ScrapeErrors
 	now := pcommon.NewTimestampFromTime(time.Now())
+	metricScrapes := []func(context.Context, pcommon.Timestamp, chan error){
+		s.scrapeLicenseUsageByIndex,
+		s.scrapeIndexThroughput,
+		s.scrapeIndexesTotalSize,
+		s.scrapeIndexesEventCount,
+		s.scrapeIndexesBucketCount,
+		s.scrapeIndexesRawSize,
+		s.scrapeIndexesBucketEventCount,
+		s.scrapeIndexesBucketHotWarmCount,
+		s.scrapeIntrospectionQueues,
+		s.scrapeIntrospectionQueuesBytes,
+	}
 
-	s.scrapeLicenseUsageByIndex(ctx, now, errs)
-	s.scrapeAvgExecLatencyByHost(ctx, now, errs)
-	s.scrapeSchedulerCompletionRatioByHost(ctx, now, errs)
-	s.scrapeIndexerAvgRate(ctx, now, errs)
-	s.scrapeSchedulerRunTimeByHost(ctx, now, errs)
-	s.scrapeIndexerRawWriteSecondsByHost(ctx, now, errs)
-	s.scrapeIndexerCPUSecondsByHost(ctx, now, errs)
-	s.scrapeAvgIopsByHost(ctx, now, errs)
-	s.scrapeIndexThroughput(ctx, now, errs)
-	s.scrapeIndexesTotalSize(ctx, now, errs)
-	s.scrapeIndexesEventCount(ctx, now, errs)
-	s.scrapeIndexesBucketCount(ctx, now, errs)
-	s.scrapeIndexesRawSize(ctx, now, errs)
-	s.scrapeIndexesBucketEventCount(ctx, now, errs)
-	s.scrapeIndexesBucketHotWarmCount(ctx, now, errs)
-	s.scrapeIntrospectionQueues(ctx, now, errs)
-	s.scrapeIntrospectionQueuesBytes(ctx, now, errs)
-	s.scrapeIndexerPipelineQueues(ctx, now, errs)
-	s.scrapeBucketsSearchableStatus(ctx, now, errs)
-	s.scrapeIndexesBucketCountAdHoc(ctx, now, errs)
+	go func() {
+		errorListener(ctx, errChan, errOut)
+	}()
+
+	for _, fn := range metricScrapes {
+		wg.Add(1)
+		go func(
+			fn func(ctx context.Context, now pcommon.Timestamp, errs chan error),
+			ctx context.Context,
+			now pcommon.Timestamp,
+			errs chan error) {
+			// actual function body
+			defer wg.Done()
+			fn(ctx, now, errs)
+		}(fn, ctx, now, errChan)
+	}
+
+	wg.Wait()
+	errChan <- nil
+	errs = <-errOut
 	return s.mb.Emit(), errs.Combine()
 }
 
 // Each metric has its own scrape function associated with it
-func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	// Because we have to utilize network resources for each KPI we should check that each metrics
-	// is enabled before proceeding
+func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkLicenseIndexUsage.Enabled || !s.splunkClient.isConfigured(typeCm) {
 		return
 	}
@@ -104,20 +143,20 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 	for {
 		req, err = s.splunkClient.createRequest(ctx, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		res, err = s.splunkClient.makeRequest(req)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 		}
 		res.Body.Close()
 
@@ -132,7 +171,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 		}
 
 		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
-			errs.Add(errMaxSearchWaitTimeExceeded)
+			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
 	}
@@ -147,7 +186,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 		case "By":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkLicenseIndexUsageDataPoint(now, int64(v), indexName)
@@ -1040,7 +1079,7 @@ func unmarshallSearchReq(res *http.Response, sr *searchResponse) error {
 }
 
 // Scrape index throughput introspection endpoint
-func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerThroughput.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1052,26 +1091,26 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
@@ -1081,7 +1120,7 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 }
 
 // Scrape indexes extended total size
-func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1092,26 +1131,26 @@ func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
@@ -1125,7 +1164,7 @@ func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.
 			mb, err := strconv.ParseFloat(f.Content.TotalSize, 64)
 			totalSize = int64(mb * 1024 * 1024)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 			}
 		}
 
@@ -1134,7 +1173,7 @@ func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.
 }
 
 // Scrape indexes extended total event count
-func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1146,26 +1185,26 @@ func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
@@ -1181,7 +1220,7 @@ func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon
 }
 
 // Scrape indexes extended total bucket count
-func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1193,26 +1232,26 @@ func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommo
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
@@ -1225,7 +1264,7 @@ func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommo
 		if f.Content.TotalBucketCount != "" {
 			totalBucketCount, err = strconv.ParseInt(f.Content.TotalBucketCount, 10, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 			}
 		}
 
@@ -1234,7 +1273,7 @@ func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommo
 }
 
 // Scrape indexes extended raw size
-func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedRawSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1246,26 +1285,26 @@ func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Ti
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
@@ -1279,7 +1318,7 @@ func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Ti
 			mb, err := strconv.ParseFloat(f.Content.TotalRawSize, 64)
 			totalRawSize = int64(mb * 1024 * 1024)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 			}
 		}
 		s.mb.RecordSplunkDataIndexesExtendedRawSizeDataPoint(now, totalRawSize, name)
@@ -1287,7 +1326,7 @@ func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Ti
 }
 
 // Scrape indexes extended bucket event count
-func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1299,26 +1338,26 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
@@ -1333,7 +1372,7 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 			bucketDir = "cold"
 			bucketEventCount, err = strconv.ParseInt(f.Content.BucketDirs.Cold.EventCount, 10, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 			}
 			s.mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(now, bucketEventCount, name, bucketDir)
 		}
@@ -1341,7 +1380,7 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 			bucketDir = "home"
 			bucketEventCount, err = strconv.ParseInt(f.Content.BucketDirs.Home.EventCount, 10, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 			}
 			s.mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(now, bucketEventCount, name, bucketDir)
 		}
@@ -1349,7 +1388,7 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 			bucketDir = "thawed"
 			bucketEventCount, err = strconv.ParseInt(f.Content.BucketDirs.Thawed.EventCount, 10, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 			}
 			s.mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(now, bucketEventCount, name, bucketDir)
 		}
@@ -1357,7 +1396,7 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 }
 
 // Scrape indexes extended bucket hot/warm count
-func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1369,26 +1408,26 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
@@ -1404,7 +1443,7 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now
 			bucketHotCount, err = strconv.ParseInt(f.Content.BucketDirs.Home.HotBucketCount, 10, 64)
 			bucketDir = "hot"
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 			}
 			s.mb.RecordSplunkDataIndexesExtendedBucketHotCountDataPoint(now, bucketHotCount, name, bucketDir)
 		}
@@ -1412,7 +1451,7 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now
 			bucketWarmCount, err = strconv.ParseInt(f.Content.BucketDirs.Home.WarmBucketCount, 10, 64)
 			bucketDir = "warm"
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 			}
 			s.mb.RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint(now, bucketWarmCount, name, bucketDir)
 		}
@@ -1420,7 +1459,7 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now
 }
 
 // Scrape introspection queues
-func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1432,26 +1471,26 @@ func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcomm
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
@@ -1468,7 +1507,7 @@ func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcomm
 }
 
 // Scrape introspection queues bytes
-func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1480,26 +1519,26 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now 
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
-		errs.Add(err)
+		errs <- err
 		return
 	}
 	var name string
