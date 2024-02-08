@@ -37,6 +37,7 @@ type ocReceiver struct {
 	gatewayMux         *gatewayruntime.ServeMux
 	corsOrigins        []string
 	grpcServerSettings configgrpc.ServerConfig
+	cancel             context.CancelFunc
 
 	traceReceiver   *octrace.Receiver
 	metricsReceiver *ocmetrics.Receiver
@@ -192,6 +193,10 @@ func (ocr *ocReceiver) Shutdown(context.Context) error {
 	// tests and code should be reactive in less than even 1second.
 	// ocr.serverGRPC.Stop()
 
+	if ocr.cancel != nil {
+		ocr.cancel()
+	}
+
 	return err
 }
 
@@ -213,7 +218,8 @@ func (ocr *ocReceiver) httpServer() *http.Server {
 
 func (ocr *ocReceiver) startServer() error {
 	// Register the grpc-gateway on the HTTP server mux
-	c := context.Background()
+	var c context.Context
+	c, ocr.cancel = context.WithCancel(context.Background())
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	endpoint := ocr.ln.Addr().String()
 
