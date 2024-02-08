@@ -63,6 +63,13 @@ func (rb *ResourceBuilder) SetK8sCronjobName(val string) {
 	}
 }
 
+// SetK8sCronjobStartTime sets provided value as "k8s.cronjob.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sCronjobStartTime(val string) {
+	if rb.config.K8sCronjobStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.cronjob.start_time", val)
+	}
+}
+
 // SetK8sCronjobUID sets provided value as "k8s.cronjob.uid" attribute.
 func (rb *ResourceBuilder) SetK8sCronjobUID(val string) {
 	if rb.config.K8sCronjobUID.Enabled {
@@ -77,6 +84,13 @@ func (rb *ResourceBuilder) SetK8sDaemonsetName(val string) {
 	}
 }
 
+// SetK8sDaemonsetStartTime sets provided value as "k8s.daemonset.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sDaemonsetStartTime(val string) {
+	if rb.config.K8sDaemonsetStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.daemonset.start_time", val)
+	}
+}
+
 // SetK8sDaemonsetUID sets provided value as "k8s.daemonset.uid" attribute.
 func (rb *ResourceBuilder) SetK8sDaemonsetUID(val string) {
 	if rb.config.K8sDaemonsetUID.Enabled {
@@ -88,6 +102,13 @@ func (rb *ResourceBuilder) SetK8sDaemonsetUID(val string) {
 func (rb *ResourceBuilder) SetK8sDeploymentName(val string) {
 	if rb.config.K8sDeploymentName.Enabled {
 		rb.res.Attributes().PutStr("k8s.deployment.name", val)
+	}
+}
+
+// SetK8sDeploymentStartTime sets provided value as "k8s.deployment.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sDeploymentStartTime(val string) {
+	if rb.config.K8sDeploymentStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.deployment.start_time", val)
 	}
 }
 
@@ -119,6 +140,13 @@ func (rb *ResourceBuilder) SetK8sJobName(val string) {
 	}
 }
 
+// SetK8sJobStartTime sets provided value as "k8s.job.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sJobStartTime(val string) {
+	if rb.config.K8sJobStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.job.start_time", val)
+	}
+}
+
 // SetK8sJobUID sets provided value as "k8s.job.uid" attribute.
 func (rb *ResourceBuilder) SetK8sJobUID(val string) {
 	if rb.config.K8sJobUID.Enabled {
@@ -130,6 +158,13 @@ func (rb *ResourceBuilder) SetK8sJobUID(val string) {
 func (rb *ResourceBuilder) SetK8sNamespaceName(val string) {
 	if rb.config.K8sNamespaceName.Enabled {
 		rb.res.Attributes().PutStr("k8s.namespace.name", val)
+	}
+}
+
+// SetK8sNamespaceStartTime sets provided value as "k8s.namespace.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sNamespaceStartTime(val string) {
+	if rb.config.K8sNamespaceStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.namespace.start_time", val)
 	}
 }
 
@@ -168,6 +203,13 @@ func (rb *ResourceBuilder) SetK8sPodName(val string) {
 	}
 }
 
+// SetK8sPodStartTime sets provided value as "k8s.pod.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sPodStartTime(val string) {
+	if rb.config.K8sPodStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.pod.start_time", val)
+	}
+}
+
 // SetK8sPodUID sets provided value as "k8s.pod.uid" attribute.
 func (rb *ResourceBuilder) SetK8sPodUID(val string) {
 	if rb.config.K8sPodUID.Enabled {
@@ -179,6 +221,13 @@ func (rb *ResourceBuilder) SetK8sPodUID(val string) {
 func (rb *ResourceBuilder) SetK8sReplicasetName(val string) {
 	if rb.config.K8sReplicasetName.Enabled {
 		rb.res.Attributes().PutStr("k8s.replicaset.name", val)
+	}
+}
+
+// SetK8sReplicasetStartTime sets provided value as "k8s.replicaset.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sReplicasetStartTime(val string) {
+	if rb.config.K8sReplicasetStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.replicaset.start_time", val)
 	}
 }
 
@@ -263,6 +312,13 @@ func (rb *ResourceBuilder) SetK8sServiceAccountName(val string) {
 func (rb *ResourceBuilder) SetK8sStatefulsetName(val string) {
 	if rb.config.K8sStatefulsetName.Enabled {
 		rb.res.Attributes().PutStr("k8s.statefulset.name", val)
+	}
+}
+
+// SetK8sStatefulsetStartTime sets provided value as "k8s.statefulset.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sStatefulsetStartTime(val string) {
+	if rb.config.K8sStatefulsetStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.statefulset.start_time", val)
 	}
 }
 

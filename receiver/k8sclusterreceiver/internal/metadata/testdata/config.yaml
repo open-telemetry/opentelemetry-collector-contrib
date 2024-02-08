@@ -102,13 +102,19 @@ all_set:
       enabled: true
     k8s.cronjob.name:
       enabled: true
+    k8s.cronjob.start_time:
+      enabled: true
     k8s.cronjob.uid:
       enabled: true
     k8s.daemonset.name:
       enabled: true
+    k8s.daemonset.start_time:
+      enabled: true
     k8s.daemonset.uid:
       enabled: true
     k8s.deployment.name:
+      enabled: true
+    k8s.deployment.start_time:
       enabled: true
     k8s.deployment.uid:
       enabled: true
@@ -118,9 +124,13 @@ all_set:
       enabled: true
     k8s.job.name:
       enabled: true
+    k8s.job.start_time:
+      enabled: true
     k8s.job.uid:
       enabled: true
     k8s.namespace.name:
+      enabled: true
+    k8s.namespace.start_time:
       enabled: true
     k8s.namespace.uid:
       enabled: true
@@ -132,9 +142,13 @@ all_set:
       enabled: true
     k8s.pod.name:
       enabled: true
+    k8s.pod.start_time:
+      enabled: true
     k8s.pod.uid:
       enabled: true
     k8s.replicaset.name:
+      enabled: true
+    k8s.replicaset.start_time:
       enabled: true
     k8s.replicaset.uid:
       enabled: true
@@ -159,6 +173,8 @@ all_set:
     k8s.service_account.name:
       enabled: true
     k8s.statefulset.name:
+      enabled: true
+    k8s.statefulset.start_time:
       enabled: true
     k8s.statefulset.uid:
       enabled: true
@@ -271,13 +287,19 @@ none_set:
       enabled: false
     k8s.cronjob.name:
       enabled: false
+    k8s.cronjob.start_time:
+      enabled: false
     k8s.cronjob.uid:
       enabled: false
     k8s.daemonset.name:
       enabled: false
+    k8s.daemonset.start_time:
+      enabled: false
     k8s.daemonset.uid:
       enabled: false
     k8s.deployment.name:
+      enabled: false
+    k8s.deployment.start_time:
       enabled: false
     k8s.deployment.uid:
       enabled: false
@@ -287,9 +309,13 @@ none_set:
       enabled: false
     k8s.job.name:
       enabled: false
+    k8s.job.start_time:
+      enabled: false
     k8s.job.uid:
       enabled: false
     k8s.namespace.name:
+      enabled: false
+    k8s.namespace.start_time:
       enabled: false
     k8s.namespace.uid:
       enabled: false
@@ -301,9 +327,13 @@ none_set:
       enabled: false
     k8s.pod.name:
       enabled: false
+    k8s.pod.start_time:
+      enabled: false
     k8s.pod.uid:
       enabled: false
     k8s.replicaset.name:
+      enabled: false
+    k8s.replicaset.start_time:
       enabled: false
     k8s.replicaset.uid:
       enabled: false
@@ -328,6 +358,8 @@ none_set:
     k8s.service_account.name:
       enabled: false
     k8s.statefulset.name:
+      enabled: false
+    k8s.statefulset.start_time:
       enabled: false
     k8s.statefulset.uid:
       enabled: false

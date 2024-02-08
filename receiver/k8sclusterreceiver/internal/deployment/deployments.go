@@ -35,6 +35,7 @@ func RecordMetrics(mb *imetadata.MetricsBuilder, dep *appsv1.Deployment, ts pcom
 	rb.SetK8sDeploymentName(dep.Name)
 	rb.SetK8sDeploymentUID(string(dep.UID))
 	rb.SetK8sNamespaceName(dep.Namespace)
+	rb.SetK8sDeploymentStartTime(dep.GetCreationTimestamp().String())
 	rb.SetOpencensusResourcetype("k8s")
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }

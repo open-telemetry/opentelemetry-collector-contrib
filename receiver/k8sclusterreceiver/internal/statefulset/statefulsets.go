@@ -47,6 +47,7 @@ func RecordMetrics(mb *imetadata.MetricsBuilder, ss *appsv1.StatefulSet, ts pcom
 	rb.SetK8sStatefulsetUID(string(ss.UID))
 	rb.SetK8sStatefulsetName(ss.Name)
 	rb.SetK8sNamespaceName(ss.Namespace)
+	rb.SetK8sStatefulsetStartTime(ss.GetCreationTimestamp().String())
 	rb.SetOpencensusResourcetype("k8s")
 	mb.EmitForResource(imetadata.WithResource(rb.Emit()))
 }

@@ -26,6 +26,7 @@ func RecordMetrics(mb *metadata.MetricsBuilder, cj *batchv1.CronJob, ts pcommon.
 	rb.SetK8sNamespaceName(cj.Namespace)
 	rb.SetK8sCronjobUID(string(cj.UID))
 	rb.SetK8sCronjobName(cj.Name)
+	rb.SetK8sCronjobStartTime(cj.GetCreationTimestamp().String())
 	rb.SetOpencensusResourcetype("k8s")
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }

@@ -19,23 +19,30 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sClusterName("k8s.cluster.name-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sCronjobName("k8s.cronjob.name-val")
+			rb.SetK8sCronjobStartTime("k8s.cronjob.start_time-val")
 			rb.SetK8sCronjobUID("k8s.cronjob.uid-val")
 			rb.SetK8sDaemonsetName("k8s.daemonset.name-val")
+			rb.SetK8sDaemonsetStartTime("k8s.daemonset.start_time-val")
 			rb.SetK8sDaemonsetUID("k8s.daemonset.uid-val")
 			rb.SetK8sDeploymentName("k8s.deployment.name-val")
+			rb.SetK8sDeploymentStartTime("k8s.deployment.start_time-val")
 			rb.SetK8sDeploymentUID("k8s.deployment.uid-val")
 			rb.SetK8sHpaName("k8s.hpa.name-val")
 			rb.SetK8sHpaUID("k8s.hpa.uid-val")
 			rb.SetK8sJobName("k8s.job.name-val")
+			rb.SetK8sJobStartTime("k8s.job.start_time-val")
 			rb.SetK8sJobUID("k8s.job.uid-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
+			rb.SetK8sNamespaceStartTime("k8s.namespace.start_time-val")
 			rb.SetK8sNamespaceUID("k8s.namespace.uid-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
 			rb.SetK8sNodeStartTime("k8s.node.start_time-val")
 			rb.SetK8sNodeUID("k8s.node.uid-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
+			rb.SetK8sPodStartTime("k8s.pod.start_time-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
 			rb.SetK8sReplicasetName("k8s.replicaset.name-val")
+			rb.SetK8sReplicasetStartTime("k8s.replicaset.start_time-val")
 			rb.SetK8sReplicasetUID("k8s.replicaset.uid-val")
 			rb.SetK8sReplicationcontrollerName("k8s.replicationcontroller.name-val")
 			rb.SetK8sReplicationcontrollerUID("k8s.replicationcontroller.uid-val")
@@ -48,6 +55,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sServiceUID("k8s.service.uid-val")
 			rb.SetK8sServiceAccountName("k8s.service_account.name-val")
 			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
+			rb.SetK8sStatefulsetStartTime("k8s.statefulset.start_time-val")
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
 			rb.SetOpencensusResourcetype("opencensus.resourcetype-val")
 			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
@@ -58,9 +66,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 39, res.Attributes().Len())
+				assert.Equal(t, 47, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 39, res.Attributes().Len())
+				assert.Equal(t, 47, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -98,6 +106,11 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "k8s.cronjob.name-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("k8s.cronjob.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.cronjob.start_time-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.cronjob.uid")
 			assert.True(t, ok)
 			if ok {
@@ -108,6 +121,11 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "k8s.daemonset.name-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("k8s.daemonset.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.daemonset.start_time-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.daemonset.uid")
 			assert.True(t, ok)
 			if ok {
@@ -117,6 +135,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.deployment.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.deployment.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.deployment.start_time-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.deployment.uid")
 			assert.True(t, ok)
@@ -138,6 +161,11 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "k8s.job.name-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("k8s.job.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.job.start_time-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.job.uid")
 			assert.True(t, ok)
 			if ok {
@@ -147,6 +175,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.namespace.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.namespace.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.namespace.start_time-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.namespace.uid")
 			assert.True(t, ok)
@@ -173,6 +206,11 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "k8s.pod.name-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("k8s.pod.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.pod.start_time-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.pod.uid")
 			assert.True(t, ok)
 			if ok {
@@ -182,6 +220,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.replicaset.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.replicaset.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.replicaset.start_time-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.replicaset.uid")
 			assert.True(t, ok)
@@ -242,6 +285,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.statefulset.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.statefulset.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.statefulset.start_time-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.statefulset.uid")
 			assert.True(t, ok)

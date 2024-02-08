@@ -422,23 +422,30 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.cluster.name | The k8s cluster name. | Any Str | true |
 | k8s.container.name | The k8s container name | Any Str | true |
 | k8s.cronjob.name | The k8s CronJob name | Any Str | true |
+| k8s.cronjob.start_time | The start time of the Cronjob. | Any Str | true |
 | k8s.cronjob.uid | The k8s CronJob uid. | Any Str | true |
 | k8s.daemonset.name | The k8s daemonset name. | Any Str | true |
+| k8s.daemonset.start_time | The start time of the Daemonset. | Any Str | true |
 | k8s.daemonset.uid | The k8s daemonset uid. | Any Str | true |
 | k8s.deployment.name | The name of the Deployment. | Any Str | true |
+| k8s.deployment.start_time | The start time of the Deployment. | Any Str | true |
 | k8s.deployment.uid | The UID of the Deployment. | Any Str | true |
 | k8s.hpa.name | The k8s hpa name. | Any Str | true |
 | k8s.hpa.uid | The k8s hpa uid. | Any Str | true |
 | k8s.job.name | The k8s pod name. | Any Str | true |
+| k8s.job.start_time | The start time of the Job. | Any Str | true |
 | k8s.job.uid | The k8s job uid. | Any Str | true |
 | k8s.namespace.name | The k8s namespace name. | Any Str | true |
+| k8s.namespace.start_time | The start time of the Namespace. | Any Str | true |
 | k8s.namespace.uid | The k8s namespace uid. | Any Str | true |
 | k8s.node.name | The k8s node name. | Any Str | true |
 | k8s.node.start_time | The start time of the Node. | Any Str | true |
 | k8s.node.uid | The k8s node uid. | Any Str | true |
 | k8s.pod.name | The k8s pod name. | Any Str | true |
+| k8s.pod.start_time | The start time of the Pod. | Any Str | true |
 | k8s.pod.uid | The k8s pod uid. | Any Str | true |
 | k8s.replicaset.name | The k8s replicaset name | Any Str | true |
+| k8s.replicaset.start_time | The start time of the Replicaset. | Any Str | true |
 | k8s.replicaset.uid | The k8s replicaset uid | Any Str | true |
 | k8s.replicationcontroller.name | The k8s replicationcontroller name. | Any Str | true |
 | k8s.replicationcontroller.uid | The k8s replicationcontroller uid. | Any Str | true |
@@ -451,6 +458,7 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.service.uid | The UID of the service | Any Str | true |
 | k8s.service_account.name | The name of the Service-account | Any Str | true |
 | k8s.statefulset.name | The k8s statefulset name. | Any Str | true |
+| k8s.statefulset.start_time | The start time of the Statefulset. | Any Str | true |
 | k8s.statefulset.uid | The k8s statefulset uid. | Any Str | true |
 | opencensus.resourcetype | The OpenCensus resource type. | Any Str | true |
 | openshift.clusterquota.name | The k8s ClusterResourceQuota name. | Any Str | true |

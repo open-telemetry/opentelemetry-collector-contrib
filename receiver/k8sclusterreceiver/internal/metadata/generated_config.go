@@ -211,6 +211,20 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for k8s_cluster resource attributes.
@@ -221,23 +235,30 @@ type ResourceAttributesConfig struct {
 	K8sClusterName               ResourceAttributeConfig `mapstructure:"k8s.cluster.name"`
 	K8sContainerName             ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sCronjobName               ResourceAttributeConfig `mapstructure:"k8s.cronjob.name"`
+	K8sCronjobStartTime          ResourceAttributeConfig `mapstructure:"k8s.cronjob.start_time"`
 	K8sCronjobUID                ResourceAttributeConfig `mapstructure:"k8s.cronjob.uid"`
 	K8sDaemonsetName             ResourceAttributeConfig `mapstructure:"k8s.daemonset.name"`
+	K8sDaemonsetStartTime        ResourceAttributeConfig `mapstructure:"k8s.daemonset.start_time"`
 	K8sDaemonsetUID              ResourceAttributeConfig `mapstructure:"k8s.daemonset.uid"`
 	K8sDeploymentName            ResourceAttributeConfig `mapstructure:"k8s.deployment.name"`
+	K8sDeploymentStartTime       ResourceAttributeConfig `mapstructure:"k8s.deployment.start_time"`
 	K8sDeploymentUID             ResourceAttributeConfig `mapstructure:"k8s.deployment.uid"`
 	K8sHpaName                   ResourceAttributeConfig `mapstructure:"k8s.hpa.name"`
 	K8sHpaUID                    ResourceAttributeConfig `mapstructure:"k8s.hpa.uid"`
 	K8sJobName                   ResourceAttributeConfig `mapstructure:"k8s.job.name"`
+	K8sJobStartTime              ResourceAttributeConfig `mapstructure:"k8s.job.start_time"`
 	K8sJobUID                    ResourceAttributeConfig `mapstructure:"k8s.job.uid"`
 	K8sNamespaceName             ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
+	K8sNamespaceStartTime        ResourceAttributeConfig `mapstructure:"k8s.namespace.start_time"`
 	K8sNamespaceUID              ResourceAttributeConfig `mapstructure:"k8s.namespace.uid"`
 	K8sNodeName                  ResourceAttributeConfig `mapstructure:"k8s.node.name"`
 	K8sNodeStartTime             ResourceAttributeConfig `mapstructure:"k8s.node.start_time"`
 	K8sNodeUID                   ResourceAttributeConfig `mapstructure:"k8s.node.uid"`
 	K8sPodName                   ResourceAttributeConfig `mapstructure:"k8s.pod.name"`
+	K8sPodStartTime              ResourceAttributeConfig `mapstructure:"k8s.pod.start_time"`
 	K8sPodUID                    ResourceAttributeConfig `mapstructure:"k8s.pod.uid"`
 	K8sReplicasetName            ResourceAttributeConfig `mapstructure:"k8s.replicaset.name"`
+	K8sReplicasetStartTime       ResourceAttributeConfig `mapstructure:"k8s.replicaset.start_time"`
 	K8sReplicasetUID             ResourceAttributeConfig `mapstructure:"k8s.replicaset.uid"`
 	K8sReplicationcontrollerName ResourceAttributeConfig `mapstructure:"k8s.replicationcontroller.name"`
 	K8sReplicationcontrollerUID  ResourceAttributeConfig `mapstructure:"k8s.replicationcontroller.uid"`
@@ -250,6 +271,7 @@ type ResourceAttributesConfig struct {
 	K8sServiceUID                ResourceAttributeConfig `mapstructure:"k8s.service.uid"`
 	K8sServiceAccountName        ResourceAttributeConfig `mapstructure:"k8s.service_account.name"`
 	K8sStatefulsetName           ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
+	K8sStatefulsetStartTime      ResourceAttributeConfig `mapstructure:"k8s.statefulset.start_time"`
 	K8sStatefulsetUID            ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
 	OpencensusResourcetype       ResourceAttributeConfig `mapstructure:"opencensus.resourcetype"`
 	OpenshiftClusterquotaName    ResourceAttributeConfig `mapstructure:"openshift.clusterquota.name"`
@@ -276,16 +298,25 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		K8sCronjobName: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		K8sCronjobStartTime: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		K8sCronjobUID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		K8sDaemonsetName: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		K8sDaemonsetStartTime: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		K8sDaemonsetUID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		K8sDeploymentName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sDeploymentStartTime: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		K8sDeploymentUID: ResourceAttributeConfig{
@@ -300,10 +331,16 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		K8sJobName: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		K8sJobStartTime: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		K8sJobUID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		K8sNamespaceName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sNamespaceStartTime: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		K8sNamespaceUID: ResourceAttributeConfig{
@@ -321,10 +358,16 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		K8sPodName: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		K8sPodStartTime: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		K8sPodUID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		K8sReplicasetName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sReplicasetStartTime: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		K8sReplicasetUID: ResourceAttributeConfig{
@@ -361,6 +404,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sStatefulsetName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sStatefulsetStartTime: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		K8sStatefulsetUID: ResourceAttributeConfig{

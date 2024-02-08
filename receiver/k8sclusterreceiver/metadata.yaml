@@ -209,6 +209,46 @@ resource_attributes:
     description: The OpenCensus resource type.
     type: string
     enabled: true
+  
+  k8s.daemonset.start_time:
+    description: "The start time of the Daemonset."
+    enabled: true
+    type: string
+
+  k8s.deployment.start_time:
+    description: "The start time of the Deployment."
+    enabled: true
+    type: string
+  
+  k8s.job.start_time:
+    description: "The start time of the Job."
+    enabled: true
+    type: string
+
+  k8s.cronjob.start_time:
+    description: "The start time of the Cronjob."
+    enabled: true
+    type: string
+  
+  k8s.replicaset.start_time:
+    description: "The start time of the Replicaset."
+    enabled: true
+    type: string
+  
+  k8s.statefulset.start_time:
+    description: "The start time of the Statefulset."
+    enabled: true
+    type: string
+  
+  k8s.namespace.start_time:
+    description: "The start time of the Namespace."
+    enabled: true
+    type: string
+
+  k8s.pod.start_time:
+    description: "The start time of the Pod."
+    enabled: true
+    type: string
 
 attributes:
   k8s.namespace.name:

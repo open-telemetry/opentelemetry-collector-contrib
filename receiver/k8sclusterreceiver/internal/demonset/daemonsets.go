@@ -35,6 +35,7 @@ func RecordMetrics(mb *metadata.MetricsBuilder, ds *appsv1.DaemonSet, ts pcommon
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(ds.Namespace)
 	rb.SetK8sDaemonsetName(ds.Name)
+	rb.SetK8sDaemonsetStartTime(ds.GetCreationTimestamp().String())
 	rb.SetK8sDaemonsetUID(string(ds.UID))
 	rb.SetOpencensusResourcetype("k8s")
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
