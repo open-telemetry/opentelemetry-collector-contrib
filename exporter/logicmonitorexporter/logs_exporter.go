@@ -97,7 +97,7 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 	return e.sender.SendLogs(ctx, payload)
 }
 
-func (e *logExporter) shutdown(ctx context.Context) error {
+func (e *logExporter) shutdown(_ context.Context) error {
 	if e.cancel != nil {
 		e.cancel()
 	}

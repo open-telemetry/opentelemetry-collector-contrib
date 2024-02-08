@@ -57,7 +57,7 @@ func (e *tracesExporter) PushTraceData(ctx context.Context, td ptrace.Traces) er
 	return e.sender.SendTraces(ctx, td)
 }
 
-func (e *tracesExporter) shutdown(ctx context.Context) error {
+func (e *tracesExporter) shutdown(_ context.Context) error {
 	if e.cancel != nil {
 		e.cancel()
 	}
