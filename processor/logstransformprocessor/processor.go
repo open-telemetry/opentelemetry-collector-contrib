@@ -78,8 +78,14 @@ func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
 }
 
 func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) error {
+	// create all objects before starting them, since the consumer loops depend on the converters not being nil.
+	ltp.converter = adapter.NewConverter(ltp.logger)
+
+	wkrCount := int(math.Max(1, float64(runtime.NumCPU())))
+	ltp.fromConverter = adapter.NewFromPdataConverter(wkrCount, ltp.logger)
+
 	// data flows like this:
-	// fromConverter -> converter loop -> pipeline -> adapter -> emitter loop -> converter -> consumer loop
+	// fromConverter -> converter loop -> pipeline -> emitter loop -> converter -> consumer loop
 	// We should start the pipeline in reverse order, and stop it in this order.
 	ltp.startConsumerLoop(ctx)
 	ltp.startConverter()
@@ -95,9 +101,6 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) 
 }
 
 func (ltp *logsTransformProcessor) startFromConverter() {
-	wkrCount := int(math.Max(1, float64(runtime.NumCPU())))
-
-	ltp.fromConverter = adapter.NewFromPdataConverter(wkrCount, ltp.logger)
 	ltp.fromConverter.Start()
 
 	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
@@ -111,7 +114,7 @@ func (ltp *logsTransformProcessor) startFromConverter() {
 func (ltp *logsTransformProcessor) startConverterLoop(ctx context.Context) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	go ltp.converterLoop(wg, ctx)
+	go ltp.converterLoop(ctx, wg)
 
 	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
 		wg.Wait()
@@ -144,7 +147,8 @@ func (ltp *logsTransformProcessor) startPipeline() error {
 func (ltp *logsTransformProcessor) startEmitterLoop(ctx context.Context) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	go ltp.emitterLoop(wg, ctx)
+	go ltp.emitterLoop(ctx, wg)
+
 	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
 		wg.Wait()
 		return nil
@@ -152,21 +156,21 @@ func (ltp *logsTransformProcessor) startEmitterLoop(ctx context.Context) {
 }
 
 func (ltp *logsTransformProcessor) startConverter() {
-	ltp.converter = adapter.NewConverter(ltp.logger)
 	ltp.converter.Start()
+
 	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
 		ltp.converter.Stop()
 		return nil
 	})
 }
 
+// startConsumerLoop starts the loop which reads all the logs produced by the converter
+// (aggregated by Resource) and then places them on the next consumer
 func (ltp *logsTransformProcessor) startConsumerLoop(ctx context.Context) {
-	// ...
-	// * third which reads all the logs produced by the converter
-	//   (aggregated by Resource) and then places them on the next consumer
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	go ltp.consumerLoop(wg, ctx)
+	go ltp.consumerLoop(ctx, wg)
+
 	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
 		wg.Wait()
 		return nil
@@ -180,7 +184,7 @@ func (ltp *logsTransformProcessor) ConsumeLogs(_ context.Context, ld plog.Logs) 
 
 // converterLoop reads the log entries produced by the fromConverter and sends them
 // into the pipeline
-func (ltp *logsTransformProcessor) converterLoop(wg *sync.WaitGroup, ctx context.Context) {
+func (ltp *logsTransformProcessor) converterLoop(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for {
@@ -208,7 +212,7 @@ func (ltp *logsTransformProcessor) converterLoop(wg *sync.WaitGroup, ctx context
 
 // emitterLoop reads the log entries produced by the emitter and batches them
 // in converter.
-func (ltp *logsTransformProcessor) emitterLoop(wg *sync.WaitGroup, ctx context.Context) {
+func (ltp *logsTransformProcessor) emitterLoop(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for {
@@ -230,7 +234,7 @@ func (ltp *logsTransformProcessor) emitterLoop(wg *sync.WaitGroup, ctx context.C
 }
 
 // consumerLoop reads converter log entries and calls the consumer to consumer them.
-func (ltp *logsTransformProcessor) consumerLoop(wg *sync.WaitGroup, ctx context.Context) {
+func (ltp *logsTransformProcessor) consumerLoop(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for {
