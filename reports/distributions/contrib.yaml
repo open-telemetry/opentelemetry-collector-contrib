@@ -148,6 +148,7 @@ components:
         - nsxt
         - opencensus
         - oracledb
+        - otelarrow
         - otlpjsonfile
         - podman_stats
         - postgresql
