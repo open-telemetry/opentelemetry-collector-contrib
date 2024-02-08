@@ -543,7 +543,11 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 		},
 	}
 	sink := new(consumertest.MetricsSink)
-	r, err := newReceiver(receivertest.NewNopCreateSettings(), *cfg)
+	cs := receivertest.NewNopCreateSettings()
+	cs.TelemetrySettings.ReportStatus = func(event *component.StatusEvent) {
+		require.NoError(t, event.Err())
+	}
+	r, err := newReceiver(cs, *cfg)
 	require.NoError(t, err)
 	r.RegisterMetricsConsumer(sink)
 	defer func() {
@@ -553,8 +557,6 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	mh := componenttest.NewNopHost()
 	require.NoError(t, r.Start(context.Background(), mh), "should not have failed to start metric reception")
 
-	// If there are errors reported through host.ReportFatalError() this will retrieve it.
-	<-time.After(500 * time.Millisecond)
 	t.Log("Metric Reception Started")
 
 	msec := time.Now().Unix() * 1e3
