@@ -352,13 +352,17 @@ var severityText = [...]string{
 
 var severityField = entry.NewAttributeField("severity")
 
-func postprocessWithoutPriHeader(e *entry.Entry) error {
+func cleanupTimestamp(e *entry.Entry) error {
 	_, ok := entry.NewAttributeField("timestamp").Delete(e)
 	if !ok {
 		return fmt.Errorf("failed to cleanup timestamp")
 	}
 
 	return nil
+}
+
+func postprocessWithoutPriHeader(e *entry.Entry) error {
+	return cleanupTimestamp(e)
 }
 
 func postprocess(e *entry.Entry) error {
@@ -379,12 +383,7 @@ func postprocess(e *entry.Entry) error {
 	e.Severity = severityMapping[sevInt]
 	e.SeverityText = severityText[sevInt]
 
-	_, ok = entry.NewAttributeField("timestamp").Delete(e)
-	if !ok {
-		return fmt.Errorf("failed to cleanup timestamp")
-	}
-
-	return nil
+	return cleanupTimestamp(e)
 }
 
 func newOctetCountingParseFunc() parseFunc {
