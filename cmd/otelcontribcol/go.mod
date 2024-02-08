@@ -130,7 +130,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereceiver v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.94.0
@@ -433,6 +432,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed // indirect
+	github.com/haimrubinstein/go-syslog/v3 v3.0.0 // indirect
 	github.com/hashicorp/consul/api v1.27.0 // indirect
 	github.com/hashicorp/cronexpr v1.1.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -453,7 +453,6 @@ require (
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/influxdata/go-syslog/v3 v3.0.1-0.20230911200830-875f5bc594a4 // indirect
 	github.com/influxdata/influxdb-observability/common v0.5.8 // indirect
 	github.com/influxdata/influxdb-observability/influx2otel v0.5.8 // indirect
 	github.com/influxdata/influxdb-observability/otel2influx v0.5.8 // indirect
@@ -1015,8 +1014,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../../pkg/translator/prometheusremotewrite
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver => ../../receiver/filelogreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereceiver => ../../receiver/filereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ../../exporter/signalfxexporter
 
