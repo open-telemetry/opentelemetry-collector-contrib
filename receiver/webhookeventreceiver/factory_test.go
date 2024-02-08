@@ -10,11 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
 )
 
 func TestFactoryCreate(t *testing.T) {
 	factory := NewFactory()
-	require.EqualValues(t, "webhookevent", factory.Type())
+	require.EqualValues(t, metadata.Type, factory.Type())
 }
 
 func TestDefaultConfig(t *testing.T) {

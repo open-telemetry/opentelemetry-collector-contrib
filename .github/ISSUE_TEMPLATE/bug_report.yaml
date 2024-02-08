@@ -198,7 +198,6 @@ body:
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
-      - receiver/file
       - receiver/filelog
       - receiver/filestats
       - receiver/flinkmetrics
@@ -231,6 +230,7 @@ body:
       - receiver/opencensus
       - receiver/oracledb
       - receiver/osquery
+      - receiver/otelarrow
       - receiver/otlpjsonfile
       - receiver/podman
       - receiver/postgresql
