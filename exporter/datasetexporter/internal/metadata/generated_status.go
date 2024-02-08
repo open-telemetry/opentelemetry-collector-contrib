@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("dataset")
+)
+
 const (
-	Type            = "dataset"
 	LogsStability   = component.StabilityLevelAlpha
 	TracesStability = component.StabilityLevelAlpha
 )

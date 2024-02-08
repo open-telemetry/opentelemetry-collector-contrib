@@ -51,7 +51,7 @@ func newMetricsReceiver(
 		set:           set,
 	}
 
-	scrp, err := scraperhelper.NewScraper(metadata.Type, recv.scrape, scraperhelper.WithStart(recv.start))
+	scrp, err := scraperhelper.NewScraper(metadata.Type.String(), recv.scrape, scraperhelper.WithStart(recv.start))
 	if err != nil {
 		return nil, err
 	}

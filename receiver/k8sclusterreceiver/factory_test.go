@@ -26,7 +26,7 @@ import (
 
 func TestFactory(t *testing.T) {
 	f := NewFactory()
-	require.Equal(t, component.Type("k8s_cluster"), f.Type())
+	require.Equal(t, metadata.Type, f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	rCfg, ok := cfg.(*Config)
@@ -64,7 +64,7 @@ func TestFactory(t *testing.T) {
 
 func TestFactoryDistributions(t *testing.T) {
 	f := NewFactory()
-	require.Equal(t, component.Type("k8s_cluster"), f.Type())
+	require.Equal(t, metadata.Type, f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	rCfg, ok := cfg.(*Config)
@@ -111,8 +111,8 @@ func newNopHostWithExporters() component.Host {
 func (n *nopHostWithExporters) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	return map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
-			component.NewIDWithName("nop", "withoutmetadata"): MockExporter{},
-			component.NewIDWithName("nop", "withmetadata"):    mockExporterWithK8sMetadata{},
+			component.MustNewIDWithName("nop", "withoutmetadata"): MockExporter{},
+			component.MustNewIDWithName("nop", "withmetadata"):    mockExporterWithK8sMetadata{},
 		},
 	}
 }

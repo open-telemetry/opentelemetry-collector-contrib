@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -24,7 +23,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, component.Type(metadata.Type), factory.Type())
+	assert.Equal(t, metadata.Type, factory.Type())
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
