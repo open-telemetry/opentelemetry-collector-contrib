@@ -37,7 +37,7 @@ func TestClientCreation(t *testing.T) {
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
 			Auth: &configauth.Authentication{
-				AuthenticatorID: component.NewID("basicauth/client"),
+				AuthenticatorID: component.MustNewIDWithName("basicauth", "client"),
 			},
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
@@ -49,7 +49,7 @@ func TestClientCreation(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.NewID("basicauth/client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
 		},
 	}
 	// create a client from an example config
@@ -68,7 +68,7 @@ func TestClientCreateRequest(t *testing.T) {
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
 			Auth: &configauth.Authentication{
-				AuthenticatorID: component.NewID("basicauth/client"),
+				AuthenticatorID: component.MustNewIDWithName("basicauth", "client"),
 			},
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
@@ -80,7 +80,7 @@ func TestClientCreateRequest(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.NewID("basicauth/client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
 		},
 	}
 	// create a client from an example config
@@ -150,7 +150,7 @@ func TestAPIRequestCreate(t *testing.T) {
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
 			Auth: &configauth.Authentication{
-				AuthenticatorID: component.NewID("basicauth/client"),
+				AuthenticatorID: component.MustNewIDWithName("basicauth", "client"),
 			},
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
@@ -162,7 +162,7 @@ func TestAPIRequestCreate(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.NewID("basicauth/client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
 		},
 	}
 	// create a client from an example config

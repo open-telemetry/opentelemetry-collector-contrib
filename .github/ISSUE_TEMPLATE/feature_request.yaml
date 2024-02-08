@@ -225,6 +225,7 @@ body:
       - receiver/opencensus
       - receiver/oracledb
       - receiver/osquery
+      - receiver/otelarrow
       - receiver/otlpjsonfile
       - receiver/podman
       - receiver/postgresql
