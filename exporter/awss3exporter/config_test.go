@@ -26,7 +26,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID("awss3")].(*Config)
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 	assert.Equal(t, e,
 		&Config{
 			S3Uploader: S3UploaderConfig{
@@ -51,7 +51,7 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID("awss3")].(*Config)
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
 	assert.Equal(t, e,
 		&Config{
@@ -79,7 +79,7 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID("awss3")].(*Config)
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
 	assert.Equal(t, e,
 		&Config{
@@ -167,7 +167,7 @@ func TestMarshallerName(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID("awss3")].(*Config)
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
 	assert.Equal(t, e,
 		&Config{
@@ -180,7 +180,7 @@ func TestMarshallerName(t *testing.T) {
 		},
 	)
 
-	e = cfg.Exporters[component.NewIDWithName("awss3", "proto")].(*Config)
+	e = cfg.Exporters[component.MustNewIDWithName("awss3", "proto")].(*Config)
 
 	assert.Equal(t, e,
 		&Config{
