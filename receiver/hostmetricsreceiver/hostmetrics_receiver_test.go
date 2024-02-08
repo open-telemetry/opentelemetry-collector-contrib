@@ -227,7 +227,7 @@ func (m *mockFactory) CreateMetricsScraper(context.Context, receiver.CreateSetti
 	return args.Get(0).(scraperhelper.Scraper), args.Error(1)
 }
 
-func (m *mockScraper) ID() component.ID                            { return component.NewID("mock_scraper") }
+func (m *mockScraper) ID() component.ID                            { return component.MustNewID("mock_scraper") }
 func (m *mockScraper) Start(context.Context, component.Host) error { return nil }
 func (m *mockScraper) Shutdown(context.Context) error              { return nil }
 func (m *mockScraper) Scrape(context.Context) (pmetric.Metrics, error) {

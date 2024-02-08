@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
@@ -42,7 +41,7 @@ func TestConfig(t *testing.T) {
 	v, err := confmaptest.LoadConf(testFile)
 	require.NoError(t, err)
 	testYamls := map[string]filterconfig.MetricMatchProperties{}
-	require.NoErrorf(t, v.Unmarshal(&testYamls, confmap.WithErrorUnused()), "unable to unmarshal yaml from file %v", testFile)
+	require.NoErrorf(t, v.Unmarshal(&testYamls), "unable to unmarshal yaml from file %v", testFile)
 
 	tests := []struct {
 		name   string
