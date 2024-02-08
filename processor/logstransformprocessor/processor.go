@@ -32,7 +32,6 @@ type logsTransformProcessor struct {
 	emitter       *adapter.LogEmitter
 	converter     *adapter.Converter
 	fromConverter *adapter.FromPdataConverter
-	wg            sync.WaitGroup
 	shutdownFns   []component.ShutdownFunc
 }
 
@@ -64,25 +63,69 @@ func (ltp *logsTransformProcessor) Capabilities() consumer.Capabilities {
 }
 
 func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
-	for _, fn := range ltp.shutdownFns {
+	ltp.logger.Info("Stopping logs transform processor")
+	// We call the shutdown functions in reverse order, so that the last thing we started
+	// is stopped first.
+	for i := len(ltp.shutdownFns) - 1; i >= 0; i-- {
+		fn := ltp.shutdownFns[i]
+
 		if err := fn(ctx); err != nil {
 			return err
 		}
 	}
-	ltp.wg.Wait()
 
 	return nil
 }
 
 func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) error {
+	// data flows like this:
+	// fromConverter -> converter loop -> pipeline -> adapter -> emitter loop -> converter -> consumer loop
+	// We should start the pipeline in reverse order, and stop it in this order.
+	ltp.startConsumerLoop(ctx)
+	ltp.startConverter()
+	ltp.startEmitterLoop(ctx)
+	err := ltp.startPipeline()
+	if err != nil {
+		return err
+	}
+	ltp.startConverterLoop(ctx)
+	ltp.startFromConverter()
 
+	return nil
+}
+
+func (ltp *logsTransformProcessor) startFromConverter() {
+	wkrCount := int(math.Max(1, float64(runtime.NumCPU())))
+
+	ltp.fromConverter = adapter.NewFromPdataConverter(wkrCount, ltp.logger)
+	ltp.fromConverter.Start()
+
+	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+		ltp.fromConverter.Stop()
+		return nil
+	})
+}
+
+// startConverterLoop starts the converter loop, which reads all the logs translated by the fromConverter and then forwards
+// them to pipeline
+func (ltp *logsTransformProcessor) startConverterLoop(ctx context.Context) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go ltp.converterLoop(wg, ctx)
+
+	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+		return waitForWgOrCtx(wg, ctx)
+	})
+}
+
+func (ltp *logsTransformProcessor) startPipeline() error {
 	// There is no need for this processor to use storage
 	err := ltp.pipe.Start(storage.NewNopClient())
 	if err != nil {
 		return err
 	}
+
 	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
-		ltp.logger.Info("Stopping logs transform processor")
 		return ltp.pipe.Stop()
 	})
 
@@ -92,40 +135,39 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) 
 	}
 	ltp.firstOperator = pipelineOperators[0]
 
-	wkrCount := int(math.Max(1, float64(runtime.NumCPU())))
+	return nil
+}
 
+// startEmitterLoop starts the loop which reads all the logs modified by the pipeline and then forwards
+// them to converter
+func (ltp *logsTransformProcessor) startEmitterLoop(ctx context.Context) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go ltp.emitterLoop(wg, ctx)
+	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+		return waitForWgOrCtx(wg, ctx)
+	})
+}
+
+func (ltp *logsTransformProcessor) startConverter() {
 	ltp.converter = adapter.NewConverter(ltp.logger)
 	ltp.converter.Start()
 	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
 		ltp.converter.Stop()
 		return nil
 	})
+}
 
-	ltp.fromConverter = adapter.NewFromPdataConverter(wkrCount, ltp.logger)
-	ltp.fromConverter.Start()
-	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
-		ltp.fromConverter.Stop()
-		return nil
-	})
-	// Below we're starting 3 loops:
-	// * first which reads all the logs translated by the fromConverter and then forwards
-	//   them to pipeline
-	// ...
-	ltp.wg.Add(1)
-	go ltp.converterLoop(ctx)
-
-	// * second which reads all the logs modified by the pipeline and then forwards
-	//   them to converter
-	// ...
-	ltp.wg.Add(1)
-	go ltp.emitterLoop(ctx)
-
+func (ltp *logsTransformProcessor) startConsumerLoop(ctx context.Context) {
 	// ...
 	// * third which reads all the logs produced by the converter
 	//   (aggregated by Resource) and then places them on the next consumer
-	ltp.wg.Add(1)
-	go ltp.consumerLoop(ctx)
-	return nil
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go ltp.consumerLoop(wg, ctx)
+	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+		return waitForWgOrCtx(wg, ctx)
+	})
 }
 
 func (ltp *logsTransformProcessor) ConsumeLogs(_ context.Context, ld plog.Logs) error {
@@ -135,8 +177,8 @@ func (ltp *logsTransformProcessor) ConsumeLogs(_ context.Context, ld plog.Logs) 
 
 // converterLoop reads the log entries produced by the fromConverter and sends them
 // into the pipeline
-func (ltp *logsTransformProcessor) converterLoop(ctx context.Context) {
-	defer ltp.wg.Done()
+func (ltp *logsTransformProcessor) converterLoop(wg *sync.WaitGroup, ctx context.Context) {
+	defer wg.Done()
 
 	for {
 		select {
@@ -163,8 +205,8 @@ func (ltp *logsTransformProcessor) converterLoop(ctx context.Context) {
 
 // emitterLoop reads the log entries produced by the emitter and batches them
 // in converter.
-func (ltp *logsTransformProcessor) emitterLoop(ctx context.Context) {
-	defer ltp.wg.Done()
+func (ltp *logsTransformProcessor) emitterLoop(wg *sync.WaitGroup, ctx context.Context) {
+	defer wg.Done()
 
 	for {
 		select {
@@ -185,8 +227,8 @@ func (ltp *logsTransformProcessor) emitterLoop(ctx context.Context) {
 }
 
 // consumerLoop reads converter log entries and calls the consumer to consumer them.
-func (ltp *logsTransformProcessor) consumerLoop(ctx context.Context) {
-	defer ltp.wg.Done()
+func (ltp *logsTransformProcessor) consumerLoop(wg *sync.WaitGroup, ctx context.Context) {
+	defer wg.Done()
 
 	for {
 		select {
@@ -205,4 +247,20 @@ func (ltp *logsTransformProcessor) consumerLoop(ctx context.Context) {
 			}
 		}
 	}
+}
+
+func waitForWgOrCtx(wg *sync.WaitGroup, ctx context.Context) error {
+	doneChan := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(doneChan)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-doneChan: // OK
+	}
+
+	return nil
 }
