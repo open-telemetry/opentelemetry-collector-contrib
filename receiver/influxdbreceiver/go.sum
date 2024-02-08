@@ -150,8 +150,8 @@ go.opentelemetry.io/collector/receiver v0.94.1 h1:p9kIPmDeLSAlFZZuHdFELGGiP0JduF
 go.opentelemetry.io/collector/receiver v0.94.1/go.mod h1:AYdIg3Bl4kwiqQy/k3tuYQnS918gb5i3HcInn6owudE=
 go.opentelemetry.io/collector/semconv v0.94.1 h1:+FoBlzwFgwalgbdBhJHtHPvR7W0+aJDUAdQdsmfT/Ts=
 go.opentelemetry.io/collector/semconv v0.94.1/go.mod h1:gZ0uzkXsN+J5NpiRcdp9xOhNGQDDui8Y62p15sKrlzo=
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.48.0 h1:doUP+ExOpH3spVTLS0FcWGLnQrPct/hD/bCPbDRUEAU=
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.48.0/go.mod h1:rdENBZMT2OE6Ne/KLwpiXudnAsbdrdBaqBvTN8M8BgA=
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0 h1:sv9kVfal0MK0wBMCOGr+HeJm9v803BkJxGrk2au7j08=
+go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0/go.mod h1:SK2UL73Zy1quvRPonmOmRDiWk1KBV3LyIeeIxcEApWw=
 go.opentelemetry.io/otel v1.23.0 h1:Df0pqjqExIywbMCMTxkAwzjLZtRf+bBKLbUcpxO2C9E=
 go.opentelemetry.io/otel v1.23.0/go.mod h1:YCycw9ZeKhcJFrb34iVSkyT0iczq/zYDtZYFufObyB0=
 go.opentelemetry.io/otel/exporters/prometheus v0.45.1 h1:R/bW3afad6q6VGU+MFYpnEdo0stEARMCdhWu6+JI6aI=
