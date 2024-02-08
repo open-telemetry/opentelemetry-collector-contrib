@@ -5,6 +5,7 @@ package logstransformprocessor
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -194,4 +195,23 @@ func generateLogData(messages []testLogMessage) plog.Logs {
 	}
 
 	return ld
+}
+
+func TestWaitForWgOrCtx(t *testing.T) {
+	t.Run("Waitgroup is done, context is not", func(t *testing.T) {
+		wg := &sync.WaitGroup{}
+		err := waitForWgOrCtx(wg, context.Background())
+		require.NoError(t, err)
+	})
+
+	t.Run("Context is done, wait group is not", func(t *testing.T) {
+		wg := &sync.WaitGroup{}
+		wg.Add(1)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		err := waitForWgOrCtx(wg, ctx)
+		require.ErrorIs(t, err, context.Canceled)
+	})
 }
