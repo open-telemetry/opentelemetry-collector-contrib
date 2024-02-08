@@ -142,7 +142,7 @@ func fromMeasure(measure stats.Measure, agg *view.Aggregation) *view.View {
 }
 
 func buildReceiverCustomMetricName(metric string) string {
-	return receiverKey + nameSep + string(metadata.Type) + nameSep + metric
+	return receiverKey + nameSep + metadata.Type.String() + nameSep + metric
 }
 
 // recordFailedReconnection increments the metric that records failed reconnection event.
