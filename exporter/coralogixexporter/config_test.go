@@ -46,20 +46,20 @@ func TestLoadConfig(t *testing.T) {
 				SubSystem:       "SUBSYSTEM_NAME",
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 				DomainSettings: configgrpc.ClientConfig{
-					Compression: configcompression.Gzip,
+					Compression: configcompression.TypeGzip,
 				},
 				Metrics: configgrpc.ClientConfig{
 					Endpoint:        "https://",
-					Compression:     configcompression.Gzip,
+					Compression:     configcompression.TypeGzip,
 					WriteBufferSize: 512 * 1024,
 				},
 				Logs: configgrpc.ClientConfig{
 					Endpoint:    "https://",
-					Compression: configcompression.Gzip,
+					Compression: configcompression.TypeGzip,
 				},
 				Traces: configgrpc.ClientConfig{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: configcompression.Gzip,
+					Compression: configcompression.TypeGzip,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting:         configtls.TLSSetting{},
 						Insecure:           false,
@@ -101,20 +101,20 @@ func TestLoadConfig(t *testing.T) {
 				SubSystem:       "SUBSYSTEM_NAME",
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 				DomainSettings: configgrpc.ClientConfig{
-					Compression: configcompression.Gzip,
+					Compression: configcompression.TypeGzip,
 				},
 				Metrics: configgrpc.ClientConfig{
 					Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression:     configcompression.Gzip,
+					Compression:     configcompression.TypeGzip,
 					WriteBufferSize: 512 * 1024,
 				},
 				Logs: configgrpc.ClientConfig{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: configcompression.Gzip,
+					Compression: configcompression.TypeGzip,
 				},
 				Traces: configgrpc.ClientConfig{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: configcompression.Gzip,
+					Compression: configcompression.TypeGzip,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting:         configtls.TLSSetting{},
 						Insecure:           false,
