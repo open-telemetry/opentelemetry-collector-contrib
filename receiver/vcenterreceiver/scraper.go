@@ -371,9 +371,6 @@ func (v *vcenterMetricScraper) collectVMs(
 			return
 		}
 
-		if vm.Name() == "DC0_C0_RP0_VM1" {
-			fmt.Println("here")
-		}
 		if moVM.Config == nil {
 			errs.AddPartial(1, fmt.Errorf("vm config empty for %s", hostname))
 			continue
