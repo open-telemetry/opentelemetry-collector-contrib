@@ -67,7 +67,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	host := &mockHostFactories{Host: componenttest.NewNopHost(), factories: factories}
 	host.extensions = map[component.ID]component.Component{
 		component.MustNewID("mock_observer"):                      &mockObserver{},
-		component.NewIDWithName("mock_observer", "with_name"): &mockObserver{},
+		component.MustNewIDWithName("mock_observer", "with_name"): &mockObserver{},
 	}
 
 	cfg := factory.CreateDefaultConfig()

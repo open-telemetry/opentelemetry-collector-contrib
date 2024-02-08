@@ -90,7 +90,7 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
 			component.MustNewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): tExp,
+			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
 	})
 
@@ -146,7 +146,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
 			component.MustNewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): tExp,
+			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
 	})
 
@@ -239,7 +239,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
 			component.MustNewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): tExp,
+			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
 	})
 
@@ -294,7 +294,7 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
 			component.MustNewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): tExp,
+			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
 	})
 
@@ -341,8 +341,8 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
 			component.MustNewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "1"): firstExp,
-			component.NewIDWithName("otlp", "2"): secondExp,
+			component.MustNewIDWithName("otlp", "1"): firstExp,
+			component.MustNewIDWithName("otlp", "2"): secondExp,
 		},
 	})
 
@@ -466,7 +466,7 @@ func TestTracesAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
 			component.MustNewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "1"): firstExp,
+			component.MustNewIDWithName("otlp", "1"): firstExp,
 		},
 	})
 

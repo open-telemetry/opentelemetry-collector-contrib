@@ -27,7 +27,7 @@ func TestBearerToken(t *testing.T) {
 	baExt, err := baFactory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), baCfg)
 	require.NoError(t, err)
 
-	baComponentName := component.NewIDWithName("bearertokenauth", "array01")
+	baComponentName := component.MustNewIDWithName("bearertokenauth", "array01")
 
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),

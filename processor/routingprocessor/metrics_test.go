@@ -43,7 +43,7 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
 			component.MustNewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): mExp,
+			component.MustNewIDWithName("otlp", "2"): mExp,
 		},
 	})
 
@@ -102,7 +102,7 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
 			component.MustNewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): mExp,
+			component.MustNewIDWithName("otlp", "2"): mExp,
 		},
 	})
 
@@ -196,7 +196,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
 			component.MustNewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): mExp,
+			component.MustNewIDWithName("otlp", "2"): mExp,
 		},
 	})
 
@@ -251,7 +251,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
 			component.MustNewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): mExp,
+			component.MustNewIDWithName("otlp", "2"): mExp,
 		},
 	})
 
@@ -313,7 +313,7 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 		host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 			component.DataTypeMetrics: {
 				component.MustNewID("otlp"):              defaultExp,
-				component.NewIDWithName("otlp", "2"): mExp,
+				component.MustNewIDWithName("otlp", "2"): mExp,
 			},
 		})
 
@@ -346,8 +346,8 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
 			component.MustNewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "1"): firstExp,
-			component.NewIDWithName("otlp", "2"): secondExp,
+			component.MustNewIDWithName("otlp", "1"): firstExp,
+			component.MustNewIDWithName("otlp", "2"): secondExp,
 		},
 	})
 
@@ -481,7 +481,7 @@ func TestMetricsAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
 			component.MustNewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "1"): firstExp,
+			component.MustNewIDWithName("otlp", "1"): firstExp,
 		},
 	})
 

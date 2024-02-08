@@ -180,7 +180,7 @@ func TestMarshallerName(t *testing.T) {
 		},
 	)
 
-	e = cfg.Exporters[component.NewIDWithName("awss3", "proto")].(*Config)
+	e = cfg.Exporters[component.MustNewIDWithName("awss3", "proto")].(*Config)
 
 	assert.Equal(t, e,
 		&Config{

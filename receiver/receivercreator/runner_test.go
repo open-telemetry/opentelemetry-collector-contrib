@@ -43,7 +43,7 @@ func Test_loadAndCreateMetricsRuntimeReceiver(t *testing.T) {
 	t.Run("test create receiver from loaded config", func(t *testing.T) {
 		recvr, err := run.createMetricsRuntimeReceiver(
 			exampleFactory,
-			component.NewIDWithName("nop", "1/receiver_creator/1{endpoint=\"localhost:12345\"}/endpoint.id"),
+			component.MustNewIDWithName("nop", "1/receiver_creator/1{endpoint=\"localhost:12345\"}/endpoint.id"),
 			loadedConfig,
 			nil)
 		require.NoError(t, err)
