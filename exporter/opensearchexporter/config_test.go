@@ -57,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					MaxIdleConns:    &maxIdleConns,
 					IdleConnTimeout: &idleConnTimeout,
-					Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("sample_basic_auth")},
+					Auth:            &configauth.Authentication{AuthenticatorID: component.MustNewID("sample_basic_auth")},
 				},
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,

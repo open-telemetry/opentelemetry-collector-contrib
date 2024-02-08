@@ -7,22 +7,22 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/expr-lang/expr v1.16.0
 	github.com/fsnotify/fsnotify v1.7.0
-	github.com/influxdata/go-syslog/v3 v3.0.1-0.20230911200830-875f5bc594a4
+	github.com/haimrubinstein/go-syslog/v3 v3.0.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.93.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.93.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.94.0
 	github.com/stretchr/testify v1.8.4
 	github.com/valyala/fastjson v1.6.4
-	go.opentelemetry.io/collector/component v0.94.0
-	go.opentelemetry.io/collector/config/configtls v0.94.0
-	go.opentelemetry.io/collector/confmap v0.94.0
-	go.opentelemetry.io/collector/consumer v0.94.0
-	go.opentelemetry.io/collector/extension v0.94.0
+	go.opentelemetry.io/collector/component v0.94.1
+	go.opentelemetry.io/collector/config/configtls v0.94.1
+	go.opentelemetry.io/collector/confmap v0.94.1
+	go.opentelemetry.io/collector/consumer v0.94.1
+	go.opentelemetry.io/collector/extension v0.94.1
 	go.opentelemetry.io/collector/featuregate v1.1.0
 	go.opentelemetry.io/collector/pdata v1.1.0
-	go.opentelemetry.io/collector/receiver v0.94.0
+	go.opentelemetry.io/collector/receiver v0.94.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
@@ -43,6 +43,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
+	github.com/influxdata/go-syslog/v3 v3.0.1-0.20230911200830-875f5bc594a4 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.0.2 // indirect
@@ -58,9 +59,9 @@ require (
 	github.com/prometheus/common v0.46.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	go.opentelemetry.io/collector v0.94.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.94.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.94.0 // indirect
+	go.opentelemetry.io/collector v0.94.1 // indirect
+	go.opentelemetry.io/collector/config/configopaque v0.94.1 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.94.1 // indirect
 	go.opentelemetry.io/otel v1.23.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.1 // indirect
 	go.opentelemetry.io/otel/metric v1.23.0 // indirect
