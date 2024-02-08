@@ -23,7 +23,7 @@ import (
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 )
 
-var receiverID = component.NewID("opencensus")
+var receiverID = component.MustNewID("opencensus")
 
 // Ensure that if we add a metrics exporter that our target metrics
 // will be recorded but also with the proper tag keys and values.

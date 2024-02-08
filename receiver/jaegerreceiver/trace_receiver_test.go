@@ -41,7 +41,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-var jaegerReceiver = component.NewIDWithName("jaeger", "receiver_test")
+var jaegerReceiver = component.MustNewIDWithName("jaeger", "receiver_test")
 
 func TestTraceSource(t *testing.T) {
 	set := receivertest.NewNopCreateSettings()
