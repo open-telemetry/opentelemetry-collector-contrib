@@ -41,7 +41,7 @@ func newReceiverRunner(params rcvr.CreateSettings, host component.Host) *receive
 		logger:      params.Logger,
 		params:      params,
 		idNamespace: params.ID,
-		host:        &loggingHost{host, params.Logger},
+		host:        host,
 		receivers:   map[string]*wrappedReceiver{},
 		lock:        &sync.Mutex{},
 	}
@@ -152,7 +152,7 @@ func mergeTemplatedAndDiscoveredConfigs(factory rcvr.Factory, templated, discove
 		endpointConfig := confmap.NewFromStringMap(map[string]any{
 			endpointConfigKey: targetEndpoint,
 		})
-		if err := endpointConfig.Unmarshal(factory.CreateDefaultConfig(), confmap.WithErrorUnused()); err != nil {
+		if err := endpointConfig.Unmarshal(factory.CreateDefaultConfig()); err != nil {
 			// rather than attach to error content that can change over time,
 			// confirm the error only arises w/ ErrorUnused mapstructure setting ("invalid keys")
 			if err = endpointConfig.Unmarshal(factory.CreateDefaultConfig(), confmap.WithIgnoreUnused()); err == nil {

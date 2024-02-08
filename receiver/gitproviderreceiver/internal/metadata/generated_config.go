@@ -25,9 +25,14 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for gitprovider metrics.
 type MetricsConfig struct {
-	GitRepositoryBranchCount      MetricConfig `mapstructure:"git.repository.branch.count"`
-	GitRepositoryContributorCount MetricConfig `mapstructure:"git.repository.contributor.count"`
-	GitRepositoryCount            MetricConfig `mapstructure:"git.repository.count"`
+	GitRepositoryBranchCount             MetricConfig `mapstructure:"git.repository.branch.count"`
+	GitRepositoryContributorCount        MetricConfig `mapstructure:"git.repository.contributor.count"`
+	GitRepositoryCount                   MetricConfig `mapstructure:"git.repository.count"`
+	GitRepositoryPullRequestApprovedTime MetricConfig `mapstructure:"git.repository.pull_request.approved.time"`
+	GitRepositoryPullRequestMergedCount  MetricConfig `mapstructure:"git.repository.pull_request.merged.count"`
+	GitRepositoryPullRequestMergedTime   MetricConfig `mapstructure:"git.repository.pull_request.merged.time"`
+	GitRepositoryPullRequestOpenCount    MetricConfig `mapstructure:"git.repository.pull_request.open.count"`
+	GitRepositoryPullRequestOpenTime     MetricConfig `mapstructure:"git.repository.pull_request.open.time"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -39,6 +44,21 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		GitRepositoryCount: MetricConfig{
+			Enabled: true,
+		},
+		GitRepositoryPullRequestApprovedTime: MetricConfig{
+			Enabled: true,
+		},
+		GitRepositoryPullRequestMergedCount: MetricConfig{
+			Enabled: true,
+		},
+		GitRepositoryPullRequestMergedTime: MetricConfig{
+			Enabled: true,
+		},
+		GitRepositoryPullRequestOpenCount: MetricConfig{
+			Enabled: true,
+		},
+		GitRepositoryPullRequestOpenTime: MetricConfig{
 			Enabled: true,
 		},
 	}
