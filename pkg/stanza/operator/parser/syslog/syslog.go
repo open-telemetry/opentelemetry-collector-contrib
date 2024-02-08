@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	sl "github.com/influxdata/go-syslog/v3"
-	"github.com/influxdata/go-syslog/v3/nontransparent"
-	"github.com/influxdata/go-syslog/v3/octetcounting"
-	"github.com/influxdata/go-syslog/v3/rfc3164"
-	"github.com/influxdata/go-syslog/v3/rfc5424"
+	sl "github.com/haimrubinstein/go-syslog/v3"
+	"github.com/haimrubinstein/go-syslog/v3/nontransparent"
+	"github.com/haimrubinstein/go-syslog/v3/octetcounting"
+	"github.com/haimrubinstein/go-syslog/v3/rfc3164"
+	"github.com/haimrubinstein/go-syslog/v3/rfc5424"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -60,6 +60,7 @@ type BaseConfig struct {
 	Protocol                     string  `mapstructure:"protocol,omitempty"`
 	Location                     string  `mapstructure:"location,omitempty"`
 	EnableOctetCounting          bool    `mapstructure:"enable_octet_counting,omitempty"`
+	AllowSkipPriHeader           bool    `mapstructure:"allow_skip_pri_header,omitempty"`
 	NonTransparentFramingTrailer *string `mapstructure:"non_transparent_framing_trailer,omitempty"`
 }
 
@@ -109,6 +110,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		protocol:                     proto,
 		location:                     location,
 		enableOctetCounting:          c.EnableOctetCounting,
+		allowSkipPriHeader:           c.AllowSkipPriHeader,
 		nonTransparentFramingTrailer: c.NonTransparentFramingTrailer,
 	}, nil
 }
@@ -120,7 +122,11 @@ func (s *Parser) buildParseFunc() (parseFunc, error) {
 	switch s.protocol {
 	case RFC3164:
 		return func(input []byte) (sl.Message, error) {
-			return rfc3164.NewMachine(rfc3164.WithLocaleTimezone(s.location)).Parse(input)
+			parserOptions := []sl.MachineOption{rfc3164.WithLocaleTimezone(s.location)}
+			if s.allowSkipPriHeader {
+				parserOptions = append(parserOptions, rfc3164.WithAllowSkipPri())
+			}
+			return rfc3164.NewMachine(parserOptions...).Parse(input)
 		}, nil
 	case RFC5424:
 		switch {
@@ -135,7 +141,11 @@ func (s *Parser) buildParseFunc() (parseFunc, error) {
 		// Raw RFC5424 parsing
 		default:
 			return func(input []byte) (sl.Message, error) {
-				return rfc5424.NewMachine().Parse(input)
+				parserOptions := []sl.MachineOption{}
+				if s.allowSkipPriHeader {
+					parserOptions = append(parserOptions, rfc5424.WithAllowSkipPri())
+				}
+				return rfc5424.NewMachine(parserOptions...).Parse(input)
 			}, nil
 		}
 
@@ -150,11 +160,26 @@ type Parser struct {
 	protocol                     string
 	location                     *time.Location
 	enableOctetCounting          bool
+	allowSkipPriHeader           bool
 	nonTransparentFramingTrailer *string
 }
 
 // Process will parse an entry field as syslog.
 func (s *Parser) Process(ctx context.Context, entry *entry.Entry) error {
+
+	// if pri header is missing and this is an expected behavior then facility and severity values should be skipped.
+	if !s.enableOctetCounting && s.allowSkipPriHeader {
+
+		bytes, err := toBytes(entry.Body)
+		if err != nil {
+			return err
+		}
+
+		if s.shouldSkipPriorityValues(bytes) {
+			return s.ParserOperator.ProcessWithCallback(ctx, entry, s.parse, postprocessWithoutPriHeader)
+		}
+	}
+
 	return s.ParserOperator.ProcessWithCallback(ctx, entry, s.parse, postprocess)
 }
 
@@ -175,39 +200,53 @@ func (s *Parser) parse(value any) (any, error) {
 		return nil, err
 	}
 
+	skipPriHeaderValues := s.shouldSkipPriorityValues(bytes)
+
 	switch message := slog.(type) {
 	case *rfc3164.SyslogMessage:
-		return s.parseRFC3164(message)
+		return s.parseRFC3164(message, skipPriHeaderValues)
 	case *rfc5424.SyslogMessage:
-		return s.parseRFC5424(message)
+		return s.parseRFC5424(message, skipPriHeaderValues)
 	default:
 		return nil, fmt.Errorf("parsed value was not rfc3164 or rfc5424 compliant")
 	}
 }
 
+func (s *Parser) shouldSkipPriorityValues(value []byte) bool {
+	if !s.enableOctetCounting && s.allowSkipPriHeader {
+		// check if entry starts with '<'.
+		// if not it means that the pre header was missing from the body and hence we should skip it.
+		if len(value) > 1 && value[0] != '<' {
+			return true
+		}
+	}
+	return false
+}
+
 // parseRFC3164 will parse an RFC3164 syslog message.
-func (s *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage) (map[string]any, error) {
+func (s *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage, skipPriHeaderValues bool) (map[string]any, error) {
 	value := map[string]any{
 		"timestamp": syslogMessage.Timestamp,
-		"priority":  syslogMessage.Priority,
-		"facility":  syslogMessage.Facility,
-		"severity":  syslogMessage.Severity,
 		"hostname":  syslogMessage.Hostname,
 		"appname":   syslogMessage.Appname,
 		"proc_id":   syslogMessage.ProcID,
 		"msg_id":    syslogMessage.MsgID,
 		"message":   syslogMessage.Message,
 	}
+
+	if !skipPriHeaderValues {
+		value["priority"] = syslogMessage.Priority
+		value["severity"] = syslogMessage.Severity
+		value["facility"] = syslogMessage.Facility
+	}
+
 	return s.toSafeMap(value)
 }
 
 // parseRFC5424 will parse an RFC5424 syslog message.
-func (s *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage) (map[string]any, error) {
+func (s *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage, skipPriHeaderValues bool) (map[string]any, error) {
 	value := map[string]any{
 		"timestamp":       syslogMessage.Timestamp,
-		"priority":        syslogMessage.Priority,
-		"facility":        syslogMessage.Facility,
-		"severity":        syslogMessage.Severity,
 		"hostname":        syslogMessage.Hostname,
 		"appname":         syslogMessage.Appname,
 		"proc_id":         syslogMessage.ProcID,
@@ -216,6 +255,13 @@ func (s *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage) (map[string]
 		"structured_data": syslogMessage.StructuredData,
 		"version":         syslogMessage.Version,
 	}
+
+	if !skipPriHeaderValues {
+		value["priority"] = syslogMessage.Priority
+		value["severity"] = syslogMessage.Severity
+		value["facility"] = syslogMessage.Facility
+	}
+
 	return s.toSafeMap(value)
 }
 
@@ -306,6 +352,19 @@ var severityText = [...]string{
 
 var severityField = entry.NewAttributeField("severity")
 
+func cleanupTimestamp(e *entry.Entry) error {
+	_, ok := entry.NewAttributeField("timestamp").Delete(e)
+	if !ok {
+		return fmt.Errorf("failed to cleanup timestamp")
+	}
+
+	return nil
+}
+
+func postprocessWithoutPriHeader(e *entry.Entry) error {
+	return cleanupTimestamp(e)
+}
+
 func postprocess(e *entry.Entry) error {
 	sev, ok := severityField.Delete(e)
 	if !ok {
@@ -324,12 +383,7 @@ func postprocess(e *entry.Entry) error {
 	e.Severity = severityMapping[sevInt]
 	e.SeverityText = severityText[sevInt]
 
-	_, ok = entry.NewAttributeField("timestamp").Delete(e)
-	if !ok {
-		return fmt.Errorf("failed to cleanup timestamp")
-	}
-
-	return nil
+	return cleanupTimestamp(e)
 }
 
 func newOctetCountingParseFunc() parseFunc {
