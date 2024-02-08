@@ -87,7 +87,7 @@ func TestSetTimeStamp(t *testing.T) {
 		Token:  "token",
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint:    server.URL,
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 		},
 	}
 	var err error
