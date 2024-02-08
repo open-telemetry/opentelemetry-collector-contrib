@@ -41,7 +41,7 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 			if len(query.Metrics) == 0 {
 				continue
 			}
-			id := component.NewIDWithName("sqlqueryreceiver", fmt.Sprintf("query-%d: %s", i, query.SQL))
+			id := component.MustNewIDWithName("sqlqueryreceiver", fmt.Sprintf("query-%d: %s", i, query.SQL))
 			dbProviderFunc := func() (*sql.DB, error) {
 				return sqlOpenerFunc(sqlCfg.Driver, sqlCfg.DataSource)
 			}
