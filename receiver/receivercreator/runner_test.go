@@ -68,7 +68,7 @@ func TestValidateSetEndpointFromConfig(t *testing.T) {
 		Endpoint any `mapstructure:"endpoint"`
 	}
 
-	receiverWithEndpoint := receiver.NewFactory("with.endpoint", func() component.Config {
+	receiverWithEndpoint := receiver.NewFactory(component.MustNewType("with_endpoint"), func() component.Config {
 		return &configWithEndpoint{}
 	})
 
@@ -76,7 +76,7 @@ func TestValidateSetEndpointFromConfig(t *testing.T) {
 		NotEndpoint any `mapstructure:"not.endpoint"`
 	}
 
-	receiverWithoutEndpoint := receiver.NewFactory("without.endpoint", func() component.Config {
+	receiverWithoutEndpoint := receiver.NewFactory(component.MustNewType("without_endpoint"), func() component.Config {
 		return &configWithoutEndpoint{}
 	})
 

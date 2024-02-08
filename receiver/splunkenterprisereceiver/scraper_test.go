@@ -87,7 +87,7 @@ func TestScraper(t *testing.T) {
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: ts.URL,
 			Auth: &configauth.Authentication{
-				AuthenticatorID: component.MustNewID("basicauth/client"),
+				AuthenticatorID: component.MustNewIDWithName("basicauth", "client"),
 			},
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
@@ -100,7 +100,7 @@ func TestScraper(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewID("basicauth/client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
 		},
 	}
 
