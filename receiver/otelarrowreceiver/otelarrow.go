@@ -88,7 +88,7 @@ func (r *otelArrowReceiver) startGRPCServer(cfg configgrpc.GRPCServerSettings, h
 		defer r.shutdownWG.Done()
 
 		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && !errors.Is(errGrpc, grpc.ErrServerStopped) {
-			host.ReportFatalError(errGrpc)
+			r.settings.ReportStatus(component.NewFatalErrorEvent(errGrpc))
 		}
 	}()
 	return nil
