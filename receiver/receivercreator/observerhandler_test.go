@@ -30,7 +30,7 @@ func TestOnAddForMetrics(t *testing.T) {
 	}{
 		{
 			name:                   "dynamically set with supported endpoint",
-			receiverTemplateID:     component.NewIDWithName("with.endpoint", "some.name"),
+			receiverTemplateID:     component.MustNewIDWithName("with_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"int_field": 12345678},
 			expectedReceiverType:   &nopWithEndpointReceiver{},
 			expectedReceiverConfig: &nopWithEndpointConfig{
@@ -40,7 +40,7 @@ func TestOnAddForMetrics(t *testing.T) {
 		},
 		{
 			name:                   "inherits supported endpoint",
-			receiverTemplateID:     component.NewIDWithName("with.endpoint", "some.name"),
+			receiverTemplateID:     component.MustNewIDWithName("with_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "some.endpoint"},
 			expectedReceiverType:   &nopWithEndpointReceiver{},
 			expectedReceiverConfig: &nopWithEndpointConfig{
@@ -50,7 +50,7 @@ func TestOnAddForMetrics(t *testing.T) {
 		},
 		{
 			name:                   "not dynamically set with unsupported endpoint",
-			receiverTemplateID:     component.NewIDWithName("without.endpoint", "some.name"),
+			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"int_field": 23456789, "not_endpoint": "not.an.endpoint"},
 			expectedReceiverType:   &nopWithoutEndpointReceiver{},
 			expectedReceiverConfig: &nopWithoutEndpointConfig{
@@ -60,9 +60,9 @@ func TestOnAddForMetrics(t *testing.T) {
 		},
 		{
 			name:                   "inherits unsupported endpoint",
-			receiverTemplateID:     component.NewIDWithName("without.endpoint", "some.name"),
+			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
-			expectedError:          "failed to load \"without.endpoint/some.name\" template config: 1 error(s) decoding:\n\n* '' has invalid keys: endpoint",
+			expectedError:          "failed to load \"without_endpoint/some.name\" template config: 1 error(s) decoding:\n\n* '' has invalid keys: endpoint",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -132,7 +132,7 @@ func TestOnAddForLogs(t *testing.T) {
 	}{
 		{
 			name:                   "dynamically set with supported endpoint",
-			receiverTemplateID:     component.NewIDWithName("with.endpoint", "some.name"),
+			receiverTemplateID:     component.MustNewIDWithName("with_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"int_field": 12345678},
 			expectedReceiverType:   &nopWithEndpointReceiver{},
 			expectedReceiverConfig: &nopWithEndpointConfig{
@@ -142,7 +142,7 @@ func TestOnAddForLogs(t *testing.T) {
 		},
 		{
 			name:                   "inherits supported endpoint",
-			receiverTemplateID:     component.NewIDWithName("with.endpoint", "some.name"),
+			receiverTemplateID:     component.MustNewIDWithName("with_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "some.endpoint"},
 			expectedReceiverType:   &nopWithEndpointReceiver{},
 			expectedReceiverConfig: &nopWithEndpointConfig{
@@ -152,7 +152,7 @@ func TestOnAddForLogs(t *testing.T) {
 		},
 		{
 			name:                   "not dynamically set with unsupported endpoint",
-			receiverTemplateID:     component.NewIDWithName("without.endpoint", "some.name"),
+			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"int_field": 23456789, "not_endpoint": "not.an.endpoint"},
 			expectedReceiverType:   &nopWithoutEndpointReceiver{},
 			expectedReceiverConfig: &nopWithoutEndpointConfig{
@@ -162,9 +162,9 @@ func TestOnAddForLogs(t *testing.T) {
 		},
 		{
 			name:                   "inherits unsupported endpoint",
-			receiverTemplateID:     component.NewIDWithName("without.endpoint", "some.name"),
+			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
-			expectedError:          "failed to load \"without.endpoint/some.name\" template config: 1 error(s) decoding:\n\n* '' has invalid keys: endpoint",
+			expectedError:          "failed to load \"without_endpoint/some.name\" template config: 1 error(s) decoding:\n\n* '' has invalid keys: endpoint",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -234,7 +234,7 @@ func TestOnAddForTraces(t *testing.T) {
 	}{
 		{
 			name:                   "dynamically set with supported endpoint",
-			receiverTemplateID:     component.NewIDWithName("with.endpoint", "some.name"),
+			receiverTemplateID:     component.MustNewIDWithName("with_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"int_field": 12345678},
 			expectedReceiverType:   &nopWithEndpointReceiver{},
 			expectedReceiverConfig: &nopWithEndpointConfig{
@@ -244,7 +244,7 @@ func TestOnAddForTraces(t *testing.T) {
 		},
 		{
 			name:                   "inherits supported endpoint",
-			receiverTemplateID:     component.NewIDWithName("with.endpoint", "some.name"),
+			receiverTemplateID:     component.MustNewIDWithName("with_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "some.endpoint"},
 			expectedReceiverType:   &nopWithEndpointReceiver{},
 			expectedReceiverConfig: &nopWithEndpointConfig{
@@ -254,7 +254,7 @@ func TestOnAddForTraces(t *testing.T) {
 		},
 		{
 			name:                   "not dynamically set with unsupported endpoint",
-			receiverTemplateID:     component.NewIDWithName("without.endpoint", "some.name"),
+			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"int_field": 23456789, "not_endpoint": "not.an.endpoint"},
 			expectedReceiverType:   &nopWithoutEndpointReceiver{},
 			expectedReceiverConfig: &nopWithoutEndpointConfig{
@@ -264,9 +264,9 @@ func TestOnAddForTraces(t *testing.T) {
 		},
 		{
 			name:                   "inherits unsupported endpoint",
-			receiverTemplateID:     component.NewIDWithName("without.endpoint", "some.name"),
+			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
-			expectedError:          "failed to load \"without.endpoint/some.name\" template config: 1 error(s) decoding:\n\n* '' has invalid keys: endpoint",
+			expectedError:          "failed to load \"without_endpoint/some.name\" template config: 1 error(s) decoding:\n\n* '' has invalid keys: endpoint",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -329,7 +329,7 @@ func TestOnAddForTraces(t *testing.T) {
 func TestOnRemoveForMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	rcvrCfg := receiverConfig{
-		id:         component.NewIDWithName("with.endpoint", "some.name"),
+		id:         component.MustNewIDWithName("with_endpoint", "some.name"),
 		config:     userConfigMap{"endpoint": "some.endpoint"},
 		endpointID: portEndpoint.ID,
 	}
@@ -358,7 +358,7 @@ func TestOnRemoveForMetrics(t *testing.T) {
 func TestOnRemoveForLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	rcvrCfg := receiverConfig{
-		id:         component.NewIDWithName("with.endpoint", "some.name"),
+		id:         component.MustNewIDWithName("with_endpoint", "some.name"),
 		config:     userConfigMap{"endpoint": "some.endpoint"},
 		endpointID: portEndpoint.ID,
 	}
@@ -387,7 +387,7 @@ func TestOnRemoveForLogs(t *testing.T) {
 func TestOnChange(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	rcvrCfg := receiverConfig{
-		id:         component.NewIDWithName("with.endpoint", "some.name"),
+		id:         component.MustNewIDWithName("with_endpoint", "some.name"),
 		config:     userConfigMap{"endpoint": "some.endpoint"},
 		endpointID: portEndpoint.ID,
 	}
@@ -450,8 +450,8 @@ type mockHost struct {
 func newMockHost(t *testing.T, host component.Host) *mockHost {
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
-	factories.Receivers["with.endpoint"] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
-	factories.Receivers["without.endpoint"] = &nopWithoutEndpointFactory{Factory: receivertest.NewNopFactory()}
+	factories.Receivers[component.MustNewType("with_endpoint")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
+	factories.Receivers[component.MustNewType("without_endpoint")] = &nopWithoutEndpointFactory{Factory: receivertest.NewNopFactory()}
 	return &mockHost{t: t, factories: factories, Host: host}
 }
 
@@ -478,7 +478,7 @@ func newMockRunner(t *testing.T) *mockRunner {
 	return &mockRunner{
 		receiverRunner: receiverRunner{
 			params:      cs,
-			idNamespace: component.NewIDWithName("some.type", "some.name"),
+			idNamespace: component.MustNewIDWithName("some_type", "some.name"),
 			host:        newMockHost(t, componenttest.NewNopHost()),
 		},
 	}
@@ -491,7 +491,7 @@ func newObserverHandler(
 	nextTraces consumer.Traces,
 ) (*observerHandler, *mockRunner) {
 	set := receivertest.NewNopCreateSettings()
-	set.ID = component.NewIDWithName("some.type", "some.name")
+	set.ID = component.MustNewIDWithName("some_type", "some.name")
 	mr := newMockRunner(t)
 	return &observerHandler{
 		params:                set,

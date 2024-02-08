@@ -35,7 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
-var receiverID = component.NewID("opencensus")
+var receiverID = component.MustNewID("opencensus")
 
 func TestReceiver_endToEnd(t *testing.T) {
 	tt, err := componenttest.SetupTelemetry(receiverID)
