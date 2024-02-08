@@ -114,7 +114,8 @@ func (ltp *logsTransformProcessor) startConverterLoop(ctx context.Context) {
 	go ltp.converterLoop(wg, ctx)
 
 	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
-		return waitForWgOrCtx(wg, ctx)
+		wg.Wait()
+		return nil
 	})
 }
 
@@ -145,7 +146,8 @@ func (ltp *logsTransformProcessor) startEmitterLoop(ctx context.Context) {
 	wg.Add(1)
 	go ltp.emitterLoop(wg, ctx)
 	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
-		return waitForWgOrCtx(wg, ctx)
+		wg.Wait()
+		return nil
 	})
 }
 
@@ -166,7 +168,8 @@ func (ltp *logsTransformProcessor) startConsumerLoop(ctx context.Context) {
 	wg.Add(1)
 	go ltp.consumerLoop(wg, ctx)
 	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
-		return waitForWgOrCtx(wg, ctx)
+		wg.Wait()
+		return nil
 	})
 }
 
@@ -247,20 +250,4 @@ func (ltp *logsTransformProcessor) consumerLoop(wg *sync.WaitGroup, ctx context.
 			}
 		}
 	}
-}
-
-func waitForWgOrCtx(wg *sync.WaitGroup, ctx context.Context) error {
-	doneChan := make(chan struct{})
-	go func() {
-		wg.Wait()
-		close(doneChan)
-	}()
-
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-doneChan: // OK
-	}
-
-	return nil
 }
