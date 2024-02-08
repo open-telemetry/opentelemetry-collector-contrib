@@ -239,7 +239,47 @@ resource_attributes:
   k8s.container.status.last_terminated_reason:
     description: Last terminated reason of a container.
     type: string
-    enabled: false
+    enabled: true
+
+  k8s.daemonset.start_time:
+    description: "The start time of the Daemonset."
+    enabled: true
+    type: string
+
+  k8s.deployment.start_time:
+    description: "The start time of the Deployment."
+    enabled: true
+    type: string
+
+  k8s.job.start_time:
+    description: "The start time of the Job."
+    enabled: true
+    type: string
+
+  k8s.cronjob.start_time:
+    description: "The start time of the Cronjob."
+    enabled: true
+    type: string
+
+  k8s.replicaset.start_time:
+    description: "The start time of the Replicaset."
+    enabled: true
+    type: string
+
+  k8s.statefulset.start_time:
+    description: "The start time of the Statefulset."
+    enabled: true
+    type: string
+
+  k8s.namespace.start_time:
+    description: "The start time of the Namespace."
+    enabled: true
+    type: string
+
+  k8s.pod.start_time:
+    description: "The start time of the Pod."
+    enabled: true
+    type: string
 
 attributes:
   k8s.namespace.name:
@@ -561,7 +601,7 @@ metrics:
       value_type: int
     attributes:
       - condition
-  # k8s.node.condition_* metrics (k8s.node.condition_ready, k8s.node.condition_memory_pressure, etc) are controlled 
+  # k8s.node.condition_* metrics (k8s.node.condition_ready, k8s.node.condition_memory_pressure, etc) are controlled
   # by node_conditions_to_report config option. By default, only k8s.node.condition_ready is enabled.
 
   # k8s.node.allocatable_* metrics (k8s.node.allocatable_cpu, k8s.node.allocatable_memory, etc) are controlled
