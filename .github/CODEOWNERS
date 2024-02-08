@@ -235,6 +235,7 @@ receiver/nsxtreceiver/                                   @open-telemetry/collect
 receiver/opencensusreceiver/                             @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 receiver/oracledbreceiver/                               @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1 @atoulme
 receiver/osqueryreceiver/                                @open-telemetry/collector-contrib-approvers @codeboten @nslaughter @smithclay
+receiver/otelarrowreceiver/                              @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3
 receiver/otlpjsonfilereceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
 receiver/podmanreceiver/                                 @open-telemetry/collector-contrib-approvers @rogercoll
 receiver/postgresqlreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski

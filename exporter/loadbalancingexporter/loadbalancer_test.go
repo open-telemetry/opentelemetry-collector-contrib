@@ -243,7 +243,7 @@ func TestRemoveExtraExporters(t *testing.T) {
 func TestAddMissingExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	exporterFactory := exporter.NewFactory("otlp", func() component.Config {
+	exporterFactory := exporter.NewFactory(component.MustNewType("otlp"), func() component.Config {
 		return &otlpexporter.Config{}
 	}, exporter.WithTraces(func(
 		_ context.Context,
@@ -277,7 +277,7 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
 	expectedErr := errors.New("some expected error")
-	exporterFactory := exporter.NewFactory("otlp", func() component.Config {
+	exporterFactory := exporter.NewFactory(component.MustNewType("otlp"), func() component.Config {
 		return &otlpexporter.Config{}
 	}, exporter.WithTraces(func(
 		_ context.Context,
