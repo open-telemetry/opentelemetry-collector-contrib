@@ -200,6 +200,7 @@ github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
+github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/mitchellh/reflectwalk v1.0.0/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
 github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
@@ -275,9 +276,13 @@ go.opentelemetry.io/collector/confmap v0.72.0/go.mod h1:ypdzD5rWFYPuaZXWNR0Y3pGK
 go.opentelemetry.io/collector/confmap v0.72.1-0.20230306190955-966865880707 h1:4JAkbuxQ8Be5/ltVvOssca9cjniPCRbi51Q7hWkds54=
 go.opentelemetry.io/collector/confmap v0.72.1-0.20230306190955-966865880707/go.mod h1:pSzdsQ6G03jzM4BTiDx8OnrfidfUImkghM8+hvg8r40=
 go.opentelemetry.io/collector/confmap v0.87.0/go.mod h1:inqYRP70+bMrUwGGnuhcWyyufxyU3VQT6rl3/EX0f+g=
+go.opentelemetry.io/collector/confmap v0.91.0/go.mod h1:uxV+fZ85kG31oovL6Cl3fAMQ3RRPwUvfAbbA9WT1Yhk=
+go.opentelemetry.io/collector/confmap v0.94.1/go.mod h1:pCT5UtcHaHVJ5BIILv1Z2VQyjZzmT9uTdBmC9+Z0AgA=
 go.opentelemetry.io/collector/featuregate v0.72.0 h1:ohUu+sefEWa1VGgzTu40xJhfHp+FJOUiQVPRv6IWco0=
 go.opentelemetry.io/collector/featuregate v0.72.0/go.mod h1:6mZdaoUukhcreY8fZKwnTm7RVsyp4iFFNf5UXMnzIxc=
 go.opentelemetry.io/collector/featuregate v1.0.0-rcv0016/go.mod h1:fLmJMf1AoHttkF8p5oJAc4o5ZpHu8yO5XYJ7gbLCLzo=
+go.opentelemetry.io/collector/featuregate v1.0.0/go.mod h1:xGbRuw+GbutRtVVSEy3YR2yuOlEyiUMhN2M9DJljgqY=
+go.opentelemetry.io/collector/featuregate v1.1.0/go.mod h1:QQXjP4etmJQhkQ20j4P/rapWuItYxoFozg/iIwuKnYg=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/atomic v1.10.0 h1:9qC72Qh0+3MqyJbAn8YU5xVq1frD8bn3JtD2oXtafVQ=
 go.uber.org/atomic v1.10.0/go.mod h1:LUxbIzbOniOlMKjJjyPfpl4v+PKK2cNJn91OQbhoJI0=
