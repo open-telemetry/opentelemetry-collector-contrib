@@ -27,7 +27,6 @@ func TestAddToGroupedMetric(t *testing.T) {
 	namespace := "namespace"
 	instrumentationLibName := "cloudwatch-otel"
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
-	logger := zap.NewNop()
 
 	testCases := []struct {
 		name               string
@@ -110,11 +109,11 @@ func TestAddToGroupedMetric(t *testing.T) {
 			for i := 0; i < metrics.Len(); i++ {
 				err := addToGroupedMetric(metrics.At(i), groupedMetrics,
 					generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
-					true, zap.NewNop(),
+					true,
 					nil,
 					testCfg,
 					emfCalcs)
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			}
 
 			assert.Equal(t, 1, len(groupedMetrics))
@@ -153,11 +152,10 @@ func TestAddToGroupedMetric(t *testing.T) {
 				groupedMetrics,
 				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
 				true,
-				logger,
 				nil,
 				testCfg,
 				emfCalcs)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 
 		assert.Equal(t, 4, len(groupedMetrics))
@@ -226,11 +224,10 @@ func TestAddToGroupedMetric(t *testing.T) {
 				groupedMetrics,
 				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
 				true,
-				logger,
 				nil,
 				testCfg,
 				emfCalcs)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 
 		assert.Equal(t, 4, len(groupedMetrics))
@@ -277,11 +274,11 @@ func TestAddToGroupedMetric(t *testing.T) {
 		err := addToGroupedMetric(metric,
 			groupedMetrics,
 			metricMetadata1,
-			true, logger,
+			true,
 			nil,
 			testCfg,
 			emfCalcs)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		metricMetadata2 := generateTestMetricMetadata(namespace,
 			timestamp,
@@ -290,8 +287,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 			instrumentationLibName,
 			metric.Type(),
 		)
-		err = addToGroupedMetric(metric, groupedMetrics, metricMetadata2, true, logger, nil, testCfg, emfCalcs)
-		assert.Nil(t, err)
+		err = addToGroupedMetric(metric, groupedMetrics, metricMetadata2, true, nil, testCfg, emfCalcs)
+		assert.NoError(t, err)
 
 		assert.Len(t, groupedMetrics, 2)
 		seenLogGroup1 := false
@@ -338,18 +335,18 @@ func TestAddToGroupedMetric(t *testing.T) {
 		assert.Equal(t, 2, metrics.Len())
 
 		obs, logs := observer.New(zap.WarnLevel)
-		obsLogger := zap.New(obs)
+		testCfg.logger = zap.New(obs)
 
 		for i := 0; i < metrics.Len(); i++ {
 			err := addToGroupedMetric(metrics.At(i),
 				groupedMetrics,
 				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
-				true, obsLogger,
+				true,
 				nil,
 				testCfg,
 				emfCalcs,
 			)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 		assert.Equal(t, 1, len(groupedMetrics))
 
@@ -382,17 +379,16 @@ func TestAddToGroupedMetric(t *testing.T) {
 		metric.SetUnit("Count")
 
 		obs, logs := observer.New(zap.WarnLevel)
-		obsLogger := zap.New(obs)
+		testCfg.logger = zap.New(obs)
 		err := addToGroupedMetric(metric,
 			groupedMetrics,
 			generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeEmpty),
 			true,
-			obsLogger,
 			nil,
 			testCfg,
 			emfCalcs,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, 0, len(groupedMetrics))
 
 		// Test output warning logs
@@ -460,14 +456,12 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 	metrics := rms.At(0).ScopeMetrics().At(0).Metrics()
 	numMetrics := metrics.Len()
 
-	logger := zap.NewNop()
-
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[any]*groupedMetric)
 		for i := 0; i < numMetrics; i++ {
 			metadata := generateTestMetricMetadata("namespace", int64(1596151098037), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type())
-			err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, logger, nil, testCfg, emfCalcs)
+			err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, nil, testCfg, emfCalcs)
 			assert.Nil(b, err)
 		}
 	}

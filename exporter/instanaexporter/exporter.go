@@ -30,7 +30,7 @@ type instanaExporter struct {
 }
 
 func (e *instanaExporter) start(_ context.Context, host component.Host) error {
-	client, err := e.config.HTTPClientSettings.ToClient(host, e.settings)
+	client, err := e.config.ClientConfig.ToClient(host, e.settings)
 	if err != nil {
 		return err
 	}

@@ -19,7 +19,7 @@ type splunkEntClient struct {
 }
 
 func newSplunkEntClient(cfg *Config, h component.Host, s component.TelemetrySettings) (*splunkEntClient, error) {
-	client, err := cfg.HTTPClientSettings.ToClient(h, s)
+	client, err := cfg.ClientConfig.ToClient(h, s)
 	if err != nil {
 		return nil, err
 	}

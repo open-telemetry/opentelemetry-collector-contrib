@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("pulsar")
+)
+
 const (
-	Type             = "pulsar"
 	MetricsStability = component.StabilityLevelAlpha
 	TracesStability  = component.StabilityLevelAlpha
 	LogsStability    = component.StabilityLevelAlpha

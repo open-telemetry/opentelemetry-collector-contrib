@@ -48,7 +48,7 @@ func TestEC2Session(t *testing.T) {
 	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
 	assert.Equal(t, s, expectedSession, "Expect the session object is not overridden")
 	assert.Equal(t, *cfg.Region, ec2Region, "Region value fetched from ec2-metadata service")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 // fetch region value from environment variable
@@ -65,7 +65,7 @@ func TestRegionEnv(t *testing.T) {
 	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
 	assert.Equal(t, s, expectedSession, "Expect the session object is not overridden")
 	assert.Equal(t, *cfg.Region, region, "Region value fetched from environment")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestGetAWSConfigSessionWithSessionErr(t *testing.T) {
@@ -82,7 +82,7 @@ func TestGetAWSConfigSessionWithSessionErr(t *testing.T) {
 	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
 	assert.Nil(t, cfg)
 	assert.Nil(t, s)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestGetAWSConfigSessionWithEC2RegionErr(t *testing.T) {
@@ -98,7 +98,7 @@ func TestGetAWSConfigSessionWithEC2RegionErr(t *testing.T) {
 	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
 	assert.Nil(t, cfg)
 	assert.Nil(t, s)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestNewAWSSessionWithErr(t *testing.T) {
@@ -109,11 +109,11 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	conn := &Conn{}
 	se, err := conn.newAWSSession(logger, roleArn, region)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, se)
 	roleArn = ""
 	se, err = conn.newAWSSession(logger, roleArn, region)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, se)
 	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "regional")
@@ -122,7 +122,7 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 	})
 	assert.NotNil(t, se)
 	_, err = conn.getEC2Region(se)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
@@ -143,7 +143,7 @@ func TestGetDefaultSession(t *testing.T) {
 	logger := zap.NewNop()
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	_, err := GetDefaultSession(logger)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestGetSTSCreds(t *testing.T) {
@@ -151,8 +151,8 @@ func TestGetSTSCreds(t *testing.T) {
 	region := "fake_region"
 	roleArn := ""
 	_, err := getSTSCreds(logger, region, roleArn)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	_, err = getSTSCreds(logger, region, roleArn)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

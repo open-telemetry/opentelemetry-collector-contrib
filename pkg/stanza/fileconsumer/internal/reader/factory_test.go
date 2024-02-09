@@ -7,11 +7,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -32,6 +35,9 @@ func testFactory(t *testing.T, opts ...testFactoryOpt) (*Factory, *emittest.Sink
 		trimFunc:           trim.Whitespace,
 		flushPeriod:        defaultFlushPeriod,
 		sinkCallBufferSize: 100,
+		attributes: attrs.Resolver{
+			IncludeFileName: true,
+		},
 	}
 	for _, opt := range opts {
 		opt(cfg)
@@ -42,37 +48,31 @@ func testFactory(t *testing.T, opts ...testFactoryOpt) (*Factory, *emittest.Sink
 
 	sink := emittest.NewSink(emittest.WithCallBuffer(cfg.sinkCallBufferSize))
 	return &Factory{
-		SugaredLogger:           testutil.Logger(t),
-		FromBeginning:           cfg.fromBeginning,
-		FingerprintSize:         cfg.fingerprintSize,
-		MaxLogSize:              cfg.maxLogSize,
-		Encoding:                cfg.encoding,
-		SplitFunc:               splitFunc,
-		TrimFunc:                cfg.trimFunc,
-		FlushTimeout:            cfg.flushPeriod,
-		EmitFunc:                sink.Callback,
-		IncludeFileName:         cfg.includeFileName,
-		IncludeFilePath:         cfg.includeFilePath,
-		IncludeFileNameResolved: cfg.includeFileNameResolved,
-		IncludeFilePathResolved: cfg.includeFilePathResolved,
+		SugaredLogger:   testutil.Logger(t),
+		FromBeginning:   cfg.fromBeginning,
+		FingerprintSize: cfg.fingerprintSize,
+		MaxLogSize:      cfg.maxLogSize,
+		Encoding:        cfg.encoding,
+		SplitFunc:       splitFunc,
+		TrimFunc:        cfg.trimFunc,
+		FlushTimeout:    cfg.flushPeriod,
+		EmitFunc:        sink.Callback,
+		Attributes:      cfg.attributes,
 	}, sink
 }
 
 type testFactoryOpt func(*testFactoryCfg)
 
 type testFactoryCfg struct {
-	fromBeginning           bool
-	fingerprintSize         int
-	maxLogSize              int
-	encoding                encoding.Encoding
-	splitCfg                split.Config
-	trimFunc                trim.Func
-	flushPeriod             time.Duration
-	sinkCallBufferSize      int
-	includeFileName         bool
-	includeFilePath         bool
-	includeFileNameResolved bool
-	includeFilePathResolved bool
+	fromBeginning      bool
+	fingerprintSize    int
+	maxLogSize         int
+	encoding           encoding.Encoding
+	splitCfg           split.Config
+	trimFunc           trim.Func
+	flushPeriod        time.Duration
+	sinkCallBufferSize int
+	attributes         attrs.Resolver
 }
 
 func withFingerprintSize(size int) testFactoryOpt {
@@ -105,26 +105,44 @@ func withSinkBufferSize(n int) testFactoryOpt {
 	}
 }
 
-func includeFileName() testFactoryOpt {
+func fromEnd() testFactoryOpt {
 	return func(c *testFactoryCfg) {
-		c.includeFileName = true
+		c.fromBeginning = false
 	}
 }
 
-func includeFilePath() testFactoryOpt {
-	return func(c *testFactoryCfg) {
-		c.includeFilePath = true
-	}
-}
+func TestStartAt(t *testing.T) {
+	tempDir := t.TempDir()
+	temp := filetest.OpenTemp(t, tempDir)
+	content := "some text\n"
+	_, err := temp.WriteString(content)
+	require.NoError(t, err)
 
-func includeFileNameResolved() testFactoryOpt {
-	return func(c *testFactoryCfg) {
-		c.includeFileNameResolved = true
-	}
-}
+	f, _ := testFactory(t, withFingerprintSize(len(content)*2))
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err := f.NewReader(temp, fp)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), r.Offset)
 
-func includeFilePathResolved() testFactoryOpt {
-	return func(c *testFactoryCfg) {
-		c.includeFilePathResolved = true
-	}
+	f, _ = testFactory(t, withFingerprintSize(len(content)/2), fromEnd())
+	fp, err = f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err = f.NewReader(temp, fp)
+	require.NoError(t, err)
+	assert.Equal(t, int64(len(content)), r.Offset)
+
+	f, _ = testFactory(t, withFingerprintSize(len(content)/2))
+	fp, err = f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err = f.NewReader(temp, fp)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), r.Offset)
+
+	f, _ = testFactory(t, withFingerprintSize(len(content)/2), fromEnd())
+	fp, err = f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err = f.NewReader(temp, fp)
+	require.NoError(t, err)
+	assert.Equal(t, int64(len(content)), r.Offset)
 }

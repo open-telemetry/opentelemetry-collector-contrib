@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
-	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestExtensionIntegrity(t *testing.T) {
@@ -223,9 +222,6 @@ func TestSanitize(t *testing.T) {
 }
 
 func TestComponentNameWithUnsafeCharacters(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("extension.filestorage.replaceUnsafeCharacters", true)
-	require.NoError(t, err)
-
 	tempDir := t.TempDir()
 
 	f := NewFactory()
@@ -296,7 +292,7 @@ func newTestExtension(t *testing.T) storage.Extension {
 }
 
 func newTestEntity(name string) component.ID {
-	return component.NewIDWithName("nop", name)
+	return component.MustNewIDWithName("nop", name)
 }
 
 func TestCompaction(t *testing.T) {

@@ -58,10 +58,10 @@ func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rC
 	var err error
 	if cfg.UseBatchApi {
 		azureBatchScraper := newBatchScraper(cfg, params)
-		scraper, err = scraperhelper.NewScraper(metadata.Type, azureBatchScraper.scrape, scraperhelper.WithStart(azureBatchScraper.start))
+		scraper, err = scraperhelper.NewScraper(metadata.Type.String(), azureBatchScraper.scrape, scraperhelper.WithStart(azureBatchScraper.start))
 	} else {
 		azureScraper := newScraper(cfg, params)
-		scraper, err = scraperhelper.NewScraper(metadata.Type, azureScraper.scrape, scraperhelper.WithStart(azureScraper.start))
+		scraper, err = scraperhelper.NewScraper(metadata.Type.String(), azureScraper.scrape, scraperhelper.WithStart(azureScraper.start))
 	}
 
 	if err != nil {

@@ -28,18 +28,18 @@ const (
 
 // RemoteSamplingConfig defines config key for remote sampling fetch endpoint
 type RemoteSamplingConfig struct {
-	HostEndpoint                  string        `mapstructure:"host_endpoint"`
-	StrategyFile                  string        `mapstructure:"strategy_file"`
-	StrategyFileReloadInterval    time.Duration `mapstructure:"strategy_file_reload_interval"`
-	configgrpc.GRPCClientSettings `mapstructure:",squash"`
+	HostEndpoint               string        `mapstructure:"host_endpoint"`
+	StrategyFile               string        `mapstructure:"strategy_file"`
+	StrategyFileReloadInterval time.Duration `mapstructure:"strategy_file_reload_interval"`
+	configgrpc.ClientConfig    `mapstructure:",squash"`
 }
 
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
-	GRPC          *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
-	ThriftHTTP    *confighttp.HTTPServerSettings `mapstructure:"thrift_http"`
-	ThriftBinary  *ProtocolUDP                   `mapstructure:"thrift_binary"`
-	ThriftCompact *ProtocolUDP                   `mapstructure:"thrift_compact"`
+	GRPC          *configgrpc.ServerConfig `mapstructure:"grpc"`
+	ThriftHTTP    *confighttp.ServerConfig `mapstructure:"thrift_http"`
+	ThriftBinary  *ProtocolUDP             `mapstructure:"thrift_binary"`
+	ThriftCompact *ProtocolUDP             `mapstructure:"thrift_compact"`
 }
 
 // ProtocolUDP is the configuration for a UDP protocol.

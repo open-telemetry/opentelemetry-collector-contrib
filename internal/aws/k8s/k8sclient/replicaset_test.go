@@ -74,5 +74,5 @@ func TestReplicaSetClient_ReplicaSetToDeployment(t *testing.T) {
 func TestTransformFuncReplicaSet(t *testing.T) {
 	info, err := transformFuncReplicaSet(nil)
 	assert.Nil(t, info)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

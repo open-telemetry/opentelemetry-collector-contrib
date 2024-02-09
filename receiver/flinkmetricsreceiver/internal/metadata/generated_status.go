@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("flinkmetrics")
+)
+
 const (
-	Type             = "flinkmetrics"
 	MetricsStability = component.StabilityLevelAlpha
 )
 

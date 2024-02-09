@@ -44,7 +44,7 @@ type opampAgent struct {
 
 func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
 	// TODO: Add OpAMP HTTP transport support.
-	o.opampClient = client.NewWebSocket(o.logger.Sugar())
+	o.opampClient = client.NewWebSocket(newLoggerFromZap(o.logger))
 
 	header := http.Header{}
 	for k, v := range o.cfg.Server.WS.Headers {
@@ -62,16 +62,16 @@ func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
 		OpAMPServerURL: o.cfg.Server.WS.Endpoint,
 		InstanceUid:    o.instanceID.String(),
 		Callbacks: types.CallbacksStruct{
-			OnConnectFunc: func() {
+			OnConnectFunc: func(_ context.Context) {
 				o.logger.Debug("Connected to the OpAMP server")
 			},
-			OnConnectFailedFunc: func(err error) {
+			OnConnectFailedFunc: func(_ context.Context, err error) {
 				o.logger.Error("Failed to connect to the OpAMP server", zap.Error(err))
 			},
-			OnErrorFunc: func(err *protobufs.ServerErrorResponse) {
+			OnErrorFunc: func(_ context.Context, err *protobufs.ServerErrorResponse) {
 				o.logger.Error("OpAMP server returned an error response", zap.String("message", err.ErrorMessage))
 			},
-			GetEffectiveConfigFunc: func(ctx context.Context) (*protobufs.EffectiveConfig, error) {
+			GetEffectiveConfigFunc: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
 				return o.composeEffectiveConfig(), nil
 			},
 			OnMessageFunc: o.onMessage,

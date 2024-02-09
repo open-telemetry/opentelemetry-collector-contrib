@@ -21,14 +21,14 @@ import (
 )
 
 func TestMissingClientConfigManagerHTTP(t *testing.T) {
-	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, nil)
+	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.ServerConfig{}, nil)
 	assert.Equal(t, errMissingStrategyStore, err)
 	assert.Nil(t, s)
 }
 
 func TestStartAndStopHTTP(t *testing.T) {
 	// prepare
-	srvSettings := confighttp.HTTPServerSettings{
+	srvSettings := confighttp.ServerConfig{
 		Endpoint: "127.0.0.1:0",
 	}
 	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), srvSettings, &mockCfgMgr{})
@@ -53,7 +53,7 @@ func TestEndpointsAreWired(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			// prepare
-			s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, &mockCfgMgr{
+			s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.ServerConfig{}, &mockCfgMgr{
 				getSamplingStrategyFunc: func(ctx context.Context, serviceName string) (*api_v2.SamplingStrategyResponse, error) {
 					return &api_v2.SamplingStrategyResponse{
 						ProbabilisticSampling: &api_v2.ProbabilisticSamplingStrategy{
@@ -87,7 +87,7 @@ func TestEndpointsAreWired(t *testing.T) {
 
 func TestServiceNameIsRequired(t *testing.T) {
 	// prepare
-	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, &mockCfgMgr{})
+	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.ServerConfig{}, &mockCfgMgr{})
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
@@ -105,7 +105,7 @@ func TestServiceNameIsRequired(t *testing.T) {
 }
 
 func TestErrorFromClientConfigManager(t *testing.T) {
-	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, &mockCfgMgr{})
+	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.ServerConfig{}, &mockCfgMgr{})
 	require.NoError(t, err)
 	require.NotNil(t, s)
 

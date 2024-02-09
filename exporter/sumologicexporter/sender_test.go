@@ -42,7 +42,7 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 	}))
 
 	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: testServer.URL,
 			Timeout:  defaultTimeout,
 		},
@@ -73,7 +73,7 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 		s: newSender(
 			cfg,
 			&http.Client{
-				Timeout: cfg.HTTPClientSettings.Timeout,
+				Timeout: cfg.ClientConfig.Timeout,
 			},
 			f,
 			sourceFormats{
@@ -474,7 +474,7 @@ func TestInvalidEndpoint(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.HTTPClientSettings.Endpoint = ":"
+	test.s.config.ClientConfig.Endpoint = ":"
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
@@ -485,7 +485,7 @@ func TestInvalidPostRequest(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.HTTPClientSettings.Endpoint = ""
+	test.s.config.ClientConfig.Endpoint = ""
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
@@ -496,7 +496,7 @@ func TestLogsBufferOverflow(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.HTTPClientSettings.Endpoint = ":"
+	test.s.config.ClientConfig.Endpoint = ":"
 	log := exampleLog()
 	flds := newFields(pcommon.NewMap())
 
@@ -766,7 +766,7 @@ func TestMetricsBufferOverflow(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.HTTPClientSettings.Endpoint = ":"
+	test.s.config.ClientConfig.Endpoint = ":"
 	test.s.config.MetricFormat = PrometheusFormat
 	test.s.config.MaxRequestBodySize = 1024 * 1024 * 1024 * 1024
 	metric := exampleIntMetric()

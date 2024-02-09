@@ -66,7 +66,7 @@ func newCloudFoundryReceiver(
 }
 
 func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host) error {
-	tokenProvider, tokenErr := newUAATokenProvider(cfr.settings.Logger, cfr.config.UAA.LimitedHTTPClientSettings, cfr.config.UAA.Username, string(cfr.config.UAA.Password))
+	tokenProvider, tokenErr := newUAATokenProvider(cfr.settings.Logger, cfr.config.UAA.LimitedClientConfig, cfr.config.UAA.Username, string(cfr.config.UAA.Password))
 	if tokenErr != nil {
 		return fmt.Errorf("create cloud foundry UAA token provider: %w", tokenErr)
 	}
@@ -74,7 +74,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 	streamFactory, streamErr := newEnvelopeStreamFactory(
 		cfr.settings,
 		tokenProvider,
-		cfr.config.RLPGateway.HTTPClientSettings,
+		cfr.config.RLPGateway.ClientConfig,
 		host,
 	)
 	if streamErr != nil {
@@ -92,17 +92,17 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 
 		_, tokenErr = tokenProvider.ProvideToken()
 		if tokenErr != nil {
-			host.ReportFatalError(fmt.Errorf("cloud foundry receiver failed to fetch initial token from UAA: %w", tokenErr))
+			cfr.settings.ReportStatus(component.NewFatalErrorEvent(fmt.Errorf("cloud foundry receiver failed to fetch initial token from UAA: %w", tokenErr)))
 			return
 		}
 
 		envelopeStream, err := streamFactory.CreateStream(innerCtx, cfr.config.RLPGateway.ShardID)
 		if err != nil {
-			host.ReportFatalError(fmt.Errorf("creating RLP gateway envelope stream: %w", err))
+			cfr.settings.ReportStatus(component.NewFatalErrorEvent(fmt.Errorf("creating RLP gateway envelope stream: %w", err)))
 			return
 		}
 
-		cfr.streamMetrics(innerCtx, envelopeStream, host)
+		cfr.streamMetrics(innerCtx, envelopeStream)
 		cfr.settings.Logger.Debug("cloudfoundry metrics streamer stopped")
 	}()
 
@@ -120,8 +120,7 @@ func (cfr *cloudFoundryReceiver) Shutdown(_ context.Context) error {
 
 func (cfr *cloudFoundryReceiver) streamMetrics(
 	ctx context.Context,
-	stream loggregator.EnvelopeStream,
-	host component.Host) {
+	stream loggregator.EnvelopeStream) {
 
 	for {
 		// Blocks until non-empty result or context is cancelled (returns nil in that case)
@@ -129,7 +128,7 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 		if envelopes == nil {
 			// If context has not been cancelled, then nil means the shutdown was due to an error within stream
 			if ctx.Err() == nil {
-				host.ReportFatalError(errors.New("RLP gateway streamer shut down due to an error"))
+				cfr.settings.ReportStatus(component.NewFatalErrorEvent(errors.New("RLP gateway streamer shut down due to an error")))
 			}
 
 			break

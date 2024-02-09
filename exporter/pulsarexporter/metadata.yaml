@@ -7,3 +7,7 @@ status:
   distributions: [contrib, splunk]
   codeowners:
     active: [dmitryax, dao-jun]
+
+tests:
+  config:
+  skip_lifecycle: true

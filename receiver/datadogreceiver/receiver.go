@@ -55,7 +55,7 @@ func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error 
 	ddmux.HandleFunc("/api/v0.2/traces", ddr.handleTraces)
 
 	var err error
-	ddr.server, err = ddr.config.HTTPServerSettings.ToServer(
+	ddr.server, err = ddr.config.ServerConfig.ToServer(
 		host,
 		ddr.params.TelemetrySettings,
 		ddmux,
@@ -63,7 +63,7 @@ func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error 
 	if err != nil {
 		return fmt.Errorf("failed to create server definition: %w", err)
 	}
-	hln, err := ddr.config.HTTPServerSettings.ToListener()
+	hln, err := ddr.config.ServerConfig.ToListener()
 	if err != nil {
 		return fmt.Errorf("failed to create datadog listener: %w", err)
 	}
@@ -72,7 +72,7 @@ func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error 
 
 	go func() {
 		if err := ddr.server.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %w", err))
+			ddr.params.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(fmt.Errorf("error starting datadog receiver: %w", err)))
 		}
 	}()
 	return nil

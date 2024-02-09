@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package iisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
 
@@ -26,7 +25,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 	rcvr := newIisReceiver(params, cfg, nextConsumer)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type, rcvr.scrape,
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), rcvr.scrape,
 		scraperhelper.WithStart(rcvr.start),
 		scraperhelper.WithShutdown(rcvr.shutdown))
 	if err != nil {

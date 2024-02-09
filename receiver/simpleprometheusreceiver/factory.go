@@ -34,7 +34,7 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: defaultEndpoint,
 			TLSSetting: configtls.TLSClientSetting{
 				Insecure: true,

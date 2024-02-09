@@ -38,7 +38,7 @@ func TestCreateLogsExporter(t *testing.T) {
 		{
 			name: "valid config",
 			config: Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://example.logicmonitor.com/rest",
 				},
 			},
@@ -78,7 +78,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "valid config",
 			config: Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://example.logicmonitor.com/rest",
 				},
 			},

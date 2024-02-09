@@ -8,9 +8,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const (
-	Type = "resourcedetectionprocessor/openshift"
-)
+const ()
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("otelcol/resourcedetection")

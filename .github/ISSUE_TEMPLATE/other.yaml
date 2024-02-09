@@ -62,6 +62,7 @@ body:
       - exporter/mezmo
       - exporter/opencensus
       - exporter/opensearch
+      - exporter/otelarrow
       - exporter/prometheus
       - exporter/prometheusremotewrite
       - exporter/pulsar
@@ -100,9 +101,11 @@ body:
       - extension/pprof
       - extension/remotetap
       - extension/sigv4auth
+      - extension/solarwindsapmsettings
       - extension/storage
       - extension/storage/dbstorage
       - extension/storage/filestorage
+      - extension/sumologic
       - internal/aws
       - internal/collectd
       - internal/core
@@ -116,6 +119,7 @@ body:
       - internal/metadataproviders
       - internal/sharedcomponent
       - internal/splunk
+      - internal/sqlquery
       - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal
@@ -125,6 +129,7 @@ body:
       - pkg/pdatatest
       - pkg/pdatautil
       - pkg/resourcetotelemetry
+      - pkg/sampling
       - pkg/stanza
       - pkg/translator/azure
       - pkg/translator/jaeger
@@ -138,11 +143,12 @@ body:
       - pkg/winperfcounters
       - processor/attributes
       - processor/cumulativetodelta
-      - processor/datadog
+      - processor/deltatocumulative
       - processor/deltatorate
       - processor/filter
       - processor/groupbyattrs
       - processor/groupbytrace
+      - processor/interval
       - processor/k8sattributes
       - processor/logstransform
       - processor/metricsgeneration
@@ -157,7 +163,6 @@ body:
       - processor/resourcedetection/internal/openshift
       - processor/routing
       - processor/schema
-      - processor/servicegraph
       - processor/span
       - processor/spanmetrics
       - processor/sumologic
@@ -187,7 +192,6 @@ body:
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
-      - receiver/file
       - receiver/filelog
       - receiver/filestats
       - receiver/flinkmetrics
@@ -219,6 +223,8 @@ body:
       - receiver/nsxt
       - receiver/opencensus
       - receiver/oracledb
+      - receiver/osquery
+      - receiver/otelarrow
       - receiver/otlpjsonfile
       - receiver/podman
       - receiver/postgresql
@@ -255,7 +261,6 @@ body:
       - receiver/zipkin
       - receiver/zookeeper
       - testbed
-      - testbed/mockdatareceivers/mockawsxrayreceiver
       - testbed/mockdatasenders/mockdatadogagentexporter
       # End Collector components list
   - type: textarea

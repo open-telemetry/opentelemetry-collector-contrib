@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("postgresql")
+)
+
 const (
-	Type             = "postgresql"
 	MetricsStability = component.StabilityLevelBeta
 )
 

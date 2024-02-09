@@ -25,7 +25,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
+	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  defaultGRPCBindEndpoint,
 			Transport: "tcp",
