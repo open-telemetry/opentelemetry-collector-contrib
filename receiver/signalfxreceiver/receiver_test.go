@@ -50,13 +50,6 @@ func Test_signalfxeceiver_New(t *testing.T) {
 		wantStartErr error
 	}{
 		{
-			name: "nil_nextConsumer",
-			args: args{
-				config: *defaultConfig,
-			},
-			wantStartErr: component.ErrNilNextConsumer,
-		},
-		{
 			name: "default_endpoint",
 			args: args{
 				config:       *defaultConfig,
