@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("awsxray")
+)
+
 const (
-	Type            = "awsxray"
 	TracesStability = component.StabilityLevelBeta
 )
 

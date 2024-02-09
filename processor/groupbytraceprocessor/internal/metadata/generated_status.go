@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("groupbytrace")
+)
+
 const (
-	Type            = "groupbytrace"
 	TracesStability = component.StabilityLevelBeta
 )
 

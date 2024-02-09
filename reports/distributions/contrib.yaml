@@ -76,7 +76,6 @@ components:
     processor:
         - attributes
         - cumulativetodelta
-        - datadog
         - deltatorate
         - experimental_metricsgeneration
         - filter
@@ -119,7 +118,6 @@ components:
         - docker_stats
         - elasticsearch
         - expvar
-        - file
         - filelog
         - filestats
         - flinkmetrics
@@ -149,6 +147,7 @@ components:
         - nsxt
         - opencensus
         - oracledb
+        - otelarrow
         - otlpjsonfile
         - podman_stats
         - postgresql

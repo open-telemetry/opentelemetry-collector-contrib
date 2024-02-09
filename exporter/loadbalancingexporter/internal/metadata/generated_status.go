@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("loadbalancing")
+)
+
 const (
-	Type             = "loadbalancing"
 	TracesStability  = component.StabilityLevelBeta
 	LogsStability    = component.StabilityLevelBeta
 	MetricsStability = component.StabilityLevelDevelopment

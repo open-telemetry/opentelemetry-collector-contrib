@@ -170,7 +170,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 	}
 
 	if r.ContentLength == 0 {
-		er.obsrecv.EndLogsOp(ctx, metadata.Type, 0, nil)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, nil)
 		er.failBadReq(ctx, w, http.StatusBadRequest, errEmptyResponseBody)
 	}
 
@@ -199,10 +199,10 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 
 	if consumerErr != nil {
 		er.failBadReq(ctx, w, http.StatusInternalServerError, consumerErr)
-		er.obsrecv.EndLogsOp(ctx, metadata.Type, numLogs, nil)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numLogs, nil)
 	} else {
 		w.WriteHeader(http.StatusOK)
-		er.obsrecv.EndLogsOp(ctx, metadata.Type, numLogs, nil)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numLogs, nil)
 	}
 }
 
