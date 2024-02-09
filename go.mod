@@ -66,7 +66,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.94.0
@@ -862,6 +863,10 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/ppro
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension => ./extension/sigv4authextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ./extension/storage
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage => ./extension/storage/dbstorage
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage => ./extension/storage/filestorage
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ./pkg/batchperresourceattr
 
