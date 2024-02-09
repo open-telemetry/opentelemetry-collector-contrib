@@ -206,12 +206,9 @@ type laggyOperator struct {
 
 func (t *laggyOperator) Process(ctx context.Context, e *entry.Entry) error {
 
+	// Wait for a large amount of time every 100 logs
 	if t.logsCount%100 == 0 {
-		select {
-		case <-time.After(100 * time.Millisecond): // OK
-			// case <-ctx.Done(): // operator should return immediately
-			// 	return nil
-		}
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	t.logsCount++
