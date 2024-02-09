@@ -13,6 +13,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
+	tracemetrics "github.com/DataDog/datadog-agent/pkg/trace/metrics"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
@@ -28,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
 type traceExporter struct {
@@ -42,6 +44,7 @@ type traceExporter struct {
 	sourceProvider   source.Provider         // is able to source the origin of a trace (hostname, container, etc)
 	metadataReporter *inframetadata.Reporter // reports host metadata from resource attributes and metrics
 	retrier          *clientutil.Retrier     // retrier handles retries on requests
+	metricsClient    tracemetrics.StatsClient
 }
 
 func newTracesExporter(
@@ -64,6 +67,7 @@ func newTracesExporter(
 		sourceProvider:   sourceProvider,
 		retrier:          clientutil.NewRetrier(params.Logger, cfg.BackOffConfig, scrubber),
 		metadataReporter: metadataReporter,
+		metricsClient:    datadog.NewMetricClient(params.MeterProvider.Meter("datadogexporter")),
 	}
 	// client to send running metric to the backend & perform API key validation
 	errchan := make(chan error)
