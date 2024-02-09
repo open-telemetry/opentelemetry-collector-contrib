@@ -186,7 +186,6 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 	if err != nil {
 		return nil, err
 	}
-	tracelog.SetLogger(&zaplogger{params.Logger})
 	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector()), nil
 }
 
@@ -218,5 +217,6 @@ func newTraceAgentConfig(ctx context.Context, params exporter.CreateSettings, cf
 	if addr := cfg.Traces.Endpoint; addr != "" {
 		acfg.Endpoints[0].Host = addr
 	}
+	tracelog.SetLogger(&zaplogger{params.Logger}) //TODO: This shouldn't be a singleton
 	return acfg, nil
 }

@@ -289,6 +289,8 @@ func (f *factory) createMetricsExporter(
 	}
 	statsToAgent := make(chan *pb.StatsPayload)
 	statsWriter := writer.NewStatsWriter(acfg, statsToAgent, telemetry.NewNoopCollector())
+
+	set.Logger.Debug("Starting Datadog Trace-Agent StatsWriter")
 	go statsWriter.Run()
 
 	var statsIn chan []byte
@@ -355,6 +357,9 @@ func (f *factory) createMetricsExporter(
 			statsWriter.Stop()
 			if statsIn != nil {
 				close(statsIn)
+			}
+			if statsToAgent != nil {
+				close(statsToAgent)
 			}
 			return nil
 		}),
