@@ -289,7 +289,7 @@ func (f *factory) createMetricsExporter(
 	}
 	statsToAgent := make(chan *pb.StatsPayload)
 	statsWriter := writer.NewStatsWriter(acfg, statsToAgent, telemetry.NewNoopCollector())
-	go statsWriter.Run() // TODO: stop this
+	go statsWriter.Run()
 
 	var statsIn chan []byte
 	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
@@ -352,6 +352,7 @@ func (f *factory) createMetricsExporter(
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			f.StopReporter()
+			statsWriter.Stop()
 			if statsIn != nil {
 				close(statsIn)
 			}
