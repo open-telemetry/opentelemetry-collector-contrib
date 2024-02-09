@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -28,12 +29,7 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
-
+	_ "github.com/opsramp/go-proxy-dialer/connect" // implemetation for http connect proxy
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -44,6 +40,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"golang.org/x/net/http/httpproxy"
+	"golang.org/x/net/proxy"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 var (
@@ -113,7 +116,23 @@ func getAuthToken(cfg SecuritySettings) (string, error) {
 		return credentials.AccessToken, nil
 	}
 	tokenRenewInProgress = true
-	client := &http.Client{}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			Proxy: func(req *http.Request) (*url.URL, error) {
+				return httpproxy.FromEnvironment().ProxyFunc()(req.URL)
+			},
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+	}
 	data := url.Values{}
 	data.Set("client_id", cfg.ClientID)
 	data.Set("client_secret", cfg.ClientSecret)
@@ -143,7 +162,29 @@ func getAuthToken(cfg SecuritySettings) (string, error) {
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (err error) {
-	if e.clientConn, err = e.config.GRPCClientSettings.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+	e.clientConn, err = e.config.GRPCClientSettings.ToClientConn(
+		ctx,
+		host,
+		e.settings,
+		grpc.WithUserAgent(e.userAgent),
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			if httpproxy.FromEnvironment().HTTPProxy == "" {
+				return (&net.Dialer{}).Dial("tcp", addr)
+			}
+
+			uri, er := url.Parse(httpproxy.FromEnvironment().HTTPProxy)
+			if er != nil {
+				return nil, er
+			}
+
+			dialer, er := proxy.FromURL(uri, proxy.Direct)
+			if er != nil {
+				return nil, er
+			}
+			return dialer.Dial("tcp", addr)
+		}),
+	)
+	if err != nil {
 		return err
 	}
 
