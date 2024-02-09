@@ -258,6 +258,40 @@ func Test_ParseCSV(t *testing.T) {
 			parseError: "wrong number of fields: expected 2, found 3",
 		},
 		{
+			name: "Empty header string",
+			oArgs: &ParseCSVArguments[any]{
+				Target: ottl.StandardStringGetter[any]{
+					Getter: func(ctx context.Context, tCtx any) (any, error) {
+						return `val1`, nil
+					},
+				},
+				Header: ottl.StandardStringGetter[any]{
+					Getter: func(ctx context.Context, tCtx any) (any, error) {
+						return "", nil
+					},
+				},
+			},
+			want: map[string]any{
+				"": "val1",
+			},
+		},
+		{
+			name: "Parse fails due to empty row",
+			oArgs: &ParseCSVArguments[any]{
+				Target: ottl.StandardStringGetter[any]{
+					Getter: func(ctx context.Context, tCtx any) (any, error) {
+						return "", nil
+					},
+				},
+				Header: ottl.StandardStringGetter[any]{
+					Getter: func(ctx context.Context, tCtx any) (any, error) {
+						return "col1,col2,col3", nil
+					},
+				},
+			},
+			parseError: "no csv lines found",
+		},
+		{
 			name: "Parse fails for row with bare quotes",
 			oArgs: &ParseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{

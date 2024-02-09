@@ -187,6 +187,11 @@ func csvReadLine(csvReader *csv.Reader) ([]string, error) {
 		lines = append(lines, line)
 	}
 
+	// If the input is empty, we might not get any lines
+	if len(lines) == 0 {
+		return nil, errors.New("no csv lines found")
+	}
+
 	/*
 		This parser is parsing a single value, which came from a single log entry.
 		Therefore, if there are multiple lines here, it should be assumed that each
