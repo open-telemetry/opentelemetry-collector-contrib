@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsclo
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.50.7
+	github.com/aws/aws-sdk-go v1.50.14
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.94.0
