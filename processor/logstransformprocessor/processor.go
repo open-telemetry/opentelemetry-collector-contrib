@@ -84,9 +84,17 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) 
 	wkrCount := int(math.Max(1, float64(runtime.NumCPU())))
 	ltp.fromConverter = adapter.NewFromPdataConverter(wkrCount, ltp.logger)
 
-	// data flows like this:
-	// fromConverter -> converter loop -> pipeline -> emitter loop -> converter -> consumer loop
-	// We should start the pipeline in reverse order, and stop it in this order.
+	// data flows in this order:
+	// ConsumeLogs: receives logs and forwards them for conversion to stanza format ->
+	// fromConverter: converts logs to stanza format ->
+	// converterLoop: forwards converted logs to the stanza pipeline ->
+	// pipeline: performs user configured operations on the logs ->
+	// emitterLoop: forwards output stanza logs for conversion to OTLP ->
+	// converter: converts stanza logs to OTLP ->
+	// consumerLoop: sends the converted OTLP logs to the next consumer
+	//
+	// We should start these components in reverse order of the data flow, then stop them in order of the data flow,
+	// in order to allow for pipeline draining.
 	ltp.startConsumerLoop(ctx)
 	ltp.startConverter()
 	ltp.startEmitterLoop(ctx)
