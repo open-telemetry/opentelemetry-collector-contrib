@@ -117,7 +117,7 @@ func parseCSV[K any](target, header ottl.StringGetter[K], delimiter, headerDelim
 
 		fields, err := csvReadLine(csvReader)
 		if err != nil {
-			return nil, fmt.Errorf("read csv line: %w", err)
+			return nil, err
 		}
 
 		return csvHeadersMap(headers, fields)
