@@ -81,7 +81,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.94.0
@@ -728,6 +729,10 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage => ../../extension/storage/dbstorage
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage => ../../extension/storage/filestorage
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal => ../../pkg/batchpersignal
 
