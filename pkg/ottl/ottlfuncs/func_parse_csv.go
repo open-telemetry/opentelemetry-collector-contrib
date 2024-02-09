@@ -108,6 +108,10 @@ func parseCSV[K any](target, header ottl.StringGetter[K], delimiter, headerDelim
 			return nil, fmt.Errorf("get header: %w", err)
 		}
 
+		if headerStr == "" {
+			return nil, errors.New("headers must not be an empty string")
+		}
+
 		headers := strings.Split(headerStr, headerDelimiterString)
 
 		csvReader := csv.NewReader(strings.NewReader(targetStr))
@@ -137,6 +141,10 @@ func parseCSVIgnoreQuotes[K any](target, header ottl.StringGetter[K], delimiter,
 		headerStr, err := header.Get(ctx, tCtx)
 		if err != nil {
 			return nil, fmt.Errorf("get header: %w", err)
+		}
+
+		if headerStr == "" {
+			return nil, errors.New("headers must not be an empty string")
 		}
 
 		headers := strings.Split(headerStr, headerDelimiterString)

@@ -258,7 +258,7 @@ func Test_ParseCSV(t *testing.T) {
 			parseError: "wrong number of fields: expected 2, found 3",
 		},
 		{
-			name: "Empty header string",
+			name: "Empty header string (strict)",
 			oArgs: &ParseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(ctx context.Context, tCtx any) (any, error) {
@@ -271,9 +271,7 @@ func Test_ParseCSV(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]any{
-				"": "val1",
-			},
+			parseError: "headers must not be an empty string",
 		},
 		{
 			name: "Parse fails due to empty row",
@@ -403,6 +401,23 @@ func Test_ParseCSV(t *testing.T) {
 				Mode: ottl.NewTestingOptional("ignoreQuotes"),
 			},
 			parseError: "get header: error getting value in ottl.StandardStringGetter[interface {}]: cannot get",
+		},
+		{
+			name: "Empty header string (ignoreQuotes)",
+			oArgs: &ParseCSVArguments[any]{
+				Target: ottl.StandardStringGetter[any]{
+					Getter: func(ctx context.Context, tCtx any) (any, error) {
+						return `val1`, nil
+					},
+				},
+				Header: ottl.StandardStringGetter[any]{
+					Getter: func(ctx context.Context, tCtx any) (any, error) {
+						return "", nil
+					},
+				},
+				Mode: ottl.NewTestingOptional("ignoreQuotes"),
+			},
+			parseError: "headers must not be an empty string",
 		},
 		/* Validation tests */
 		{
