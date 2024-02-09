@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.92.0
-	github.com/opsramp/go-proxy-dialer v0.0.0-20240208185136-c1286aee717f
+	github.com/opsramp/go-proxy-dialer v0.0.0-20240209060732-5e75def1c040
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/config/configauth v0.92.0
 	go.opentelemetry.io/collector/config/configcompression v0.92.0
