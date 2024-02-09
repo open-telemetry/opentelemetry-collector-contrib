@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 )
@@ -22,7 +22,7 @@ func TestInvalidEndpoint(t *testing.T) {
 				},
 			},
 		},
-		zap.NewNop(),
+		componenttest.NewNopTelemetrySettings(),
 	)
 	assert.Error(t, err)
 }

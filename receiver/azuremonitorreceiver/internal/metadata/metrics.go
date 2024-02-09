@@ -30,7 +30,7 @@ func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
+	err := parser.Unmarshal(ras)
 	if err != nil {
 		return err
 	}
