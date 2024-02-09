@@ -42,7 +42,15 @@ func newExtension(
 	set extension.CreateSettings,
 ) *healthCheckExtension {
 	var comps []component.Component
-	aggregator := status.NewAggregator()
+
+	errPriority := status.PriorityPermanent
+	if config.ComponentHealthSettings != nil &&
+		config.ComponentHealthSettings.IncludeRecoverable &&
+		!config.ComponentHealthSettings.IncludePermanent {
+		errPriority = status.PriorityRecoverable
+	}
+
+	aggregator := status.NewAggregator(errPriority)
 
 	if config.GRPCSettings != nil {
 		srvGRPC := grpc.NewServer(

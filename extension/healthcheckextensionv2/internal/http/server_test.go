@@ -86,7 +86,6 @@ func TestStatus(t *testing.T) {
 							pipelines["traces"].InstanceIDs(),
 							component.StatusOK,
 						)
-						require.NoError(t, server.Ready())
 					},
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
@@ -123,7 +122,6 @@ func TestStatus(t *testing.T) {
 				},
 				{
 					step: func() {
-						require.NoError(t, server.NotReady())
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							pipelines["traces"].InstanceIDs(),
@@ -166,7 +164,6 @@ func TestStatus(t *testing.T) {
 							pipelines["traces"].InstanceIDs(),
 							component.StatusOK,
 						)
-						require.NoError(t, server.Ready())
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
@@ -269,7 +266,6 @@ func TestStatus(t *testing.T) {
 				},
 				{
 					step: func() {
-						require.NoError(t, server.NotReady())
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							pipelines["traces"].InstanceIDs(),
@@ -312,7 +308,6 @@ func TestStatus(t *testing.T) {
 							pipelines["traces"].InstanceIDs(),
 							component.StatusOK,
 						)
-						require.NoError(t, server.Ready())
 					},
 					queryParams:        "pipeline=traces",
 					expectedStatusCode: http.StatusOK,
@@ -353,7 +348,6 @@ func TestStatus(t *testing.T) {
 				},
 				{
 					step: func() {
-						require.NoError(t, server.NotReady())
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							pipelines["traces"].InstanceIDs(),
@@ -396,7 +390,6 @@ func TestStatus(t *testing.T) {
 							pipelines["traces"].InstanceIDs(),
 							component.StatusOK,
 						)
-						require.NoError(t, server.Ready())
 					},
 					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusOK,
@@ -480,7 +473,6 @@ func TestStatus(t *testing.T) {
 				},
 				{
 					step: func() {
-						require.NoError(t, server.NotReady())
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							pipelines["traces"].InstanceIDs(),
@@ -505,9 +497,9 @@ func TestStatus(t *testing.T) {
 				},
 			},
 			componentHealthSettings: &common.ComponentHealthSettings{
-				IncludePermanentErrors:   true,
-				IncludeRecoverableErrors: true,
-				RecoveryDuration:         20 * time.Millisecond,
+				IncludePermanent:   true,
+				IncludeRecoverable: true,
+				RecoveryDuration:   2 * time.Millisecond,
 			},
 			pipelines: testhelpers.NewPipelines("traces"),
 			teststeps: []teststep{
@@ -527,7 +519,6 @@ func TestStatus(t *testing.T) {
 							pipelines["traces"].InstanceIDs(),
 							component.StatusOK,
 						)
-						require.NoError(t, server.Ready())
 					},
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
@@ -565,7 +556,6 @@ func TestStatus(t *testing.T) {
 				},
 				{
 					step: func() {
-						require.NoError(t, server.NotReady())
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							pipelines["traces"].InstanceIDs(),
@@ -589,9 +579,9 @@ func TestStatus(t *testing.T) {
 				},
 			},
 			componentHealthSettings: &common.ComponentHealthSettings{
-				IncludePermanentErrors:   true,
-				IncludeRecoverableErrors: true,
-				RecoveryDuration:         20 * time.Millisecond,
+				IncludePermanent:   true,
+				IncludeRecoverable: true,
+				RecoveryDuration:   2 * time.Millisecond,
 			},
 			pipelines: testhelpers.NewPipelines("traces"),
 			teststeps: []teststep{
@@ -613,7 +603,6 @@ func TestStatus(t *testing.T) {
 							pipelines["traces"].InstanceIDs(),
 							component.StatusOK,
 						)
-						require.NoError(t, server.Ready())
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
@@ -716,7 +705,6 @@ func TestStatus(t *testing.T) {
 				},
 				{
 					step: func() {
-						require.NoError(t, server.NotReady())
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							pipelines["traces"].InstanceIDs(),
@@ -740,9 +728,9 @@ func TestStatus(t *testing.T) {
 				},
 			},
 			componentHealthSettings: &common.ComponentHealthSettings{
-				IncludePermanentErrors:   false,
-				IncludeRecoverableErrors: true,
-				RecoveryDuration:         20 * time.Millisecond,
+				IncludePermanent:   false,
+				IncludeRecoverable: true,
+				RecoveryDuration:   2 * time.Millisecond,
 			},
 			pipelines: testhelpers.NewPipelines("traces"),
 			teststeps: []teststep{
@@ -763,7 +751,6 @@ func TestStatus(t *testing.T) {
 							pipelines["traces"].InstanceIDs(),
 							component.StatusOK,
 						)
-						require.NoError(t, server.Ready())
 					},
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
@@ -786,7 +773,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusPermanentError,
+						status:  component.StatusRecoverableError,
 						err:     assert.AnError,
 					},
 				},
@@ -805,7 +792,6 @@ func TestStatus(t *testing.T) {
 				},
 				{
 					step: func() {
-						require.NoError(t, server.NotReady())
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							pipelines["traces"].InstanceIDs(),
@@ -829,9 +815,9 @@ func TestStatus(t *testing.T) {
 				},
 			},
 			componentHealthSettings: &common.ComponentHealthSettings{
-				IncludePermanentErrors:   false,
-				IncludeRecoverableErrors: true,
-				RecoveryDuration:         20 * time.Millisecond,
+				IncludePermanent:   false,
+				IncludeRecoverable: true,
+				RecoveryDuration:   2 * time.Millisecond,
 			},
 			pipelines: testhelpers.NewPipelines("traces"),
 			teststeps: []teststep{
@@ -853,7 +839,6 @@ func TestStatus(t *testing.T) {
 							pipelines["traces"].InstanceIDs(),
 							component.StatusOK,
 						)
-						require.NoError(t, server.Ready())
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
@@ -898,12 +883,12 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusPermanentError,
+						status:  component.StatusRecoverableError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy: false,
-								status:  component.StatusPermanentError,
+								status:  component.StatusRecoverableError,
 								err:     assert.AnError,
 								nestedStatus: map[string]*componentStatusExpectation{
 									"receiver:traces/in": {
@@ -960,7 +945,6 @@ func TestStatus(t *testing.T) {
 				},
 				{
 					step: func() {
-						require.NoError(t, server.NotReady())
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							pipelines["traces"].InstanceIDs(),
@@ -984,9 +968,9 @@ func TestStatus(t *testing.T) {
 				},
 			},
 			componentHealthSettings: &common.ComponentHealthSettings{
-				IncludePermanentErrors:   true,
-				IncludeRecoverableErrors: true,
-				RecoveryDuration:         20 * time.Millisecond,
+				IncludePermanent:   true,
+				IncludeRecoverable: true,
+				RecoveryDuration:   2 * time.Millisecond,
 			},
 			pipelines: testhelpers.NewPipelines("traces"),
 			teststeps: []teststep{
@@ -1008,7 +992,6 @@ func TestStatus(t *testing.T) {
 							pipelines["traces"].InstanceIDs(),
 							component.StatusOK,
 						)
-						require.NoError(t, server.Ready())
 					},
 					queryParams:        "pipeline=traces",
 					expectedStatusCode: http.StatusOK,
@@ -1049,7 +1032,6 @@ func TestStatus(t *testing.T) {
 				},
 				{
 					step: func() {
-						require.NoError(t, server.NotReady())
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							pipelines["traces"].InstanceIDs(),
@@ -1074,9 +1056,9 @@ func TestStatus(t *testing.T) {
 				},
 			},
 			componentHealthSettings: &common.ComponentHealthSettings{
-				IncludePermanentErrors:   true,
-				IncludeRecoverableErrors: true,
-				RecoveryDuration:         20 * time.Millisecond,
+				IncludePermanent:   true,
+				IncludeRecoverable: true,
+				RecoveryDuration:   2 * time.Millisecond,
 			},
 			pipelines: testhelpers.NewPipelines("traces"),
 			teststeps: []teststep{
@@ -1097,7 +1079,6 @@ func TestStatus(t *testing.T) {
 							pipelines["traces"].InstanceIDs(),
 							component.StatusOK,
 						)
-						require.NoError(t, server.Ready())
 					},
 					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusOK,
@@ -1181,7 +1162,6 @@ func TestStatus(t *testing.T) {
 				},
 				{
 					step: func() {
-						require.NoError(t, server.NotReady())
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							pipelines["traces"].InstanceIDs(),
@@ -1206,15 +1186,14 @@ func TestStatus(t *testing.T) {
 				},
 			},
 			componentHealthSettings: &common.ComponentHealthSettings{
-				IncludePermanentErrors:   true,
-				IncludeRecoverableErrors: true,
-				RecoveryDuration:         20 * time.Millisecond,
+				IncludePermanent:   true,
+				IncludeRecoverable: true,
+				RecoveryDuration:   2 * time.Millisecond,
 			},
 			pipelines: testhelpers.NewPipelines("traces", "metrics"),
 			teststeps: []teststep{
 				{
 					step: func() {
-						require.NoError(t, server.Ready())
 						// traces will be StatusOK
 						testhelpers.SeedAggregator(
 							server.aggregator,
@@ -1344,7 +1323,6 @@ func TestStatus(t *testing.T) {
 			teststeps: []teststep{
 				{
 					step: func() {
-						require.NoError(t, server.Ready())
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							pipelines["traces"].InstanceIDs(),
@@ -1382,7 +1360,7 @@ func TestStatus(t *testing.T) {
 				tc.settings,
 				tc.componentHealthSettings,
 				componenttest.NewNopTelemetrySettings(),
-				status.NewAggregator(),
+				status.NewAggregator(testhelpers.ErrPriority(tc.componentHealthSettings)),
 			)
 
 			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
@@ -1553,7 +1531,7 @@ func TestConfig(t *testing.T) {
 				tc.settings,
 				&common.ComponentHealthSettings{},
 				componenttest.NewNopTelemetrySettings(),
-				status.NewAggregator(),
+				status.NewAggregator(status.PriorityPermanent),
 			)
 
 			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))

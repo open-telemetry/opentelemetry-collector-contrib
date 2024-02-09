@@ -39,7 +39,7 @@ func TestCheck(t *testing.T) {
 		settings,
 		componenttest.NewNopTelemetrySettings(),
 		10*time.Millisecond,
-		status.NewAggregator(),
+		status.NewAggregator(status.PriorityPermanent),
 	)
 	traces := testhelpers.NewPipelineMetadata("traces")
 	metrics := testhelpers.NewPipelineMetadata("metrics")
@@ -257,7 +257,7 @@ func TestWatch(t *testing.T) {
 		settings,
 		componenttest.NewNopTelemetrySettings(),
 		10*time.Millisecond,
-		status.NewAggregator(),
+		status.NewAggregator(status.PriorityPermanent),
 	)
 	traces := testhelpers.NewPipelineMetadata("traces")
 	metrics := testhelpers.NewPipelineMetadata("metrics")
