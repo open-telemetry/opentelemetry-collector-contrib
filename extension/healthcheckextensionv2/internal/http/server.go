@@ -30,14 +30,11 @@ type Server struct {
 	colconf        atomic.Value
 	aggregator     *status.Aggregator
 	startTimestamp time.Time
-	readyCh        chan struct{}
-	notReadyCh     chan struct{}
 	doneCh         chan struct{}
 }
 
 var _ component.Component = (*Server)(nil)
 var _ extension.ConfigWatcher = (*Server)(nil)
-var _ extension.PipelineWatcher = (*Server)(nil)
 
 func NewServer(
 	settings *Settings,
@@ -51,8 +48,6 @@ func NewServer(
 		settings:   settings,
 		strategy:   &defaultHealthStrategy{startTimestamp: &now},
 		aggregator: aggregator,
-		readyCh:    make(chan struct{}),
-		notReadyCh: make(chan struct{}),
 		doneCh:     make(chan struct{}),
 	}
 
@@ -118,31 +113,4 @@ func (s *Server) NotifyConfig(_ context.Context, conf *confmap.Conf) error {
 	}
 	s.colconf.Store(confBytes)
 	return nil
-}
-
-// Ready implements the extenion.PipelineWatcher interface
-func (s *Server) Ready() error {
-	close(s.readyCh)
-	return nil
-}
-
-// NotReady implements the extenion.PipelineWatcher interface
-func (s *Server) NotReady() error {
-	close(s.notReadyCh)
-	return nil
-}
-
-func (s *Server) isReady() bool {
-	select {
-	case <-s.notReadyCh:
-		return false
-	default:
-	}
-
-	select {
-	case <-s.readyCh:
-		return true
-	default:
-		return false
-	}
 }

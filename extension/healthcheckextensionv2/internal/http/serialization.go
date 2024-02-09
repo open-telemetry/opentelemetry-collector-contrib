@@ -11,9 +11,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/status"
 )
 
-type healthyFunc func(*component.StatusEvent) bool
+type healthyFunc func(status.Event) bool
 
-func (f healthyFunc) isHealthy(ev *component.StatusEvent) bool {
+func (f healthyFunc) isHealthy(ev status.Event) bool {
 	if f != nil {
 		return f(ev)
 	}
@@ -21,7 +21,6 @@ func (f healthyFunc) isHealthy(ev *component.StatusEvent) bool {
 }
 
 type serializationOptions struct {
-	verbose          bool
 	includeStartTime bool
 	startTimestamp   *time.Time
 	healthyFunc      healthyFunc
@@ -59,7 +58,7 @@ func (ev *SerializableEvent) Status() component.Status {
 	return component.StatusNone
 }
 
-func toSerializableEvent(ev *component.StatusEvent, isHealthy bool) *SerializableEvent {
+func toSerializableEvent(ev status.Event, isHealthy bool) *SerializableEvent {
 	se := &SerializableEvent{
 		Healthy:      isHealthy,
 		StatusString: ev.Status().String(),
@@ -77,8 +76,8 @@ func toSerializableStatus(
 ) *serializableStatus {
 	s := &serializableStatus{
 		SerializableEvent: toSerializableEvent(
-			st.StatusEvent,
-			opts.healthyFunc.isHealthy(st.StatusEvent),
+			st.Event,
+			opts.healthyFunc.isHealthy(st.Event),
 		),
 		ComponentStatuses: make(map[string]*serializableStatus),
 	}
@@ -88,17 +87,8 @@ func toSerializableStatus(
 		opts.includeStartTime = false
 	}
 
-	childrenHealthy := true
 	for k, cs := range st.ComponentStatusMap {
-		sst := toSerializableStatus(cs, opts)
-		childrenHealthy = childrenHealthy && sst.Healthy
-		if opts.verbose {
-			s.ComponentStatuses[k] = sst
-		}
-	}
-
-	if len(st.ComponentStatusMap) > 0 {
-		s.Healthy = childrenHealthy
+		s.ComponentStatuses[k] = toSerializableStatus(cs, opts)
 	}
 
 	return s

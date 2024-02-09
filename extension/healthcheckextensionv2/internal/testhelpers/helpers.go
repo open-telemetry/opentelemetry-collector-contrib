@@ -6,6 +6,7 @@ package testhelpers // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"go.opentelemetry.io/collector/component"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/status"
 )
 
@@ -72,4 +73,11 @@ func SeedAggregator(
 			agg.RecordStatus(id, component.NewStatusEvent(st))
 		}
 	}
+}
+
+func ErrPriority(settings *common.ComponentHealthSettings) status.ErrorPriority {
+	if settings != nil && settings.IncludeRecoverable && !settings.IncludePermanent {
+		return status.PriorityRecoverable
+	}
+	return status.PriorityPermanent
 }

@@ -32,9 +32,9 @@ func TestComponentStatus(t *testing.T) {
 	ext := newExtension(context.Background(), *cfg, extensiontest.NewNopCreateSettings())
 
 	// Status before Start will be StatusNone
-	st, ok := ext.aggregator.AggregateStatus(status.ScopeAll)
+	st, ok := ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
 	require.True(t, ok)
-	assert.Equal(t, st.StatusEvent.Status(), component.StatusNone)
+	assert.Equal(t, st.Status(), component.StatusNone)
 
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -53,17 +53,17 @@ func TestComponentStatus(t *testing.T) {
 	// Note the use of assert.Eventually here and throughout this test is because
 	// status events are processed asynchronously in the background.
 	assert.Eventually(t, func() bool {
-		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll)
+		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
 		require.True(t, ok)
-		return st.StatusEvent.Status() == component.StatusStarting
+		return st.Status() == component.StatusStarting
 	}, time.Second, 10*time.Millisecond)
 
 	require.NoError(t, ext.Ready())
 
 	assert.Eventually(t, func() bool {
-		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll)
+		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
 		require.True(t, ok)
-		return st.StatusEvent.Status() == component.StatusOK
+		return st.Status() == component.StatusOK
 	}, time.Second, 10*time.Millisecond)
 
 	// StatusStopping will be sent immediately.
@@ -72,9 +72,9 @@ func TestComponentStatus(t *testing.T) {
 	}
 
 	assert.Eventually(t, func() bool {
-		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll)
+		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
 		require.True(t, ok)
-		return st.StatusEvent.Status() == component.StatusStopping
+		return st.Status() == component.StatusStopping
 	}, time.Second, 10*time.Millisecond)
 
 	require.NoError(t, ext.NotReady())
@@ -85,9 +85,9 @@ func TestComponentStatus(t *testing.T) {
 		ext.ComponentStatusChanged(id, component.NewStatusEvent(component.StatusStopped))
 	}
 
-	st, ok = ext.aggregator.AggregateStatus(status.ScopeAll)
+	st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
 	require.True(t, ok)
-	assert.Equal(t, component.StatusStopping, st.StatusEvent.Status())
+	assert.Equal(t, component.StatusStopping, st.Status())
 }
 
 func TestNotifyConfig(t *testing.T) {

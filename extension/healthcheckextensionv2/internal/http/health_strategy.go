@@ -7,22 +7,33 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/status"
-	"go.opentelemetry.io/collector/component"
 )
 
+var responseCodes = map[component.Status]int{
+	component.StatusNone:             http.StatusServiceUnavailable,
+	component.StatusStarting:         http.StatusServiceUnavailable,
+	component.StatusOK:               http.StatusOK,
+	component.StatusRecoverableError: http.StatusOK,
+	component.StatusPermanentError:   http.StatusOK,
+	component.StatusFatalError:       http.StatusInternalServerError,
+	component.StatusStopping:         http.StatusServiceUnavailable,
+	component.StatusStopped:          http.StatusServiceUnavailable,
+}
+
 type healthStrategy interface {
-	toResponse(*status.AggregateStatus, bool) (int, *serializableStatus)
+	toResponse(*status.AggregateStatus) (int, *serializableStatus)
 }
 
 type defaultHealthStrategy struct {
 	startTimestamp *time.Time
 }
 
-func (d *defaultHealthStrategy) toResponse(st *status.AggregateStatus, verbose bool) (int, *serializableStatus) {
-	return http.StatusOK, toSerializableStatus(st, &serializationOptions{
-		verbose:          verbose,
+func (d *defaultHealthStrategy) toResponse(st *status.AggregateStatus) (int, *serializableStatus) {
+	return responseCodes[st.Status()], toSerializableStatus(st, &serializationOptions{
 		includeStartTime: true,
 		startTimestamp:   d.startTimestamp,
 	})
@@ -33,39 +44,37 @@ type componentHealthStrategy struct {
 	startTimestamp *time.Time
 }
 
-func (c *componentHealthStrategy) toResponse(st *status.AggregateStatus, verbose bool) (int, *serializableStatus) {
+func (c *componentHealthStrategy) toResponse(st *status.AggregateStatus) (int, *serializableStatus) {
 	now := time.Now()
 	sst := toSerializableStatus(
 		st,
 		&serializationOptions{
-			verbose:          verbose,
 			includeStartTime: true,
 			startTimestamp:   c.startTimestamp,
 			healthyFunc:      c.healthyFunc(&now),
 		},
 	)
 
-	if c.settings.IncludePermanentErrors && st.Status() == component.StatusPermanentError {
+	if c.settings.IncludePermanent && st.Status() == component.StatusPermanentError {
 		return http.StatusInternalServerError, sst
 	}
 
-	if c.settings.IncludeRecoverableErrors {
-		recoverable, found := status.ActiveRecoverable(st)
-		if found && now.After(recoverable.Timestamp().Add(c.settings.RecoveryDuration)) {
+	if c.settings.IncludeRecoverable && st.Status() == component.StatusRecoverableError {
+		if now.After(st.Timestamp().Add(c.settings.RecoveryDuration)) {
 			return http.StatusInternalServerError, sst
 		}
 	}
 
-	return http.StatusOK, sst
+	return responseCodes[st.Status()], sst
 }
 
-func (c *componentHealthStrategy) healthyFunc(now *time.Time) func(*component.StatusEvent) bool {
-	return func(ev *component.StatusEvent) bool {
+func (c *componentHealthStrategy) healthyFunc(now *time.Time) func(status.Event) bool {
+	return func(ev status.Event) bool {
 		if ev.Status() == component.StatusPermanentError {
-			return !c.settings.IncludePermanentErrors
+			return !c.settings.IncludePermanent
 		}
 
-		if ev.Status() == component.StatusRecoverableError && c.settings.IncludeRecoverableErrors {
+		if ev.Status() == component.StatusRecoverableError && c.settings.IncludeRecoverable {
 			return now.Before(ev.Timestamp().Add(c.settings.RecoveryDuration))
 		}
 
