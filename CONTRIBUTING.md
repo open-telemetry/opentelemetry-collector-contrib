@@ -370,7 +370,7 @@ Sometimes a component may be in need of a new or additional Code Owner. A few re
 - An existing Code Owner has become unresponsive. See [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector#unmaintained).
 - The component was never assigned a Code Owner.
 
-Code Ownership does not have to be a full time job. If you can find a couple hours to help out on a recurring basis, please consider pursing Code Ownership.
+Code Ownership does not have to be a full-time job. If you can find a couple hours to help out on a recurring basis, please consider pursuing Code Ownership.
 
 ### Requirements
 
