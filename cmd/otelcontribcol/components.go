@@ -7,7 +7,6 @@ import (
 	forwardconnector "go.opentelemetry.io/collector/connector/forwardconnector"
 	"go.opentelemetry.io/collector/exporter"
 	debugexporter "go.opentelemetry.io/collector/exporter/debugexporter"
-	loggingexporter "go.opentelemetry.io/collector/exporter/loggingexporter"
 	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
 	otlphttpexporter "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension"
@@ -26,6 +25,7 @@ import (
 	routingconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
 	servicegraphconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
 	spanmetricsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
+	alertmanagerexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter"
 	alibabacloudlogserviceexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
 	awscloudwatchlogsexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 	awsemfexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
@@ -94,15 +94,16 @@ import (
 	pprofextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
 	remotetapextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension"
 	sigv4authextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
+	solarwindsapmsettingsextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension"
 	dbstorage "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	filestorage "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	attributesprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	cumulativetodeltaprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
-	datadogprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor"
 	deltatorateprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
 	filterprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	groupbyattrsprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
 	groupbytraceprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
+	intervalprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor"
 	k8sattributesprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 	metricsgenerationprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor"
 	metricstransformprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
@@ -112,7 +113,6 @@ import (
 	resourcedetectionprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	resourceprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	routingprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
-	servicegraphprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
 	spanmetricsprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
 	spanprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 	sumologicprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor"
@@ -167,6 +167,7 @@ import (
 	mongodbatlasreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	mongodbreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	mysqlreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
+	namedpipereceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver"
 	nginxreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
 	nsxtreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
 	opencensusreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
@@ -232,6 +233,7 @@ func components() (otelcol.Factories, error) {
 		pprofextension.NewFactory(),
 		remotetapextension.NewFactory(),
 		sigv4authextension.NewFactory(),
+		solarwindsapmsettingsextension.NewFactory(),
 		filestorage.NewFactory(),
 		dbstorage.NewFactory(),
 		otlpencodingextension.NewFactory(),
@@ -295,6 +297,7 @@ func components() (otelcol.Factories, error) {
 		mongodbatlasreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
 		mysqlreceiver.NewFactory(),
+		namedpipereceiver.NewFactory(),
 		nginxreceiver.NewFactory(),
 		nsxtreceiver.NewFactory(),
 		opencensusreceiver.NewFactory(),
@@ -339,9 +342,9 @@ func components() (otelcol.Factories, error) {
 
 	factories.Exporters, err = exporter.MakeFactoryMap(
 		debugexporter.NewFactory(),
-		loggingexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
+		alertmanagerexporter.NewFactory(),
 		alibabacloudlogserviceexporter.NewFactory(),
 		awscloudwatchlogsexporter.NewFactory(),
 		awsemfexporter.NewFactory(),
@@ -396,11 +399,11 @@ func components() (otelcol.Factories, error) {
 		memorylimiterprocessor.NewFactory(),
 		attributesprocessor.NewFactory(),
 		cumulativetodeltaprocessor.NewFactory(),
-		datadogprocessor.NewFactory(),
 		deltatorateprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
 		groupbyattrsprocessor.NewFactory(),
 		groupbytraceprocessor.NewFactory(),
+		intervalprocessor.NewFactory(),
 		k8sattributesprocessor.NewFactory(),
 		metricsgenerationprocessor.NewFactory(),
 		metricstransformprocessor.NewFactory(),
@@ -409,7 +412,6 @@ func components() (otelcol.Factories, error) {
 		resourcedetectionprocessor.NewFactory(),
 		resourceprocessor.NewFactory(),
 		routingprocessor.NewFactory(),
-		servicegraphprocessor.NewFactory(),
 		spanmetricsprocessor.NewFactory(),
 		sumologicprocessor.NewFactory(),
 		spanprocessor.NewFactory(),

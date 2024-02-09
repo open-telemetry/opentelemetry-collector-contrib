@@ -15,7 +15,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	err := parser.Unmarshal(rac)
 	if err != nil {
 		return err
 	}
@@ -25,41 +25,13 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for resourcedetectionprocessor/consul resource attributes.
 type ResourceAttributesConfig struct {
-	AzureResourcegroupName ResourceAttributeConfig `mapstructure:"azure.resourcegroup.name"`
-	AzureVMName            ResourceAttributeConfig `mapstructure:"azure.vm.name"`
-	AzureVMScalesetName    ResourceAttributeConfig `mapstructure:"azure.vm.scaleset.name"`
-	AzureVMSize            ResourceAttributeConfig `mapstructure:"azure.vm.size"`
-	CloudAccountID         ResourceAttributeConfig `mapstructure:"cloud.account.id"`
-	CloudPlatform          ResourceAttributeConfig `mapstructure:"cloud.platform"`
-	CloudProvider          ResourceAttributeConfig `mapstructure:"cloud.provider"`
-	CloudRegion            ResourceAttributeConfig `mapstructure:"cloud.region"`
-	HostID                 ResourceAttributeConfig `mapstructure:"host.id"`
-	HostName               ResourceAttributeConfig `mapstructure:"host.name"`
+	CloudRegion ResourceAttributeConfig `mapstructure:"cloud.region"`
+	HostID      ResourceAttributeConfig `mapstructure:"host.id"`
+	HostName    ResourceAttributeConfig `mapstructure:"host.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		AzureResourcegroupName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		AzureVMName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		AzureVMScalesetName: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		AzureVMSize: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		CloudAccountID: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		CloudPlatform: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		CloudProvider: ResourceAttributeConfig{
-			Enabled: true,
-		},
 		CloudRegion: ResourceAttributeConfig{
 			Enabled: true,
 		},

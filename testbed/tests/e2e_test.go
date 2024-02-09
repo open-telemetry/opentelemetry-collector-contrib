@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -26,10 +27,11 @@ func TestIdleMode(t *testing.T) {
 	resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
 	require.NoError(t, err)
 
-	sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
-	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+	sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+	receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 	cfg := createConfigYaml(t, sender, receiver, resultDir, nil, nil)
-	cp := testbed.NewChildProcessCollector()
+	cp := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
+
 	cleanup, err := cp.PrepareConfig(cfg)
 	require.NoError(t, err)
 	t.Cleanup(cleanup)
@@ -45,10 +47,9 @@ func TestIdleMode(t *testing.T) {
 		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 20, ExpectedMaxRAM: 83}),
 	)
 	tc.StartAgent()
+	t.Cleanup(tc.Stop)
 
 	tc.Sleep(tc.Duration)
-
-	tc.Stop()
 }
 
 const ballastConfig = `
@@ -73,14 +74,16 @@ func TestBallastMemory(t *testing.T) {
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("ballast-size-%d", test.ballastSize), func(t *testing.T) {
-			sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
-			receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+			sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+			receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 			ballastCfg := createConfigYaml(
 				t, sender, receiver, resultDir, nil,
 				map[string]string{"memory_ballast": fmt.Sprintf(ballastConfig, test.ballastSize)})
-			cp := testbed.NewChildProcessCollector()
+			cp := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 			cleanup, err := cp.PrepareConfig(ballastCfg)
 			require.NoError(t, err)
+			t.Cleanup(cleanup)
+
 			tc := testbed.NewTestCase(
 				t,
 				dataProvider,
@@ -99,6 +102,7 @@ func TestBallastMemory(t *testing.T) {
 				),
 			)
 			tc.StartAgent()
+			t.Cleanup(tc.Stop)
 
 			var rss, vms uint32
 			// It is possible that the process is not ready or the ballast code path
@@ -128,9 +132,6 @@ func TestBallastMemory(t *testing.T) {
 			} else {
 				assert.LessOrEqual(t, float32(rss), lenientMax, rssTooHigh)
 			}
-
-			cleanup()
-			tc.Stop()
 		})
 	}
 }

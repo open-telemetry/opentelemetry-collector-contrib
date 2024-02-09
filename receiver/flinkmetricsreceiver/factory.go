@@ -34,7 +34,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ScraperControllerSettings: cfg,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: defaultEndpoint,
 			Timeout:  10 * time.Second,
 		},
@@ -53,7 +53,7 @@ func createMetricsReceiver(
 		return nil, errConfigNotflinkmetrics
 	}
 	ns := newflinkScraper(cfg, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err
 	}

@@ -38,7 +38,8 @@ type logsReceiver struct {
 }
 
 const secretHeaderName = "X-CF-Secret"
-const receiverScopeName = "otelcol/" + metadata.Type
+
+var receiverScopeName = "otelcol/" + metadata.Type.String()
 
 func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
 	recv := &logsReceiver{
@@ -110,7 +111,7 @@ func (l *logsReceiver) startListening(ctx context.Context, _ component.Host) err
 
 			if !errors.Is(err, http.ErrServerClosed) {
 				l.logger.Error("ServeTLS failed", zap.Error(err))
-				_ = l.telemetrySettings.ReportComponentStatus(component.NewFatalErrorEvent(err))
+				l.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 			}
 
 		} else {
@@ -123,7 +124,7 @@ func (l *logsReceiver) startListening(ctx context.Context, _ component.Host) err
 
 			if !errors.Is(err, http.ErrServerClosed) {
 				l.logger.Error("Serve failed", zap.Error(err))
-				_ = l.telemetrySettings.ReportComponentStatus(component.NewFatalErrorEvent(err))
+				l.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 			}
 
 		}

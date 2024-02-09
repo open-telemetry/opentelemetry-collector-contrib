@@ -3,16 +3,15 @@ package batchmemlimitprocessor
 import (
 	"context"
 	"encoding/json"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.uber.org/multierr"
 	"runtime"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -160,7 +159,6 @@ func (bl *batchLogs) getLogCount() int {
 }
 
 func (bl *batchLogs) add(ld plog.Logs) (bool, error) {
-
 	newLogsCount := ld.LogRecordCount()
 	newLogsSize := bl.sizer.LogsSize(ld)
 	if newLogsCount == 0 || newLogsSize == 0 {
@@ -235,7 +233,6 @@ func (bl *batchLogs) splitLogs() plog.Logs {
 
 // splitSingleLogRecord - splits the single log record into 512 KB chunks
 func (bl *batchLogs) splitSingleLogRecord() plog.Logs {
-
 	removedLogs := plog.NewLogs()
 
 	if bl.logData.ResourceLogs().Len() != 1 {
@@ -250,8 +247,8 @@ func (bl *batchLogs) splitSingleLogRecord() plog.Logs {
 
 	existingLogRecord := existingResourceLogs.ScopeLogs().At(0).LogRecords().At(0)
 
-	existingLogRecordBody := map[string]interface{}{}
-	var bodyHasJsonStr bool
+	existingLogRecordBody := map[string]any{}
+	var bodyHasJSONStr bool
 	if existingLogRecord.Body().Type() == pcommon.ValueTypeMap {
 		for k, v := range existingLogRecord.Body().Map().AsRaw() {
 			existingLogRecordBody[k] = v
@@ -259,11 +256,11 @@ func (bl *batchLogs) splitSingleLogRecord() plog.Logs {
 	} else {
 		err := json.Unmarshal([]byte(existingLogRecord.Body().AsString()), &existingLogRecordBody)
 		if err != nil {
-			existingLogRecordBody = map[string]interface{}{
+			existingLogRecordBody = map[string]any{
 				MessageKey: existingLogRecord.Body().AsString(),
 			}
 		} else {
-			bodyHasJsonStr = true
+			bodyHasJSONStr = true
 		}
 	}
 
@@ -290,7 +287,7 @@ func (bl *batchLogs) splitSingleLogRecord() plog.Logs {
 		existingLogRecord.Body().Map().PutStr(MessageKey, existingMessageStr)
 		remLogRec.Body().Map().PutStr(MessageKey, newMessage)
 	} else {
-		if bodyHasJsonStr {
+		if bodyHasJSONStr {
 			existingLogRecordBody[MessageKey] = existingMessageStr
 			jsonBytes, _ := json.Marshal(existingLogRecordBody)
 			existingLogRecord.Body().SetStr(string(jsonBytes))

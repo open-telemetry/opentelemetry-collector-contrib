@@ -33,9 +33,9 @@ import (
 // the Skywalking receiver will use.
 type configuration struct {
 	CollectorHTTPPort           int
-	CollectorHTTPSettings       confighttp.HTTPServerSettings
+	CollectorHTTPSettings       confighttp.ServerConfig
 	CollectorGRPCPort           int
-	CollectorGRPCServerSettings configgrpc.GRPCServerSettings
+	CollectorGRPCServerSettings configgrpc.ServerConfig
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Skywaking.
@@ -153,7 +153,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		go func() {
 			defer sr.goroutines.Done()
 			if errHTTP := sr.collectorServer.Serve(cln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-				host.ReportFatalError(errHTTP)
+				sr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 			}
 		}()
 	}
@@ -188,7 +188,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		go func() {
 			defer sr.goroutines.Done()
 			if errGrpc := sr.grpc.Serve(gln); !errors.Is(errGrpc, grpc.ErrServerStopped) && errGrpc != nil {
-				host.ReportFatalError(errGrpc)
+				sr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errGrpc))
 			}
 		}()
 	}

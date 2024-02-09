@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
@@ -33,7 +32,7 @@ func createMetricsReceiver(
 	}
 	sqlServerScraper := newSQLServerScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type, sqlServerScraper.scrape,
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), sqlServerScraper.scrape,
 		scraperhelper.WithStart(sqlServerScraper.start),
 		scraperhelper.WithShutdown(sqlServerScraper.shutdown))
 	if err != nil {

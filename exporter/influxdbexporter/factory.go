@@ -35,7 +35,7 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Timeout: 5 * time.Second,
 			Headers: map[string]configopaque.String{
 				"User-Agent": "OpenTelemetry -> Influx",

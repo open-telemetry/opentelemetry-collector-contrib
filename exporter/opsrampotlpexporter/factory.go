@@ -47,7 +47,7 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:   configretry.NewDefaultBackOffConfig(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Headers: map[string]configopaque.String{},
@@ -76,7 +76,7 @@ func createTracesExporter(
 		oce.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown))
@@ -99,7 +99,7 @@ func createMetricsExporter(
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
@@ -123,7 +123,7 @@ func createLogsExporter(
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),

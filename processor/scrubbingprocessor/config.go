@@ -1,8 +1,9 @@
 package scrubbingprocessor
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 type AttributeType string
@@ -22,8 +23,8 @@ type MaskingSettings struct {
 
 // Config defines the configuration for Resource processor.
 type Config struct {
-	adapter.BaseConfig       `mapstructure:",squash"`
-	Masking                  []MaskingSettings `mapstructure:"masking"`
+	adapter.BaseConfig `mapstructure:",squash"`
+	Masking            []MaskingSettings `mapstructure:"masking"`
 }
 
 var _ component.Config = (*Config)(nil)

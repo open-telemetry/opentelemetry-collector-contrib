@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package activedirectorydsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
 
@@ -33,7 +32,7 @@ func createMetricsReceiver(
 
 	adds := newActiveDirectoryDSScraper(c.MetricsBuilderConfig, params)
 	scraper, err := scraperhelper.NewScraper(
-		metadata.Type,
+		metadata.Type.String(),
 		adds.scrape,
 		scraperhelper.WithStart(adds.start),
 		scraperhelper.WithShutdown(adds.shutdown),

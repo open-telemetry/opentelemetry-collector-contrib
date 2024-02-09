@@ -3,13 +3,14 @@ package batchmemlimitprocessor
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 // Config defines the configuration for Resource processor.
 type Config struct {
-	adapter.BaseConfig       `mapstructure:",squash"`
+	adapter.BaseConfig `mapstructure:",squash"`
 
 	// Timeout sets the time after which a batch will be sent regardless of size.
 	Timeout time.Duration `mapstructure:"timeout"`
@@ -25,6 +26,5 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
-
 	return nil
 }

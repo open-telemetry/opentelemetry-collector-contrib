@@ -6,6 +6,7 @@ package traces
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -34,16 +35,31 @@ func Start(cfg *Config) error {
 
 	var exp *otlptrace.Exporter
 	if cfg.UseHTTP {
+		var exporterOpts []otlptracehttp.Option
+
 		logger.Info("starting HTTP exporter")
-		exp, err = otlptracehttp.New(context.Background(), httpExporterOptions(cfg)...)
+		exporterOpts, err = httpExporterOptions(cfg)
+		if err != nil {
+			return err
+		}
+		exp, err = otlptracehttp.New(context.Background(), exporterOpts...)
+		if err != nil {
+			return fmt.Errorf("failed to obtain OTLP HTTP exporter: %w", err)
+		}
 	} else {
+		var exporterOpts []otlptracegrpc.Option
+
 		logger.Info("starting gRPC exporter")
-		exp, err = otlptracegrpc.New(context.Background(), grpcExporterOptions(cfg)...)
+		exporterOpts, err = grpcExporterOptions(cfg)
+		if err != nil {
+			return err
+		}
+		exp, err = otlptracegrpc.New(context.Background(), exporterOpts...)
+		if err != nil {
+			return fmt.Errorf("failed to obtain OTLP gRPC exporter: %w", err)
+		}
 	}
 
-	if err != nil {
-		return fmt.Errorf("failed to obtain OTLP exporter: %w", err)
-	}
 	defer func() {
 		logger.Info("stopping the exporter")
 		if tempError := exp.Shutdown(context.Background()); tempError != nil {
@@ -124,6 +140,7 @@ func Run(c *Config, logger *zap.Logger) error {
 		wg.Add(1)
 		w := worker{
 			numTraces:        c.NumTraces,
+			numChildSpans:    int(math.Max(1, float64(c.NumChildSpans))),
 			propagateContext: c.PropagateContext,
 			statusCode:       statusCode,
 			limitPerSecond:   limit,

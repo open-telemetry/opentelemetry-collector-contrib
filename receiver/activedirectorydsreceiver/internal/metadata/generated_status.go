@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("active_directory_ds")
+)
+
 const (
-	Type             = "active_directory_ds"
 	MetricsStability = component.StabilityLevelBeta
 )
 

@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("docker_observer")
+)
+
 const (
-	Type               = "docker_observer"
 	ExtensionStability = component.StabilityLevelBeta
 )
 

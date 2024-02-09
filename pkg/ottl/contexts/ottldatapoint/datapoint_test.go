@@ -68,11 +68,11 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			got, err := accessor.Get(context.Background(), ctx)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), ctx, tt.newVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			exCache := pcommon.NewMap()
 			tt.modified(exCache)
@@ -486,11 +486,11 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			got, err := accessor.Get(context.Background(), ctx)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), ctx, tt.newVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			exNumberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 			tt.modified(exNumberDataPoint)
@@ -921,11 +921,11 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			ctx := NewTransformContext(histogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			got, err := accessor.Get(context.Background(), ctx)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), ctx, tt.newVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			exNumberDataPoint := createHistogramDataPointTelemetry()
 			tt.modified(exNumberDataPoint)
@@ -1439,11 +1439,11 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			ctx := NewTransformContext(expoHistogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			got, err := accessor.Get(context.Background(), ctx)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), ctx, tt.newVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			exNumberDataPoint := createExpoHistogramDataPointTelemetry()
 			tt.modified(exNumberDataPoint)
@@ -1858,11 +1858,11 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			ctx := NewTransformContext(summaryDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			got, err := accessor.Get(context.Background(), ctx)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), ctx, tt.newVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			exNumberDataPoint := createSummaryDataPointTelemetry()
 			tt.modified(exNumberDataPoint)
@@ -2042,11 +2042,11 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 			ctx := NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			got, err := accessor.Get(context.Background(), ctx)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), ctx, tt.newVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			exMetric := createMetricTelemetry()
 			tt.modified(exMetric)

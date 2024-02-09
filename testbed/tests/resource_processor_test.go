@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -97,8 +98,8 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 }
 
 func TestMetricResourceProcessor(t *testing.T) {
-	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
-	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+	receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 
 	tests := getResourceProcessorTestCases()
 
@@ -107,7 +108,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
 			require.NoError(t, err)
 
-			agentProc := testbed.NewChildProcessCollector()
+			agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 			processors := map[string]string{
 				"resource": test.resourceProcessorConfig,
 			}
@@ -141,7 +142,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 			tc.MockBackend.ClearReceivedItems()
 			startCounter := tc.MockBackend.DataItemsReceived()
 
-			sender, ok := tc.Sender.(testbed.MetricDataSender)
+			sender, ok := tc.LoadGenerator.(*testbed.ProviderSender).Sender.(testbed.MetricDataSender)
 			require.True(t, ok, "unsupported metric sender")
 
 			require.NoError(t, sender.ConsumeMetrics(context.Background(), test.mockedConsumedMetrics))

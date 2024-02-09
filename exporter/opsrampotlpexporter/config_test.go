@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 10 * time.Second,
 			},
-			RetrySettings: configretry.BackOffConfig{
+			BackOffConfig: configretry.BackOffConfig{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,
 				MaxInterval:     1 * time.Minute,

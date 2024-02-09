@@ -40,7 +40,7 @@ type prwExporter struct {
 	concurrency       int
 	userAgentHeader   string
 	maxBatchSizeBytes int
-	clientSettings    *confighttp.HTTPClientSettings
+	clientSettings    *confighttp.ClientConfig
 	settings          component.TelemetrySettings
 	retrySettings     configretry.BackOffConfig
 	wal               *prweWAL
@@ -54,7 +54,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		return nil, err
 	}
 
-	endpointURL, err := url.ParseRequestURI(cfg.HTTPClientSettings.Endpoint)
+	endpointURL, err := url.ParseRequestURI(cfg.ClientConfig.Endpoint)
 	if err != nil {
 		return nil, errors.New("invalid endpoint")
 	}
@@ -68,7 +68,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		userAgentHeader:   userAgentHeader,
 		maxBatchSizeBytes: cfg.MaxBatchSizeBytes,
 		concurrency:       cfg.RemoteWriteQueue.NumConsumers,
-		clientSettings:    &cfg.HTTPClientSettings,
+		clientSettings:    &cfg.ClientConfig,
 		settings:          set.TelemetrySettings,
 		retrySettings:     cfg.BackOffConfig,
 		exporterSettings: prometheusremotewrite.Settings{
@@ -80,14 +80,8 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 			SendMetadata:        cfg.SendMetadata,
 		},
 	}
-	if cfg.WAL == nil {
-		return prwe, nil
-	}
 
-	prwe.wal, err = newWAL(cfg.WAL, prwe.export)
-	if err != nil {
-		return nil, err
-	}
+	prwe.wal = newWAL(cfg.WAL, prwe.export)
 	return prwe, nil
 }
 
@@ -236,6 +230,15 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 
 	// executeFunc can be used for backoff and non backoff scenarios.
 	executeFunc := func() error {
+		// check there was no timeout in the component level to avoid retries
+		// to continue to run after a timeout
+		select {
+		case <-ctx.Done():
+			return backoff.Permanent(ctx.Err())
+		default:
+			// continue
+		}
+
 		// Create the HTTP POST request to send to the endpoint
 		req, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
 		if err != nil {

@@ -33,7 +33,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ScraperControllerSettings: cfg,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: defaultEndpoint,
 			Timeout:  10 * time.Second,
 		},
@@ -48,7 +48,7 @@ func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rC
 	}
 
 	rabbitScraper := newScraper(params.Logger, cfg, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, rabbitScraper.scrape, scraperhelper.WithStart(rabbitScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), rabbitScraper.scrape, scraperhelper.WithStart(rabbitScraper.start))
 	if err != nil {
 		return nil, err
 	}

@@ -39,7 +39,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	tests := []struct {
 		id       component.ID
@@ -142,7 +142,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 
 			sub, err := cm.Sub(tt.id.String())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.Nil(t, component.UnmarshalConfig(sub, cfg))
 			if assert.Nil(t, component.ValidateConfig(cfg)) {
 				assert.Equal(t, tt.expected, cfg)

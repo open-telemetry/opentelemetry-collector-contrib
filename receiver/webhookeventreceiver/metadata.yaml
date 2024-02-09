@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     alpha: [logs]
-  distributions:
+  distributions: [contrib]
   codeowners:
     active: ["atoulme", "shalper2"]
     emeritus:
