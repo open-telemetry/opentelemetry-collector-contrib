@@ -108,25 +108,25 @@ For example, consider the following input:
 
 ```go
 Resource {host.name="localhost"}
-  InstumentationLibrary {name="MyLibrary"}
+  InstrumentationLibrary {name="MyLibrary"}
   Spans
     Span {span_id=1, ...}
-  InstumentationLibrary {name="OtherLibrary"}
+  InstrumentationLibrary {name="OtherLibrary"}
   Spans
     Span {span_id=2, ...}
     
 Resource {host.name="localhost"}
-  InstumentationLibrary {name="MyLibrary"}
+  InstrumentationLibrary {name="MyLibrary"}
   Spans
     Span {span_id=3, ...}
     
 Resource {host.name="localhost"}
-  InstumentationLibrary {name="MyLibrary"}
+  InstrumentationLibrary {name="MyLibrary"}
   Spans
     Span {span_id=4, ...}
     
 Resource {host.name="otherhost"}
-  InstumentationLibrary {name="MyLibrary"}
+  InstrumentationLibrary {name="MyLibrary"}
   Spans
     Span {span_id=5, ...}
 ```
@@ -148,17 +148,17 @@ The output of the processor will therefore be:
 
 ```go
 Resource {host.name="localhost"}
-  InstumentationLibrary {name="MyLibrary"}
+  InstrumentationLibrary {name="MyLibrary"}
   Spans
     Span {span_id=1, ...}
     Span {span_id=3, ...}
     Span {span_id=4, ...}
-  InstumentationLibrary {name="OtherLibrary"}
+  InstrumentationLibrary {name="OtherLibrary"}
   Spans
     Span {span_id=2, ...}
 
 Resource {host.name="otherhost"}
-  InstumentationLibrary {name="MyLibrary"}
+  InstrumentationLibrary {name="MyLibrary"}
   Spans
     Span {span_id=5, ...}
 ```
