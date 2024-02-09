@@ -198,7 +198,7 @@ func generateLogData(messages []testLogMessage) plog.Logs {
 }
 
 // laggy operator is a test operator that simulates heavy processing that takes a large amount of time.
-// The heavey processing only occurs for every 100th log
+// The heavy processing only occurs for every 100th log
 type laggyOperator struct {
 	helper.WriterOperator
 	logsCount int
@@ -280,9 +280,4 @@ func TestProcessorShutdownWithSlowOperator(t *testing.T) {
 
 	err = ltp.Shutdown(context.Background())
 	require.NoError(t, err)
-
-	// We should ensure that all channels are drained and all logs
-	// are put into ConsumeLogs are emitted to the consumer at this point,
-	// but this is not the case right now.
-	// require.Equal(t, 500, tln.LogRecordCount())
 }
