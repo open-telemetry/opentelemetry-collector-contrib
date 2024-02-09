@@ -26,7 +26,7 @@ var (
 	errMissingClientSecret   = errors.New(`ClientSecret" is not specified in config`)
 	errMissingFedTokenFile   = errors.New(`FederatedTokenFile is not specified in config`)
 	errInvalidCloud          = errors.New(`Cloud" is invalid`)
-	errInvalidRegion         = errors.New("`Region` is not specifiec in config`")
+	errInvalidRegion         = errors.New("`Region` is not specified in config`")
 
 	monitorServices = []string{
 		"Microsoft.EventGrid/eventSubscriptions",
@@ -246,6 +246,7 @@ type Config struct {
 	MaximumNumberOfMetricsInACall           int                           `mapstructure:"maximum_number_of_metrics_in_a_call"`
 	AppendTagsAsAttributes                  bool                          `mapstructure:"append_tags_as_attributes"`
 	UseBatchApi                             bool                          `mapstructure:"use_batch_api"`
+	DiscoverSubscription                    bool                          `mapstructure:"discover_subscriptions"`
 	Region                                  string                        `mapstructure:"region"`
 	MaximumNumberOfDimensionsInACall        int                           `mapstructure:"maximum_number_of_dimensions_in_a_call"`
 }
@@ -257,7 +258,7 @@ const (
 
 // Validate validates the configuration by checking for missing or invalid fields
 func (c Config) Validate() (err error) {
-	if c.SubscriptionID == "" {
+	if c.SubscriptionID == "" && !c.DiscoverSubscription {
 		err = multierr.Append(err, errMissingSubscriptionID)
 	}
 
@@ -294,7 +295,7 @@ func (c Config) Validate() (err error) {
 		err = multierr.Append(err, errInvalidCloud)
 	}
 
-	if c.UseBatchApi && c.Region == "" {
+	if c.UseBatchApi && c.Region == "" && !c.DiscoverSubscription {
 		err = multierr.Append(err, errInvalidRegion)
 	}
 
