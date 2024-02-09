@@ -162,7 +162,7 @@ func getAuthToken(cfg SecuritySettings) (string, error) {
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (err error) {
-	e.clientConn, err = e.config.GRPCClientSettings.ToClientConn(
+	e.clientConn, err = e.config.ClientConfig.ToClientConn(
 		ctx,
 		host,
 		e.settings,
@@ -192,13 +192,13 @@ func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (e
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
 	headers := map[string]string{}
-	for k, v := range e.config.GRPCClientSettings.Headers {
+	for k, v := range e.config.ClientConfig.Headers {
 		headers[k] = string(v)
 	}
 	e.metadata = metadata.New(headers)
 	e.metadata.Set("Authorization", fmt.Sprintf("Bearer %s", e.accessToken))
 	e.callOptions = []grpc.CallOption{
-		grpc.WaitForReady(e.config.GRPCClientSettings.WaitForReady),
+		grpc.WaitForReady(e.config.ClientConfig.WaitForReady),
 	}
 	return
 }

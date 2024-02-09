@@ -67,10 +67,10 @@ type Config struct {
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 
-	Security                      SecuritySettings         `mapstructure:"security"`
-	configgrpc.GRPCClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	Masking                       []MaskingSettings        `mapstructure:"masking"`
-	ExpirationSkip                time.Duration            `mapstructure:"expiration_skip"`
+	Security                SecuritySettings         `mapstructure:"security"`
+	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	Masking                 []MaskingSettings        `mapstructure:"masking"`
+	ExpirationSkip          time.Duration            `mapstructure:"expiration_skip"`
 }
 
 var _ component.Config = (*Config)(nil)
