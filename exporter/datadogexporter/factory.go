@@ -12,6 +12,8 @@ import (
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
+	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/trace/writer"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
@@ -237,7 +239,7 @@ func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
 	return cfg
 }
 
-func (f *factory) consumeStatsPayload(ctx context.Context, out chan []byte, traceagent *agent.Agent, tracerVersion string, logger *zap.Logger) {
+func (f *factory) consumeStatsPayload(ctx context.Context, statsIn <-chan []byte, statsToAgent chan<- *pb.StatsPayload, logger *zap.Logger) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		f.wg.Add(1)
 		go func() {
@@ -246,7 +248,7 @@ func (f *factory) consumeStatsPayload(ctx context.Context, out chan []byte, trac
 				select {
 				case <-ctx.Done():
 					return
-				case msg := <-out:
+				case msg := <-statsIn:
 					sp := &pb.StatsPayload{}
 
 					err := proto.Unmarshal(msg, sp)
@@ -254,9 +256,7 @@ func (f *factory) consumeStatsPayload(ctx context.Context, out chan []byte, trac
 						logger.Error("failed to unmarshal stats payload", zap.Error(err))
 						continue
 					}
-					for _, sc := range sp.Stats {
-						traceagent.ProcessStats(sc, "", tracerVersion)
-					}
+					statsToAgent <- sp
 				}
 			}
 		}()
@@ -283,11 +283,18 @@ func (f *factory) createMetricsExporter(
 		cancel()
 		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
 	}
-	var statsOut chan []byte
+	acfg, err := newTraceAgentConfig(ctx, set, cfg, hostProvider)
+	if err != nil {
+		return nil, err
+	}
+	statsToAgent := make(chan *pb.StatsPayload)
+	statsWriter := writer.NewStatsWriter(acfg, statsToAgent, telemetry.NewNoopCollector())
+	go statsWriter.Run() // TODO: stop this
+
+	var statsIn chan []byte
 	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
-		statsOut = make(chan []byte, 1000)
-		statsv := set.BuildInfo.Command + set.BuildInfo.Version
-		f.consumeStatsPayload(ctx, statsOut, traceagent, statsv, set.Logger)
+		statsIn = make(chan []byte, 1000)
+		f.consumeStatsPayload(ctx, statsIn, statsToAgent, set.Logger)
 	}
 	pcfg := newMetadataConfigfromConfig(cfg)
 	metadataReporter, err := f.Reporter(set, pcfg)
@@ -321,7 +328,7 @@ func (f *factory) createMetricsExporter(
 			return nil
 		}
 	} else {
-		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, attrsTranslator, hostProvider, traceagent, metadataReporter, statsOut)
+		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, attrsTranslator, hostProvider, traceagent, metadataReporter, statsIn)
 		if metricsErr != nil {
 			cancel()    // first cancel context
 			f.wg.Wait() // then wait for shutdown
@@ -345,8 +352,8 @@ func (f *factory) createMetricsExporter(
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			f.StopReporter()
-			if statsOut != nil {
-				close(statsOut)
+			if statsIn != nil {
+				close(statsIn)
 			}
 			return nil
 		}),
