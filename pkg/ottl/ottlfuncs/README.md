@@ -251,6 +251,7 @@ Examples:
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
 `target` is a path expression to a `pcommon.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string. `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching string with the hash value of `replacement`.
+`replacementFormat` is an optional string argument that specifies the format of the replacement.
 
 Each string value in `target` that matches `pattern` will get replaced with `replacement`. Non-string values are ignored.
 
@@ -295,6 +296,7 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 The `replace_match` function allows replacing entire strings if they match a glob pattern.
 
 `target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string.
+`replacementFormat` is an optional string argument that specifies the format of the replacement.
 
 If `target` matches `pattern` it will get replaced with `replacement`.
 

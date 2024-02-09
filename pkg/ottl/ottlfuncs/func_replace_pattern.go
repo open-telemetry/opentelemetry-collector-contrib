@@ -38,6 +38,21 @@ func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argu
 	return replacePattern(args.Target, args.RegexPattern, args.Replacement, args.Function, args.ReplacementFormat)
 }
 
+func applyReplaceFormat[K any](ctx context.Context, tCtx K, replacementFormat ottl.Optional[ottl.StringGetter[K]], replacementVal string) (string, error) {
+	if !replacementFormat.IsEmpty() { // If replacementFormat is not empty, add it to the replacement value
+		formatString := replacementFormat.Get()
+		formatStringVal, errFmt := formatString.Get(ctx, tCtx)
+		if errFmt != nil {
+			return "", errFmt
+		}
+		if strings.Count(formatStringVal, "%s") > 1 || strings.Count(formatStringVal, "%") < 1 {
+			return "", fmt.Errorf("replacementFormat must be format string containing a single %%s and no other format specifiers")
+		}
+		replacementVal = fmt.Sprintf(formatStringVal, replacementVal)
+	}
+	return replacementVal, nil
+}
+
 func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern *regexp.Regexp, fn ottl.Optional[ottl.FunctionGetter[K]], originalValStr string, replacementVal string, replacementFormat ottl.Optional[ottl.StringGetter[K]]) (string, error) {
 	var updatedString string
 	updatedString = originalValStr
@@ -63,16 +78,9 @@ func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern
 		if !ok {
 			return "", fmt.Errorf("the replacement value must be a string")
 		}
-		if !replacementFormat.IsEmpty() { // If replacementFormat is not empty, add it to the replacement value
-			formatString := replacementFormat.Get()
-			formatStringVal, err := formatString.Get(ctx, tCtx)
-			if err != nil {
-				return "", err
-			}
-			if strings.Count(formatStringVal, "%s") > 1 || strings.Count(formatStringVal, "%") < 1 {
-				return "", fmt.Errorf("replacementFormat must be format string containing a single %%s and no other format specifiers")
-			}
-			replacementValStr = fmt.Sprintf(formatStringVal, replacementValStr)
+		replacementValStr, errNew = applyReplaceFormat(ctx, tCtx, replacementFormat, replacementValStr)
+		if errNew != nil {
+			return "", errNew
 		}
 		updatedString = strings.ReplaceAll(updatedString, fullMatch, replacementValStr)
 	}
