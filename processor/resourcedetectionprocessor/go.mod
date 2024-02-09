@@ -5,7 +5,7 @@ go 1.20
 require (
 	cloud.google.com/go/compute/metadata v0.2.3
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0
-	github.com/aws/aws-sdk-go v1.50.7
+	github.com/aws/aws-sdk-go v1.50.14
 	github.com/google/go-cmp v0.6.0
 	github.com/hashicorp/consul/api v1.27.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.94.0
@@ -116,7 +116,7 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.94.1 // indirect
 	go.opentelemetry.io/collector/extension v0.94.1 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.94.1 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.48.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0 // indirect
 	go.opentelemetry.io/otel v1.23.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.1 // indirect
 	go.opentelemetry.io/otel/sdk v1.23.0 // indirect

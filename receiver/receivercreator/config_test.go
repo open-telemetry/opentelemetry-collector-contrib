@@ -139,7 +139,7 @@ func TestInvalidResourceAttributeEndpointType(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 
-	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
+	factories.Receivers[component.MustNewType("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
@@ -152,7 +152,7 @@ func TestInvalidReceiverResourceAttributeValueType(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 
-	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
+	factories.Receivers[component.MustNewType("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
