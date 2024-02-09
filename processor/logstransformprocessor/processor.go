@@ -78,7 +78,7 @@ func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
 }
 
 func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) error {
-	// create all objects before starting them, since the consumer loops depend on the converters not being nil.
+	// create all objects before starting them, since the loops (consumerLoop, converterLoop) depend on these converters not being nil.
 	ltp.converter = adapter.NewConverter(ltp.logger)
 
 	wkrCount := int(math.Max(1, float64(runtime.NumCPU())))
