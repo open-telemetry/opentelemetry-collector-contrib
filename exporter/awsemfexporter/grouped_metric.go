@@ -27,9 +27,17 @@ type metricInfo struct {
 }
 
 // addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
-func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[any]*groupedMetric, metadata cWMetricMetadata, patternReplaceSucceeded bool, logger *zap.Logger, descriptor map[string]MetricDescriptor, config *Config, calculators *emfCalculators) error {
+func addToGroupedMetric(
+	pmd pmetric.Metric,
+	groupedMetrics map[any]*groupedMetric,
+	metadata cWMetricMetadata,
+	patternReplaceSucceeded bool,
+	descriptor map[string]MetricDescriptor,
+	config *Config,
+	calculators *emfCalculators,
+) error {
 
-	dps := getDataPoints(pmd, metadata, logger)
+	dps := getDataPoints(pmd, metadata, config.logger)
 	if dps == nil || dps.Len() == 0 {
 		return nil
 	}
@@ -83,7 +91,7 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[any]*groupedMetri
 			if _, ok := groupedMetrics[groupKey]; ok {
 				// if MetricName already exists in metrics map, print warning log
 				if _, ok := groupedMetrics[groupKey].metrics[dp.name]; ok {
-					logger.Warn(
+					config.logger.Warn(
 						"Duplicate metric found",
 						zap.String("Name", dp.name),
 						zap.Any("Labels", labels),
