@@ -60,7 +60,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	require.NoError(t, err)
 
 	factories, _ := otelcoltest.NopFactories()
-	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
+	factories.Receivers[component.MustNewType("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
 

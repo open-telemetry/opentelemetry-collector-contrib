@@ -17,13 +17,13 @@ import (
 
 // This file implements factory for awsxray receiver.
 
-const (
+var (
 	// The value of "type" key in configuration.
-	typeStr = "datadog"
+	compType = component.MustNewType("datadog")
 )
 
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(typeStr,
+	return exporter.NewFactory(compType,
 		createDefaultConfig,
 		exporter.WithTraces(CreateTracesExporter, component.StabilityLevelAlpha))
 }
