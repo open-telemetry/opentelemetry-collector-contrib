@@ -38,6 +38,16 @@ func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argu
 	return replacePattern(args.Target, args.RegexPattern, args.Replacement, args.Function, args.ReplacementFormat)
 }
 
+func validFormatString(formatString string) bool {
+	// Check for exactly one %s and no other invalid format specifiers
+	validPattern := `^(.*?%s.*?)$`
+	validRegex := regexp.MustCompile(validPattern)
+	invalidPattern := `%[^s]`
+	invalidRegex := regexp.MustCompile(invalidPattern)
+
+	return validRegex.MatchString(formatString) && !invalidRegex.MatchString(formatString)
+}
+
 func applyReplaceFormat[K any](ctx context.Context, tCtx K, replacementFormat ottl.Optional[ottl.StringGetter[K]], replacementVal string) (string, error) {
 	if !replacementFormat.IsEmpty() { // If replacementFormat is not empty, add it to the replacement value
 		formatString := replacementFormat.Get()
@@ -45,7 +55,7 @@ func applyReplaceFormat[K any](ctx context.Context, tCtx K, replacementFormat ot
 		if errFmt != nil {
 			return "", errFmt
 		}
-		if strings.Count(formatStringVal, "%s") > 1 || strings.Count(formatStringVal, "%") < 1 {
+		if !validFormatString(formatStringVal) {
 			return "", fmt.Errorf("replacementFormat must be format string containing a single %%s and no other format specifiers")
 		}
 		replacementVal = fmt.Sprintf(formatStringVal, replacementVal)
