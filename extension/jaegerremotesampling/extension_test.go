@@ -94,6 +94,7 @@ func TestRemote(t *testing.T) {
 				err = server.Serve(lis)
 				require.NoError(t, err)
 			}()
+			defer func() { server.Stop() }()
 
 			// create the config, pointing to the mock server
 			cfg := testConfig()
@@ -138,8 +139,6 @@ func TestRemote(t *testing.T) {
 					assert.Equal(t, []string{string(expectedHeaderValue)}, md.Get(expectedHeaderName))
 				}
 			}
-
-			server.Stop()
 		})
 	}
 }
