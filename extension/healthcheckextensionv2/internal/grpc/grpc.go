@@ -19,18 +19,18 @@ func (s *Server) Check(
 	_ context.Context,
 	req *healthpb.HealthCheckRequest,
 ) (*healthpb.HealthCheckResponse, error) {
-	st, ok := s.aggregator.AggregateStatus(status.Scope(req.Service))
+	st, ok := s.aggregator.AggregateStatus(status.Scope(req.Service), status.Concise)
 	if !ok {
 		return nil, grpcstatus.Error(codes.NotFound, "unknown service")
 	}
 
 	return &healthpb.HealthCheckResponse{
-		Status: s.toServingStatus(st.StatusEvent),
+		Status: s.toServingStatus(st.Event),
 	}, nil
 }
 
 func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_WatchServer) error {
-	sub := s.aggregator.Subscribe(status.Scope(req.Service))
+	sub := s.aggregator.Subscribe(status.Scope(req.Service), status.Concise)
 	defer s.aggregator.Unsubscribe(sub)
 
 	var lastServingStatus healthpb.HealthCheckResponse_ServingStatus = -1
@@ -49,7 +49,7 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 			switch {
 			case st == nil:
 				sst = healthpb.HealthCheckResponse_SERVICE_UNKNOWN
-			case st.StatusEvent.Status() == component.StatusRecoverableError:
+			case st.Status() == component.StatusRecoverableError:
 				failureTicker.Reset(s.recoveryDuration)
 				sst = lastServingStatus
 				if lastServingStatus == -1 {
@@ -57,7 +57,7 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 				}
 			default:
 				failureTicker.Stop()
-				sst = statusToServingStatusMap[st.StatusEvent.Status()]
+				sst = statusToServingStatusMap[st.Status()]
 			}
 
 			if lastServingStatus == sst {
@@ -102,7 +102,7 @@ var statusToServingStatusMap = map[component.Status]healthpb.HealthCheckResponse
 }
 
 func (s *Server) toServingStatus(
-	ev *component.StatusEvent,
+	ev status.Event,
 ) healthpb.HealthCheckResponse_ServingStatus {
 	if ev.Status() == component.StatusRecoverableError &&
 		time.Now().After(ev.Timestamp().Add(s.recoveryDuration)) {

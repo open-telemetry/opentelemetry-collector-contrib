@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -16,6 +17,12 @@ var (
 	extsID    = component.NewID("extensions")
 	extsIDMap = map[component.ID]struct{}{extsID: {}}
 )
+
+type Event interface {
+	Status() component.Status
+	Err() error
+	Timestamp() time.Time
+}
 
 // Scope refers to a part of an AggregateStatus. The zero-value, aka ScopeAll,
 // refers to the entire AggregateStatus. ScopeExtensions refers to the extensions
@@ -35,85 +42,40 @@ func (s Scope) toKey() string {
 	return pipelinePrefix + string(s)
 }
 
+type Verbosity bool
+
+const (
+	Verbose Verbosity = true
+	Concise           = false
+)
+
 // AggregateStatus contains a map of child AggregateStatuses and an embedded component.StatusEvent.
 // It can be used to represent a single, top-level status when the ComponentStatusMap is empty,
 // or a nested structure when map is non-empty.
 type AggregateStatus struct {
-	*component.StatusEvent
+	Event
 
 	ComponentStatusMap map[string]*AggregateStatus
 }
 
-// Remove
-func (a *AggregateStatus) Ready() bool {
-	if len(a.ComponentStatusMap) == 0 &&
-		(a.Status() == component.StatusStarting ||
-			a.Status() == component.StatusStopping ||
-			a.Status() == component.StatusStopped ||
-			a.Status() == component.StatusNone) {
-		return false
-	}
-	for _, st := range a.ComponentStatusMap {
-		if !st.Ready() {
-			return false
-		}
-	}
-	return true
-}
-
-// TODO: Remove
-func (a *AggregateStatus) ActiveRecoverable() (*component.StatusEvent, bool) {
-	//return early if not permanent, fatal, recoverable
-	var ev *component.StatusEvent
-	result := a.activeRecoverable(ev)
-	return result, result != nil
-}
-
-func (a *AggregateStatus) activeRecoverable(curr *component.StatusEvent) *component.StatusEvent {
-	if len(a.ComponentStatusMap) == 0 &&
-		a.Status() == component.StatusRecoverableError &&
-		(curr == nil || a.Timestamp().Before(curr.Timestamp())) {
-		curr = a.StatusEvent
-	}
-	for _, st := range a.ComponentStatusMap {
-		curr = st.activeRecoverable(curr)
-	}
-	return curr
-}
-
-func (a *AggregateStatus) clone() *AggregateStatus {
+func (a *AggregateStatus) clone(verbosity Verbosity) *AggregateStatus {
 	st := &AggregateStatus{
-		StatusEvent: a.StatusEvent,
+		Event: a.Event,
 	}
 
-	if len(a.ComponentStatusMap) > 0 {
+	if verbosity == Verbose && len(a.ComponentStatusMap) > 0 {
 		st.ComponentStatusMap = make(map[string]*AggregateStatus, len(a.ComponentStatusMap))
 		for k, cs := range a.ComponentStatusMap {
-			st.ComponentStatusMap[k] = cs.clone()
+			st.ComponentStatusMap[k] = cs.clone(verbosity)
 		}
 	}
 
 	return st
 }
 
-func ActiveRecoverable(st *AggregateStatus) (*component.StatusEvent, bool) {
-	if !component.StatusIsError(st.Status()) {
-		return nil, false
-	}
-	result := activeRecoverable(st, nil)
-	return result, result != nil
-}
-
-func activeRecoverable(st *AggregateStatus, curr *component.StatusEvent) *component.StatusEvent {
-	if len(st.ComponentStatusMap) == 0 &&
-		st.Status() == component.StatusRecoverableError &&
-		(curr == nil || st.Timestamp().Before(curr.Timestamp())) {
-		curr = st.StatusEvent
-	}
-	for _, cst := range st.ComponentStatusMap {
-		curr = activeRecoverable(cst, curr)
-	}
-	return curr
+type subscription struct {
+	statusCh  chan *AggregateStatus
+	verbosity Verbosity
 }
 
 // Aggregator records individual status events for components and aggregates statuses for the
@@ -121,17 +83,19 @@ func activeRecoverable(st *AggregateStatus, curr *component.StatusEvent) *compon
 type Aggregator struct {
 	mu              sync.RWMutex
 	aggregateStatus *AggregateStatus
-	subscriptions   map[string][]chan *AggregateStatus
+	subscriptions   map[string][]*subscription
+	aggregationFunc aggregationFunc
 }
 
 // NewAggregator returns a *status.Aggregator.
-func NewAggregator() *Aggregator {
+func NewAggregator(errPriority ErrorPriority) *Aggregator {
 	return &Aggregator{
 		aggregateStatus: &AggregateStatus{
-			StatusEvent:        &component.StatusEvent{},
+			Event:              &component.StatusEvent{},
 			ComponentStatusMap: make(map[string]*AggregateStatus),
 		},
-		subscriptions: make(map[string][]chan *AggregateStatus),
+		subscriptions:   make(map[string][]*subscription),
+		aggregationFunc: newAggregationFunc(errPriority),
 	}
 }
 
@@ -139,12 +103,12 @@ func NewAggregator() *Aggregator {
 // overall (ScopeAll), extensions (ScopeExtensions), or a pipeline by name. Detail specifies whether
 // or not subtrees should be returned with the *AggregateStatus. The boolean return value indicates
 // whether or not the scope was found.
-func (a *Aggregator) AggregateStatus(scope Scope) (*AggregateStatus, bool) {
+func (a *Aggregator) AggregateStatus(scope Scope, verbosity Verbosity) (*AggregateStatus, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
 	if scope == ScopeAll {
-		return a.aggregateStatus.clone(), true
+		return a.aggregateStatus.clone(verbosity), true
 	}
 
 	st, ok := a.aggregateStatus.ComponentStatusMap[scope.toKey()]
@@ -152,7 +116,7 @@ func (a *Aggregator) AggregateStatus(scope Scope) (*AggregateStatus, bool) {
 		return nil, false
 	}
 
-	return st.clone(), true
+	return st.clone(verbosity), true
 }
 
 // RecordStatus stores and aggregates a StatusEvent for the given component instance.
@@ -180,18 +144,14 @@ func (a *Aggregator) RecordStatus(source *component.InstanceID, event *component
 
 		componentKey := fmt.Sprintf("%s:%s", strings.ToLower(source.Kind.String()), source.ID)
 		pipelineStatus.ComponentStatusMap[componentKey] = &AggregateStatus{
-			StatusEvent: event,
+			Event: event,
 		}
 		a.aggregateStatus.ComponentStatusMap[pipelineKey] = pipelineStatus
-		pipelineStatus.StatusEvent = component.AggregateStatusEvent(
-			toStatusEventMap(pipelineStatus),
-		)
+		pipelineStatus.Event = a.aggregationFunc(pipelineStatus)
 		a.notifySubscribers(pipelineScope, pipelineStatus)
 	}
 
-	a.aggregateStatus.StatusEvent = component.AggregateStatusEvent(
-		toStatusEventMap(a.aggregateStatus),
-	)
+	a.aggregateStatus.Event = a.aggregationFunc(a.aggregateStatus)
 	a.notifySubscribers(ScopeAll, a.aggregateStatus)
 }
 
@@ -200,7 +160,7 @@ func (a *Aggregator) RecordStatus(source *component.InstanceID, event *component
 // It is possible to subscribe to a pipeline that has not yet reported. An initial nil
 // will be sent on the channel and events will start streaming if and when it starts reporting.
 // Detail specifies whether or not subtrees should be returned with the *AggregateStatus.
-func (a *Aggregator) Subscribe(scope Scope) <-chan *AggregateStatus {
+func (a *Aggregator) Subscribe(scope Scope, verbosity Verbosity) <-chan *AggregateStatus {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -209,13 +169,18 @@ func (a *Aggregator) Subscribe(scope Scope) <-chan *AggregateStatus {
 	if scope != ScopeAll {
 		st = st.ComponentStatusMap[key]
 	}
+	if st != nil {
+		st = st.clone(verbosity)
+	}
+	sub := &subscription{
+		statusCh:  make(chan *AggregateStatus, 1),
+		verbosity: verbosity,
+	}
 
-	statusCh := make(chan *AggregateStatus, 1)
+	a.subscriptions[key] = append(a.subscriptions[key], sub)
+	sub.statusCh <- st
 
-	a.subscriptions[key] = append(a.subscriptions[key], statusCh)
-	statusCh <- st
-
-	return statusCh
+	return sub.statusCh
 }
 
 // Unbsubscribe removes a stream from further status updates.
@@ -225,7 +190,7 @@ func (a *Aggregator) Unsubscribe(statusCh <-chan *AggregateStatus) {
 
 	for scope, subs := range a.subscriptions {
 		for i, sub := range subs {
-			if sub == statusCh {
+			if sub.statusCh == statusCh {
 				a.subscriptions[scope] = append(subs[:i], subs[i+1:]...)
 				return
 			}
@@ -240,7 +205,7 @@ func (a *Aggregator) Close() {
 
 	for _, subs := range a.subscriptions {
 		for _, sub := range subs {
-			close(sub)
+			close(sub.statusCh)
 		}
 	}
 }
@@ -249,17 +214,9 @@ func (a *Aggregator) notifySubscribers(scope Scope, status *AggregateStatus) {
 	for _, sub := range a.subscriptions[scope.toKey()] {
 		// clear unread events
 		select {
-		case <-sub:
+		case <-sub.statusCh:
 		default:
 		}
-		sub <- status.clone()
+		sub.statusCh <- status.clone(sub.verbosity)
 	}
-}
-
-func toStatusEventMap(aggStatus *AggregateStatus) map[string]*component.StatusEvent {
-	result := make(map[string]*component.StatusEvent, len(aggStatus.ComponentStatusMap))
-	for k, v := range aggStatus.ComponentStatusMap {
-		result[k] = v.StatusEvent
-	}
-	return result
 }

@@ -12,21 +12,16 @@ import (
 
 func (s *Server) statusHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !s.isReady() {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			return
-		}
-
 		pipeline := r.URL.Query().Get("pipeline")
 		verbose := r.URL.Query().Has("verbose")
-		st, ok := s.aggregator.AggregateStatus(status.Scope(pipeline))
+		st, ok := s.aggregator.AggregateStatus(status.Scope(pipeline), status.Verbosity(verbose))
 
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
-		code, sst := s.strategy.toResponse(st, verbose)
+		code, sst := s.strategy.toResponse(st)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(code)
