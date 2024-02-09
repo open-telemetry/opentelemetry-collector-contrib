@@ -120,6 +120,7 @@ func TestRemote(t *testing.T) {
 				resp, err := http.Get("http://127.0.0.1:5778/sampling?service=foo")
 				assert.NoError(t, err)
 				assert.Equal(t, 200, resp.StatusCode)
+				assert.NoError(t, resp.Body.Close())
 			}
 
 			// shut down the server
@@ -137,6 +138,8 @@ func TestRemote(t *testing.T) {
 					assert.Equal(t, []string{string(expectedHeaderValue)}, md.Get(expectedHeaderName))
 				}
 			}
+
+			server.Stop()
 		})
 	}
 }
