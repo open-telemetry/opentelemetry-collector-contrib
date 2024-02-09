@@ -26,4 +26,5 @@ import (
 	_ "go.opentelemetry.io/collector/cmd/builder"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "golang.org/x/vuln/cmd/govulncheck"
+	_ "gotest.tools/gotestsum"
 )
