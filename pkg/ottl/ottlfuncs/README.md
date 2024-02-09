@@ -806,7 +806,7 @@ Examples:
 
 The `ParseCSV` Converter returns a `pcommon.Map` struct that contains the result of parsing the `target` string as CSV. The resultant map is structured such that it is a mapping of field name -> field value.
 
-`target` is a Getter that returns a string. This string should be a CSV row. if `target` is not a properly formatted CSV row, or if the number of fields in `target` does not match the number of fields in `headers`, `ParseCSV` will return an error.
+`target` is a Getter that returns a string. This string should be a CSV row. if `target` is not a properly formatted CSV row, or if the number of fields in `target` does not match the number of fields in `headers`, `ParseCSV` will return an error. Newlines in target are not treated as row delimiters during parsing, and will be treated as though they are part of the field that are placed in.
 
 `headers` is a Getter that returns a string. This string should be a CSV header, specifying the names of the CSV fields.
 
