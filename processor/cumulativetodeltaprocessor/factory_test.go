@@ -15,12 +15,14 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/metadata"
 )
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	pType := factory.Type()
-	assert.Equal(t, pType, component.Type("cumulativetodelta"))
+	assert.Equal(t, pType, metadata.Type)
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -62,6 +64,7 @@ func TestCreateProcessors(t *testing.T) {
 				consumertest.NewNop())
 			assert.NotNil(t, mp)
 			assert.NoError(t, mErr)
+			assert.NoError(t, mp.Shutdown(context.Background()))
 		})
 	}
 }

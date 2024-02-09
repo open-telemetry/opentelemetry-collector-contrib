@@ -89,7 +89,7 @@ func (er *eventReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	// create listener from config
-	ln, err := er.cfg.HTTPServerSettings.ToListener()
+	ln, err := er.cfg.ServerConfig.ToListener()
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (er *eventReceiver) Start(_ context.Context, host component.Host) error {
 	router.GET(er.cfg.HealthPath, er.handleHealthCheck)
 
 	// webhook server standup and configuration
-	er.server, err = er.cfg.HTTPServerSettings.ToServer(host, er.settings.TelemetrySettings, router)
+	er.server, err = er.cfg.ServerConfig.ToServer(host, er.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}
@@ -170,7 +170,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 	}
 
 	if r.ContentLength == 0 {
-		er.obsrecv.EndLogsOp(ctx, metadata.Type, 0, nil)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, nil)
 		er.failBadReq(ctx, w, http.StatusBadRequest, errEmptyResponseBody)
 	}
 
@@ -199,10 +199,10 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 
 	if consumerErr != nil {
 		er.failBadReq(ctx, w, http.StatusInternalServerError, consumerErr)
-		er.obsrecv.EndLogsOp(ctx, metadata.Type, numLogs, nil)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numLogs, nil)
 	} else {
 		w.WriteHeader(http.StatusOK)
-		er.obsrecv.EndLogsOp(ctx, metadata.Type, numLogs, nil)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numLogs, nil)
 	}
 }
 

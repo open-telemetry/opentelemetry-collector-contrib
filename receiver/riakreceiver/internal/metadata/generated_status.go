@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("riak")
+)
+
 const (
-	Type             = "riak"
 	MetricsStability = component.StabilityLevelBeta
 )
 

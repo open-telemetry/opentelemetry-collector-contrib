@@ -411,7 +411,7 @@ extensions:
   opamp:
     # OpAMP server URL. Supports WS or plain http transport,
     # based on the scheme of the URL (ws,wss,http,https).
-    # Any other settings defined in HTTPClientSettings, squashed. This
+    # Any other settings defined in ClientConfig, squashed. This
     # includes ability to specify an "auth" setting that refers
     # to an extension that implements the Authentication interface.
     endpoint:

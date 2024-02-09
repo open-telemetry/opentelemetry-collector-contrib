@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("docker_stats")
+)
+
 const (
-	Type             = "docker_stats"
 	MetricsStability = component.StabilityLevelAlpha
 )
 

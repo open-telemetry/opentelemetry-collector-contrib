@@ -189,7 +189,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 
 	var ln net.Listener
 	// set up the listener
-	ln, err := r.config.HTTPServerSettings.ToListener()
+	ln, err := r.config.ServerConfig.ToListener()
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
 	}
@@ -202,7 +202,7 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	}
 	mx.NewRoute().HandlerFunc(r.handleReq)
 
-	r.server, err = r.config.HTTPServerSettings.ToServer(host, r.settings.TelemetrySettings, mx)
+	r.server, err = r.config.ServerConfig.ToServer(host, r.settings.TelemetrySettings, mx)
 	if err != nil {
 		return err
 	}
@@ -255,7 +255,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	}
 
 	if req.ContentLength == 0 {
-		r.obsrecv.EndLogsOp(ctx, metadata.Type, 0, nil)
+		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, nil)
 		r.failRequest(ctx, resp, http.StatusBadRequest, noDataRespBody, 0, nil)
 		return
 	}
@@ -303,7 +303,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, consumerErr)
 	} else {
 		r.writeSuccessResponse(ctx, resp, ld.LogRecordCount())
-		r.obsrecv.EndLogsOp(ctx, metadata.Type, slLen, nil)
+		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), slLen, nil)
 	}
 }
 
@@ -396,7 +396,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			return
 		}
 		decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
-		r.obsrecv.EndLogsOp(ctx, metadata.Type, len(events), decodeErr)
+		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), len(events), decodeErr)
 		if decodeErr != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
 			return
@@ -407,7 +407,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		md, _ := splunkHecToMetricsData(r.settings.Logger, metricEvents, resourceCustomizer, r.config)
 
 		decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
-		r.obsrecv.EndMetricsOp(ctx, metadata.Type, len(metricEvents), decodeErr)
+		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(metricEvents), decodeErr)
 		if decodeErr != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(metricEvents), decodeErr)
 			return
@@ -449,9 +449,9 @@ func (r *splunkReceiver) failRequest(
 	}
 
 	if r.metricsConsumer == nil {
-		r.obsrecv.EndLogsOp(ctx, metadata.Type, numRecordsReceived, err)
+		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numRecordsReceived, err)
 	} else {
-		r.obsrecv.EndMetricsOp(ctx, metadata.Type, numRecordsReceived, err)
+		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), numRecordsReceived, err)
 	}
 
 	if r.settings.Logger.Core().Enabled(zap.DebugLevel) {

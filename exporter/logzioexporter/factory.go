@@ -39,12 +39,12 @@ func createDefaultConfig() component.Config {
 		Token:         "",
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
 			Timeout:  30 * time.Second,
 			Headers:  map[string]configopaque.String{},
 			// Default to gzip compression
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},
@@ -78,11 +78,11 @@ func getListenerURL(region string) string {
 func generateEndpoint(cfg *Config) (string, error) {
 	defaultURL := fmt.Sprintf("%s/?token=%s", getListenerURL(""), string(cfg.Token))
 	switch {
-	case cfg.HTTPClientSettings.Endpoint != "":
-		return cfg.HTTPClientSettings.Endpoint, nil
+	case cfg.ClientConfig.Endpoint != "":
+		return cfg.ClientConfig.Endpoint, nil
 	case cfg.Region != "":
 		return fmt.Sprintf("%s/?token=%s", getListenerURL(cfg.Region), string(cfg.Token)), nil
-	case cfg.HTTPClientSettings.Endpoint == "" && cfg.Region == "":
+	case cfg.ClientConfig.Endpoint == "" && cfg.Region == "":
 		return defaultURL, errors.New("failed to generate endpoint, Endpoint or Region must be set")
 	default:
 		return defaultURL, nil

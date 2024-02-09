@@ -39,7 +39,7 @@ func newMetricsReceiver(
 
 	expVar := newExpVarScraper(cfg, set)
 	scraper, err := scraperhelper.NewScraper(
-		metadata.Type,
+		metadata.Type.String(),
 		expVar.scrape,
 		scraperhelper.WithStart(expVar.start),
 	)
@@ -58,7 +58,7 @@ func newMetricsReceiver(
 func newDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: defaultEndpoint,
 			Timeout:  defaultTimeout,
 		},

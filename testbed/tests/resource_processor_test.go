@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -97,8 +98,8 @@ func getResourceProcessorTestCases() []resourceProcessorTestCase {
 }
 
 func TestMetricResourceProcessor(t *testing.T) {
-	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
-	receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+	sender := testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+	receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 
 	tests := getResourceProcessorTestCases()
 

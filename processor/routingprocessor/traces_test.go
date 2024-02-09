@@ -34,9 +34,9 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 	require.NoError(t, err)
 
 	otlpExpFactory := otlpexporter.NewFactory()
-	otlpID := component.NewID("otlp")
+	otlpID := component.MustNewID("otlp")
 	otlpConfig := &otlpexporter.Config{
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: "example.com:1234",
 		},
 	}
@@ -72,7 +72,7 @@ func TestTraces_InvalidExporter(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
-			component.NewID("otlp"): &mockComponent{},
+			component.MustNewID("otlp"): &mockComponent{},
 		},
 	})
 
@@ -89,8 +89,8 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): tExp,
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
 	})
 
@@ -145,8 +145,8 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): tExp,
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
 	})
 
@@ -238,8 +238,8 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): tExp,
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
 	})
 
@@ -293,8 +293,8 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "2"): tExp,
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
 	})
 
@@ -340,9 +340,9 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "1"): firstExp,
-			component.NewIDWithName("otlp", "2"): secondExp,
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "1"): firstExp,
+			component.MustNewIDWithName("otlp", "2"): secondExp,
 		},
 	})
 
@@ -465,8 +465,8 @@ func TestTracesAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
-			component.NewID("otlp"):              defaultExp,
-			component.NewIDWithName("otlp", "1"): firstExp,
+			component.MustNewID("otlp"):              defaultExp,
+			component.MustNewIDWithName("otlp", "1"): firstExp,
 		},
 	})
 

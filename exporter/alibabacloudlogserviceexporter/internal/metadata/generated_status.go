@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("alibabacloud_logservice")
+)
+
 const (
-	Type             = "alibabacloud_logservice"
 	TracesStability  = component.StabilityLevelUnmaintained
 	MetricsStability = component.StabilityLevelUnmaintained
 	LogsStability    = component.StabilityLevelUnmaintained
