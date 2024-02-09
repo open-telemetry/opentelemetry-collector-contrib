@@ -241,7 +241,16 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 
 	var md pmetric.Metrics
 
-	if !otlpFormat {
+	if otlpFormat {
+		r.settings.Logger.Debug("Received request is in OTLP format")
+		otlpreq := pmetricotlp.NewExportRequest()
+		if err := otlpreq.UnmarshalProto(body); err != nil {
+			r.settings.Logger.Debug("OTLP data unmarshalling failed", zap.Error(err))
+			r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
+			return
+		}
+		md = otlpreq.Metrics()
+	} else {
 		msg := &sfxpb.DataPointUploadMessage{}
 		err := msg.Unmarshal(body)
 		if err != nil {
@@ -253,15 +262,6 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		if err != nil {
 			r.settings.Logger.Debug("SignalFx conversion error", zap.Error(err))
 		}
-	} else {
-		r.settings.Logger.Debug("Received request is in OTLP format")
-		otlpreq := pmetricotlp.NewExportRequest()
-		if err := otlpreq.UnmarshalProto(body); err != nil {
-			r.settings.Logger.Debug("OTLP data unmarshalling failed", zap.Error(err))
-			r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
-			return
-		}
-		md = otlpreq.Metrics()
 	}
 
 	dataPointCount := md.DataPointCount()
@@ -271,7 +271,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		return
 	}
 
-	r.addAccessTokenLabel(&md, req)
+	r.addAccessTokenLabel(md, req)
 
 	err := r.metricsConsumer.ConsumeMetrics(ctx, md)
 	r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), dataPointCount, err)
@@ -366,7 +366,7 @@ func (r *sfxReceiver) failRequest(
 	)
 }
 
-func (r *sfxReceiver) addAccessTokenLabel(md *pmetric.Metrics, req *http.Request) {
+func (r *sfxReceiver) addAccessTokenLabel(md pmetric.Metrics, req *http.Request) {
 	if r.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
 			for i := 0; i < md.ResourceMetrics().Len(); i++ {
