@@ -46,7 +46,16 @@ func (p *mockPusher) ForceFlush() error {
 	return nil
 }
 
+// set fake environment variables for testing
+func setupTestEnv(t *testing.T) {
+	t.Helper()
+	t.Setenv("AWS_REGION", "us-west-2")
+	t.Setenv("AWS_ACCESS_KEY_ID", "fake")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "fake")
+}
+
 func TestConsumeMetrics(t *testing.T) {
+	setupTestEnv(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	factory := NewFactory()
@@ -166,6 +175,7 @@ func TestConsumeMetricsWithOutputDestination(t *testing.T) {
 }
 
 func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
+	setupTestEnv(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	factory := NewFactory()
@@ -193,6 +203,7 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 }
 
 func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
+	setupTestEnv(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	factory := NewFactory()
@@ -224,6 +235,7 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 }
 
 func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
+	setupTestEnv(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	factory := NewFactory()
@@ -255,6 +267,7 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 }
 
 func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
+	setupTestEnv(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	factory := NewFactory()
