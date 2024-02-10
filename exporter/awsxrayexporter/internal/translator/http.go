@@ -25,7 +25,6 @@ const (
 	AttributeURLScheme              = "url.scheme"
 	AttributeURLFull                = "url.full"
 	AttributeURLPath                = "url.path"
-	AttributeURLQuery               = "url.query"
 	AttributeUserAgentOriginal      = "user_agent.original"
 )
 
