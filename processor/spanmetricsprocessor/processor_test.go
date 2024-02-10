@@ -414,6 +414,7 @@ func TestMetricCache(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 	err := p.Start(ctx, mhost)
 	require.NoError(t, err)
+	defer func() { assert.NoError(t, p.Shutdown(ctx)) }()
 
 	// 0 key was cached at beginning
 	assert.Zero(t, len(p.histograms))
