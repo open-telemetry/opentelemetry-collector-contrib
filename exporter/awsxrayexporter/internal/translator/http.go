@@ -22,9 +22,10 @@ const (
 	AttributeNetworkPeerAddress     = "network.peer.address"
 	AttributeClientAddress          = "client.address"
 	AttributeClientPort             = "client.port"
-	AttributeURLSchema              = "url.scheme"
+	AttributeURLScheme              = "url.scheme"
 	AttributeURLFull                = "url.full"
 	AttributeURLPath                = "url.path"
+	AttributeURLQuery               = "url.query"
 	AttributeUserAgentOriginal      = "user_agent.original"
 )
 
@@ -51,9 +52,7 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 			info.Request.Method = awsxray.String(value.Str())
 			hasHTTP = true
 		case conventions.AttributeHTTPClientIP, AttributeClientAddress:
-			//urlParts[conventions.AttributeHTTPClientIP] = value.Str()
 			info.Request.ClientIP = awsxray.String(value.Str())
-			info.Request.XForwardedFor = aws.Bool(true)
 			hasHTTP = true
 		case conventions.AttributeHTTPUserAgent, AttributeUserAgentOriginal:
 			info.Request.UserAgent = awsxray.String(value.Str())
@@ -65,7 +64,7 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 			urlParts[conventions.AttributeHTTPURL] = value.Str()
 			hasHTTP = true
 			hasHTTPRequestURLAttributes = true
-		case conventions.AttributeHTTPScheme, AttributeURLSchema:
+		case conventions.AttributeHTTPScheme, AttributeURLScheme:
 			urlParts[conventions.AttributeHTTPScheme] = value.Str()
 			hasHTTP = true
 		case conventions.AttributeHTTPHost, AttributeServerAddress:
@@ -110,6 +109,12 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 		}
 		return true
 	})
+
+	// if there is no network peer address, then `client.address` is from X-Forwarded-For.
+	_, ok := urlParts[conventions.AttributeNetPeerIP]
+	if !ok && info.Request.ClientIP != nil {
+		info.Request.XForwardedFor = aws.Bool(true)
+	}
 
 	if !hasHTTP {
 		// Didn't have any HTTP-specific information so don't need to fill it in segment

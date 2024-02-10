@@ -4,6 +4,7 @@
 package translator
 
 import (
+	"github.com/aws/aws-sdk-go/aws"
 	"strings"
 	"testing"
 	"time"
@@ -75,7 +76,7 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 func TestClientSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[AttributeHTTPRequestMethod] = "GET"
-	attributes[AttributeURLSchema] = "https"
+	attributes[AttributeURLScheme] = "https"
 	attributes[AttributeServerAddress] = "api.example.com"
 	attributes[AttributeURLPath] = "/users/junit"
 	attributes[AttributeHTTPResponseStatusCode] = 200
@@ -121,7 +122,7 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 func TestClientSpanWithPeerAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[AttributeHTTPRequestMethod] = "GET"
-	attributes[AttributeURLSchema] = "http"
+	attributes[AttributeURLScheme] = "http"
 	attributes[conventions.AttributeNetPeerName] = "kb234.example.com"
 	attributes[conventions.AttributeNetPeerPort] = 8080
 	attributes[conventions.AttributeNetPeerIP] = "10.8.17.36"
@@ -193,7 +194,7 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 func TestClientSpanWithPeerIp4AttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[AttributeHTTPRequestMethod] = "GET"
-	attributes[AttributeURLSchema] = "http"
+	attributes[AttributeURLScheme] = "http"
 	attributes[AttributeNetworkPeerAddress] = "10.8.17.36"
 	attributes[AttributeClientPort] = "8080"
 	attributes[AttributeURLPath] = "/users/junit"
@@ -231,7 +232,7 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 func TestClientSpanWithPeerIp6AttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[AttributeHTTPRequestMethod] = "GET"
-	attributes[AttributeURLSchema] = "https"
+	attributes[AttributeURLScheme] = "https"
 	attributes[AttributeNetworkPeerAddress] = "2001:db8:85a3::8a2e:370:7334"
 	attributes[AttributeClientPort] = "443"
 	attributes[AttributeURLPath] = "/users/junit"
@@ -311,7 +312,7 @@ func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 func TestServerSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[AttributeHTTPRequestMethod] = "GET"
-	attributes[AttributeURLSchema] = "https"
+	attributes[AttributeURLScheme] = "https"
 	attributes[AttributeServerAddress] = "api.example.com"
 	attributes[AttributeURLPath] = "/users/junit"
 	attributes[AttributeClientAddress] = "192.168.15.32"
@@ -354,7 +355,7 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 func TestServerSpanWithSchemeServernamePortTargetAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[AttributeHTTPRequestMethod] = "GET"
-	attributes[AttributeURLSchema] = "https"
+	attributes[AttributeURLScheme] = "https"
 	attributes[AttributeServerAddress] = "api.example.com"
 	attributes[AttributeServerPort] = 443
 	attributes[AttributeURLPath] = "/users/junit"
@@ -400,7 +401,7 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 func TestServerSpanWithSchemeNamePortTargetAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[AttributeHTTPRequestMethod] = "GET"
-	attributes[AttributeURLSchema] = "http"
+	attributes[AttributeURLScheme] = "http"
 	attributes[AttributeServerAddress] = "kb234.example.com"
 	attributes[AttributeServerPort] = 8080
 	attributes[AttributeURLPath] = "/users/junit"
@@ -450,7 +451,7 @@ func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 func TestSpanWithNotEnoughHTTPRequestURLAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[AttributeHTTPRequestMethod] = "GET"
-	attributes[AttributeURLSchema] = "http"
+	attributes[AttributeURLScheme] = "http"
 	attributes[AttributeClientAddress] = "192.168.15.32"
 	attributes[AttributeUserAgentOriginal] = "PostmanRuntime/7.21.0"
 	attributes[AttributeURLPath] = "/users/junit"
@@ -478,7 +479,7 @@ func TestSpanWithNotEnoughHTTPRequestURLAttributesDuplicated(t *testing.T) {
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[AttributeHTTPRequestMethod] = "GET"
 	attributes[conventions.AttributeHTTPScheme] = "http"
-	attributes[AttributeURLSchema] = "http"
+	attributes[AttributeURLScheme] = "http"
 	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
 	attributes[AttributeClientAddress] = "192.168.15.32"
 	attributes[conventions.AttributeHTTPUserAgent] = "PostmanRuntime/7.21.0"
@@ -505,6 +506,30 @@ func TestSpanWithNotEnoughHTTPRequestURLAttributesDuplicated(t *testing.T) {
 	assert.Equal(t, int64(12452), contentLength)
 	assert.Equal(t, int64(200), *httpData.Response.Status)
 	assert.NotNil(t, filtered)
+}
+
+func TestSpanWithClientAddrWithoutNetworkPeerAddr(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[AttributeClientAddress] = "192.168.15.32"
+	span := constructHTTPServerSpan(attributes)
+	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
+	timeEvents.CopyTo(span.Events())
+
+	_, httpData := makeHTTP(span)
+
+	assert.Equal(t, aws.Bool(true), httpData.Request.XForwardedFor)
+}
+func TestSpanWithClientAddrAndNetworkPeerAddr(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[AttributeClientAddress] = "192.168.15.32"
+	attributes[AttributeNetworkPeerAddress] = "192.168.15.32"
+	span := constructHTTPServerSpan(attributes)
+	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTimestamp())
+	timeEvents.CopyTo(span.Events())
+
+	_, httpData := makeHTTP(span)
+
+	assert.Nil(t, httpData.Request.XForwardedFor)
 }
 
 func constructHTTPClientSpan(attributes map[string]any) ptrace.Span {
