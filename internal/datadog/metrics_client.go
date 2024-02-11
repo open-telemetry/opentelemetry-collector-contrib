@@ -16,7 +16,7 @@ import (
 
 type metricsClient struct {
 	meter  metric.Meter
-	guages map[string]float64
+	gauges map[string]float64
 	mutex  sync.Mutex
 }
 
@@ -29,7 +29,7 @@ func NewMetricClient(meter metric.Meter) metrics.StatsClient {
 	defer mutex.Unlock()
 	m := &metricsClient{
 		meter:  meter,
-		guages: make(map[string]float64),
+		gauges: make(map[string]float64),
 	}
 	metrics.Client = m
 	return m
@@ -37,15 +37,15 @@ func NewMetricClient(meter metric.Meter) metrics.StatsClient {
 
 func (m *metricsClient) Gauge(name string, value float64, tags []string, _ float64) error {
 	m.mutex.Lock()
-	if _, ok := m.guages[name]; ok {
-		m.guages[name] = value
+	if _, ok := m.gauges[name]; ok {
+		m.gauges[name] = value
 		return nil
 	}
-	m.guages[name] = value
+	m.gauges[name] = value
 	m.mutex.Unlock()
 	_, err := m.meter.Float64ObservableGauge(name, metric.WithFloat64Callback(func(_ context.Context, f metric.Float64Observer) error {
 		attr := attributeFromTags(tags)
-		if v, ok := m.guages[name]; ok {
+		if v, ok := m.gauges[name]; ok {
 			f.Observe(v, metric.WithAttributes(attr...))
 		}
 		return nil
