@@ -266,7 +266,7 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.17.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.103 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.52.0-devel.0.20240212190738-023a641188d2 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel.0.20240212190738-023a641188d2 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.51.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace v0.52.0-devel.0.20240212190738-023a641188d2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.51.0-rc.2 // indirect

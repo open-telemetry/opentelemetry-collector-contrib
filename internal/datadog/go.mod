@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/datado
 go 1.20
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel
+	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel.0.20240212190738-023a641188d2
 	github.com/DataDog/datadog-agent/pkg/trace v0.52.0-devel.0.20240212190738-023a641188d2
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.2
 	github.com/stretchr/testify v1.8.4

@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.103
-	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel
+	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel.0.20240212190738-023a641188d2
 	github.com/DataDog/datadog-agent/pkg/trace v0.52.0-devel.0.20240212190738-023a641188d2
 	github.com/DataDog/datadog-api-client-go/v2 v2.22.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
