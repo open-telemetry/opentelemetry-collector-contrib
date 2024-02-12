@@ -125,6 +125,66 @@ func Test_ParseCSV(t *testing.T) {
 			},
 		},
 		{
+			name: "Parse with leading newline",
+			oArgs: &ParseCSVArguments[any]{
+				Target: ottl.StandardStringGetter[any]{
+					Getter: func(ctx context.Context, tCtx any) (any, error) {
+						return "\nval1,val2,val3", nil
+					},
+				},
+				Header: ottl.StandardStringGetter[any]{
+					Getter: func(ctx context.Context, tCtx any) (any, error) {
+						return "col1,col2,col3", nil
+					},
+				},
+			},
+			want: map[string]any{
+				"col1": "val1",
+				"col2": "val2",
+				"col3": "val3",
+			},
+		},
+		{
+			name: "Parse with trailing newline",
+			oArgs: &ParseCSVArguments[any]{
+				Target: ottl.StandardStringGetter[any]{
+					Getter: func(ctx context.Context, tCtx any) (any, error) {
+						return "val1,val2,val3\n", nil
+					},
+				},
+				Header: ottl.StandardStringGetter[any]{
+					Getter: func(ctx context.Context, tCtx any) (any, error) {
+						return "col1,col2,col3", nil
+					},
+				},
+			},
+			want: map[string]any{
+				"col1": "val1",
+				"col2": "val2",
+				"col3": "val3",
+			},
+		},
+		{
+			name: "Parse with newline at end of field",
+			oArgs: &ParseCSVArguments[any]{
+				Target: ottl.StandardStringGetter[any]{
+					Getter: func(ctx context.Context, tCtx any) (any, error) {
+						return "val1,val2\n,val3", nil
+					},
+				},
+				Header: ottl.StandardStringGetter[any]{
+					Getter: func(ctx context.Context, tCtx any) (any, error) {
+						return "col1,col2,col3", nil
+					},
+				},
+			},
+			want: map[string]any{
+				"col1": "val1",
+				"col2": "val2\n",
+				"col3": "val3",
+			},
+		},
+		{
 			name: "Parse comma separated values with explicit mode",
 			oArgs: &ParseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
