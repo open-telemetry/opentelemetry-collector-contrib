@@ -1,0 +1,7 @@
+ack:
+
+ack/withmemorystorage:
+  storageType: "in-memory"
+
+ack/withpersistentstorage:
+  storageType: "disk"
