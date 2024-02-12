@@ -5,11 +5,11 @@ go 1.20
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.103
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel
-	github.com/DataDog/datadog-agent/pkg/trace v0.50.2
+	github.com/DataDog/datadog-agent/pkg/trace v0.52.0-devel.0.20240212190738-023a641188d2
 	github.com/DataDog/datadog-api-client-go/v2 v2.22.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.2
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.2
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.3
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.13.2
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.2
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.2
@@ -69,14 +69,14 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.2.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2 v2.2.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.52.0-devel.0.20240212190738-023a641188d2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.51.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.51.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.51.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.51.0-rc.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.51.0-rc.2 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
-	github.com/DataDog/go-sqllexer v0.0.8 // indirect
+	github.com/DataDog/go-sqllexer v0.0.9 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
@@ -266,7 +266,7 @@ require (
 	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
-	golang.org/x/tools v0.16.0 // indirect
+	golang.org/x/tools v0.16.1 // indirect
 	gonum.org/v1/gonum v0.14.0 // indirect
 	google.golang.org/api v0.150.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
