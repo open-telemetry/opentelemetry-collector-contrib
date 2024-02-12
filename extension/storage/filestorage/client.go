@@ -172,7 +172,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	}()
 
 	// use temporary file as compaction target
-	options := bboltOptions(timeout, false)
+	options := bboltOptions(timeout, !c.db.NoSync)
 
 	c.compactionMutex.Lock()
 	defer c.compactionMutex.Unlock()
