@@ -14,11 +14,11 @@ import (
 
 func Test_parseKeyValue(t *testing.T) {
 	tests := []struct {
-		name           string
-		target         ottl.StringGetter[any]
-		delimiter      ottl.Optional[string]
-		pair_delimiter ottl.Optional[string]
-		expected       map[string]any
+		name          string
+		target        ottl.StringGetter[any]
+		delimiter     ottl.Optional[string]
+		pairDelimiter ottl.Optional[string]
+		expected      map[string]any
 	}{
 		{
 			name: "simple",
@@ -27,8 +27,8 @@ func Test_parseKeyValue(t *testing.T) {
 					return "name=ottl func=key_value", nil
 				},
 			},
-			delimiter:      ottl.Optional[string]{},
-			pair_delimiter: ottl.Optional[string]{},
+			delimiter:     ottl.Optional[string]{},
+			pairDelimiter: ottl.Optional[string]{},
 			expected: map[string]any{
 				"name": "ottl",
 				"func": "key_value",
@@ -41,8 +41,8 @@ func Test_parseKeyValue(t *testing.T) {
 					return `name=ottl age=1 job="software engineering" location="grand rapids michigan" src="10.3.3.76" dst=172.217.0.10 protocol=udp sport=57112 port=443 translated_src_ip=96.63.176.3 translated_port=57112`, nil
 				},
 			},
-			delimiter:      ottl.Optional[string]{},
-			pair_delimiter: ottl.Optional[string]{},
+			delimiter:     ottl.Optional[string]{},
+			pairDelimiter: ottl.Optional[string]{},
 			expected: map[string]any{
 				"age":               "1",
 				"port":              "443",
@@ -64,8 +64,8 @@ func Test_parseKeyValue(t *testing.T) {
 					return `a=b c='this is a "co ol" value'`, nil
 				},
 			},
-			delimiter:      ottl.Optional[string]{},
-			pair_delimiter: ottl.Optional[string]{},
+			delimiter:     ottl.Optional[string]{},
+			pairDelimiter: ottl.Optional[string]{},
 			expected: map[string]any{
 				"a": "b",
 				"c": "this is a \"co ol\" value",
@@ -78,8 +78,8 @@ func Test_parseKeyValue(t *testing.T) {
 					return `requestClientApplication="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0"`, nil
 				},
 			},
-			delimiter:      ottl.Optional[string]{},
-			pair_delimiter: ottl.Optional[string]{},
+			delimiter:     ottl.Optional[string]{},
+			pairDelimiter: ottl.Optional[string]{},
 			expected: map[string]any{
 				"requestClientApplication": "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0",
 			},
@@ -91,8 +91,8 @@ func Test_parseKeyValue(t *testing.T) {
 					return "requestClientApplication='Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0'", nil
 				},
 			},
-			delimiter:      ottl.Optional[string]{},
-			pair_delimiter: ottl.Optional[string]{},
+			delimiter:     ottl.Optional[string]{},
+			pairDelimiter: ottl.Optional[string]{},
 			expected: map[string]any{
 				"requestClientApplication": "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0",
 			},
@@ -104,8 +104,8 @@ func Test_parseKeyValue(t *testing.T) {
 					return `name="   ottl " func="  key_ value"`, nil
 				},
 			},
-			delimiter:      ottl.Optional[string]{},
-			pair_delimiter: ottl.Optional[string]{},
+			delimiter:     ottl.Optional[string]{},
+			pairDelimiter: ottl.Optional[string]{},
 			expected: map[string]any{
 				"name": "ottl",
 				"func": "key_ value",
@@ -118,8 +118,8 @@ func Test_parseKeyValue(t *testing.T) {
 					return "   name!ottl     func!key_value hello!world  ", nil
 				},
 			},
-			delimiter:      ottl.NewTestingOptional[string]("!"),
-			pair_delimiter: ottl.Optional[string]{},
+			delimiter:     ottl.NewTestingOptional[string]("!"),
+			pairDelimiter: ottl.Optional[string]{},
 			expected: map[string]any{
 				"name":  "ottl",
 				"func":  "key_value",
@@ -135,8 +135,8 @@ name!!ottl
 func!!key_value                      hello!!world  `, nil
 				},
 			},
-			delimiter:      ottl.NewTestingOptional[string]("!!"),
-			pair_delimiter: ottl.Optional[string]{},
+			delimiter:     ottl.NewTestingOptional[string]("!!"),
+			pairDelimiter: ottl.Optional[string]{},
 			expected: map[string]any{
 				"name":  "ottl",
 				"func":  "key_value",
@@ -152,8 +152,8 @@ func!!      key_value another!!pair
 hello!!world  `, nil
 				},
 			},
-			delimiter:      ottl.NewTestingOptional[string]("!!"),
-			pair_delimiter: ottl.NewTestingOptional[string]("\n"),
+			delimiter:     ottl.NewTestingOptional[string]("!!"),
+			pairDelimiter: ottl.NewTestingOptional[string]("\n"),
 			expected: map[string]any{
 				"name":  "ottl",
 				"func":  "key_value another!!pair",
@@ -167,8 +167,8 @@ hello!!world  `, nil
 					return `name="ottl="_func="=key_value"`, nil
 				},
 			},
-			delimiter:      ottl.Optional[string]{},
-			pair_delimiter: ottl.NewTestingOptional("_"),
+			delimiter:     ottl.Optional[string]{},
+			pairDelimiter: ottl.NewTestingOptional("_"),
 			expected: map[string]any{
 				"name": "ottl=",
 				"func": "=key_value",
@@ -181,8 +181,8 @@ hello!!world  `, nil
 					return `k1@*v1_!_k2@**v2_!__k3@@*v3__`, nil
 				},
 			},
-			delimiter:      ottl.NewTestingOptional("@*"),
-			pair_delimiter: ottl.NewTestingOptional("_!_"),
+			delimiter:     ottl.NewTestingOptional("@*"),
+			pairDelimiter: ottl.NewTestingOptional("_!_"),
 			expected: map[string]any{
 				"k1":   "v1",
 				"k2":   "*v2",
@@ -196,8 +196,8 @@ hello!!world  `, nil
 					return "   k1=v1   k2==v2       k3=v3= ", nil
 				},
 			},
-			delimiter:      ottl.Optional[string]{},
-			pair_delimiter: ottl.Optional[string]{},
+			delimiter:     ottl.Optional[string]{},
+			pairDelimiter: ottl.Optional[string]{},
 			expected: map[string]any{
 				"k1": "v1",
 				"k2": "=v2",
@@ -205,24 +205,66 @@ hello!!world  `, nil
 			},
 		},
 		{
-			name: " embedded double quotes end single quoted value",
+			name: "embedded double quotes end single quoted value",
 			target: ottl.StandardStringGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return `a=b c='this is a "co ol"'`, nil
 				},
 			},
-			delimiter:      ottl.Optional[string]{},
-			pair_delimiter: ottl.Optional[string]{},
+			delimiter:     ottl.Optional[string]{},
+			pairDelimiter: ottl.Optional[string]{},
 			expected: map[string]any{
 				"a": "b",
 				"c": "this is a \"co ol\"",
 			},
 		},
+		{
+			name: "more quotes",
+			target: ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					return "a=b c=d'='", nil
+				},
+			},
+			delimiter:     ottl.Optional[string]{},
+			pairDelimiter: ottl.Optional[string]{},
+			expected: map[string]any{
+				"a": "b",
+				"c": "d=",
+			},
+		},
+
+		{
+			name: "long pair delimiter",
+			target: ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					return "a=b c=d", nil
+				},
+			},
+			delimiter:     ottl.Optional[string]{},
+			pairDelimiter: ottl.NewTestingOptional("aaaaaaaaaaaaaaaa"),
+			expected: map[string]any{
+				"a": "b c=d", // occurs because `SplitString()` returns original string and `strings.SplitN` with N=2 will split on just the first instance of delimiter("=")
+			},
+		},
+		{
+			name: "empty delimiters",
+			target: ottl.StandardStringGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
+					return "a=b c=d", nil
+				},
+			},
+			delimiter:     ottl.NewTestingOptional(""),
+			pairDelimiter: ottl.NewTestingOptional(""),
+			expected: map[string]any{
+				"a": "b",
+				"c": "d",
+			},
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(t.Name(), func(t *testing.T) {
-			exprFunc, err := parseKeyValue[any](tt.target, tt.delimiter, tt.pair_delimiter)
+		t.Run(tt.name, func(t *testing.T) {
+			exprFunc, err := parseKeyValue[any](tt.target, tt.delimiter, tt.pairDelimiter)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(context.Background(), nil)
@@ -253,8 +295,8 @@ func Test_parseKeyValue_equal_delimiters(t *testing.T) {
 		},
 	}
 	delimiter := ottl.NewTestingOptional[string]("=")
-	pair_delimiter := ottl.NewTestingOptional[string]("=")
-	_, err := parseKeyValue[any](target, delimiter, pair_delimiter)
+	pairDelimiter := ottl.NewTestingOptional[string]("=")
+	_, err := parseKeyValue[any](target, delimiter, pairDelimiter)
 	assert.Error(t, err)
 
 	delimiter = ottl.NewTestingOptional[string](" ")
@@ -269,8 +311,8 @@ func Test_parseKeyValue_bad_target(t *testing.T) {
 		},
 	}
 	delimiter := ottl.NewTestingOptional[string]("=")
-	pair_delimiter := ottl.NewTestingOptional[string]("!")
-	exprFunc, err := parseKeyValue[any](target, delimiter, pair_delimiter)
+	pairDelimiter := ottl.NewTestingOptional[string]("!")
+	exprFunc, err := parseKeyValue[any](target, delimiter, pairDelimiter)
 	assert.NoError(t, err)
 	_, err = exprFunc(context.Background(), nil)
 	assert.Error(t, err)
@@ -283,8 +325,8 @@ func Test_parseKeyValue_empty_target(t *testing.T) {
 		},
 	}
 	delimiter := ottl.NewTestingOptional[string]("=")
-	pair_delimiter := ottl.NewTestingOptional[string]("!")
-	exprFunc, err := parseKeyValue[any](target, delimiter, pair_delimiter)
+	pairDelimiter := ottl.NewTestingOptional[string]("!")
+	exprFunc, err := parseKeyValue[any](target, delimiter, pairDelimiter)
 	assert.NoError(t, err)
 	_, err = exprFunc(context.Background(), nil)
 	assert.Error(t, err)
@@ -297,11 +339,11 @@ func Test_parseKeyValue_bad_split(t *testing.T) {
 		},
 	}
 	delimiter := ottl.NewTestingOptional[string]("=")
-	pair_delimiter := ottl.NewTestingOptional[string]("!")
-	exprFunc, err := parseKeyValue[any](target, delimiter, pair_delimiter)
+	pairDelimiter := ottl.NewTestingOptional[string]("!")
+	exprFunc, err := parseKeyValue[any](target, delimiter, pairDelimiter)
 	assert.NoError(t, err)
 	_, err = exprFunc(context.Background(), nil)
-	assert.Error(t, err)
+	assert.ErrorContains(t, err, "cannot split \"hello_world\" into 2 items, got 1 item(s)")
 }
 
 func Test_parseKeyValue_mismatch_quotes(t *testing.T) {
@@ -314,4 +356,19 @@ func Test_parseKeyValue_mismatch_quotes(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = exprFunc(context.Background(), nil)
 	assert.Error(t, err)
+}
+
+func Test_parseKeyValue_bad_delimiter(t *testing.T) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
+			return "a=b c=d", nil
+		},
+	}
+
+	// covers too long of a delimiter && delimiter not found
+	delimiter := ottl.NewTestingOptional[string]("=============")
+	exprFunc, err := parseKeyValue[any](target, delimiter, ottl.Optional[string]{})
+	assert.NoError(t, err)
+	_, err = exprFunc(context.Background(), nil)
+	assert.ErrorContains(t, err, "cannot split \"a=b\" into 2 items, got 1 item(s)")
 }
