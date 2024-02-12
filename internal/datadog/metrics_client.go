@@ -20,11 +20,12 @@ type metricsClient struct {
 	mutex  sync.Mutex
 }
 
+var mutex sync.Mutex
+
 // NewMetricClient returns a new metrics client
 func NewMetricClient(meter metric.Meter) metrics.StatsClient {
 	// We need to lock the mutex here to avoid
 	// duplicate metrics being created by both datadogconnector and exporter
-	var mutex sync.Mutex
 	mutex.Lock()
 	defer mutex.Unlock()
 	m := &metricsClient{
@@ -36,17 +37,18 @@ func NewMetricClient(meter metric.Meter) metrics.StatsClient {
 }
 
 func (m *metricsClient) Gauge(name string, value float64, tags []string, _ float64) error {
+	// The last parameter is rate, but we're omitting it because rate does not have effect for gauge points: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/dedd44436ae064f5a0b43769d24adf897533957b/receiver/statsdreceiver/internal/protocol/metric_translator.go#L153-L156
 	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	if _, ok := m.gauges[name]; ok {
 		m.gauges[name] = value
 		return nil
 	}
 	m.gauges[name] = value
-	m.mutex.Unlock()
 	_, err := m.meter.Float64ObservableGauge(name, metric.WithFloat64Callback(func(_ context.Context, f metric.Float64Observer) error {
 		attr := attributeFromTags(tags)
 		if v, ok := m.gauges[name]; ok {
-			f.Observe(v, metric.WithAttributes(attr...))
+			f.Observe(v, metric.WithAttributeSet(attribute.NewSet(attr...)))
 		}
 		return nil
 	}))
@@ -62,7 +64,7 @@ func (m *metricsClient) Count(name string, value int64, tags []string, _ float64
 		return err
 	}
 	attr := attributeFromTags(tags)
-	counter.Add(context.Background(), value, metric.WithAttributes(attr...))
+	counter.Add(context.Background(), value, metric.WithAttributeSet(attribute.NewSet(attr...)))
 	return nil
 }
 
@@ -84,7 +86,7 @@ func (m *metricsClient) Histogram(name string, value float64, tags []string, _ f
 		return err
 	}
 	attr := attributeFromTags(tags)
-	hist.Record(context.Background(), value, metric.WithAttributes(attr...))
+	hist.Record(context.Background(), value, metric.WithAttributeSet(attribute.NewSet(attr...)))
 	return nil
 }
 
