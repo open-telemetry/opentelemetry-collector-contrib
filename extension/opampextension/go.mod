@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension
 
-go 1.20
+go 1.21
 
 require (
 	github.com/google/uuid v1.6.0
