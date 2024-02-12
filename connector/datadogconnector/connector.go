@@ -9,6 +9,7 @@ import (
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
+	tracemetrics "github.com/DataDog/datadog-agent/pkg/trace/metrics"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/component"
@@ -40,6 +41,9 @@ type traceToMetricConnector struct {
 
 	// exit specifies the exit channel, which will be closed upon shutdown.
 	exit chan struct{}
+
+	// metricsClient allows the trace agent to create telemetry metrics
+	metricsClient tracemetrics.StatsClient
 }
 
 var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
@@ -66,6 +70,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 		in:              in,
 		metricsConsumer: metricsConsumer,
 		exit:            make(chan struct{}),
+		metricsClient:   datadog.NewMetricClient(set.MeterProvider.Meter("datadogconnector")),
 	}, nil
 }
 

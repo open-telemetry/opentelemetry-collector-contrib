@@ -35,16 +35,16 @@ import (
 type traceExporter struct {
 	params           exporter.CreateSettings
 	cfg              *Config
-	ctx              context.Context         // ctx triggers shutdown upon cancellation
-	client           *zorkian.Client         // client sends runnimg metrics to backend & performs API validation
-	metricsAPI       *datadogV2.MetricsApi   // client sends runnimg metrics to backend
-	scrubber         scrub.Scrubber          // scrubber scrubs sensitive information from error messages
-	onceMetadata     *sync.Once              // onceMetadata ensures that metadata is sent only once across all exporters
-	agent            *agent.Agent            // agent processes incoming traces
-	sourceProvider   source.Provider         // is able to source the origin of a trace (hostname, container, etc)
-	metadataReporter *inframetadata.Reporter // reports host metadata from resource attributes and metrics
-	retrier          *clientutil.Retrier     // retrier handles retries on requests
-	metricsClient    tracemetrics.StatsClient
+	ctx              context.Context          // ctx triggers shutdown upon cancellation
+	client           *zorkian.Client          // client sends runnimg metrics to backend & performs API validation
+	metricsAPI       *datadogV2.MetricsApi    // client sends runnimg metrics to backend
+	scrubber         scrub.Scrubber           // scrubber scrubs sensitive information from error messages
+	onceMetadata     *sync.Once               // onceMetadata ensures that metadata is sent only once across all exporters
+	agent            *agent.Agent             // agent processes incoming traces
+	sourceProvider   source.Provider          // is able to source the origin of a trace (hostname, container, etc)
+	metadataReporter *inframetadata.Reporter  // reports host metadata from resource attributes and metrics
+	retrier          *clientutil.Retrier      // retrier handles retries on requests
+	metricsClient    tracemetrics.StatsClient // metricsClient allows the trace agent to create telemetry metrics
 }
 
 func newTracesExporter(
