@@ -35,3 +35,7 @@ list-correctness-traces-tests:
 .PHONY: run-correctness-traces-tests
 run-correctness-traces-tests: $(GOJUNIT)
 	TESTS_DIR=correctnesstests/traces GOJUNIT=$(GOJUNIT) ./runtests.sh
+
+.PHONY: run-correctness-connectors-tests
+run-correctness-connectors-tests: $(GOJUNIT)
+	TESTS_DIR=correctnesstests/connectors GOJUNIT=$(GOJUNIT) ./runtests.sh
