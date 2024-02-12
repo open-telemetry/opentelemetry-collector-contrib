@@ -80,7 +80,7 @@ all-common:
 
 .PHONY: e2e-test
 e2e-test: otelcontribcol oteltestbedcol
-	$(MAKE) -C testbed run-tests
+	$(MAKE) --no-print-directory -C testbed run-tests
 
 .PHONY: integration-test
 integration-test:
@@ -162,7 +162,7 @@ push-tags: $(MULTIMOD)
 .PHONY: $(ALL_MODS)
 $(ALL_MODS):
 	@echo "Running target '$(TARGET)' in module '$@' as part of group '$(GROUP)'"
-	$(MAKE) -C $@ $(TARGET)
+	$(MAKE) --no-print-directory -C $@ $(TARGET)
 
 # Trigger each module's delegation target
 .PHONY: for-all-target
@@ -301,7 +301,7 @@ chlog-update: $(CHLOGGEN)
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
 	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol
-	$(MAKE) -C cmd/otelcontribcol fmt
+	$(MAKE) --no-print-directory -C cmd/otelcontribcol fmt
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
@@ -312,7 +312,7 @@ otelcontribcol:
 .PHONY: genoteltestbedcol
 genoteltestbedcol: $(BUILDER)
 	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config.yaml --output-path cmd/oteltestbedcol
-	$(MAKE) -C cmd/oteltestbedcol fmt
+	$(MAKE) --no-print-directory -C cmd/oteltestbedcol fmt
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol

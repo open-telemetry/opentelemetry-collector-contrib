@@ -108,6 +108,13 @@ func TestValidate(t *testing.T) {
 				Traces: TracesConfig{TraceBuffer: 10},
 			},
 		},
+		{
+			name: "With peer_tags",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{PeerTags: []string{"tag1", "tag2"}},
+			},
+		},
 	}
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {

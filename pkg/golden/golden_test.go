@@ -42,6 +42,29 @@ func TestWriteMetrics(t *testing.T) {
 	require.Equal(t, expectedBytes, actualBytes)
 }
 
+func TestWriteMetrics_SkipTimestampNormalization(t *testing.T) {
+	metricslice := testMetrics()
+	metrics := pmetric.NewMetrics()
+	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
+
+	actualFile := filepath.Join(t.TempDir(), "metrics.yaml")
+	require.NoError(t, writeMetrics(actualFile, metrics, SkipMetricTimestampNormalization()))
+
+	actualBytes, err := os.ReadFile(actualFile)
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "skip-timestamp-norm", "expected.yaml")
+	expectedBytes, err := os.ReadFile(expectedFile)
+	require.NoError(t, err)
+
+	if runtime.GOOS == "windows" {
+		// os.ReadFile adds a '\r' that we don't actually expect
+		expectedBytes = bytes.ReplaceAll(expectedBytes, []byte("\r\n"), []byte("\n"))
+	}
+
+	require.Equal(t, string(expectedBytes), string(actualBytes))
+}
+
 func TestReadMetrics(t *testing.T) {
 	metricslice := testMetrics()
 	expectedMetrics := pmetric.NewMetrics()

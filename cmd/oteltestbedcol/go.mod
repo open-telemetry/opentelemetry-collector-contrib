@@ -15,7 +15,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.94.0
@@ -142,7 +142,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.17.5 // indirect
+	github.com/klauspost/compress v1.17.6 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.0.2 // indirect
@@ -288,6 +288,8 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage => ../../extension/storage/filestorage
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 

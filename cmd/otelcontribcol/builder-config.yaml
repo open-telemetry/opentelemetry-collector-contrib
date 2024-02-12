@@ -28,10 +28,8 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension v0.94.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.94.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension v0.94.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.94.0
-    import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.94.0
-    import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage v0.94.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.94.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.94.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension v0.94.0
@@ -218,6 +216,8 @@ connectors:
 
 replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage => ../../extension/storage/dbstorage
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage => ../../extension/storage/filestorage
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal => ../../pkg/batchpersignal
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs => ../../internal/aws/cwlogs
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter => ../../exporter/f5cloudexporter
