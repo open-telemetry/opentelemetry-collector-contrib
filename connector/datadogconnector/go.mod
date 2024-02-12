@@ -225,8 +225,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prome
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ../../receiver/hostmetricsreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter => ../../exporter/prometheusremotewriteexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver => ../../receiver/filelogreceiver
@@ -260,3 +258,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => ../../internal/aws/ecsutil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor => ../../processor/k8sattributesprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage

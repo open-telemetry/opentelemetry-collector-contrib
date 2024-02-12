@@ -9,8 +9,7 @@ extensions:
   - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.94.1
   - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.94.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.94.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.94.0
-    import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.94.0
 
 exporters:
   - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.94.1
@@ -50,6 +49,7 @@ receivers:
 
 replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage => ../../extension/storage/filestorage
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ../../receiver/opencensusreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ../../receiver/splunkhecreceiver
