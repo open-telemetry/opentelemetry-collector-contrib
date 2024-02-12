@@ -5,6 +5,7 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"sort"
@@ -135,7 +136,7 @@ type MetricBatchValuesClient interface {
 
 func (s *azureBatchScraper) GetMetricsBatchValuesClient(region string) MetricBatchValuesClient {
 	endpoint := "https://" + region + ".metrics.monitor.azure.com"
-	s.settings.Logger.Info("Batch Endpoint", zap.String("endpoint", endpoint))
+	s.settings.Logger.Debug("Batch Endpoint", zap.String("endpoint", endpoint))
 	client, _ := azquery.NewMetricsBatchClient(endpoint, s.cred, s.azQueryMetricsBatchClientOptions)
 	return client
 }
@@ -384,9 +385,23 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 
 	for compositeKey, metricsByGrain := range resType.metricsByCompositeKey {
 		now := time.Now().UTC()
-		metricsByGrain.metricsValuesUpdated = now
 
-		startTime := now.Add(time.Duration(-timeGrains[compositeKey.timeGrain]) * time.Second * 4) // times 4 because for some resources, data are missing for the very latest timestamp. The processing will keep only the latest timestamp with data.
+		// Azure Metrics only allows querying every minute?
+		d := (60 * time.Second)
+		closestMinute := now.Round(d)
+		timeSinceClosestMinute := time.Since(closestMinute).Seconds()
+		if timeSinceClosestMinute < 0 {
+			// Skip this batch to avoid duplication (on first interval)
+			continue
+		}
+
+		if time.Since(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
+			continue
+		}
+		metricsByGrain.metricsValuesUpdated = closestMinute
+
+		timeGrain := timeGrains[compositeKey.timeGrain]
+		startTime := closestMinute.Add(time.Duration(-timeGrain) * time.Second)
 		for region := range s.regionsFromSubscriptions[*subscription.SubscriptionID] {
 			clientMetrics := s.GetMetricsBatchValuesClient(region)
 
@@ -400,13 +415,25 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 
 				start_resources := 0
 				for start_resources < len(resType.resourceIds) {
-
 					end_resources := start_resources + 50 // getBatch API is limited to 50 resources max
 					if end_resources > len(resType.resourceIds) {
 						end_resources = len(resType.resourceIds)
 					}
 
-					s.settings.Logger.Info("scrape", zap.String("subscription", *subscription.DisplayName), zap.String("resourceType", resourceType), zap.String("region", region))
+					s.settings.Logger.Debug(
+						"scrape",
+						zap.String("subscription", *subscription.DisplayName),
+						zap.String("region", region),
+						zap.String("resourceType", resourceType),
+						zap.Any("resourceIds", resType.resourceIds[start_resources:end_resources]),
+						zap.Any("metrics", metricsByGrain.metrics[start:end]),
+						zap.Int("start_resources", start_resources),
+						zap.Int("end_resrouces", end_resources),
+						zap.Time("startTime", startTime),
+						zap.Time("end_time", closestMinute),
+						zap.String("interval", compositeKey.timeGrain),
+					)
+
 					response, err := clientMetrics.QueryBatch(
 						ctx,
 						*subscription.SubscriptionID,
@@ -422,17 +449,22 @@ func (s *azureBatchScraper) getBatchMetricsValues(ctx context.Context, subscript
 								azquery.AggregationTypeCount,
 							),
 							StartTime: to.Ptr(startTime.Format(time.RFC3339)),
-							EndTime:   to.Ptr(now.Format(time.RFC3339)),
+							EndTime:   to.Ptr(closestMinute.Format(time.RFC3339)),
 							Interval:  to.Ptr(compositeKey.timeGrain),
 							Top:       to.Ptr(int32(s.cfg.MaximumNumberOfDimensionsInACall)), // Defaults to 10 (may be limiting results)
 						},
 					)
 
 					if err != nil {
-						s.settings.Logger.Error("failed to get Azure Metrics values data", zap.String("subscription", *subscription.SubscriptionID), zap.String("region", region), zap.String("resourceType", resourceType), zap.Any("metrics", metricsByGrain.metrics[start:end]), zap.Any("resources", resType.resourceIds[start_resources:end_resources]), zap.Error(err))
+						var respErr *azcore.ResponseError
+						if errors.As(err, &respErr) {
+							s.settings.Logger.Error("failed to get Azure Metrics values data", zap.String("subscription", *subscription.SubscriptionID), zap.String("region", region), zap.String("resourceType", resourceType), zap.Any("metrics", metricsByGrain.metrics[start:end]), zap.Any("resources", resType.resourceIds[start_resources:end_resources]), zap.Any("response", response), zap.Error(err))
+						}
+						s.settings.Logger.Error("failed to get Azure Metrics values data", zap.String("subscription", *subscription.SubscriptionID), zap.String("region", region), zap.String("resourceType", resourceType), zap.Any("metrics", metricsByGrain.metrics[start:end]), zap.Any("resources", resType.resourceIds[start_resources:end_resources]), zap.Any("response", response), zap.Any("responseError", respErr))
 						break
 					}
 
+					//s.settings.Logger.Debug("scrape", zap.Any("response.Values", response.Values))
 					for _, metricValues := range response.Values {
 						for _, metric := range metricValues.Values {
 
