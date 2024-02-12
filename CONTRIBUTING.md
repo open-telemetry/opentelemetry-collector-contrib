@@ -361,14 +361,16 @@ Example label comment:
 
 ## Becoming a Code Owner
 
-A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, responding to issues, and reviewing pull requests.
+A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, triaging and responding to issues, and reviewing pull requests.
 
 Sometimes a component may be in need of a new or additional Code Owner. A few reasons this situation may arise would be:
-- The component was never assigned a Code Owner.
+
+- The existing Code Owners are actively looking for more help.
 - A previous Code Owner stepped down.
 - An existing Code Owner has become unresponsive. See [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector#unmaintained).
-- The existing Code Owners are actively looking for new Code Owners to help.
+- The component was never assigned a Code Owner.
 
+Code Ownership does not have to be a full-time job. If you can find a couple hours to help out on a recurring basis, please consider pursuing Code Ownership.
 
 ### Requirements
 

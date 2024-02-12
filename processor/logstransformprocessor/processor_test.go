@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -194,4 +195,89 @@ func generateLogData(messages []testLogMessage) plog.Logs {
 	}
 
 	return ld
+}
+
+// laggy operator is a test operator that simulates heavy processing that takes a large amount of time.
+// The heavy processing only occurs for every 100th log
+type laggyOperator struct {
+	helper.WriterOperator
+	logsCount int
+}
+
+func (t *laggyOperator) Process(ctx context.Context, e *entry.Entry) error {
+
+	// Wait for a large amount of time every 100 logs
+	if t.logsCount%100 == 0 {
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	t.logsCount++
+
+	t.Write(ctx, e)
+	return nil
+}
+
+func (t *laggyOperator) CanProcess() bool {
+	return true
+}
+
+type laggyOperatorConfig struct {
+	helper.WriterConfig
+}
+
+func (l *laggyOperatorConfig) Build(s *zap.SugaredLogger) (operator.Operator, error) {
+	wo, err := l.WriterConfig.Build(s)
+	if err != nil {
+		return nil, err
+	}
+
+	return &laggyOperator{
+		WriterOperator: wo,
+	}, nil
+}
+
+func TestProcessorShutdownWithSlowOperator(t *testing.T) {
+	operator.Register("laggy", func() operator.Builder { return &laggyOperatorConfig{} })
+
+	config := &Config{
+		BaseConfig: adapter.BaseConfig{
+			Operators: []operator.Config{
+				{
+					Builder: func() *laggyOperatorConfig {
+						l := &laggyOperatorConfig{}
+						l.OperatorType = "laggy"
+						return l
+					}(),
+				},
+			},
+		},
+	}
+
+	tln := new(consumertest.LogsSink)
+	factory := NewFactory()
+	ltp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), config, tln)
+	require.NoError(t, err)
+	assert.True(t, ltp.Capabilities().MutatesData)
+
+	err = ltp.Start(context.Background(), nil)
+	require.NoError(t, err)
+
+	testLog := plog.NewLogs()
+	scopeLogs := testLog.ResourceLogs().AppendEmpty().
+		ScopeLogs().AppendEmpty()
+
+	for i := 0; i < 500; i++ {
+		lr := scopeLogs.LogRecords().AppendEmpty()
+		lr.Body().SetStr("Test message")
+	}
+
+	// The idea is to check that shutdown, when there are a lot of entries, doesn't try to write logs to
+	// a closed channel, since that'll cause a panic.
+	// In order to test, we send a lot of logs to be consumed, then shutdown immediately.
+
+	err = ltp.ConsumeLogs(context.Background(), testLog)
+	require.NoError(t, err)
+
+	err = ltp.Shutdown(context.Background())
+	require.NoError(t, err)
 }

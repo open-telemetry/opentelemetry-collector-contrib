@@ -32,6 +32,7 @@ type logExporter struct {
 	config   *Config
 	sender   *logs.Sender
 	settings component.TelemetrySettings
+	cancel   context.CancelFunc
 }
 
 // Create new logicmonitor logs exporter
@@ -52,6 +53,7 @@ func (e *logExporter) start(ctx context.Context, host component.Host) error {
 
 	opts := buildLogIngestOpts(e.config, client)
 
+	ctx, e.cancel = context.WithCancel(ctx)
 	e.sender, err = logs.NewSender(ctx, e.settings.Logger, opts...)
 	if err != nil {
 		return err
@@ -93,6 +95,14 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 		}
 	}
 	return e.sender.SendLogs(ctx, payload)
+}
+
+func (e *logExporter) shutdown(_ context.Context) error {
+	if e.cancel != nil {
+		e.cancel()
+	}
+
+	return nil
 }
 
 func buildLogIngestOpts(config *Config, client *http.Client) []lmsdklogs.Option {

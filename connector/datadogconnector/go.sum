@@ -58,8 +58,8 @@ github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.2 h1:yq97sYsulZz/qyl/bog
 github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.2/go.mod h1:eTXti9mx7qhkoi+Qg3mMmvVY5McghUUgsf4Hrk9zY8k=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.2 h1:xFGXfIsTyHC0VlrrfoAVaZ1pBAJUh2ARZrS7gcdAooY=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.2/go.mod h1:EOGgNrSPskIxY3+KgCl+yEggMjrGqrA2oL5va+/p2jM=
-github.com/DataDog/datadog-api-client-go/v2 v2.21.0 h1:u9a3HgyF61Zjui12r13xrVANnpLsuNFCBAox34StOtc=
-github.com/DataDog/datadog-api-client-go/v2 v2.21.0/go.mod h1:oD5Lx8Li3oPRa/BSBenkn4i48z+91gwYORF/+6ph71g=
+github.com/DataDog/datadog-api-client-go/v2 v2.22.0 h1:+DtWu4PjGxsJU8FESjPi7C2rTDMojNungejsIzNFe70=
+github.com/DataDog/datadog-api-client-go/v2 v2.22.0/go.mod h1:QKOu6vscsh87fMY1lHfLEmNSunyXImj8BUaUWJXOehc=
 github.com/DataDog/datadog-go/v5 v5.1.1 h1:JLZ6s2K1pG2h9GkvEvMdEGqMDyVLEAccdX5TltWcLMU=
 github.com/DataDog/datadog-go/v5 v5.1.1/go.mod h1:KhiYb2Badlv9/rofz+OznKoEF5XKTonWyhx5K83AP8E=
 github.com/DataDog/go-sqllexer v0.0.8 h1:vfC8R9PhmJfeOKcFYAX9UOd890A3wu3KrjU9Kr7nM0E=
@@ -99,8 +99,8 @@ github.com/alecthomas/repr v0.2.0 h1:HAzS41CIzNW5syS8Mf9UwXhNH1J9aix/BvDRf1Ml2Yk
 github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 h1:s6gZFSlWYmbqAuRjVTiNNhvNRfY2Wxp9nhfyel4rklc=
 github.com/armon/go-metrics v0.4.1 h1:hR91U9KYmb6bLBYLQjyM+3j+rcd/UhE+G78SFnF8gJA=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
-github.com/aws/aws-sdk-go v1.50.7 h1:odKb+uneeGgF2jgAerKjFzpljiyZxleV4SHB7oBK+YA=
-github.com/aws/aws-sdk-go v1.50.7/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
+github.com/aws/aws-sdk-go v1.50.14 h1:m1bxKtd1lJpNnl+Owah0+UPRuS9f3GFvxBPgc8RiodE=
+github.com/aws/aws-sdk-go v1.50.14/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/bmatcuk/doublestar/v4 v4.6.1 h1:FH9SifrbvJhnlQpztAx++wlkk70QBf0iBWDwNy7PA4I=

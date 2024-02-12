@@ -38,7 +38,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/log v0.50.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.2 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.21.0 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.22.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-sqllexer v0.0.8 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
@@ -53,7 +53,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
-	github.com/aws/aws-sdk-go v1.50.7 // indirect
+	github.com/aws/aws-sdk-go v1.50.14 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect

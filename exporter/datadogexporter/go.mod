@@ -6,7 +6,7 @@ require (
 	github.com/DataDog/agent-payload/v5 v5.0.103
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel
 	github.com/DataDog/datadog-agent/pkg/trace v0.50.2
-	github.com/DataDog/datadog-api-client-go/v2 v2.21.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.22.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.2
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.2
@@ -15,7 +15,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.2
 	github.com/DataDog/sketches-go v1.4.4
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0
-	github.com/aws/aws-sdk-go v1.50.7
+	github.com/aws/aws-sdk-go v1.50.14
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.94.0
@@ -308,8 +308,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filel
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
@@ -356,3 +354,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datad
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../../pkg/translator/prometheusremotewrite
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor => ../../processor/tailsamplingprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
