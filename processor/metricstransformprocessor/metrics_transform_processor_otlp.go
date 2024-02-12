@@ -549,6 +549,8 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 			}
 		case toggleScalarDataType:
 			toggleScalarDataTypeOp(metric, transform.MetricIncludeFilter)
+		case shortenFloatDataLength:
+			shortenFloatDataLengthOp(metric, op)
 		case scaleValue:
 			scaleValueOp(metric, op, transform.MetricIncludeFilter)
 		case addLabel:

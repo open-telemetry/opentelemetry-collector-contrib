@@ -128,6 +128,9 @@ type Operation struct {
 
 	// LabelValue identifies the exact label value to operate on
 	LabelValue string `mapstructure:"label_value"`
+
+	// FloatMaxLength identifies the max length allowed to a float number after the point
+	DecimalPlaces int `mapstructure:"float_max_length"`
 }
 
 // ValueAction renames label values.
@@ -188,6 +191,9 @@ const (
 	// toggleScalarDataType changes the data type from int64 to double, or vice-versa
 	toggleScalarDataType operationAction = "toggle_scalar_data_type"
 
+	// shortenFloatDataLength chages the data length if it's a float to chosen number of digits long
+	shortenFloatDataLength operationAction = "shroten_float_data_length"
+
 	// scaleValue multiplies the value by a constant scalar
 	scaleValue operationAction = "experimental_scale_value"
 
@@ -204,7 +210,7 @@ const (
 	aggregateLabelValues operationAction = "aggregate_label_values"
 )
 
-var operationActions = []operationAction{addLabel, updateLabel, deleteLabelValue, toggleScalarDataType, scaleValue, aggregateLabels, aggregateLabelValues}
+var operationActions = []operationAction{addLabel, updateLabel, deleteLabelValue, toggleScalarDataType, scaleValue, aggregateLabels, aggregateLabelValues, shortenFloatDataLength}
 
 func (oa operationAction) isValid() bool {
 	for _, operationAction := range operationActions {

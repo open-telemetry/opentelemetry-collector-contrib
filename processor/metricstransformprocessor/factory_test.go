@@ -105,6 +105,10 @@ func TestCreateProcessors(t *testing.T) {
 			succeed:      false,
 			errorMessage: fmt.Sprintf("%q must be in %q", submatchCaseFieldName, submatchCases),
 		},
+		{
+			configName:		"config_valid_float_length.yaml",
+			succeed:		true,
+		},
 	}
 
 	for _, tt := range tests {
