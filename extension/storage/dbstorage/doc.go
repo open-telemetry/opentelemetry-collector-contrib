@@ -2,5 +2,4 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:generate mdatagen metadata.yaml
-
-package filereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filereceiver"
+package dbstorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"

@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecs
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.50.7
+	github.com/aws/aws-sdk-go v1.50.14
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.94.0
 	github.com/stretchr/testify v1.8.4
@@ -59,7 +59,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.94.1 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.94.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.1.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.48.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0 // indirect
 	go.opentelemetry.io/otel v1.23.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.1 // indirect
 	go.opentelemetry.io/otel/sdk v1.23.0 // indirect

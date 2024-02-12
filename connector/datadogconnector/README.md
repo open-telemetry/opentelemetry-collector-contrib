@@ -162,6 +162,12 @@ connectors:
         ## setting a higher `trace_buffer` to avoid traces being dropped.
         #
         # trace_buffer: 1000
+
+        ## @param peer_tags - [BETA] Optional list of supplementary peer tags that go beyond the defaults. The Datadog backend validates all tags
+        ## and will drop ones that are unapproved. The default set of peer tags can be found at
+        ## https://github.com/DataDog/datadog-agent/blob/505170c4ac8c3cbff1a61cf5f84b28d835c91058/pkg/trace/stats/concentrator.go#L55.
+        #
+        # peer_tags: ["tag"]
 ```
 
 **NOTE**: `compute_stats_by_span_kind` and `peer_tags_aggregation` only work when the feature gate `connector.datadogconnector.performance` is enabled. See below for details on this feature gate.

@@ -158,7 +158,7 @@ func TestTransformer(t *testing.T) {
 				cfg.IsFirstEntry = "$body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.OverwriteWith = "newest"
-				cfg.ForceFlushTimeout = 100 * time.Millisecond
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -178,7 +178,7 @@ func TestTransformer(t *testing.T) {
 				cfg.IsFirstEntry = "body == 'start'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.OverwriteWith = "oldest"
-				cfg.ForceFlushTimeout = 100 * time.Millisecond
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -219,8 +219,8 @@ func TestTransformer(t *testing.T) {
 				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = `body matches "^[^\\s]"`
-				cfg.ForceFlushTimeout = 100 * time.Millisecond
 				cfg.OutputIDs = []string{"fake"}
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -252,8 +252,8 @@ func TestTransformer(t *testing.T) {
 				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField("message")
 				cfg.IsFirstEntry = `body.message matches "^[^\\s]"`
-				cfg.ForceFlushTimeout = 100 * time.Millisecond
 				cfg.OutputIDs = []string{"fake"}
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -287,7 +287,6 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineWith = ""
 				cfg.IsLastEntry = "body.logtag == 'F'"
 				cfg.OverwriteWith = "oldest"
-				cfg.ForceFlushTimeout = 100 * time.Millisecond
 				cfg.OutputIDs = []string{"fake"}
 				return cfg
 			}(),
@@ -501,17 +500,19 @@ func TestTransformer(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
 			op, err := tc.config.Build(testutil.Logger(t))
 			require.NoError(t, err)
 			require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
-			recombine := op.(*Transformer)
+			defer func() { require.NoError(t, op.Stop()) }()
+			r := op.(*Transformer)
 
 			fake := testutil.NewFakeOutput(t)
-			err = recombine.SetOutputs([]operator.Operator{fake})
+			err = r.SetOutputs([]operator.Operator{fake})
 			require.NoError(t, err)
 
 			for _, e := range tc.input {
-				require.NoError(t, recombine.Process(context.Background(), e))
+				require.NoError(t, r.Process(ctx, e))
 			}
 
 			fake.ExpectEntries(t, tc.expectedOutput)
@@ -709,13 +710,21 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 	require.NoError(t, recombine.Start(nil))
 	require.NoError(t, recombine.Process(ctx, e))
 
+	done := make(chan struct{})
+	ticker := time.NewTicker(cfg.ForceFlushTimeout / 2)
 	go func() {
 		next := entry.New()
 		next.Timestamp = time.Now()
 		next.Body = "next"
 		for {
-			time.Sleep(cfg.ForceFlushTimeout / 2)
-			require.NoError(t, recombine.Process(ctx, next))
+			select {
+			case <-done:
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				require.NoError(t, recombine.Process(ctx, next))
+
+			}
 		}
 	}()
 
@@ -726,6 +735,7 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 		t.FailNow()
 	}
 	require.NoError(t, recombine.Stop())
+	close(done)
 }
 
 func TestSourceBatchDelete(t *testing.T) {
