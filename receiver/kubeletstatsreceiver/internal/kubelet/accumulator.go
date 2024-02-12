@@ -4,7 +4,7 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
-	"log"
+	k8s "k8s.io/client-go/kubernetes"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -78,7 +78,7 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 func (a *metricDataAccumulator) getNodeUID(nodeName string) string {
 	uid, err := a.metadata.getNodeUID(nodeName)
 	if err != nil {
-		log.Println(err.Error())
+		a.logger.Error(err.Error())
 		return ""
 	}
 	return uid
@@ -96,14 +96,25 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 	addFilesystemMetrics(a.mbs.PodMetricsBuilder, metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
 	addNetworkMetrics(a.mbs.PodMetricsBuilder, metadata.PodNetworkMetrics, s.Network, currentTime)
 
-	serviceName := a.getServiceName(s.PodRef.UID)
+	client, err := k8sconfig.MakeClient(k8sconfig.APIConfig{
+		AuthType: k8sconfig.AuthTypeServiceAccount,
+	})
+	if err != nil {
+		a.logger.Error(err.Error())
+	}
+
+	serviceName := a.getServiceName(client, s.PodRef.UID)
+	jobInfo := a.getJobInfo(client, s.PodRef.UID)
 	serviceAccountName := a.getServiceAccountName(s.PodRef.UID)
 
 	rb := a.mbs.PodMetricsBuilder.NewResourceBuilder()
 	rb.SetK8sPodUID(s.PodRef.UID)
 	rb.SetK8sPodName(s.PodRef.Name)
+	rb.SetK8sPodStartTime(s.StartTime.Time.String())
 	rb.SetK8sNamespaceName(s.PodRef.Namespace)
 	rb.SetK8sServiceName(serviceName)
+	rb.SetK8sJobUID(string(jobInfo.UID))
+	rb.SetK8sJobName(jobInfo.Name)
 	rb.SetK8sServiceAccountName(serviceAccountName)
 	rb.SetK8sClusterName("unknown")
 	a.m = append(a.m, a.mbs.PodMetricsBuilder.Emit(
@@ -113,27 +124,30 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 }
 
 // getch k8s service name from metadata
-func (a *metricDataAccumulator) getServiceName(podUID string) string {
-	k8sAPIClient, err := k8sconfig.MakeClient(k8sconfig.APIConfig{
-		AuthType: k8sconfig.AuthTypeServiceAccount,
-	})
+func (a *metricDataAccumulator) getServiceName(client k8s.Interface, podUID string) string {
+	name, err := a.metadata.getServiceName(client, podUID)
 	if err != nil {
-		return ""
-	}
-
-	name, err := a.metadata.getServiceName(podUID, k8sAPIClient)
-	if err != nil {
-		log.Println(err.Error())
+		a.logger.Error(err.Error())
 		return ""
 	}
 	return name
+}
+
+// getch k8s job uid from metadata
+func (a *metricDataAccumulator) getJobInfo(client k8s.Interface, podUID string) JobInfo {
+	jobInfo, err := a.metadata.getJobInfo(client, podUID)
+	if err != nil {
+		a.logger.Error(err.Error())
+		return JobInfo{}
+	}
+	return jobInfo
 }
 
 // getch k8s service account name from metadata
 func (a *metricDataAccumulator) getServiceAccountName(podUID string) string {
 	name, err := a.metadata.getServiceAccountName(podUID)
 	if err != nil {
-		log.Println(err.Error())
+		a.logger.Error(err.Error())
 		return ""
 	}
 	return name

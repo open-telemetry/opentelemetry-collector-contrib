@@ -49,7 +49,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -74,6 +73,10 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerFilesystemUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerFilesystemUtilizationDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -136,6 +139,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordK8sNodeFilesystemUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordK8sNodeMemoryAvailableDataPoint(ts, 1)
 
 			defaultMetricsCount++
@@ -194,6 +201,10 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodFilesystemUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sPodFilesystemUtilizationDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -265,12 +276,15 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetGlusterfsPath("glusterfs.path-val")
 			rb.SetK8sClusterName("k8s.cluster.name-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
+			rb.SetK8sJobName("k8s.job.name-val")
+			rb.SetK8sJobUID("k8s.job.uid-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
 			rb.SetK8sNodeStartTime("k8s.node.start_time-val")
 			rb.SetK8sNodeUID("k8s.node.uid-val")
 			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
+			rb.SetK8sPodStartTime("k8s.pod.start_time-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
 			rb.SetK8sServiceName("k8s.service.name-val")
 			rb.SetK8sServiceAccountName("k8s.service_account.name-val")
@@ -361,6 +375,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.filesystem.utilization":
+					assert.False(t, validatedMetrics["container.filesystem.utilization"], "Found a duplicate in the metrics slice: container.filesystem.utilization")
+					validatedMetrics["container.filesystem.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container filesystem utilization", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
 				case "container.memory.available":
 					assert.False(t, validatedMetrics["container.memory.available"], "Found a duplicate in the metrics slice: container.memory.available")
 					validatedMetrics["container.memory.available"] = true
@@ -557,6 +583,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.filesystem.utilization":
+					assert.False(t, validatedMetrics["k8s.node.filesystem.utilization"], "Found a duplicate in the metrics slice: k8s.node.filesystem.utilization")
+					validatedMetrics["k8s.node.filesystem.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node filesystem utilization", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
 				case "k8s.node.memory.available":
 					assert.False(t, validatedMetrics["k8s.node.memory.available"], "Found a duplicate in the metrics slice: k8s.node.memory.available")
 					validatedMetrics["k8s.node.memory.available"] = true
@@ -769,6 +807,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.filesystem.utilization":
+					assert.False(t, validatedMetrics["k8s.pod.filesystem.utilization"], "Found a duplicate in the metrics slice: k8s.pod.filesystem.utilization")
+					validatedMetrics["k8s.pod.filesystem.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod filesystem utilization", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
 				case "k8s.pod.memory.available":
 					assert.False(t, validatedMetrics["k8s.pod.memory.available"], "Found a duplicate in the metrics slice: k8s.pod.memory.available")
 					validatedMetrics["k8s.pod.memory.available"] = true

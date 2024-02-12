@@ -69,7 +69,7 @@ func TestSetExtraLabels(t *testing.T) {
 	}{
 		{
 			name:     "no_labels",
-			metadata: NewMetadata([]MetadataLabel{}, nil, nil),
+			metadata: NewMetadata([]MetadataLabel{}, nil, nil, nil),
 			args:     []string{"uid", "container.id", "container"},
 			want:     map[string]interface{}{},
 		},
@@ -97,7 +97,7 @@ func TestSetExtraLabels(t *testing.T) {
 						},
 					},
 				},
-			}, nil),
+			}, nil, nil),
 			args: []string{"uid-1234", "container.id", "container1"},
 			want: map[string]interface{}{
 				string(MetadataLabelContainerID): "test-container",
@@ -127,7 +127,7 @@ func TestSetExtraLabels(t *testing.T) {
 						},
 					},
 				},
-			}, nil),
+			}, nil, nil),
 			args: []string{"uid-1234", "container.id", "init-container1"},
 			want: map[string]interface{}{
 				string(MetadataLabelContainerID): "test-init-container",
@@ -135,7 +135,7 @@ func TestSetExtraLabels(t *testing.T) {
 		},
 		{
 			name:      "set_container_id_no_metadata",
-			metadata:  NewMetadata([]MetadataLabel{MetadataLabelContainerID}, nil, nil),
+			metadata:  NewMetadata([]MetadataLabel{MetadataLabelContainerID}, nil, nil, nil),
 			args:      []string{"uid-1234", "container.id", "container1"},
 			wantError: "pods metadata were not fetched",
 		},
@@ -157,7 +157,7 @@ func TestSetExtraLabels(t *testing.T) {
 						},
 					},
 				},
-			}, nil),
+			}, nil, nil),
 			args:      []string{"uid-1234", "container.id", "container1"},
 			wantError: "pod \"uid-1234\" with container \"container1\" not found in the fetched metadata",
 		},
@@ -179,13 +179,13 @@ func TestSetExtraLabels(t *testing.T) {
 						},
 					},
 				},
-			}, nil),
+			}, nil, nil),
 			args:      []string{"uid-1234", "container.id", "container1"},
 			wantError: "pod \"uid-1234\" with container \"container1\" has an empty containerID",
 		},
 		{
 			name:      "set_volume_type_no_metadata",
-			metadata:  NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, nil, nil),
+			metadata:  NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, nil, nil, nil),
 			args:      []string{"uid-1234", "k8s.volume.type", "volume0"},
 			wantError: "pods metadata were not fetched",
 		},
@@ -207,7 +207,7 @@ func TestSetExtraLabels(t *testing.T) {
 						},
 					},
 				},
-			}, nil),
+			}, nil, nil),
 			args:      []string{"uid-1234", "k8s.volume.type", "volume1"},
 			wantError: "pod \"uid-1234\" with volume \"volume1\" not found in the fetched metadata",
 		},
@@ -375,8 +375,8 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 						},
 					},
 				},
-			}, func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
-				return nil
+			}, nil, func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
+				return nil, nil
 			})
 			rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
 			err := md.setExtraResources(rb, stats.PodReference{UID: tt.args[0]}, MetadataLabel(tt.args[1]), volName)

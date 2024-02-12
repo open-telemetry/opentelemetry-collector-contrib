@@ -165,6 +165,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordK8sPersistentvolumeCapacityDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordK8sPodPhaseDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -256,6 +260,21 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sNodeName("k8s.node.name-val")
 			rb.SetK8sNodeStartTime("k8s.node.start_time-val")
 			rb.SetK8sNodeUID("k8s.node.uid-val")
+			rb.SetK8sPersistentvolumeAccessModes("k8s.persistentvolume.access_modes-val")
+			rb.SetK8sPersistentvolumeAnnotations("k8s.persistentvolume.annotations-val")
+			rb.SetK8sPersistentvolumeFinalizers("k8s.persistentvolume.finalizers-val")
+			rb.SetK8sPersistentvolumeLabels("k8s.persistentvolume.labels-val")
+			rb.SetK8sPersistentvolumeName("k8s.persistentvolume.name-val")
+			rb.SetK8sPersistentvolumeNamespace("k8s.persistentvolume.namespace-val")
+			rb.SetK8sPersistentvolumePhase("k8s.persistentvolume.phase-val")
+			rb.SetK8sPersistentvolumeReclaimPolicy("k8s.persistentvolume.reclaim_policy-val")
+			rb.SetK8sPersistentvolumeStartTime("k8s.persistentvolume.start_time-val")
+			rb.SetK8sPersistentvolumeStorageClass("k8s.persistentvolume.storage_class-val")
+			rb.SetK8sPersistentvolumeType("k8s.persistentvolume.type-val")
+			rb.SetK8sPersistentvolumeUID("k8s.persistentvolume.uid-val")
+			rb.SetK8sPersistentvolumeVolumeMode("k8s.persistentvolume.volume_mode-val")
+			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
+			rb.SetK8sPersistentvolumeclaimUID("k8s.persistentvolumeclaim.uid-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
 			rb.SetK8sPodStartTime("k8s.pod.start_time-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
@@ -619,6 +638,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The current phase of namespaces (1 for active and 0 for terminating)", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.persistentvolume.capacity":
+					assert.False(t, validatedMetrics["k8s.persistentvolume.capacity"], "Found a duplicate in the metrics slice: k8s.persistentvolume.capacity")
+					validatedMetrics["k8s.persistentvolume.capacity"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The capacity of persistent volume.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

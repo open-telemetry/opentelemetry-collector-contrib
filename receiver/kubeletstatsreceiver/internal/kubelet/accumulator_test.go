@@ -4,18 +4,22 @@
 package kubelet
 
 import (
+	"context"
 	"errors"
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	vone "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes/fake"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
@@ -31,7 +35,7 @@ func TestMetadataErrorCases(t *testing.T) {
 		numMDs                          int
 		numLogs                         int
 		logMessages                     []string
-		detailedPVCLabelsSetterOverride func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error
+		detailedPVCLabelsSetterOverride func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error)
 	}{
 		{
 			name: "Fails to get container metadata",
@@ -44,6 +48,13 @@ func TestMetadataErrorCases(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							UID: "pod-uid-123",
 						},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								{
+									Name: "container2",
+								},
+							},
+						},
 						Status: v1.PodStatus{
 							ContainerStatuses: []v1.ContainerStatus{
 								{
@@ -55,7 +66,7 @@ func TestMetadataErrorCases(t *testing.T) {
 						},
 					},
 				},
-			}, nil),
+			}, nil, nil),
 			testScenario: func(acc metricDataAccumulator) {
 				now := metav1.Now()
 				podStats := stats.PodStats{
@@ -81,7 +92,7 @@ func TestMetadataErrorCases(t *testing.T) {
 			metricGroupsToCollect: map[MetricGroup]bool{
 				VolumeMetricGroup: true,
 			},
-			metadata: NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, nil, nil),
+			metadata: NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, nil, nil, nil),
 			testScenario: func(acc metricDataAccumulator) {
 				podStats := stats.PodStats{
 					PodRef: stats.PodReference{
@@ -123,7 +134,7 @@ func TestMetadataErrorCases(t *testing.T) {
 						},
 					},
 				},
-			}, nil),
+			}, nil, nil),
 			testScenario: func(acc metricDataAccumulator) {
 				podStats := stats.PodStats{
 					PodRef: stats.PodReference{
@@ -167,10 +178,10 @@ func TestMetadataErrorCases(t *testing.T) {
 						},
 					},
 				},
-			}, nil),
-			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+			}, nil, nil),
+			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
 				// Mock failure cases.
-				return errors.New("")
+				return nil, errors.New("")
 			},
 			testScenario: func(acc metricDataAccumulator) {
 				podStats := stats.PodStats{
@@ -248,4 +259,149 @@ func TestNilHandling(t *testing.T) {
 	assert.NotPanics(t, func() {
 		acc.volumeStats(stats.PodStats{}, stats.VolumeStats{})
 	})
+}
+
+func TestGetServiceName(t *testing.T) {
+	// Create a fake Kubernetes client
+	client := fake.NewSimpleClientset()
+
+	// Create a Pod with labels
+	var pods []v1.Pod
+	pods = append(pods, v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			UID:       "test-pod-uid-123",
+			Name:      "test-pod-1",
+			Namespace: "test-namespace",
+			Labels: map[string]string{
+				"foo":  "bar",
+				"foo1": "",
+			},
+		},
+		Spec: v1.PodSpec{},
+	})
+
+	acc := metricDataAccumulator{
+		metadata: NewMetadata([]MetadataLabel{MetadataLabelContainerID}, &v1.PodList{
+			Items: pods,
+		}, nil, nil),
+	}
+
+	// Create a Service with the same labels as the Pod
+	service := &v1.Service{
+		ObjectMeta: vone.ObjectMeta{
+			Name:      "test-service",
+			Namespace: "test-namespace",
+		},
+		Spec: v1.ServiceSpec{
+			Selector: map[string]string{
+				"foo":  "bar",
+				"foo1": "",
+			},
+		},
+	}
+
+	// Create the Service in the fake client
+	_, err := client.CoreV1().Services(service.Namespace).Create(context.TODO(), service, vone.CreateOptions{})
+	assert.NoError(t, err)
+
+	// Call the getServiceName method
+	result := acc.getServiceName(client, string(pods[0].UID))
+
+	// Verify the result
+	assert.Equal(t, service.Name, result)
+}
+
+func TestGetServiceAccountName(t *testing.T) {
+	// Create a Pod with labels
+	var pods []v1.Pod
+	pods = append(pods, v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			UID:       "test-pod-uid-123",
+			Name:      "test-pod-1",
+			Namespace: "test-namespace",
+			Labels: map[string]string{
+				"foo":  "bar",
+				"foo1": "",
+			},
+		},
+		Spec: v1.PodSpec{
+			ServiceAccountName: "test-service-account",
+		},
+	})
+
+	acc := metricDataAccumulator{
+		metadata: NewMetadata([]MetadataLabel{MetadataLabelContainerID}, &v1.PodList{
+			Items: pods,
+		}, nil, nil),
+	}
+
+	// Call the getServiceName method
+	result := acc.getServiceAccountName(string(pods[0].UID))
+
+	// Verify the result
+	expectedServiceAccountName := "test-service-account"
+
+	assert.Equal(t, expectedServiceAccountName, result)
+}
+
+func TestGetJobInfo(t *testing.T) {
+	// Create a fake Kubernetes client
+	client := fake.NewSimpleClientset()
+
+	// Create a Pod with labels
+	var pods []v1.Pod
+	pods = append(pods, v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			UID:       "test-pod-uid-123",
+			Name:      "test-pod-1",
+			Namespace: "test-namespace",
+			Labels: map[string]string{
+				"foo":  "bar",
+				"foo1": "",
+			},
+		},
+		Spec: v1.PodSpec{},
+	})
+
+	acc := metricDataAccumulator{
+		metadata: NewMetadata([]MetadataLabel{MetadataLabelContainerID}, &v1.PodList{
+			Items: pods,
+		}, nil, nil),
+	}
+
+	// Create a Job with the same labels as the Pod
+	job := &batchv1.Job{
+		ObjectMeta: vone.ObjectMeta{
+			Name:      "test-job-1",
+			Namespace: "test-namespace",
+			UID:       types.UID("test-job-1-uid"),
+			Labels: map[string]string{
+				"foo":  "bar",
+				"foo1": "",
+			},
+		},
+		Spec: batchv1.JobSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"foo":  "bar",
+					"foo1": "",
+				},
+			},
+		},
+	}
+
+	// Create the Job in the fake client
+	_, err := client.BatchV1().Jobs(job.Namespace).Create(context.TODO(), job, vone.CreateOptions{})
+	assert.NoError(t, err)
+
+	// Call the getJobInfo method
+	jobInfo := acc.getJobInfo(client, string(pods[0].UID))
+
+	// Verify the result
+	expectedJobInfo := JobInfo{
+		Name: "test-job-1",
+		UID:  job.UID,
+	}
+
+	assert.Equal(t, expectedJobInfo, jobInfo)
 }

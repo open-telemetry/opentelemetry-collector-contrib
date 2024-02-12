@@ -9,6 +9,7 @@ import "k8s.io/apimachinery/pkg/runtime/schema"
 var (
 	Pod                         = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Pod"}
 	Node                        = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Node"}
+	PersistentVolume            = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "PersistentVolume"}
 	Namespace                   = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Namespace"}
 	ReplicationController       = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "ReplicationController"}
 	ResourceQuota               = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "ResourceQuota"}

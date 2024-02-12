@@ -48,8 +48,6 @@ resource_attributes:
     type: string
     enabled: true
 
-  
-
   k8s.namespace.uid:
     description: The k8s namespace uid.
     type: string
@@ -74,6 +72,81 @@ resource_attributes:
     description: "The start time of the Node."
     enabled: true
     type: string
+
+  k8s.persistentvolume.uid:
+    description: The UID of the Persistent Volume
+    type: string
+    enabled: true
+
+  k8s.persistentvolume.name:
+    description: The name of the Persistent Volume
+    type: string
+    enabled: true
+
+  k8s.persistentvolume.namespace:
+    description: The namespace of the Persistent Volume
+    type: string
+    enabled: true
+
+  k8s.persistentvolume.type:
+    description: The type of the Persistent Volume.
+    type: string
+    enabled: true
+
+  k8s.persistentvolume.labels:
+    description: Labels of the Persistent Volume
+    type: string
+    enabled: true
+
+  k8s.persistentvolume.access_modes:
+    description: The access modes of the Persistent Volume.
+    type: string
+    enabled: true
+
+  k8s.persistentvolume.volume_mode:
+    description: The volume mode of the Persistent Volume.
+    type: string
+    enabled: true
+
+  k8s.persistentvolume.reclaim_policy:
+    description: The reclaim policy of the Persistent Volume.
+    type: string
+    enabled: true
+
+  k8s.persistentvolume.annotations:
+    description: The annotations of the Persistent Volume.
+    type: string
+    enabled: true
+
+  k8s.persistentvolume.phase:
+    description: The phase of the Persistent Volume.
+    type: string
+    enabled: true
+
+  k8s.persistentvolume.storage_class:
+    description: The storage class of the Persistent Volume.
+    type: string
+    enabled: true
+
+  k8s.persistentvolume.start_time:
+    description: The start time of the Persistent Volume.
+    type: string
+    enabled: true
+
+  k8s.persistentvolume.finalizers:
+    description: Finalizers of the Persistent Volume.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.uid:
+    description: The UID of the Persistent Volume Claim.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.name:
+    description: The Name of the Persistent Volume Claim.
+    type: string
+    enabled: true
 
   container.id:
     description: The container id.
@@ -104,6 +177,11 @@ resource_attributes:
     description: The k8s pod uid.
     type: string
     enabled: true
+
+  k8s.pod.start_time:
+    description: "The start time of the Pod."
+    enabled: true
+    type: string
 
   k8s.replicaset.name:
     description: The k8s replicaset name
@@ -332,6 +410,13 @@ metrics:
     enabled: false
     description: Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)
     unit: 1
+    gauge:
+      value_type: int
+
+  k8s.persistentvolume.capacity:
+    enabled: true
+    description: The capacity of persistent volume.
+    unit: "By"
     gauge:
       value_type: int
 

@@ -52,6 +52,14 @@ Container filesystem usage
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
 
+### container.filesystem.utilization
+
+Container filesystem utilization
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
 ### container.memory.available
 
 Container memory available
@@ -139,6 +147,14 @@ Node filesystem usage
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
+
+### k8s.node.filesystem.utilization
+
+Node filesystem utilization
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 ### k8s.node.memory.available
 
@@ -257,6 +273,14 @@ Pod filesystem usage
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
+
+### k8s.pod.filesystem.utilization
+
+Pod filesystem utilization
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 ### k8s.pod.memory.available
 
@@ -486,12 +510,15 @@ The time since the pod started
 | glusterfs.path | Glusterfs volume path | Any Str | true |
 | k8s.cluster.name | The name of the Cluster | Any Str | true |
 | k8s.container.name | Container name used by container runtime | Any Str | true |
+| k8s.job.name | The name of the Job | Any Str | true |
+| k8s.job.uid | The UID of the Job | Any Str | true |
 | k8s.namespace.name | The name of the namespace that the pod is running in | Any Str | true |
 | k8s.node.name | The name of the Node | Any Str | true |
 | k8s.node.start_time | The start time of the Node. | Any Str | true |
 | k8s.node.uid | The UID of the Node | Any Str | true |
 | k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | Any Str | true |
 | k8s.pod.name | The name of the Pod | Any Str | true |
+| k8s.pod.start_time | The start time of the Pod. | Any Str | true |
 | k8s.pod.uid | The UID of the Pod | Any Str | true |
 | k8s.service.name | The name of the Service | Any Str | true |
 | k8s.service_account.name | The name of the Service-account | Any Str | true |

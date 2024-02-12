@@ -77,6 +77,20 @@ func (rb *ResourceBuilder) SetK8sContainerName(val string) {
 	}
 }
 
+// SetK8sJobName sets provided value as "k8s.job.name" attribute.
+func (rb *ResourceBuilder) SetK8sJobName(val string) {
+	if rb.config.K8sJobName.Enabled {
+		rb.res.Attributes().PutStr("k8s.job.name", val)
+	}
+}
+
+// SetK8sJobUID sets provided value as "k8s.job.uid" attribute.
+func (rb *ResourceBuilder) SetK8sJobUID(val string) {
+	if rb.config.K8sJobUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.job.uid", val)
+	}
+}
+
 // SetK8sNamespaceName sets provided value as "k8s.namespace.name" attribute.
 func (rb *ResourceBuilder) SetK8sNamespaceName(val string) {
 	if rb.config.K8sNamespaceName.Enabled {
@@ -116,6 +130,13 @@ func (rb *ResourceBuilder) SetK8sPersistentvolumeclaimName(val string) {
 func (rb *ResourceBuilder) SetK8sPodName(val string) {
 	if rb.config.K8sPodName.Enabled {
 		rb.res.Attributes().PutStr("k8s.pod.name", val)
+	}
+}
+
+// SetK8sPodStartTime sets provided value as "k8s.pod.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sPodStartTime(val string) {
+	if rb.config.K8sPodStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.pod.start_time", val)
 	}
 }
 
