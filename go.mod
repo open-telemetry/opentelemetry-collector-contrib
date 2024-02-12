@@ -24,7 +24,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter v0.94.0
@@ -777,8 +776,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datad
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter => ./exporter/datasetexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter => ./exporter/dynatraceexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter => ./exporter/f5cloudexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter => ./exporter/fileexporter
 
