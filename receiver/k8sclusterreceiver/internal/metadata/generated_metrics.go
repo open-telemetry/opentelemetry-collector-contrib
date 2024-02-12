@@ -2249,9 +2249,6 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
-	if mbc.ResourceAttributes.K8sKubeproxyVersion.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] `k8s.kubeproxy.version` should not be configured: k8s.kubeproxy.version resource attribute is deprecated and will be removed soon.")
-	}
 	mb := &MetricsBuilder{
 		config:                                  mbc,
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
