@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver
 
-go 1.20
+go 1.21
 
 require (
 	github.com/gorilla/mux v1.8.1

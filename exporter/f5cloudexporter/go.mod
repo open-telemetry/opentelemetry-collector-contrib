@@ -1,7 +1,7 @@
 // Deprecated: [v0.95.0] This package is deprecated and will be removed in a future release.
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter
 
-go 1.20
+go 1.21
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
