@@ -1,9 +1,7 @@
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
 import (
-	"fmt"
-	"strconv"
-	"strings"
+	"math"
 	
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -26,36 +24,17 @@ func shortenFloatDataLengthOp(metric pmetric.Metric, op internalOperation) {
 		dp := dps.At(i)
 
 		// Generate the string representation of the metric value and add it as an attribute
-		var valueStr string
+		var roundedValue float64
 		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeDouble:
-			valueStr = fmt.Sprintf("%f", dp.DoubleValue())
-			valueStr = truncateFloatString(valueStr, op.configOperation.DecimalPlaces)
-			valueFloat, err := strconv.ParseFloat(valueStr, 64) // Convert string to float64
-			if err != nil {
-				fmt.Println("Error converting string to float:", err)
-				return
-			}
-			dp.SetDoubleValue(valueFloat)
+			roundedValue = roundTo(dp.DoubleValue(), op.configOperation.DecimalPlaces)
+			dp.SetDoubleValue(roundedValue)
 		}
 		
 	}
 }
 
-func truncateFloatString(s string, decimalPlaces int) string {
-	// Find the index of the decimal point.
-	pointIndex := strings.Index(s, ".")
-	if pointIndex == -1 {
-		// No decimal point found; return the original string.
-		return s
-	}
-
-	// Calculate the total length by adding the index of the point and the desired decimal places + 1 (for the point itself).
-	totalLength := pointIndex + decimalPlaces + 1
-	if totalLength >= len(s) {
-		// If the total length is beyond the string's length, return the original string.
-		return s
-	}
-	// Otherwise, return the substring up to the calculated total length.
-	return s[:totalLength]
+func roundTo(val float64, decimalPlaces int) float64 {
+	scale := math.Pow(10, float64(decimalPlaces))
+	return math.Round(val*scale) / scale
 }

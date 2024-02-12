@@ -4,4 +4,4 @@ metricstransform:
     action: update
     operations:
      - action: shroten_float_data_length
-       float_max_length: 10.1
+       float_max_length: 10
