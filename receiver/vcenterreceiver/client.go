@@ -89,16 +89,6 @@ func (vc *vcenterClient) Datacenters(ctx context.Context) ([]*object.Datacenter,
 	return datacenters, nil
 }
 
-// Clusters returns the clusterComputeResources of the vSphere SDK
-func (vc *vcenterClient) Clusters(ctx context.Context, datacenter *object.Datacenter) ([]*object.ClusterComputeResource, error) {
-	vc.finder = vc.finder.SetDatacenter(datacenter)
-	clusters, err := vc.finder.ClusterComputeResourceList(ctx, "*")
-	if err != nil {
-		return []*object.ClusterComputeResource{}, fmt.Errorf("unable to get cluster lists: %w", err)
-	}
-	return clusters, nil
-}
-
 func (vc *vcenterClient) Computes(ctx context.Context, datacenter *object.Datacenter) ([]*object.ComputeResource, error) {
 	vc.finder = vc.finder.SetDatacenter(datacenter)
 	computes, err := vc.finder.ComputeResourceList(ctx, "*")

@@ -154,9 +154,6 @@ resourceMetrics:
         - key: vcenter.vm.id
           value:
             stringValue: b4689bed-97f0-5bcd-8a4c-07477cc8f06f
-        - key: vcenter.cluster.name
-          value:
-            stringValue: DC0_H0
         - key: vcenter.host.name
           value:
             stringValue: DC0_H0
@@ -237,9 +234,6 @@ resourceMetrics:
         - key: vcenter.vm.id
           value:
             stringValue: 12f8928d-f144-5c57-89db-dd2d0902c9fa
-        - key: vcenter.cluster.name
-          value:
-            stringValue: DC0_H0
         - key: vcenter.host.name
           value:
             stringValue: DC0_H0

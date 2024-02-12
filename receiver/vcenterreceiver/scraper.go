@@ -384,7 +384,6 @@ func (v *vcenterMetricScraper) collectVMs(
 		if compute.Reference().Type == "ClusterComputeResource" {
 			rb.SetVcenterClusterName(compute.Name())
 		}
-		rb.SetVcenterClusterName(compute.Name())
 		rb.SetVcenterHostName(hostname)
 		if rp != nil && rp.Name() != "" {
 			rb.SetVcenterResourcePoolName(rp.Name())
