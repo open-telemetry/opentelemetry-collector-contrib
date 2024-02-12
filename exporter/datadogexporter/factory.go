@@ -285,6 +285,7 @@ func (f *factory) createMetricsExporter(
 	}
 	acfg, err := newTraceAgentConfig(ctx, set, cfg, hostProvider)
 	if err != nil {
+		cancel()
 		return nil, err
 	}
 	statsToAgent := make(chan *pb.StatsPayload)
