@@ -9,6 +9,9 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/featuregate v1.1.0
 	go.opentelemetry.io/collector/pdata v1.1.0
+	go.opentelemetry.io/otel v1.23.0
+	go.opentelemetry.io/otel/metric v1.23.0
+	go.opentelemetry.io/otel/sdk/metric v1.23.0
 )
 
 require (
@@ -32,6 +35,8 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/go-logr/logr v1.4.1 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/godbus/dbus/v5 v5.0.6 // indirect
@@ -69,8 +74,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.94.1 // indirect
 	go.opentelemetry.io/collector/confmap v0.94.1 // indirect
 	go.opentelemetry.io/collector/semconv v0.94.1 // indirect
-	go.opentelemetry.io/otel v1.23.0 // indirect
-	go.opentelemetry.io/otel/metric v1.23.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.23.0 // indirect
 	go.opentelemetry.io/otel/trace v1.23.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
