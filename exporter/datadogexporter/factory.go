@@ -278,11 +278,6 @@ func (f *factory) createMetricsExporter(
 	ctx, cancel := context.WithCancel(ctx)
 	// cancel() runs on shutdown
 	var pushMetricsFn consumer.ConsumeMetricsFunc
-	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider)
-	if err != nil {
-		cancel()
-		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
-	}
 	acfg, err := newTraceAgentConfig(ctx, set, cfg, hostProvider)
 	if err != nil {
 		cancel()
@@ -331,7 +326,7 @@ func (f *factory) createMetricsExporter(
 			return nil
 		}
 	} else {
-		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, attrsTranslator, hostProvider, traceagent, metadataReporter, statsIn)
+		exp, metricsErr := newMetricsExporter(ctx, set, cfg, acfg, &f.onceMetadata, attrsTranslator, hostProvider, statsToAgent, metadataReporter, statsIn)
 		if metricsErr != nil {
 			cancel()    // first cancel context
 			f.wg.Wait() // then wait for shutdown
