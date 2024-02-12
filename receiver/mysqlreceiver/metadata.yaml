@@ -171,7 +171,7 @@ metrics:
   mysql.buffer_pool.pages:
     enabled: true
     description: The number of pages in the InnoDB buffer pool.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -181,7 +181,7 @@ metrics:
   mysql.buffer_pool.data_pages:
     enabled: true
     description: The number of data pages in the InnoDB buffer pool.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: false
@@ -190,7 +190,7 @@ metrics:
   mysql.buffer_pool.page_flushes:
     enabled: true
     description: The number of requests to flush pages from the InnoDB buffer pool.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -199,7 +199,7 @@ metrics:
   mysql.buffer_pool.operations:
     enabled: true
     description: The number of operations on the InnoDB buffer pool.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -227,7 +227,7 @@ metrics:
   mysql.prepared_statements:
     enabled: true
     description: The number of times each type of prepared statement command has been issued.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -237,7 +237,7 @@ metrics:
   mysql.commands:
     enabled: false
     description: The number of times each type of command has been executed.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -247,7 +247,7 @@ metrics:
   mysql.handlers:
     enabled: true
     description: The number of requests to various MySQL handlers.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -257,7 +257,7 @@ metrics:
   mysql.double_writes:
     enabled: true
     description: The number of writes to the InnoDB doublewrite buffer.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -267,7 +267,7 @@ metrics:
   mysql.log_operations:
     enabled: true
     description: The number of InnoDB log operations.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -277,7 +277,7 @@ metrics:
   mysql.operations:
     enabled: true
     description: The number of InnoDB operations.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -287,7 +287,7 @@ metrics:
   mysql.page_operations:
     enabled: true
     description: The number of InnoDB page operations.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -297,7 +297,7 @@ metrics:
   mysql.table.io.wait.count:
     enabled: true
     description: The total count of I/O wait events for a table.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -315,7 +315,7 @@ metrics:
   mysql.index.io.wait.count:
     enabled: true
     description: The total count of I/O wait events for an index.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -333,7 +333,7 @@ metrics:
   mysql.row_locks:
     enabled: true
     description: The number of InnoDB row locks.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -343,7 +343,7 @@ metrics:
   mysql.row_operations:
     enabled: true
     description: The number of InnoDB row operations.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -353,7 +353,7 @@ metrics:
   mysql.locks:
     enabled: true
     description: The number of MySQL locks.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -363,7 +363,7 @@ metrics:
   mysql.sorts:
     enabled: true
     description: The number of MySQL sorts.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -373,7 +373,7 @@ metrics:
   mysql.threads:
     enabled: true
     description: The state of MySQL threads.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -393,7 +393,7 @@ metrics:
   mysql.opened_resources:
     enabled: true
     description: The number of opened resources.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -448,7 +448,7 @@ metrics:
   mysql.connection.count:
     enabled: false
     description: The number of connection attempts (successful or not) to the MySQL server.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -457,7 +457,7 @@ metrics:
   mysql.connection.errors:
     enabled: false
     description: Errors that occur during the client connection process.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -468,7 +468,7 @@ metrics:
     enabled: true
     description: The number of mysqlx connections.
     extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -478,7 +478,7 @@ metrics:
   mysql.joins:
     enabled: false
     description: The number of joins that perform table scans.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -488,7 +488,7 @@ metrics:
   mysql.tmp_resources:
     enabled: true
     description: The number of created temporary resources.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -516,7 +516,7 @@ metrics:
   mysql.statement_event.count:
     enabled: false
     description: Summary of current and recent statement events.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: false
@@ -534,7 +534,7 @@ metrics:
   mysql.mysqlx_worker_threads:
     enabled: false
     description: The number of worker threads available.
-    unit: 1
+    unit: "1"
     extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
     sum:
       value_type: int
@@ -545,7 +545,7 @@ metrics:
   mysql.table_open_cache:
     enabled: false
     description: The number of hits, misses or overflows for open tables cache lookups.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -555,7 +555,7 @@ metrics:
   mysql.query.client.count:
     enabled: false
     description: The number of statements executed by the server. This includes only statements sent to the server by clients.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -564,7 +564,7 @@ metrics:
   mysql.query.count:
     enabled: false
     description: The number of statements executed by the server.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string
@@ -573,7 +573,7 @@ metrics:
   mysql.query.slow.count:
     enabled: false
     description: The number of slow queries.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       input_type: string

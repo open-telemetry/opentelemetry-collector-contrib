@@ -9,7 +9,7 @@ skywalking/2:
   timeout: 10s
   headers:
     "can you have a . here?": "F0000000-0000-0000-0000-000000000000"
-    header1: 234
+    header1: "234"
     another: "somevalue"
   balancer_name: "round_robin"
   keepalive:
