@@ -93,27 +93,31 @@ var ContainerMemoryMetrics = MemoryMetrics{
 }
 
 type FilesystemMetrics struct {
-	Available RecordIntDataPointFunc
-	Capacity  RecordIntDataPointFunc
-	Usage     RecordIntDataPointFunc
+	Available   RecordIntDataPointFunc
+	Capacity    RecordIntDataPointFunc
+	Usage       RecordIntDataPointFunc
+	Utilization RecordDoubleDataPointFunc
 }
 
 var NodeFilesystemMetrics = FilesystemMetrics{
-	Available: (*MetricsBuilder).RecordK8sNodeFilesystemAvailableDataPoint,
-	Capacity:  (*MetricsBuilder).RecordK8sNodeFilesystemCapacityDataPoint,
-	Usage:     (*MetricsBuilder).RecordK8sNodeFilesystemUsageDataPoint,
+	Available:   (*MetricsBuilder).RecordK8sNodeFilesystemAvailableDataPoint,
+	Capacity:    (*MetricsBuilder).RecordK8sNodeFilesystemCapacityDataPoint,
+	Usage:       (*MetricsBuilder).RecordK8sNodeFilesystemUsageDataPoint,
+	Utilization: (*MetricsBuilder).RecordK8sNodeFilesystemUtilizationDataPoint,
 }
 
 var PodFilesystemMetrics = FilesystemMetrics{
-	Available: (*MetricsBuilder).RecordK8sPodFilesystemAvailableDataPoint,
-	Capacity:  (*MetricsBuilder).RecordK8sPodFilesystemCapacityDataPoint,
-	Usage:     (*MetricsBuilder).RecordK8sPodFilesystemUsageDataPoint,
+	Available:   (*MetricsBuilder).RecordK8sPodFilesystemAvailableDataPoint,
+	Capacity:    (*MetricsBuilder).RecordK8sPodFilesystemCapacityDataPoint,
+	Usage:       (*MetricsBuilder).RecordK8sPodFilesystemUsageDataPoint,
+	Utilization: (*MetricsBuilder).RecordK8sPodFilesystemUtilizationDataPoint,
 }
 
 var ContainerFilesystemMetrics = FilesystemMetrics{
-	Available: (*MetricsBuilder).RecordContainerFilesystemAvailableDataPoint,
-	Capacity:  (*MetricsBuilder).RecordContainerFilesystemCapacityDataPoint,
-	Usage:     (*MetricsBuilder).RecordContainerFilesystemUsageDataPoint,
+	Available:   (*MetricsBuilder).RecordContainerFilesystemAvailableDataPoint,
+	Capacity:    (*MetricsBuilder).RecordContainerFilesystemCapacityDataPoint,
+	Usage:       (*MetricsBuilder).RecordContainerFilesystemUsageDataPoint,
+	Utilization: (*MetricsBuilder).RecordContainerFilesystemUtilizationDataPoint,
 }
 
 type NetworkMetrics struct {

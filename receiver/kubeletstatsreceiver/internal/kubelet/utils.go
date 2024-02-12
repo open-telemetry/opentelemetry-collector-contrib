@@ -15,3 +15,10 @@ func recordIntDataPoint(mb *metadata.MetricsBuilder, recordDataPoint metadata.Re
 	}
 	recordDataPoint(mb, currentTime, int64(*value))
 }
+
+func recordDoubleDataPoint(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordDoubleDataPointFunc, value *float64, currentTime pcommon.Timestamp) {
+	if value == nil {
+		return
+	}
+	recordDataPoint(mb, currentTime, *value)
+}

@@ -5,11 +5,11 @@ package pod // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
-	"strings"
-	"time"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"k8s.io/apimachinery/pkg/labels"
+	k8s "k8s.io/client-go/kubernetes"
+	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -76,6 +76,15 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 }
 
 func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.Pod, ts pcommon.Timestamp) {
+	client, err := k8sconfig.MakeClient(k8sconfig.APIConfig{
+		AuthType: k8sconfig.AuthTypeServiceAccount,
+	})
+	if err != nil {
+		logger.Error(err.Error())
+	}
+
+	jobInfo := getJobInfoForPod(client, pod)
+
 	mb.RecordK8sPodPhaseDataPoint(ts, int64(phaseToInt(pod.Status.Phase)))
 	mb.RecordK8sPodStatusReasonDataPoint(ts, int64(reasonToInt(pod.Status.Reason)))
 	rb := mb.NewResourceBuilder()
@@ -83,10 +92,13 @@ func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.
 	rb.SetK8sNodeName(pod.Spec.NodeName)
 	rb.SetK8sPodName(pod.Name)
 	rb.SetK8sPodUID(string(pod.UID))
-	rb.SetK8sPodQosClass(string(pod.Status.QOSClass))
-	rb.SetK8sServiceName(getServiceNameForPod(pod))
 	rb.SetK8sPodStartTime(pod.GetCreationTimestamp().String())
-	rb.SetK8sServiceAccountName(getServiceAccountNameForPod(pod))
+	rb.SetK8sPodQosClass(string(pod.Status.QOSClass))
+	rb.SetK8sServiceName(getServiceNameForPod(client, pod))
+	rb.SetK8sJobName(jobInfo.Name)
+	rb.SetK8sJobUID(string(jobInfo.UID))
+	rb.SetK8sPodStartTime(pod.GetCreationTimestamp().String())
+	rb.SetK8sServiceAccountName(getServiceAccountNameForPod(client, pod))
 	rb.SetK8sClusterName("unknown")
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
@@ -95,15 +107,8 @@ func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.
 	}
 }
 
-func getServiceNameForPod(pod *corev1.Pod) string {
+func getServiceNameForPod(client k8s.Interface, pod *corev1.Pod) string {
 	var serviceName string
-
-	client, err := k8sconfig.MakeClient(k8sconfig.APIConfig{
-		AuthType: k8sconfig.AuthTypeServiceAccount,
-	})
-	if err != nil {
-		return ""
-	}
 
 	serviceList, err := client.CoreV1().Services(pod.Namespace).List(context.TODO(), v1.ListOptions{})
 	if err != nil {
@@ -122,16 +127,32 @@ func getServiceNameForPod(pod *corev1.Pod) string {
 	return ""
 }
 
-func getServiceAccountNameForPod(pod *corev1.Pod) string {
-	var serviceAccountName string
+type JobInfo struct {
+	Name string
+	UID  types.UID
+}
 
-	client, err := k8sconfig.MakeClient(k8sconfig.APIConfig{
-		AuthType: k8sconfig.AuthTypeServiceAccount,
+func getJobInfoForPod(client k8s.Interface, pod *corev1.Pod) JobInfo {
+	podSelector := labels.Set(pod.Labels)
+	jobList, err := client.BatchV1().Jobs(pod.Namespace).List(context.TODO(), v1.ListOptions{
+		LabelSelector: podSelector.AsSelector().String(),
 	})
 	if err != nil {
-		panic(err)
-		return ""
+		return JobInfo{}
 	}
+
+	if len(jobList.Items) > 0 {
+		return JobInfo{
+			Name: jobList.Items[0].Name,
+			UID:  jobList.Items[0].UID,
+		}
+	}
+
+	return JobInfo{}
+}
+
+func getServiceAccountNameForPod(client k8s.Interface, pod *corev1.Pod) string {
+	var serviceAccountName string
 
 	podDetails, err := client.CoreV1().Pods(pod.Namespace).Get(context.TODO(), pod.Name, v1.GetOptions{})
 	if err != nil {

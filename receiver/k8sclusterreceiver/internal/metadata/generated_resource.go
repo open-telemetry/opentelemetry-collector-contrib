@@ -182,6 +182,111 @@ func (rb *ResourceBuilder) SetK8sNodeUID(val string) {
 	}
 }
 
+// SetK8sPersistentvolumeAccessModes sets provided value as "k8s.persistentvolume.access_modes" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeAccessModes(val string) {
+	if rb.config.K8sPersistentvolumeAccessModes.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.access_modes", val)
+	}
+}
+
+// SetK8sPersistentvolumeAnnotations sets provided value as "k8s.persistentvolume.annotations" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeAnnotations(val string) {
+	if rb.config.K8sPersistentvolumeAnnotations.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.annotations", val)
+	}
+}
+
+// SetK8sPersistentvolumeFinalizers sets provided value as "k8s.persistentvolume.finalizers" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeFinalizers(val string) {
+	if rb.config.K8sPersistentvolumeFinalizers.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.finalizers", val)
+	}
+}
+
+// SetK8sPersistentvolumeLabels sets provided value as "k8s.persistentvolume.labels" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeLabels(val string) {
+	if rb.config.K8sPersistentvolumeLabels.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.labels", val)
+	}
+}
+
+// SetK8sPersistentvolumeName sets provided value as "k8s.persistentvolume.name" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeName(val string) {
+	if rb.config.K8sPersistentvolumeName.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.name", val)
+	}
+}
+
+// SetK8sPersistentvolumeNamespace sets provided value as "k8s.persistentvolume.namespace" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeNamespace(val string) {
+	if rb.config.K8sPersistentvolumeNamespace.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.namespace", val)
+	}
+}
+
+// SetK8sPersistentvolumePhase sets provided value as "k8s.persistentvolume.phase" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumePhase(val string) {
+	if rb.config.K8sPersistentvolumePhase.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.phase", val)
+	}
+}
+
+// SetK8sPersistentvolumeReclaimPolicy sets provided value as "k8s.persistentvolume.reclaim_policy" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeReclaimPolicy(val string) {
+	if rb.config.K8sPersistentvolumeReclaimPolicy.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.reclaim_policy", val)
+	}
+}
+
+// SetK8sPersistentvolumeStartTime sets provided value as "k8s.persistentvolume.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeStartTime(val string) {
+	if rb.config.K8sPersistentvolumeStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.start_time", val)
+	}
+}
+
+// SetK8sPersistentvolumeStorageClass sets provided value as "k8s.persistentvolume.storage_class" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeStorageClass(val string) {
+	if rb.config.K8sPersistentvolumeStorageClass.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.storage_class", val)
+	}
+}
+
+// SetK8sPersistentvolumeType sets provided value as "k8s.persistentvolume.type" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeType(val string) {
+	if rb.config.K8sPersistentvolumeType.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.type", val)
+	}
+}
+
+// SetK8sPersistentvolumeUID sets provided value as "k8s.persistentvolume.uid" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeUID(val string) {
+	if rb.config.K8sPersistentvolumeUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.uid", val)
+	}
+}
+
+// SetK8sPersistentvolumeVolumeMode sets provided value as "k8s.persistentvolume.volume_mode" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeVolumeMode(val string) {
+	if rb.config.K8sPersistentvolumeVolumeMode.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolume.volume_mode", val)
+	}
+}
+
+// SetK8sPersistentvolumeclaimName sets provided value as "k8s.persistentvolumeclaim.name" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeclaimName(val string) {
+	if rb.config.K8sPersistentvolumeclaimName.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolumeclaim.name", val)
+	}
+}
+
+// SetK8sPersistentvolumeclaimUID sets provided value as "k8s.persistentvolumeclaim.uid" attribute.
+func (rb *ResourceBuilder) SetK8sPersistentvolumeclaimUID(val string) {
+	if rb.config.K8sPersistentvolumeclaimUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.persistentvolumeclaim.uid", val)
+	}
+}
+
 // SetK8sPodName sets provided value as "k8s.pod.name" attribute.
 func (rb *ResourceBuilder) SetK8sPodName(val string) {
 	if rb.config.K8sPodName.Enabled {

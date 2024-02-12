@@ -169,3 +169,9 @@ Number of partitions in topic.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| runtime.metrics.kafka | Flag for kafka metrics | Any Str | true |
