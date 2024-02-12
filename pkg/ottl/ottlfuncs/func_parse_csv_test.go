@@ -169,7 +169,7 @@ func Test_ParseCSV(t *testing.T) {
 			oArgs: &ParseCSVArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(ctx context.Context, tCtx any) (any, error) {
-						return "val1,val2\n,val3", nil
+						return "val1\n,val2,val3", nil
 					},
 				},
 				Header: ottl.StandardStringGetter[any]{
@@ -179,8 +179,8 @@ func Test_ParseCSV(t *testing.T) {
 				},
 			},
 			want: map[string]any{
-				"col1": "val1",
-				"col2": "val2\n",
+				"col1": "val1\n",
+				"col2": "val2",
 				"col3": "val3",
 			},
 		},
