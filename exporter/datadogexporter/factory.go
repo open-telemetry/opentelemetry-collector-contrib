@@ -239,7 +239,7 @@ func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
 	return cfg
 }
 
-func (f *factory) consumeStatsPayload(ctx context.Context, statsIn <-chan []byte, statsToAgent chan<- *pb.StatsPayload, logger *zap.Logger) {
+func (f *factory) consumeStatsPayload(ctx context.Context, statsIn <-chan []byte, statsToAgent chan<- *pb.StatsPayload, tracerVersion string, logger *zap.Logger) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		f.wg.Add(1)
 		go func() {
@@ -255,6 +255,11 @@ func (f *factory) consumeStatsPayload(ctx context.Context, statsIn <-chan []byte
 					if err != nil {
 						logger.Error("failed to unmarshal stats payload", zap.Error(err))
 						continue
+					}
+					for _, csp := range sp.Stats {
+						if csp.TracerVersion == "" {
+							csp.TracerVersion = tracerVersion
+						}
 					}
 					statsToAgent <- sp
 				}
@@ -292,7 +297,8 @@ func (f *factory) createMetricsExporter(
 	var statsIn chan []byte
 	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
 		statsIn = make(chan []byte, 1000)
-		f.consumeStatsPayload(ctx, statsIn, statsToAgent, set.Logger)
+		statsv := set.BuildInfo.Command + set.BuildInfo.Version
+		f.consumeStatsPayload(ctx, statsIn, statsToAgent, statsv, set.Logger)
 	}
 	pcfg := newMetadataConfigfromConfig(cfg)
 	metadataReporter, err := f.Reporter(set, pcfg)
