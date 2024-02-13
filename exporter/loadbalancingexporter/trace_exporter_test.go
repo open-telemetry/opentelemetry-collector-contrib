@@ -534,6 +534,89 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	require.Greater(t, counter2.Load(), int64(0))
 }
 
+func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
+	sink := new(consumertest.TracesSink)
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+		return newMockTracesExporter(sink.ConsumeTraces), nil
+	}
+
+	endpoints := []string{}
+	for i := 0; i < endpointsCount; i++ {
+		endpoints = append(endpoints, fmt.Sprintf("endpoint-%d", i))
+	}
+
+	config := &Config{
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{Hostnames: endpoints},
+		},
+	}
+
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), config, componentFactory)
+	require.NotNil(b, lb)
+	require.NoError(b, err)
+
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), config)
+	require.NotNil(b, p)
+	require.NoError(b, err)
+
+	p.loadBalancer = lb
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(b, err)
+
+	trace1 := ptrace.NewTraces()
+	trace2 := ptrace.NewTraces()
+	for i := 0; i < endpointsCount; i++ {
+		for j := 0; j < tracesCount/endpointsCount; j++ {
+			appendSimpleTraceWithID(trace2.ResourceSpans().AppendEmpty(), [16]byte{1, 2, 6, byte(i)})
+		}
+	}
+	td := mergeTraces(trace1, trace2)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		err = p.ConsumeTraces(context.Background(), td)
+		require.NoError(b, err)
+	}
+
+	b.StopTimer()
+	err = p.Shutdown(context.Background())
+	require.NoError(b, err)
+}
+
+func BenchmarkConsumeTraces_1E100T(b *testing.B) {
+	benchConsumeTraces(b, 1, 100)
+}
+
+func BenchmarkConsumeTraces_1E1000T(b *testing.B) {
+	benchConsumeTraces(b, 1, 1000)
+}
+
+func BenchmarkConsumeTraces_5E100T(b *testing.B) {
+	benchConsumeTraces(b, 5, 100)
+}
+
+func BenchmarkConsumeTraces_5E500T(b *testing.B) {
+	benchConsumeTraces(b, 5, 500)
+}
+
+func BenchmarkConsumeTraces_5E1000T(b *testing.B) {
+	benchConsumeTraces(b, 5, 1000)
+}
+
+func BenchmarkConsumeTraces_10E100T(b *testing.B) {
+	benchConsumeTraces(b, 10, 100)
+}
+
+func BenchmarkConsumeTraces_10E500T(b *testing.B) {
+	benchConsumeTraces(b, 10, 500)
+}
+
+func BenchmarkConsumeTraces_10E1000T(b *testing.B) {
+	benchConsumeTraces(b, 10, 1000)
+}
+
 func randomTraces() ptrace.Traces {
 	v1 := uint8(rand.Intn(256))
 	v2 := uint8(rand.Intn(256))
