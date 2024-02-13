@@ -47,7 +47,7 @@ func createDefaultConfig() component.Config {
 			CheckInterval:              defaultCompactionInterval,
 		},
 		Timeout: time.Second,
-		FSync:   false,
+		FSync:   true,
 	}
 }
 
