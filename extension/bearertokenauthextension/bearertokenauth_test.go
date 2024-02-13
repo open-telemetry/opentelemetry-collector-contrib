@@ -160,6 +160,7 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 
 	assert.Nil(t, bauth.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Error(t, bauth.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, bauth.Shutdown(context.Background())) }()
 
 	token, err := os.ReadFile(bauth.filename)
 	assert.NoError(t, err)

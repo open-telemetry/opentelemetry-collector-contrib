@@ -42,7 +42,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter"
@@ -328,7 +327,6 @@ func Components() (otelcol.Factories, error) {
 		debugexporter.NewFactory(),
 		dynatraceexporter.NewFactory(),
 		elasticsearchexporter.NewFactory(),
-		f5cloudexporter.NewFactory(),
 		fileexporter.NewFactory(),
 		googlecloudexporter.NewFactory(),
 		googlemanagedprometheusexporter.NewFactory(),
