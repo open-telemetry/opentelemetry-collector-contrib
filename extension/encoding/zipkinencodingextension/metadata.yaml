@@ -7,3 +7,6 @@ status:
   distributions: []
   codeowners:
     active: [MovieStoreGuy, dao-jun]
+
+tests:
+  config:

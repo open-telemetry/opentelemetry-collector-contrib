@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter
 
-go 1.20
+go 1.21
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
@@ -21,6 +21,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.94.1
 	go.opentelemetry.io/otel/metric v1.23.0
 	go.opentelemetry.io/otel/trace v1.23.0
+	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.61.0
 )
 

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver
 
-go 1.20
+go 1.21
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2

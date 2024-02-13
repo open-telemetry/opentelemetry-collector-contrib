@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator
 
-go 1.20
+go 1.21
 
 require (
 	github.com/expr-lang/expr v1.16.0

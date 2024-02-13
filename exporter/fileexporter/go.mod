@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter
 
-go 1.20
+go 1.21
 
 require (
 	github.com/klauspost/compress v1.17.6
