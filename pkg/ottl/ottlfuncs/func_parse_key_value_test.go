@@ -7,9 +7,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func Test_parseKeyValue(t *testing.T) {
@@ -246,20 +247,6 @@ hello!!world  `, nil
 				"a": "b c=d", // occurs because `SplitString()` returns original string and `strings.SplitN` with N=2 will split on just the first instance of delimiter("=")
 			},
 		},
-		{
-			name: "empty delimiters",
-			target: ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
-					return "a=b c=d", nil
-				},
-			},
-			delimiter:     ottl.NewTestingOptional(""),
-			pairDelimiter: ottl.NewTestingOptional(""),
-			expected: map[string]any{
-				"a": "b",
-				"c": "d",
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -371,4 +358,19 @@ func Test_parseKeyValue_bad_delimiter(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = exprFunc(context.Background(), nil)
 	assert.ErrorContains(t, err, "cannot split \"a=b\" into 2 items, got 1 item(s)")
+}
+
+func Test_parseKeyValue_empty_delimiters(t *testing.T) {
+	target := ottl.StandardStringGetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
+			return "a=b c=d", nil
+		},
+	}
+	delimiter := ottl.NewTestingOptional[string]("")
+
+	_, err := parseKeyValue[any](target, delimiter, ottl.Optional[string]{})
+	assert.ErrorContains(t, err, "delimiter cannot be set to an empty string")
+
+	_, err = parseKeyValue[any](target, ottl.Optional[string]{}, delimiter)
+	assert.ErrorContains(t, err, "pair delimiter cannot be set to an empty string")
 }

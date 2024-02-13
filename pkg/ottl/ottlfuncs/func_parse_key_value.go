@@ -8,9 +8,10 @@ import (
 	"fmt"
 	"strings"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/parseutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type ParseKeyValueArguments[K any] struct {
@@ -35,12 +36,18 @@ func createParseKeyValueFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argum
 
 func parseKeyValue[K any](target ottl.StringGetter[K], d ottl.Optional[string], p ottl.Optional[string]) (ottl.ExprFunc[K], error) {
 	delimiter := "="
-	if !d.IsEmpty() && d.Get() != "" {
+	if !d.IsEmpty() {
+		if d.Get() == "" {
+			return nil, fmt.Errorf("delimiter cannot be set to an empty string")
+		}
 		delimiter = d.Get()
 	}
 
 	pairDelimiter := " "
-	if !p.IsEmpty() && p.Get() != "" {
+	if !p.IsEmpty() {
+		if p.Get() == "" {
+			return nil, fmt.Errorf("pair delimiter cannot be set to an empty string")
+		}
 		pairDelimiter = p.Get()
 	}
 
