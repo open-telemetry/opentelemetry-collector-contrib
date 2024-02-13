@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ackextension
+package ackextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 
 // AckExtension is an extension that can be used by other otel components to support acking of data and can be queried against
 // to check the status of given ack ids.

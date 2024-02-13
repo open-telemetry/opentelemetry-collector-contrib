@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ackextension
+package ackextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 
 import (
 	"context"
@@ -31,6 +31,6 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createExtension(_ context.Context, set extension.CreateSettings, conf component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
 	return nil, nil
 }

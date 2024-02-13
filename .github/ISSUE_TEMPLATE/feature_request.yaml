@@ -76,6 +76,7 @@ body:
       - exporter/syslog
       - exporter/tencentcloudlogservice
       - exporter/zipkin
+      - extension/ack
       - extension/asapauth
       - extension/awsproxy
       - extension/basicauth

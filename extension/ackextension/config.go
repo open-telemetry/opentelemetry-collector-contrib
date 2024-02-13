@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ackextension
+package ackextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 
 // Config defines configuration for ack extension
 type Config struct {

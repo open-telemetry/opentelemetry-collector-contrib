@@ -54,6 +54,7 @@ components:
         - tencentcloud_logservice
         - zipkin
     extension:
+        - ack
         - asapclient
         - awsproxy
         - basicauth
