@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -151,18 +152,19 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, spli
 	}
 
 	readerFactory := reader.Factory{
-		SugaredLogger:   logger.With("component", "fileconsumer"),
-		FromBeginning:   startAtBeginning,
-		FingerprintSize: int(c.FingerprintSize),
-		MaxLogSize:      int(c.MaxLogSize),
-		Encoding:        enc,
-		SplitFunc:       splitFunc,
-		TrimFunc:        trimFunc,
-		FlushTimeout:    c.FlushPeriod,
-		EmitFunc:        emit,
-		Attributes:      c.Resolver,
-		HeaderConfig:    hCfg,
-		DeleteAtEOF:     c.DeleteAfterRead,
+		SugaredLogger:     logger.With("component", "fileconsumer"),
+		FromBeginning:     startAtBeginning,
+		FingerprintSize:   int(c.FingerprintSize),
+		InitialBufferSize: scanner.DefaultBufferSize,
+		MaxLogSize:        int(c.MaxLogSize),
+		Encoding:          enc,
+		SplitFunc:         splitFunc,
+		TrimFunc:          trimFunc,
+		FlushTimeout:      c.FlushPeriod,
+		EmitFunc:          emit,
+		Attributes:        c.Resolver,
+		HeaderConfig:      hCfg,
+		DeleteAtEOF:       c.DeleteAfterRead,
 	}
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
 	for i := 0; i < len(knownFiles); i++ {
