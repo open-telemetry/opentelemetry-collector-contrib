@@ -33,7 +33,7 @@ func ScopePathGetSetter[K InstrumentationScopeContext](path ottl.Path[K]) (ottl.
 	case "dropped_attributes_count":
 		return accessInstrumentationScopeDroppedAttributesCount[K](), nil
 	default:
-		return nil, FormatDefaultErrorMessage(path.Name(), "Instrumentation Scope", InstrumentationScopeRef)
+		return nil, FormatDefaultErrorMessage(path.String(), "Instrumentation Scope", InstrumentationScopeRef)
 	}
 }
 

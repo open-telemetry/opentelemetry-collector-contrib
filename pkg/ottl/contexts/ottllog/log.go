@@ -182,7 +182,7 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 			if nextPath.Name() == "string" {
 				return accessStringBody(), nil
 			}
-			return nil, internal.FormatDefaultErrorMessage("body."+nextPath.Name(), contextName, internal.LogRef)
+			return nil, internal.FormatDefaultErrorMessage(path.String(), contextName, internal.LogRef)
 		}
 		if path.Keys() == nil {
 			return accessBody(), nil
@@ -203,7 +203,7 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 			if path.Next().Name() == "string" {
 				return accessStringTraceID(), nil
 			}
-			return nil, internal.FormatDefaultErrorMessage("trace_id."+nextPath.Name(), contextName, internal.LogRef)
+			return nil, internal.FormatDefaultErrorMessage(path.String(), contextName, internal.LogRef)
 		}
 		return accessTraceID(), nil
 	case "span_id":
@@ -212,11 +212,11 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 			if nextPath.Name() == "string" {
 				return accessStringSpanID(), nil
 			}
-			return nil, internal.FormatDefaultErrorMessage("span_id."+nextPath.Name(), contextName, internal.LogRef)
+			return nil, internal.FormatDefaultErrorMessage(path.String(), contextName, internal.LogRef)
 		}
 		return accessSpanID(), nil
 	default:
-		return nil, internal.FormatDefaultErrorMessage(path.Name(), contextName, internal.LogRef)
+		return nil, internal.FormatDefaultErrorMessage(path.String(), contextName, internal.LogRef)
 	}
 }
 

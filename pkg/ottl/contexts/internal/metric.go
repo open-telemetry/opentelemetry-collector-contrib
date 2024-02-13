@@ -47,7 +47,7 @@ func MetricPathGetSetter[K MetricContext](path ottl.Path[K]) (ottl.GetSetter[K],
 	case "data_points":
 		return accessDataPoints[K](), nil
 	default:
-		return nil, FormatDefaultErrorMessage(path.Name(), "Metric", MetricRef)
+		return nil, FormatDefaultErrorMessage(path.String(), "Metric", MetricRef)
 	}
 }
 
