@@ -180,8 +180,5 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf(`requires "max_event_size" <= %d`, maxMaxEventSize)
 	}
 
-	if err := cfg.QueueSettings.Validate(); err != nil {
-		return fmt.Errorf("sending_queue settings has invalid configuration: %w", err)
-	}
 	return nil
 }
