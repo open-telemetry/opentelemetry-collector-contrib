@@ -28,9 +28,9 @@ func TestLogsRegisterConsumers(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]component.ID{{logsFirst}, {logsSecond}, {logsThird}},
-		RetryInterval:    5 * time.Minute,
-		RetryGap:         10 * time.Second,
-		MaxRetries:       5,
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
+		MaxRetries:       10000,
 	}
 
 	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
@@ -68,8 +68,8 @@ func TestLogsWithValidFailover(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]component.ID{{logsFirst}, {logsSecond}, {logsThird}},
-		RetryInterval:    25 * time.Millisecond,
-		RetryGap:         5 * time.Millisecond,
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
 		MaxRetries:       10000,
 	}
 
@@ -105,8 +105,8 @@ func TestLogsWithFailoverError(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]component.ID{{logsFirst}, {logsSecond}, {logsThird}},
-		RetryInterval:    25 * time.Millisecond,
-		RetryGap:         5 * time.Millisecond,
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
 		MaxRetries:       10000,
 	}
 
@@ -143,8 +143,8 @@ func TestLogsWithRecovery(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]component.ID{{logsFirst}, {logsSecond}, {logsThird}, {logsFourth}},
-		RetryInterval:    25 * time.Millisecond,
-		RetryGap:         5 * time.Millisecond,
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
 		MaxRetries:       10000,
 	}
 
@@ -247,41 +247,70 @@ func TestLogsWithRecovery(t *testing.T) {
 			return consumeLogsAndCheckStable(failoverConnector, 0, lr)
 		}, 3*time.Second, 5*time.Millisecond)
 	})
+}
 
-	t.Run("failover with max retries exceeded: level 3 -> 1 -> 3 -> 1(Skipped due to max retries) -> 2", func(t *testing.T) {
-		defer func() {
-			resetLogsConsumers(failoverConnector, &sinkFirst, &sinkSecond, &sinkThird, &sinkFourth)
-		}()
-		failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
-		failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errLogsConsumer))
+func TestLogsWithRecovery_MaxRetries(t *testing.T) {
+	var sinkFirst, sinkSecond, sinkThird, sinkFourth consumertest.LogsSink
+	logsFirst := component.NewIDWithName(component.DataTypeLogs, "logs/first")
+	logsSecond := component.NewIDWithName(component.DataTypeLogs, "logs/second")
+	logsThird := component.NewIDWithName(component.DataTypeLogs, "logs/third")
+	logsFourth := component.NewIDWithName(component.DataTypeLogs, "logs/fourth")
 
-		require.Eventually(t, func() bool {
-			return consumeLogsAndCheckStable(failoverConnector, 2, lr)
-		}, 3*time.Second, 5*time.Millisecond)
+	cfg := &Config{
+		PipelinePriority: [][]component.ID{{logsFirst}, {logsSecond}, {logsThird}, {logsFourth}},
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
+		MaxRetries:       10000,
+	}
 
-		failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkSecond)
-		failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)
-
-		require.Eventually(t, func() bool {
-			return consumeLogsAndCheckStable(failoverConnector, 0, lr)
-		}, 3*time.Second, 5*time.Millisecond)
-
-		failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
-		failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errLogsConsumer))
-		failoverConnector.failover.pS.SetRetryCountToMax(0)
-
-		require.Eventually(t, func() bool {
-			return consumeLogsAndCheckStable(failoverConnector, 2, lr)
-		}, 3*time.Second, 5*time.Millisecond)
-
-		failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkSecond)
-		failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)
-
-		require.Eventually(t, func() bool {
-			return consumeLogsAndCheckStable(failoverConnector, 1, lr)
-		}, 3*time.Second, 5*time.Millisecond)
-
+	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+		logsFirst:  &sinkFirst,
+		logsSecond: &sinkSecond,
+		logsThird:  &sinkThird,
+		logsFourth: &sinkFourth,
 	})
+
+	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
+		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Logs))
+
+	require.NoError(t, err)
+
+	failoverConnector := conn.(*logsFailover)
+
+	lr := sampleLog()
+
+	defer func() {
+		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+	}()
+
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errLogsConsumer))
+
+	require.Eventually(t, func() bool {
+		return consumeLogsAndCheckStable(failoverConnector, 2, lr)
+	}, 3*time.Second, 5*time.Millisecond)
+
+	failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkSecond)
+	failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)
+
+	require.Eventually(t, func() bool {
+		return consumeLogsAndCheckStable(failoverConnector, 0, lr)
+	}, 3*time.Second, 5*time.Millisecond)
+
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errLogsConsumer))
+	failoverConnector.failover.pS.SetRetryCountToMax(0)
+
+	require.Eventually(t, func() bool {
+		return consumeLogsAndCheckStable(failoverConnector, 2, lr)
+	}, 3*time.Second, 5*time.Millisecond)
+
+	failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkSecond)
+	failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)
+
+	require.Eventually(t, func() bool {
+		return consumeLogsAndCheckStable(failoverConnector, 1, lr)
+	}, 3*time.Second, 5*time.Millisecond)
 }
 
 func consumeLogsAndCheckStable(conn *logsFailover, idx int, lr plog.Logs) bool {

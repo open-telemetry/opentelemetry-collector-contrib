@@ -28,8 +28,8 @@ func TestMetricsRegisterConsumers(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]component.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
-		RetryInterval:    25 * time.Millisecond,
-		RetryGap:         5 * time.Millisecond,
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
 		MaxRetries:       10000,
 	}
 
@@ -68,8 +68,8 @@ func TestMetricsWithValidFailover(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]component.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
-		RetryInterval:    25 * time.Millisecond,
-		RetryGap:         5 * time.Millisecond,
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
 		MaxRetries:       10000,
 	}
 
@@ -105,8 +105,8 @@ func TestMetricsWithFailoverError(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]component.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
-		RetryInterval:    25 * time.Millisecond,
-		RetryGap:         5 * time.Millisecond,
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
 		MaxRetries:       10000,
 	}
 
@@ -143,8 +143,8 @@ func TestMetricsWithRecovery(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]component.ID{{metricsFirst}, {metricsSecond}, {metricsThird}, {metricsFourth}},
-		RetryInterval:    25 * time.Millisecond,
-		RetryGap:         5 * time.Millisecond,
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
 		MaxRetries:       10000,
 	}
 
@@ -247,41 +247,70 @@ func TestMetricsWithRecovery(t *testing.T) {
 			return consumeMetricsAndCheckStable(failoverConnector, 0, mr)
 		}, 3*time.Second, 5*time.Millisecond)
 	})
+}
 
-	t.Run("failover with max retries exceeded: level 3 -> 1 -> 3 -> 1(Skipped due to max retries) -> 2", func(t *testing.T) {
-		defer func() {
-			resetMetricsConsumers(failoverConnector, &sinkFirst, &sinkSecond, &sinkThird, &sinkFourth)
-		}()
-		failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
-		failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errMetricsConsumer))
+func TestMetricsWithRecovery_MaxRetries(t *testing.T) {
+	var sinkFirst, sinkSecond, sinkThird, sinkFourth consumertest.MetricsSink
+	metricsFirst := component.NewIDWithName(component.DataTypeMetrics, "metrics/first")
+	metricsSecond := component.NewIDWithName(component.DataTypeMetrics, "metrics/second")
+	metricsThird := component.NewIDWithName(component.DataTypeMetrics, "metrics/third")
+	metricsFourth := component.NewIDWithName(component.DataTypeMetrics, "metrics/fourth")
 
-		require.Eventually(t, func() bool {
-			return consumeMetricsAndCheckStable(failoverConnector, 2, mr)
-		}, 3*time.Second, 5*time.Millisecond)
+	cfg := &Config{
+		PipelinePriority: [][]component.ID{{metricsFirst}, {metricsSecond}, {metricsThird}, {metricsFourth}},
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
+		MaxRetries:       10000,
+	}
 
-		failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkSecond)
-		failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)
-
-		require.Eventually(t, func() bool {
-			return consumeMetricsAndCheckStable(failoverConnector, 0, mr)
-		}, 3*time.Second, 5*time.Millisecond)
-
-		failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
-		failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errMetricsConsumer))
-		failoverConnector.failover.pS.SetRetryCountToMax(0)
-
-		require.Eventually(t, func() bool {
-			return consumeMetricsAndCheckStable(failoverConnector, 2, mr)
-		}, 3*time.Second, 5*time.Millisecond)
-
-		failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkSecond)
-		failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)
-
-		require.Eventually(t, func() bool {
-			return consumeMetricsAndCheckStable(failoverConnector, 1, mr)
-		}, 3*time.Second, 5*time.Millisecond)
-
+	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+		metricsFirst:  &sinkFirst,
+		metricsSecond: &sinkSecond,
+		metricsThird:  &sinkThird,
+		metricsFourth: &sinkFourth,
 	})
+
+	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
+		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Metrics))
+
+	require.NoError(t, err)
+
+	failoverConnector := conn.(*metricsFailover)
+
+	mr := sampleMetric()
+
+	defer func() {
+		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+	}()
+
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errMetricsConsumer))
+
+	require.Eventually(t, func() bool {
+		return consumeMetricsAndCheckStable(failoverConnector, 2, mr)
+	}, 3*time.Second, 5*time.Millisecond)
+
+	failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkSecond)
+	failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)
+
+	require.Eventually(t, func() bool {
+		return consumeMetricsAndCheckStable(failoverConnector, 0, mr)
+	}, 3*time.Second, 5*time.Millisecond)
+
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errMetricsConsumer))
+	failoverConnector.failover.pS.SetRetryCountToMax(0)
+
+	require.Eventually(t, func() bool {
+		return consumeMetricsAndCheckStable(failoverConnector, 2, mr)
+	}, 3*time.Second, 5*time.Millisecond)
+
+	failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkSecond)
+	failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)
+
+	require.Eventually(t, func() bool {
+		return consumeMetricsAndCheckStable(failoverConnector, 1, mr)
+	}, 3*time.Second, 5*time.Millisecond)
 }
 
 func consumeMetricsAndCheckStable(conn *metricsFailover, idx int, mr pmetric.Metrics) bool {
