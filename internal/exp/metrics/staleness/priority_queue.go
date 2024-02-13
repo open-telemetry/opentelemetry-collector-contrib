@@ -89,6 +89,7 @@ func (pq *PriorityQueue) Peek() (identity.Stream, time.Time) {
 
 func (pq *PriorityQueue) Pop() (identity.Stream, time.Time) {
 	val := heap.Pop(&pq.inner).(*queueItem)
+	delete(pq.itemLookup, val.key)
 	return val.key, val.prio
 }
 
