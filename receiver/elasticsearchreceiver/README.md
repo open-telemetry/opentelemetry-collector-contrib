@@ -66,15 +66,3 @@ The following metric are available with versions:
 - `elasticsearch.cluster.state_update.time` >= [7.16.0](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/release-notes-7.16.0.html)
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
-
-## Feature gate configurations
-
-See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
-
-**BETA**: `receiver.elasticsearch.emitNodeVersionAttr`
-
-The feature gate `receiver.elasticsearch.emitNodeVersionAttr` when enabled will enrich all node metrics with an
-resource attribute representing the node version.
-
-This feature gate is enabled by default, and eventually the old implementation will be removed. It aims to give users time
-to migrate to the new implementation. The target release for this featuregate to be permanently enabled is 0.82.0.
