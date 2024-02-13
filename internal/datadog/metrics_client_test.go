@@ -1,7 +1,12 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 package datadog
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/DataDog/datadog-agent/pkg/trace/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -9,8 +14,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-	"testing"
-	"time"
 )
 
 func setupMetricClient() (*metric.ManualReader, metrics.StatsClient, *metric.MeterProvider) {
@@ -34,7 +37,8 @@ func TestNewMetricClientComplex(t *testing.T) {
 func TestGauge(t *testing.T) {
 	reader, metricClient, _ := setupMetricClient()
 
-	metricClient.Gauge("test_gauge", 1, []string{"otlp:true", "service:otelcol"}, 1)
+	err := metricClient.Gauge("test_gauge", 1, []string{"otlp:true", "service:otelcol"}, 1)
+	assert.NoError(t, err)
 	rm := metricdata.ResourceMetrics{}
 	assert.NoError(t, reader.Collect(context.Background(), &rm))
 	require.Len(t, rm.ScopeMetrics, 1)
@@ -55,8 +59,10 @@ func TestGauge(t *testing.T) {
 func TestGaugeMultiple(t *testing.T) {
 	reader, metricClient, _ := setupMetricClient()
 
-	metricClient.Gauge("test_gauge", 1, []string{"otlp:true"}, 1)
-	metricClient.Gauge("test_gauge", 2, []string{"otlp:true"}, 1)
+	err := metricClient.Gauge("test_gauge", 1, []string{"otlp:true"}, 1)
+	assert.NoError(t, err)
+	err = metricClient.Gauge("test_gauge", 2, []string{"otlp:true"}, 1)
+	assert.NoError(t, err)
 
 	rm := metricdata.ResourceMetrics{}
 	assert.NoError(t, reader.Collect(context.Background(), &rm))
@@ -78,7 +84,8 @@ func TestGaugeMultiple(t *testing.T) {
 func TestCount(t *testing.T) {
 	reader, metricClient, _ := setupMetricClient()
 
-	metricClient.Count("test_count", 1, []string{"otlp:true", "service:otelcol"}, 1)
+	err := metricClient.Count("test_count", 1, []string{"otlp:true", "service:otelcol"}, 1)
+	assert.NoError(t, err)
 	rm := metricdata.ResourceMetrics{}
 	assert.NoError(t, reader.Collect(context.Background(), &rm))
 	require.Len(t, rm.ScopeMetrics, 1)
@@ -97,9 +104,12 @@ func TestCount(t *testing.T) {
 	}
 	metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
 
-	metricClient.Count("test_count", 2, []string{"otlp:true", "service:otelcol"}, 1)
-	metricClient.Count("test_count", 3, []string{"otlp:true", "service:otelcol"}, 1)
-	metricClient.Count("test_count2", 3, []string{"otlp:true", "service:otelcol"}, 1)
+	err = metricClient.Count("test_count", 2, []string{"otlp:true", "service:otelcol"}, 1)
+	assert.NoError(t, err)
+	err = metricClient.Count("test_count", 3, []string{"otlp:true", "service:otelcol"}, 1)
+	assert.NoError(t, err)
+	err = metricClient.Count("test_count2", 3, []string{"otlp:true", "service:otelcol"}, 1)
+	assert.NoError(t, err)
 	assert.NoError(t, reader.Collect(context.Background(), &rm))
 	require.Len(t, rm.ScopeMetrics, 1)
 	sm = rm.ScopeMetrics[0]
@@ -134,7 +144,8 @@ func TestCount(t *testing.T) {
 func TestHistogram(t *testing.T) {
 	reader, metricClient, _ := setupMetricClient()
 
-	metricClient.Histogram("test_histogram", 1, []string{"otlp:true", "service:otelcol"}, 1)
+	err := metricClient.Histogram("test_histogram", 1, []string{"otlp:true", "service:otelcol"}, 1)
+	assert.NoError(t, err)
 	rm := metricdata.ResourceMetrics{}
 	assert.NoError(t, reader.Collect(context.Background(), &rm))
 	require.Len(t, rm.ScopeMetrics, 1)
@@ -162,7 +173,8 @@ func TestHistogram(t *testing.T) {
 func TestTiming(t *testing.T) {
 	reader, metricClient, _ := setupMetricClient()
 
-	metricClient.Timing("test_timing", time.Duration(1000000000), []string{"otlp:true", "service:otelcol"}, 1)
+	err := metricClient.Timing("test_timing", time.Duration(1000000000), []string{"otlp:true", "service:otelcol"}, 1)
+	assert.NoError(t, err)
 	rm := metricdata.ResourceMetrics{}
 	assert.NoError(t, reader.Collect(context.Background(), &rm))
 	require.Len(t, rm.ScopeMetrics, 1)
