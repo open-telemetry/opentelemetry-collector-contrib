@@ -13,8 +13,14 @@ import (
 var nowFunc = time.Now
 
 type Map[T any] interface {
+	// Load the value at key. If it does not exist, the boolean will be false and the value returned will be the zero value
 	Load(key identity.Stream) (T, bool)
+	// Store the given key value pair in the map
 	Store(key identity.Stream, value T)
+	// LoadOrStore will either load the value from the map and return it and the boolean `true`
+	// or if it doesn't exist in the Map yet, the value passed in will be stored and then returned with the boolean `false`
+	LoadOrStore(key identity.Stream, value T) (T, bool)
+	// Remove the value at key from the map
 	Delete(key identity.Stream)
 	// Range calls f sequentially for each key and value present in the map.
 	// If f returns false, range stops the iteration.
