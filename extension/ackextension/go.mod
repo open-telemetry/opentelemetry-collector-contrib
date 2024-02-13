@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension
 
 go 1.21
 
