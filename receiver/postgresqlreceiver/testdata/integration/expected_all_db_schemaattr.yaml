@@ -1,6 +1,5 @@
 resourceMetrics:
-  - resource:
-      attributes: []
+  - resource: {}
     scopeMetrics:
       - metrics:
           - description: Number of buffers allocated.
@@ -8,9 +7,9 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "477"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                - asInt: "627"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{buffers}'
           - description: Number of buffers written.
@@ -23,29 +22,29 @@ resourceMetrics:
                     - key: source
                       value:
                         stringValue: backend
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: backend_fsync
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: bgwriter
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "60"
                   attributes:
                     - key: source
                       value:
                         stringValue: checkpoints
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{buffers}'
           - description: The number of checkpoints performed.
@@ -58,15 +57,15 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: requested
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: type
                       value:
                         stringValue: scheduled
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{checkpoints}'
           - description: Total time spent writing and syncing files to disk by checkpoints.
@@ -74,20 +73,20 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 23
+                - asDouble: 7
                   attributes:
                     - key: type
                       value:
                         stringValue: sync
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
-                - asDouble: 16
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 5
                   attributes:
                     - key: type
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: ms
           - description: Number of times the background writer stopped a cleaning scan because it had written too many buffers.
@@ -96,16 +95,16 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: Configured maximum number of client connections allowed
             gauge:
               dataPoints:
                 - asInt: "100"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: postgresql.connection.max
             unit: '{connections}'
           - description: Number of user databases.
@@ -114,77 +113,77 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "3"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{databases}'
           - description: The number of database locks.
             gauge:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: relation
-                      value:
-                        stringValue: pg_class_relname_nsp_index
-                    - key: mode
-                      value:
-                        stringValue: AccessShareLock
                     - key: lock_type
                       value:
                         stringValue: relation
-                  startTimeUnixNano: "1693418281967464598"
-                  timeUnixNano: "1693418340968890176"
-                - asInt: "1"
-                  attributes:
-                    - key: relation
-                      value:
-                        stringValue: pg_class_tblspc_relfilenode_index
                     - key: mode
                       value:
                         stringValue: AccessShareLock
-                    - key: lock_type
-                      value:
-                        stringValue: relation
-                  startTimeUnixNano: "1693418281967464598"
-                  timeUnixNano: "1693418340968890176"
-                - asInt: "1"
-                  attributes:
-                    - key: relation
-                      value:
-                        stringValue: pg_locks
-                    - key: mode
-                      value:
-                        stringValue: AccessShareLock
-                    - key: lock_type
-                      value:
-                        stringValue: relation
-                  startTimeUnixNano: "1693418281967464598"
-                  timeUnixNano: "1693418340968890176"
-                - asInt: "1"
-                  attributes:
                     - key: relation
                       value:
                         stringValue: pg_class
-                    - key: mode
-                      value:
-                        stringValue: AccessShareLock
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
                     - key: lock_type
                       value:
                         stringValue: relation
-                  startTimeUnixNano: "1693418281967464598"
-                  timeUnixNano: "1693418340968890176"
-                - asInt: "1"
-                  attributes:
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
                     - key: relation
                       value:
                         stringValue: pg_class_oid_index
-                    - key: mode
-                      value:
-                        stringValue: AccessShareLock
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
                     - key: lock_type
                       value:
                         stringValue: relation
-                  startTimeUnixNano: "1693418281967464598"
-                  timeUnixNano: "1693418340968890176"
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_class_relname_nsp_index
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_class_tblspc_relfilenode_index
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: relation
+                      value:
+                        stringValue: pg_locks
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: postgresql.database.locks
             unit: '{lock}'
         scope:
@@ -203,8 +202,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "6"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The database disk usage.
@@ -213,8 +212,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "7176708"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: The number of deadlocks.
             name: postgresql.deadlocks
@@ -222,18 +221,18 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{deadlock}"
+            unit: '{deadlock}'
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: Number of user tables in a database.
@@ -242,8 +241,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{table}'
           - description: The number of temp files.
             name: postgresql.temp_files
@@ -251,10 +250,10 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{temp_file}" 
+            unit: '{temp_file}'
         scope:
           name: otelcol/postgresqlreceiver
           version: latest
@@ -271,8 +270,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "7"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The database disk usage.
@@ -281,8 +280,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "7217668"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: The number of deadlocks.
             name: postgresql.deadlocks
@@ -290,18 +289,18 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{deadlock}"
+            unit: '{deadlock}'
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: Number of user tables in a database.
@@ -310,8 +309,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{table}'
           - description: The number of temp files.
             name: postgresql.temp_files
@@ -319,10 +318,10 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{temp_file}"  
+            unit: '{temp_file}'
         scope:
           name: otelcol/postgresqlreceiver
           version: latest
@@ -338,18 +337,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "3"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The number of commits.
             name: postgresql.commits
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "6"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                - asInt: "8"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The database disk usage.
@@ -358,8 +357,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "7232024"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: The number of deadlocks.
             name: postgresql.deadlocks
@@ -367,18 +366,18 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{deadlock}"
+            unit: '{deadlock}'
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: Number of user tables in a database.
@@ -387,8 +386,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{table}'
           - description: The number of temp files.
             name: postgresql.temp_files
@@ -396,10 +395,10 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{temp_file}"  
+            unit: '{temp_file}'
         scope:
           name: otelcol/postgresqlreceiver
           version: latest
@@ -426,57 +425,57 @@ resourceMetrics:
                     - key: source
                       value:
                         stringValue: heap_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: heap_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: idx_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: idx_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: tidx_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: tidx_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: toast_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: toast_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of db row operations.
@@ -489,29 +488,29 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: del
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: operation
                       value:
                         stringValue: hot_upd
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: operation
                       value:
                         stringValue: ins
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: operation
                       value:
                         stringValue: upd
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of rows in the database.
@@ -524,34 +523,34 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: dead
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: state
                       value:
                         stringValue: live
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The number of sequential scans.
             name: postgresql.sequential_scans
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{sequential_scan}"
+            unit: '{sequential_scan}'
           - description: Disk space used by a table.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: Number of times a table has manually been vacuumed.
             name: postgresql.table.vacuum.count
@@ -559,8 +558,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{vacuums}'
         scope:
@@ -589,57 +588,57 @@ resourceMetrics:
                     - key: source
                       value:
                         stringValue: heap_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: heap_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: idx_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: idx_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: tidx_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: tidx_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: toast_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: toast_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of db row operations.
@@ -652,29 +651,29 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: del
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: operation
                       value:
                         stringValue: hot_upd
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: operation
                       value:
                         stringValue: ins
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: operation
                       value:
                         stringValue: upd
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of rows in the database.
@@ -687,34 +686,34 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: dead
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: state
                       value:
                         stringValue: live
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The number of sequential scans.
             name: postgresql.sequential_scans
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{sequential_scan}"
+            unit: '{sequential_scan}'
           - description: Disk space used by a table.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: Number of times a table has manually been vacuumed.
             name: postgresql.table.vacuum.count
@@ -722,8 +721,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{vacuums}'
         scope:
@@ -752,57 +751,57 @@ resourceMetrics:
                     - key: source
                       value:
                         stringValue: heap_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: heap_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: idx_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: idx_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: tidx_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: tidx_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: toast_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: toast_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of db row operations.
@@ -815,29 +814,29 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: del
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: operation
                       value:
                         stringValue: hot_upd
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: operation
                       value:
                         stringValue: ins
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: operation
                       value:
                         stringValue: upd
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of rows in the database.
@@ -850,34 +849,34 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: dead
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: state
                       value:
                         stringValue: live
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The number of sequential scans.
             name: postgresql.sequential_scans
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                - asInt: "2"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{sequential_scan}"
+            unit: '{sequential_scan}'
           - description: Disk space used by a table.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: Number of times a table has manually been vacuumed.
             name: postgresql.table.vacuum.count
@@ -885,8 +884,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{vacuums}'
         scope:
@@ -915,57 +914,57 @@ resourceMetrics:
                     - key: source
                       value:
                         stringValue: heap_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
                     - key: source
                       value:
                         stringValue: heap_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "2"
                   attributes:
                     - key: source
                       value:
                         stringValue: idx_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "4"
                   attributes:
                     - key: source
                       value:
                         stringValue: idx_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: tidx_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: tidx_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: toast_hit
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: source
                       value:
                         stringValue: toast_read
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of db row operations.
@@ -978,29 +977,29 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: del
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: operation
                       value:
                         stringValue: hot_upd
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
                     - key: operation
                       value:
                         stringValue: ins
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: operation
                       value:
                         stringValue: upd
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: "1"
           - description: The number of rows in the database.
@@ -1013,34 +1012,34 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: dead
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
                     - key: state
                       value:
                         stringValue: live
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
           - description: The number of sequential scans.
             name: postgresql.sequential_scans
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                - asInt: "3"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{sequential_scan}"
+            unit: '{sequential_scan}'
           - description: Disk space used by a table.
             name: postgresql.table.size
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "8192"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: By
           - description: Number of times a table has manually been vacuumed.
             name: postgresql.table.vacuum.count
@@ -1048,8 +1047,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{vacuums}'
         scope:
@@ -1077,16 +1076,16 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{scans}'
           - description: The size of the index on disk.
             gauge:
               dataPoints:
                 - asInt: "8192"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: postgresql.index.size
             unit: By
         scope:
@@ -1114,16 +1113,16 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{scans}'
           - description: The size of the index on disk.
             gauge:
               dataPoints:
                 - asInt: "8192"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: postgresql.index.size
             unit: By
         scope:
@@ -1151,16 +1150,16 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{scans}'
           - description: The size of the index on disk.
             gauge:
               dataPoints:
                 - asInt: "16384"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: postgresql.index.size
             unit: By
         scope:
@@ -1188,16 +1187,16 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{scans}'
           - description: The size of the index on disk.
             gauge:
               dataPoints:
                 - asInt: "8192"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: postgresql.index.size
             unit: By
         scope:
@@ -1225,16 +1224,16 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{scans}'
           - description: The size of the index on disk.
             gauge:
               dataPoints:
                 - asInt: "8192"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: postgresql.index.size
             unit: By
         scope:
@@ -1262,16 +1261,16 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{scans}'
           - description: The size of the index on disk.
             gauge:
               dataPoints:
                 - asInt: "16384"
-                  startTimeUnixNano: "1687780273472170000"
-                  timeUnixNano: "1687780274490198000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: postgresql.index.size
             unit: By
         scope:
