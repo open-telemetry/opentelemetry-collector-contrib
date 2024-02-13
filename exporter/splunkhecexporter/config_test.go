@@ -212,7 +212,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "negative queue size",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HTTPClientSettings.Endpoint = "http://foo_bar.com"
+				cfg.ClientConfig.Endpoint = "http://foo_bar.com"
 				cfg.QueueSettings.Enabled = true
 				cfg.QueueSettings.QueueSize = -5
 				cfg.Token = "foo"
