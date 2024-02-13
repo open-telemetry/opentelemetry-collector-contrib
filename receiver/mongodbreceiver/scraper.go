@@ -32,7 +32,7 @@ var (
 
 	removeDatabaseAttrFeatureGate = featuregate.GlobalRegistry().MustRegister(
 		removeDatabaseAttrID,
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("Remove duplicate database name attribute"),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24972"),
 		featuregate.WithRegisterFromVersion("v0.90.0"))
