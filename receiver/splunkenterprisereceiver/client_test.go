@@ -56,7 +56,7 @@ func TestClientCreation(t *testing.T) {
 
 	testEndpoint, _ := url.Parse("https://localhost:8089")
 
-	require.Equal(t, testEndpoint, (*client)[typeIdx].endpoint)
+	require.Equal(t, testEndpoint, client.clients[typeIdx].endpoint)
 }
 
 // test functionality of createRequest which is used for building metrics out of
@@ -171,7 +171,7 @@ func TestAPIRequestCreate(t *testing.T) {
 	require.NoError(t, err)
 
 	// build the expected request
-	expectedURL := (*client)[typeIdx].endpoint.String() + "/test/endpoint"
+	expectedURL := client.clients[typeIdx].endpoint.String() + "/test/endpoint"
 	expected, _ := http.NewRequest(http.MethodGet, expectedURL, nil)
 
 	require.Equal(t, expected.URL, req.URL)

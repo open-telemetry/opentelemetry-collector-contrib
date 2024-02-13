@@ -30,8 +30,13 @@ var (
 // Type wrapper for accessing context value
 type endpointType string
 
+// Wrapper around splunkClientMap to avoid awkward reference/dereference stuff that arises when using maps in golang
+type splunkEntClient struct {
+	clients splunkClientMap
+}
+
 // The splunkEntClient is made up of a number of splunkClients defined for each configured endpoint
-type splunkEntClient map[any]*splunkClient
+type splunkClientMap map[any]splunkClient
 
 // The client does not carry the endpoint that is configured with it and golang does not support mixed
 // type arrays so this struct contains the pair: the client configured for the endpoint and the endpoint
@@ -45,7 +50,7 @@ func newSplunkEntClient(cfg *Config, h component.Host, s component.TelemetrySett
 	var err error
 	var e *url.URL
 	var c *http.Client
-	splunkEntClient := make(splunkEntClient)
+	clientMap := make(splunkClientMap)
 
 	// if the endpoint is defined, put it in the endpoints map for later use
 	// we already checked that url.Parse does not fail in cfg.Validate()
@@ -55,7 +60,7 @@ func newSplunkEntClient(cfg *Config, h component.Host, s component.TelemetrySett
 		if err != nil {
 			return nil, err
 		}
-		splunkEntClient[typeIdx] = &splunkClient{
+		clientMap[typeIdx] = splunkClient{
 			client:   c,
 			endpoint: e,
 		}
@@ -66,7 +71,7 @@ func newSplunkEntClient(cfg *Config, h component.Host, s component.TelemetrySett
 		if err != nil {
 			return nil, err
 		}
-		splunkEntClient[typeSh] = &splunkClient{
+		clientMap[typeSh] = splunkClient{
 			client:   c,
 			endpoint: e,
 		}
@@ -77,13 +82,13 @@ func newSplunkEntClient(cfg *Config, h component.Host, s component.TelemetrySett
 		if err != nil {
 			return nil, err
 		}
-		splunkEntClient[typeCm] = &splunkClient{
+		clientMap[typeCm] = splunkClient{
 			client:   c,
 			endpoint: e,
 		}
 	}
 
-	return &splunkEntClient, nil
+	return &splunkEntClient{clients: clientMap}, nil
 }
 
 // For running ad hoc searches only
@@ -99,7 +104,7 @@ func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse)
 	if sr.Jobid == nil {
 		var u string
 		path := "/services/search/jobs/"
-		if e, ok := (*c)[eptType]; !ok {
+		if e, ok := c.clients[eptType]; !ok {
 			return nil, errNoClientFound
 		} else {
 			u, err = url.JoinPath(e.endpoint.String(), path)
@@ -120,7 +125,7 @@ func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse)
 		return req, nil
 	}
 	path := fmt.Sprintf("/services/search/jobs/%s/results", *sr.Jobid)
-	url, _ := url.JoinPath((*c)[eptType].endpoint.String(), path)
+	url, _ := url.JoinPath(c.clients[eptType].endpoint.String(), path)
 
 	req, err = http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -140,7 +145,7 @@ func (c *splunkEntClient) createAPIRequest(ctx context.Context, apiEndpoint stri
 		return nil, errCtxMissingEndpointType
 	}
 
-	if e, ok := (*c)[eptType]; !ok {
+	if e, ok := c.clients[eptType]; !ok {
 		return nil, errNoClientFound
 	} else {
 		u = e.endpoint.String() + apiEndpoint
@@ -160,7 +165,7 @@ func (c *splunkEntClient) makeRequest(req *http.Request) (*http.Response, error)
 	if eptType == nil {
 		return nil, errCtxMissingEndpointType
 	}
-	if sc, ok := (*c)[eptType]; ok {
+	if sc, ok := c.clients[eptType]; ok {
 		res, err := sc.client.Do(req)
 		if err != nil {
 			return nil, err
@@ -174,6 +179,6 @@ func (c *splunkEntClient) makeRequest(req *http.Request) (*http.Response, error)
 // Check if the splunkEntClient contains a configured endpoint for the type of scraper
 // Returns true if an entry exists, false if not.
 func (c *splunkEntClient) isConfigured(v string) bool {
-	_, ok := (*c)[v]
+	_, ok := c.clients[v]
 	return ok
 }
