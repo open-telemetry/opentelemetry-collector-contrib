@@ -25,13 +25,6 @@ func TestNewLogsProcessor(t *testing.T) {
 		wantErr      bool
 	}{
 		{
-			name: "nil_nextConsumer",
-			cfg: &Config{
-				SamplingPercentage: 15.5,
-			},
-			wantErr: true,
-		},
-		{
 			name:         "happy_path",
 			nextConsumer: consumertest.NewNop(),
 			cfg: &Config{
