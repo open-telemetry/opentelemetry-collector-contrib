@@ -262,6 +262,12 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 
 	if len(sp) > 0 {
 		exp.params.Logger.Debug("exporting APM stats payloads", zap.Any("stats_payloads", sp))
+		statsv := exp.params.BuildInfo.Command + exp.params.BuildInfo.Version
+		for _, csp := range sp {
+			if csp.TracerVersion == "" {
+				csp.TracerVersion = statsv
+			}
+		}
 		exp.statsToAgent <- &pb.StatsPayload{
 			AgentHostname:  exp.agntConfig.Hostname, // This is "dead-code". We will be removing this code path entirely
 			AgentEnv:       exp.agntConfig.DefaultEnv,
