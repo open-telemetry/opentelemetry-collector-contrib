@@ -29,15 +29,20 @@ func caPool(caFile string) (*x509.CertPool, error) {
 }
 
 func GetTLSCredentialsForGRPCExporter(caFile string, cAuth ClientAuth) (credentials.TransportCredentials, error) {
-
 	pool, err := caPool(caFile)
 	if err != nil {
 		return nil, err
 	}
 
-	creds := credentials.NewTLS(&tls.Config{
-		RootCAs: pool,
-	})
+    var creds credentials.TransportCredentials
+
+    if caFile != "" {
+	    creds = credentials.NewTLS(&tls.Config{
+		    RootCAs: pool,
+	    })
+	} else {
+	    creds = credentials.NewTLS(&tls.Config{})
+	}
 
 	// Configuration for mTLS
 	if cAuth.Enabled {
@@ -60,8 +65,14 @@ func GetTLSCredentialsForHTTPExporter(caFile string, cAuth ClientAuth) (*tls.Con
 		return nil, err
 	}
 
-	tlsCfg := tls.Config{
-		RootCAs: pool,
+	var tlsCfg tls.Config
+
+    if caFile != "" {
+	    tlsCfg = tls.Config{
+		    RootCAs: pool,
+	    }
+	} else {
+	    tlsCfg = tls.Config{}
 	}
 
 	// Configuration for mTLS
