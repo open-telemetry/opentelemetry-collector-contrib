@@ -32,7 +32,7 @@ func newFailoverRouter[C any](provider consumerProvider[C], cfg *Config, done ch
 		MaxRetries:    cfg.MaxRetries,
 	}
 
-	selector := state.NewPipelineSelector(len(cfg.PipelinePriority), pSConstants)
+	selector := state.NewPipelineSelector(len(cfg.PipelinePriority), pSConstants, done)
 	selector.Start(done)
 	return &failoverRouter[C]{
 		consumerProvider: provider,
