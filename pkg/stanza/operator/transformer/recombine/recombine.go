@@ -201,7 +201,6 @@ func (r *Transformer) Stop() error {
 	r.flushAllSources(ctx)
 
 	close(r.chClose)
-
 	return nil
 }
 
@@ -239,10 +238,9 @@ func (r *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 
 	switch {
 	// This is the first entry in the next batch
-	case matches && r.matchIndicatesFirst():
+	case matches && r.matchFirstLine:
 		// Flush the existing batch
-		err := r.flushSource(ctx, s)
-		if err != nil {
+		if err := r.flushSource(ctx, s); err != nil {
 			return err
 		}
 
@@ -250,7 +248,7 @@ func (r *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 		r.addToBatch(ctx, e, s)
 		return nil
 	// This is the last entry in a complete batch
-	case matches && r.matchIndicatesLast():
+	case matches && !r.matchFirstLine:
 		r.addToBatch(ctx, e, s)
 		return r.flushSource(ctx, s)
 	}
@@ -259,14 +257,6 @@ func (r *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	// nor the last entry of a log, so just add it to the batch
 	r.addToBatch(ctx, e, s)
 	return nil
-}
-
-func (r *Transformer) matchIndicatesFirst() bool {
-	return r.matchFirstLine
-}
-
-func (r *Transformer) matchIndicatesLast() bool {
-	return !r.matchFirstLine
 }
 
 // addToBatch adds the current entry to the current batch of entries that will be combined
@@ -303,7 +293,6 @@ func (r *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source str
 			r.Errorf("there was error flushing combined logs %s", err)
 		}
 	}
-
 }
 
 // flushAllSources flushes all sources.

@@ -1,12 +1,13 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension
 
-go 1.20
+go 1.21
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.94.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.94.1
+	go.opentelemetry.io/collector/confmap v0.94.1
 	go.opentelemetry.io/collector/extension v0.94.1
 	go.opentelemetry.io/collector/pdata v1.1.0
 	go.opentelemetry.io/otel/metric v1.23.0
@@ -42,7 +43,6 @@ require (
 	github.com/prometheus/common v0.46.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.94.1 // indirect
-	go.opentelemetry.io/collector/confmap v0.94.1 // indirect
 	go.opentelemetry.io/collector/semconv v0.94.1 // indirect
 	go.opentelemetry.io/otel v1.23.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.1 // indirect
