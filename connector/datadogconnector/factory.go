@@ -7,13 +7,13 @@ package datadogconnector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
 // NewFactory creates a factory for tailtracer connector.
