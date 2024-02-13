@@ -6,7 +6,7 @@ require (
 	github.com/apache/pulsar-client-go v0.8.1
 	github.com/apache/thrift v0.19.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.53.0
+	github.com/jaegertracing/jaeger v1.54.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.94.0
 	github.com/openzipkin/zipkin-go v0.4.2
@@ -18,8 +18,8 @@ require (
 	go.opentelemetry.io/collector/pdata v1.1.0
 	go.opentelemetry.io/collector/receiver v0.94.1
 	go.opentelemetry.io/collector/semconv v0.94.1
-	go.opentelemetry.io/otel/metric v1.23.0
-	go.opentelemetry.io/otel/trace v1.23.0
+	go.opentelemetry.io/otel/metric v1.23.1
+	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/zap v1.26.0
 )
 
@@ -68,7 +68,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.94.1 // indirect
-	go.opentelemetry.io/otel v1.23.0 // indirect
+	go.opentelemetry.io/otel v1.23.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.1 // indirect
 	go.opentelemetry.io/otel/sdk v1.23.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.23.0 // indirect
