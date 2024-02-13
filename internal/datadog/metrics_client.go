@@ -20,20 +20,19 @@ type metricsClient struct {
 	mutex  sync.Mutex
 }
 
-var mutex sync.Mutex
+var initializeOnce sync.Once
 
-// NewMetricClient returns a new metrics client
-func NewMetricClient(meter metric.Meter) metrics.StatsClient {
-	// We need to lock the mutex here to avoid
-	// duplicate metrics being created by both datadogconnector and exporter
-	mutex.Lock()
-	defer mutex.Unlock()
-	m := &metricsClient{
-		meter:  meter,
-		gauges: make(map[string]float64),
-	}
-	metrics.Client = m
-	return m
+// InitializeMetricClient using a meter provider. If the client has already been initialized,
+// this function just returns the previous one.
+func InitializeMetricClient(mp metric.MeterProvider) metrics.StatsClient {
+	initializeOnce.Do(func() {
+		m := &metricsClient{
+			meter:  mp.Meter("datadog"),
+			gauges: make(map[string]float64),
+		}
+		metrics.Client = m
+	})
+	return metrics.Client
 }
 
 func (m *metricsClient) Gauge(name string, value float64, tags []string, _ float64) error {
@@ -48,7 +47,7 @@ func (m *metricsClient) Gauge(name string, value float64, tags []string, _ float
 	_, err := m.meter.Float64ObservableGauge(name, metric.WithFloat64Callback(func(_ context.Context, f metric.Float64Observer) error {
 		attr := attributeFromTags(tags)
 		if v, ok := m.gauges[name]; ok {
-			f.Observe(v, metric.WithAttributeSet(attribute.NewSet(attr...)))
+			f.Observe(v, metric.WithAttributeSet(attr))
 		}
 		return nil
 	}))
@@ -64,11 +63,11 @@ func (m *metricsClient) Count(name string, value int64, tags []string, _ float64
 		return err
 	}
 	attr := attributeFromTags(tags)
-	counter.Add(context.Background(), value, metric.WithAttributeSet(attribute.NewSet(attr...)))
+	counter.Add(context.Background(), value, metric.WithAttributeSet(attr))
 	return nil
 }
 
-func attributeFromTags(tags []string) []attribute.KeyValue {
+func attributeFromTags(tags []string) attribute.Set {
 	attr := make([]attribute.KeyValue, 0, len(tags))
 	for _, t := range tags {
 		kv := strings.Split(t, ":")
@@ -77,7 +76,7 @@ func attributeFromTags(tags []string) []attribute.KeyValue {
 			Value: attribute.StringValue(kv[1]),
 		})
 	}
-	return attr
+	return attribute.NewSet(attr...)
 }
 
 func (m *metricsClient) Histogram(name string, value float64, tags []string, _ float64) error {
@@ -86,7 +85,7 @@ func (m *metricsClient) Histogram(name string, value float64, tags []string, _ f
 		return err
 	}
 	attr := attributeFromTags(tags)
-	hist.Record(context.Background(), value, metric.WithAttributeSet(attribute.NewSet(attr...)))
+	hist.Record(context.Background(), value, metric.WithAttributeSet(attr))
 	return nil
 }
 

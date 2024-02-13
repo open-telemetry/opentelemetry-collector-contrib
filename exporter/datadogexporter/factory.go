@@ -139,6 +139,7 @@ func (f *factory) StopReporter() {
 }
 
 func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
+	datadog.InitializeMetricClient(params.MeterProvider)
 	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider)
 	if err != nil {
 		return nil, err
