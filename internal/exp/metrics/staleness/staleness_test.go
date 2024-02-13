@@ -19,6 +19,16 @@ func (rm *RawMap[K, V]) Load(key K) (V, bool) {
 	return value, ok
 }
 
+func (rm *RawMap[K, V]) LoadOrStore(key K, value V) (V, bool) {
+	returnedVal, ok := (*rm)[key]
+	if !ok {
+		(*rm)[key] = value
+		returnedVal = value
+	}
+
+	return returnedVal, ok
+}
+
 func (rm *RawMap[K, V]) Store(key K, value V) {
 	(*rm)[key] = value
 }
