@@ -58,8 +58,8 @@ github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/jaegertracing/jaeger v1.53.0 h1:C/7UgUTBpQFRS5+cOb6kYIHVqjWNw8p5PAiSKfZbP2I=
-github.com/jaegertracing/jaeger v1.53.0/go.mod h1:bs6/Yr0miegvoyKhWdCzFmMnAcER6Ih6IkZ65AzVYfk=
+github.com/jaegertracing/jaeger v1.54.0 h1:BfQiFxrE/2Fw+qU24qjSuUGsgJQLwKHi1TXBy6J3qKo=
+github.com/jaegertracing/jaeger v1.54.0/go.mod h1:wNmtyrAJ/sJAgOvC9BltyKErJY8glTHCvWLTsvhaqkY=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=
 github.com/jmespath/go-jmespath v0.4.0/go.mod h1:T8mJZnbsbmF+m6zOOFylbeCJqk5+pHWvzYPziyZiYoo=
 github.com/jmespath/go-jmespath/internal/testify v1.5.1 h1:shLQSRRSCCPj3f2gpwzGwWFoC7ycTf1rcQZHOlsJ6N8=
