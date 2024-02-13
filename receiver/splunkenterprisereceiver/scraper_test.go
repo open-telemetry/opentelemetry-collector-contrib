@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -51,7 +50,7 @@ func mockIntrospectionQueues(w http.ResponseWriter, _ *http.Request) {
 // mock server create
 func createMockServer() *httptest.Server {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch strings.TrimSpace(r.URL.Path) {
+		switch r.URL.String() {
 		case "/services/server/introspection/indexer?output_mode=json":
 			mockIndexerThroughput(w, r)
 		case "/services/data/indexes-extended?output_mode=json&count=-1":
@@ -106,7 +105,7 @@ func TestScraper(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
+			component.NewID("basicauth/client"): auth.NewClient(),
 		},
 	}
 

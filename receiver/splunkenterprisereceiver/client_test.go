@@ -47,7 +47,7 @@ func TestClientCreation(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
+			component.NewID("basicauth/client"): auth.NewClient(),
 		},
 	}
 	// create a client from an example config
@@ -65,13 +65,7 @@ func TestClientCreateRequest(t *testing.T) {
 	cfg := &Config{
 		IdxEndpoint: confighttp.HTTPClientSettings{
 			Endpoint: "https://localhost:8089",
-<<<<<<< HEAD
-			Auth: &configauth.Authentication{
-				AuthenticatorID: component.MustNewIDWithName("basicauth", "client"),
-			},
-=======
 			Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("basicauth/client")},
->>>>>>> 49e204e471 (fixed tests)
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
@@ -82,7 +76,7 @@ func TestClientCreateRequest(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
+			component.NewID("basicauth/client"): auth.NewClient(),
 		},
 	}
 	// create a client from an example config
@@ -163,7 +157,7 @@ func TestAPIRequestCreate(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
+			component.NewID("basicauth/client"): auth.NewClient(),
 		},
 	}
 	// create a client from an example config
