@@ -25,7 +25,7 @@ type Staleness[T any] struct {
 	max time.Duration
 
 	Map[T]
-	pq *PriorityQueue
+	pq PriorityQueue
 }
 
 func NewStaleness[T any](max time.Duration, newMap Map[T]) *Staleness[T] {
