@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.94.0
 	github.com/stretchr/testify v1.8.4
-	github.com/vmware/govmomi v0.34.2
+	github.com/vmware/govmomi v0.35.0
 	go.opentelemetry.io/collector/component v0.94.1
 	go.opentelemetry.io/collector/config/configopaque v0.94.1
 	go.opentelemetry.io/collector/config/configtls v0.94.1
@@ -49,7 +49,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/google/uuid v1.4.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.2 // indirect
