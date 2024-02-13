@@ -300,7 +300,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			var (
 				once sync.Once
 			)
-			statsToAgent := make(chan *pb.StatsPayload, 1000) //just to unblock me
+			statsToAgent := make(chan *pb.StatsPayload, 1000) // Buffer the channel to allow test to pass without go-routines
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
