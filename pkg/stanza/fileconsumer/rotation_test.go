@@ -64,7 +64,7 @@ func TestCopyTruncate(t *testing.T) {
 			for rotationNum := 0; rotationNum < numRotations; rotationNum++ {
 				for messageNum := 0; messageNum < numMessages; messageNum++ {
 					filetest.WriteString(t, file, getMessage(fn, rotationNum, messageNum)+"\n")
-					time.Sleep(10 * time.Millisecond)
+					time.Sleep(5 * time.Millisecond)
 				}
 				require.NoError(t, file.Sync())
 				_, err := file.Seek(0, 0)
