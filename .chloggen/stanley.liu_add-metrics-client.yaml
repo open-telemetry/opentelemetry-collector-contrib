@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/datadogexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add trace agent metrics client in order to report trace agent telemetry metrics
+note: Internal telemetry metrics for the Datadog traces exporter are now reported through the Collector's self-telemetry 
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [31179]
