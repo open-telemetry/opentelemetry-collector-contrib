@@ -102,7 +102,7 @@ func (s *snowflakeMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, 
 			errs chan<- error,
 		) {
 			defer wg.Done()
-			fn(ctx, now, errs)
+			fn(ctx, now, errChan)
 		}(fn, ctx, now, errChan)
 	}
 
