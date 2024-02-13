@@ -7,9 +7,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-func createFormatter(protocol string) formatter {
+func createFormatter(protocol string, octetCounting bool) formatter {
 	if protocol == protocolRFC5424Str {
-		return newRFC5424Formatter()
+		return newRFC5424Formatter(octetCounting)
 	}
 	return newRFC3164Formatter()
 }
