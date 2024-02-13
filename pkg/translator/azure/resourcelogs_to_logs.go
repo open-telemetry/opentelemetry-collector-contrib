@@ -110,7 +110,6 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 			nanos, err := getTimestamp(log)
 			if err != nil {
 				r.Logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", log.Time))
-				continue
 			}
 
 			lr := logRecords.AppendEmpty()
