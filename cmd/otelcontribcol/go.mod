@@ -4,7 +4,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 
 go 1.21
 
-toolchain go1.21.6
+toolchain go1.21.7
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.94.0
@@ -469,7 +469,7 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/pgtype v1.14.0 // indirect
 	github.com/jackc/pgx/v4 v4.18.1 // indirect
-	github.com/jaegertracing/jaeger v1.53.0 // indirect
+	github.com/jaegertracing/jaeger v1.54.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect

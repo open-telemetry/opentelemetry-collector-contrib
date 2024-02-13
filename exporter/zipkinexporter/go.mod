@@ -38,7 +38,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
-	github.com/jaegertracing/jaeger v1.53.0 // indirect
+	github.com/jaegertracing/jaeger v1.54.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.5 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
