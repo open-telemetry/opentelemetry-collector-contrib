@@ -74,12 +74,5 @@ func (cfg *Config) Validate() (errors error) {
 		}
 	}
 
-<<<<<<< HEAD
-	if cfg.ClientConfig.Auth.AuthenticatorID.Name() == "" {
-		errors = multierr.Append(errors, errMissingAuthExtension)
-	}
-
-=======
->>>>>>> 3a6a3c2ce2 (refactored client)
 	return errors
 }
