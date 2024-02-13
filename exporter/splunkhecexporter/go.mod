@@ -23,8 +23,8 @@ require (
 	go.opentelemetry.io/collector/exporter v0.94.1
 	go.opentelemetry.io/collector/pdata v1.1.0
 	go.opentelemetry.io/collector/semconv v0.94.1
-	go.opentelemetry.io/otel/metric v1.23.0
-	go.opentelemetry.io/otel/trace v1.23.0
+	go.opentelemetry.io/otel/metric v1.23.1
+	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -99,7 +99,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.1.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.94.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0 // indirect
-	go.opentelemetry.io/otel v1.23.0 // indirect
+	go.opentelemetry.io/otel v1.23.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.1 // indirect
 	go.opentelemetry.io/otel/sdk v1.23.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.23.0 // indirect
