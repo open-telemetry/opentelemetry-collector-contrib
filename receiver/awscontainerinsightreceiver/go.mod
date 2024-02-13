@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
 
-go 1.20
+go 1.21
 
 require (
 	github.com/aws/aws-sdk-go v1.50.14

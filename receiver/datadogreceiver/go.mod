@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver
 
-go 1.20
+go 1.21
 
 require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.50.2
