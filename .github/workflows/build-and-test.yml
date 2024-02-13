@@ -551,7 +551,7 @@ jobs:
       - name: Upload Packages
         uses: actions/upload-artifact@v4
         with:
-          name: collector-packages
+          name: collector-packages-${{ matrix.package_type }}
           path: ./dist/*
   windows-msi:
     if: false # skip. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10113
@@ -586,7 +586,7 @@ jobs:
       - name: Upload MSI
         uses: actions/upload-artifact@v4
         with:
-          name: collector-packages
+          name: collector-packages-msi
           path: ./dist/*.msi
 
   publish-check:
@@ -602,8 +602,9 @@ jobs:
       - name: Download Packages
         uses: actions/download-artifact@v4
         with:
-          name: collector-packages
+          merge-multiple: true
           path: ./dist/
+          pattern: collector-packages-*
       - name: Verify Distribution Files Exist
         id: check
         run: ./.github/workflows/scripts/verify-dist-files-exist.sh
@@ -644,8 +645,9 @@ jobs:
       - name: Download Packages
         uses: actions/download-artifact@v4
         with:
-          name: collector-packages
+          merge-multiple: true
           path: ./dist/
+          pattern: collector-packages-*
       - name: Add Permissions to Tool Binaries
         run: chmod -R +x ./dist
       - name: Verify Distribution Files Exist

@@ -45,10 +45,10 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - run: make oteltestbedcol
-      - name: Upload Collector Binaries
+      - name: Upload Testbed Binaries
         uses: actions/upload-artifact@v4
         with:
-          name: collector-binaries
+          name: testbed-binaries
           path: ./bin/*
       - name: Split Loadtest Jobs
         id: splitloadtest
@@ -83,10 +83,10 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - run: mkdir -p results && touch results/TESTRESULTS.md
-      - name: Download Collector Binaries
+      - name: Download Testbed Binaries
         uses: actions/download-artifact@v4
         with:
-          name: collector-binaries
+          name: testbed-binaries
           path: bin/
       - run: chmod +x bin/*
       - name: Loadtest
