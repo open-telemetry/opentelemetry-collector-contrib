@@ -242,6 +242,8 @@ github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/jaegertracing/jaeger v1.53.0 h1:C/7UgUTBpQFRS5+cOb6kYIHVqjWNw8p5PAiSKfZbP2I=
 github.com/jaegertracing/jaeger v1.53.0/go.mod h1:bs6/Yr0miegvoyKhWdCzFmMnAcER6Ih6IkZ65AzVYfk=
+github.com/jaegertracing/jaeger v1.54.0 h1:BfQiFxrE/2Fw+qU24qjSuUGsgJQLwKHi1TXBy6J3qKo=
+github.com/jaegertracing/jaeger v1.54.0/go.mod h1:wNmtyrAJ/sJAgOvC9BltyKErJY8glTHCvWLTsvhaqkY=
 github.com/jawher/mow.cli v1.0.4/go.mod h1:5hQj2V8g+qYmLUVWqu4Wuja1pI57M83EChYLVZ0sMKk=
 github.com/jawher/mow.cli v1.2.0/go.mod h1:y+pcA3jBAdo/GIZx/0rFjw/K2bVEODP9rfZOfaiq8Ko=
 github.com/jmespath/go-jmespath v0.3.0/go.mod h1:9QtRXoHjLGCJ5IBSaohpXITPlowMeeYCZ7fLUTSywik=
