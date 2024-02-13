@@ -19,6 +19,8 @@
 
 > Please review the Collector's [security documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md), which contains recommendations on securing sensitive information such as the API key required by this exporter.
 
+> The Datadog Exporter now skips APM stats computation by default. It is recommended to only use the Datadog Connector in order to compute APM stats.
+
 Visit the [official documentation](https://docs.datadoghq.com/tracing/trace_collection/open_standards/otel_collector_datadog_exporter/) for usage instructions.
 
 ## FAQs
