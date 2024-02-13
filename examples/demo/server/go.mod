@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/server
 
-go 1.20
+go 1.21
 
 require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver
 
-go 1.20
+go 1.21
 
 require (
 	github.com/SAP/go-hdb v1.7.12

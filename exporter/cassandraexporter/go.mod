@@ -1,6 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter
 
-go 1.18
+go 1.21
+
+toolchain go1.21.6
 
 require (
 	github.com/gocql/gocql v1.6.0
