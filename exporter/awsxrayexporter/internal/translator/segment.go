@@ -15,6 +15,7 @@ import (
 	"time"
 
 	awsP "github.com/aws/aws-sdk-go/aws"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
@@ -44,6 +45,14 @@ var (
 	// reInvalidSpanCharacters defines the invalid letters in a span name as per
 	// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
 	reInvalidSpanCharacters = regexp.MustCompile(`[^ 0-9\p{L}N_.:/%&#=+,\-@]`)
+)
+
+var (
+	remoteXrayExporterDotConverter = featuregate.GlobalRegistry().MustRegister(
+		"xray.exporter.dotconverter.disabled",
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("XRay used to convert . type annotation key to _ to fulfill backend requirement, but now backend compatiable with Otel . type input, so the converter is no longer needed"),
+	)
 )
 
 const (
@@ -510,6 +519,9 @@ func fixSegmentName(name string) string {
 // the list of valid characters here:
 // https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
 func fixAnnotationKey(key string) string {
+	if remoteXrayExporterDotConverter.IsEnabled() {
+		return key
+	}
 	return strings.Map(func(r rune) rune {
 		switch {
 		case '0' <= r && r <= '9':
