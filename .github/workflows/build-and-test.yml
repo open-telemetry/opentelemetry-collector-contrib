@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.5
+          go-version: "1.21.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -88,7 +88,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.5
+          go-version: "1.21.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -154,7 +154,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.5
+          go-version: "1.21.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -177,7 +177,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.5
+          go-version: "1.21.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -237,7 +237,7 @@ jobs:
   unittest-matrix:
     strategy:
       matrix:
-        go-version: ["~1.22", "~1.21.5"] # 1.20 is interpreted as 1.2 without quotes
+        go-version: ["1.22.0", "1.21.7"] # 1.20 is interpreted as 1.2 without quotes
         group:
           - receiver-0
           - receiver-1
@@ -282,13 +282,13 @@ jobs:
           path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
-        if: startsWith( matrix.go-version, '~1.21' ) != true
+        if: startsWith( matrix.go-version, '1.21' ) != true
         run: make gotest GROUP=${{ matrix.group }}
       - name: Run Unit Tests With Coverage
-        if: startsWith( matrix.go-version, '~1.21' ) # only run coverage on one version
+        if: startsWith( matrix.go-version, '1.21' ) # only run coverage on one version
         run: make gotest-with-cover GROUP=${{ matrix.group }}
       - uses: actions/upload-artifact@v3
-        if: startsWith( matrix.go-version, '~1.21' ) # only upload artifact for one version
+        if: startsWith( matrix.go-version, '1.21' ) # only upload artifact for one version
         with:
           name: coverage-artifacts
           path: ${{ matrix.group }}-coverage.txt
@@ -349,7 +349,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.5
+          go-version: "1.21.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -387,7 +387,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.5
+          go-version: "1.21.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -413,7 +413,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.5
+          go-version: "1.21.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -482,7 +482,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.5
+          go-version: "1.21.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -615,7 +615,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.21.5
+          go-version: "1.21.7"
           cache: false
       - name: Mkdir bin and dist
         run: |

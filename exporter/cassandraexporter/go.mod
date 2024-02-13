@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassan
 
 go 1.21
 
-toolchain go1.21.6
-
 require (
 	github.com/gocql/gocql v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.94.0
