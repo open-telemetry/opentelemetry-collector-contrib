@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
 
-go 1.20
+go 1.21
 
 require (
 	go.opentelemetry.io/collector/component v0.94.1
