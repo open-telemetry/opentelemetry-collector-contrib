@@ -603,7 +603,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics, "", true)
+			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics, "", true, true)
 			require.NoError(t, err)
 			md := tt.metricsFn()
 			gotSfxDataPoints := c.MetricsToSignalFxV2(md)
@@ -832,7 +832,7 @@ func Test_MetricDataToSignalFxV2WithHistogramBuckets(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics, "", false)
+			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics, "", false, true)
 			require.NoError(t, err)
 			md := tt.metricsFn()
 			gotSfxDataPoints := c.MetricsToSignalFxV2(md)
@@ -982,7 +982,7 @@ func Test_MetricDataToSignalFxV2WithHistogramBuckets(t *testing.T) {
 
 	for _, tt := range testsWithDropHistogramBuckets {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics, "", true)
+			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics, "", true, true)
 			require.NoError(t, err)
 			md := tt.metricsFn()
 			gotSfxDataPoints := c.MetricsToSignalFxV2(md)
@@ -991,6 +991,110 @@ func Test_MetricDataToSignalFxV2WithHistogramBuckets(t *testing.T) {
 			// of those is not deterministic.
 			sortDimensions(tt.wantSfxDataPoints)
 			sortDimensions(gotSfxDataPoints)
+			assert.Equal(t, tt.wantSfxDataPoints, gotSfxDataPoints)
+		})
+	}
+
+	testsWithProcessHistogramsFalse := []struct {
+		name              string
+		metricsFn         func() pmetric.Metrics
+		excludeMetrics    []dpfilters.MetricFilter
+		includeMetrics    []dpfilters.MetricFilter
+		wantCount         int
+		wantSfxDataPoints []*sfxpb.DataPoint
+	}{
+		{
+			name: "no_histograms",
+			metricsFn: func() pmetric.Metrics {
+				out := pmetric.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("gauge_int_with_dims")
+					initInt64PtWithLabels(m.SetEmptyGauge().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("cumulative_double_with_dims")
+					m.SetEmptySum().SetIsMonotonic(true)
+					initDoublePtWithLabels(m.Sum().DataPoints().AppendEmpty())
+				}
+				return out
+			},
+			wantCount: 2,
+			wantSfxDataPoints: []*sfxpb.DataPoint{
+				int64SFxDataPoint("gauge_int_with_dims", &sfxMetricTypeGauge, labelMap),
+				doubleSFxDataPoint("cumulative_double_with_dims", &sfxMetricTypeCumulativeCounter, labelMap),
+			},
+		},
+		{
+			name: "only_histograms",
+			metricsFn: func() pmetric.Metrics {
+				out := pmetric.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("histo_with_buckets")
+					initHistDP(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("histo_with_buckets_2")
+					initHistDP(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+				}
+				return out
+			},
+			wantCount:         0,
+			wantSfxDataPoints: []*sfxpb.DataPoint(nil),
+		},
+		{
+			name: "mixed_with_histograms",
+			metricsFn: func() pmetric.Metrics {
+				out := pmetric.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("gauge_int_with_dims")
+					initInt64PtWithLabels(m.SetEmptyGauge().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("cumulative_double_with_dims")
+					m.SetEmptySum().SetIsMonotonic(true)
+					initDoublePtWithLabels(m.Sum().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("histo_with_no_buckets")
+					initHistDPNoBuckets(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("histo_with_buckets")
+					initHistDP(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+				}
+				return out
+			},
+			wantCount: 2,
+			wantSfxDataPoints: []*sfxpb.DataPoint{
+				int64SFxDataPoint("gauge_int_with_dims", &sfxMetricTypeGauge, labelMap),
+				doubleSFxDataPoint("cumulative_double_with_dims", &sfxMetricTypeCumulativeCounter, labelMap),
+			},
+		},
+	}
+
+	for _, tt := range testsWithProcessHistogramsFalse {
+		t.Run(tt.name, func(t *testing.T) {
+			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics, "", true, false)
+			require.NoError(t, err)
+			md := tt.metricsFn()
+			gotSfxDataPoints := c.MetricsToSignalFxV2(md)
+
+			// Sort SFx dimensions since they are built from maps and the order
+			// of those is not deterministic.
+			sortDimensions(tt.wantSfxDataPoints)
+			sortDimensions(gotSfxDataPoints)
+			assert.Equal(t, tt.wantCount, len(gotSfxDataPoints))
 			assert.Equal(t, tt.wantSfxDataPoints, gotSfxDataPoints)
 		})
 	}
@@ -1030,7 +1134,7 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 			},
 		},
 	}
-	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "", false)
+	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "", false, true)
 	require.NoError(t, err)
 	assert.EqualValues(t, expected, c.MetricsToSignalFxV2(md))
 }
@@ -1069,7 +1173,7 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 			},
 		},
 	}
-	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "_-.", false)
+	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "_-.", false, true)
 	require.NoError(t, err)
 	assert.EqualValues(t, expected, c.MetricsToSignalFxV2(md))
 
@@ -1087,7 +1191,7 @@ func TestInvalidNumberOfDimensions(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		dp.Attributes().PutStr(fmt.Sprint("dim_key_", i), fmt.Sprint("dim_val_", i))
 	}
-	c, err := NewMetricsConverter(logger, nil, nil, nil, "_-.", false)
+	c, err := NewMetricsConverter(logger, nil, nil, nil, "_-.", false, true)
 	require.NoError(t, err)
 	assert.EqualValues(t, 1, len(c.MetricsToSignalFxV2(md)))
 	// No log message should be printed
@@ -1193,7 +1297,7 @@ func TestNewMetricsConverter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewMetricsConverter(zap.NewNop(), nil, tt.excludes, nil, "", false)
+			got, err := NewMetricsConverter(zap.NewNop(), nil, tt.excludes, nil, "", false, true)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -1253,7 +1357,7 @@ func TestMetricsConverter_ConvertDimension(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := NewMetricsConverter(zap.NewNop(), tt.fields.metricTranslator, nil, nil, tt.fields.nonAlphanumericDimChars, false)
+			c, err := NewMetricsConverter(zap.NewNop(), tt.fields.metricTranslator, nil, nil, tt.fields.nonAlphanumericDimChars, false, true)
 			require.NoError(t, err)
 			if got := c.ConvertDimension(tt.args.dim); got != tt.want {
 				t.Errorf("ConvertDimension() = %v, want %v", got, tt.want)
