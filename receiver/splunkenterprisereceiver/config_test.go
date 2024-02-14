@@ -7,14 +7,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/multierr"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,7 +32,7 @@ func TestEndpointCorrectness(t *testing.T) {
 	// Error for bad or missing endpoint
 	errBad = multierr.Append(errBad, errBadOrMissingEndpoint)
 	// There is no way with the current SDK design to create a test config that
-	// satisfies the auth extention so we will just expect this error to appear.
+	// satisfies the auth extension so we will just expect this error to appear.
 	errBad = multierr.Append(errBad, errMissingAuthExtension)
 
 	// Errors related to setting the wrong endpoint field (i.e. the one from httpconfig)
