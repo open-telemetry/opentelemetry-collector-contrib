@@ -84,6 +84,7 @@ func newSignalFxExporter(
 		config.IncludeMetrics,
 		config.NonAlphanumericDimensionChars,
 		config.DropHistogramBuckets,
+		!config.SendOTLPHistograms, // if SendOTLPHistograms is true, do not process histograms when converting to SFx
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metric converter: %w", err)
@@ -121,6 +122,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 		logger:                 se.logger,
 		accessTokenPassthrough: se.config.AccessTokenPassthrough,
 		converter:              se.converter,
+		sendOTLPHistograms:     se.config.SendOTLPHistograms,
 	}
 
 	apiTLSCfg, err := se.config.APITLSSettings.LoadTLSConfig()
@@ -220,7 +222,9 @@ func (se *signalfxExporter) createClient(host component.Host) (*http.Client, err
 }
 
 func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+
 	_, err := se.pushMetricsData(ctx, md)
+
 	if err == nil && se.hostMetadataSyncer != nil {
 		se.hostMetadataSyncer.Sync(md)
 	}

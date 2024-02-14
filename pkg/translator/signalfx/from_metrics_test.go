@@ -384,7 +384,7 @@ func Test_FromMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			from := &FromTranslator{}
-			gotSfxDataPoints, err := from.FromMetrics(tt.metricsFn(), false)
+			gotSfxDataPoints, err := from.FromMetrics(tt.metricsFn(), false, false)
 			require.NoError(t, err)
 			// Sort SFx dimensions since they are built from maps and the order
 			// of those is not deterministic.
@@ -473,7 +473,50 @@ func Test_FromMetrics(t *testing.T) {
 	for _, tt := range testsWithDropHistogramBuckets {
 		t.Run(tt.name, func(t *testing.T) {
 			from := &FromTranslator{}
-			gotSfxDataPoints, err := from.FromMetrics(tt.metricsFn(), true)
+			gotSfxDataPoints, err := from.FromMetrics(tt.metricsFn(), true, false)
+			require.NoError(t, err)
+			// Sort SFx dimensions since they are built from maps and the order
+			// of those is not deterministic.
+			sortDimensions(tt.wantSfxDataPoints)
+			sortDimensions(gotSfxDataPoints)
+			assert.EqualValues(t, tt.wantSfxDataPoints, gotSfxDataPoints)
+		})
+	}
+
+	testsWithIgnoreHistograms := []struct {
+		name              string
+		metricsFn         func() pmetric.Metrics
+		wantSfxDataPoints []*sfxpb.DataPoint
+	}{
+		{
+			name: "no_histogram",
+			metricsFn: func() pmetric.Metrics {
+				out := pmetric.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("histogram")
+					m.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					initHistDP(m.Histogram().DataPoints().AppendEmpty())
+				}
+
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("gauge_double_with_dims")
+					initDoublePt(m.SetEmptyGauge().DataPoints().AppendEmpty())
+				}
+				return out
+			},
+			wantSfxDataPoints: []*sfxpb.DataPoint{
+				doubleSFxDataPoint("gauge_double_with_dims", &sfxMetricTypeGauge, nil, doubleVal),
+			},
+		},
+	}
+	for _, tt := range testsWithIgnoreHistograms {
+		t.Run(tt.name, func(t *testing.T) {
+			from := &FromTranslator{}
+			gotSfxDataPoints, err := from.FromMetrics(tt.metricsFn(), true, true)
 			require.NoError(t, err)
 			// Sort SFx dimensions since they are built from maps and the order
 			// of those is not deterministic.
