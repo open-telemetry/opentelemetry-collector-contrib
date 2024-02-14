@@ -440,3 +440,18 @@ genconfigdocs:
 generate-gh-issue-templates:
 	cd cmd/githubgen && $(GOCMD) install .
 	githubgen issue-templates
+
+.PHONY: checks
+checks:
+	$(MAKE) checkdoc
+	$(MAKE) checkmetadata
+	$(MAKE) checkapi
+	$(MAKE) -j4 goporto
+	$(MAKE) crosslink
+	$(MAKE) -j4 gotidy
+	$(MAKE) genotelcontribcol
+	$(MAKE) genoteltestbedcol
+	$(MAKE) gendistributions
+	$(MAKE) -j4 generate
+	$(MAKE) multimod-verify
+	git diff --exit-code || (echo 'Some files need committing' &&  git status && exit 1)

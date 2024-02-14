@@ -1,18 +1,18 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
 
-go 1.20
+go 1.21
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.103
+	github.com/DataDog/agent-payload/v5 v5.0.104
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel
 	github.com/DataDog/datadog-agent/pkg/trace v0.50.2
 	github.com/DataDog/datadog-api-client-go/v2 v2.22.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.2
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.2
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.13.2
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.2
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.2
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.3
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.3
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.13.3
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.3
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.3
 	github.com/DataDog/sketches-go v1.4.4
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0
 	github.com/aws/aws-sdk-go v1.50.14
@@ -49,8 +49,8 @@ require (
 	go.opentelemetry.io/collector/receiver v0.94.1
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.94.1
 	go.opentelemetry.io/collector/semconv v0.94.1
-	go.opentelemetry.io/otel/metric v1.23.0
-	go.opentelemetry.io/otel/trace v1.23.0
+	go.opentelemetry.io/otel/metric v1.23.1
+	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.26.0
 	google.golang.org/protobuf v1.32.0
@@ -95,7 +95,7 @@ require (
 	github.com/dennwc/varint v1.0.0 // indirect
 	github.com/digitalocean/godo v1.104.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
-	github.com/docker/docker v24.0.8+incompatible // indirect
+	github.com/docker/docker v24.0.9+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -242,7 +242,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.47.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.22.0 // indirect
-	go.opentelemetry.io/otel v1.23.0 // indirect
+	go.opentelemetry.io/otel v1.23.1 // indirect
 	go.opentelemetry.io/otel/bridge/opencensus v0.45.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.45.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.45.0 // indirect
@@ -252,7 +252,7 @@ require (
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.1 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.45.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.23.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.23.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.23.1 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.23.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.1.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect

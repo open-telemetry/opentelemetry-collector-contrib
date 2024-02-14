@@ -1,9 +1,9 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
 
-go 1.20
+go 1.21
 
 require (
-	github.com/docker/docker v24.0.8+incompatible
+	github.com/docker/docker v24.0.9+incompatible
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.94.0
@@ -17,8 +17,8 @@ require (
 	go.opentelemetry.io/collector/pdata v1.1.0
 	go.opentelemetry.io/collector/receiver v0.94.1
 	go.opentelemetry.io/collector/semconv v0.94.1
-	go.opentelemetry.io/otel/metric v1.23.0
-	go.opentelemetry.io/otel/trace v1.23.0
+	go.opentelemetry.io/otel/metric v1.23.1
+	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
@@ -83,7 +83,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/collector v0.94.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.94.1 // indirect
-	go.opentelemetry.io/otel v1.23.0 // indirect
+	go.opentelemetry.io/otel v1.23.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.1 // indirect
 	go.opentelemetry.io/otel/sdk v1.23.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.23.0 // indirect

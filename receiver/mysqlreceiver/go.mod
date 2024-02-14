@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
 
-go 1.20
+go 1.21
 
 require (
 	github.com/go-sql-driver/mysql v1.7.1
@@ -18,8 +18,8 @@ require (
 	go.opentelemetry.io/collector/consumer v0.94.1
 	go.opentelemetry.io/collector/pdata v1.1.0
 	go.opentelemetry.io/collector/receiver v0.94.1
-	go.opentelemetry.io/otel/metric v1.23.0
-	go.opentelemetry.io/otel/trace v1.23.0
+	go.opentelemetry.io/otel/metric v1.23.1
+	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.26.0
 )
@@ -83,7 +83,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/collector v0.94.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.94.1 // indirect
-	go.opentelemetry.io/otel v1.23.0 // indirect
+	go.opentelemetry.io/otel v1.23.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.1 // indirect
 	go.opentelemetry.io/otel/sdk v1.23.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.23.0 // indirect

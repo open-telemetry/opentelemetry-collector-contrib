@@ -158,7 +158,7 @@ func TestTransformer(t *testing.T) {
 				cfg.IsFirstEntry = "$body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.OverwriteWith = "newest"
-				cfg.ForceFlushTimeout = 100 * time.Millisecond
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -178,7 +178,7 @@ func TestTransformer(t *testing.T) {
 				cfg.IsFirstEntry = "body == 'start'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.OverwriteWith = "oldest"
-				cfg.ForceFlushTimeout = 100 * time.Millisecond
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -219,8 +219,8 @@ func TestTransformer(t *testing.T) {
 				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = `body matches "^[^\\s]"`
-				cfg.ForceFlushTimeout = 100 * time.Millisecond
 				cfg.OutputIDs = []string{"fake"}
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -252,8 +252,8 @@ func TestTransformer(t *testing.T) {
 				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField("message")
 				cfg.IsFirstEntry = `body.message matches "^[^\\s]"`
-				cfg.ForceFlushTimeout = 100 * time.Millisecond
 				cfg.OutputIDs = []string{"fake"}
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -287,7 +287,6 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineWith = ""
 				cfg.IsLastEntry = "body.logtag == 'F'"
 				cfg.OverwriteWith = "oldest"
-				cfg.ForceFlushTimeout = 100 * time.Millisecond
 				cfg.OutputIDs = []string{"fake"}
 				return cfg
 			}(),
@@ -501,18 +500,19 @@ func TestTransformer(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
 			op, err := tc.config.Build(testutil.Logger(t))
 			require.NoError(t, err)
 			require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
 			defer func() { require.NoError(t, op.Stop()) }()
-			recombine := op.(*Transformer)
+			r := op.(*Transformer)
 
 			fake := testutil.NewFakeOutput(t)
-			err = recombine.SetOutputs([]operator.Operator{fake})
+			err = r.SetOutputs([]operator.Operator{fake})
 			require.NoError(t, err)
 
 			for _, e := range tc.input {
-				require.NoError(t, recombine.Process(context.Background(), e))
+				require.NoError(t, r.Process(ctx, e))
 			}
 
 			fake.ExpectEntries(t, tc.expectedOutput)
