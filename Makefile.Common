@@ -73,7 +73,7 @@ GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 GCI                 := $(TOOLS_BIN_DIR)/gci
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
 
-GOTESTSUM_OPT?= --rerun-fails
+GOTESTSUM_OPT?= --rerun-fails=1
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
