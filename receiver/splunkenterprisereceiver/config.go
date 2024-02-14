@@ -8,14 +8,14 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 )
 
 var (
-	errUnspecifiedEndpoint  = errors.New("endpoint to an unspecified node type")
 	errBadOrMissingEndpoint = errors.New("missing a valid endpoint")
 	errBadScheme            = errors.New("endpoint scheme must be either http or https")
 	errMissingAuthExtension = errors.New("auth extension missing from config")

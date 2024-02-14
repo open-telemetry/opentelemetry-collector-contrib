@@ -183,10 +183,3 @@ func (c *splunkEntClient) isConfigured(v string) bool {
 	_, ok := c.clients[v]
 	return ok
 }
-
-// Check if the splunkEntClient contains a configured endpoint for the type of scraper
-// Returns true if an entry exists, false if not.
-func (c *splunkEntClient) isConfigured(v string) bool {
-	_, ok := c.clients[v]
-	return ok
-}
