@@ -112,7 +112,7 @@ func parseCSV[K any](target, header ottl.StringGetter[K], delimiter, headerDelim
 		}
 
 		headers := strings.Split(headerStr, headerDelimiterString)
-		fields, err := parseutils.ReadCSVRow(targetStr, delimiter, headers, lazyQuotes)
+		fields, err := parseutils.ReadCSVRow(targetStr, delimiter, lazyQuotes)
 		if err != nil {
 			return nil, err
 		}

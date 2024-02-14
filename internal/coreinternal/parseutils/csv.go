@@ -12,10 +12,11 @@ import (
 // We make the assumption that the payload we are reading is a single row, so we allow newline characters in fields.
 // However, the csv package does not support newlines in a CSV field (it assumes rows are newline separated),
 // so in order to support parsing newlines in a field, we need to stitch together the results of multiple Read calls.
-func ReadCSVRow(row string, delimiter rune, headers []string, lazyQuotes bool) ([]string, error) {
+func ReadCSVRow(row string, delimiter rune, lazyQuotes bool) ([]string, error) {
 	reader := csv.NewReader(strings.NewReader(row))
 	reader.Comma = delimiter
-	reader.FieldsPerRecord = len(headers)
+	// -1 indicates a variable length of fields
+	reader.FieldsPerRecord = -1
 	reader.LazyQuotes = lazyQuotes
 
 	lines := make([][]string, 0, 1)
@@ -67,11 +68,11 @@ func ReadCSVRow(row string, delimiter rune, headers []string, lazyQuotes bool) (
 
 // MapCSVHeaders creates a map of headers[i] -> fields[i].
 func MapCSVHeaders(headers []string, fields []string) (map[string]any, error) {
-	parsedValues := make(map[string]any)
-
 	if len(fields) != len(headers) {
 		return nil, fmt.Errorf("wrong number of fields: expected %d, found %d", len(headers), len(fields))
 	}
+
+	parsedValues := make(map[string]any, len(headers))
 
 	for i, val := range fields {
 		parsedValues[headers[i]] = val

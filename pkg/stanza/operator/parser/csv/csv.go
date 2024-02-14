@@ -157,7 +157,7 @@ func generateCSVParseFunc(headers []string, fieldDelimiter rune, lazyQuotes bool
 			return nil, err
 		}
 
-		joinedLine, err := parseutils.ReadCSVRow(csvLine, fieldDelimiter, headers, lazyQuotes)
+		joinedLine, err := parseutils.ReadCSVRow(csvLine, fieldDelimiter, lazyQuotes)
 		if err != nil {
 			return nil, err
 		}
