@@ -10,8 +10,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
+type metric = Metric
+
 type Metric struct {
-	scope Scope
+	scope
 
 	name string
 	unit string
@@ -32,6 +34,10 @@ func (i Metric) Hash() hash.Hash64 {
 	}
 	sum.Write([]byte{byte(i.ty), mono, byte(i.temporality)})
 	return sum
+}
+
+func (i Metric) Scope() Scope {
+	return i.scope
 }
 
 func OfMetric(scope Scope, m pmetric.Metric) Metric {

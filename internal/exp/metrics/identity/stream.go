@@ -13,14 +13,18 @@ import (
 )
 
 type Stream struct {
-	metric Metric
-	attrs  [16]byte
+	metric
+	attrs [16]byte
 }
 
 func (i Stream) Hash() hash.Hash64 {
 	sum := i.metric.Hash()
 	sum.Write(i.attrs[:])
 	return sum
+}
+
+func (i Stream) Metric() Metric {
+	return i.metric
 }
 
 func OfStream[DataPoint attrPoint](m Metric, dp DataPoint) Stream {

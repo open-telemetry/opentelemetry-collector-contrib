@@ -11,8 +11,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
+type scope = Scope
+
 type Scope struct {
-	res Resource
+	resource resource
 
 	name    string
 	version string
@@ -20,18 +22,22 @@ type Scope struct {
 }
 
 func (s Scope) Hash() hash.Hash64 {
-	sum := s.res.Hash()
+	sum := s.resource.Hash()
 	sum.Write([]byte(s.name))
 	sum.Write([]byte(s.version))
 	sum.Write(s.attrs[:])
 	return sum
 }
 
+func (s Scope) Resource() Resource {
+	return s.resource
+}
+
 func OfScope(res Resource, scope pcommon.InstrumentationScope) Scope {
 	return Scope{
-		res:     res,
-		name:    scope.Name(),
-		version: scope.Version(),
-		attrs:   pdatautil.MapHash(scope.Attributes()),
+		resource: res,
+		name:     scope.Name(),
+		version:  scope.Version(),
+		attrs:    pdatautil.MapHash(scope.Attributes()),
 	}
 }
