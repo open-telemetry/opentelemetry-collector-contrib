@@ -22,9 +22,9 @@ type Map[T any] interface {
 	LoadOrStore(key identity.Stream, value T) (T, bool)
 	// Remove the value at key from the map
 	Delete(key identity.Stream)
-	// Range calls f sequentially for each key and value present in the map.
-	// If f returns false, range stops the iteration.
-	Range(f func(key identity.Stream, value T) bool)
+	// Items returns an iterator function that in future go version can be used with range
+	// See: https://go.dev/wiki/RangefuncExperiment
+	Items() func(yield func(identity.Stream, T) bool) bool
 }
 
 type Staleness[T any] struct {

@@ -37,11 +37,14 @@ func (rm *RawMap[K, V]) Delete(key K) {
 	delete(*rm, key)
 }
 
-func (rm *RawMap[K, V]) Range(f func(key K, value V) bool) {
-	for key, value := range *rm {
-		if !f(key, value) {
-			return
+func (rm *RawMap[K, V]) Items() func(yield func(K, V) bool) bool {
+	return func(yield func(K, V) bool) bool {
+		for k, v := range *rm {
+			if !yield(k, v) {
+				break
+			}
 		}
+		return false
 	}
 }
 
@@ -122,10 +125,9 @@ func TestStaleness(t *testing.T) {
 func validateStalenessMapEntries(t *testing.T, expected map[identity.Stream]int, sm *Staleness[int]) {
 	actual := map[identity.Stream]int{}
 
-	sm.Range(func(key identity.Stream, value int) bool {
+	sm.Items()(func(key identity.Stream, value int) bool {
 		actual[key] = value
 		return true
 	})
-
 	require.Equal(t, expected, actual)
 }
