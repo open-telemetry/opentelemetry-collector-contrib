@@ -4,7 +4,6 @@ package csv // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
-	csvparser "encoding/csv"
 	"errors"
 	"fmt"
 	"strings"
@@ -158,12 +157,7 @@ func generateCSVParseFunc(headers []string, fieldDelimiter rune, lazyQuotes bool
 			return nil, err
 		}
 
-		reader := csvparser.NewReader(strings.NewReader(csvLine))
-		reader.Comma = fieldDelimiter
-		reader.FieldsPerRecord = len(headers)
-		reader.LazyQuotes = lazyQuotes
-
-		joinedLine, err := parseutils.ReadCSVRow(reader)
+		joinedLine, err := parseutils.ReadCSVRow(csvLine, fieldDelimiter, headers, lazyQuotes)
 		if err != nil {
 			return nil, err
 		}

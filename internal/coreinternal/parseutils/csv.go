@@ -5,16 +5,22 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 )
 
 // ReadCSVRow reads a CSV row from the csv reader, returning the fields parsed from the line.
 // We make the assumption that the payload we are reading is a single row, so we allow newline characters in fields.
 // However, the csv package does not support newlines in a CSV field (it assumes rows are newline separated),
 // so in order to support parsing newlines in a field, we need to stitch together the results of multiple Read calls.
-func ReadCSVRow(csvReader *csv.Reader) ([]string, error) {
+func ReadCSVRow(row string, delimiter rune, headers []string, lazyQuotes bool) ([]string, error) {
+	reader := csv.NewReader(strings.NewReader(row))
+	reader.Comma = delimiter
+	reader.FieldsPerRecord = len(headers)
+	reader.LazyQuotes = lazyQuotes
+
 	lines := make([][]string, 0, 1)
 	for {
-		line, err := csvReader.Read()
+		line, err := reader.Read()
 		if errors.Is(err, io.EOF) {
 			break
 		}

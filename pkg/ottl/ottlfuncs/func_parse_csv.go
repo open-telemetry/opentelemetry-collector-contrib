@@ -5,7 +5,6 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
-	"encoding/csv"
 	"errors"
 	"fmt"
 	"strings"
@@ -113,13 +112,7 @@ func parseCSV[K any](target, header ottl.StringGetter[K], delimiter, headerDelim
 		}
 
 		headers := strings.Split(headerStr, headerDelimiterString)
-
-		csvReader := csv.NewReader(strings.NewReader(targetStr))
-		csvReader.Comma = delimiter
-		csvReader.FieldsPerRecord = len(headers)
-		csvReader.LazyQuotes = lazyQuotes
-
-		fields, err := parseutils.ReadCSVRow(csvReader)
+		fields, err := parseutils.ReadCSVRow(targetStr, delimiter, headers, lazyQuotes)
 		if err != nil {
 			return nil, err
 		}
@@ -176,11 +169,4 @@ func parseCSVIgnoreQuotes[K any](target, header ottl.StringGetter[K], delimiter,
 
 		return pMap, nil
 	}
-}
-
-// csvHeadersMap creates a map of headers[i] -> fields[i].
-func csvHeadersMap(headers []string, fields []string) (pcommon.Map, error) {
-	pMap := pcommon.NewMap()
-
-	return pMap, nil
 }
