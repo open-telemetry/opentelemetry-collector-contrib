@@ -66,7 +66,7 @@ func NewMetricsConverter(
 }
 
 // MetricsToSignalFxV2 converts the passed in MetricsData to SFx datapoints
-// and if sendOTLPHistograms is set, histogram metrics are not converted to SFx format.
+// and if processHistograms is set, histogram metrics are not converted to SFx format.
 // It returns those datapoints and the number of time series that had to be
 // dropped because of errors or warnings.
 func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.DataPoint {
