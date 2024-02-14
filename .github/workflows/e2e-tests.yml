@@ -39,7 +39,7 @@ jobs:
       - name: Build Collector
         run: make otelcontribcol
       - name: Upload Collector Binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: collector-binary
           path: ./bin/*
@@ -66,7 +66,7 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Download Collector Binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: collector-binary
           path: bin/
@@ -104,7 +104,7 @@ jobs:
         run: |
           docker save otelcontribcol:latest > /tmp/otelcontribcol.tar
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: otelcontribcol
           path: /tmp/otelcontribcol.tar
@@ -155,7 +155,7 @@ jobs:
         run: |
           kubectl get csr -o=jsonpath='{range.items[?(@.spec.signerName=="kubernetes.io/kubelet-serving")]}{.metadata.name}{" "}{end}' | xargs kubectl certificate approve
       - name: Download artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: otelcontribcol
           path: /tmp

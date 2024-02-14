@@ -43,6 +43,8 @@ Marshaler determines the format of data sent to AWS S3. Currently, the following
 - `otlp_proto`: the [OpenTelemetry Protocol format](https://github.com/open-telemetry/opentelemetry-proto), represented as Protocol Buffers. A single protobuf message is written into each object.
 - `sumo_ic`: the [Sumo Logic Installed Collector Archive format](https://help.sumologic.com/docs/manage/data-archiving/archive/).
   **This format is supported only for logs.**
+- `body`: export the log body as string.
+  **This format is supported only for logs.**
 
 # Example Configuration
 

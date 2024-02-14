@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v58/github"
+	"github.com/google/go-github/v59/github"
 	"go.uber.org/zap"
 )
 

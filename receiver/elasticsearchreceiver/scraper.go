@@ -11,7 +11,6 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -30,14 +29,6 @@ var (
 		v, _ := version.NewVersion("7.13")
 		return v
 	}()
-
-	_ = featuregate.GlobalRegistry().MustRegister(
-		"receiver.elasticsearch.emitNodeVersionAttr",
-		featuregate.StageStable,
-		featuregate.WithRegisterToVersion("0.82.0"),
-		featuregate.WithRegisterDescription("All node metrics will be enriched with the node version resource attribute."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16847"),
-	)
 )
 
 var errUnknownClusterStatus = errors.New("unknown cluster status")

@@ -182,6 +182,14 @@ func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[stri
 }
 
 func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
+	acfg, err := newTraceAgentConfig(ctx, params, cfg, sourceProvider)
+	if err != nil {
+		return nil, err
+	}
+	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector()), nil
+}
+
+func newTraceAgentConfig(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*traceconfig.AgentConfig, error) {
 	acfg := traceconfig.New()
 	src, err := sourceProvider.Source(ctx)
 	if err != nil {
@@ -210,6 +218,6 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 	if addr := cfg.Traces.Endpoint; addr != "" {
 		acfg.Endpoints[0].Host = addr
 	}
-	tracelog.SetLogger(&zaplogger{params.Logger})
-	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector()), nil
+	tracelog.SetLogger(&zaplogger{params.Logger}) //TODO: This shouldn't be a singleton
+	return acfg, nil
 }
