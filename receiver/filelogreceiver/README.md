@@ -153,6 +153,31 @@ The above configuration will read logs from the "simple.log" file. Some examples
 2023-06-20 12:50:00 DEBUG This is a test debug message
 ```
 
+## Example - Multiline logs parsing
+
+Receiver Configuration
+```yaml
+receivers:
+  filelog:
+    include:
+    - /var/log/example/multiline.log
+    multiline:
+      line_start_pattern: ^Exception
+```
+
+The above configuration will be able to parse multiline logs, splitting every time the `^Exception` pattern is met.
+
+```
+Exception in thread 1 "main" java.lang.NullPointerException
+        at com.example.myproject.Book.getTitle(Book.java:16)
+        at com.example.myproject.Author.getBookTitles(Author.java:25)
+        at com.example.myproject.Bootstrap.main(Bootstrap.java:14)
+Exception in thread 2 "main" java.lang.NullPointerException
+        at com.example.myproject.Book.getTitle(Book.java:16)
+        at com.example.myproject.Author.getBookTitles(Author.java:25)
+        at com.example.myproject.Bootstrap.main(Bootstrap.java:44)
+```
+
 ## Offset tracking
 
 `storage` setting allows to define the proper storage extension to be used for storing file offsets. 

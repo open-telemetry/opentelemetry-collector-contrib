@@ -36,7 +36,7 @@ func runExtensionLifecycle(t *testing.T, ext *TestStorage, expectPersistence boo
 	ctx := context.Background()
 	require.NoError(t, ext.Start(ctx, componenttest.NewNopHost()))
 
-	clientOne, err := ext.GetClient(ctx, component.KindProcessor, component.NewID("foo"), "client_one")
+	clientOne, err := ext.GetClient(ctx, component.KindProcessor, component.MustNewID("foo"), "client_one")
 	require.NoError(t, err)
 
 	creatorID, err := CreatorID(ctx, clientOne)
@@ -65,7 +65,7 @@ func runExtensionLifecycle(t *testing.T, ext *TestStorage, expectPersistence boo
 	require.NoError(t, clientOne.Close(ctx))
 
 	// Create new client to test persistence
-	clientTwo, err := ext.GetClient(ctx, component.KindProcessor, component.NewID("foo"), "client_one")
+	clientTwo, err := ext.GetClient(ctx, component.KindProcessor, component.MustNewID("foo"), "client_one")
 	require.NoError(t, err)
 
 	creatorID, err = CreatorID(ctx, clientTwo)

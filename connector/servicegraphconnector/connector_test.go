@@ -313,7 +313,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 
 	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
-			component.NewID("mock"): mockMetricsExporter,
+			component.MustNewID("mock"): mockMetricsExporter,
 		},
 	})
 
@@ -365,7 +365,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 
 	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeMetrics: {
-			component.NewID("mock"): mockMetricsExporter,
+			component.MustNewID("mock"): mockMetricsExporter,
 		},
 	})
 

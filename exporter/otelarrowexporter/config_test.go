@@ -79,12 +79,12 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "experimental",
-				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("nop")},
+				Auth:            &configauth.Authentication{AuthenticatorID: component.MustNewID("nop")},
 			},
 			Arrow: ArrowSettings{
 				NumStreams:         2,
 				MaxStreamLifetime:  2 * time.Hour,
-				PayloadCompression: configcompression.Zstd,
+				PayloadCompression: configcompression.TypeZstd,
 				Zstd:               zstd.DefaultEncoderConfig(),
 			},
 		}, cfg)
@@ -128,7 +128,7 @@ func TestDefaultSettingsValid(t *testing.T) {
 
 func TestArrowSettingsPayloadCompressionZstd(t *testing.T) {
 	settings := ArrowSettings{
-		PayloadCompression: configcompression.Zstd,
+		PayloadCompression: configcompression.TypeZstd,
 	}
 	var config config.Config
 	for _, opt := range settings.toArrowProducerOptions() {
@@ -140,7 +140,7 @@ func TestArrowSettingsPayloadCompressionZstd(t *testing.T) {
 func TestArrowSettingsPayloadCompressionNone(t *testing.T) {
 	for _, value := range []string{"", "none"} {
 		settings := ArrowSettings{
-			PayloadCompression: configcompression.CompressionType(value),
+			PayloadCompression: configcompression.Type(value),
 		}
 		var config config.Config
 		for _, opt := range settings.toArrowProducerOptions() {
