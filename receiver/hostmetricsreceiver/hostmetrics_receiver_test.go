@@ -25,6 +25,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
@@ -302,7 +303,7 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 
 func Benchmark_ScrapeCpuMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Scrapers:                  map[string]internal.Config{cpuscraper.TypeStr: (&cpuscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -311,7 +312,7 @@ func Benchmark_ScrapeCpuMetrics(b *testing.B) {
 
 func Benchmark_ScrapeDiskMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Scrapers:                  map[string]internal.Config{diskscraper.TypeStr: (&diskscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -320,7 +321,7 @@ func Benchmark_ScrapeDiskMetrics(b *testing.B) {
 
 func Benchmark_ScrapeFileSystemMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Scrapers:                  map[string]internal.Config{filesystemscraper.TypeStr: (&filesystemscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -329,7 +330,7 @@ func Benchmark_ScrapeFileSystemMetrics(b *testing.B) {
 
 func Benchmark_ScrapeLoadMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Scrapers:                  map[string]internal.Config{loadscraper.TypeStr: (&loadscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -338,7 +339,7 @@ func Benchmark_ScrapeLoadMetrics(b *testing.B) {
 
 func Benchmark_ScrapeMemoryMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Scrapers:                  map[string]internal.Config{memoryscraper.TypeStr: (&memoryscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -347,7 +348,7 @@ func Benchmark_ScrapeMemoryMetrics(b *testing.B) {
 
 func Benchmark_ScrapeNetworkMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Scrapers:                  map[string]internal.Config{networkscraper.TypeStr: (&networkscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -356,7 +357,7 @@ func Benchmark_ScrapeNetworkMetrics(b *testing.B) {
 
 func Benchmark_ScrapeProcessesMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Scrapers:                  map[string]internal.Config{processesscraper.TypeStr: (&processesscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -365,7 +366,7 @@ func Benchmark_ScrapeProcessesMetrics(b *testing.B) {
 
 func Benchmark_ScrapePagingMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Scrapers:                  map[string]internal.Config{pagingscraper.TypeStr: (&pagingscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -378,7 +379,7 @@ func Benchmark_ScrapeProcessMetrics(b *testing.B) {
 	}
 
 	cfg := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Scrapers:                  map[string]internal.Config{processscraper.TypeStr: (&processscraper.Factory{}).CreateDefaultConfig()},
 	}
 
@@ -387,7 +388,7 @@ func Benchmark_ScrapeProcessMetrics(b *testing.B) {
 
 func Benchmark_ScrapeSystemMetrics(b *testing.B) {
 	cfg := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Scrapers: map[string]internal.Config{
 			cpuscraper.TypeStr:        (&cpuscraper.Factory{}).CreateDefaultConfig(),
 			diskscraper.TypeStr:       (&diskscraper.Factory{}).CreateDefaultConfig(),
@@ -409,7 +410,7 @@ func Benchmark_ScrapeSystemAndProcessMetrics(b *testing.B) {
 	}
 
 	cfg := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(""),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Scrapers: map[string]internal.Config{
 			cpuscraper.TypeStr:        &cpuscraper.Config{},
 			diskscraper.TypeStr:       &diskscraper.Config{},

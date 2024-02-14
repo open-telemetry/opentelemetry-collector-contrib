@@ -58,13 +58,6 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "nil_nextConsumer",
-			args: args{
-				config: *defaultConfig,
-			},
-			wantErr: errNilNextLogsConsumer,
-		},
-		{
 			name: "empty_endpoint",
 			args: args{
 				config:       *emptyEndpointConfig,
@@ -117,13 +110,6 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 		args    args
 		wantErr error
 	}{
-		{
-			name: "nil_nextConsumer",
-			args: args{
-				config: *defaultConfig,
-			},
-			wantErr: errNilNextMetricsConsumer,
-		},
 		{
 			name: "empty_endpoint",
 			args: args{
