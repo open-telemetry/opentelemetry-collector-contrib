@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"time"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/relvacode/iso8601"
@@ -113,7 +114,12 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 			}
 
 			lr := logRecords.AppendEmpty()
-			lr.SetTimestamp(nanos)
+			// only set timestamp if the record sent included a valid value
+			if err == nil {
+				lr.SetTimestamp(nanos)
+			}
+			// always set observed timestamp to time observed by Collector
+			lr.SetObservedTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
 
 			if log.Level != nil {
 				severity := asSeverity(*log.Level)
