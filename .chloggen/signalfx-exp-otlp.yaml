@@ -4,10 +4,10 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: receiver/signalfx
+component: exporter/signalfx
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Accept otlp protobuf requests when content-type is "application/x-protobuf;format=otlp"
+note: Send histograms in otlp format with new config `send_otlp_histograms` option
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [26298]
