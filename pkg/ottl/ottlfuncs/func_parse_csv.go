@@ -8,11 +8,11 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
-	"io"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/parseutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -119,12 +119,23 @@ func parseCSV[K any](target, header ottl.StringGetter[K], delimiter, headerDelim
 		csvReader.FieldsPerRecord = len(headers)
 		csvReader.LazyQuotes = lazyQuotes
 
-		fields, err := csvReadLine(csvReader)
+		fields, err := parseutils.ReadCSVRow(csvReader)
 		if err != nil {
 			return nil, err
 		}
 
-		return csvHeadersMap(headers, fields)
+		headersToFields, err := parseutils.MapCSVHeaders(headers, fields)
+		if err != nil {
+			return nil, fmt.Errorf("map csv headers: %w", err)
+		}
+
+		pMap := pcommon.NewMap()
+		err = pMap.FromRaw(headersToFields)
+		if err != nil {
+			return nil, fmt.Errorf("create pcommon.Map: %w", err)
+		}
+
+		return pMap, nil
 	}
 }
 
@@ -151,79 +162,25 @@ func parseCSVIgnoreQuotes[K any](target, header ottl.StringGetter[K], delimiter,
 
 		// Ignoring quotes makes CSV parseable with just string.Split
 		fields := strings.Split(targetStr, delimiterString)
-		return csvHeadersMap(headers, fields)
+
+		headersToFields, err := parseutils.MapCSVHeaders(headers, fields)
+		if err != nil {
+			return nil, fmt.Errorf("map csv headers: %w", err)
+		}
+
+		pMap := pcommon.NewMap()
+		err = pMap.FromRaw(headersToFields)
+		if err != nil {
+			return nil, fmt.Errorf("create pcommon.Map: %w", err)
+		}
+
+		return pMap, nil
 	}
 }
 
 // csvHeadersMap creates a map of headers[i] -> fields[i].
 func csvHeadersMap(headers []string, fields []string) (pcommon.Map, error) {
 	pMap := pcommon.NewMap()
-	parsedValues := make(map[string]any)
-
-	if len(fields) != len(headers) {
-		return pMap, fmt.Errorf("wrong number of fields: expected %d, found %d", len(headers), len(fields))
-	}
-
-	for i, val := range fields {
-		parsedValues[headers[i]] = val
-	}
-
-	err := pMap.FromRaw(parsedValues)
-	if err != nil {
-		return pMap, fmt.Errorf("create pcommon.Map: %w", err)
-	}
 
 	return pMap, nil
-}
-
-// csvReadLine reads a CSV line from the csv reader, returning the fields parsed from the line.
-// We make the assumption that the payload we are reading is a single row, so we allow newline characters in fields.
-// However, the csv package does not support newlines in a CSV field (it assumes rows are newline separated),
-// so in order to support parsing newlines in a field, we need to stitch together the results of multiple Read calls.
-func csvReadLine(csvReader *csv.Reader) ([]string, error) {
-	lines := make([][]string, 0, 1)
-	for {
-		line, err := csvReader.Read()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-
-		if err != nil && len(line) == 0 {
-			return nil, fmt.Errorf("read csv line: %w", err)
-		}
-
-		lines = append(lines, line)
-	}
-
-	// If the input is empty, we might not get any lines
-	if len(lines) == 0 {
-		return nil, errors.New("no csv lines found")
-	}
-
-	/*
-		This parser is parsing a single value, which came from a single log entry.
-		Therefore, if there are multiple lines here, it should be assumed that each
-		subsequent line contains a continuation of the last field in the previous line.
-
-		Given a file w/ headers "A,B,C,D,E" and contents "aa,b\nb,cc,d\nd,ee",
-		expect reader.Read() to return bodies:
-		- ["aa","b"]
-		- ["b","cc","d"]
-		- ["d","ee"]
-	*/
-
-	joinedLine := lines[0]
-	for i := 1; i < len(lines); i++ {
-		nextLine := lines[i]
-
-		// The first element of the next line is a continuation of the previous line's last element
-		joinedLine[len(joinedLine)-1] += "\n" + nextLine[0]
-
-		// The remainder are separate elements
-		for n := 1; n < len(nextLine); n++ {
-			joinedLine = append(joinedLine, nextLine[n])
-		}
-	}
-
-	return joinedLine, nil
 }
