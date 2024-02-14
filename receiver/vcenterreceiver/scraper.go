@@ -39,9 +39,7 @@ type vcenterMetricScraper struct {
 	mb     *metadata.MetricsBuilder
 	logger *zap.Logger
 	// map of vm name => compute name
-	vmToComputeMap map[string]string
-	// map of datastore name  => compute name
-	dsToComputeMap     map[string]string
+	vmToComputeMap     map[string]string
 	emitPerfWithObject bool
 }
 
@@ -57,7 +55,6 @@ func newVmwareVcenterScraper(
 		logger:             logger,
 		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 		vmToComputeMap:     make(map[string]string),
-		dsToComputeMap:     make(map[string]string),
 		emitPerfWithObject: emitPerfMetricsWithObjects.IsEnabled(),
 	}
 }
@@ -88,7 +85,6 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 	err := v.collectDatacenters(ctx)
 
 	// cleanup so any inventory moves are accounted for
-	v.dsToComputeMap = make(map[string]string)
 	v.vmToComputeMap = make(map[string]string)
 
 	return v.mb.Emit(), err
@@ -157,17 +153,17 @@ func (v *vcenterMetricScraper) collectCluster(
 func (v *vcenterMetricScraper) collectDatastores(
 	ctx context.Context,
 	colTime pcommon.Timestamp,
-	cluster *object.ComputeResource,
+	compute *object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
 ) {
-	datastores, err := cluster.Datastores(ctx)
+	datastores, err := compute.Datastores(ctx)
 	if err != nil {
 		errs.AddPartial(1, err)
 		return
 	}
 
 	for _, ds := range datastores {
-		v.collectDatastore(ctx, colTime, ds, cluster, errs)
+		v.collectDatastore(ctx, colTime, ds, compute, errs)
 	}
 }
 
@@ -226,17 +222,12 @@ func (v *vcenterMetricScraper) collectHost(
 			"config",
 			"summary.hardware",
 			"summary.quickStats",
-			"datastore",
 			"vm",
 		}, &hwSum)
 
 	if err != nil {
 		errs.AddPartial(1, err)
 		return
-	}
-
-	for _, dsRef := range hwSum.Datastore {
-		v.dsToComputeMap[dsRef.Value] = compute.Name()
 	}
 
 	for _, vmRef := range hwSum.Vm {
@@ -283,7 +274,6 @@ func (v *vcenterMetricScraper) collectResourcePools(
 			v.vmToComputeMap[vmRef.Value] = computeRef.Reference().Value
 		}
 
-		// moRP.Vm
 		v.recordResourcePool(ts, moRP)
 		rb := v.mb.NewResourceBuilder()
 		rb.SetVcenterResourcePoolName(rp.Name())
