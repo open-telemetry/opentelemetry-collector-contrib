@@ -104,20 +104,21 @@ func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse)
 	if sr.Jobid == nil {
 		var u string
 		path := "/services/search/jobs/"
-		if e, ok := c.clients[eptType]; !ok {
-			return nil, errNoClientFound
-		} else {
+
+		if e, ok := c.clients[eptType]; ok {
 			u, err = url.JoinPath(e.endpoint.String(), path)
 			if err != nil {
 				return nil, err
 			}
+		} else {
+			return nil, errNoClientFound
 		}
 
 		// reader for the response data
 		data := strings.NewReader(sr.search)
 
 		// return the build request, ready to be run by makeRequest
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, data)
+		req, err = http.NewRequestWithContext(ctx, http.MethodPost, u, data)
 		if err != nil {
 			return nil, err
 		}
@@ -145,11 +146,12 @@ func (c *splunkEntClient) createAPIRequest(ctx context.Context, apiEndpoint stri
 		return nil, errCtxMissingEndpointType
 	}
 
-	if e, ok := c.clients[eptType]; !ok {
-		return nil, errNoClientFound
-	} else {
+	if e, ok := c.clients[eptType]; ok {
 		u = e.endpoint.String() + apiEndpoint
+	} else {
+		return nil, errNoClientFound
 	}
+
 	req, err = http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
@@ -171,9 +173,8 @@ func (c *splunkEntClient) makeRequest(req *http.Request) (*http.Response, error)
 			return nil, err
 		}
 		return res, nil
-	} else {
-		return nil, errEndpointTypeNotFound
 	}
+	return nil, errEndpointTypeNotFound
 }
 
 // Check if the splunkEntClient contains a configured endpoint for the type of scraper
