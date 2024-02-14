@@ -178,7 +178,7 @@ processors:
 The `keys` property describes which attribute keys will be considered for grouping:
 
 * If the processed span, log record and metric data point has at least one of the specified attributes key, it will be moved to a *Resource* with the same value for these attributes. The *Resource* will be created if none exists with the same attributes.
-* If none of the specified attributes key is present in the processed span, log record or metric data point, it remains associated to the same *Resource* (no change).
+* If none of the specified attributes key is present in the processed span, log record or metric data point, it remains associated to the same *Resource* (no change), with multiple instances of the same *Resource* still [compacted](#compaction).
 
 Please refer to:
 
