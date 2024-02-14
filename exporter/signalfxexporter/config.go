@@ -112,7 +112,7 @@ type Config struct {
 
 	// ExcludeMetrics defines dpfilter.MetricFilters that will determine metrics to be
 	// excluded from sending to SignalFx backend. If translations enabled with
-	// TranslationRules options, the exclusion will be applie on translated metrics.
+	// TranslationRules options, the exclusion will be applied on translated metrics.
 	ExcludeMetrics []dpfilters.MetricFilter `mapstructure:"exclude_metrics"`
 
 	// IncludeMetrics defines dpfilter.MetricFilters to override exclusion any of metric.
@@ -134,6 +134,10 @@ type Config struct {
 	// Whether to drop  histogram bucket metrics dispatched to Splunk Observability.
 	// Default value is set to false.
 	DropHistogramBuckets bool `mapstructure:"drop_histogram_buckets"`
+
+	// Whether to send histogram metrics in OTLP format to Splunk Observability.
+	// Default value is set to false.
+	SendOTLPHistograms bool `mapstructure:"send_otlp_histograms"`
 }
 
 type DimensionClientConfig struct {
