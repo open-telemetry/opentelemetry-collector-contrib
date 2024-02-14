@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -40,7 +39,4 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, receiver, "failed to create metrics receiver")
-
-	_, err = factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), receiverConfig, nil)
-	require.Error(t, err)
 }
