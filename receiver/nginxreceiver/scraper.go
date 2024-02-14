@@ -52,12 +52,7 @@ func (r *nginxScraper) start(_ context.Context, host component.Host) error {
 func (r *nginxScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// Init client in scrape method in case there are transient errors in the constructor.
 	if r.client == nil {
-		var err error
-		r.client, err = client.NewNginxClient(r.httpClient, r.cfg.ClientConfig.Endpoint)
-		if err != nil {
-			r.client = nil
-			return pmetric.Metrics{}, err
-		}
+		r.client = client.NewNginxClient(r.httpClient, r.cfg.ClientConfig.Endpoint)
 	}
 
 	stats, err := r.client.GetStubStats()
