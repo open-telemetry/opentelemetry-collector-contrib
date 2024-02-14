@@ -222,9 +222,7 @@ func (se *signalfxExporter) createClient(host component.Host) (*http.Client, err
 }
 
 func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
-
 	_, err := se.pushMetricsData(ctx, md)
-
 	if err == nil && se.hostMetadataSyncer != nil {
 		se.hostMetadataSyncer.Sync(md)
 	}
