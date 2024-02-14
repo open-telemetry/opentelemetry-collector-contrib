@@ -601,7 +601,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 
 func TestInvalidTLSCredentials(t *testing.T) {
 	cfg := Config{
-		GRPCServerSettings: configgrpc.GRPCServerSettings{
+		ServerConfig: configgrpc.ServerConfig{
 			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
 					CertFile: "willfail",

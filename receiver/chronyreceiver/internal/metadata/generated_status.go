@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("chrony")
+)
+
 const (
-	Type             = "chrony"
 	MetricsStability = component.StabilityLevelAlpha
 )
 

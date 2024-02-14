@@ -22,7 +22,7 @@ func TestConfig_Validate(t *testing.T) {
 	})
 
 	t.Run("Valid configuration", func(t *testing.T) {
-		c := &Config{HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://example.com/"}, APIToken: "token"}
+		c := &Config{ClientConfig: confighttp.ClientConfig{Endpoint: "http://example.com/"}, APIToken: "token"}
 		err := c.Validate()
 		assert.NoError(t, err)
 
@@ -30,7 +30,7 @@ func TestConfig_Validate(t *testing.T) {
 	})
 
 	t.Run("Invalid Endpoint", func(t *testing.T) {
-		c := &Config{HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "example.com"}}
+		c := &Config{ClientConfig: confighttp.ClientConfig{Endpoint: "example.com"}}
 		err := c.Validate()
 		assert.Error(t, err)
 	})

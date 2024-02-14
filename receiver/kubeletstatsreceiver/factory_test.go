@@ -26,12 +26,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	ft := factory.Type()
-	require.EqualValues(t, "kubeletstats", ft)
+	require.EqualValues(t, metadata.Type, ft)
 }
 
 func TestValidConfig(t *testing.T) {

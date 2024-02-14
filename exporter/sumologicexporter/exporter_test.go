@@ -35,7 +35,7 @@ func TestInitExporter(t *testing.T) {
 		LogFormat:        "json",
 		MetricFormat:     "carbon2",
 		CompressEncoding: "gzip",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Timeout:  defaultTimeout,
 			Endpoint: "test_endpoint",
 		},
@@ -142,7 +142,7 @@ func TestInvalidSourceFormats(t *testing.T) {
 		LogFormat:        "json",
 		MetricFormat:     "carbon2",
 		CompressEncoding: "gzip",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Timeout:  defaultTimeout,
 			Endpoint: "test_endpoint",
 		},
@@ -156,7 +156,7 @@ func TestInvalidHTTPCLient(t *testing.T) {
 		LogFormat:        "json",
 		MetricFormat:     "carbon2",
 		CompressEncoding: "gzip",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "test_endpoint",
 			CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
 				return nil, errors.New("roundTripperException")

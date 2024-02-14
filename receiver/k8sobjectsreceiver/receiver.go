@@ -141,7 +141,7 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
 				logRecordCount := logs.LogRecordCount()
 				err = kr.consumer.ConsumeLogs(obsCtx, logs)
-				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, logRecordCount, err)
+				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
 			}
 		case <-stopperChan:
 			return
@@ -223,7 +223,7 @@ func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsCon
 			} else {
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
 				err := kr.consumer.ConsumeLogs(obsCtx, logs)
-				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, 1, err)
+				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), 1, err)
 			}
 		case <-stopperChan:
 			watcher.Stop()

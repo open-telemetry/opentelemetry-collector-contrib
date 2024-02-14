@@ -4,7 +4,7 @@ status:
   class: connector
   stability:
     development: [traces_to_metrics, traces_to_logs]
-  distributions: [contrib]
+  distributions: []
   codeowners:
     active: [jpkrohling, marctc]
 

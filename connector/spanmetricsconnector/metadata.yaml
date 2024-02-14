@@ -7,6 +7,7 @@ status:
   distributions: [contrib, sumo, grafana, splunk, liatrio]
   codeowners:
     active: [portertech]
+    emeritus: [albertteoh]
 
 tests:
   config:

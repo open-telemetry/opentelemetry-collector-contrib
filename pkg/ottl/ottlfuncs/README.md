@@ -254,9 +254,6 @@ The `replace_all_matches` function replaces any matching string value with the r
 
 Each string value in `target` that matches `pattern` will get replaced with `replacement`. Non-string values are ignored.
 
-There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
-
 Examples:
 
 - `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
@@ -277,10 +274,6 @@ If one or more sections of `target` match `regex` they will get replaced with `r
 The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
 
 The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching regex pattern with the hash value of `replacement`.
-
-There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
-If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
@@ -305,9 +298,6 @@ If `target` matches `pattern` it will get replaced with `replacement`.
 
 The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching glob pattern with the hash value of `replacement`.
 
-There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
-
 Examples:
 
 - `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
@@ -326,10 +316,6 @@ If one or more sections of `target` match `regex` they will get replaced with `r
 The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
 
 The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces a matching regex pattern with the hash value of `replacement`.
-
-There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
-If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
@@ -674,9 +660,6 @@ If target is not a string, it will be converted to one:
 
 If target is nil, false is always returned.
 
-There is currently a bug with OTTL that does not allow the target string to end with `\\"`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
-
 Examples:
 
 - `IsMatch(attributes["http.path"], "foo")`
@@ -917,9 +900,6 @@ The `Split` Converter separates a string by the delimiter, and returns an array 
 `target` is a string. `delimiter` is a string.
 
 If the `target` is not a string or does not exist, the `Split` Converter will return an error.
-
-There is currently a bug with OTTL that does not allow the target string to end with `\\"`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 

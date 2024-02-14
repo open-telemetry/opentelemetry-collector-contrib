@@ -8,3 +8,6 @@ status:
   codeowners:
     active: [wgliang, yiyang5055]
 
+tests:
+  config:
+  skip_lifecycle: true

@@ -8,3 +8,6 @@ status:
   codeowners:
     active: [atoulme, emreyalvac]
 
+tests:
+  config:
+  skip_lifecycle: true

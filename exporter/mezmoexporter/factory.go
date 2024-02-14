@@ -27,10 +27,10 @@ func NewFactory() exporter.Factory {
 // Create a default Memzo config
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPClientSettings: createDefaultHTTPClientSettings(),
-		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
-		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
-		IngestURL:          defaultIngestURL,
+		ClientConfig:  createDefaultClientConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		IngestURL:     defaultIngestURL,
 	}
 }
 
