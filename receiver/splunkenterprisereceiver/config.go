@@ -8,11 +8,10 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 )
 
 var (
