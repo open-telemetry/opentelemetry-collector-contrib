@@ -52,7 +52,7 @@ This also supports service name based exporting for traces. If you have two or m
 ## Resilience and scaling considerations
 The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`, `dns`, `k8s`), create one exporter per endpoint. The exporter conforms to its published configuration regarding sending queue and retry mechanisms. Importantly, the `loadbalancingexporter` will not attempt to re-route data to a healthy endpoint on delivery failure, and data loss is therefore possible if the exporter's target remains unavailable once redelivery is exhausted. Due consideration needs to be given to the exporter queue and retry configuration when running in a highly elastic environment.
 
-- When using the `static` resolver and a target is unavailable, all the target's load-balanced telemetry will fail to be delivered until either the target is restored or removed from the static list.
+- When using the `static` resolver and a target is unavailable, all the target's load-balanced telemetry will fail to be delivered until either the target is restored or removed from the static list. The same principle applies to the `dns` resolver.
 - When using `k8s`, `dns`, and likely future resolvers, topology changes are eventually reflected in the `loadbalancingexporter`. The `k8s` resolver will update more quickly than `dns`, but a window of time in which the true topology doesn't match the view of the `loadbalancingexporter` remains.
 
 ## Configuration
