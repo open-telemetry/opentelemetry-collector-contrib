@@ -7,7 +7,7 @@ change_type: breaking
 component: exporter/datadogexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Disable APM stats computation in Datadog Exporter by default, noAPMStatsFeatureGate is changed to beta
+note: Disable APM stats computation in Datadog Exporter by default, `exporter.datadogexporter.DisableAPMStats` is changed to beta
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [31219]
