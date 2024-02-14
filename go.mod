@@ -1,6 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib
 
-go 1.21
+go 1.21.3
+
+toolchain go1.21.7
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.94.0
