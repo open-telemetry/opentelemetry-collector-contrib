@@ -14,12 +14,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 )
 
 var (
@@ -85,11 +86,10 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 		return
 	}
 	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
-	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 
-	sr = searchResponse{
+	sr := searchResponse{
 		search: searchDict[`SplunkLicenseIndexUsageSearch`],
 	}
 
@@ -1047,9 +1047,8 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it indexThroughput
-	var ept string
 
-	ept = apiDict[`SplunkIndexerThroughput`]
+	ept := apiDict[`SplunkIndexerThroughput`]
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
@@ -1089,9 +1088,7 @@ func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
-	var ept string
-
-	ept = apiDict[`SplunkDataIndexesExtended`]
+	ept := apiDict[`SplunkDataIndexesExtended`]
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
@@ -1144,9 +1141,8 @@ func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
-	var ept string
 
-	ept = apiDict[`SplunkDataIndexesExtended`]
+	ept := apiDict[`SplunkDataIndexesExtended`]
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
@@ -1192,9 +1188,8 @@ func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommo
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
-	var ept string
 
-	ept = apiDict[`SplunkDataIndexesExtended`]
+	ept := apiDict[`SplunkDataIndexesExtended`]
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
@@ -1246,9 +1241,8 @@ func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Ti
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
-	var ept string
 
-	ept = apiDict[`SplunkDataIndexesExtended`]
+	ept := apiDict[`SplunkDataIndexesExtended`]
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
@@ -1300,9 +1294,8 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
-	var ept string
 
-	ept = apiDict[`SplunkDataIndexesExtended`]
+	ept := apiDict[`SplunkDataIndexesExtended`]
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
@@ -1371,9 +1364,8 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IndexesExtended
-	var ept string
 
-	ept = apiDict[`SplunkDataIndexesExtended`]
+	ept := apiDict[`SplunkDataIndexesExtended`]
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
@@ -1435,9 +1427,8 @@ func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcomm
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IntrospectionQueues
-	var ept string
 
-	ept = apiDict[`SplunkIntrospectionQueues`]
+	ept := apiDict[`SplunkIntrospectionQueues`]
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
@@ -1484,9 +1475,8 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now 
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	var it IntrospectionQueues
-	var ept string
 
-	ept = apiDict[`SplunkIntrospectionQueues`]
+	ept := apiDict[`SplunkIntrospectionQueues`]
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
