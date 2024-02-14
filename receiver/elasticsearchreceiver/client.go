@@ -49,7 +49,7 @@ type defaultElasticsearchClient struct {
 var _ elasticsearchClient = (*defaultElasticsearchClient)(nil)
 
 func newElasticsearchClient(settings component.TelemetrySettings, c Config, h component.Host) (*defaultElasticsearchClient, error) {
-	client, err := c.HTTPClientSettings.ToClient(h, settings)
+	client, err := c.ClientConfig.ToClient(h, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func newElasticsearchClient(settings component.TelemetrySettings, c Config, h co
 
 	var authHeader string
 	if c.Username != "" && c.Password != "" {
-		userPass := fmt.Sprintf("%s:%s", c.Username, c.Password)
+		userPass := fmt.Sprintf("%s:%s", c.Username, string(c.Password))
 		authb64 := base64.StdEncoding.EncodeToString([]byte(userPass))
 		authHeader = fmt.Sprintf("Basic %s", authb64)
 	}

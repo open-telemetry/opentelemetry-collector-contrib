@@ -34,6 +34,6 @@ exporters:
       # Creates a new marker anytime the exporter sees a k8s event with a reason of Backoff
       - type: k8s-backoff-events
         rules:
-          - log_conditions:
-              - IsMap(body) and IsMap(body["object"]) and body["object"]["reason"] == "Backoff"
+          log_conditions:
+            - IsMap(body) and IsMap(body["object"]) and body["object"]["reason"] == "Backoff"
 ```

@@ -11,8 +11,6 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 // addSingleSumNumberDataPoint converts the Gauge metric data point to a
@@ -24,8 +22,8 @@ func addSingleGaugeNumberDataPoint(
 	metric pmetric.Metric,
 	settings Settings,
 	series map[string]*prompb.TimeSeries,
+	name string,
 ) {
-	name := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
 	labels := createAttributes(
 		resource,
 		pt.Attributes(),
@@ -57,8 +55,8 @@ func addSingleSumNumberDataPoint(
 	metric pmetric.Metric,
 	settings Settings,
 	series map[string]*prompb.TimeSeries,
+	name string,
 ) {
-	name := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
 	labels := createAttributes(
 		resource,
 		pt.Attributes(),
@@ -89,13 +87,14 @@ func addSingleSumNumberDataPoint(
 	if settings.ExportCreatedMetric && metric.Sum().IsMonotonic() {
 		startTimestamp := pt.StartTimestamp()
 		if startTimestamp != 0 {
-			createdLabels := createAttributes(
-				resource,
-				pt.Attributes(),
-				settings.ExternalLabels,
-				nameStr,
-				name+createdSuffix,
-			)
+			createdLabels := make([]prompb.Label, len(labels))
+			copy(createdLabels, labels)
+			for i, l := range createdLabels {
+				if l.Name == model.MetricNameLabel {
+					createdLabels[i].Value = name + createdSuffix
+					break
+				}
+			}
 			addCreatedTimeSeriesIfNeeded(series, createdLabels, startTimestamp, pt.Timestamp(), metric.Type().String())
 		}
 	}

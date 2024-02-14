@@ -25,14 +25,17 @@ const (
 )
 
 type kubernetesprocessor struct {
-	logger          *zap.Logger
-	apiConfig       k8sconfig.APIConfig
-	kc              kube.Client
-	passthroughMode bool
-	rules           kube.ExtractionRules
-	filters         kube.Filters
-	podAssociations []kube.Association
-	podIgnore       kube.Excludes
+	cfg               component.Config
+	options           []option
+	telemetrySettings component.TelemetrySettings
+	logger            *zap.Logger
+	apiConfig         k8sconfig.APIConfig
+	kc                kube.Client
+	passthroughMode   bool
+	rules             kube.ExtractionRules
+	filters           kube.Filters
+	podAssociations   []kube.Association
+	podIgnore         kube.Excludes
 }
 
 func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kube.ClientProvider) error {
@@ -50,6 +53,23 @@ func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kub
 }
 
 func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error {
+	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
+
+	for _, opt := range allOptions {
+		if err := opt(kp); err != nil {
+			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			return nil
+		}
+	}
+
+	// This might have been set by an option already
+	if kp.kc == nil {
+		err := kp.initKubeClient(kp.logger, kubeClientProvider)
+		if err != nil {
+			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			return nil
+		}
+	}
 	if !kp.passthroughMode {
 		go kp.kc.Start()
 	}

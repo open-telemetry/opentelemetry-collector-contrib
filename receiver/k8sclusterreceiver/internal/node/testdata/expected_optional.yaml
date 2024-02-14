@@ -13,6 +13,19 @@ resourceMetrics:
         - key: k8s.kubeproxy.version
           value:
             stringValue: v1.25.3
+        - key: container.runtime.version
+          value:
+            stringValue: "1.6.9"
+        - key: container.runtime
+          value:
+            stringValue: "containerd"
+        - key: os.description
+          value:
+            stringValue: Ubuntu 22.04.1 LTS
+        - key: os.type
+          value:
+            stringValue: "linux"
+
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:

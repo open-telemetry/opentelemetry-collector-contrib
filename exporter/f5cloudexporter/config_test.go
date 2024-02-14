@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	otlphttp "go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -32,32 +33,32 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	actualCfg := cfg.(*Config)
-	expectedCfg := &Config{
-		Config: otlphttp.Config{
-			RetrySettings: exporterhelper.RetrySettings{
-				Enabled:             true,
-				InitialInterval:     10 * time.Second,
-				MaxInterval:         1 * time.Minute,
-				MaxElapsedTime:      10 * time.Minute,
-				RandomizationFactor: backoff.DefaultRandomizationFactor,
-				Multiplier:          backoff.DefaultMultiplier,
-			},
-			QueueSettings: exporterhelper.QueueSettings{
-				Enabled:      true,
-				NumConsumers: 2,
-				QueueSize:    10,
-			},
-			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint:        "https://f5cloud",
-				ReadBufferSize:  123,
-				WriteBufferSize: 345,
-				Timeout:         time.Second * 10,
-				Headers: map[string]configopaque.String{
-					"User-Agent": "opentelemetry-collector-contrib {{version}}",
-				},
-				Compression: "gzip",
-			},
+	otlphttpCfg := otlphttp.NewFactory().CreateDefaultConfig().(*otlphttp.Config)
+	otlphttpCfg.RetryConfig = configretry.BackOffConfig{
+		Enabled:             true,
+		InitialInterval:     10 * time.Second,
+		MaxInterval:         1 * time.Minute,
+		MaxElapsedTime:      10 * time.Minute,
+		RandomizationFactor: backoff.DefaultRandomizationFactor,
+		Multiplier:          backoff.DefaultMultiplier,
+	}
+	otlphttpCfg.QueueConfig = exporterhelper.QueueSettings{
+		Enabled:      true,
+		NumConsumers: 2,
+		QueueSize:    10,
+	}
+	otlphttpCfg.ClientConfig = confighttp.ClientConfig{
+		Endpoint:        "https://f5cloud",
+		ReadBufferSize:  123,
+		WriteBufferSize: 345,
+		Timeout:         time.Second * 10,
+		Headers: map[string]configopaque.String{
+			"User-Agent": "opentelemetry-collector-contrib {{version}}",
 		},
+		Compression: "gzip",
+	}
+	expectedCfg := &Config{
+		Config: *otlphttpCfg,
 		Source: "dev",
 		AuthConfig: AuthConfig{
 			CredentialFile: "/etc/creds/key.json",
@@ -65,8 +66,8 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}
 	// testing function equality is not supported in Go hence these will be ignored for this test
-	expectedCfg.HTTPClientSettings.CustomRoundTripper = nil
-	actualCfg.HTTPClientSettings.CustomRoundTripper = nil
+	expectedCfg.ClientConfig.CustomRoundTripper = nil
+	actualCfg.ClientConfig.CustomRoundTripper = nil
 	assert.Equal(t, expectedCfg, actualCfg)
 }
 

@@ -7,3 +7,9 @@ status:
   distributions: [contrib, observiq]
   codeowners:
     active: [shabicheng, kongluoxing, qiansheng91]
+
+tests:
+  config:
+    endpoint: "http://localhost:0"
+    project: "otel-testing"
+    logstore: "otel-data"

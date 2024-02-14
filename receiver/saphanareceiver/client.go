@@ -102,7 +102,7 @@ func newSapHanaClient(cfg *Config, factory sapHanaConnectionFactory) client {
 }
 
 func (c *sapHanaClient) Connect(ctx context.Context) error {
-	connector, err := sapdriver.NewDSNConnector(fmt.Sprintf("hdb://%s:%s@%s", c.receiverConfig.Username, c.receiverConfig.Password, c.receiverConfig.TCPAddr.Endpoint))
+	connector, err := sapdriver.NewDSNConnector(fmt.Sprintf("hdb://%s:%s@%s", c.receiverConfig.Username, string(c.receiverConfig.Password), c.receiverConfig.TCPAddr.Endpoint))
 	if err != nil {
 		return fmt.Errorf("error generating DSN for SAP HANA connection: %w", err)
 	}

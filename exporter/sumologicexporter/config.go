@@ -9,14 +9,15 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Sumo Logic exporter.
 type Config struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
+	confighttp.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
 	// Compression encoding format, either empty string, gzip or deflate (default gzip)
 	// Empty string means no compression
@@ -59,9 +60,9 @@ type Config struct {
 	Client string `mapstructure:"client"`
 }
 
-// createDefaultHTTPClientSettings returns default http client settings
-func createDefaultHTTPClientSettings() confighttp.HTTPClientSettings {
-	return confighttp.HTTPClientSettings{
+// createDefaultClientConfig returns default http client settings
+func createDefaultClientConfig() confighttp.ClientConfig {
+	return confighttp.ClientConfig{
 		Timeout: defaultTimeout,
 	}
 }
@@ -147,7 +148,7 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("unexpected compression encoding: %s", cfg.CompressEncoding)
 	}
 
-	if len(cfg.HTTPClientSettings.Endpoint) == 0 {
+	if len(cfg.ClientConfig.Endpoint) == 0 {
 		return errors.New("endpoint is not set")
 	}
 

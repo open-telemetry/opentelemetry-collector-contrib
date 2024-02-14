@@ -58,6 +58,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.Equal(t, []string{defaultBroker}, cfg.Brokers)
 	assert.Equal(t, "", cfg.Topic)
+	assert.Equal(t, "sarama", cfg.ClientID)
 }
 
 func TestCreateMetricExporter(t *testing.T) {

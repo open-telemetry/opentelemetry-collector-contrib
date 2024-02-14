@@ -7,3 +7,11 @@ status:
   distributions: [contrib, sumo, splunk]
   codeowners:
     active: [djaglowski, mcardy]
+
+tests:
+  config:
+    auth:
+      sasl_plain:
+        username: username
+        password: passwd
+  skip_lifecycle: true

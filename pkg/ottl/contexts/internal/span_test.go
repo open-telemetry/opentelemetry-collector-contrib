@@ -111,8 +111,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			name: "trace_state key",
 			path: &TestPath[*spanContext]{
 				N: "trace_state",
-				Keys: &TestKey[*spanContext]{
-					S: ottltest.Strp("key1"),
+				KeySlice: []ottl.Key[*spanContext]{
+					&TestKey[*spanContext]{
+						S: ottltest.Strp("key1"),
+					},
 				},
 			},
 			orig:   "val1",
@@ -233,8 +235,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			name: "attributes string",
 			path: &TestPath[*spanContext]{
 				N: "attributes",
-				Keys: &TestKey[*spanContext]{
-					S: ottltest.Strp("str"),
+				KeySlice: []ottl.Key[*spanContext]{
+					&TestKey[*spanContext]{
+						S: ottltest.Strp("str"),
+					},
 				},
 			},
 			orig:   "val",
@@ -247,8 +251,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			name: "attributes bool",
 			path: &TestPath[*spanContext]{
 				N: "attributes",
-				Keys: &TestKey[*spanContext]{
-					S: ottltest.Strp("bool"),
+				KeySlice: []ottl.Key[*spanContext]{
+					&TestKey[*spanContext]{
+						S: ottltest.Strp("bool"),
+					},
 				},
 			},
 			orig:   true,
@@ -261,8 +267,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			name: "attributes int",
 			path: &TestPath[*spanContext]{
 				N: "attributes",
-				Keys: &TestKey[*spanContext]{
-					S: ottltest.Strp("int"),
+				KeySlice: []ottl.Key[*spanContext]{
+					&TestKey[*spanContext]{
+						S: ottltest.Strp("int"),
+					},
 				},
 			},
 			orig:   int64(10),
@@ -275,8 +283,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			name: "attributes float",
 			path: &TestPath[*spanContext]{
 				N: "attributes",
-				Keys: &TestKey[*spanContext]{
-					S: ottltest.Strp("double"),
+				KeySlice: []ottl.Key[*spanContext]{
+					&TestKey[*spanContext]{
+						S: ottltest.Strp("double"),
+					},
 				},
 			},
 			orig:   float64(1.2),
@@ -289,8 +299,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			name: "attributes bytes",
 			path: &TestPath[*spanContext]{
 				N: "attributes",
-				Keys: &TestKey[*spanContext]{
-					S: ottltest.Strp("bytes"),
+				KeySlice: []ottl.Key[*spanContext]{
+					&TestKey[*spanContext]{
+						S: ottltest.Strp("bytes"),
+					},
 				},
 			},
 			orig:   []byte{1, 3, 2},
@@ -303,8 +315,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			name: "attributes array empty",
 			path: &TestPath[*spanContext]{
 				N: "attributes",
-				Keys: &TestKey[*spanContext]{
-					S: ottltest.Strp("arr_empty"),
+				KeySlice: []ottl.Key[*spanContext]{
+					&TestKey[*spanContext]{
+						S: ottltest.Strp("arr_empty"),
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -320,8 +334,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			name: "attributes array string",
 			path: &TestPath[*spanContext]{
 				N: "attributes",
-				Keys: &TestKey[*spanContext]{
-					S: ottltest.Strp("arr_str"),
+				KeySlice: []ottl.Key[*spanContext]{
+					&TestKey[*spanContext]{
+						S: ottltest.Strp("arr_str"),
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -337,8 +353,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			name: "attributes array bool",
 			path: &TestPath[*spanContext]{
 				N: "attributes",
-				Keys: &TestKey[*spanContext]{
-					S: ottltest.Strp("arr_bool"),
+				KeySlice: []ottl.Key[*spanContext]{
+					&TestKey[*spanContext]{
+						S: ottltest.Strp("arr_bool"),
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -354,8 +372,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			name: "attributes array int",
 			path: &TestPath[*spanContext]{
 				N: "attributes",
-				Keys: &TestKey[*spanContext]{
-					S: ottltest.Strp("arr_int"),
+				KeySlice: []ottl.Key[*spanContext]{
+					&TestKey[*spanContext]{
+						S: ottltest.Strp("arr_int"),
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -371,8 +391,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			name: "attributes array float",
 			path: &TestPath[*spanContext]{
 				N: "attributes",
-				Keys: &TestKey[*spanContext]{
-					S: ottltest.Strp("arr_float"),
+				KeySlice: []ottl.Key[*spanContext]{
+					&TestKey[*spanContext]{
+						S: ottltest.Strp("arr_float"),
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -388,8 +410,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			name: "attributes array bytes",
 			path: &TestPath[*spanContext]{
 				N: "attributes",
-				Keys: &TestKey[*spanContext]{
-					S: ottltest.Strp("arr_bytes"),
+				KeySlice: []ottl.Key[*spanContext]{
+					&TestKey[*spanContext]{
+						S: ottltest.Strp("arr_bytes"),
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -405,13 +429,15 @@ func TestSpanPathGetSetter(t *testing.T) {
 			name: "attributes nested",
 			path: &TestPath[*spanContext]{
 				N: "attributes",
-				Keys: &TestKey[*spanContext]{
-					S: ottltest.Strp("slice"),
-					NextKey: &TestKey[*spanContext]{
+				KeySlice: []ottl.Key[*spanContext]{
+					&TestKey[*spanContext]{
+						S: ottltest.Strp("slice"),
+					},
+					&TestKey[*spanContext]{
 						I: ottltest.Intp(0),
-						NextKey: &TestKey[*spanContext]{
-							S: ottltest.Strp("map"),
-						},
+					},
+					&TestKey[*spanContext]{
+						S: ottltest.Strp("map"),
 					},
 				},
 			},
@@ -429,13 +455,15 @@ func TestSpanPathGetSetter(t *testing.T) {
 			name: "attributes nested new values",
 			path: &TestPath[*spanContext]{
 				N: "attributes",
-				Keys: &TestKey[*spanContext]{
-					S: ottltest.Strp("new"),
-					NextKey: &TestKey[*spanContext]{
+				KeySlice: []ottl.Key[*spanContext]{
+					&TestKey[*spanContext]{
+						S: ottltest.Strp("new"),
+					},
+					&TestKey[*spanContext]{
 						I: ottltest.Intp(2),
-						NextKey: &TestKey[*spanContext]{
-							I: ottltest.Intp(0),
-						},
+					},
+					&TestKey[*spanContext]{
+						I: ottltest.Intp(0),
 					},
 				},
 			},

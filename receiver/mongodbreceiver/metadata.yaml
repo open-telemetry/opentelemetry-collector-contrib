@@ -349,3 +349,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [ ]
+
+tests:
+  config:
+  skip_lifecycle: true

@@ -43,7 +43,7 @@ dataset/full:
   retry_on_failure:
     enabled: true
     initial_interval: 11
-    randomization_factor: 11.3
+    randomization_factor: 0.113
     multiplier: 11.6
     max_interval: 12
     max_elapsed_time: 13

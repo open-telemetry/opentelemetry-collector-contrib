@@ -96,6 +96,10 @@ all_set:
       enabled: true
     container.image.tag:
       enabled: true
+    container.runtime:
+      enabled: true
+    container.runtime.version:
+      enabled: true
     k8s.container.name:
       enabled: true
     k8s.cronjob.name:
@@ -155,6 +159,10 @@ all_set:
     openshift.clusterquota.name:
       enabled: true
     openshift.clusterquota.uid:
+      enabled: true
+    os.description:
+      enabled: true
+    os.type:
       enabled: true
 none_set:
   metrics:
@@ -253,6 +261,10 @@ none_set:
       enabled: false
     container.image.tag:
       enabled: false
+    container.runtime:
+      enabled: false
+    container.runtime.version:
+      enabled: false
     k8s.container.name:
       enabled: false
     k8s.cronjob.name:
@@ -312,4 +324,8 @@ none_set:
     openshift.clusterquota.name:
       enabled: false
     openshift.clusterquota.uid:
+      enabled: false
+    os.description:
+      enabled: false
+    os.type:
       enabled: false

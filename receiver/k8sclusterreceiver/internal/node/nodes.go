@@ -5,6 +5,7 @@ package node // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/iancoleman/strcase"
@@ -34,8 +35,11 @@ func Transform(node *corev1.Node) *corev1.Node {
 		Status: corev1.NodeStatus{
 			Allocatable: node.Status.Allocatable,
 			NodeInfo: corev1.NodeSystemInfo{
-				KubeletVersion:   node.Status.NodeInfo.KubeletVersion,
-				KubeProxyVersion: node.Status.NodeInfo.KubeProxyVersion,
+				KubeletVersion:          node.Status.NodeInfo.KubeletVersion,
+				KubeProxyVersion:        node.Status.NodeInfo.KubeProxyVersion,
+				ContainerRuntimeVersion: node.Status.NodeInfo.ContainerRuntimeVersion,
+				OSImage:                 node.Status.NodeInfo.OSImage,
+				OperatingSystem:         node.Status.NodeInfo.OperatingSystem,
 			},
 		},
 	}
@@ -111,6 +115,17 @@ func CustomMetrics(set receiver.CreateSettings, rb *metadata.ResourceBuilder, no
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
 	rb.SetK8sKubeproxyVersion(node.Status.NodeInfo.KubeProxyVersion)
+	rb.SetOsType(node.Status.NodeInfo.OperatingSystem)
+
+	runtime, version := getContainerRuntimeInfo(node.Status.NodeInfo.ContainerRuntimeVersion)
+	if runtime != "" {
+		rb.SetContainerRuntime(runtime)
+	}
+	if version != "" {
+		rb.SetContainerRuntimeVersion(version)
+	}
+
+	rb.SetOsDescription(node.Status.NodeInfo.OSImage)
 	rb.Emit().MoveTo(rm.Resource())
 	return rm
 }
@@ -149,6 +164,16 @@ func GetMetadata(node *corev1.Node) map[experimentalmetricmetadata.ResourceID]*m
 	}
 }
 
+func getContainerRuntimeInfo(rawInfo string) (runtime string, version string) {
+	// Kubelet reports container runtime version in the following format:
+	// <runtime-name>://<version>
+	parts := strings.Split(rawInfo, "://")
+
+	if len(parts) == 2 {
+		return parts[0], parts[1]
+	}
+	return "", ""
+}
 func getNodeConditionMetric(nodeConditionTypeValue string) string {
 	return fmt.Sprintf("k8s.node.condition_%s", strcase.ToSnake(nodeConditionTypeValue))
 }

@@ -42,7 +42,7 @@ type zookeeperMetricsScraper struct {
 }
 
 func (z *zookeeperMetricsScraper) Name() string {
-	return metadata.Type
+	return metadata.Type.String()
 }
 
 func newZookeeperMetricsScraper(settings receiver.CreateSettings, config *Config) (*zookeeperMetricsScraper, error) {
@@ -94,7 +94,7 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, 
 }
 
 func (z *zookeeperMetricsScraper) runCommand(ctx context.Context, command string) ([]string, error) {
-	conn, err := z.config.Dial()
+	conn, err := z.config.Dial(context.Background())
 
 	if err != nil {
 		z.logger.Error("failed to establish connection",

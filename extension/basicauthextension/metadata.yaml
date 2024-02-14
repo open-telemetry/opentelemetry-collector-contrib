@@ -13,4 +13,8 @@ status:
   - splunk
   - sumo
   codeowners:
-    active: [jpkrohling, svrakitin, frzifus]
+    active: [jpkrohling, frzifus]
+    emeritus: [svrakitin]
+
+tests:
+  config:

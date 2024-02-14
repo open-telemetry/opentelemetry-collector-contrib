@@ -649,7 +649,7 @@ func TestReceiveUnmarshallerReceiveBaggageString(t *testing.T) {
 			u := newTestReceiveV1Unmarshaller(t)
 			err := u.unmarshalBaggage(actual, testCase.baggage)
 			if testCase.errStr == "" {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			} else {
 				assert.ErrorContains(t, err, testCase.errStr)
 			}

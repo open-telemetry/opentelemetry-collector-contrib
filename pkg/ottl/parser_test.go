@@ -1236,6 +1236,10 @@ func Test_parseCondition_full(t *testing.T) {
 
 func testParsePath[K any](p Path[K]) (GetSetter[any], error) {
 	if p != nil && (p.Name() == "name" || p.Name() == "attributes") {
+		if p.Name() == "attributes" {
+			p.Keys()
+		}
+
 		return &StandardGetSetter[any]{
 			Getter: func(ctx context.Context, tCtx any) (any, error) {
 				return tCtx, nil

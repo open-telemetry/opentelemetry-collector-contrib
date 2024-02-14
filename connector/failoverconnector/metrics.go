@@ -21,6 +21,8 @@ type metricsFailover struct {
 	config   *Config
 	failover *failoverRouter[consumer.Metrics]
 	logger   *zap.Logger
+
+	done chan struct{}
 }
 
 func (f *metricsFailover) Capabilities() consumer.Capabilities {
@@ -28,25 +30,59 @@ func (f *metricsFailover) Capabilities() consumer.Capabilities {
 }
 
 // ConsumeMetrics will try to export to the current set priority level and handle failover in the case of an error
-func (f *metricsFailover) ConsumeMetrics(_ context.Context, _ pmetric.Metrics) error {
-	return nil
+func (f *metricsFailover) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	tc, ch, ok := f.failover.getCurrentConsumer()
+	if !ok {
+		return errNoValidPipeline
+	}
+	err := tc.ConsumeMetrics(ctx, md)
+	if err == nil {
+		ch <- true
+		return nil
+	}
+	return f.FailoverMetrics(ctx, md)
+}
+
+// FailoverMetrics is the function responsible for handling errors returned by the nextConsumer
+func (f *metricsFailover) FailoverMetrics(ctx context.Context, md pmetric.Metrics) error {
+	for tc, ch, ok := f.failover.getCurrentConsumer(); ok; tc, ch, ok = f.failover.getCurrentConsumer() {
+		err := tc.ConsumeMetrics(ctx, md)
+		if err != nil {
+			ch <- false
+			continue
+		}
+		ch <- true
+		return nil
+	}
+	f.logger.Error("All provided pipelines return errors, dropping data")
+	return errNoValidPipeline
 }
 
 func (f *metricsFailover) Shutdown(_ context.Context) error {
+	if f.failover != nil {
+		f.failover.Shutdown()
+	}
+	close(f.done)
 	return nil
 }
 
 func newMetricsToMetrics(set connector.CreateSettings, cfg component.Config, metrics consumer.Metrics) (connector.Metrics, error) {
 	config := cfg.(*Config)
-	mr, ok := metrics.(connector.MetricsRouter)
+	mr, ok := metrics.(connector.MetricsRouterAndConsumer)
+	done := make(chan struct{})
 	if !ok {
 		return nil, errors.New("consumer is not of type MetricsRouter")
 	}
 
-	failover := newFailoverRouter[consumer.Metrics](mr.Consumer, config) // temp add type spec to resolve linter issues
+	failover := newFailoverRouter[consumer.Metrics](mr.Consumer, config, done)
+	err := failover.registerConsumers()
+	if err != nil {
+		return nil, err
+	}
 	return &metricsFailover{
 		config:   config,
 		failover: failover,
 		logger:   set.TelemetrySettings.Logger,
+		done:     done,
 	}, nil
 }

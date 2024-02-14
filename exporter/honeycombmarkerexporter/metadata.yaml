@@ -7,3 +7,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [TylerHelmuth, fchikwekwe]
+
+tests:
+  config:
+  expect_consumer_error: true

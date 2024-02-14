@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -76,9 +77,9 @@ func (je *jaegerGRPCDataSender) ProtocolName() string {
 type jaegerConfig struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 
-	configgrpc.GRPCClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }
 
 var _ component.Config = (*jaegerConfig)(nil)
@@ -108,7 +109,7 @@ func (je *jaegerGRPCDataSender) newTracesExporter(set exporter.CreateSettings) (
 		waitForReady:              cfg.WaitForReady,
 		connStateReporterInterval: time.Second,
 		stopCh:                    make(chan struct{}),
-		clientSettings:            &cfg.GRPCClientSettings,
+		clientSettings:            &cfg.ClientConfig,
 	}
 
 	return exporterhelper.NewTracesExporter(
@@ -134,7 +135,7 @@ type protoGRPCSender struct {
 	stopCh         chan struct{}
 	stopped        bool
 	stopLock       sync.Mutex
-	clientSettings *configgrpc.GRPCClientSettings
+	clientSettings *configgrpc.ClientConfig
 }
 
 type stateReporter interface {

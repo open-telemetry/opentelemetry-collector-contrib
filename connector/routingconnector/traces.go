@@ -33,7 +33,7 @@ func newTracesConnector(
 ) (*tracesConnector, error) {
 	cfg := config.(*Config)
 
-	tr, ok := traces.(connector.TracesRouter)
+	tr, ok := traces.(connector.TracesRouterAndConsumer)
 	if !ok {
 		return nil, errUnexpectedConsumer
 	}

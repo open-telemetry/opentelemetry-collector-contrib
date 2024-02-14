@@ -33,7 +33,7 @@ func newMetricsConnector(
 ) (*metricsConnector, error) {
 	cfg := config.(*Config)
 
-	mr, ok := metrics.(connector.MetricsRouter)
+	mr, ok := metrics.(connector.MetricsRouterAndConsumer)
 	if !ok {
 		return nil, errUnexpectedConsumer
 	}

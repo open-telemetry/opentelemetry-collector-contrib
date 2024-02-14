@@ -55,7 +55,7 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			return accessSpanID[K](), nil
 		}
 	case "trace_state":
-		mapKey := path.Key()
+		mapKey := path.Keys()
 		if mapKey == nil {
 			return accessTraceState[K](), nil
 		}
@@ -93,7 +93,7 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 	case "end_time":
 		return accessEndTime[K](), nil
 	case "attributes":
-		mapKeys := path.Key()
+		mapKeys := path.Keys()
 		if mapKeys == nil {
 			return accessAttributes[K](), nil
 		}
@@ -220,14 +220,14 @@ func accessTraceState[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessTraceStateKey[K SpanContext](keys ottl.Key[K]) (ottl.StandardGetSetter[K], error) {
-	if keys.Next() != nil {
+func accessTraceStateKey[K SpanContext](keys []ottl.Key[K]) (ottl.StandardGetSetter[K], error) {
+	if len(keys) != 1 {
 		return ottl.StandardGetSetter[K]{}, fmt.Errorf("must provide exactly 1 key when accessing trace_state")
 	}
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
 			if ts, err := trace.ParseTraceState(tCtx.GetSpan().TraceState().AsRaw()); err == nil {
-				s, err := keys.String(ctx, tCtx)
+				s, err := keys[0].String(ctx, tCtx)
 				if err != nil {
 					return nil, err
 				}
@@ -241,7 +241,7 @@ func accessTraceStateKey[K SpanContext](keys ottl.Key[K]) (ottl.StandardGetSette
 		Setter: func(ctx context.Context, tCtx K, val any) error {
 			if str, ok := val.(string); ok {
 				if ts, err := trace.ParseTraceState(tCtx.GetSpan().TraceState().AsRaw()); err == nil {
-					s, err := keys.String(ctx, tCtx)
+					s, err := keys[0].String(ctx, tCtx)
 					if err != nil {
 						return err
 					}
@@ -451,7 +451,7 @@ func accessAttributes[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessAttributesKey[K SpanContext](keys ottl.Key[K]) ottl.StandardGetSetter[K] {
+func accessAttributesKey[K SpanContext](keys []ottl.Key[K]) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
 			return GetMapValue[K](ctx, tCtx, tCtx.GetSpan().Attributes(), keys)

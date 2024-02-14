@@ -162,6 +162,26 @@ resource_attributes:
     type: string
     enabled: false
 
+  container.runtime:
+    description: The container runtime used by Kubernetes Node.
+    type: string
+    enabled: false
+
+  container.runtime.version:
+    description: The version of container runtime used by Kubernetes Node.
+    type: string
+    enabled: false
+
+  os.description:
+    description: The os description used by Kubernetes Node.
+    type: string
+    enabled: false
+
+  os.type:
+    description: The os type used by Kubernetes Node.
+    type: string
+    enabled: false
+
   k8s.kubeproxy.version:
     description: The version of Kube Proxy running on the node.
     type: string

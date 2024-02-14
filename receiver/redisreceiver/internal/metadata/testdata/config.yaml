@@ -63,6 +63,8 @@ all_set:
       enabled: true
     redis.replication.offset:
       enabled: true
+    redis.replication.replica_offset:
+      enabled: true
     redis.role:
       enabled: true
     redis.slaves.connected:
@@ -139,6 +141,8 @@ none_set:
     redis.replication.backlog_first_byte_offset:
       enabled: false
     redis.replication.offset:
+      enabled: false
+    redis.replication.replica_offset:
       enabled: false
     redis.role:
       enabled: false

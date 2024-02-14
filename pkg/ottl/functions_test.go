@@ -417,6 +417,35 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Keys not allowed",
+			inv: editor{
+				Function: "testing_getsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+											Keys: []key{
+												{
+													String: ottltest.Strp("foo"),
+												},
+												{
+													String: ottltest.Strp("bar"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1426,7 +1455,7 @@ func Test_NewFunctionCall(t *testing.T) {
 								Path: &path{
 									Fields: []field{
 										{
-											Name: "name",
+											Name: "attributes",
 											Keys: []key{
 												{
 													String: ottltest.Strp("foo"),
@@ -1435,6 +1464,28 @@ func Test_NewFunctionCall(t *testing.T) {
 													String: ottltest.Strp("bar"),
 												},
 											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "path that allows keys but none have been specified",
+			inv: editor{
+				Function: "testing_getsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "attributes",
 										},
 									},
 								},
@@ -2165,12 +2216,16 @@ func Test_basePath_Next(t *testing.T) {
 	assert.Nil(t, next.Next())
 }
 
-func Test_basePath_Key(t *testing.T) {
+func Test_basePath_Keys(t *testing.T) {
 	k := &baseKey[any]{}
 	bp := basePath[any]{
-		key: k,
+		keys: []Key[any]{
+			k,
+		},
 	}
-	assert.Equal(t, k, bp.Key())
+	ks := bp.Keys()
+	assert.Equal(t, 1, len(ks))
+	assert.Equal(t, k, ks[0])
 }
 
 func Test_basePath_isComplete(t *testing.T) {
@@ -2286,10 +2341,10 @@ func Test_newPath(t *testing.T) {
 	assert.NoError(t, err)
 	p := Path[any](np)
 	assert.Equal(t, "body", p.Name())
-	assert.Nil(t, p.Key())
+	assert.Nil(t, p.Keys())
 	p = p.Next()
 	assert.Equal(t, "string", p.Name())
-	assert.Nil(t, p.Key())
+	assert.Nil(t, p.Keys())
 	assert.Nil(t, p.Next())
 }
 
@@ -2313,15 +2368,6 @@ func Test_baseKey_Int(t *testing.T) {
 	assert.Equal(t, int64(1), *i)
 }
 
-func Test_baseKey_Next(t *testing.T) {
-	bp := baseKey[any]{
-		nextKey: &baseKey[any]{},
-	}
-	next := bp.Next()
-	assert.NotNil(t, next)
-	assert.Nil(t, next.Next())
-}
-
 func Test_newKey(t *testing.T) {
 	keys := []key{
 		{
@@ -2331,15 +2377,16 @@ func Test_newKey(t *testing.T) {
 			String: ottltest.Strp("bar"),
 		},
 	}
-	k := Key[any](newKey[any](keys))
-	s, err := k.String(context.Background(), nil)
+	ks := newKeys[any](keys)
+
+	assert.Equal(t, 2, len(ks))
+
+	s, err := ks[0].String(context.Background(), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, s)
 	assert.Equal(t, "foo", *s)
-	k = k.Next()
-	s, err = k.String(context.Background(), nil)
+	s, err = ks[1].String(context.Background(), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, s)
 	assert.Equal(t, "bar", *s)
-	assert.Nil(t, k.Next())
 }

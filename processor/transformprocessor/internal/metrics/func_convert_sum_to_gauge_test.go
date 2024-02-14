@@ -88,7 +88,7 @@ func Test_convertSumToGauge(t *testing.T) {
 			exprFunc, _ := convertSumToGauge()
 
 			_, err := exprFunc(nil, ctx)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			expected := pmetric.NewMetric()
 			tt.want(expected)

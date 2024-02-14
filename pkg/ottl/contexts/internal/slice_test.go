@@ -18,35 +18,43 @@ import (
 func Test_GetSliceValue_Invalid(t *testing.T) {
 	tests := []struct {
 		name string
-		keys ottl.Key[any]
+		keys []ottl.Key[any]
 		err  error
 	}{
 		{
 			name: "first key not an integer",
-			keys: &TestKey[any]{
-				S: ottltest.Strp("key"),
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					S: ottltest.Strp("key"),
+				},
 			},
 			err: fmt.Errorf("non-integer indexing is not supported"),
 		},
 		{
 			name: "index too large",
-			keys: &TestKey[any]{
-				I: ottltest.Intp(1),
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					I: ottltest.Intp(1),
+				},
 			},
 			err: fmt.Errorf("index 1 out of bounds"),
 		},
 		{
 			name: "index too small",
-			keys: &TestKey[any]{
-				I: ottltest.Intp(-1),
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					I: ottltest.Intp(-1),
+				},
 			},
 			err: fmt.Errorf("index -1 out of bounds"),
 		},
 		{
 			name: "invalid type",
-			keys: &TestKey[any]{
-				I: ottltest.Intp(0),
-				NextKey: &TestKey[any]{
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					I: ottltest.Intp(0),
+				},
+				&TestKey[any]{
 					S: ottltest.Strp("string"),
 				},
 			},
@@ -73,35 +81,43 @@ func Test_GetSliceValue_NilKey(t *testing.T) {
 func Test_SetSliceValue_Invalid(t *testing.T) {
 	tests := []struct {
 		name string
-		keys ottl.Key[any]
+		keys []ottl.Key[any]
 		err  error
 	}{
 		{
 			name: "first key not an integer",
-			keys: &TestKey[any]{
-				S: ottltest.Strp("key"),
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					S: ottltest.Strp("key"),
+				},
 			},
 			err: fmt.Errorf("non-integer indexing is not supported"),
 		},
 		{
 			name: "index too large",
-			keys: &TestKey[any]{
-				I: ottltest.Intp(1),
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					I: ottltest.Intp(1),
+				},
 			},
 			err: fmt.Errorf("index 1 out of bounds"),
 		},
 		{
 			name: "index too small",
-			keys: &TestKey[any]{
-				I: ottltest.Intp(-1),
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					I: ottltest.Intp(-1),
+				},
 			},
 			err: fmt.Errorf("index -1 out of bounds"),
 		},
 		{
 			name: "invalid type",
-			keys: &TestKey[any]{
-				I: ottltest.Intp(0),
-				NextKey: &TestKey[any]{
+			keys: []ottl.Key[any]{
+				&TestKey[any]{
+					I: ottltest.Intp(0),
+				},
+				&TestKey[any]{
 					S: ottltest.Strp("string"),
 				},
 			},

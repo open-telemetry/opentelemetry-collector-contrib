@@ -201,8 +201,11 @@ func NewNode(id string) *corev1.Node {
 				"hugepages-5Mi":                 *resource.NewQuantity(2048, resource.DecimalSI),
 			},
 			NodeInfo: corev1.NodeSystemInfo{
-				KubeletVersion:   "v1.25.3",
-				KubeProxyVersion: "v1.25.3",
+				KubeletVersion:          "v1.25.3",
+				KubeProxyVersion:        "v1.25.3",
+				OSImage:                 "Ubuntu 22.04.1 LTS",
+				ContainerRuntimeVersion: "containerd://1.6.9",
+				OperatingSystem:         "linux",
 			},
 		},
 	}

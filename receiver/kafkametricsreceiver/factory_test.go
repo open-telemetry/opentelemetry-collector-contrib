@@ -44,5 +44,5 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	cfg.Scrapers = []string{"topics"}
 	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	newMetricsReceiver = prev
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }

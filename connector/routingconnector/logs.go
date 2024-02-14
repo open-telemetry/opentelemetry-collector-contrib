@@ -33,7 +33,7 @@ func newLogsConnector(
 ) (*logsConnector, error) {
 	cfg := config.(*Config)
 
-	lr, ok := logs.(connector.LogsRouter)
+	lr, ok := logs.(connector.LogsRouterAndConsumer)
 	if !ok {
 		return nil, errUnexpectedConsumer
 	}

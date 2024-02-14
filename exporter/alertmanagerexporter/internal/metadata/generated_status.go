@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("alertmanager")
+)
+
 const (
-	Type            = "alertmanager"
 	TracesStability = component.StabilityLevelDevelopment
 )
 

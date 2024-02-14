@@ -492,7 +492,7 @@ func Test_getPromExemplars(t *testing.T) {
 		{
 			"without_exemplar",
 			pmetric.NewHistogramDataPoint(),
-			nil,
+			[]prompb.Exemplar{},
 		},
 	}
 	// run tests
@@ -762,6 +762,7 @@ func TestAddSingleSummaryDataPoint(t *testing.T) {
 						ExportCreatedMetric: true,
 					},
 					got,
+					metric.Name(),
 				)
 			}
 			assert.Equal(t, tt.want(), got)
@@ -873,6 +874,7 @@ func TestAddSingleHistogramDataPoint(t *testing.T) {
 						ExportCreatedMetric: true,
 					},
 					got,
+					metric.Name(),
 				)
 			}
 			assert.Equal(t, tt.want(), got)

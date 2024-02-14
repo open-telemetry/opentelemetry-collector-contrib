@@ -62,7 +62,7 @@ func (o *Output) Process(_ context.Context, entry *entry.Entry) error {
 	err := o.encoder.Encode(entry)
 	if err != nil {
 		o.mux.Unlock()
-		o.Errorf("Failed to process entry: %s, $s", err, entry.Body)
+		o.Errorf("Failed to process entry: %s", err)
 		return err
 	}
 	o.mux.Unlock()

@@ -81,7 +81,7 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			expr, err := newExpr(tc.property)
 			assert.Nil(t, expr)
-			require.NotNil(t, err)
+			require.Error(t, err)
 			println(tc.name)
 			assert.Equal(t, tc.errorString, err.Error())
 		})
@@ -148,7 +148,7 @@ func TestLogRecord_Matching_False(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			expr, err := newExpr(tc.properties)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			require.NotNil(t, expr)
 
 			val, err := expr.Eval(context.Background(), ottllog.NewTransformContext(lr, pcommon.NewInstrumentationScope(), pcommon.NewResource()))

@@ -52,5 +52,5 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		cfg.TLS.Insecure = true
 	}
 
-	return componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
+	return componentParser.Unmarshal(cfg)
 }

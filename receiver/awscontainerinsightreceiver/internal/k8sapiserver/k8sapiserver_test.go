@@ -157,7 +157,7 @@ func TestK8sAPIServer_New(t *testing.T) {
 	}
 	k8sAPIServer, err := New(MockClusterNameProvicer{}, zap.NewNop(), k8sClientOption)
 	assert.Nil(t, k8sAPIServer)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestK8sAPIServer_GetMetrics(t *testing.T) {
@@ -182,7 +182,7 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		leadingOption, broadcasterOption, isLeadingCOption)
 
 	assert.NotNil(t, k8sAPIServer)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	mockClient.On("NamespaceToRunningPodNum").Return(map[string]int{"default": 2})
 	mockClient.On("ClusterFailedNodeCount").Return(1)
@@ -230,12 +230,12 @@ func TestK8sAPIServer_init(t *testing.T) {
 	k8sAPIServer := &K8sAPIServer{}
 
 	err := k8sAPIServer.init()
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.True(t, strings.HasPrefix(err.Error(), "environment variable HOST_NAME is not set"))
 
 	t.Setenv("HOST_NAME", "hostname")
 
 	err = k8sAPIServer.init()
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.True(t, strings.HasPrefix(err.Error(), "environment variable K8S_NAMESPACE is not set"))
 }

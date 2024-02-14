@@ -73,7 +73,6 @@ func (rfs *FilterSet) Matches(toMatch string) bool {
 }
 
 // addFilters compiles all the given filters and stores them as regexes.
-// All regexes are automatically anchored to enforce full string matches.
 func (rfs *FilterSet) addFilters(filters []string) error {
 	dedup := make(map[string]struct{}, len(filters))
 	for _, f := range filters {

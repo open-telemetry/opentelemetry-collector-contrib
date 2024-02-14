@@ -58,7 +58,7 @@ func newCollectdReceiver(
 // Start starts an HTTP server that can process CollectD JSON requests.
 func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error {
 	var err error
-	cdr.server, err = cdr.config.HTTPServerSettings.ToServer(host, cdr.createSettings.TelemetrySettings, cdr)
+	cdr.server, err = cdr.config.ServerConfig.ToServer(host, cdr.createSettings.TelemetrySettings, cdr)
 	if err != nil {
 		return err
 	}
@@ -72,13 +72,13 @@ func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error
 	if err != nil {
 		return err
 	}
-	l, err := cdr.config.HTTPServerSettings.ToListener()
+	l, err := cdr.config.ServerConfig.ToListener()
 	if err != nil {
 		return err
 	}
 	go func() {
 		if err := cdr.server.Serve(l); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			_ = cdr.createSettings.TelemetrySettings.ReportComponentStatus(component.NewFatalErrorEvent(err))
+			cdr.createSettings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil
@@ -98,21 +98,21 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx = cdr.obsrecv.StartMetricsOp(ctx)
 
 	if r.Method != "POST" {
-		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, errors.New("invalid http verb"))
+		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, errors.New("invalid http verb"))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, err)
+		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	var records []collectDRecord
 	err = json.Unmarshal(body, &records)
 	if err != nil {
-		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, err)
+		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
 		cdr.handleHTTPErr(w, err, "unable to decode json")
 		return
 	}
@@ -124,7 +124,7 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, record := range records {
 		err = record.appendToMetrics(cdr.logger, scopeMetrics, defaultAttrs)
 		if err != nil {
-			cdr.obsrecv.EndMetricsOp(ctx, metadata.Type, len(records), err)
+			cdr.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(records), err)
 			cdr.handleHTTPErr(w, err, "unable to process metrics")
 			return
 		}
@@ -133,16 +133,16 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	err = cdr.nextConsumer.ConsumeMetrics(ctx, metrics)
 	if err != nil {
-		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type, lenDp, err)
+		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), lenDp, err)
 		return
 	}
 
 	_, err = w.Write([]byte("OK"))
 	if err != nil {
-		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type, lenDp, err)
+		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), lenDp, err)
 		return
 	}
-	cdr.obsrecv.EndMetricsOp(ctx, metadata.Type, lenDp, nil)
+	cdr.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), lenDp, nil)
 }
 
 func (cdr *collectdReceiver) defaultAttributes(req *http.Request) map[string]string {

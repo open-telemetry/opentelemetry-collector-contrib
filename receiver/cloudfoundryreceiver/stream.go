@@ -24,7 +24,7 @@ type EnvelopeStreamFactory struct {
 func newEnvelopeStreamFactory(
 	settings component.TelemetrySettings,
 	authTokenProvider *UAATokenProvider,
-	httpConfig confighttp.HTTPClientSettings,
+	httpConfig confighttp.ClientConfig,
 	host component.Host) (*EnvelopeStreamFactory, error) {
 
 	httpClient, err := httpConfig.ToClient(host, settings)

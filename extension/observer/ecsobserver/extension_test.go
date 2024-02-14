@@ -104,9 +104,8 @@ func TestExtensionStartStop(t *testing.T) {
 		sdCfg.ResultFile = "testdata/ut_ext_critical_error.actual.yaml"
 		cs := extensiontest.NewNopCreateSettings()
 		statusEventChan := make(chan *component.StatusEvent)
-		cs.TelemetrySettings.ReportComponentStatus = func(e *component.StatusEvent) error {
+		cs.TelemetrySettings.ReportStatus = func(e *component.StatusEvent) {
 			statusEventChan <- e
-			return nil
 		}
 		ext, err := createExtensionWithFetcher(cs, sdCfg, f)
 		require.NoError(t, err)

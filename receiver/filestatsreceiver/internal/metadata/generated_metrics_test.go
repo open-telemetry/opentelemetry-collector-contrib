@@ -59,6 +59,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordFileAtimeDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordFileCountDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordFileCtimeDataPoint(ts, 1, "file.permissions-val")
 
 			defaultMetricsCount++
@@ -104,6 +107,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "file.count":
+					assert.False(t, validatedMetrics["file.count"], "Found a duplicate in the metrics slice: file.count")
+					validatedMetrics["file.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of files matched", ms.At(i).Description())
+					assert.Equal(t, "{file}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

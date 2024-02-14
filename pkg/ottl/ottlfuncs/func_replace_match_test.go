@@ -21,7 +21,7 @@ func Test_replaceMatch(t *testing.T) {
 		FCtx: ottl.FunctionContext{
 			Set: componenttest.NewNopTelemetrySettings(),
 		},
-		Fact: StandardConverters[pcommon.Value]()["SHA256"],
+		Fact: optionalFnTestFactory[pcommon.Value](),
 	}
 	optionalArg := ottl.NewTestingOptional[ottl.FunctionGetter[pcommon.Value]](ottlValue)
 	target := &ottl.StandardGetSetter[pcommon.Value]{
@@ -53,7 +53,7 @@ func Test_replaceMatch(t *testing.T) {
 			},
 			function: optionalArg,
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStr("4804d6b7f03268e33f78c484977f3d81771220df07cc6aac4ad4868102141fad")
+				expectedValue.SetStr("hash(hello {universe})")
 			},
 		},
 		{

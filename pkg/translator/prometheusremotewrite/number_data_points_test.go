@@ -60,6 +60,7 @@ func TestAddSingleGaugeNumberDataPoint(t *testing.T) {
 					metric,
 					Settings{},
 					gotSeries,
+					metric.Name(),
 				)
 			}
 			assert.Equal(t, tt.want(), gotSeries)
@@ -236,6 +237,7 @@ func TestAddSingleSumNumberDataPoint(t *testing.T) {
 					metric,
 					Settings{ExportCreatedMetric: true},
 					got,
+					metric.Name(),
 				)
 			}
 			assert.Equal(t, tt.want(), got)

@@ -54,7 +54,7 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 
 			// The listener ownership goes to the server.
 			if err = hc.server.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
-				_ = hc.settings.ReportComponentStatus(component.NewFatalErrorEvent(err))
+				hc.settings.ReportStatus(component.NewFatalErrorEvent(err))
 			}
 		}()
 	} else {
@@ -90,7 +90,7 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 			}()
 
 			if errHTTP := hc.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-				host.ReportFatalError(errHTTP)
+				hc.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 			}
 
 		}()

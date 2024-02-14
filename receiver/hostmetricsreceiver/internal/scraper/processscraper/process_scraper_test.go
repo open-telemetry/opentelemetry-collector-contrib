@@ -1110,7 +1110,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 			assert.Equal(t, test.expectedCount, md.MetricCount())
 
 			if config.MuteProcessNameError && config.MuteProcessExeError && config.MuteProcessUserError {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			} else {
 				assert.EqualError(t, err, test.expectedError)
 			}
@@ -1170,7 +1170,7 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 		md, err := scraper.scrape(context.Background())
 
 		assert.Zero(t, md.MetricCount())
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	})
 }
 
@@ -1239,11 +1239,11 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 
 			// scrape the first time
 			_, err = scraper.scrape(context.Background())
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			// scrape second time to get utilization
 			md, err := scraper.scrape(context.Background())
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			for k := 0; k < md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len(); k++ {
 				fmt.Println(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(k).Name())

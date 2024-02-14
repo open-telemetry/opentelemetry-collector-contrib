@@ -31,7 +31,7 @@ func TestSwExporter(t *testing.T) {
 	server, addr, handler := initializeGRPCTestServer(t, grpc.MaxConcurrentStreams(10))
 	tt := &Config{
 		NumStreams: 10,
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: addr.String(),
 			TLSSetting: configtls.TLSClientSetting{
 				Insecure: true,
@@ -46,7 +46,7 @@ func TestSwExporter(t *testing.T) {
 		tt,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithRetry(tt.RetrySettings),
+		exporterhelper.WithRetry(tt.BackOffConfig),
 		exporterhelper.WithQueue(tt.QueueSettings),
 		exporterhelper.WithTimeout(tt.TimeoutSettings),
 		exporterhelper.WithStart(oce.start),
@@ -104,7 +104,7 @@ func TestSwExporter(t *testing.T) {
 	server, addr, handler2 := initializeGRPCTestServerMetric(t, grpc.MaxConcurrentStreams(10))
 	tt = &Config{
 		NumStreams: 10,
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: addr.String(),
 			TLSSetting: configtls.TLSClientSetting{
 				Insecure: true,
@@ -119,7 +119,7 @@ func TestSwExporter(t *testing.T) {
 		tt,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithRetry(tt.RetrySettings),
+		exporterhelper.WithRetry(tt.BackOffConfig),
 		exporterhelper.WithQueue(tt.QueueSettings),
 		exporterhelper.WithTimeout(tt.TimeoutSettings),
 		exporterhelper.WithStart(oce.start),

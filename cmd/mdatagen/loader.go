@@ -124,7 +124,7 @@ func (m *metric) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("enabled") {
 		return errors.New("missing required field: `enabled`")
 	}
-	err := parser.Unmarshal(m, confmap.WithErrorUnused())
+	err := parser.Unmarshal(m)
 	if err != nil {
 		return err
 	}
@@ -194,7 +194,7 @@ func (a attribute) TestValue() string {
 	case pcommon.ValueTypeSlice:
 		return fmt.Sprintf(`[]any{"%s-item1", "%s-item2"}`, a.FullName, a.FullName)
 	case pcommon.ValueTypeBytes:
-		return fmt.Sprintf(`bytes("%s-val")`, a.FullName)
+		return fmt.Sprintf(`[]byte("%s-val")`, a.FullName)
 	}
 	return ""
 }
@@ -253,7 +253,7 @@ func loadMetadata(filePath string) (metadata, error) {
 	}
 
 	md := metadata{ScopeName: scopeName(filePath), ShortFolderName: shortFolderName(filePath)}
-	if err := conf.Unmarshal(&md, confmap.WithErrorUnused()); err != nil {
+	if err := conf.Unmarshal(&md); err != nil {
 		return md, err
 	}
 

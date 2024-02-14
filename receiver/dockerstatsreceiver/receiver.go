@@ -24,9 +24,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
-const (
-	defaultDockerAPIVersion         = 1.25
-	minimalRequiredDockerAPIVersion = 1.25
+var (
+	defaultDockerAPIVersion         = "1.25"
+	minimumRequiredDockerAPIVersion = docker.MustNewAPIVersion(defaultDockerAPIVersion)
 )
 
 type resultV2 struct {

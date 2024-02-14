@@ -106,7 +106,7 @@ func TestStartClientAlreadySet(t *testing.T) {
 	scraper := newScraper(
 		&Config{
 			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: mockClient.URL,
 			},
 		},
@@ -120,7 +120,7 @@ func TestStartBadUrl(t *testing.T) {
 	scraper := newScraper(
 		&Config{
 			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: "\x00",
 			},
 		},
@@ -134,7 +134,7 @@ func TestStartBadUrl(t *testing.T) {
 func TestScraperRecordNoStat(_ *testing.T) {
 	scraper := newScraper(
 		&Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: "http://localhost",
 			},
 			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),

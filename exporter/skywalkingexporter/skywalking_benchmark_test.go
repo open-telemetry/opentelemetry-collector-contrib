@@ -126,7 +126,7 @@ func doInit(numStream int, t *testing.T) (*swExporter, *grpc.Server, *mockLogHan
 			NumConsumers: 1,
 			QueueSize:    1000,
 		},
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: addr.String(),
 			TLSSetting: configtls.TLSClientSetting{
 				Insecure: true,
@@ -141,7 +141,7 @@ func doInit(numStream int, t *testing.T) (*swExporter, *grpc.Server, *mockLogHan
 		tt,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithRetry(tt.RetrySettings),
+		exporterhelper.WithRetry(tt.BackOffConfig),
 		exporterhelper.WithQueue(tt.QueueSettings),
 		exporterhelper.WithTimeout(tt.TimeoutSettings),
 		exporterhelper.WithStart(oce.start),

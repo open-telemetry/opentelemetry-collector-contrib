@@ -224,7 +224,7 @@ receivers:
                 value: in
           - oid: "4.4.4.5.0"
             attributes:
-              - name: aattr.name.1
+              - name: attr.name.1
                 value: out
       # This metric will have metrics created with each attached to a different resource.
       # Each resource will have a resource attribute with a guaranteed unique value based on the index.

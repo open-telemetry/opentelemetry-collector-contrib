@@ -7,3 +7,6 @@ status:
   distributions: [core, contrib, splunk, observiq, sumo, aws, redhat, liatrio]
   codeowners:
     active: [MovieStoreGuy]
+
+tests:
+  config:
