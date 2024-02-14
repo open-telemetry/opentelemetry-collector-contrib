@@ -287,10 +287,10 @@ jobs:
       - name: Run Unit Tests With Coverage
         if: startsWith( matrix.go-version, '1.21' ) # only run coverage on one version
         run: make gotest-with-cover GROUP=${{ matrix.group }}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: startsWith( matrix.go-version, '1.21' ) # only upload artifact for one version
         with:
-          name: coverage-artifacts
+          name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.group }}
           path: ${{ matrix.group }}-coverage.txt
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
@@ -313,9 +313,10 @@ jobs:
     needs: [unittest]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: coverage-artifacts
+          merge-multiple: true
+          pattern: coverage-artifacts-*
       - name: Upload coverage report
         uses: Wandalen/wretry.action@v1.3.0
         with:
@@ -502,9 +503,9 @@ jobs:
       - name: Build Collector ${{ matrix.binary }}
         run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
       - name: Upload Collector Binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: collector-binaries
+          name: collector-binaries-${{ matrix.os }}-${{ matrix.arch }}
           path: ./bin/*
 
   build-package:
@@ -525,10 +526,11 @@ jobs:
       - name: Install fpm
         run: gem install --no-document fpm -v 1.15.1
       - name: Download Collector Binaries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: collector-binaries
+          merge-multiple: true
           path: bin/
+          pattern: collector-binaries-*
       - run: chmod +x bin/*
       - name: Set Release Tag
         id: github_tag
@@ -549,9 +551,9 @@ jobs:
               ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*x86_64.rpm examples/demo/otel-collector-config.yaml
           fi
       - name: Upload Packages
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: collector-packages
+          name: collector-packages-${{ matrix.package_type }}
           path: ./dist/*
   windows-msi:
     if: false # skip. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10113
@@ -562,10 +564,11 @@ jobs:
         with:
           fetch-depth: 0
       - name: Download Binaries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: collector-binaries
+          merge-multiple: true
           path: ./bin/
+          pattern: collector-binaries-*
       - name: Cache Wix
         id: wix-cache
         uses: actions/cache@v3
@@ -584,9 +587,9 @@ jobs:
       - name: Validate MSI
         run: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
       - name: Upload MSI
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: collector-packages
+          name: collector-packages-msi
           path: ./dist/*.msi
 
   publish-check:
@@ -595,15 +598,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download Binaries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: collector-binaries
+          merge-multiple: true
           path: ./bin/
+          pattern: collector-binaries-*
       - name: Download Packages
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: collector-packages
+          merge-multiple: true
           path: ./dist/
+          pattern: collector-packages-*
       - name: Verify Distribution Files Exist
         id: check
         run: ./.github/workflows/scripts/verify-dist-files-exist.sh
@@ -636,16 +641,18 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Download Binaries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: collector-binaries
+          merge-multiple: true
           path: ./bin/
+          pattern: collector-binaries-*
       - run: chmod +x bin/*
       - name: Download Packages
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: collector-packages
+          merge-multiple: true
           path: ./dist/
+          pattern: collector-packages-*
       - name: Add Permissions to Tool Binaries
         run: chmod -R +x ./dist
       - name: Verify Distribution Files Exist
