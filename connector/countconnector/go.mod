@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector
 
-go 1.20
+go 1.21
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.94.0

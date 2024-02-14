@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter
 
-go 1.20
+go 1.21
 
 require (
 	github.com/open-telemetry/otel-arrow v0.16.0
