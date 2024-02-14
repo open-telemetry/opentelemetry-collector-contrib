@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package identity
+package identity // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 
 import (
 	"hash"
