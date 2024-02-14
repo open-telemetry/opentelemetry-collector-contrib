@@ -1,0 +1,12 @@
+type: awss3
+
+status:
+  class: exporter
+  stability:
+    alpha: [traces, metrics, logs]
+  distributions: [contrib, observiq, sumo, splunk]
+  codeowners:
+    active: [atoulme, pdelewski]
+tests:
+  config:
+  expect_consumer_error: true

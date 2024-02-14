@@ -1,31 +1,21 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sampling
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 )
 
 func TestEvaluate_Latency(t *testing.T) {
-	filter := NewLatency(zap.NewNop(), 5000)
+	filter := NewLatency(componenttest.NewNopTelemetrySettings(), 5000, 0)
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	now := time.Now()
@@ -73,7 +63,94 @@ func TestEvaluate_Latency(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			decision, err := filter.Evaluate(traceID, newTraceWithSpans(c.Spans))
+			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithSpans(c.Spans))
+
+			assert.NoError(t, err)
+			assert.Equal(t, decision, c.Decision)
+		})
+	}
+}
+
+func TestEvaluate_Bounded_Latency(t *testing.T) {
+	filter := NewLatency(componenttest.NewNopTelemetrySettings(), 5000, 10000)
+
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	now := time.Now()
+
+	cases := []struct {
+		Desc     string
+		Spans    []spanWithTimeAndDuration
+		Decision Decision
+	}{
+		{
+			"trace duration shorter than lower bound",
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  4500 * time.Millisecond,
+				},
+			},
+			NotSampled,
+		},
+		{
+			"trace duration is equal to lower bound",
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  5000 * time.Millisecond,
+				},
+			},
+			NotSampled,
+		},
+		{
+			"trace duration is within lower and upper bounds",
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  5001 * time.Millisecond,
+				},
+			},
+			Sampled,
+		},
+		{
+			"trace duration is above upper bound",
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  10001 * time.Millisecond,
+				},
+			},
+			NotSampled,
+		},
+		{
+			"trace duration equals upper bound",
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  10000 * time.Millisecond,
+				},
+			},
+			Sampled,
+		},
+		{
+			"total trace duration is longer than threshold but every single span is shorter",
+			[]spanWithTimeAndDuration{
+				{
+					StartTime: now,
+					Duration:  3000 * time.Millisecond,
+				},
+				{
+					StartTime: now.Add(2500 * time.Millisecond),
+					Duration:  3000 * time.Millisecond,
+				},
+			},
+			Sampled,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Desc, func(t *testing.T) {
+			decision, err := filter.Evaluate(context.Background(), traceID, newTraceWithSpans(c.Spans))
 
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)

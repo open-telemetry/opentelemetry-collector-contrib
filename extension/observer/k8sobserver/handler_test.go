@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobserver
 
@@ -36,7 +25,7 @@ func newTestHandler() *handler {
 
 func TestPodEndpointsAdded(t *testing.T) {
 	th := newTestHandler()
-	th.OnAdd(podWithNamedPorts)
+	th.OnAdd(podWithNamedPorts, true)
 	assert.ElementsMatch(t, []observer.Endpoint{
 		{
 			ID:     "test-1/pod-2-UID",
@@ -66,7 +55,7 @@ func TestPodEndpointsAdded(t *testing.T) {
 
 func TestPodEndpointsRemoved(t *testing.T) {
 	th := newTestHandler()
-	th.OnAdd(podWithNamedPorts)
+	th.OnAdd(podWithNamedPorts, true)
 	th.OnDelete(podWithNamedPorts)
 	assert.Empty(t, th.ListEndpoints())
 }
@@ -115,9 +104,70 @@ func TestPodEndpointsChanged(t *testing.T) {
 	}, th.ListEndpoints())
 }
 
+func TestServiceEndpointsAdded(t *testing.T) {
+	th := newTestHandler()
+	th.OnAdd(serviceWithClusterIP, true)
+	assert.ElementsMatch(t, []observer.Endpoint{
+		{
+			ID:     "test-1/service-1-UID",
+			Target: "service-1.default.svc.cluster.local",
+			Details: &observer.K8sService{
+				Name:        "service-1",
+				Namespace:   "default",
+				UID:         "service-1-UID",
+				Labels:      map[string]string{"env": "prod"},
+				ServiceType: "ClusterIP",
+				ClusterIP:   "1.2.3.4",
+			},
+		}}, th.ListEndpoints())
+}
+
+func TestServiceEndpointsRemoved(t *testing.T) {
+	th := newTestHandler()
+	th.OnAdd(serviceWithClusterIP, true)
+	th.OnDelete(serviceWithClusterIP)
+	assert.Empty(t, th.ListEndpoints())
+}
+
+func TestServiceEndpointsChanged(t *testing.T) {
+	th := newTestHandler()
+	// Nothing changed.
+	th.OnUpdate(serviceWithClusterIP, serviceWithClusterIP)
+	require.Empty(t, th.ListEndpoints())
+
+	// Labels changed.
+	changedLabels := serviceWithClusterIP.DeepCopy()
+	changedLabels.Labels["new-label"] = "value"
+	th.OnUpdate(serviceWithClusterIP, changedLabels)
+
+	endpoints := th.ListEndpoints()
+	require.ElementsMatch(t,
+		[]observer.EndpointID{"test-1/service-1-UID"},
+		[]observer.EndpointID{endpoints[0].ID},
+	)
+
+	// Running state changed, one added and one removed.
+	updatedService := serviceWithClusterIP.DeepCopy()
+	updatedService.Labels["updated-label"] = "true"
+	th.OnUpdate(serviceWithClusterIP, updatedService)
+	require.ElementsMatch(t, []observer.Endpoint{
+		{
+			ID:     "test-1/service-1-UID",
+			Target: "service-1.default.svc.cluster.local",
+			Details: &observer.K8sService{
+				Name:        "service-1",
+				Namespace:   "default",
+				UID:         "service-1-UID",
+				Labels:      map[string]string{"env": "prod", "updated-label": "true"},
+				ServiceType: "ClusterIP",
+				ClusterIP:   "1.2.3.4",
+			}},
+	}, th.ListEndpoints())
+}
+
 func TestNodeEndpointsAdded(t *testing.T) {
 	th := newTestHandler()
-	th.OnAdd(node1V1)
+	th.OnAdd(node1V1, true)
 	assert.ElementsMatch(t, []observer.Endpoint{
 		{
 			ID:     "test-1/node1-uid",
@@ -140,7 +190,7 @@ func TestNodeEndpointsAdded(t *testing.T) {
 
 func TestNodeEndpointsRemoved(t *testing.T) {
 	th := newTestHandler()
-	th.OnAdd(node1V1)
+	th.OnAdd(node1V1, true)
 	th.OnDelete(node1V1)
 	assert.Empty(t, th.ListEndpoints())
 }

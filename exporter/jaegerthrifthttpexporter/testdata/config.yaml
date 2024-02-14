@@ -1,8 +1,0 @@
-jaeger_thrift:
-  endpoint: "http://jaeger.example:14268/api/traces"
-jaeger_thrift/2:
-  endpoint: "http://jaeger.example.com/api/traces"
-  timeout: 2s
-  headers:
-    added-entry: "added value"
-    dot.test: test

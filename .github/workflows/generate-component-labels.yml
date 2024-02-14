@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'open-telemetry' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Generate component labels
         run: ./.github/workflows/scripts/generate-component-labels.sh

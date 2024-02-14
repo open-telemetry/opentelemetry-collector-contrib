@@ -4,7 +4,7 @@ The `regex_parser` operator parses the string-type field selected by `parse_from
 
 #### Regex Syntax
 
-This operator makes use of [Go regular expression](https://github.com/google/re2/wiki/Syntax). When writing a regex, consider using a tool such as (regex101)[https://regex101.com/?flavor=golang].
+This operator makes use of [Go regular expression](https://github.com/google/re2/wiki/Syntax). When writing a regex, consider using a tool such as [regex101](https://regex101.com/?flavor=golang).
 
 ### Configuration Fields
 
@@ -19,6 +19,20 @@ This operator makes use of [Go regular expression](https://github.com/google/re2
 | `if`          |                  | An [expression](../types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 | `timestamp`   | `nil`            | An optional [timestamp](../types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator. |
 | `severity`    | `nil`            | An optional [severity](../types/severity.md) block which will parse a severity field before passing the entry to the output operator. |
+| `cache`       | `nil`            | An optional cache block. See below for details. |
+
+#### Cache configuration
+
+Regular expression matching results can be cached. This is useful when we need to parse a relatively small set of values repeatedly.
+Parsing file paths is a common use case.
+
+The size of the cache is configurable, and it uses a FIFO replacement policy. It also includes athrottling mechanism, which will prevent more than 10% of the maximum size to be replaced within a 5 second interval.
+
+Setting the size to 0 will disable the cache. This is the default.
+
+| Field        | Default  | Description |
+| ---          | ---      | ---         |
+| `size`       | 0        | The maximum size of the cache. |
 
 ### Example Configurations
 

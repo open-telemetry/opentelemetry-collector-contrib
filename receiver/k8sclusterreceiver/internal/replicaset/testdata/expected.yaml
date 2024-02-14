@@ -1,0 +1,32 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: test-namespace
+        - key: k8s.replicaset.name
+          value:
+            stringValue: test-replicaset-1
+        - key: k8s.replicaset.uid
+          value:
+            stringValue: test-replicaset-1-uid
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Number of desired pods in this replicaset
+            gauge:
+              dataPoints:
+                - asInt: "3"
+            name: k8s.replicaset.desired
+            unit: "{pod}"
+          - description: Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset
+            gauge:
+              dataPoints:
+                - asInt: "2"
+            name: k8s.replicaset.available
+            unit: "{pod}"
+
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
+

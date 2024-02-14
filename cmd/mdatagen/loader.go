@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package main
 
@@ -18,12 +7,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.uber.org/multierr"
 )
 
 type metricName string
@@ -65,6 +55,10 @@ func (mvt *ValueType) UnmarshalText(text []byte) error {
 		mvt.ValueType = pcommon.ValueTypeBool
 	case "bytes":
 		mvt.ValueType = pcommon.ValueTypeBytes
+	case "slice":
+		mvt.ValueType = pcommon.ValueTypeSlice
+	case "map":
+		mvt.ValueType = pcommon.ValueTypeMap
 	default:
 		return fmt.Errorf("invalid type: %q", vtStr)
 	}
@@ -89,27 +83,15 @@ func (mvt ValueType) Primitive() string {
 		return "bool"
 	case pcommon.ValueTypeBytes:
 		return "[]byte"
+	case pcommon.ValueTypeSlice:
+		return "[]any"
+	case pcommon.ValueTypeMap:
+		return "map[string]any"
+	case pcommon.ValueTypeEmpty:
+		return ""
 	default:
 		return ""
 	}
-}
-
-func (mvt ValueType) TestValue() string {
-	switch mvt.ValueType {
-	case pcommon.ValueTypeEmpty, pcommon.ValueTypeStr:
-		return `"attr-val"`
-	case pcommon.ValueTypeInt:
-		return "1"
-	case pcommon.ValueTypeDouble:
-		return "1.1"
-	case pcommon.ValueTypeBool:
-		return "true"
-	case pcommon.ValueTypeMap:
-		return `pcommon.NewMap()`
-	case pcommon.ValueTypeSlice:
-		return `pcommon.NewSlice()`
-	}
-	return ""
 }
 
 type metric struct {
@@ -127,7 +109,7 @@ type metric struct {
 	ExtendedDocumentation string `mapstructure:"extended_documentation"`
 
 	// Unit of the metric.
-	Unit string `mapstructure:"unit"`
+	Unit *string `mapstructure:"unit"`
 
 	// Sum stores metadata for sum metric type
 	Sum *sum `mapstructure:"sum,omitempty"`
@@ -142,26 +124,12 @@ func (m *metric) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("enabled") {
 		return errors.New("missing required field: `enabled`")
 	}
-	if !parser.IsSet("description") {
-		return errors.New("missing required field: `description`")
-	}
-	err := parser.Unmarshal(m, confmap.WithErrorUnused())
+	err := parser.Unmarshal(m)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-
-func (m *metric) Validate() error {
-	if m.Sum != nil {
-		return m.Sum.Validate()
-	}
-	if m.Gauge != nil {
-		return m.Gauge.Validate()
-	}
-	return nil
-}
-
 func (m metric) Data() MetricData {
 	if m.Sum != nil {
 		return m.Sum
@@ -173,11 +141,11 @@ func (m metric) Data() MetricData {
 }
 
 type warnings struct {
-	// A warning that will be displayed if the metric is enabled in user config.
+	// A warning that will be displayed if the field is enabled in user config.
 	IfEnabled string `mapstructure:"if_enabled"`
 	// A warning that will be displayed if `enabled` field is not set explicitly in user config.
 	IfEnabledNotSet string `mapstructure:"if_enabled_not_set"`
-	// A warning that will be displayed if the metrics is configured by user in any way.
+	// A warning that will be displayed if the field is configured by user in any way.
 	IfConfigured string `mapstructure:"if_configured"`
 }
 
@@ -192,25 +160,58 @@ type attribute struct {
 	Enum []string `mapstructure:"enum"`
 	// Type is an attribute type.
 	Type ValueType `mapstructure:"type"`
+	// FullName is the attribute name populated from the map key.
+	FullName attributeName `mapstructure:"-"`
+	// Warnings that will be shown to user under specified conditions.
+	Warnings warnings `mapstructure:"warnings"`
 }
 
-func (attr *attribute) Unmarshal(parser *confmap.Conf) error {
-	if !parser.IsSet("description") {
-		return errors.New("missing required field: `description`")
+// Name returns actual name of the attribute that is set on the metric after applying NameOverride.
+func (a attribute) Name() attributeName {
+	if a.NameOverride != "" {
+		return attributeName(a.NameOverride)
 	}
-	if !parser.IsSet("type") {
-		return errors.New("missing required field: `type`")
+	return a.FullName
+}
+
+func (a attribute) TestValue() string {
+	if a.Enum != nil {
+		return fmt.Sprintf(`"%s"`, a.Enum[0])
 	}
-	err := parser.Unmarshal(attr, confmap.WithErrorUnused())
-	if err != nil {
-		return err
+	switch a.Type.ValueType {
+	case pcommon.ValueTypeEmpty:
+		return ""
+	case pcommon.ValueTypeStr:
+		return fmt.Sprintf(`"%s-val"`, a.FullName)
+	case pcommon.ValueTypeInt:
+		return fmt.Sprintf("%d", len(a.FullName))
+	case pcommon.ValueTypeDouble:
+		return fmt.Sprintf("%f", 0.1+float64(len(a.FullName)))
+	case pcommon.ValueTypeBool:
+		return fmt.Sprintf("%t", len(a.FullName)%2 == 0)
+	case pcommon.ValueTypeMap:
+		return fmt.Sprintf(`map[string]any{"key1": "%s-val1", "key2": "%s-val2"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeSlice:
+		return fmt.Sprintf(`[]any{"%s-item1", "%s-item2"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeBytes:
+		return fmt.Sprintf(`[]byte("%s-val")`, a.FullName)
 	}
-	return nil
+	return ""
+}
+
+type tests struct {
+	Config              any  `mapstructure:"config"`
+	SkipLifecycle       bool `mapstructure:"skip_lifecycle"`
+	ExpectConsumerError bool `mapstructure:"expect_consumer_error"`
 }
 
 type metadata struct {
-	// Name of the component.
-	Name string `mapstructure:"name"`
+	// Type of the component.
+	Type string `mapstructure:"type"`
+	// Type of the parent component (applicable to subcomponents).
+	Parent string `mapstructure:"parent"`
+	// Status information for the component.
+	Status *Status `mapstructure:"status"`
 	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
 	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
@@ -219,64 +220,19 @@ type metadata struct {
 	Attributes map[attributeName]attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.
 	Metrics map[metricName]metric `mapstructure:"metrics"`
+	// ScopeName of the metrics emitted by the component.
+	ScopeName string `mapstructure:"-"`
+	// ShortFolderName is the shortened folder name of the component, removing class if present
+	ShortFolderName string `mapstructure:"-"`
+
+	Tests *tests `mapstructure:"tests"`
 }
 
-func (md *metadata) Unmarshal(parser *confmap.Conf) error {
-	if !parser.IsSet("name") {
-		return errors.New("missing required field: `description`")
+func setAttributesFullName(attrs map[attributeName]attribute) {
+	for k, v := range attrs {
+		v.FullName = k
+		attrs[k] = v
 	}
-	err := parser.Unmarshal(md, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (md *metadata) Validate() error {
-	var errs error
-
-	usedAttrs := map[attributeName]bool{}
-	for mn, m := range md.Metrics {
-		if m.Sum == nil && m.Gauge == nil {
-			errs = multierr.Append(errs, fmt.Errorf("metric %v doesn't have a metric type key, "+
-				"one of the following has to be specified: sum, gauge", mn))
-			continue
-		}
-		if m.Sum != nil && m.Gauge != nil {
-			errs = multierr.Append(errs, fmt.Errorf("metric %v has more than one metric type keys, "+
-				"only one of the following has to be specified: sum, gauge", mn))
-			continue
-		}
-
-		if err := m.Validate(); err != nil {
-			errs = multierr.Append(errs, fmt.Errorf(`metric "%v": %w`, mn, err))
-			continue
-		}
-
-		unknownAttrs := make([]attributeName, 0, len(m.Attributes))
-		for _, attr := range m.Attributes {
-			if _, ok := md.Attributes[attr]; ok {
-				usedAttrs[attr] = true
-			} else {
-				unknownAttrs = append(unknownAttrs, attr)
-			}
-		}
-		if len(unknownAttrs) > 0 {
-			errs = multierr.Append(errs, fmt.Errorf(`metric "%v" refers to undefined attributes: %v`, mn, unknownAttrs))
-		}
-	}
-
-	unusedAttrs := make([]attributeName, 0, len(md.Attributes))
-	for attr := range md.Attributes {
-		if !usedAttrs[attr] {
-			unusedAttrs = append(unusedAttrs, attr)
-		}
-	}
-	if len(unusedAttrs) > 0 {
-		errs = multierr.Append(errs, fmt.Errorf("unused attributes: %v", unusedAttrs))
-	}
-
-	return errs
 }
 
 type templateContext struct {
@@ -296,8 +252,8 @@ func loadMetadata(filePath string) (metadata, error) {
 		return metadata{}, err
 	}
 
-	md := metadata{}
-	if err := conf.Unmarshal(&md, confmap.WithErrorUnused()); err != nil {
+	md := metadata{ScopeName: scopeName(filePath), ShortFolderName: shortFolderName(filePath)}
+	if err := conf.Unmarshal(&md); err != nil {
 		return md, err
 	}
 
@@ -305,5 +261,48 @@ func loadMetadata(filePath string) (metadata, error) {
 		return md, err
 	}
 
+	setAttributesFullName(md.Attributes)
+	setAttributesFullName(md.ResourceAttributes)
+
 	return md, nil
+}
+
+var componentTypes = map[string]func(string) string{
+	"connector": func(in string) string { return strings.TrimSuffix(in, "connector") },
+	"exporter":  func(in string) string { return strings.TrimSuffix(in, "exporter") },
+	"extension": func(in string) string { return strings.TrimSuffix(in, "extension") },
+	"processor": func(in string) string { return strings.TrimSuffix(in, "processor") },
+	"scraper":   func(in string) string { return strings.TrimSuffix(in, "scraper") },
+	"receiver":  func(in string) string { return in },
+}
+
+func shortFolderName(filePath string) string {
+	parentFolder := filepath.Base(filepath.Dir(filePath))
+	for cType := range componentTypes {
+		if strings.HasSuffix(parentFolder, cType) {
+			return strings.TrimSuffix(parentFolder, cType)
+		}
+	}
+	return parentFolder
+}
+
+func scopeName(filePath string) string {
+	sn := "otelcol"
+	dirs := strings.Split(filepath.Dir(filePath), string(os.PathSeparator))
+	for _, dir := range dirs {
+		// skip directory names for component types
+		if _, ok := componentTypes[dir]; ok {
+			continue
+		}
+		// note here that the only component that receives a different
+		// treatment is receivers. this is to prevent breaking backwards
+		// compatibility for anyone that's using the generated metrics w/
+		// scope names today.
+		for cType, normalizeFunc := range componentTypes {
+			if strings.HasSuffix(dir, cType) {
+				sn += "/" + normalizeFunc(dir)
+			}
+		}
+	}
+	return sn
 }

@@ -1,4 +1,12 @@
-name: elasticsearchreceiver
+type: elasticsearch
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski, BinaryFissionGames]
 
 resource_attributes:
   elasticsearch.cluster.name:
@@ -195,7 +203,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [circuit_breaker_name]
     enabled: true
@@ -204,7 +212,7 @@ metrics:
     unit: 1
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [circuit_breaker_name]
     enabled: true
@@ -213,7 +221,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [cache_name]
     enabled: true
@@ -222,7 +230,7 @@ metrics:
     unit: "{evictions}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [cache_name]
     enabled: true
@@ -231,7 +239,7 @@ metrics:
     unit: "{count}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ query_cache_count_type ]
     enabled: true
@@ -240,7 +248,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: false
@@ -249,7 +257,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -258,7 +266,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -267,7 +275,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -281,10 +289,11 @@ metrics:
     unit: KiBy
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
+    extended_documentation: This metric is available only on Linux systems.
   # The calculation for node.disk.io.write is actually in KiBy(1024 bytes), not kBy (1000 bytes)
   # The metric value calculation comes from sectors: https://github.com/elastic/elasticsearch/blob/3c6797f2d2271a30b24f505da55afbb5ea10733e/server/src/main/java/org/elasticsearch/monitor/fs/FsInfo.java#L293
   # The metric value is gathered by reading disk stats files from https://github.com/elastic/elasticsearch/blob/3c6797f2d2271a30b24f505da55afbb5ea10733e/server/src/main/java/org/elasticsearch/monitor/fs/FsProbe.java#L117
@@ -295,16 +304,17 @@ metrics:
     unit: KiBy
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
+    extended_documentation: This metric is available only on Linux systems.
   elasticsearch.node.cluster.io:
     description: The number of bytes sent and received on the network for internal cluster communication.
     unit: By
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -313,7 +323,7 @@ metrics:
     unit: "{connections}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -322,7 +332,7 @@ metrics:
     unit: "{connections}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -338,7 +348,7 @@ metrics:
     unit: "{operations}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [operation]
     enabled: true
@@ -347,7 +357,7 @@ metrics:
     unit: ms
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [operation]
     enabled: true
@@ -356,7 +366,7 @@ metrics:
     unit: "{operations}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [get_result]
     enabled: false
@@ -365,7 +375,7 @@ metrics:
     unit: ms
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [get_result]
     enabled: false
@@ -374,7 +384,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -383,7 +393,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -392,7 +402,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -401,7 +411,7 @@ metrics:
     unit: "{operations}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -410,7 +420,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -419,7 +429,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -428,7 +438,7 @@ metrics:
     unit: "{threads}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [thread_pool_name, thread_state]
     enabled: true
@@ -437,7 +447,7 @@ metrics:
     unit: "{tasks}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [thread_pool_name]
     enabled: true
@@ -446,7 +456,7 @@ metrics:
     unit: "{tasks}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [thread_pool_name, task_state]
     enabled: true
@@ -455,7 +465,7 @@ metrics:
     unit: "{documents}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [document_state]
     enabled: true
@@ -464,7 +474,7 @@ metrics:
     unit: "{files}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -482,7 +492,7 @@ metrics:
     unit: 1
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [collector_name]
     enabled: true
@@ -491,7 +501,7 @@ metrics:
     unit: ms
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [collector_name]
     enabled: true
@@ -564,7 +574,7 @@ metrics:
     unit: "{tasks}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -573,7 +583,7 @@ metrics:
     unit: "{fetches}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -583,7 +593,7 @@ metrics:
     unit: "{shards}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [shard_state]
     enabled: true
@@ -592,7 +602,7 @@ metrics:
     unit: "{nodes}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -601,7 +611,7 @@ metrics:
     unit: "{nodes}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -615,7 +625,7 @@ metrics:
     unit: "{status}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [health_status]
     enabled: true
@@ -659,7 +669,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [  indexing_pressure_stage ]
     enabled: true
@@ -668,7 +678,7 @@ metrics:
     unit: 1
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -677,7 +687,7 @@ metrics:
     unit: 1
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -693,7 +703,7 @@ metrics:
     unit: 1
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ cluster_state_queue_state ]
     enabled: true
@@ -702,7 +712,7 @@ metrics:
     unit: 1
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -711,7 +721,7 @@ metrics:
     unit: 1
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ cluster_published_difference_state ]
     enabled: true
@@ -720,7 +730,7 @@ metrics:
     unit: 1
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ cluster_state_update_state ]
     enabled: true
@@ -729,7 +739,7 @@ metrics:
     unit: ms
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ cluster_state_update_state, cluster_state_update_type ]
     enabled: true
@@ -738,7 +748,7 @@ metrics:
     unit: "{evictions}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [cache_name]
     enabled: false
@@ -747,7 +757,7 @@ metrics:
     unit: "{documents}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -756,7 +766,7 @@ metrics:
     unit: "{documents}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -765,7 +775,7 @@ metrics:
     unit: "{operation}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -774,7 +784,7 @@ metrics:
     unit: "{documents}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ingest_pipeline_name ]
     enabled: true
@@ -783,7 +793,7 @@ metrics:
     unit: "{operation}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ingest_pipeline_name ]
     enabled: true
@@ -792,7 +802,7 @@ metrics:
     unit: "{documents}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ingest_pipeline_name ]
     enabled: true
@@ -801,7 +811,7 @@ metrics:
     unit: "{compilations}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -810,7 +820,7 @@ metrics:
     unit: 1
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -819,7 +829,7 @@ metrics:
     unit: 1
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -828,7 +838,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [segments_memory_object_type]
     enabled: false
@@ -838,7 +848,7 @@ metrics:
     unit: "{operations}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [operation, index_aggregation_type]
     enabled: true
@@ -847,7 +857,7 @@ metrics:
     unit: ms
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [operation, index_aggregation_type]
     enabled: true
@@ -856,7 +866,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: true
@@ -865,7 +875,7 @@ metrics:
     unit: By
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
@@ -874,7 +884,7 @@ metrics:
     unit: "{documents}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
@@ -883,7 +893,7 @@ metrics:
     unit: "{segments}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
@@ -892,7 +902,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
@@ -901,7 +911,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type, segments_memory_object_type]
     enabled: false
@@ -910,7 +920,7 @@ metrics:
     unit: "{operations}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
@@ -919,7 +929,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
@@ -928,7 +938,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [cache_name, index_aggregation_type]
     enabled: false
@@ -937,7 +947,7 @@ metrics:
     unit: 1
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
@@ -946,7 +956,7 @@ metrics:
     unit: "{evictions}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [cache_name, index_aggregation_type]
     enabled: false
@@ -955,7 +965,7 @@ metrics:
     unit: "{documents}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [document_state, index_aggregation_type]
     enabled: false
@@ -971,7 +981,7 @@ metrics:
     unit: ms
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: false
@@ -980,7 +990,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: false

@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
@@ -49,7 +38,7 @@ const (
 	minusInfValue = "-Inf"
 )
 
-func sanitizeFloat(value float64) interface{} {
+func sanitizeFloat(value float64) any {
 	if math.IsNaN(value) {
 		return nanValue
 	}
@@ -71,7 +60,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 	source := config.Source
 	sourceType := config.SourceType
 	index := config.Index
-	commonFields := map[string]interface{}{}
+	commonFields := map[string]any{}
 
 	res.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
@@ -91,6 +80,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 		return true
 	})
 	metricFieldName := splunkMetricValue + ":" + m.Name()
+	//exhaustive:enforce
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:
 		pts := m.Gauge().DataPoints()
@@ -215,6 +205,11 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 			}
 		}
 		return splunkMetrics
+	case pmetric.MetricTypeExponentialHistogram:
+		logger.Warn(
+			"Point with unsupported type ExponentialHistogram",
+			zap.Any("metric", m))
+		return nil
 	case pmetric.MetricTypeEmpty:
 		return nil
 	default:
@@ -225,7 +220,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 	}
 }
 
-func createEvent(timestamp pcommon.Timestamp, host string, source string, sourceType string, index string, fields map[string]interface{}) *splunk.Event {
+func createEvent(timestamp pcommon.Timestamp, host string, source string, sourceType string, index string, fields map[string]any) *splunk.Event {
 	return &splunk.Event{
 		Time:       timestampToSecondsWithMillisecondPrecision(timestamp),
 		Host:       host,
@@ -251,23 +246,23 @@ func copyEventWithoutValues(event *splunk.Event) *splunk.Event {
 	}
 }
 
-func populateAttributes(fields map[string]interface{}, attributeMap pcommon.Map) {
+func populateAttributes(fields map[string]any, attributeMap pcommon.Map) {
 	attributeMap.Range(func(k string, v pcommon.Value) bool {
 		fields[k] = v.AsString()
 		return true
 	})
 }
 
-func cloneMap(fields map[string]interface{}) map[string]interface{} {
-	newFields := make(map[string]interface{}, len(fields))
+func cloneMap(fields map[string]any) map[string]any {
+	newFields := make(map[string]any, len(fields))
 	for k, v := range fields {
 		newFields[k] = v
 	}
 	return newFields
 }
 
-func cloneMapWithSelector(fields map[string]interface{}, selector func(string) bool) map[string]interface{} {
-	newFields := make(map[string]interface{}, len(fields))
+func cloneMapWithSelector(fields map[string]any, selector func(string) bool) map[string]any {
+	newFields := make(map[string]any, len(fields))
 	for k, v := range fields {
 		if selector(k) {
 			newFields[k] = v
@@ -276,18 +271,8 @@ func cloneMapWithSelector(fields map[string]interface{}, selector func(string) b
 	return newFields
 }
 
-func timestampToSecondsWithMillisecondPrecision(ts pcommon.Timestamp) *float64 {
-	if ts == 0 {
-		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations
-		// (i.e. before Open Telemetry) are setup with the know-how on how to consume them. In this case,
-		// we want to omit the time field when sending data to the Splunk HEC so that the HEC adds a timestamp
-		// at indexing time, which will be much more useful than a 0-epoch-time value.
-		return nil
-	}
-
-	val := math.Round(float64(ts)/1e6) / 1e3
-
-	return &val
+func timestampToSecondsWithMillisecondPrecision(ts pcommon.Timestamp) float64 {
+	return math.Round(float64(ts)/1e6) / 1e3
 }
 
 func float64ToDimValue(f float64) string {
@@ -299,10 +284,12 @@ func mergeEventsToMultiMetricFormat(events []*splunk.Event) ([]*splunk.Event, er
 	hashes := map[uint32]*splunk.Event{}
 	hasher := fnv.New32a()
 	var merged []*splunk.Event
+	marshaler := jsoniter.ConfigCompatibleWithStandardLibrary
 
 	for _, e := range events {
 		cloned := copyEventWithoutValues(e)
-		data, err := jsoniter.Marshal(cloned)
+
+		data, err := marshaler.Marshal(cloned)
 		if err != nil {
 			return nil, err
 		}

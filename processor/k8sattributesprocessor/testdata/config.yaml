@@ -18,6 +18,7 @@ k8sattributes/2:
       - k8s.namespace.name
       - k8s.node.name
       - k8s.pod.start_time
+      - k8s.cluster.uid
 
     annotations:
       - tag_name: a1 # extracts value of annotation with key `annotation-one` and inserts it as a tag with key `a1`
@@ -66,9 +67,6 @@ k8sattributes/2:
     - sources:
       - from: connection
         name: ip
-    # deprecated way
-    - from: resource_attribute
-      name: k8s.pod.uid
 
   exclude:
     pods:
@@ -92,3 +90,123 @@ k8sattributes/4:
     metadata:
       # the following metadata field has been depracated
       - k8s.cluster.name
+
+k8sattributes/too_many_sources:
+  pod_association:
+    - sources:
+        - from: resource_attribute
+          name: custom-attribute
+        - from: resource_attribute
+          name: ip
+        - from: resource_attribute
+          name: k8s.pod.ip
+        - from: resource_attribute
+          name: host.name
+        - from: connection
+          name: ip
+
+k8sattributes/bad_keys_labels:
+  extract:
+    labels:
+      - tag_name: l1
+        key: label1
+        key_regex: label\d
+
+k8sattributes/bad_keys_annotations:
+  extract:
+    annotations:
+      - tag_name: a1
+        key: annotation1
+        key_regex: annotation\d
+
+k8sattributes/bad_from_labels:
+  extract:
+    labels:
+      - tag_name: a1
+        key: label1
+        from: unknown
+
+k8sattributes/bad_from_annotations:
+  extract:
+    annotations:
+      - tag_name: a1
+        key: annotation1
+        from: unknown
+
+k8sattributes/bad_regex_labels:
+  extract:
+    labels:
+      - tag_name: a1
+        key: label1
+        from: pod
+        regex: "["
+
+k8sattributes/bad_regex_annotations:
+  extract:
+    annotations:
+      - tag_name: a1
+        key: annotation1
+        from: pod
+        regex: "["
+
+k8sattributes/bad_keyregex_labels:
+  extract:
+    labels:
+      - tag_name: a1
+        from: pod
+        key_regex: "["
+
+k8sattributes/bad_keyregex_annotations:
+  extract:
+    annotations:
+      - tag_name: a1
+        from: pod
+        key_regex: "["
+
+
+k8sattributes/bad_regex_groups_labels:
+  extract:
+    labels:
+      - tag_name: a1
+        key: label1
+        from: pod
+        regex: "((.*)*)"
+
+k8sattributes/bad_regex_groups_annotations:
+  extract:
+    annotations:
+      - tag_name: a1
+        key: annotation1
+        from: pod
+        regex: "((.*)*)"
+
+
+k8sattributes/bad_regex_name_labels:
+  extract:
+    labels:
+      - tag_name: a1
+        key: label1
+        from: pod
+        regex: "field=(?P<notvalue>.+)"
+
+k8sattributes/bad_regex_name_annotations:
+  extract:
+    annotations:
+      - tag_name: a1
+        key: annotation1
+        from: pod
+        regex: "field=(?P<notvalue>.+)"
+
+k8sattributes/bad_filter_label_op:
+  filter:
+    labels:
+      - key: label
+        value: v1
+        op: "unknown"
+
+k8sattributes/bad_filter_field_op:
+  filter:
+    fields:
+      - key: field
+        value: v1
+        op: "exists"

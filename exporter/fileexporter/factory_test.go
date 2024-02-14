@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileexporter
 
@@ -18,6 +7,7 @@ import (
 	"context"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -54,6 +44,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
+	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
 func TestCreateTracesExporter(t *testing.T) {
@@ -67,6 +58,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
+	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
 func TestCreateTracesExporterError(t *testing.T) {
@@ -91,6 +83,7 @@ func TestCreateLogsExporter(t *testing.T) {
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
+	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
 func TestCreateLogsExporterError(t *testing.T) {
@@ -104,7 +97,7 @@ func TestCreateLogsExporterError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestBuildFileWriter(t *testing.T) {
+func TestNewFileWriter(t *testing.T) {
 	type args struct {
 		cfg *Config
 	}
@@ -112,17 +105,19 @@ func TestBuildFileWriter(t *testing.T) {
 		name     string
 		args     args
 		want     io.WriteCloser
-		validate func(*testing.T, io.WriteCloser)
+		validate func(*testing.T, *fileWriter)
 	}{
 		{
 			name: "single file",
 			args: args{
 				cfg: &Config{
-					Path: tempFileName(t),
+					Path:          tempFileName(t),
+					FlushInterval: 5 * time.Second,
 				},
 			},
-			validate: func(t *testing.T, closer io.WriteCloser) {
-				_, ok := closer.(*bufferedWriteCloser)
+			validate: func(t *testing.T, writer *fileWriter) {
+				assert.Equal(t, 5*time.Second, writer.flushInterval)
+				_, ok := writer.file.(*bufferedWriteCloser)
 				assert.Equal(t, true, ok)
 			},
 		},
@@ -136,10 +131,10 @@ func TestBuildFileWriter(t *testing.T) {
 					},
 				},
 			},
-			validate: func(t *testing.T, closer io.WriteCloser) {
-				writer, ok := closer.(*lumberjack.Logger)
+			validate: func(t *testing.T, writer *fileWriter) {
+				logger, ok := writer.file.(*lumberjack.Logger)
 				assert.Equal(t, true, ok)
-				assert.Equal(t, defaultMaxBackups, writer.MaxBackups)
+				assert.Equal(t, defaultMaxBackups, logger.MaxBackups)
 			},
 		},
 		{
@@ -155,19 +150,22 @@ func TestBuildFileWriter(t *testing.T) {
 					},
 				},
 			},
-			validate: func(t *testing.T, closer io.WriteCloser) {
-				writer, ok := closer.(*lumberjack.Logger)
+			validate: func(t *testing.T, writer *fileWriter) {
+				logger, ok := writer.file.(*lumberjack.Logger)
 				assert.Equal(t, true, ok)
-				assert.Equal(t, 3, writer.MaxBackups)
-				assert.Equal(t, 30, writer.MaxSize)
-				assert.Equal(t, 100, writer.MaxAge)
-				assert.Equal(t, true, writer.LocalTime)
+				assert.Equal(t, 3, logger.MaxBackups)
+				assert.Equal(t, 30, logger.MaxSize)
+				assert.Equal(t, 100, logger.MaxAge)
+				assert.Equal(t, true, logger.LocalTime)
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := buildFileWriter(tt.args.cfg)
+			got, err := newFileWriter(tt.args.cfg.Path, tt.args.cfg.Rotation, tt.args.cfg.FlushInterval, nil)
+			defer func() {
+				assert.NoError(t, got.file.Close())
+			}()
 			assert.NoError(t, err)
 			tt.validate(t, got)
 		})

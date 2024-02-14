@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
@@ -41,10 +30,10 @@ type zapToGokitLogAdapter struct {
 type logData struct {
 	level       level.Value
 	msg         string
-	otherFields []interface{}
+	otherFields []any
 }
 
-func (w *zapToGokitLogAdapter) Log(keyvals ...interface{}) error {
+func (w *zapToGokitLogAdapter) Log(keyvals ...any) error {
 	// expecting key value pairs, the number of items need to be even
 	if len(keyvals)%2 == 0 {
 		// Extract log level and message and log them using corresponding zap function
@@ -58,7 +47,7 @@ func (w *zapToGokitLogAdapter) Log(keyvals ...interface{}) error {
 	return nil
 }
 
-func extractLogData(keyvals []interface{}) logData {
+func extractLogData(keyvals []any) logData {
 	ld := logData{
 		level: level.InfoValue(), // default
 	}
@@ -89,7 +78,7 @@ func extractLogData(keyvals []interface{}) logData {
 }
 
 // check if a given key-value pair represents go-kit log message and return it
-func matchLogMessage(key interface{}, val interface{}) (string, bool) {
+func matchLogMessage(key any, val any) (string, bool) {
 	if strKey, ok := key.(string); !ok || strKey != msgKey {
 		return "", false
 	}
@@ -102,7 +91,7 @@ func matchLogMessage(key interface{}, val interface{}) (string, bool) {
 }
 
 // check if a given key-value pair represents go-kit log level and return it
-func matchLogLevel(key interface{}, val interface{}) (level.Value, bool) {
+func matchLogLevel(key any, val any) (level.Value, bool) {
 	strKey, ok := key.(string)
 	if !ok || strKey != levelKey {
 		return nil, false
@@ -118,7 +107,7 @@ func matchLogLevel(key interface{}, val interface{}) (level.Value, bool) {
 //revive:disable:error-return
 
 // check if a given key-value pair represents an error and return it
-func matchError(key interface{}, val interface{}) (error, bool) {
+func matchError(key any, val any) (error, bool) {
 	strKey, ok := key.(string)
 	if !ok || strKey != errKey {
 		return nil, false
@@ -134,7 +123,7 @@ func matchError(key interface{}, val interface{}) (error, bool) {
 //revive:enable:error-return
 
 // find a matching zap logging function to be used for a given level
-func levelToFunc(logger *zap.SugaredLogger, lvl level.Value) func(string, ...interface{}) {
+func levelToFunc(logger *zap.SugaredLogger, lvl level.Value) func(string, ...any) {
 	switch lvl {
 	case level.DebugValue():
 		return logger.Debugw

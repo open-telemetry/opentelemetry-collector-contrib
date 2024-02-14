@@ -1,16 +1,5 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package azuremonitorexporter
 
@@ -23,7 +12,7 @@ import (
 )
 
 func TestHTTPAttributeMapping(t *testing.T) {
-	httpAttributeValues := map[string]interface{}{
+	httpAttributeValues := map[string]any{
 		conventions.AttributeHTTPMethod: conventions.AttributeHTTPMethod,
 		conventions.AttributeHTTPURL:    conventions.AttributeHTTPURL,
 		conventions.AttributeHTTPTarget: conventions.AttributeHTTPTarget,
@@ -74,7 +63,7 @@ func TestHTTPAttributeMapping(t *testing.T) {
 }
 
 func TestRPCPAttributeMapping(t *testing.T) {
-	rpcAttributeValues := map[string]interface{}{
+	rpcAttributeValues := map[string]any{
 		conventions.AttributeRPCSystem:  conventions.AttributeRPCSystem,
 		conventions.AttributeRPCService: conventions.AttributeRPCService,
 		conventions.AttributeRPCMethod:  conventions.AttributeRPCMethod,
@@ -96,7 +85,7 @@ func TestRPCPAttributeMapping(t *testing.T) {
 }
 
 func TestDatabaseAttributeMapping(t *testing.T) {
-	databaseAttributeValues := map[string]interface{}{
+	databaseAttributeValues := map[string]any{
 		conventions.AttributeDBSystem:              conventions.AttributeDBSystem,
 		conventions.AttributeDBConnectionString:    conventions.AttributeDBConnectionString,
 		conventions.AttributeDBUser:                conventions.AttributeDBUser,
@@ -132,7 +121,7 @@ func TestDatabaseAttributeMapping(t *testing.T) {
 }
 
 func TestMessagingAttributeMapping(t *testing.T) {
-	messagingAttributeValues := map[string]interface{}{
+	messagingAttributeValues := map[string]any{
 		conventions.AttributeMessagingSystem:                            conventions.AttributeMessagingSystem,
 		conventions.AttributeMessagingDestination:                       conventions.AttributeMessagingDestination,
 		conventions.AttributeMessagingDestinationKind:                   conventions.AttributeMessagingDestinationKind,

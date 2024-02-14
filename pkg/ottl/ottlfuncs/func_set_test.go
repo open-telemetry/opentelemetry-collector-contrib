@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlfuncs
 
@@ -28,7 +17,7 @@ func Test_set(t *testing.T) {
 	input := pcommon.NewValueStr("original name")
 
 	target := &ottl.StandardGetSetter[pcommon.Value]{
-		Setter: func(ctx context.Context, tCtx pcommon.Value, val interface{}) error {
+		Setter: func(ctx context.Context, tCtx pcommon.Value, val any) error {
 			tCtx.SetStr(val.(string))
 			return nil
 		},
@@ -44,7 +33,7 @@ func Test_set(t *testing.T) {
 			name:   "set name",
 			setter: target,
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (interface{}, error) {
+				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
 				},
 			},
@@ -56,7 +45,7 @@ func Test_set(t *testing.T) {
 			name:   "set nil value",
 			setter: target,
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (interface{}, error) {
+				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 					return nil, nil
 				},
 			},
@@ -69,8 +58,7 @@ func Test_set(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
 
-			exprFunc, err := Set(tt.setter, tt.getter)
-			assert.NoError(t, err)
+			exprFunc := set(tt.setter, tt.getter)
 
 			result, err := exprFunc(nil, scenarioValue)
 			assert.NoError(t, err)
@@ -85,21 +73,20 @@ func Test_set(t *testing.T) {
 }
 
 func Test_set_get_nil(t *testing.T) {
-	setter := &ottl.StandardGetSetter[interface{}]{
-		Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+	setter := &ottl.StandardGetSetter[any]{
+		Setter: func(ctx context.Context, tCtx any, val any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
 	}
 
-	getter := &ottl.StandardGetSetter[interface{}]{
-		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+	getter := &ottl.StandardGetSetter[any]{
+		Getter: func(ctx context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
 
-	exprFunc, err := Set[interface{}](setter, getter)
-	assert.NoError(t, err)
+	exprFunc := set[any](setter, getter)
 
 	result, err := exprFunc(nil, nil)
 	assert.NoError(t, err)

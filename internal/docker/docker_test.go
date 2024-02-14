@@ -1,19 +1,7 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 // TODO review if tests should succeed on Windows
 
@@ -92,7 +80,7 @@ func TestWatchingTimeouts(t *testing.T) {
 
 	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	expectedError := "context deadline exceeded"
 
@@ -104,7 +92,7 @@ func TestWatchingTimeouts(t *testing.T) {
 	observed, logs := observer.New(zapcore.WarnLevel)
 	cli, err = NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	cnt, ofInterest := cli.inspectedContainerIsOfInterest(context.Background(), "SomeContainerId")
 	assert.False(t, ofInterest)
@@ -137,7 +125,7 @@ func TestFetchingTimeouts(t *testing.T) {
 
 	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	expectedError := "context deadline exceeded"
 
@@ -146,7 +134,7 @@ func TestFetchingTimeouts(t *testing.T) {
 	observed, logs := observer.New(zapcore.WarnLevel)
 	cli, err = NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	statsJSON, err := cli.FetchContainerStatsAsJSON(
 		context.Background(),
@@ -193,7 +181,7 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 
 	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	dc := &Container{
 		ContainerJSON: &dtypes.ContainerJSON{
@@ -240,7 +228,7 @@ func TestEventLoopHandlesError(t *testing.T) {
 
 	cli, err := NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	go cli.ContainerEventLoop(context.Background())
 

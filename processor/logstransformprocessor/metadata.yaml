@@ -1,0 +1,15 @@
+type: logstransform
+
+status:
+  class: processor
+  stability:
+    development: [logs]
+  distributions: [observiq, splunk, sumo]
+  codeowners:
+    active: [djaglowski, dehaansa]
+
+tests:
+  config:
+    operators:
+      - type: regex_parser
+        regex: '^(?P<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$'

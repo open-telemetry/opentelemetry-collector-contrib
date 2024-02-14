@@ -1,19 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
@@ -29,35 +17,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-const operatorType = "windows_eventlog_input"
-
 func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
-}
-
-// NewConfig will return an event log config with default values.
-func NewConfig() *Config {
-	return NewConfigWithID(operatorType)
-}
-
-// NewConfig will return an event log config with default values.
-func NewConfigWithID(operatorID string) *Config {
-	return &Config{
-		InputConfig:  helper.NewInputConfig(operatorID, operatorType),
-		MaxReads:     100,
-		StartAt:      "end",
-		PollInterval: 1 * time.Second,
-	}
-}
-
-// Config is the configuration of a windows event log operator.
-type Config struct {
-	helper.InputConfig `mapstructure:",squash"`
-	Channel            string        `mapstructure:"channel"`
-	MaxReads           int           `mapstructure:"max_reads,omitempty"`
-	StartAt            string        `mapstructure:"start_at,omitempty"`
-	PollInterval       time.Duration `mapstructure:"poll_interval,omitempty"`
-	Raw                bool          `mapstructure:"raw,omitempty"`
 }
 
 // Build will build a windows event log operator.
@@ -80,30 +41,33 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	return &Input{
-		InputOperator: inputOperator,
-		buffer:        NewBuffer(),
-		channel:       c.Channel,
-		maxReads:      c.MaxReads,
-		startAt:       c.StartAt,
-		pollInterval:  c.PollInterval,
-		raw:           c.Raw,
+		InputOperator:    inputOperator,
+		buffer:           NewBuffer(),
+		channel:          c.Channel,
+		maxReads:         c.MaxReads,
+		startAt:          c.StartAt,
+		pollInterval:     c.PollInterval,
+		raw:              c.Raw,
+		excludeProviders: c.ExcludeProviders,
 	}, nil
 }
 
 // Input is an operator that creates entries using the windows event log api.
 type Input struct {
 	helper.InputOperator
-	bookmark     Bookmark
-	subscription Subscription
-	buffer       Buffer
-	channel      string
-	maxReads     int
-	startAt      string
-	raw          bool
-	pollInterval time.Duration
-	persister    operator.Persister
-	cancel       context.CancelFunc
-	wg           sync.WaitGroup
+	bookmark         Bookmark
+	subscription     Subscription
+	buffer           Buffer
+	channel          string
+	maxReads         int
+	startAt          string
+	raw              bool
+	excludeProviders []string
+	pollInterval     time.Duration
+	persister        operator.Persister
+	publisherCache   publisherCache
+	cancel           context.CancelFunc
+	wg               sync.WaitGroup
 }
 
 // Start will start reading events from a subscription.
@@ -117,7 +81,7 @@ func (e *Input) Start(persister operator.Persister) error {
 	offsetXML, err := e.getBookmarkOffset(ctx)
 	if err != nil {
 		e.Errorf("Failed to open bookmark, continuing without previous bookmark: %s", err)
-		e.persister.Delete(ctx, e.channel)
+		_ = e.persister.Delete(ctx, e.channel)
 	}
 
 	if offsetXML != "" {
@@ -130,6 +94,8 @@ func (e *Input) Start(persister operator.Persister) error {
 	if err := e.subscription.Open(e.channel, e.startAt, e.bookmark); err != nil {
 		return fmt.Errorf("failed to open subscription: %w", err)
 	}
+
+	e.publisherCache = newPublisherCache()
 
 	e.wg.Add(1)
 	go e.readOnInterval(ctx)
@@ -147,6 +113,10 @@ func (e *Input) Stop() error {
 
 	if err := e.bookmark.Close(); err != nil {
 		return fmt.Errorf("failed to close bookmark: %w", err)
+	}
+
+	if err := e.publisherCache.evictAll(); err != nil {
+		return fmt.Errorf("failed to close publishers: %w", err)
 	}
 
 	return nil
@@ -205,6 +175,20 @@ func (e *Input) read(ctx context.Context) int {
 // processEvent will process and send an event retrieved from windows event log.
 func (e *Input) processEvent(ctx context.Context, event Event) {
 	if e.raw {
+		if len(e.excludeProviders) > 0 {
+			simpleEvent, err := event.RenderSimple(e.buffer)
+			if err != nil {
+				e.Errorf("Failed to render simple event: %s", err)
+				return
+			}
+
+			for _, excludeProvider := range e.excludeProviders {
+				if simpleEvent.Provider.Name == excludeProvider {
+					return
+				}
+			}
+		}
+
 		rawEvent, err := event.RenderRaw(e.buffer)
 		if err != nil {
 			e.Errorf("Failed to render raw event: %s", err)
@@ -219,13 +203,21 @@ func (e *Input) processEvent(ctx context.Context, event Event) {
 		return
 	}
 
-	publisher := NewPublisher()
-	if err := publisher.Open(simpleEvent.Provider.Name); err != nil {
-		e.Errorf("Failed to open publisher: %s: writing log entry to pipeline without metadata", err)
+	for _, excludeProvider := range e.excludeProviders {
+		if simpleEvent.Provider.Name == excludeProvider {
+			return
+		}
+	}
+
+	publisher, openPublisherErr := e.publisherCache.get(simpleEvent.Provider.Name)
+	if openPublisherErr != nil {
+		e.Warnf("Failed to open the %q event source, respective log entries can't be formatted: %s", simpleEvent.Provider.Name, openPublisherErr)
+	}
+
+	if !publisher.Valid() {
 		e.sendEvent(ctx, simpleEvent)
 		return
 	}
-	defer publisher.Close()
 
 	formattedEvent, err := event.RenderFormatted(e.buffer, publisher)
 	if err != nil {

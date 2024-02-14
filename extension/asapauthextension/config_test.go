@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package asapauthextension
 
@@ -24,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension/internal/metadata"
 )
 
 // Test keys. Not for use anywhere but these tests.
@@ -44,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id: component.NewID(typeStr),
+			id: component.NewID(metadata.Type),
 			expected: &Config{
 				TTL:        60 * time.Second,
 				Audience:   []string{"test_service1", "test_service2"},
@@ -54,19 +45,19 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "missingkeyid"),
+			id:          component.NewIDWithName(metadata.Type, "missingkeyid"),
 			expectedErr: errNoKeyIDProvided,
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "missingissuer"),
+			id:          component.NewIDWithName(metadata.Type, "missingissuer"),
 			expectedErr: errNoIssuerProvided,
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "missingaudience"),
+			id:          component.NewIDWithName(metadata.Type, "missingaudience"),
 			expectedErr: errNoAudienceProvided,
 		},
 		{
-			id:          component.NewIDWithName(typeStr, "missingpk"),
+			id:          component.NewIDWithName(metadata.Type, "missingpk"),
 			expectedErr: errNoPrivateKeyProvided,
 		},
 	}

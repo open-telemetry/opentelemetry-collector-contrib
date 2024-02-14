@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package entry // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 
@@ -23,17 +12,17 @@ var timeNow = time.Now
 
 // Entry is a flexible representation of log data associated with a timestamp.
 type Entry struct {
-	ObservedTimestamp time.Time              `json:"observed_timestamp"      yaml:"observed_timestamp"`
-	Timestamp         time.Time              `json:"timestamp"               yaml:"timestamp"`
-	Body              interface{}            `json:"body"                    yaml:"body"`
-	Attributes        map[string]interface{} `json:"attributes,omitempty"    yaml:"attributes,omitempty"`
-	Resource          map[string]interface{} `json:"resource,omitempty"      yaml:"resource,omitempty"`
-	SeverityText      string                 `json:"severity_text,omitempty" yaml:"severity_text,omitempty"`
-	SpanID            []byte                 `json:"span_id,omitempty"       yaml:"span_id,omitempty"`
-	TraceID           []byte                 `json:"trace_id,omitempty"      yaml:"trace_id,omitempty"`
-	TraceFlags        []byte                 `json:"trace_flags,omitempty"   yaml:"trace_flags,omitempty"`
-	Severity          Severity               `json:"severity"                yaml:"severity"`
-	ScopeName         string                 `json:"scope_name"              yaml:"scope_name"`
+	ObservedTimestamp time.Time      `json:"observed_timestamp"      yaml:"observed_timestamp"`
+	Timestamp         time.Time      `json:"timestamp"               yaml:"timestamp"`
+	Body              any            `json:"body"                    yaml:"body"`
+	Attributes        map[string]any `json:"attributes,omitempty"    yaml:"attributes,omitempty"`
+	Resource          map[string]any `json:"resource,omitempty"      yaml:"resource,omitempty"`
+	SeverityText      string         `json:"severity_text,omitempty" yaml:"severity_text,omitempty"`
+	SpanID            []byte         `json:"span_id,omitempty"       yaml:"span_id,omitempty"`
+	TraceID           []byte         `json:"trace_id,omitempty"      yaml:"trace_id,omitempty"`
+	TraceFlags        []byte         `json:"trace_flags,omitempty"   yaml:"trace_flags,omitempty"`
+	Severity          Severity       `json:"severity"                yaml:"severity"`
+	ScopeName         string         `json:"scope_name"              yaml:"scope_name"`
 }
 
 // New will create a new log entry with current timestamp and an empty body.
@@ -46,7 +35,7 @@ func New() *Entry {
 // AddAttribute will add a key/value pair to the entry's attributes.
 func (entry *Entry) AddAttribute(key, value string) {
 	if entry.Attributes == nil {
-		entry.Attributes = make(map[string]interface{})
+		entry.Attributes = make(map[string]any)
 	}
 	entry.Attributes[key] = value
 }
@@ -54,36 +43,36 @@ func (entry *Entry) AddAttribute(key, value string) {
 // AddResourceKey wil add a key/value pair to the entry's resource.
 func (entry *Entry) AddResourceKey(key, value string) {
 	if entry.Resource == nil {
-		entry.Resource = make(map[string]interface{})
+		entry.Resource = make(map[string]any)
 	}
 	entry.Resource[key] = value
 }
 
 // Get will return the value of a field on the entry, including a boolean indicating if the field exists.
-func (entry *Entry) Get(field FieldInterface) (interface{}, bool) {
+func (entry *Entry) Get(field FieldInterface) (any, bool) {
 	return field.Get(entry)
 }
 
 // Set will set the value of a field on the entry.
-func (entry *Entry) Set(field FieldInterface, val interface{}) error {
+func (entry *Entry) Set(field FieldInterface, val any) error {
 	return field.Set(entry, val)
 }
 
 // Delete will delete a field from the entry.
-func (entry *Entry) Delete(field FieldInterface) (interface{}, bool) {
+func (entry *Entry) Delete(field FieldInterface) (any, bool) {
 	return field.Delete(entry)
 }
 
 // Read will read the value of a field into a designated interface.
-func (entry *Entry) Read(field FieldInterface, dest interface{}) error {
+func (entry *Entry) Read(field FieldInterface, dest any) error {
 	switch dest := dest.(type) {
 	case *string:
 		return entry.readToString(field, dest)
-	case *map[string]interface{}:
+	case *map[string]any:
 		return entry.readToInterfaceMap(field, dest)
 	case *map[string]string:
 		return entry.readToStringMap(field, dest)
-	case *interface{}:
+	case *any:
 		return entry.readToInterface(field, dest)
 	default:
 		return fmt.Errorf("can not read to unsupported type '%T'", dest)
@@ -91,10 +80,10 @@ func (entry *Entry) Read(field FieldInterface, dest interface{}) error {
 }
 
 // readToInterface reads a field to a designated interface pointer.
-func (entry *Entry) readToInterface(field FieldInterface, dest *interface{}) error {
+func (entry *Entry) readToInterface(field FieldInterface, dest *any) error {
 	val, ok := entry.Get(field)
 	if !ok {
-		return fmt.Errorf("field '%s' is missing and can not be read as a interface{}", field)
+		return fmt.Errorf("field '%s' is missing and can not be read as a any", field)
 	}
 
 	*dest = val
@@ -121,16 +110,16 @@ func (entry *Entry) readToString(field FieldInterface, dest *string) error {
 }
 
 // readToInterfaceMap reads a field to a designated map interface pointer.
-func (entry *Entry) readToInterfaceMap(field FieldInterface, dest *map[string]interface{}) error {
+func (entry *Entry) readToInterfaceMap(field FieldInterface, dest *map[string]any) error {
 	val, ok := entry.Get(field)
 	if !ok {
-		return fmt.Errorf("field '%s' is missing and can not be read as a map[string]interface{}", field)
+		return fmt.Errorf("field '%s' is missing and can not be read as a map[string]any", field)
 	}
 
-	if m, ok := val.(map[string]interface{}); ok {
+	if m, ok := val.(map[string]any); ok {
 		*dest = m
 	} else {
-		return fmt.Errorf("field '%s' of type '%T' can not be cast to a map[string]interface{}", field, val)
+		return fmt.Errorf("field '%s' of type '%T' can not be cast to a map[string]any", field, val)
 	}
 
 	return nil
@@ -144,7 +133,7 @@ func (entry *Entry) readToStringMap(field FieldInterface, dest *map[string]strin
 	}
 
 	switch m := val.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		newDest := make(map[string]string)
 		for k, v := range m {
 			if vStr, ok := v.(string); ok {
@@ -154,7 +143,7 @@ func (entry *Entry) readToStringMap(field FieldInterface, dest *map[string]strin
 			}
 		}
 		*dest = newDest
-	case map[interface{}]interface{}:
+	case map[any]any:
 		newDest := make(map[string]string)
 		for k, v := range m {
 			keyStr, ok := k.(string)

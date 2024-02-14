@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobserver
 
@@ -20,8 +9,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-// NewPod is a helper function for creating Pods for testing.
-func NewPod(name, host string) *v1.Pod {
+// newPod is a helper function for creating Pods for testing.
+func newPod(name, host string) *v1.Pod {
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
@@ -49,7 +38,7 @@ func NewPod(name, host string) *v1.Pod {
 	return pod
 }
 
-var pod1V1 = NewPod("pod1", "localhost")
+var pod1V1 = newPod("pod1", "localhost")
 var pod1V2 = func() *v1.Pod {
 	pod := pod1V1.DeepCopy()
 	pod.Labels["pod-version"] = "2"
@@ -96,7 +85,7 @@ var container2StatusRunning = v1.ContainerStatus{
 }
 
 var podWithNamedPorts = func() *v1.Pod {
-	pod := NewPod("pod-2", "localhost")
+	pod := newPod("pod-2", "localhost")
 	pod.Labels = map[string]string{
 		"env": "prod",
 	}
@@ -115,8 +104,38 @@ func pointerBool(val bool) *bool {
 	return &val
 }
 
-// NewNode is a helper function for creating Nodes for testing.
-func NewNode(name, hostname string) *v1.Node {
+// newService is a helper function for creating Services for testing.
+func newService(name string) *v1.Service {
+	service := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      name,
+			UID:       types.UID(name + "-UID"),
+			Labels: map[string]string{
+				"env": "prod",
+			},
+		},
+		Spec: v1.ServiceSpec{
+			Type:      v1.ServiceTypeClusterIP,
+			ClusterIP: "1.2.3.4",
+		},
+	}
+
+	return service
+}
+
+var serviceWithClusterIP = func() *v1.Service {
+	return newService("service-1")
+}()
+
+var serviceWithClusterIPV2 = func() *v1.Service {
+	service := serviceWithClusterIP.DeepCopy()
+	service.Labels["service-version"] = "2"
+	return service
+}()
+
+// newNode is a helper function for creating Nodes for testing.
+func newNode(name, hostname string) *v1.Node {
 	return &v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "namespace",
@@ -158,7 +177,7 @@ func NewNode(name, hostname string) *v1.Node {
 	}
 }
 
-var node1V1 = NewNode("node1", "localhost")
+var node1V1 = newNode("node1", "localhost")
 var node1V2 = func() *v1.Node {
 	node := node1V1.DeepCopy()
 	node.Labels["node-version"] = "2"

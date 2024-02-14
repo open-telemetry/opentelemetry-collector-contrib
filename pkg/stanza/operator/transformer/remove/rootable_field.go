@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package remove // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/remove"
 
@@ -43,7 +32,7 @@ func (f *rootableField) UnmarshalJSON(raw []byte) error {
 }
 
 // UnmarshalYAML will unmarshal a field from YAML
-func (f *rootableField) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (f *rootableField) UnmarshalYAML(unmarshal func(any) error) error {
 	var s string
 	err := unmarshal(&s)
 	if err != nil {
@@ -77,7 +66,7 @@ func (f *rootableField) unmarshalCheckString(s string) error {
 }
 
 // Get gets the value of the field if the flags for 'allAttributes' or 'allResource' isn't set
-func (f *rootableField) Get(entry *entry.Entry) (interface{}, bool) {
+func (f *rootableField) Get(entry *entry.Entry) (any, bool) {
 	if f.allAttributes || f.allResource {
 		return nil, false
 	}

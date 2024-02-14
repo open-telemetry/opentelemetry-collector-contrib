@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
@@ -23,11 +12,12 @@ import (
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 	// Endpoints holds the Elasticsearch URLs the exporter should send events to.
 	//
 	// This setting is required if CloudID is not set and if the
@@ -53,9 +43,12 @@ type Config struct {
 
 	// This setting is required when logging pipelines used.
 	LogsIndex string `mapstructure:"logs_index"`
-
+	// fall back to pure LogsIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
+	LogsDynamicIndex DynamicIndexSetting `mapstructure:"logs_dynamic_index"`
 	// This setting is required when traces pipelines used.
 	TracesIndex string `mapstructure:"traces_index"`
+	// fall back to pure TracesIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
+	TracesDynamicIndex DynamicIndexSetting `mapstructure:"traces_dynamic_index"`
 
 	// Pipeline configures the ingest node pipeline name that should be used to process the
 	// events.
@@ -63,14 +56,25 @@ type Config struct {
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html
 	Pipeline string `mapstructure:"pipeline"`
 
-	HTTPClientSettings `mapstructure:",squash"`
-	Discovery          DiscoverySettings `mapstructure:"discover"`
-	Retry              RetrySettings     `mapstructure:"retry"`
-	Flush              FlushSettings     `mapstructure:"flush"`
-	Mapping            MappingsSettings  `mapstructure:"mapping"`
+	ClientConfig   `mapstructure:",squash"`
+	Discovery      DiscoverySettings      `mapstructure:"discover"`
+	Retry          RetrySettings          `mapstructure:"retry"`
+	Flush          FlushSettings          `mapstructure:"flush"`
+	Mapping        MappingsSettings       `mapstructure:"mapping"`
+	LogstashFormat LogstashFormatSettings `mapstructure:"logstash_format"`
 }
 
-type HTTPClientSettings struct {
+type LogstashFormatSettings struct {
+	Enabled         bool   `mapstructure:"enabled"`
+	PrefixSeparator string `mapstructure:"prefix_separator"`
+	DateFormat      string `mapstructure:"date_format"`
+}
+
+type DynamicIndexSetting struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+type ClientConfig struct {
 	Authentication AuthenticationSettings `mapstructure:",squash"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
@@ -171,6 +175,7 @@ type MappingMode int
 const (
 	MappingNone MappingMode = iota
 	MappingECS
+	MappingRaw
 )
 
 var (
@@ -184,6 +189,8 @@ func (m MappingMode) String() string {
 		return ""
 	case MappingECS:
 		return "ecs"
+	case MappingRaw:
+		return "raw"
 	default:
 		return ""
 	}
@@ -194,6 +201,7 @@ var mappingModes = func() map[string]MappingMode {
 	for _, m := range []MappingMode{
 		MappingNone,
 		MappingECS,
+		MappingRaw,
 	} {
 		table[strings.ToLower(m.String())] = m
 	}
@@ -226,4 +234,11 @@ func (cfg *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// MappingMode returns the mapping.mode defined in the given cfg
+// object. This method must be called after cfg.Validate() has been
+// called without returning an error.
+func (cfg *Config) MappingMode() MappingMode {
+	return mappingModes[cfg.Mapping.Mode]
 }

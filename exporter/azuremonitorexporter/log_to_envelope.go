@@ -1,16 +1,5 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
@@ -29,7 +18,7 @@ type logPacker struct {
 	logger *zap.Logger
 }
 
-func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord) *contracts.Envelope {
+func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord, resource pcommon.Resource, instrumentationScope pcommon.InstrumentationScope) *contracts.Envelope {
 	envelope := contracts.NewEnvelope()
 	envelope.Tags = make(map[string]string)
 	envelope.Time = toTime(timestampFromLogRecord(logRecord)).Format(time.RFC3339Nano)
@@ -41,7 +30,7 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord) *contract
 
 	messageData.SeverityLevel = packer.toAiSeverityLevel(logRecord.SeverityNumber())
 
-	messageData.Message = logRecord.Body().Str()
+	messageData.Message = logRecord.Body().AsString()
 
 	envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(logRecord.TraceID())
 	envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(logRecord.SpanID())
@@ -51,6 +40,14 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord) *contract
 	data.BaseData = messageData
 	data.BaseType = messageData.BaseType()
 	envelope.Data = data
+
+	resourceAttributes := resource.Attributes()
+	applyResourcesToDataProperties(messageData.Properties, resourceAttributes)
+	applyInstrumentationScopeValueToDataProperties(messageData.Properties, instrumentationScope)
+	applyCloudTagsToEnvelope(envelope, resourceAttributes)
+	applyInternalSdkVersionTagToEnvelope(envelope)
+
+	setAttributesAsProperties(logRecord.Attributes(), messageData.Properties)
 
 	packer.sanitize(func() []string { return messageData.Sanitize() })
 	packer.sanitize(func() []string { return envelope.Sanitize() })

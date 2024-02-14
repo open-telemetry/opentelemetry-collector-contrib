@@ -1,0 +1,13 @@
+type: wavefront
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, sumo, splunk]
+  codeowners:
+    active: [samiura]
+
+tests:
+  config:
+  skip_lifecycle: true

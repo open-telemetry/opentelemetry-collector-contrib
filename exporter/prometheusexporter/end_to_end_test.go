@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusexporter
 
@@ -27,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -69,8 +57,8 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	// 2. Create the Prometheus metrics exporter that'll receive and verify the metrics produced.
 	exporterCfg := &Config{
 		Namespace: "test",
-		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: ":8787",
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: "localhost:8787",
 		},
 		SendTimestamps:   true,
 		MetricExpiration: 2 * time.Hour,
@@ -99,7 +87,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
               static_configs:
                 - targets: ['%s']
         `, srvURL.Host))
-	receiverConfig := new(promconfig.Config)
+	receiverConfig := new(prometheusreceiver.PromConfig)
 	if err = yaml.Unmarshal(yamlConfig, receiverConfig); err != nil {
 		t.Fatal(err)
 	}
@@ -122,7 +110,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	// 4. Scrape from the Prometheus receiver to ensure that we export summary metrics
 	wg.Wait()
 
-	res, err := http.Get("http://localhost" + exporterCfg.Endpoint + "/metrics")
+	res, err := http.Get("http://" + exporterCfg.Endpoint + "/metrics")
 	if err != nil {
 		t.Fatalf("Failed to scrape from the exporter: %v", err)
 	}

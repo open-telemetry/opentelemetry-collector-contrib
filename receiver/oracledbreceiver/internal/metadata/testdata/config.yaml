@@ -1,7 +1,11 @@
 default:
 all_set:
   metrics:
+    oracledb.consistent_gets:
+      enabled: true
     oracledb.cpu_time:
+      enabled: true
+    oracledb.db_block_gets:
       enabled: true
     oracledb.dml_locks.limit:
       enabled: true
@@ -56,7 +60,11 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    oracledb.consistent_gets:
+      enabled: false
     oracledb.cpu_time:
+      enabled: false
+    oracledb.db_block_gets:
       enabled: false
     oracledb.dml_locks.limit:
       enabled: false

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
@@ -35,7 +24,7 @@ func defaultClient(t *testing.T, endpoint string) client {
 		cfg,
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, couchdbClient)
 	return couchdbClient
 }
@@ -44,7 +33,7 @@ func TestNewCouchDBClient(t *testing.T) {
 	t.Run("Invalid config", func(t *testing.T) {
 		couchdbClient, err := newCouchDBClient(
 			&Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -94,7 +83,7 @@ func TestGet(t *testing.T) {
 		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
-		require.NotNil(t, err)
+		require.Error(t, err)
 		require.Nil(t, result)
 		require.Contains(t, err.Error(), "invalid port ")
 	})
@@ -103,7 +92,7 @@ func TestGet(t *testing.T) {
 		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
-		require.NotNil(t, err)
+		require.Error(t, err)
 		require.Nil(t, result)
 		require.Contains(t, err.Error(), "404 Not Found")
 	})
@@ -112,7 +101,7 @@ func TestGet(t *testing.T) {
 		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
-		require.NotNil(t, err)
+		require.Error(t, err)
 		require.Nil(t, result)
 		require.Contains(t, err.Error(), "failed to read response body ")
 	})
@@ -120,7 +109,7 @@ func TestGet(t *testing.T) {
 		url := ts.URL + "/_node/_local/_stats/couchdb"
 		couchdbClient, err := newCouchDBClient(
 			&Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: url,
 				},
 				Username: "unauthorized",
@@ -128,12 +117,12 @@ func TestGet(t *testing.T) {
 			},
 			componenttest.NewNopHost(),
 			componenttest.NewNopTelemetrySettings())
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, couchdbClient)
 
 		result, err := couchdbClient.Get(url)
 		require.Nil(t, result)
-		require.NotNil(t, err)
+		require.Error(t, err)
 		require.Contains(t, err.Error(), "401 Unauthorized")
 	})
 	t.Run("no error", func(t *testing.T) {
@@ -141,7 +130,7 @@ func TestGet(t *testing.T) {
 		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, result)
 	})
 }
@@ -169,22 +158,22 @@ func TestGetNodeStats(t *testing.T) {
 		couchdbClient := defaultClient(t, "invalid")
 
 		actualStats, err := couchdbClient.GetStats("_local")
-		require.NotNil(t, err)
+		require.Error(t, err)
 		require.Nil(t, actualStats)
 	})
 	t.Run("invalid json", func(t *testing.T) {
 		couchdbClient := defaultClient(t, ts.URL+"/invalid_json")
 
 		actualStats, err := couchdbClient.GetStats("_local")
-		require.NotNil(t, err)
+		require.Error(t, err)
 		require.Nil(t, actualStats)
 	})
 	t.Run("no error", func(t *testing.T) {
-		expectedStats := map[string]interface{}{"key": []interface{}{"value"}}
+		expectedStats := map[string]any{"key": []any{"value"}}
 		couchdbClient := defaultClient(t, ts.URL)
 
 		actualStats, err := couchdbClient.GetStats("_local")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.EqualValues(t, expectedStats, actualStats)
 	})
 }
@@ -193,7 +182,7 @@ func TestBuildReq(t *testing.T) {
 	couchdbClient := couchDBClient{
 		client: &http.Client{},
 		cfg: &Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: defaultEndpoint,
 			},
 			Username: "otelu",
@@ -215,7 +204,7 @@ func TestBuildBadReq(t *testing.T) {
 	couchdbClient := couchDBClient{
 		client: &http.Client{},
 		cfg: &Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: defaultEndpoint,
 			},
 		},

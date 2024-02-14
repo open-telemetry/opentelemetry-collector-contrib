@@ -1,0 +1,13 @@
+type: sumologic
+
+status:
+  class: exporter
+  stability:
+    beta: [metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [sumo-drosiek]
+
+tests:
+  config:
+  skip_lifecycle: true

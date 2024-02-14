@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
@@ -21,10 +10,29 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
-func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+type convertGaugeToSumArguments struct {
+	StringAggTemp string
+	Monotonic     bool
+}
+
+func newConvertGaugeToSumFactory() ottl.Factory[ottlmetric.TransformContext] {
+	return ottl.NewFactory("convert_gauge_to_sum", &convertGaugeToSumArguments{}, createConvertGaugeToSumFunction)
+}
+
+func createConvertGaugeToSumFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+	args, ok := oArgs.(*convertGaugeToSumArguments)
+
+	if !ok {
+		return nil, fmt.Errorf("ConvertGaugeToSumFactory args must be of type *ConvertGaugeToSumArguments")
+	}
+
+	return convertGaugeToSum(args.StringAggTemp, args.Monotonic)
+}
+
+func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	var aggTemp pmetric.AggregationTemporality
 	switch stringAggTemp {
 	case "delta":
@@ -35,7 +43,7 @@ func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottl
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
 
-	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (interface{}, error) {
+	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeGauge {
 			return nil, nil

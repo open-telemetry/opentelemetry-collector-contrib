@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package syslog
 
@@ -22,33 +11,77 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split/splittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func TestInput(t *testing.T) {
-	basicConfig := func() *syslog.Config {
+var (
+	basicConfig = func() *syslog.Config {
 		cfg := syslog.NewConfigWithID("test_syslog_parser")
 		return cfg
 	}
+	OctetCase = syslog.Case{
+		Name: "RFC6587 Octet Counting",
+		Config: func() *syslog.Config {
+			cfg := basicConfig()
+			cfg.Protocol = syslog.RFC5424
+			cfg.EnableOctetCounting = true
+			return cfg
+		}(),
+		Input: &entry.Entry{
+			Body: `215 <86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile215 <86>1 2016-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile215 <86>1 2017-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile`,
+		},
+		Expect: &entry.Entry{
+			Timestamp:    time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.UTC),
+			Severity:     entry.Info,
+			SeverityText: "info",
+			Attributes: map[string]any{
+				"appname":  "SecureAuth0",
+				"facility": 10,
+				"hostname": "192.168.2.132",
+				"message":  "Found the user for retrieving user's profile",
+				"msg_id":   "ID52020",
+				"priority": 86,
+				"proc_id":  "23108",
+				"structured_data": map[string]any{
+					"SecureAuth@27389": map[string]any{
+						"PEN":             "27389",
+						"Realm":           "SecureAuth0",
+						"UserHostAddress": "192.168.2.132",
+						"UserID":          "Tester2",
+					},
+				},
+				"version": 1,
+			},
+			Body: `215 <86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile`,
+		},
+		ValidForTCP: true,
+	}
+)
+
+func TestInput(t *testing.T) {
 
 	cases, err := syslog.CreateCases(basicConfig)
 	require.NoError(t, err)
+	cases = append(cases, OctetCase)
 
 	for _, tc := range cases {
+		cfg := tc.Config.BaseConfig
 		if tc.ValidForTCP {
 			t.Run(fmt.Sprintf("TCP-%s", tc.Name), func(t *testing.T) {
-				InputTest(t, NewConfigWithTCP(&tc.Config.BaseConfig), tc)
+				InputTest(t, NewConfigWithTCP(&cfg), tc)
 			})
 		}
 
 		if tc.ValidForUDP {
 			t.Run(fmt.Sprintf("UDP-%s", tc.Name), func(t *testing.T) {
-				InputTest(t, NewConfigWithUDP(&tc.Config.BaseConfig), tc)
+				InputTest(t, NewConfigWithUDP(&cfg), tc)
 			})
 		}
 	}
@@ -63,7 +96,7 @@ func InputTest(t *testing.T, cfg *Config, tc syslog.Case) {
 	p, err := pipeline.NewDirectedPipeline(ops)
 	require.NoError(t, err)
 
-	err = p.Start(testutil.NewMockPersister("test"))
+	err = p.Start(testutil.NewUnscopedMockPersister())
 	require.NoError(t, err)
 
 	var conn net.Conn
@@ -147,4 +180,60 @@ func NewConfigWithUDP(syslogCfg *syslog.BaseConfig) *Config {
 	cfg.UDP.ListenAddress = ":12032"
 	cfg.OutputIDs = []string{"fake"}
 	return cfg
+}
+
+func TestOctetFramingSplitFunc(t *testing.T) {
+	testCases := []struct {
+		name  string
+		input []byte
+		steps []splittest.Step
+	}{
+		{
+			name:  "OneLogSimple",
+			input: []byte(`17 my log LOGEND 123`),
+			steps: []splittest.Step{
+				splittest.ExpectToken(`17 my log LOGEND 123`),
+			},
+		},
+		{
+			name:  "TwoLogsSimple",
+			input: []byte(`17 my log LOGEND 12317 my log LOGEND 123`),
+			steps: []splittest.Step{
+				splittest.ExpectToken(`17 my log LOGEND 123`),
+				splittest.ExpectToken(`17 my log LOGEND 123`),
+			},
+		},
+		{
+			name:  "NoMatches",
+			input: []byte(`no matches in it`),
+			steps: []splittest.Step{
+				splittest.ExpectToken(`no matches in it`),
+			},
+		},
+		{
+			name:  "NonMatchesAfter",
+			input: []byte(`17 my log LOGEND 123my log LOGEND 12317 my log LOGEND 123`),
+			steps: []splittest.Step{
+				splittest.ExpectToken(`17 my log LOGEND 123`),
+				splittest.ExpectToken(`my log LOGEND 12317 my log LOGEND 123`),
+			},
+		},
+		{
+			name: "HugeLog10000",
+			input: func() []byte {
+				newRaw := splittest.GenerateBytes(10000)
+				newRaw = append([]byte(`10000 `), newRaw...)
+				return newRaw
+			}(),
+			steps: []splittest.Step{
+				splittest.ExpectToken(`10000 ` + string(splittest.GenerateBytes(10000))),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		splitFunc, err := OctetSplitFuncBuilder(nil)
+		require.NoError(t, err)
+		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
+	}
 }

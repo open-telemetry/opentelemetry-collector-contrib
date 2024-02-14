@@ -1,19 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-//go:build windows
-// +build windows
+// SPDX-License-Identifier: Apache-2.0
 
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
@@ -42,7 +28,9 @@ type EventXML struct {
 	Opcode           string      `xml:"System>Opcode"`
 	RenderedKeywords []string    `xml:"RenderingInfo>Keywords>Keyword"`
 	Keywords         []string    `xml:"System>Keywords"`
-	EventData        []string    `xml:"EventData>Data"`
+	Security         *Security   `xml:"System>Security"`
+	Execution        *Execution  `xml:"System>Execution"`
+	EventData        EventData   `xml:"EventData"`
 }
 
 // parseTimestamp will parse the timestamp of the event.
@@ -88,7 +76,7 @@ func (e *EventXML) parseSeverity() entry.Severity {
 }
 
 // parseBody will parse a body from the event.
-func (e *EventXML) parseBody() map[string]interface{} {
+func (e *EventXML) parseBody() map[string]any {
 	message, details := e.parseMessage()
 
 	level := e.RenderedLevel
@@ -111,12 +99,12 @@ func (e *EventXML) parseBody() map[string]interface{} {
 		keywords = e.Keywords
 	}
 
-	body := map[string]interface{}{
-		"event_id": map[string]interface{}{
+	body := map[string]any{
+		"event_id": map[string]any{
 			"qualifiers": e.EventID.Qualifiers,
 			"id":         e.EventID.ID,
 		},
-		"provider": map[string]interface{}{
+		"provider": map[string]any{
 			"name":         e.Provider.Name,
 			"guid":         e.Provider.GUID,
 			"event_source": e.Provider.EventSourceName,
@@ -130,22 +118,61 @@ func (e *EventXML) parseBody() map[string]interface{} {
 		"task":        task,
 		"opcode":      opcode,
 		"keywords":    keywords,
-		"event_data":  e.EventData,
+		"event_data":  parseEventData(e.EventData),
 	}
+
 	if len(details) > 0 {
 		body["details"] = details
 	}
+
+	if e.Security != nil && e.Security.UserID != "" {
+		body["security"] = map[string]any{
+			"user_id": e.Security.UserID,
+		}
+	}
+
+	if e.Execution != nil {
+		body["execution"] = e.Execution.asMap()
+	}
+
 	return body
 }
 
 // parseMessage will attempt to parse a message into a message and details
-func (e *EventXML) parseMessage() (string, map[string]interface{}) {
+func (e *EventXML) parseMessage() (string, map[string]any) {
 	switch e.Channel {
 	case "Security":
 		return parseSecurity(e.Message)
 	default:
 		return e.Message, nil
 	}
+}
+
+// parse event data into a map[string]interface
+// see: https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-datafieldtype-complextype
+func parseEventData(eventData EventData) map[string]any {
+	outputMap := make(map[string]any, 3)
+	if eventData.Name != "" {
+		outputMap["name"] = eventData.Name
+	}
+	if eventData.Binary != "" {
+		outputMap["binary"] = eventData.Binary
+	}
+
+	if len(eventData.Data) == 0 {
+		return outputMap
+	}
+
+	dataMaps := make([]any, len(eventData.Data))
+	for i, data := range eventData.Data {
+		dataMaps[i] = map[string]any{
+			data.Name: data.Value,
+		}
+	}
+
+	outputMap["data"] = dataMaps
+
+	return outputMap
 }
 
 // unmarshalEventXML will unmarshal EventXML from xml bytes.
@@ -173,4 +200,65 @@ type Provider struct {
 	Name            string `xml:"Name,attr"`
 	GUID            string `xml:"Guid,attr"`
 	EventSourceName string `xml:"EventSourceName,attr"`
+}
+
+type EventData struct {
+	// https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-eventdatatype-complextype
+	// ComplexData is not supported.
+	Name   string `xml:"Name,attr"`
+	Data   []Data `xml:"Data"`
+	Binary string `xml:"Binary"`
+}
+
+type Data struct {
+	// https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-datafieldtype-complextype
+	Name  string `xml:"Name,attr"`
+	Value string `xml:",chardata"`
+}
+
+// Security contains info pertaining to the user triggering the event.
+type Security struct {
+	UserID string `xml:"UserID,attr"`
+}
+
+// Execution contains info pertaining to the process that triggered the event.
+type Execution struct {
+	// ProcessID and ThreadID are required on execution info
+	ProcessID uint `xml:"ProcessID,attr"`
+	ThreadID  uint `xml:"ThreadID,attr"`
+	// These remaining fields are all optional for execution info
+	ProcessorID   *uint `xml:"ProcessorID,attr"`
+	SessionID     *uint `xml:"SessionID,attr"`
+	KernelTime    *uint `xml:"KernelTime,attr"`
+	UserTime      *uint `xml:"UserTime,attr"`
+	ProcessorTime *uint `xml:"ProcessorTime,attr"`
+}
+
+func (e Execution) asMap() map[string]any {
+	result := map[string]any{
+		"process_id": e.ProcessID,
+		"thread_id":  e.ThreadID,
+	}
+
+	if e.ProcessorID != nil {
+		result["processor_id"] = *e.ProcessorID
+	}
+
+	if e.SessionID != nil {
+		result["session_id"] = *e.SessionID
+	}
+
+	if e.KernelTime != nil {
+		result["kernel_time"] = *e.KernelTime
+	}
+
+	if e.UserTime != nil {
+		result["user_time"] = *e.UserTime
+	}
+
+	if e.ProcessorTime != nil {
+		result["processor_time"] = *e.ProcessorTime
+	}
+
+	return result
 }

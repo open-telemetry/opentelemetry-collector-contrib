@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package dockerobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver"
 
@@ -18,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
 // Config defines configuration for docker observer
@@ -55,15 +46,15 @@ type Config struct {
 	CacheSyncInterval time.Duration `mapstructure:"cache_sync_interval"`
 
 	// Docker client API version. Default is 1.22
-	DockerAPIVersion float64 `mapstructure:"api_version"`
+	DockerAPIVersion string `mapstructure:"api_version"`
 }
 
 func (config Config) Validate() error {
 	if config.Endpoint == "" {
 		return errors.New("endpoint must be specified")
 	}
-	if config.DockerAPIVersion < minimalRequiredDockerAPIVersion {
-		return fmt.Errorf("api_version must be at least %v", minimalRequiredDockerAPIVersion)
+	if err := docker.VersionIsValidAndGTE(config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
+		return err
 	}
 	if config.Timeout == 0 {
 		return fmt.Errorf("timeout must be specified")

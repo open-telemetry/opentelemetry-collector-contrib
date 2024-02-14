@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package entry // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 
@@ -65,11 +54,11 @@ func (f BodyField) String() string {
 
 // Get will retrieve a value from an entry's body using the field.
 // It will return the value and whether the field existed.
-func (f BodyField) Get(entry *Entry) (interface{}, bool) {
-	var currentValue interface{} = entry.Body
+func (f BodyField) Get(entry *Entry) (any, bool) {
+	var currentValue = entry.Body
 
 	for _, key := range f.Keys {
-		currentMap, ok := currentValue.(map[string]interface{})
+		currentMap, ok := currentValue.(map[string]any)
 		if !ok {
 			return nil, false
 		}
@@ -85,8 +74,8 @@ func (f BodyField) Get(entry *Entry) (interface{}, bool) {
 
 // Set will set a value on an entry's body using the field.
 // If a key already exists, it will be overwritten.
-func (f BodyField) Set(entry *Entry, value interface{}) error {
-	mapValue, isMapValue := value.(map[string]interface{})
+func (f BodyField) Set(entry *Entry, value any) error {
+	mapValue, isMapValue := value.(map[string]any)
 	if isMapValue {
 		f.Merge(entry, mapValue)
 		return nil
@@ -97,9 +86,9 @@ func (f BodyField) Set(entry *Entry, value interface{}) error {
 		return nil
 	}
 
-	currentMap, ok := entry.Body.(map[string]interface{})
+	currentMap, ok := entry.Body.(map[string]any)
 	if !ok {
-		currentMap = map[string]interface{}{}
+		currentMap = map[string]any{}
 		entry.Body = currentMap
 	}
 
@@ -115,10 +104,10 @@ func (f BodyField) Set(entry *Entry, value interface{}) error {
 
 // Merge will attempt to merge the contents of a map into an entry's body.
 // It will overwrite any intermediate values as necessary.
-func (f BodyField) Merge(entry *Entry, mapValues map[string]interface{}) {
-	currentMap, ok := entry.Body.(map[string]interface{})
+func (f BodyField) Merge(entry *Entry, mapValues map[string]any) {
+	currentMap, ok := entry.Body.(map[string]any)
 	if !ok {
-		currentMap = map[string]interface{}{}
+		currentMap = map[string]any{}
 		entry.Body = currentMap
 	}
 
@@ -133,7 +122,7 @@ func (f BodyField) Merge(entry *Entry, mapValues map[string]interface{}) {
 
 // Delete removes a value from an entry's body using the field.
 // It will return the deleted value and whether the field existed.
-func (f BodyField) Delete(entry *Entry) (interface{}, bool) {
+func (f BodyField) Delete(entry *Entry) (any, bool) {
 	if f.isRoot() {
 		oldBody := entry.Body
 		entry.Body = nil
@@ -142,7 +131,7 @@ func (f BodyField) Delete(entry *Entry) (interface{}, bool) {
 
 	currentValue := entry.Body
 	for i, key := range f.Keys {
-		currentMap, ok := currentValue.(map[string]interface{})
+		currentMap, ok := currentValue.(map[string]any)
 		if !ok {
 			break
 		}
@@ -186,7 +175,7 @@ func (f *BodyField) UnmarshalJSON(raw []byte) error {
 }
 
 // UnmarshalYAML will attempt to unmarshal a field from YAML.
-func (f *BodyField) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (f *BodyField) UnmarshalYAML(unmarshal func(any) error) error {
 	var value string
 	if err := unmarshal(&value); err != nil {
 		return fmt.Errorf("the field is not a string: %w", err)

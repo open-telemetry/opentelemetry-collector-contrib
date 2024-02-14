@@ -1,0 +1,13 @@
+type: otlpjsonfile
+
+status:
+  class: receiver
+  stability:
+    alpha: [traces, metrics, logs]
+  distributions: [contrib, sumo]
+  codeowners:
+    active: [djaglowski, atoulme]
+tests:
+  config:
+    include:
+      - "/tmp/*.log"

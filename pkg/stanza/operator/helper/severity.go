@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
@@ -25,8 +14,9 @@ import (
 
 // SeverityParser is a helper that parses severity onto an entry.
 type SeverityParser struct {
-	ParseFrom entry.Field
-	Mapping   severityMap
+	ParseFrom     entry.Field
+	Mapping       severityMap
+	overwriteText bool
 }
 
 // Parse will parse severity from a field and attach it to the entry
@@ -44,6 +34,9 @@ func (p *SeverityParser) Parse(ent *entry.Entry) error {
 	if err != nil {
 		return errors.Wrap(err, "parse")
 	}
+	if p.overwriteText && severity != entry.Default {
+		sevText = severity.String()
+	}
 
 	ent.Severity = severity
 	ent.SeverityText = sevText
@@ -56,7 +49,7 @@ type severityMap map[string]entry.Severity
 //  1. severity level if found, or default level
 //  2. string version of input value
 //  3. error if invalid input type
-func (m severityMap) find(value interface{}) (entry.Severity, string, error) {
+func (m severityMap) find(value any) (entry.Severity, string, error) {
 	switch v := value.(type) {
 	case int:
 		strV := strconv.Itoa(v)

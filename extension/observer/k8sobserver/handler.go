@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 
@@ -40,7 +29,7 @@ type handler struct {
 
 func (h *handler) ListEndpoints() []observer.Endpoint {
 	var endpoints []observer.Endpoint
-	h.endpoints.Range(func(endpointID, endpoint interface{}) bool {
+	h.endpoints.Range(func(endpointID, endpoint any) bool {
 		if e, ok := endpoint.(observer.Endpoint); ok {
 			endpoints = append(endpoints, e)
 		} else {
@@ -52,12 +41,14 @@ func (h *handler) ListEndpoints() []observer.Endpoint {
 }
 
 // OnAdd is called in response to a new pod or node being detected.
-func (h *handler) OnAdd(objectInterface interface{}) {
+func (h *handler) OnAdd(objectInterface any, _ bool) {
 	var endpoints []observer.Endpoint
 
 	switch object := objectInterface.(type) {
 	case *v1.Pod:
 		endpoints = convertPodToEndpoints(h.idNamespace, object)
+	case *v1.Service:
+		endpoints = convertServiceToEndpoints(h.idNamespace, object)
 	case *v1.Node:
 		endpoints = append(endpoints, convertNodeToEndpoint(h.idNamespace, object))
 	default: // unsupported
@@ -70,7 +61,7 @@ func (h *handler) OnAdd(objectInterface interface{}) {
 }
 
 // OnUpdate is called in response to an existing pod or node changing.
-func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
+func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
 	oldEndpoints := map[observer.EndpointID]observer.Endpoint{}
 	newEndpoints := map[observer.EndpointID]observer.Endpoint{}
 
@@ -78,6 +69,7 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
 	case *v1.Pod:
 		newPod, ok := newObjectInterface.(*v1.Pod)
 		if !ok {
+			h.logger.Warn("skip updating endpoint for pod as the update is of different type", zap.Any("oldPod", oldObjectInterface), zap.Any("newObject", newObjectInterface))
 			return
 		}
 		for _, e := range convertPodToEndpoints(h.idNamespace, oldObject) {
@@ -87,9 +79,23 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
 			newEndpoints[e.ID] = e
 		}
 
+	case *v1.Service:
+		newService, ok := newObjectInterface.(*v1.Service)
+		if !ok {
+			h.logger.Warn("skip updating endpoint for service as the update is of different type", zap.Any("oldService", oldObjectInterface), zap.Any("newObject", newObjectInterface))
+			return
+		}
+		for _, e := range convertServiceToEndpoints(h.idNamespace, oldObject) {
+			oldEndpoints[e.ID] = e
+		}
+		for _, e := range convertServiceToEndpoints(h.idNamespace, newService) {
+			newEndpoints[e.ID] = e
+		}
+
 	case *v1.Node:
 		newNode, ok := newObjectInterface.(*v1.Node)
 		if !ok {
+			h.logger.Warn("skip updating endpoint for node as the update is of different type", zap.Any("oldNode", oldObjectInterface), zap.Any("newObject", newObjectInterface))
 			return
 		}
 		oldEndpoint := convertNodeToEndpoint(h.idNamespace, oldObject)
@@ -142,7 +148,7 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
 }
 
 // OnDelete is called in response to a pod or node being deleted.
-func (h *handler) OnDelete(objectInterface interface{}) {
+func (h *handler) OnDelete(objectInterface any) {
 	var endpoints []observer.Endpoint
 
 	switch object := objectInterface.(type) {
@@ -154,6 +160,10 @@ func (h *handler) OnDelete(objectInterface interface{}) {
 	case *v1.Pod:
 		if object != nil {
 			endpoints = convertPodToEndpoints(h.idNamespace, object)
+		}
+	case *v1.Service:
+		if object != nil {
+			endpoints = convertServiceToEndpoints(h.idNamespace, object)
 		}
 	case *v1.Node:
 		if object != nil {

@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
@@ -68,7 +57,7 @@ func newSourceFormats(cfg *Config) sourceFormats {
 // format converts sourceFormat to string.
 // Takes fields and put into template (%s placeholders) in order defined by matches
 func (s *sourceFormat) format(f fields) string {
-	labels := make([]interface{}, 0, len(s.matches))
+	labels := make([]any, 0, len(s.matches))
 
 	for _, matchset := range s.matches {
 		v, ok := f.orig.Get(matchset)

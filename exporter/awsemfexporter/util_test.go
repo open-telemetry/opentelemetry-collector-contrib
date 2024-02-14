@@ -1,32 +1,18 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awsemfexporter
 
 import (
 	"testing"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
 
 func TestReplacePatternValidTaskId(t *testing.T) {
@@ -41,6 +27,20 @@ func TestReplacePatternValidTaskId(t *testing.T) {
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
 
 	assert.Equal(t, "test-task-id", s)
+	assert.True(t, success)
+}
+
+func TestReplacePatternValidServiceName(t *testing.T) {
+	logger := zap.NewNop()
+
+	input := "{ServiceName}"
+
+	attrMap := pcommon.NewMap()
+	attrMap.PutStr("service.name", "some-test-service")
+
+	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
+
+	assert.Equal(t, "some-test-service", s)
 	assert.True(t, success)
 }
 
@@ -175,46 +175,42 @@ func TestReplacePatternValidTaskDefinitionFamily(t *testing.T) {
 }
 
 func TestGetNamespace(t *testing.T) {
-	defaultMetric := createMetricTestData()
+	defaultRM := createTestResourceMetrics()
 	testCases := []struct {
 		testName        string
-		metric          *agentmetricspb.ExportMetricsServiceRequest
+		rm              pmetric.ResourceMetrics
 		configNamespace string
 		namespace       string
 	}{
 		{
 			"non-empty namespace",
-			defaultMetric,
+			defaultRM,
 			"namespace",
 			"namespace",
 		},
 		{
 			"empty namespace",
-			defaultMetric,
+			defaultRM,
 			"",
 			"myServiceNS/myServiceName",
 		},
 		{
 			"empty namespace, no service namespace",
-			&agentmetricspb.ExportMetricsServiceRequest{
-				Resource: &resourcepb.Resource{
-					Labels: map[string]string{
-						conventions.AttributeServiceName: "myServiceName",
-					},
-				},
-			},
+			func() pmetric.ResourceMetrics {
+				rm := pmetric.NewResourceMetrics()
+				rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "myServiceName")
+				return rm
+			}(),
 			"",
 			"myServiceName",
 		},
 		{
 			"empty namespace, no service name",
-			&agentmetricspb.ExportMetricsServiceRequest{
-				Resource: &resourcepb.Resource{
-					Labels: map[string]string{
-						conventions.AttributeServiceNamespace: "myServiceNS",
-					},
-				},
-			},
+			func() pmetric.ResourceMetrics {
+				rm := pmetric.NewResourceMetrics()
+				rm.Resource().Attributes().PutStr(conventions.AttributeServiceNamespace, "myServiceNS")
+				return rm
+			}(),
 			"",
 			"myServiceNS",
 		},
@@ -222,52 +218,30 @@ func TestGetNamespace(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			rms := internaldata.OCToMetrics(tc.metric.Node, tc.metric.Resource, tc.metric.Metrics)
-			rm := rms.ResourceMetrics().At(0)
-			namespace := getNamespace(rm, tc.configNamespace)
+			namespace := getNamespace(tc.rm, tc.configNamespace)
 			assert.Equal(t, tc.namespace, namespace)
 		})
 	}
 }
 
 func TestGetLogInfo(t *testing.T) {
-	metrics := []*agentmetricspb.ExportMetricsServiceRequest{
-		{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
-				LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
-			},
-			Resource: &resourcepb.Resource{
-				Labels: map[string]string{
-					"aws.ecs.cluster.name":          "test-cluster-name",
-					"aws.ecs.task.id":               "test-task-id",
-					"k8s.node.name":                 "ip-192-168-58-245.ec2.internal",
-					"aws.ecs.container.instance.id": "203e0410260d466bab7873bb4f317b4e",
-					"aws.ecs.task.family":           "test-task-definition-family",
-				},
-			},
-		},
-		{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
-				LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
-			},
-			Resource: &resourcepb.Resource{
-				Labels: map[string]string{
-					"ClusterName":          "test-cluster-name",
-					"TaskId":               "test-task-id",
-					"NodeName":             "ip-192-168-58-245.ec2.internal",
-					"ContainerInstanceId":  "203e0410260d466bab7873bb4f317b4e",
-					"TaskDefinitionFamily": "test-task-definition-family",
-				},
-			},
-		},
-	}
-
-	var rms []pmetric.ResourceMetrics
-	for _, md := range metrics {
-		rms = append(rms, internaldata.OCToMetrics(md.Node, md.Resource, md.Metrics).ResourceMetrics().At(0))
-	}
+	rm1 := pmetric.NewResourceMetrics()
+	rm1.Resource().Attributes().PutStr(conventions.AttributeServiceName, "myServiceName")
+	rm1.Resource().Attributes().PutStr(occonventions.AttributeExporterVersion, "SomeVersion")
+	rm1.Resource().Attributes().PutStr("aws.ecs.cluster.name", "test-cluster-name")
+	rm1.Resource().Attributes().PutStr("aws.ecs.task.id", "test-task-id")
+	rm1.Resource().Attributes().PutStr("k8s.node.name", "ip-192-168-58-245.ec2.internal")
+	rm1.Resource().Attributes().PutStr("aws.ecs.container.instance.id", "203e0410260d466bab7873bb4f317b4e")
+	rm1.Resource().Attributes().PutStr("aws.ecs.task.family", "test-task-definition-family")
+	rm2 := pmetric.NewResourceMetrics()
+	rm2.Resource().Attributes().PutStr(conventions.AttributeServiceName, "test-emf")
+	rm2.Resource().Attributes().PutStr(occonventions.AttributeExporterVersion, "SomeVersion")
+	rm2.Resource().Attributes().PutStr("ClusterName", "test-cluster-name")
+	rm2.Resource().Attributes().PutStr("TaskId", "test-task-id")
+	rm2.Resource().Attributes().PutStr("NodeName", "ip-192-168-58-245.ec2.internal")
+	rm2.Resource().Attributes().PutStr("ContainerInstanceId", "203e0410260d466bab7873bb4f317b4e")
+	rm2.Resource().Attributes().PutStr("TaskDefinitionFamily", "test-task-definition-family")
+	rms := []pmetric.ResourceMetrics{rm1, rm2}
 
 	testCases := []struct {
 		testName        string

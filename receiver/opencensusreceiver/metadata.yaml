@@ -1,0 +1,18 @@
+type: opencensus
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics, traces]
+  distributions:
+  - core
+  - contrib
+  - grafana
+  - observiq
+  - redhat
+  - sumo
+  codeowners:
+    active: [open-telemetry/collector-approvers]
+tests:
+  config:
+  skip_lifecycle: true

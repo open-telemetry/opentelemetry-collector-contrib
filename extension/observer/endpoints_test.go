@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package observer
 
@@ -60,7 +49,7 @@ func TestEndpointEnv(t *testing.T) {
 			},
 		},
 		{
-			name: "K8s port",
+			name: "K8s pod port",
 			endpoint: Endpoint{
 				ID:     EndpointID("port_id"),
 				Target: "192.68.73.2",
@@ -99,6 +88,42 @@ func TestEndpointEnv(t *testing.T) {
 					"namespace": "pod-namespace",
 				},
 				"transport": ProtocolTCP,
+			},
+		},
+		{
+			name: "Service",
+			endpoint: Endpoint{
+				ID:     EndpointID("service_id"),
+				Target: "service.namespace",
+				Details: &K8sService{
+					Name: "service_name",
+					UID:  "service-uid",
+					Labels: map[string]string{
+						"label_key": "label_val",
+					},
+					Annotations: map[string]string{
+						"annotation_1": "value_1",
+					},
+					Namespace:   "service-namespace",
+					ServiceType: "LoadBalancer",
+					ClusterIP:   "192.68.73.2",
+				},
+			},
+			want: EndpointEnv{
+				"type":     "k8s.service",
+				"endpoint": "service.namespace",
+				"id":       "service_id",
+				"name":     "service_name",
+				"labels": map[string]string{
+					"label_key": "label_val",
+				},
+				"annotations": map[string]string{
+					"annotation_1": "value_1",
+				},
+				"uid":          "service-uid",
+				"namespace":    "service-namespace",
+				"cluster_ip":   "192.68.73.2",
+				"service_type": "LoadBalancer",
 			},
 		},
 		{

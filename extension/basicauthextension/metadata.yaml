@@ -1,0 +1,20 @@
+type: basicauth
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions:
+  - contrib
+  - grafana
+  - liatrio
+  - observiq
+  - redhat
+  - splunk
+  - sumo
+  codeowners:
+    active: [jpkrohling, frzifus]
+    emeritus: [svrakitin]
+
+tests:
+  config:

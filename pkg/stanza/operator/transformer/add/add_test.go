@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 package add
 
 import (
@@ -34,14 +23,15 @@ type testCase struct {
 }
 
 func TestProcessAndBuild(t *testing.T) {
+	t.Setenv("TEST_EXPR_STRING_ENV", "val")
 	now := time.Now()
 	newTestEntry := func() *entry.Entry {
 		e := entry.New()
 		e.ObservedTimestamp = now
 		e.Timestamp = time.Unix(1586632809, 0)
-		e.Body = map[string]interface{}{
+		e.Body = map[string]any{
 			"key": "val",
-			"nested": map[string]interface{}{
+			"nested": map[string]any{
 				"nestedkey": "nestedval",
 			},
 		}
@@ -60,7 +50,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body.(map[string]interface{})["new"] = "randomMessage"
+				e.Body.(map[string]any)["new"] = "randomMessage"
 				return e
 			},
 			false,
@@ -76,7 +66,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body.(map[string]interface{})["new"] = "val_suffix"
+				e.Body.(map[string]any)["new"] = "val_suffix"
 				return e
 			},
 			false,
@@ -86,8 +76,8 @@ func TestProcessAndBuild(t *testing.T) {
 			func() *Config {
 				cfg := NewConfig()
 				cfg.Field = entry.NewBodyField("new")
-				cfg.Value = map[interface{}]interface{}{
-					"nest": map[interface{}]interface{}{
+				cfg.Value = map[any]any{
+					"nest": map[any]any{
 						"key": "val",
 					},
 				}
@@ -96,13 +86,13 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": "val",
-					"nested": map[string]interface{}{
+					"nested": map[string]any{
 						"nestedkey": "nestedval",
 					},
-					"new": map[interface{}]interface{}{
-						"nest": map[interface{}]interface{}{
+					"new": map[any]any{
+						"nest": map[any]any{
 							"key": "val",
 						},
 					},
@@ -122,7 +112,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{"new": "some.attribute"}
+				e.Attributes = map[string]any{"new": "some.attribute"}
 				return e
 			},
 			false,
@@ -138,7 +128,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]interface{}{"new": "some.resource"}
+				e.Resource = map[string]any{"new": "some.resource"}
 				return e
 			},
 			false,
@@ -154,7 +144,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]interface{}{"new": "val_suffix"}
+				e.Resource = map[string]any{"new": "val_suffix"}
 				return e
 			},
 			false,
@@ -170,9 +160,9 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": "val",
-					"nested": map[string]interface{}{
+					"nested": map[string]any{
 						"nestedkey": "nestedval",
 					},
 					"new": 1,
@@ -192,9 +182,9 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": "val",
-					"nested": map[string]interface{}{
+					"nested": map[string]any{
 						"nestedkey": "nestedval",
 					},
 					"new": []int{1, 2, 3, 4},
@@ -214,9 +204,9 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": []int{1, 2, 3, 4},
-					"nested": map[string]interface{}{
+					"nested": map[string]any{
 						"nestedkey": "nestedval",
 					},
 				}
@@ -235,7 +225,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]interface{}{
+				e.Resource = map[string]any{
 					"new": 1,
 				}
 				return e
@@ -253,7 +243,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"new": 1,
 				}
 				return e
@@ -265,7 +255,7 @@ func TestProcessAndBuild(t *testing.T) {
 			func() *Config {
 				cfg := NewConfig()
 				cfg.Field = entry.NewAttributeField("one", "two")
-				cfg.Value = map[string]interface{}{
+				cfg.Value = map[string]any{
 					"new": 1,
 				}
 				return cfg
@@ -273,9 +263,9 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				e.Attributes = map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"new": 1,
 						},
 					},
@@ -289,7 +279,7 @@ func TestProcessAndBuild(t *testing.T) {
 			func() *Config {
 				cfg := NewConfig()
 				cfg.Field = entry.NewResourceField("one", "two")
-				cfg.Value = map[string]interface{}{
+				cfg.Value = map[string]any{
 					"new": 1,
 				}
 				return cfg
@@ -297,12 +287,48 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				e.Resource = map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"new": 1,
 						},
 					},
+				}
+				return e
+			},
+			false,
+		},
+		{
+			"add_expr",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.Field = entry.NewAttributeField("fookey")
+				cfg.Value = "EXPR('foo_' + body.key)"
+				return cfg
+			}(),
+			newTestEntry,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]any{
+					"fookey": "foo_val",
+				}
+				return e
+			},
+			false,
+		},
+		{
+			"add_expr_env",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.Field = entry.NewAttributeField("fookey")
+				cfg.Value = "EXPR('foo_' + env('TEST_EXPR_STRING_ENV'))"
+				return cfg
+			}(),
+			newTestEntry,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]any{
+					"fookey": "foo_val",
 				}
 				return e
 			},

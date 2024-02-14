@@ -1,0 +1,15 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - name: summary.one
+            summary:
+              dataPoints:
+                - quantileValues:
+                    - quantile: 0.5
+                      value: 50
+                    - quantile: 0.9
+                      value: 90
+                    - quantile: 0.99
+                      value: 99
+        scope: {}

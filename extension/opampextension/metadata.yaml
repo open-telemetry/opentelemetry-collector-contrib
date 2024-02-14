@@ -1,0 +1,11 @@
+type: opamp
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  codeowners:
+    active: [portertech, evan-bradley, tigrannajaryan]
+
+tests:
+  config:

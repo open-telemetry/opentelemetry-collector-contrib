@@ -1,0 +1,12 @@
+type: collectd
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [atoulme]
+
+tests:
+  config:

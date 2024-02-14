@@ -102,8 +102,9 @@ processors:
             aggregation_type: sum
 
   transform/couchbase:
-    metrics:
-      queries:
+    metric_statements:
+    - context: datapoint
+      statements:
         - convert_gauge_to_sum("cumulative", true) where metric.name == "couchbase.bucket.operation.count"
         - set(metric.description, "Number of operations on the bucket.") where metric.name == "couchbase.bucket.operation.count"
         - set(metric.unit, "{operations}") where metric.name == "couchbase.bucket.operation.count"

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
@@ -30,7 +19,7 @@ func Test_mapToAdxLog(t *testing.T) {
 	logger := zap.NewNop()
 	epoch, _ := time.Parse("2006-01-02T15:04:05.999999999Z07:00", "1970-01-01T00:00:00.000000000Z")
 	defaultTime := pcommon.NewTimestampFromTime(epoch).AsTime().Format(time.RFC3339Nano)
-	tmap := make(map[string]interface{})
+	tmap := make(map[string]any)
 	tmap["key"] = "value"
 	tmap[hostkey] = testhost
 
@@ -178,8 +167,8 @@ func Test_mapToAdxLog(t *testing.T) {
 				{
 					Timestamp:          defaultTime,
 					ObservedTimestamp:  defaultTime,
-					ResourceAttributes: map[string]interface{}{},
-					LogsAttributes:     map[string]interface{}{},
+					ResourceAttributes: map[string]any{},
+					LogsAttributes:     map[string]any{},
 				},
 			},
 		},

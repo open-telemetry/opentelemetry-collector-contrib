@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 
@@ -114,13 +103,13 @@ func compareConfigToClient(t *testing.T, client *snmpClient, cfg *Config) {
 		case "auth_no_priv":
 			require.Equal(t, gosnmp.AuthNoPriv, client.client.GetMsgFlags())
 			require.Equal(t, cfg.AuthType, securityParams.AuthenticationProtocol)
-			require.Equal(t, cfg.AuthPassword, securityParams.AuthenticationPassphrase)
+			require.Equal(t, string(cfg.AuthPassword), securityParams.AuthenticationPassphrase)
 		case "auth_priv":
 			require.Equal(t, gosnmp.AuthPriv, client.client.GetMsgFlags())
 			require.Equal(t, cfg.AuthType, securityParams.AuthenticationProtocol.String())
-			require.Equal(t, cfg.AuthPassword, securityParams.AuthenticationPassphrase)
+			require.Equal(t, string(cfg.AuthPassword), securityParams.AuthenticationPassphrase)
 			require.Equal(t, cfg.PrivacyType, securityParams.PrivacyProtocol.String())
-			require.Equal(t, cfg.PrivacyPassword, securityParams.PrivacyPassphrase)
+			require.Equal(t, string(cfg.PrivacyPassword), securityParams.PrivacyPassphrase)
 		}
 	}
 }
@@ -215,7 +204,7 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "No OIDs does nothing",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
+				var expectedSNMPData []SNMPData
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				client := &snmpClient{
 					logger: zap.NewNop(),
@@ -230,7 +219,6 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client failures adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				getError := errors.New("Bad GET")
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("Get", []string{"1"}).Return(nil, getError)
@@ -244,13 +232,13 @@ func TestGetScalarData(t *testing.T) {
 				returnedSNMPData := client.GetScalarData(oidSlice, &scraperErrors)
 				expectedErr := fmt.Errorf("problem with getting scalar data: problem with SNMP GET for OIDs '%v': %w", oidSlice, getError)
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{
 			desc: "GoSNMP Client timeout failures tries to reset connection",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
+				var expectedSNMPData []SNMPData
 				getError := errors.New("request timeout (after 0 retries)")
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("Get", []string{"1"}).Return(nil, getError)
@@ -272,7 +260,6 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client reset connection fails on connect adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				getError := errors.New("request timeout (after 0 retries)")
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("Get", []string{"1"}).Return(nil, getError)
@@ -291,7 +278,7 @@ func TestGetScalarData(t *testing.T) {
 				expectedErr2 := fmt.Errorf("problem with getting scalar data: problem connecting while trying to reset connection: %w", connectErr)
 				expectedErr := fmt.Errorf(expectedErr1.Error() + "; " + expectedErr2.Error())
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{
@@ -332,7 +319,6 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client returned nil value does not return data",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				pdu := gosnmp.SnmpPDU{
 					Value: nil,
@@ -352,13 +338,12 @@ func TestGetScalarData(t *testing.T) {
 				returnedSNMPData := client.GetScalarData(oidSlice, &scraperErrors)
 				expectedErr := fmt.Errorf("problem with getting scalar data: data for OID '%s' not found", badOID)
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{
 			desc: "GoSNMP Client returned unsupported type value does not return data",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				pdu := gosnmp.SnmpPDU{
 					Value: true,
@@ -378,7 +363,7 @@ func TestGetScalarData(t *testing.T) {
 				returnedSNMPData := client.GetScalarData(oidSlice, &scraperErrors)
 				expectedErr := fmt.Errorf("problem with getting scalar data: data for OID '%s' not a supported type", badOID)
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{
@@ -473,7 +458,6 @@ func TestGetScalarData(t *testing.T) {
 		{
 			desc: "GoSNMP Client float data type with bad value adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				pdu1 := gosnmp.SnmpPDU{
 					Value: true,
@@ -491,13 +475,12 @@ func TestGetScalarData(t *testing.T) {
 				returnedSNMPData := client.GetScalarData(oidSlice, &scraperErrors)
 				expectedErr := fmt.Errorf("problem with getting scalar data: data for OID '1' not a supported type")
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{
 			desc: "GoSNMP Client float data type with bad string value adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				pdu1 := gosnmp.SnmpPDU{
 					Value: "bad",
@@ -515,16 +498,15 @@ func TestGetScalarData(t *testing.T) {
 				returnedSNMPData := client.GetScalarData(oidSlice, &scraperErrors)
 				expectedErr := fmt.Errorf("problem with getting scalar data: data for OID '1' not a supported type")
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{
 			desc: "GoSNMP Client int data type with bad value adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				pdu1 := gosnmp.SnmpPDU{
-					Value: uint64(math.MaxUint64),
+					Value: float64(math.MaxFloat64),
 					Name:  "1",
 					Type:  gosnmp.Counter64,
 				}
@@ -539,7 +521,7 @@ func TestGetScalarData(t *testing.T) {
 				returnedSNMPData := client.GetScalarData(oidSlice, &scraperErrors)
 				expectedErr := fmt.Errorf("problem with getting scalar data: data for OID '1' not a supported type")
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{
@@ -586,7 +568,6 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "No OIDs does nothing",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				client := &snmpClient{
 					logger: zap.NewNop(),
@@ -595,13 +576,12 @@ func TestGetIndexedData(t *testing.T) {
 				var scraperErrors scrapererror.ScrapeErrors
 				returnedSNMPData := client.GetIndexedData([]string{}, &scraperErrors)
 				require.NoError(t, scraperErrors.Combine())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{
 			desc: "GoSNMP Client failures adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				walkError := errors.New("Bad WALK")
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
@@ -615,13 +595,12 @@ func TestGetIndexedData(t *testing.T) {
 				returnedSNMPData := client.GetIndexedData(oidSlice, &scraperErrors)
 				expectedErr := fmt.Errorf("problem with getting indexed data: problem with SNMP WALK for OID '1': %w", walkError)
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{
 			desc: "GoSNMP Client timeout failures tries to reset connection",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				walkError := errors.New("request timeout (after 0 retries)")
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
@@ -637,13 +616,12 @@ func TestGetIndexedData(t *testing.T) {
 				returnedSNMPData := client.GetIndexedData(oidSlice, &scraperErrors)
 				expectedErr := fmt.Errorf("problem with getting indexed data: problem with SNMP WALK for OID '1': %w", walkError)
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{
 			desc: "GoSNMP Client reset connection fails on connect adds errors",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				walkError := errors.New("request timeout (after 0 retries)")
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
@@ -662,7 +640,7 @@ func TestGetIndexedData(t *testing.T) {
 				expectedErr2 := fmt.Errorf("problem with getting indexed data: problem connecting while trying to reset connection: %w", connectErr)
 				expectedErr := fmt.Errorf(expectedErr1.Error() + "; " + expectedErr2.Error())
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{
@@ -701,7 +679,6 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client returned nil value does not return data",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
 				badOID := "1.1"
@@ -720,13 +697,12 @@ func TestGetIndexedData(t *testing.T) {
 				returnedSNMPData := client.GetIndexedData(oidSlice, &scraperErrors)
 				expectedErr := fmt.Errorf("problem with getting indexed data: data for OID '%s' not found", badOID)
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{
 			desc: "GoSNMP Client returned unsupported type value does not return data",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
 				badOID := "1.1"
@@ -745,7 +721,7 @@ func TestGetIndexedData(t *testing.T) {
 				returnedSNMPData := client.GetIndexedData(oidSlice, &scraperErrors)
 				expectedErr := fmt.Errorf("problem with getting indexed data: data for OID '%s' not a supported type", badOID)
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{
@@ -844,7 +820,6 @@ func TestGetIndexedData(t *testing.T) {
 		{
 			desc: "GoSNMP Client float data type with bad value adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
 				pdu := gosnmp.SnmpPDU{
@@ -861,13 +836,12 @@ func TestGetIndexedData(t *testing.T) {
 				returnedSNMPData := client.GetIndexedData([]string{"1"}, &scraperErrors)
 				expectedErr := fmt.Errorf("problem with getting indexed data: data for OID '1.1' not a supported type")
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{
 			desc: "GoSNMP Client float data type with bad string value adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
 				pdu := gosnmp.SnmpPDU{
@@ -884,17 +858,16 @@ func TestGetIndexedData(t *testing.T) {
 				returnedSNMPData := client.GetIndexedData([]string{"1"}, &scraperErrors)
 				expectedErr := fmt.Errorf("problem with getting indexed data: data for OID '1.1' not a supported type")
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{
 			desc: "GoSNMP Client int data type with bad value adds error",
 			testFunc: func(t *testing.T) {
-				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
 				pdu := gosnmp.SnmpPDU{
-					Value: uint64(math.MaxUint64),
+					Value: float64(math.MaxFloat64),
 					Name:  "1.1",
 					Type:  gosnmp.Counter64,
 				}
@@ -907,7 +880,7 @@ func TestGetIndexedData(t *testing.T) {
 				returnedSNMPData := client.GetIndexedData([]string{"1"}, &scraperErrors)
 				expectedErr := fmt.Errorf("problem with getting indexed data: data for OID '1.1' not a supported type")
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
-				require.Equal(t, expectedSNMPData, returnedSNMPData)
+				require.Nil(t, returnedSNMPData)
 			},
 		},
 		{

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package awsxray
 
@@ -117,10 +106,10 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 					},
 				},
 			},
-			Annotations: map[string]interface{}{
+			Annotations: map[string]any{
 				"DDB.DescribeExistingTableAndPutToMissingTable.Annotation": "anno",
 			},
-			Metadata: map[string]map[string]interface{}{
+			Metadata: map[string]map[string]any{
 				"default": {
 					"DDB.DescribeExistingTableAndPutToMissingTable.AddMetadata": "meta",
 				},
@@ -163,9 +152,9 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 									Name:      String("connect"),
 									StartTime: aws.Float64(1596566305.5357504),
 									EndTime:   aws.Float64(1596566305.575329),
-									Metadata: map[string]map[string]interface{}{
+									Metadata: map[string]map[string]any{
 										"http": {
-											"connection": map[string]interface{}{
+											"connection": map[string]any{
 												"reused":   false,
 												"was_idle": false,
 											},
@@ -177,11 +166,11 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 											Name:      String("dns"),
 											StartTime: aws.Float64(1596566305.5357957),
 											EndTime:   aws.Float64(1596566305.5373216),
-											Metadata: map[string]map[string]interface{}{
+											Metadata: map[string]map[string]any{
 												"http": {
-													"dns": map[string]interface{}{
-														"addresses": []interface{}{
-															map[string]interface{}{
+													"dns": map[string]any{
+														"addresses": []any{
+															map[string]any{
 																"IP":   "52.94.10.94",
 																"Zone": "",
 															},
@@ -196,9 +185,9 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 											Name:      String("dial"),
 											StartTime: aws.Float64(1596566305.5373297),
 											EndTime:   aws.Float64(1596566305.537964),
-											Metadata: map[string]map[string]interface{}{
+											Metadata: map[string]map[string]any{
 												"http": {
-													"connect": map[string]interface{}{
+													"connect": map[string]any{
 														"network": "tcp",
 													},
 												},
@@ -209,9 +198,9 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 											Name:      String("tls"),
 											StartTime: aws.Float64(1596566305.5380135),
 											EndTime:   aws.Float64(1596566305.5753162),
-											Metadata: map[string]map[string]interface{}{
+											Metadata: map[string]map[string]any{
 												"http": {
-													"tls": map[string]interface{}{
+													"tls": map[string]any{
 														"cipher_suite":                  49199.0,
 														"did_resume":                    false,
 														"negotiated_protocol":           "http/1.1",

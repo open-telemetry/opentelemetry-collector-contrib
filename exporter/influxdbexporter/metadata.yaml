@@ -1,0 +1,13 @@
+type: influxdb
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib, observiq, liatrio]
+  codeowners:
+    active: [jacobmarble]
+
+tests:
+  config:
+  expect_consumer_error: true

@@ -1,0 +1,19 @@
+type: awscloudwatchlogs
+
+status:
+  class: exporter
+  stability:
+    beta: [logs]
+  distributions: [contrib, observiq, liatrio]
+  codeowners:
+    active: [boostchicken, bryan-aguilar, rapphil]
+
+tests:
+  config:
+    endpoint: http://localhost:0
+    region: local
+    sending_queue:
+      enabled: false
+    retry_on_failure:
+      enabled: false
+  expect_consumer_error: true

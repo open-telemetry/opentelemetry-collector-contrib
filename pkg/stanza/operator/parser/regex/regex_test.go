@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package regex
 
@@ -71,6 +60,9 @@ func TestParserInvalidType(t *testing.T) {
 
 func TestParserCache(t *testing.T) {
 	parser := newTestParser(t, "^(?P<key>cache)", 200)
+	defer func() {
+		require.NoError(t, parser.Stop())
+	}()
 	_, err := parser.parse([]int{})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as regex")
@@ -95,7 +87,7 @@ func TestParserRegex(t *testing.T) {
 			},
 			&entry.Entry{
 				Body: "a=b",
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"a": "b",
 				},
 			},
@@ -111,7 +103,7 @@ func TestParserRegex(t *testing.T) {
 			},
 			&entry.Entry{
 				Body: "a=b",
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"a": "b",
 				},
 			},
@@ -127,7 +119,7 @@ func TestParserRegex(t *testing.T) {
 			},
 			&entry.Entry{
 				Body: "coredns-5644d7b6d9-mzngq_kube-system_coredns-901f7510281180a402936c92f5bc0f3557f5a21ccb5a4591c5bf98f3ddbffdd6.log",
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"container_id":   "901f7510281180a402936c92f5bc0f3557f5a21ccb5a4591c5bf98f3ddbffdd6",
 					"container_name": "coredns",
 					"namespace":      "kube-system",
@@ -145,6 +137,10 @@ func TestParserRegex(t *testing.T) {
 
 			op, err := cfg.Build(testutil.Logger(t))
 			require.NoError(t, err)
+
+			defer func() {
+				require.NoError(t, op.Stop())
+			}()
 
 			fake := testutil.NewFakeOutput(t)
 			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))

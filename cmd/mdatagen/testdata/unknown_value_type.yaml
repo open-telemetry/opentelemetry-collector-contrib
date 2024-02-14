@@ -1,4 +1,12 @@
-name: metricreceiver
+type: metricreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+
 metrics:
   system.cpu.time:
     enabled: true
@@ -7,4 +15,4 @@ metrics:
     sum:
       value_type: unknown
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative

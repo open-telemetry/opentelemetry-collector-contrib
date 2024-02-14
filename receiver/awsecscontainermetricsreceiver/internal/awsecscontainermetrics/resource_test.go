@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awsecscontainermetrics
 
@@ -105,6 +94,7 @@ func TestTaskResource(t *testing.T) {
 		PullStoppedAt:    "2020-10-02T00:43:06.31288465Z",
 		KnownStatus:      "RUNNING",
 		LaunchType:       "EC2",
+		ServiceName:      "MyService",
 	}
 	r := taskResource(tm)
 	require.NotNil(t, r)
@@ -126,6 +116,7 @@ func TestTaskResource(t *testing.T) {
 		conventions.AttributeAWSECSLaunchtype:      conventions.AttributeAWSECSLaunchtypeEC2,
 		conventions.AttributeCloudRegion:           "us-west-2",
 		conventions.AttributeCloudAccountID:        "111122223333",
+		attributeECSServiceName:                    "MyService",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)
@@ -142,6 +133,7 @@ func TestTaskResourceWithClusterARN(t *testing.T) {
 		PullStoppedAt:    "2020-10-02T00:43:06.31288465Z",
 		KnownStatus:      "RUNNING",
 		LaunchType:       "EC2",
+		ServiceName:      "MyService",
 	}
 	r := taskResource(tm)
 	require.NotNil(t, r)
@@ -164,6 +156,7 @@ func TestTaskResourceWithClusterARN(t *testing.T) {
 		conventions.AttributeAWSECSLaunchtype:      conventions.AttributeAWSECSLaunchtypeEC2,
 		conventions.AttributeCloudRegion:           "us-west-2",
 		conventions.AttributeCloudAccountID:        "803860917211",
+		attributeECSServiceName:                    "MyService",
 	}
 
 	verifyAttributeMap(t, expected, attrMap)

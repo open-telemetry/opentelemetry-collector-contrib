@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 
@@ -46,12 +35,7 @@ func init() {
 	})
 }
 
-const (
-	// configSection is the name that must be used for the config settings
-	// in the configuration struct. The metadata mapstructure for the parser
-	// should use the same string.
-	configSection = "config"
-)
+var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config is the general configuration for the parser to be used.
 type Config struct {
@@ -68,10 +52,14 @@ type ParserConfig interface {
 	BuildParser() (Parser, error)
 }
 
-// LoadParserConfig is used to load the parser configuration according to the
-// specified parser type. It expects the passed viper to be pointing at the level
-// of the Config reference.
-func LoadParserConfig(cp *confmap.Conf, cfg *Config) error {
+// Unmarshal is used to load the parser configuration according to the
+// specified parser type.
+func (cfg *Config) Unmarshal(cp *confmap.Conf) error {
+	// If type is configured then use that, otherwise use default.
+	if configuredType, ok := cp.Get("type").(string); ok {
+		cfg.Type = configuredType
+	}
+
 	defaultCfgFn, ok := parserMap[cfg.Type]
 	if !ok {
 		return fmt.Errorf(
@@ -82,10 +70,5 @@ func LoadParserConfig(cp *confmap.Conf, cfg *Config) error {
 
 	cfg.Config = defaultCfgFn()
 
-	vParserCfg, errSub := cp.Sub(configSection)
-	if errSub != nil {
-		return errSub
-	}
-
-	return vParserCfg.Unmarshal(cfg.Config, confmap.WithErrorUnused())
+	return cp.Unmarshal(cfg)
 }

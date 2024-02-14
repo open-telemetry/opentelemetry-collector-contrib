@@ -1,0 +1,559 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: node_id
+          value:
+            stringValue: BB902
+    scopeMetrics:
+      - metrics:
+          - description: Minimum percentage of contiguous disk space free to the namespace across all devices
+            gauge:
+              dataPoints:
+                - asInt: "98"
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+            name: aerospike.namespace.disk.available
+            unit: '%'
+          - description: Percentage of the namespace's memory which is still free
+            gauge:
+              dataPoints:
+                - asInt: "95"
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+            name: aerospike.namespace.memory.free
+            unit: '%'
+          - description: Memory currently used by each component of the namespace
+            name: aerospike.namespace.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "8513765"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: data
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "41913920"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: index
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: sindex
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: set_index
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+            unit: By
+          - description: Number of scan operations performed on the namespace
+            name: aerospike.namespace.scan.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: aggr
+                    - key: result
+                      value:
+                        stringValue: abort
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: aggr
+                    - key: result
+                      value:
+                        stringValue: complete
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: aggr
+                    - key: result
+                      value:
+                        stringValue: error
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: basic
+                    - key: result
+                      value:
+                        stringValue: abort
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: basic
+                    - key: result
+                      value:
+                        stringValue: complete
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: basic
+                    - key: result
+                      value:
+                        stringValue: error
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: ops_bg
+                    - key: result
+                      value:
+                        stringValue: abort
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: ops_bg
+                    - key: result
+                      value:
+                        stringValue: complete
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: ops_bg
+                    - key: result
+                      value:
+                        stringValue: error
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: udf_bg
+                    - key: result
+                      value:
+                        stringValue: abort
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: udf_bg
+                    - key: result
+                      value:
+                        stringValue: complete
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: udf_bg
+                    - key: result
+                      value:
+                        stringValue: error
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+              isMonotonic: true
+            unit: '{scans}'
+        scope:
+          name: otelcol/aerospikereceiver
+  - resource:
+      attributes:
+        - key: node_id
+          value:
+            stringValue: BB904
+    scopeMetrics:
+      - metrics:
+          - description: Minimum percentage of contiguous disk space free to the namespace across all devices
+            gauge:
+              dataPoints:
+                - asInt: "98"
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+            name: aerospike.namespace.disk.available
+            unit: '%'
+          - description: Percentage of the namespace's memory which is still free
+            gauge:
+              dataPoints:
+                - asInt: "95"
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+            name: aerospike.namespace.memory.free
+            unit: '%'
+          - description: Memory currently used by each component of the namespace
+            name: aerospike.namespace.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "8522202"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: data
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "41955456"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: index
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: sindex
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: set_index
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+            unit: By
+          - description: Number of scan operations performed on the namespace
+            name: aerospike.namespace.scan.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: aggr
+                    - key: result
+                      value:
+                        stringValue: abort
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: aggr
+                    - key: result
+                      value:
+                        stringValue: complete
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: aggr
+                    - key: result
+                      value:
+                        stringValue: error
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: basic
+                    - key: result
+                      value:
+                        stringValue: abort
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: basic
+                    - key: result
+                      value:
+                        stringValue: complete
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: basic
+                    - key: result
+                      value:
+                        stringValue: error
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: ops_bg
+                    - key: result
+                      value:
+                        stringValue: abort
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: ops_bg
+                    - key: result
+                      value:
+                        stringValue: complete
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: ops_bg
+                    - key: result
+                      value:
+                        stringValue: error
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: udf_bg
+                    - key: result
+                      value:
+                        stringValue: abort
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: udf_bg
+                    - key: result
+                      value:
+                        stringValue: complete
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: udf_bg
+                    - key: result
+                      value:
+                        stringValue: error
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+              isMonotonic: true
+            unit: '{scans}'
+        scope:
+          name: otelcol/aerospikereceiver
+  - resource:
+      attributes:
+        - key: node_id
+          value:
+            stringValue: BB903
+    scopeMetrics:
+      - metrics:
+          - description: Minimum percentage of contiguous disk space free to the namespace across all devices
+            gauge:
+              dataPoints:
+                - asInt: "98"
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+            name: aerospike.namespace.disk.available
+            unit: '%'
+          - description: Percentage of the namespace's memory which is still free
+            gauge:
+              dataPoints:
+                - asInt: "95"
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+            name: aerospike.namespace.memory.free
+            unit: '%'
+          - description: Memory currently used by each component of the namespace
+            name: aerospike.namespace.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "8343140"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: data
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "41073920"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: index
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: sindex
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: set_index
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+            unit: By
+          - description: Number of scan operations performed on the namespace
+            name: aerospike.namespace.scan.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: aggr
+                    - key: result
+                      value:
+                        stringValue: abort
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: aggr
+                    - key: result
+                      value:
+                        stringValue: complete
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: aggr
+                    - key: result
+                      value:
+                        stringValue: error
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: basic
+                    - key: result
+                      value:
+                        stringValue: abort
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: basic
+                    - key: result
+                      value:
+                        stringValue: complete
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: basic
+                    - key: result
+                      value:
+                        stringValue: error
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: ops_bg
+                    - key: result
+                      value:
+                        stringValue: abort
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: ops_bg
+                    - key: result
+                      value:
+                        stringValue: complete
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: ops_bg
+                    - key: result
+                      value:
+                        stringValue: error
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: udf_bg
+                    - key: result
+                      value:
+                        stringValue: abort
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: udf_bg
+                    - key: result
+                      value:
+                        stringValue: complete
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: udf_bg
+                    - key: result
+                      value:
+                        stringValue: error
+                  startTimeUnixNano: "1653329630290831862"
+                  timeUnixNano: "1653329645321022166"
+              isMonotonic: true
+            unit: '{scans}'
+        scope:
+          name: otelcol/aerospikereceiver

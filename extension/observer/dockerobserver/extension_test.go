@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package dockerobserver
 
@@ -26,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver/internal/metadata"
 )
 
 func containerJSON(t *testing.T) dtypes.ContainerJSON {
@@ -104,7 +94,7 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 }
 
 func TestCollectEndpointsAllConfigSettings(t *testing.T) {
-	extAllSettings := loadConfig(t, component.NewIDWithName(typeStr, "all_settings"))
+	extAllSettings := loadConfig(t, component.NewIDWithName(metadata.Type, "all_settings"))
 	ext, err := newObserver(zap.NewNop(), extAllSettings)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
@@ -141,7 +131,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 }
 
 func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
-	extUseHostname := loadConfig(t, component.NewIDWithName(typeStr, "use_hostname_if_present"))
+	extUseHostname := loadConfig(t, component.NewIDWithName(metadata.Type, "use_hostname_if_present"))
 	ext, err := newObserver(zap.NewNop(), extUseHostname)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
@@ -178,7 +168,7 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 }
 
 func TestCollectEndpointsUseHostBindings(t *testing.T) {
-	extHostBindings := loadConfig(t, component.NewIDWithName(typeStr, "use_host_bindings"))
+	extHostBindings := loadConfig(t, component.NewIDWithName(metadata.Type, "use_host_bindings"))
 	ext, err := newObserver(zap.NewNop(), extHostBindings)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
@@ -215,7 +205,7 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 }
 
 func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
-	extIgnoreHostBindings := loadConfig(t, component.NewIDWithName(typeStr, "ignore_non_host_bindings"))
+	extIgnoreHostBindings := loadConfig(t, component.NewIDWithName(metadata.Type, "ignore_non_host_bindings"))
 	ext, err := newObserver(zap.NewNop(), extIgnoreHostBindings)
 	require.NoError(t, err)
 	require.NotNil(t, ext)

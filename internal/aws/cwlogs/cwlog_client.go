@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 
@@ -42,65 +31,60 @@ const (
 type Client struct {
 	svc          cloudwatchlogsiface.CloudWatchLogsAPI
 	logRetention int64
+	tags         map[string]*string
 	logger       *zap.Logger
 }
 
 // Create a log client based on the actual cloudwatch logs client.
-func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetention int64, logger *zap.Logger) *Client {
+func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetention int64, tags map[string]*string, logger *zap.Logger) *Client {
 	logClient := &Client{svc: svc,
 		logRetention: logRetention,
+		tags:         tags,
 		logger:       logger}
 	return logClient
 }
 
 // NewClient create Client
-func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, sess *session.Session) *Client {
+func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, tags map[string]*string, sess *session.Session, componentName string) *Client {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
-	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
-	return newCloudWatchLogClient(client, logRetention, logger)
+	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName, componentName))
+	return newCloudWatchLogClient(client, logRetention, tags, logger)
 }
 
 // PutLogEvents mainly handles different possible error could be returned from server side, and retries them
 // if necessary.
-func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retryCnt int) (*string, error) {
+func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retryCnt int) error {
 	var response *cloudwatchlogs.PutLogEventsOutput
 	var err error
-	var token = input.SequenceToken
-
+	// CloudWatch Logs API was changed to ignore the sequenceToken
+	// PutLogEvents actions are now accepted and never return
+	// InvalidSequenceTokenException or DataAlreadyAcceptedException even
+	// if the sequence token is not valid.
+	// Finally InvalidSequenceTokenException and DataAlreadyAcceptedException are
+	// never returned by the PutLogEvents action.
 	for i := 0; i <= retryCnt; i++ {
-		input.SequenceToken = token
 		response, err = client.svc.PutLogEvents(input)
 		if err != nil {
 			var awsErr awserr.Error
 			if !errors.As(err, &awsErr) {
 				client.logger.Error("Cannot cast PutLogEvents error into awserr.Error.", zap.Error(err))
-				return token, err
+				return err
 			}
 			switch e := awsErr.(type) {
 			case *cloudwatchlogs.InvalidParameterException:
 				client.logger.Error("cwlog_client: Error occurs in PutLogEvents, will not retry the request", zap.Error(e), zap.String("LogGroupName", *input.LogGroupName), zap.String("LogStreamName", *input.LogStreamName))
-				return token, err
-			case *cloudwatchlogs.InvalidSequenceTokenException: // Resend log events with new sequence token when InvalidSequenceTokenException happens
-				client.logger.Warn("cwlog_client: Error occurs in PutLogEvents, will search the next token and retry the request", zap.Error(e))
-				token = e.ExpectedSequenceToken
-				continue
-			case *cloudwatchlogs.DataAlreadyAcceptedException: // Skip batch if DataAlreadyAcceptedException happens
-				client.logger.Warn("cwlog_client: Error occurs in PutLogEvents, drop this request and continue to the next request", zap.Error(e))
-				token = e.ExpectedSequenceToken
-				return token, err
+				return err
 			case *cloudwatchlogs.OperationAbortedException: // Retry request if OperationAbortedException happens
 				client.logger.Warn("cwlog_client: Error occurs in PutLogEvents, will retry the request", zap.Error(e))
-				return token, err
+				return err
 			case *cloudwatchlogs.ServiceUnavailableException: // Retry request if ServiceUnavailableException happens
 				client.logger.Warn("cwlog_client: Error occurs in PutLogEvents, will retry the request", zap.Error(e))
-				return token, err
+				return err
 			case *cloudwatchlogs.ResourceNotFoundException:
-				tmpToken, tmpErr := client.CreateStream(input.LogGroupName, input.LogStreamName)
-				if tmpErr == nil {
-					if tmpToken == "" {
-						token = nil
-					}
+				tmpErr := client.CreateStream(input.LogGroupName, input.LogStreamName)
+				if tmpErr != nil {
+					return tmpErr
 				}
 				continue
 			default:
@@ -108,10 +92,10 @@ func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retr
 				// Drop request if ThrottlingException happens
 				if awsErr.Code() == errCodeThrottlingException {
 					client.logger.Warn("cwlog_client: Error occurs in PutLogEvents, will not retry the request", zap.Error(awsErr), zap.String("LogGroupName", *input.LogGroupName), zap.String("LogStreamName", *input.LogStreamName))
-					return token, err
+					return err
 				}
 				client.logger.Error("cwlog_client: Error occurs in PutLogEvents", zap.Error(awsErr))
-				return token, err
+				return err
 			}
 
 		}
@@ -132,7 +116,6 @@ func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retr
 			}
 
 			if response.NextSequenceToken != nil {
-				token = response.NextSequenceToken
 				break
 			}
 		}
@@ -140,11 +123,11 @@ func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retr
 	if err != nil {
 		client.logger.Error("All retries failed for PutLogEvents. Drop this request.", zap.Error(err))
 	}
-	return token, err
+	return err
 }
 
 // Prepare the readiness for the log group and log stream.
-func (client *Client) CreateStream(logGroup, streamName *string) (token string, e error) {
+func (client *Client) CreateStream(logGroup, streamName *string) error {
 	// CreateLogStream / CreateLogGroup
 	_, err := client.svc.CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
 		LogGroupName:  logGroup,
@@ -154,8 +137,10 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 		client.logger.Debug("cwlog_client: creating stream fail", zap.Error(err))
 		var awsErr awserr.Error
 		if errors.As(err, &awsErr) && awsErr.Code() == cloudwatchlogs.ErrCodeResourceNotFoundException {
+			// Create Log Group with tags if they exist and were specified in the config
 			_, err = client.svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
 				LogGroupName: logGroup,
+				Tags:         client.tags,
 			})
 			if err == nil {
 				// For newly created log groups, set the log retention polic if specified or non-zero.  Otheriwse, set to Never Expire
@@ -164,8 +149,8 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 					if err != nil {
 						var awsErr awserr.Error
 						if errors.As(err, &awsErr) {
-							client.logger.Debug("CreateLogStream / CreateLogGroup has errors related to log retention policy.", zap.String("LogGroupName", *logGroup), zap.String("LogStreamName", *streamName), zap.Error(e))
-							return token, err
+							client.logger.Debug("CreateLogStream / CreateLogGroup has errors related to log retention policy.", zap.String("LogGroupName", *logGroup), zap.String("LogStreamName", *streamName), zap.Error(err))
+							return err
 						}
 					}
 				}
@@ -180,20 +165,20 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 	if err != nil {
 		var awsErr awserr.Error
 		if errors.As(err, &awsErr) && awsErr.Code() == cloudwatchlogs.ErrCodeResourceAlreadyExistsException {
-			return "", nil
+			return nil
 		}
-		client.logger.Debug("CreateLogStream / CreateLogGroup has errors.", zap.String("LogGroupName", *logGroup), zap.String("LogStreamName", *streamName), zap.Error(e))
-		return token, err
+		client.logger.Debug("CreateLogStream / CreateLogGroup has errors.", zap.String("LogGroupName", *logGroup), zap.String("LogStreamName", *streamName), zap.Error(err))
+		return err
 	}
 
 	// After a log stream is created the token is always empty.
-	return "", nil
+	return nil
 }
 
-func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string) request.NamedHandler {
-	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version)
+func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string, componentName string) request.NamedHandler {
+	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, componentName)
 	if matchContainerInsightsPattern(logGroupName) {
-		fn = request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, "ContainerInsights")
+		fn = request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, componentName, "ContainerInsights")
 	}
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",

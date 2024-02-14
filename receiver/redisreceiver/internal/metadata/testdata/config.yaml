@@ -11,6 +11,8 @@ all_set:
       enabled: true
     redis.cmd.calls:
       enabled: true
+    redis.cmd.latency:
+      enabled: true
     redis.cmd.usec:
       enabled: true
     redis.commands:
@@ -61,6 +63,8 @@ all_set:
       enabled: true
     redis.replication.offset:
       enabled: true
+    redis.replication.replica_offset:
+      enabled: true
     redis.role:
       enabled: true
     redis.slaves.connected:
@@ -69,6 +73,10 @@ all_set:
       enabled: true
   resource_attributes:
     redis.version:
+      enabled: true
+    server.address:
+      enabled: true
+    server.port:
       enabled: true
 none_set:
   metrics:
@@ -82,6 +90,8 @@ none_set:
       enabled: false
     redis.cmd.calls:
       enabled: false
+    redis.cmd.latency:
+      enabled: false
     redis.cmd.usec:
       enabled: false
     redis.commands:
@@ -132,6 +142,8 @@ none_set:
       enabled: false
     redis.replication.offset:
       enabled: false
+    redis.replication.replica_offset:
+      enabled: false
     redis.role:
       enabled: false
     redis.slaves.connected:
@@ -140,4 +152,8 @@ none_set:
       enabled: false
   resource_attributes:
     redis.version:
+      enabled: false
+    server.address:
+      enabled: false
+    server.port:
       enabled: false

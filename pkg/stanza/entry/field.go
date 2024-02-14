@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package entry // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 
@@ -40,9 +29,9 @@ type RootableField struct {
 
 // FieldInterface is a field on an entry.
 type FieldInterface interface {
-	Get(*Entry) (interface{}, bool)
-	Set(entry *Entry, value interface{}) error
-	Delete(entry *Entry) (interface{}, bool)
+	Get(*Entry) (any, bool)
+	Set(entry *Entry, value any) error
+	Delete(entry *Entry) (any, bool)
 	String() string
 }
 
@@ -70,7 +59,7 @@ func (r *RootableField) UnmarshalJSON(raw []byte) error {
 }
 
 // UnmarshalYAML will unmarshal a field from YAML
-func (f *Field) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (f *Field) UnmarshalYAML(unmarshal func(any) error) error {
 	var s string
 	err := unmarshal(&s)
 	if err != nil {
@@ -81,7 +70,7 @@ func (f *Field) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 // UnmarshalYAML will unmarshal a field from YAML
-func (r *RootableField) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (r *RootableField) UnmarshalYAML(unmarshal func(any) error) error {
 	var s string
 	err := unmarshal(&s)
 	if err != nil {
@@ -215,6 +204,8 @@ func fromJSONDot(s string) ([]string, error) {
 		return nil, fmt.Errorf("found unclosed single quote")
 	case InUnbracketedToken:
 		fields = append(fields, s[tokenStart:])
+	case Begin, OutBracket:
+		// shouldn't be possible
 	}
 
 	if len(fields) == 0 {
@@ -260,15 +251,15 @@ func toJSONDot(prefix string, keys []string) string {
 
 // getNestedMap will get a nested map assigned to a key.
 // If the map does not exist, it will create and return it.
-func getNestedMap(currentMap map[string]interface{}, key string) map[string]interface{} {
+func getNestedMap(currentMap map[string]any, key string) map[string]any {
 	currentValue, ok := currentMap[key]
 	if !ok {
-		currentMap[key] = map[string]interface{}{}
+		currentMap[key] = map[string]any{}
 	}
 
-	nextMap, ok := currentValue.(map[string]interface{})
+	nextMap, ok := currentValue.(map[string]any)
 	if !ok {
-		nextMap = map[string]interface{}{}
+		nextMap = map[string]any{}
 		currentMap[key] = nextMap
 	}
 

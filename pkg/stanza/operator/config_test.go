@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package operator
 
@@ -34,7 +23,7 @@ func (f *FakeBuilder) Build(_ *zap.SugaredLogger) (Operator, error) {
 }
 func (f *FakeBuilder) ID() string     { return "operator" }
 func (f *FakeBuilder) Type() string   { return "operator" }
-func (f *FakeBuilder) SetID(s string) {}
+func (f *FakeBuilder) SetID(_ string) {}
 
 func TestUnmarshalJSONErrors(t *testing.T) {
 	t.Cleanup(func() {

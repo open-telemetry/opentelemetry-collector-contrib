@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fluentforwardreceiver
 
@@ -56,7 +45,7 @@ func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observ
 
 	connect := func() net.Conn {
 		conn, err := net.Dial("tcp", receiver.(*fluentReceiver).listener.Addr().String())
-		require.Nil(t, err)
+		require.NoError(t, err)
 		return conn
 	}
 
@@ -119,10 +108,10 @@ func TestMessageEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, plogtest.CompareLogs(Logs(Log{
+	require.NoError(t, plogtest.CompareLogs(logConstructor(Log{
 		Timestamp: 1593031012000000000,
 		Body:      pcommon.NewValueStr("..."),
-		Attributes: map[string]interface{}{
+		Attributes: map[string]any{
 			"container_id":   "b00a67eb645849d6ab38ff8beb4aad035cc7e917bf123c3e9057c7e89fc73d2d",
 			"container_name": "/unruffled_cannon",
 			"fluent.tag":     "b00a67eb6458",
@@ -149,11 +138,11 @@ func TestForwardEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, plogtest.CompareLogs(Logs(
+	require.NoError(t, plogtest.CompareLogs(logConstructor(
 		Log{
 			Timestamp: 1593032377776693638,
 			Body:      pcommon.NewValueEmpty(),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"Mem.free":   848908,
 				"Mem.total":  7155496,
 				"Mem.used":   6306588,
@@ -166,7 +155,7 @@ func TestForwardEvent(t *testing.T) {
 		Log{
 			Timestamp: 1593032378756829346,
 			Body:      pcommon.NewValueEmpty(),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"Mem.free":   848908,
 				"Mem.total":  7155496,
 				"Mem.used":   6306588,
@@ -203,7 +192,7 @@ func TestEventAcknowledgment(t *testing.T) {
 	require.Equal(t, len(b), n)
 
 	require.NoError(t, conn.SetReadDeadline(time.Now().Add(5*time.Second)))
-	resp := map[string]interface{}{}
+	resp := map[string]any{}
 	err = msgp.NewReader(conn).ReadMapStrIntf(resp)
 	require.NoError(t, err)
 
@@ -228,11 +217,11 @@ func TestForwardPackedEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, plogtest.CompareLogs(Logs(
+	require.NoError(t, plogtest.CompareLogs(logConstructor(
 		Log{
 			Timestamp: 1593032517024597622,
 			Body:      pcommon.NewValueStr("starting fluentd worker pid=17 ppid=7 worker=0"),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"fluent.tag": "fluent.info",
 				"pid":        17,
 				"ppid":       7,
@@ -242,21 +231,21 @@ func TestForwardPackedEvent(t *testing.T) {
 		Log{
 			Timestamp: 1593032517028573686,
 			Body:      pcommon.NewValueStr("delayed_commit_timeout is overwritten by ack_response_timeout"),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"fluent.tag": "fluent.info",
 			},
 		},
 		Log{
 			Timestamp: 1593032517028815948,
 			Body:      pcommon.NewValueStr("following tail of /var/log/kern.log"),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"fluent.tag": "fluent.info",
 			},
 		},
 		Log{
 			Timestamp: 1593032517031174229,
 			Body:      pcommon.NewValueStr("fluentd worker is now running worker=0"),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"fluent.tag": "fluent.info",
 				"worker":     0,
 			},
@@ -264,7 +253,7 @@ func TestForwardPackedEvent(t *testing.T) {
 		Log{
 			Timestamp: 1593032522187382822,
 			Body:      pcommon.NewValueStr("fluentd worker is now stopping worker=0"),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"fluent.tag": "fluent.info",
 				"worker":     0,
 			},
@@ -290,11 +279,11 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, plogtest.CompareLogs(Logs(
+	require.NoError(t, plogtest.CompareLogs(logConstructor(
 		Log{
 			Timestamp: 1593032426012197420,
 			Body:      pcommon.NewValueStr("starting fluentd worker pid=17 ppid=7 worker=0"),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"fluent.tag": "fluent.info",
 				"pid":        17,
 				"ppid":       7,
@@ -304,21 +293,21 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 		Log{
 			Timestamp: 1593032426013724933,
 			Body:      pcommon.NewValueStr("delayed_commit_timeout is overwritten by ack_response_timeout"),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"fluent.tag": "fluent.info",
 			},
 		},
 		Log{
 			Timestamp: 1593032426020510455,
 			Body:      pcommon.NewValueStr("following tail of /var/log/kern.log"),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"fluent.tag": "fluent.info",
 			},
 		},
 		Log{
 			Timestamp: 1593032426024346580,
 			Body:      pcommon.NewValueStr("fluentd worker is now running worker=0"),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"fluent.tag": "fluent.info",
 				"worker":     0,
 			},
@@ -326,7 +315,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 		Log{
 			Timestamp: 1593032434346935532,
 			Body:      pcommon.NewValueStr("fluentd worker is now stopping worker=0"),
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"fluent.tag": "fluent.info",
 				"worker":     0,
 			},

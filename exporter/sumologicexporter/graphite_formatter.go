@@ -1,16 +1,5 @@
-// Copyright 2021, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
@@ -54,7 +43,7 @@ func (gf *graphiteFormatter) escapeGraphiteString(value string) string {
 // format returns metric name basing on template for given fields nas metric name
 func (gf *graphiteFormatter) format(f fields, metricName string) string {
 	s := gf.template
-	labels := make([]interface{}, 0, len(s.matches))
+	labels := make([]any, 0, len(s.matches))
 
 	for _, matchset := range s.matches {
 		if matchset == graphiteMetricNamePlaceholder {
@@ -90,6 +79,8 @@ func (gf *graphiteFormatter) numberRecord(fs fields, name string, dataPoint pmet
 			dataPoint.IntValue(),
 			dataPoint.Timestamp()/pcommon.Timestamp(time.Second),
 		)
+	case pmetric.NumberDataPointValueTypeEmpty:
+		return ""
 	}
 	return ""
 }
@@ -99,7 +90,7 @@ func (gf *graphiteFormatter) metric2String(record metricPair) string {
 	var nextLines []string
 	fs := newFields(record.attributes)
 	name := record.metric.Name()
-
+	//exhaustive:enforce
 	switch record.metric.Type() {
 	case pmetric.MetricTypeGauge:
 		dps := record.metric.Gauge().DataPoints()
@@ -116,6 +107,8 @@ func (gf *graphiteFormatter) metric2String(record metricPair) string {
 	// Skip complex metrics
 	case pmetric.MetricTypeHistogram:
 	case pmetric.MetricTypeSummary:
+	case pmetric.MetricTypeEmpty:
+	case pmetric.MetricTypeExponentialHistogram:
 	}
 
 	return strings.Join(nextLines, "\n")

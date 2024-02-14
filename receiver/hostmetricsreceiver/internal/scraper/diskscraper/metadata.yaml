@@ -1,4 +1,6 @@
-name: hostmetricsreceiver/disk
+type: hostmetricsreceiver/disk
+
+parent: hostmetrics
 
 sem_conv_version: 1.9.0
 
@@ -19,7 +21,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [device, direction]
   system.disk.operations:
@@ -28,7 +30,7 @@ metrics:
     unit: "{operations}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [device, direction]
 
@@ -38,7 +40,7 @@ metrics:
     unit: s
     sum:
       value_type: double
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [device]
   system.disk.operation_time:
@@ -47,7 +49,7 @@ metrics:
     unit: s
     sum:
       value_type: double
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [device, direction]
   system.disk.weighted_io_time:
@@ -56,7 +58,7 @@ metrics:
     unit: s
     sum:
       value_type: double
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [device]
 
@@ -66,7 +68,7 @@ metrics:
     unit: "{operations}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     attributes: [device]
   system.disk.merged:
@@ -75,6 +77,6 @@ metrics:
     unit: "{operations}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [device, direction]

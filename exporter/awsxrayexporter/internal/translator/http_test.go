@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package translator
 
@@ -27,7 +16,7 @@ import (
 )
 
 func TestClientSpanWithURLAttribute(t *testing.T) {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPStatusCode] = 200
@@ -45,7 +34,7 @@ func TestClientSpanWithURLAttribute(t *testing.T) {
 }
 
 func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "api.example.com"
@@ -66,7 +55,7 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 }
 
 func TestClientSpanWithPeerAttributes(t *testing.T) {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPScheme] = "http"
 	attributes[conventions.AttributeNetPeerName] = "kb234.example.com"
@@ -91,7 +80,7 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 }
 
 func TestClientSpanWithHttpPeerAttributes(t *testing.T) {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPClientIP] = "1.2.3.4"
 	attributes[conventions.AttributeNetPeerIP] = "10.8.17.36"
 	span := constructHTTPClientSpan(attributes)
@@ -105,7 +94,7 @@ func TestClientSpanWithHttpPeerAttributes(t *testing.T) {
 }
 
 func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPScheme] = "http"
 	attributes[conventions.AttributeNetPeerIP] = "10.8.17.36"
@@ -124,7 +113,7 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 }
 
 func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeNetPeerIP] = "2001:db8:85a3::8a2e:370:7334"
@@ -143,7 +132,7 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 }
 
 func TestServerSpanWithURLAttribute(t *testing.T) {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
@@ -163,7 +152,7 @@ func TestServerSpanWithURLAttribute(t *testing.T) {
 }
 
 func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "api.example.com"
@@ -184,7 +173,7 @@ func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 }
 
 func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPServerName] = "api.example.com"
@@ -206,7 +195,7 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 }
 
 func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPScheme] = "http"
 	attributes[conventions.AttributeHostName] = "kb234.example.com"
@@ -230,7 +219,7 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 }
 
 func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPScheme] = "http"
 	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
@@ -255,7 +244,7 @@ func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 	assert.NotNil(t, filtered)
 }
 
-func constructHTTPClientSpan(attributes map[string]interface{}) ptrace.Span {
+func constructHTTPClientSpan(attributes map[string]any) ptrace.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -278,7 +267,7 @@ func constructHTTPClientSpan(attributes map[string]interface{}) ptrace.Span {
 	return span
 }
 
-func constructHTTPServerSpan(attributes map[string]interface{}) ptrace.Span {
+func constructHTTPServerSpan(attributes map[string]any) ptrace.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)

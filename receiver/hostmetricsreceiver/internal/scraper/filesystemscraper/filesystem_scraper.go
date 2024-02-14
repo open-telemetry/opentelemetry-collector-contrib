@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filesystemscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
 
@@ -21,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
@@ -46,9 +36,9 @@ type scraper struct {
 	fsFilter fsFilter
 
 	// for mocking gopsutil disk.Partitions & disk.Usage
-	bootTime   func() (uint64, error)
-	partitions func(bool) ([]disk.PartitionStat, error)
-	usage      func(string) (*disk.UsageStat, error)
+	bootTime   func(context.Context) (uint64, error)
+	partitions func(context.Context, bool) ([]disk.PartitionStat, error)
+	usage      func(context.Context, string) (*disk.UsageStat, error)
 }
 
 type deviceUsage struct {
@@ -63,12 +53,13 @@ func newFileSystemScraper(_ context.Context, settings receiver.CreateSettings, c
 		return nil, err
 	}
 
-	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTime, partitions: disk.Partitions, usage: disk.Usage, fsFilter: *fsFilter}
+	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, partitions: disk.PartitionsWithContext, usage: disk.UsageWithContext, fsFilter: *fsFilter}
 	return scraper, nil
 }
 
-func (s *scraper) start(context.Context, component.Host) error {
-	bootTime, err := s.bootTime()
+func (s *scraper) start(ctx context.Context, _ component.Host) error {
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
+	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
 	}
@@ -77,11 +68,12 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	var errors scrapererror.ScrapeErrors
-	partitions, err := s.partitions(s.config.IncludeVirtualFS)
+	partitions, err := s.partitions(ctx, s.config.IncludeVirtualFS)
 	if err != nil {
 		if len(partitions) == 0 {
 			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
@@ -103,7 +95,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			continue
 		}
 		translatedMountpoint := translateMountpoint(s.config.RootPath, partition.Mountpoint)
-		usage, usageErr := s.usage(translatedMountpoint)
+		usage, usageErr := s.usage(ctx, translatedMountpoint)
 		if usageErr != nil {
 			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", translatedMountpoint, usageErr))
 			continue

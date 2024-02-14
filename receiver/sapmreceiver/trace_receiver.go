@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package sapmreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 
@@ -29,15 +18,15 @@ import (
 	"github.com/signalfx/sapm-proto/sapmprotocol"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 var gzipWriterPool = &sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return gzip.NewWriter(io.Discard)
 	},
 }
@@ -57,7 +46,7 @@ type sapmReceiver struct {
 	// for every request. At some point this may be removed when there is actual content to return.
 	defaultResponse []byte
 
-	obsrecv *obsreport.Receiver
+	obsrecv *receiverhelper.ObsReport
 }
 
 // handleRequest parses an http request containing sapm and passes the trace data to the next consumer
@@ -167,7 +156,7 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 		return nil
 	}
 	// set up the listener
-	ln, err := sr.config.HTTPServerSettings.ToListener()
+	ln, err := sr.config.ServerConfig.ToListener()
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", sr.config.Endpoint, err)
 	}
@@ -177,7 +166,7 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 	nr.HandleFunc(sapmprotocol.TraceEndpointV2, sr.HTTPHandlerFunc)
 
 	// create a server with the handler
-	sr.server, err = sr.config.HTTPServerSettings.ToServer(host, sr.settings, nr)
+	sr.server, err = sr.config.ServerConfig.ToServer(host, sr.settings, nr)
 	if err != nil {
 		return err
 	}
@@ -187,7 +176,7 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 	go func() {
 		defer sr.shutdownWG.Done()
 		if errHTTP := sr.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			host.ReportFatalError(errHTTP)
+			sr.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 	return nil
@@ -222,7 +211,7 @@ func newReceiver(
 	if config.TLSSetting != nil {
 		transport = "https"
 	}
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             params.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: params,

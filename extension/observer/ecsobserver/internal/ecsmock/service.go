@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package ecsmock // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver/internal/ecsmock"
 
@@ -125,10 +114,8 @@ func (c *Cluster) DescribeTasksWithContext(_ context.Context, input *ecs.Describ
 	if err := checkCluster(input.Cluster, c.name); err != nil {
 		return nil, err
 	}
-	var (
-		failures []*ecs.Failure
-		tasks    []*ecs.Task
-	)
+	var failures []*ecs.Failure
+	tasks := make([]*ecs.Task, 0, len(input.Tasks))
 	for i, taskArn := range input.Tasks {
 		arn := aws.StringValue(taskArn)
 		task, ok := c.taskMap[arn]
@@ -160,10 +147,8 @@ func (c *Cluster) DescribeContainerInstancesWithContext(_ context.Context, input
 	if err := checkCluster(input.Cluster, c.name); err != nil {
 		return nil, err
 	}
-	var (
-		instances []*ecs.ContainerInstance
-		failures  []*ecs.Failure
-	)
+	var failures []*ecs.Failure
+	instances := make([]*ecs.ContainerInstance, 0, len(input.ContainerInstances))
 	for _, cid := range input.ContainerInstances {
 		ci, ok := c.containerInstanceMap[aws.StringValue(cid)]
 		if !ok {
@@ -241,10 +226,8 @@ func (c *Cluster) DescribeServicesWithContext(_ context.Context, input *ecs.Desc
 	if err := checkCluster(input.Cluster, c.name); err != nil {
 		return nil, err
 	}
-	var (
-		failures []*ecs.Failure
-		services []*ecs.Service
-	)
+	var failures []*ecs.Failure
+	services := make([]*ecs.Service, 0, len(input.Services))
 	for i, serviceArn := range input.Services {
 		arn := aws.StringValue(serviceArn)
 		svc, ok := c.serviceMap[arn]
@@ -472,7 +455,7 @@ func getPage(p pageInput) (*pageOutput, error) {
 // 'generic' Start
 
 // getArns is used by both ListTasks and ListServices
-func getArns(items interface{}, arnGetter func(i int) *string) []*string {
+func getArns(items any, arnGetter func(i int) *string) []*string {
 	rv := reflect.ValueOf(items)
 	var arns []*string
 	for i := 0; i < rv.Len(); i++ {

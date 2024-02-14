@@ -1,0 +1,81 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: span.kind
+                value:
+                  stringValue: SPAN_KIND_SERVER
+              - key: status.code
+                value:
+                  stringValue: STATUS_CODE_ERROR
+              - key: service.name
+                value:
+                  stringValue: service-a
+              - key: exception.type
+                value:
+                  stringValue: Exception
+              - key: exception.message
+                value:
+                  stringValue: Exception message
+              - key: exception.stacktrace
+                value:
+                  stringValue: Exception stacktrace
+            body: {}
+            severityNumber: 17
+            severityText: ERROR
+            spanId: 2a00000000000000
+            traceId: 2a000000000000000000000000000000
+          - attributes:
+              - key: span.kind
+                value:
+                  stringValue: SPAN_KIND_CLIENT
+              - key: status.code
+                value:
+                  stringValue: STATUS_CODE_ERROR
+              - key: service.name
+                value:
+                  stringValue: service-a
+              - key: exception.type
+                value:
+                  stringValue: Exception
+              - key: exception.message
+                value:
+                  stringValue: Exception message
+              - key: exception.stacktrace
+                value:
+                  stringValue: Exception stacktrace
+            body: {}
+            severityNumber: 17
+            severityText: ERROR
+            spanId: 2a00000000000000
+            traceId: 2a000000000000000000000000000000
+        scope: {}
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: span.kind
+                value:
+                  stringValue: SPAN_KIND_SERVER
+              - key: status.code
+                value:
+                  stringValue: STATUS_CODE_ERROR
+              - key: service.name
+                value:
+                  stringValue: service-b
+              - key: exception.type
+                value:
+                  stringValue: Exception
+              - key: exception.message
+                value:
+                  stringValue: Exception message
+              - key: exception.stacktrace
+                value:
+                  stringValue: Exception stacktrace
+            body: {}
+            severityNumber: 17
+            severityText: ERROR
+            spanId: 2a00000000000000
+            traceId: 2a000000000000000000000000000000
+        scope: {}

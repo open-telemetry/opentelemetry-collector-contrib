@@ -1,0 +1,24 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: attribute.one
+                      value:
+                        stringValue: unpredictable.one
+                    - key: attribute.two
+                      value:
+                        stringValue: same
+                - asInt: "2"
+                  attributes:
+                    - key: attribute.one
+                      value:
+                        stringValue: unpredictable.two
+                    - key: attribute.two
+                      value:
+                        stringValue: same
+            name: gauge.one
+        scope: {}

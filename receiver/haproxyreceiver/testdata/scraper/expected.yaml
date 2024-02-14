@@ -1,0 +1,1021 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: haproxy.addr
+          value:
+            stringValue: /var/folders/jk/w3ltzbs56zl17nt65hxq5p8w0000gn/T/haproxytest2255445006/testhaproxy.sock
+        - key: haproxy.proxy_name
+          value:
+            stringValue: myfrontend
+        - key: haproxy.service_name
+          value:
+            stringValue: FRONTEND
+    scopeMetrics:
+      - metrics:
+          - description: Bytes in. Corresponds to HAProxy's `bin` metric.
+            name: haproxy.bytes.input
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "85470"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: by
+          - description: Bytes out. Corresponds to HAProxy's `bout` metric.
+            name: haproxy.bytes.output
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "107711"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: by
+          - description: Number of connections over the last elapsed second (frontend). Corresponds to HAProxy's `conn_rate` metric.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.connections.rate
+            unit: '{connections}'
+          - description: Requests denied because of security concerns. Corresponds to HAProxy's `dreq` metric
+            name: haproxy.requests.denied
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Cumulative number of request errors. Corresponds to HAProxy's `ereq` metric.
+            name: haproxy.requests.errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{errors}'
+          - description: HTTP requests per second over last elapsed second. Corresponds to HAProxy's `req_rate` metric.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.requests.rate
+            unit: '{requests}'
+          - description: Total number of HTTP requests received. Corresponds to HAProxy's `req_tot`, `hrsp_1xx`, `hrsp_2xx`, `hrsp_3xx`, `hrsp_4xx`, `hrsp_5xx` and `hrsp_other` metrics.
+            name: haproxy.requests.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 1xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "134"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 2xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 3xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 4xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 5xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Responses denied because of security concerns. Corresponds to HAProxy's `dresp` metric
+            name: haproxy.responses.denied
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{responses}'
+          - description: Current sessions. Corresponds to HAProxy's `scur` metric.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.count
+            unit: '{sessions}'
+          - description: Number of sessions per second over last elapsed second. Corresponds to HAProxy's `rate` metric.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.rate
+            unit: '{sessions}'
+        scope:
+          name: otelcol/haproxyreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: haproxy.addr
+          value:
+            stringValue: /var/folders/jk/w3ltzbs56zl17nt65hxq5p8w0000gn/T/haproxytest2255445006/testhaproxy.sock
+        - key: haproxy.proxy_name
+          value:
+            stringValue: stats
+        - key: haproxy.service_name
+          value:
+            stringValue: FRONTEND
+    scopeMetrics:
+      - metrics:
+          - description: Bytes in. Corresponds to HAProxy's `bin` metric.
+            name: haproxy.bytes.input
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1444"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: by
+          - description: Bytes out. Corresponds to HAProxy's `bout` metric.
+            name: haproxy.bytes.output
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "47008"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: by
+          - description: Number of connections over the last elapsed second (frontend). Corresponds to HAProxy's `conn_rate` metric.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.connections.rate
+            unit: '{connections}'
+          - description: Requests denied because of security concerns. Corresponds to HAProxy's `dreq` metric
+            name: haproxy.requests.denied
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Cumulative number of request errors. Corresponds to HAProxy's `ereq` metric.
+            name: haproxy.requests.errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{errors}'
+          - description: HTTP requests per second over last elapsed second. Corresponds to HAProxy's `req_rate` metric.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.requests.rate
+            unit: '{requests}'
+          - description: Total number of HTTP requests received. Corresponds to HAProxy's `req_tot`, `hrsp_1xx`, `hrsp_2xx`, `hrsp_3xx`, `hrsp_4xx`, `hrsp_5xx` and `hrsp_other` metrics.
+            name: haproxy.requests.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 1xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "2"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 2xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 3xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 4xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 5xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Responses denied because of security concerns. Corresponds to HAProxy's `dresp` metric
+            name: haproxy.responses.denied
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{responses}'
+          - description: Current sessions. Corresponds to HAProxy's `scur` metric.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.count
+            unit: '{sessions}'
+          - description: Number of sessions per second over last elapsed second. Corresponds to HAProxy's `rate` metric.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.rate
+            unit: '{sessions}'
+        scope:
+          name: otelcol/haproxyreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: haproxy.addr
+          value:
+            stringValue: /var/folders/jk/w3ltzbs56zl17nt65hxq5p8w0000gn/T/haproxytest2255445006/testhaproxy.sock
+        - key: haproxy.proxy_name
+          value:
+            stringValue: webservers
+        - key: haproxy.service_name
+          value:
+            stringValue: BACKEND
+    scopeMetrics:
+      - metrics:
+          - description: Bytes in. Corresponds to HAProxy's `bin` metric.
+            name: haproxy.bytes.input
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "85470"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: by
+          - description: Bytes out. Corresponds to HAProxy's `bout` metric.
+            name: haproxy.bytes.output
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "107711"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: by
+          - description: Number of requests that encountered an error trying to connect to a backend server. The backend stat is the sum of the stat. Corresponds to HAProxy's `econ` metric
+            name: haproxy.connections.errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{errors}'
+          - description: Number of times a connection to a server was retried. Corresponds to HAProxy's `wretr` metric.
+            name: haproxy.connections.retries
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{retries}'
+          - description: Requests denied because of security concerns. Corresponds to HAProxy's `dreq` metric
+            name: haproxy.requests.denied
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Current queued requests. For the backend this reports the number queued without a server assigned. Corresponds to HAProxy's `qcur` metric.
+            name: haproxy.requests.queued
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Number of times a request was redispatched to another server. Corresponds to HAProxy's `wredis` metric.
+            name: haproxy.requests.redispatched
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Total number of HTTP requests received. Corresponds to HAProxy's `req_tot`, `hrsp_1xx`, `hrsp_2xx`, `hrsp_3xx`, `hrsp_4xx`, `hrsp_5xx` and `hrsp_other` metrics.
+            name: haproxy.requests.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 1xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "134"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 2xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 3xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 4xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 5xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Responses denied because of security concerns. Corresponds to HAProxy's `dresp` metric
+            name: haproxy.responses.denied
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{responses}'
+          - description: Cumulative number of response errors. Corresponds to HAProxy's `eresp` metric, `srv_abrt` will be counted here also.
+            name: haproxy.responses.errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{errors}'
+          - description: Number of times a server was selected, either for new sessions or when re-dispatching. Corresponds to HAProxy's `lbtot` metric.
+            name: haproxy.server_selected.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "134"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{selections}'
+          - description: Average total session time in ms over the last 1024 requests. Corresponds to HAProxy's `ttime` metric.
+            gauge:
+              dataPoints:
+                - asDouble: 105
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.average
+            unit: ms
+          - description: Current sessions. Corresponds to HAProxy's `scur` metric.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.count
+            unit: '{sessions}'
+          - description: Number of sessions per second over last elapsed second. Corresponds to HAProxy's `rate` metric.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.rate
+            unit: '{sessions}'
+        scope:
+          name: otelcol/haproxyreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: haproxy.addr
+          value:
+            stringValue: /var/folders/jk/w3ltzbs56zl17nt65hxq5p8w0000gn/T/haproxytest2255445006/testhaproxy.sock
+        - key: haproxy.proxy_name
+          value:
+            stringValue: webservers
+        - key: haproxy.service_name
+          value:
+            stringValue: s1
+    scopeMetrics:
+      - metrics:
+          - description: Bytes in. Corresponds to HAProxy's `bin` metric.
+            name: haproxy.bytes.input
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "28734"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: by
+          - description: Bytes out. Corresponds to HAProxy's `bout` metric.
+            name: haproxy.bytes.output
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "36204"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: by
+          - description: Number of requests that encountered an error trying to connect to a backend server. The backend stat is the sum of the stat. Corresponds to HAProxy's `econ` metric
+            name: haproxy.connections.errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{errors}'
+          - description: Number of times a connection to a server was retried. Corresponds to HAProxy's `wretr` metric.
+            name: haproxy.connections.retries
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{retries}'
+          - description: Current queued requests. For the backend this reports the number queued without a server assigned. Corresponds to HAProxy's `qcur` metric.
+            name: haproxy.requests.queued
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Number of times a request was redispatched to another server. Corresponds to HAProxy's `wredis` metric.
+            name: haproxy.requests.redispatched
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Total number of HTTP requests received. Corresponds to HAProxy's `req_tot`, `hrsp_1xx`, `hrsp_2xx`, `hrsp_3xx`, `hrsp_4xx`, `hrsp_5xx` and `hrsp_other` metrics.
+            name: haproxy.requests.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 1xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "45"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 2xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 3xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 4xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 5xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Responses denied because of security concerns. Corresponds to HAProxy's `dresp` metric
+            name: haproxy.responses.denied
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{responses}'
+          - description: Cumulative number of response errors. Corresponds to HAProxy's `eresp` metric, `srv_abrt` will be counted here also.
+            name: haproxy.responses.errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{errors}'
+          - description: Number of times a server was selected, either for new sessions or when re-dispatching. Corresponds to HAProxy's `lbtot` metric.
+            name: haproxy.server_selected.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "45"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{selections}'
+          - description: Average total session time in ms over the last 1024 requests. Corresponds to HAProxy's `ttime` metric.
+            gauge:
+              dataPoints:
+                - asDouble: 95
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.average
+            unit: ms
+          - description: Current sessions. Corresponds to HAProxy's `scur` metric.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.count
+            unit: '{sessions}'
+          - description: Number of sessions per second over last elapsed second. Corresponds to HAProxy's `rate` metric.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.rate
+            unit: '{sessions}'
+        scope:
+          name: otelcol/haproxyreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: haproxy.addr
+          value:
+            stringValue: /var/folders/jk/w3ltzbs56zl17nt65hxq5p8w0000gn/T/haproxytest2255445006/testhaproxy.sock
+        - key: haproxy.proxy_name
+          value:
+            stringValue: webservers
+        - key: haproxy.service_name
+          value:
+            stringValue: s2
+    scopeMetrics:
+      - metrics:
+          - description: Bytes in. Corresponds to HAProxy's `bin` metric.
+            name: haproxy.bytes.input
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "28664"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: by
+          - description: Bytes out. Corresponds to HAProxy's `bout` metric.
+            name: haproxy.bytes.output
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "36131"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: by
+          - description: Number of requests that encountered an error trying to connect to a backend server. The backend stat is the sum of the stat. Corresponds to HAProxy's `econ` metric
+            name: haproxy.connections.errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{errors}'
+          - description: Number of times a connection to a server was retried. Corresponds to HAProxy's `wretr` metric.
+            name: haproxy.connections.retries
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{retries}'
+          - description: Current queued requests. For the backend this reports the number queued without a server assigned. Corresponds to HAProxy's `qcur` metric.
+            name: haproxy.requests.queued
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Number of times a request was redispatched to another server. Corresponds to HAProxy's `wredis` metric.
+            name: haproxy.requests.redispatched
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Total number of HTTP requests received. Corresponds to HAProxy's `req_tot`, `hrsp_1xx`, `hrsp_2xx`, `hrsp_3xx`, `hrsp_4xx`, `hrsp_5xx` and `hrsp_other` metrics.
+            name: haproxy.requests.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 1xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "45"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 2xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 3xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 4xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 5xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Responses denied because of security concerns. Corresponds to HAProxy's `dresp` metric
+            name: haproxy.responses.denied
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{responses}'
+          - description: Cumulative number of response errors. Corresponds to HAProxy's `eresp` metric, `srv_abrt` will be counted here also.
+            name: haproxy.responses.errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{errors}'
+          - description: Number of times a server was selected, either for new sessions or when re-dispatching. Corresponds to HAProxy's `lbtot` metric.
+            name: haproxy.server_selected.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "45"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{selections}'
+          - description: Average total session time in ms over the last 1024 requests. Corresponds to HAProxy's `ttime` metric.
+            gauge:
+              dataPoints:
+                - asDouble: 99
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.average
+            unit: ms
+          - description: Current sessions. Corresponds to HAProxy's `scur` metric.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.count
+            unit: '{sessions}'
+          - description: Number of sessions per second over last elapsed second. Corresponds to HAProxy's `rate` metric.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.rate
+            unit: '{sessions}'
+        scope:
+          name: otelcol/haproxyreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: haproxy.addr
+          value:
+            stringValue: /var/folders/jk/w3ltzbs56zl17nt65hxq5p8w0000gn/T/haproxytest2255445006/testhaproxy.sock
+        - key: haproxy.proxy_name
+          value:
+            stringValue: webservers
+        - key: haproxy.service_name
+          value:
+            stringValue: s3
+    scopeMetrics:
+      - metrics:
+          - description: Bytes in. Corresponds to HAProxy's `bin` metric.
+            name: haproxy.bytes.input
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "28072"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: by
+          - description: Bytes out. Corresponds to HAProxy's `bout` metric.
+            name: haproxy.bytes.output
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "35376"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: by
+          - description: Number of requests that encountered an error trying to connect to a backend server. The backend stat is the sum of the stat. Corresponds to HAProxy's `econ` metric
+            name: haproxy.connections.errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{errors}'
+          - description: Number of times a connection to a server was retried. Corresponds to HAProxy's `wretr` metric.
+            name: haproxy.connections.retries
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{retries}'
+          - description: Current queued requests. For the backend this reports the number queued without a server assigned. Corresponds to HAProxy's `qcur` metric.
+            name: haproxy.requests.queued
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Number of times a request was redispatched to another server. Corresponds to HAProxy's `wredis` metric.
+            name: haproxy.requests.redispatched
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Total number of HTTP requests received. Corresponds to HAProxy's `req_tot`, `hrsp_1xx`, `hrsp_2xx`, `hrsp_3xx`, `hrsp_4xx`, `hrsp_5xx` and `hrsp_other` metrics.
+            name: haproxy.requests.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 1xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "44"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 2xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 3xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 4xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: 5xx
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status_code
+                      value:
+                        stringValue: other
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{requests}'
+          - description: Responses denied because of security concerns. Corresponds to HAProxy's `dresp` metric
+            name: haproxy.responses.denied
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{responses}'
+          - description: Cumulative number of response errors. Corresponds to HAProxy's `eresp` metric, `srv_abrt` will be counted here also.
+            name: haproxy.responses.errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{errors}'
+          - description: Number of times a server was selected, either for new sessions or when re-dispatching. Corresponds to HAProxy's `lbtot` metric.
+            name: haproxy.server_selected.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "44"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{selections}'
+          - description: Average total session time in ms over the last 1024 requests. Corresponds to HAProxy's `ttime` metric.
+            gauge:
+              dataPoints:
+                - asDouble: 121
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.average
+            unit: ms
+          - description: Current sessions. Corresponds to HAProxy's `scur` metric.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.count
+            unit: '{sessions}'
+          - description: Number of sessions per second over last elapsed second. Corresponds to HAProxy's `rate` metric.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: haproxy.sessions.rate
+            unit: '{sessions}'
+        scope:
+          name: otelcol/haproxyreceiver
+          version: latest

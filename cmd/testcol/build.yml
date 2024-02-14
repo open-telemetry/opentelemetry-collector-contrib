@@ -1,0 +1,19 @@
+dist:
+  module: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/testcol
+  name: testotel
+  version: 0.0.1
+  otelcol_version: 0.92.0
+
+exporters:
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.92.0
+
+processors:
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.92.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.92.0
+
+receivers:
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.92.0
+
+replaces:
+  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor => ../../processor/deltatocumulativeprocessor
+  

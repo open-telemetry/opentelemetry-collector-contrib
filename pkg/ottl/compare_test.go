@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottl
 
@@ -56,7 +45,7 @@ func Test_compare(t *testing.T) {
 		name string
 		a    any
 		b    any
-		want []bool // in order of EQ, NE, LT, LTE, GTE, GT.
+		want []bool // in order of eq, ne, lt, lte, gte, gt.
 	}{
 		{"identity string", sa, sa, []bool{true, false, false, true, true, false}},
 		{"identity int64", i64a, i64a, []bool{true, false, false, true, true, false}},
@@ -112,11 +101,11 @@ func Test_compare(t *testing.T) {
 		{"non-prim, int type", testA{"hi"}, 5, []bool{false, true, false, false, false, false}},
 		{"int, non-prim", 5, testA{"hi"}, []bool{false, true, false, false, false, false}},
 	}
-	ops := []compareOp{EQ, NE, LT, LTE, GTE, GT}
+	ops := []compareOp{eq, ne, lt, lte, gte, gt}
 	for _, tt := range tests {
 		for _, op := range ops {
 			t.Run(fmt.Sprintf("%s %v", tt.name, op), func(t *testing.T) {
-				p, _ := NewParser[interface{}](nil, nil, componenttest.NewNopTelemetrySettings())
+				p, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 				if got := p.compare(tt.a, tt.b, op); got != tt.want[op] {
 					t.Errorf("compare(%v, %v, %v) = %v, want %v", tt.a, tt.b, op, got, tt.want[op])
 				}
@@ -130,120 +119,120 @@ func Test_compare(t *testing.T) {
 // The summary is that they're pretty fast; all the calls to compare are 12 ns/op or less on a 2019 intel
 // mac pro laptop, and none of them have any allocations.
 func BenchmarkCompareEQInt64(b *testing.B) {
-	testParser, _ := NewParser[interface{}](nil, nil, componenttest.NewNopTelemetrySettings())
+	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(i64a, i64b, EQ)
+		testParser.compare(i64a, i64b, eq)
 	}
 }
 
 func BenchmarkCompareEQFloat(b *testing.B) {
-	testParser, _ := NewParser[interface{}](nil, nil, componenttest.NewNopTelemetrySettings())
+	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(f64a, f64b, EQ)
+		testParser.compare(f64a, f64b, eq)
 	}
 }
 
 func BenchmarkCompareEQString(b *testing.B) {
-	testParser, _ := NewParser[interface{}](nil, nil, componenttest.NewNopTelemetrySettings())
+	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(sa, sb, EQ)
+		testParser.compare(sa, sb, eq)
 	}
 }
 
 func BenchmarkCompareEQPString(b *testing.B) {
-	testParser, _ := NewParser[interface{}](nil, nil, componenttest.NewNopTelemetrySettings())
+	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(&sa, &sb, EQ)
+		testParser.compare(&sa, &sb, eq)
 	}
 }
 
 func BenchmarkCompareEQBytes(b *testing.B) {
-	testParser, _ := NewParser[interface{}](nil, nil, componenttest.NewNopTelemetrySettings())
+	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(ba, bb, EQ)
+		testParser.compare(ba, bb, eq)
 	}
 }
 
 func BenchmarkCompareEQNil(b *testing.B) {
-	testParser, _ := NewParser[interface{}](nil, nil, componenttest.NewNopTelemetrySettings())
+	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(nil, nil, EQ)
+		testParser.compare(nil, nil, eq)
 	}
 }
 
 func BenchmarkCompareNEInt(b *testing.B) {
-	testParser, _ := NewParser[interface{}](nil, nil, componenttest.NewNopTelemetrySettings())
+	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(i64a, i64b, NE)
+		testParser.compare(i64a, i64b, ne)
 	}
 }
 
 func BenchmarkCompareNEFloat(b *testing.B) {
-	testParser, _ := NewParser[interface{}](nil, nil, componenttest.NewNopTelemetrySettings())
+	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(f64a, f64b, NE)
+		testParser.compare(f64a, f64b, ne)
 	}
 }
 
 func BenchmarkCompareNEString(b *testing.B) {
-	testParser, _ := NewParser[interface{}](nil, nil, componenttest.NewNopTelemetrySettings())
+	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(sa, sb, NE)
+		testParser.compare(sa, sb, ne)
 	}
 }
 
 func BenchmarkCompareLTFloat(b *testing.B) {
-	testParser, _ := NewParser[interface{}](nil, nil, componenttest.NewNopTelemetrySettings())
+	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(f64a, f64b, LT)
+		testParser.compare(f64a, f64b, lt)
 	}
 }
 
 func BenchmarkCompareLTString(b *testing.B) {
-	testParser, _ := NewParser[interface{}](nil, nil, componenttest.NewNopTelemetrySettings())
+	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(sa, sb, LT)
+		testParser.compare(sa, sb, lt)
 	}
 }
 
 func BenchmarkCompareLTNil(b *testing.B) {
-	testParser, _ := NewParser[interface{}](nil, nil, componenttest.NewNopTelemetrySettings())
+	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(nil, nil, LT)
+		testParser.compare(nil, nil, lt)
 	}
 }
 
 // this is only used for benchmarking, and is a rough equivalent of the original compare function
-// before adding LT, LTE, GTE, and GT.
+// before adding lt, lte, gte, and gt.
 func compareEq(a any, b any, op compareOp) bool {
 	switch op {
-	case EQ:
+	case eq:
 		return a == b
-	case NE:
+	case ne:
 		return a != b
 	default:
 		return false
@@ -252,6 +241,6 @@ func compareEq(a any, b any, op compareOp) bool {
 
 func BenchmarkCompareEQFunction(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compareEq(sa, sb, EQ)
+		compareEq(sa, sb, eq)
 	}
 }

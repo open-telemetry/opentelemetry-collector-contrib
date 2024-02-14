@@ -1,19 +1,7 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
@@ -36,7 +24,7 @@ type sqlServerScraper struct {
 	logger           *zap.Logger
 	config           *Config
 	watcherRecorders []watcherRecorder
-	metricsBuilder   *metadata.MetricsBuilder
+	mb               *metadata.MetricsBuilder
 }
 
 // watcherRecorder is a struct containing perf counter watcher along with corresponding value recorder.
@@ -49,19 +37,28 @@ type watcherRecorder struct {
 // it needs metadata.MetricsBuilder and timestamp as arguments.
 type curriedRecorder func(*metadata.MetricsBuilder, pcommon.Timestamp)
 
-// newSqlServerScraper returns a new sqlServerScraper.
-func newSqlServerScraper(params receiver.CreateSettings, cfg *Config) *sqlServerScraper {
-	metricsBuilder := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params)
-	return &sqlServerScraper{logger: params.Logger, config: cfg, metricsBuilder: metricsBuilder}
+// newSQLServerScraper returns a new sqlServerScraper.
+func newSQLServerScraper(params receiver.CreateSettings, cfg *Config) *sqlServerScraper {
+	return &sqlServerScraper{
+		logger: params.Logger,
+		config: cfg,
+		mb:     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+	}
 }
 
 // start creates and sets the watchers for the scraper.
-func (s *sqlServerScraper) start(ctx context.Context, host component.Host) error {
+func (s *sqlServerScraper) start(_ context.Context, _ component.Host) error {
 	s.watcherRecorders = []watcherRecorder{}
 
 	for _, pcr := range perfCounterRecorders {
 		for perfCounterName, recorder := range pcr.recorders {
-			w, err := winperfcounters.NewWatcher(pcr.object, pcr.instance, perfCounterName)
+			perfCounterObj := defaultObjectName + ":" + pcr.object
+			if s.config.InstanceName != "" {
+				// The instance name must be preceded by "MSSQL$" to indicate that it is a named instance
+				perfCounterObj = "\\" + s.config.ComputerName + "\\MSSQL$" + s.config.InstanceName + ":" + pcr.object
+			}
+
+			w, err := winperfcounters.NewWatcher(perfCounterObj, pcr.instance, perfCounterName)
 			if err != nil {
 				s.logger.Warn(err.Error())
 				continue
@@ -74,14 +71,14 @@ func (s *sqlServerScraper) start(ctx context.Context, host component.Host) error
 }
 
 // scrape collects windows performance counter data from all watchers and then records/emits it using the metricBuilder
-func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *sqlServerScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	recordersByDatabase, errs := recordersPerDatabase(s.watcherRecorders)
 
 	for dbName, recorders := range recordersByDatabase {
 		s.emitMetricGroup(recorders, dbName)
 	}
 
-	return s.metricsBuilder.Emit(), errs
+	return s.mb.Emit(), errs
 }
 
 // recordersPerDatabase scrapes perf counter values using provided []watcherRecorder and returns
@@ -120,20 +117,22 @@ func (s *sqlServerScraper) emitMetricGroup(recorders []curriedRecorder, database
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	for _, recorder := range recorders {
-		recorder(s.metricsBuilder, now)
+		recorder(s.mb, now)
 	}
 
+	rb := s.mb.NewResourceBuilder()
 	if databaseName != "" {
-		s.metricsBuilder.EmitForResource(
-			metadata.WithSqlserverDatabaseName(databaseName),
-		)
-	} else {
-		s.metricsBuilder.EmitForResource()
+		rb.SetSqlserverDatabaseName(databaseName)
 	}
+	if s.config.InstanceName != "" {
+		rb.SetSqlserverComputerName(s.config.ComputerName)
+		rb.SetSqlserverInstanceName(s.config.InstanceName)
+	}
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // shutdown stops all of the watchers for the scraper.
-func (s sqlServerScraper) shutdown(ctx context.Context) error {
+func (s sqlServerScraper) shutdown(_ context.Context) error {
 	var errs error
 	for _, wr := range s.watcherRecorders {
 		err := wr.watcher.Close()

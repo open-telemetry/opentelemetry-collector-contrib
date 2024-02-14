@@ -1,0 +1,15 @@
+# The following demonstrates how to enable protocols with defaults.
+loki/defaults:
+  protocols:
+    grpc:
+    http:
+loki/mixed:
+  protocols:
+    grpc:
+      endpoint: localhost:4600
+    http:
+      endpoint: localhost:4500
+  use_incoming_timestamp: true
+loki/empty:
+loki/extra_keys:
+  foo:

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package clientutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 
@@ -20,11 +9,15 @@ import (
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 )
+
+// GZipSubmitMetricsOptionalParameters is used to enable gzip compression for metric payloads submitted by native datadog client
+var GZipSubmitMetricsOptionalParameters = datadogV2.NewSubmitMetricsOptionalParameters().WithContentEncoding(datadogV2.METRICCONTENTENCODING_GZIP)
 
 // CreateAPIClient creates a new Datadog API client
 func CreateAPIClient(buildInfo component.BuildInfo, endpoint string, settings exporterhelper.TimeoutSettings, insecureSkipVerify bool) *datadog.APIClient {

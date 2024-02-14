@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mezmoexporter
 
@@ -120,7 +109,7 @@ type testServer struct {
 	url      string
 }
 
-type httpAssertionCallback func(req *http.Request, body MezmoLogBody) (int, string)
+type httpAssertionCallback func(req *http.Request, body mezmoLogBody) (int, string)
 type testServerParams struct {
 	t                  *testing.T
 	assertionsCallback httpAssertionCallback
@@ -135,7 +124,7 @@ func createHTTPServer(params *testServerParams) testServer {
 			params.t.Fatal(err)
 		}
 
-		var logBody MezmoLogBody
+		var logBody mezmoLogBody
 		if err = json.Unmarshal(body, &logBody); err != nil {
 			w.WriteHeader(http.StatusUnprocessableEntity)
 		}
@@ -180,7 +169,7 @@ func createLogger() (*zap.Logger, *observer.ObservedLogs) {
 func TestLogsExporter(t *testing.T) {
 	httpServerParams := testServerParams{
 		t: t,
-		assertionsCallback: func(req *http.Request, body MezmoLogBody) (int, string) {
+		assertionsCallback: func(req *http.Request, body mezmoLogBody) (int, string) {
 			assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
 			assert.Equal(t, "mezmo-otel-exporter/"+buildInfo.Version, req.Header.Get("User-Agent"))
 			return http.StatusOK, ""
@@ -217,7 +206,7 @@ func TestLogsExporter(t *testing.T) {
 func TestAddsRequiredAttributes(t *testing.T) {
 	httpServerParams := testServerParams{
 		t: t,
-		assertionsCallback: func(req *http.Request, body MezmoLogBody) (int, string) {
+		assertionsCallback: func(req *http.Request, body mezmoLogBody) (int, string) {
 			assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
 			assert.Equal(t, "mezmo-otel-exporter/"+buildInfo.Version, req.Header.Get("User-Agent"))
 
@@ -251,7 +240,7 @@ func Test404IngestError(t *testing.T) {
 
 	httpServerParams := testServerParams{
 		t: t,
-		assertionsCallback: func(req *http.Request, body MezmoLogBody) (int, string) {
+		assertionsCallback: func(req *http.Request, body mezmoLogBody) (int, string) {
 			return http.StatusNotFound, `{"foo":"bar"}`
 		},
 	}

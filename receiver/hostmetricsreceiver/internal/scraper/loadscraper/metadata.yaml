@@ -1,4 +1,6 @@
-name: hostmetricsreceiver/load
+type: hostmetricsreceiver/load
+
+parent: hostmetrics
 
 sem_conv_version: 1.9.0
 
@@ -6,20 +8,20 @@ metrics:
   system.cpu.load_average.1m:
     enabled: true
     description: Average CPU Load over 1 minute.
-    unit: 1
+    unit: "{thread}"
     gauge:
       value_type: double
 
   system.cpu.load_average.5m:
     enabled: true
     description: Average CPU Load over 5 minutes.
-    unit: 1
+    unit: "{thread}"
     gauge:
       value_type: double
 
   system.cpu.load_average.15m:
     enabled: true
     description: Average CPU Load over 15 minutes.
-    unit: 1
+    unit: "{thread}"
     gauge:
       value_type: double

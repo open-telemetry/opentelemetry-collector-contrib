@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 
@@ -31,10 +20,9 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	minimalRequiredDockerAPIVersion = 1.22
-	userAgent                       = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
-)
+const userAgent = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
+
+var minimumRequiredDockerAPIVersion = MustNewAPIVersion("1.22")
 
 // Container is client.ContainerInspect() response container
 // stats and translated environment string map for potential labels.
@@ -57,10 +45,17 @@ type Client struct {
 }
 
 func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*Client, error) {
+	version := minimumRequiredDockerAPIVersion
+	if config.DockerAPIVersion != "" {
+		var err error
+		if version, err = NewAPIVersion(config.DockerAPIVersion); err != nil {
+			return nil, err
+		}
+	}
 	client, err := docker.NewClientWithOpts(
 		append([]docker.Opt{
 			docker.WithHost(config.Endpoint),
-			docker.WithVersion(fmt.Sprintf("v%v", config.DockerAPIVersion)),
+			docker.WithVersion(version),
 			docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
 		}, opts...)...,
 	)

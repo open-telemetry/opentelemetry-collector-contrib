@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
@@ -24,6 +13,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
+type convertSummarySumValToSumArguments struct {
+	StringAggTemp string
+	Monotonic     bool
+}
+
+func newConvertSummarySumValToSumFactory() ottl.Factory[ottldatapoint.TransformContext] {
+	return ottl.NewFactory("convert_summary_sum_val_to_sum", &convertSummarySumValToSumArguments{}, createConvertSummarySumValToSumFunction)
+}
+
+func createConvertSummarySumValToSumFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	args, ok := oArgs.(*convertSummarySumValToSumArguments)
+
+	if !ok {
+		return nil, fmt.Errorf("convertSummarySumValToSumFactory args must be of type *convertSummarySumValToSumArguments")
+	}
+
+	return convertSummarySumValToSum(args.StringAggTemp, args.Monotonic)
+}
+
 func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
 	var aggTemp pmetric.AggregationTemporality
 	switch stringAggTemp {
@@ -34,7 +42,7 @@ func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprF
 	default:
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
-	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (interface{}, error) {
+	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeSummary {
 			return nil, nil

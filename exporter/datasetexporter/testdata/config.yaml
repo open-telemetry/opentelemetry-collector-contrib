@@ -1,0 +1,55 @@
+dataset/minimal:
+  dataset_url: https://app.scalyr.com
+  api_key: key-minimal
+
+dataset/lib:
+  dataset_url: https://app.eu.scalyr.com
+  api_key: key-lib
+  buffer:
+    max_lifetime: 345ms
+    group_by:
+      - attributes.container_id
+      - attributes.log.file.path
+
+dataset/full:
+  dataset_url: https://app.scalyr.com
+  api_key: key-full
+  debug: true
+  buffer:
+    max_lifetime: 3456ms
+    group_by:
+      - body.map.kubernetes.pod_id
+      - body.map.kubernetes.docker_id
+      - body.map.stream
+    retry_initial_interval: 21s
+    retry_max_interval: 22s
+    retry_max_elapsed_time: 23s
+    retry_shutdown_timeout: 24s
+  logs:
+    export_resource_info_on_event: true
+    export_resource_prefix: "_resource_"
+    export_scope_info_on_event: true
+    export_scope_prefix: "_scope_"
+    export_separator: "_X_"
+    export_distinguishing_suffix: "_L_"
+    decompose_complex_message_field: true
+    decomposed_complex_message_prefix: "_body_"
+  traces:
+    export_separator: "_Y_"
+    export_distinguishing_suffix: "_T_"
+  server_host:
+    use_hostname: false
+    server_host: "server-host"
+  retry_on_failure:
+    enabled: true
+    initial_interval: 11
+    randomization_factor: 0.113
+    multiplier: 11.6
+    max_interval: 12
+    max_elapsed_time: 13
+  sending_queue:
+    enabled: true
+    num_consumers: 14
+    queue_size: 15
+  timeout:
+    timeout: 16

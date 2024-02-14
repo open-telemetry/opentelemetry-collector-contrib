@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package coralogixexporter
 
@@ -25,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -39,7 +29,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, ocfg.RetrySettings, exporterhelper.NewDefaultRetrySettings())
+	assert.Equal(t, ocfg.BackOffConfig, configretry.NewDefaultBackOffConfig())
 	assert.Equal(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueSettings())
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutSettings())
 }
@@ -51,7 +41,19 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	set := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, oexp)
+	require.NoError(t, oexp.Shutdown(context.Background()))
+}
+
+func TestCreateMetricsExporterWithDomain(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Domain = "localhost"
+
+	set := exportertest.NewNopCreateSettings()
+	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
 
@@ -62,7 +64,18 @@ func TestCreateLogsExporter(t *testing.T) {
 
 	set := exportertest.NewNopCreateSettings()
 	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
+	require.NotNil(t, oexp)
+	require.NoError(t, oexp.Shutdown(context.Background()))
+}
+
+func TestCreateLogsExporterWithDomain(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Domain = "localhost"
+	set := exportertest.NewNopCreateSettings()
+	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
 
@@ -70,14 +83,14 @@ func TestCreateTracesExporter(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name             string
-		config           Config
+		config           *Config
 		mustFailOnCreate bool
 		mustFailOnStart  bool
 	}{
 		{
 			name: "UseSecure",
-			config: Config{
-				Traces: configgrpc.GRPCClientSettings{
+			config: &Config{
+				Traces: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						Insecure: false,
@@ -87,8 +100,8 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "Keepalive",
-			config: Config{
-				Traces: configgrpc.GRPCClientSettings{
+			config: &Config{
+				Traces: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 					Keepalive: &configgrpc.KeepaliveClientConfig{
 						Time:                30 * time.Second,
@@ -100,8 +113,8 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "NoneCompression",
-			config: Config{
-				Traces: configgrpc.GRPCClientSettings{
+			config: &Config{
+				Traces: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
 					Compression: "none",
 				},
@@ -109,35 +122,35 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "GzipCompression",
-			config: Config{
-				Traces: configgrpc.GRPCClientSettings{
+			config: &Config{
+				Traces: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
-					Compression: configcompression.Gzip,
+					Compression: configcompression.TypeGzip,
 				},
 			},
 		},
 		{
 			name: "SnappyCompression",
-			config: Config{
-				Traces: configgrpc.GRPCClientSettings{
+			config: &Config{
+				Traces: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
-					Compression: configcompression.Snappy,
+					Compression: configcompression.TypeSnappy,
 				},
 			},
 		},
 		{
 			name: "ZstdCompression",
-			config: Config{
-				Traces: configgrpc.GRPCClientSettings{
+			config: &Config{
+				Traces: configgrpc.ClientConfig{
 					Endpoint:    endpoint,
-					Compression: configcompression.Zstd,
+					Compression: configcompression.TypeZstd,
 				},
 			},
 		},
 		{
 			name: "Headers",
-			config: Config{
-				Traces: configgrpc.GRPCClientSettings{
+			config: &Config{
+				Traces: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 					Headers: map[string]configopaque.String{
 						"hdr1": "val1",
@@ -148,16 +161,16 @@ func TestCreateTracesExporter(t *testing.T) {
 		},
 		{
 			name: "NumConsumers",
-			config: Config{
-				Traces: configgrpc.GRPCClientSettings{
+			config: &Config{
+				Traces: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 				},
 			},
 		},
 		{
 			name: "CertPemFileError",
-			config: Config{
-				Traces: configgrpc.GRPCClientSettings{
+			config: &Config{
+				Traces: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -168,15 +181,26 @@ func TestCreateTracesExporter(t *testing.T) {
 			},
 			mustFailOnStart: true,
 		},
+		{
+			name: "UseDomain",
+			config: &Config{
+				Domain: "localhost",
+				DomainSettings: configgrpc.ClientConfig{
+					TLSSetting: configtls.TLSClientSetting{
+						Insecure: false,
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			set := exportertest.NewNopCreateSettings()
-			consumer, err := factory.CreateTracesExporter(context.Background(), set, &tt.config)
+			consumer, err := factory.CreateTracesExporter(context.Background(), set, tt.config)
 			if tt.mustFailOnCreate {
-				assert.NotNil(t, err)
+				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
@@ -195,4 +219,28 @@ func TestCreateTracesExporter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateLogsExporterWithDomainAndEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Domain = "	bad domain"
+
+	cfg.Logs.Endpoint = testutil.GetAvailableLocalAddress(t)
+
+	set := exportertest.NewNopCreateSettings()
+	consumer, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, consumer)
+
+	err = consumer.Start(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, err)
+
+	err = consumer.Shutdown(context.Background())
+	if err != nil {
+		// Since the endpoint of OTLP exporter doesn't actually exist,
+		// exporter may already stop because it cannot connect.
+		assert.Equal(t, err.Error(), "rpc error: code = Canceled desc = grpc: the client connection is closing")
+	}
+
 }

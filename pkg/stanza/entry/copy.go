@@ -1,29 +1,18 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package entry // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 
 import "encoding/json"
 
 // copyValue will deep copy a value based on its type.
-func copyValue(v interface{}) interface{} {
+func copyValue(v any) any {
 	switch value := v.(type) {
 	case string, int, bool, byte, nil:
 		return value
 	case map[string]string:
 		return copyStringMap(value)
-	case map[string]interface{}:
+	case map[string]any:
 		return copyInterfaceMap(value)
 	case []string:
 		return copyStringArray(value)
@@ -31,7 +20,7 @@ func copyValue(v interface{}) interface{} {
 		return copyByteArray(value)
 	case []int:
 		return copyIntArray(value)
-	case []interface{}:
+	case []any:
 		return copyInterfaceArray(value)
 	default:
 		return copyUnknown(value)
@@ -48,8 +37,8 @@ func copyStringMap(m map[string]string) map[string]string {
 }
 
 // copyInterfaceMap will deep copy a map of interfaces.
-func copyInterfaceMap(m map[string]interface{}) map[string]interface{} {
-	mapCopy := make(map[string]interface{})
+func copyInterfaceMap(m map[string]any) map[string]any {
+	mapCopy := make(map[string]any)
 	for k, v := range m {
 		mapCopy[k] = copyValue(v)
 	}
@@ -78,8 +67,8 @@ func copyIntArray(a []int) []int {
 }
 
 // copyInterfaceArray will deep copy an array of interfaces.
-func copyInterfaceArray(a []interface{}) []interface{} {
-	arrayCopy := make([]interface{}, 0, len(a))
+func copyInterfaceArray(a []any) []any {
+	arrayCopy := make([]any, 0, len(a))
 	for _, v := range a {
 		arrayCopy = append(arrayCopy, copyValue(v))
 	}
@@ -88,8 +77,8 @@ func copyInterfaceArray(a []interface{}) []interface{} {
 
 // copyUnknown will copy an unknown value using json encoding.
 // If this process fails, the result will be an empty interface.
-func copyUnknown(value interface{}) interface{} {
-	var result interface{}
+func copyUnknown(value any) any {
+	var result any
 	b, _ := json.Marshal(value)
 	_ = json.Unmarshal(b, &result)
 	return result

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package nsxtreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
 
@@ -38,7 +27,7 @@ const (
 
 func TestNewClientFailureToParse(t *testing.T) {
 	_, err := newClient(&Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "http://\x00",
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
@@ -48,7 +37,7 @@ func TestNewClientFailureToParse(t *testing.T) {
 func TestTransportNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
@@ -61,7 +50,7 @@ func TestTransportNodes(t *testing.T) {
 func TestClusterNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
@@ -74,7 +63,7 @@ func TestClusterNodes(t *testing.T) {
 func TestClusterNodeInterface(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
@@ -87,7 +76,7 @@ func TestClusterNodeInterface(t *testing.T) {
 func TestTransportNodeInterface(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
@@ -100,7 +89,7 @@ func TestTransportNodeInterface(t *testing.T) {
 func TestTransportNodeStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
@@ -113,7 +102,7 @@ func TestTransportNodeStatus(t *testing.T) {
 func TestClusterNodeStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
@@ -126,7 +115,7 @@ func TestClusterNodeStatus(t *testing.T) {
 func TestTransportNodeInterfaceStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
@@ -139,7 +128,7 @@ func TestTransportNodeInterfaceStatus(t *testing.T) {
 func TestManagerNodeInterfaceStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
@@ -152,7 +141,7 @@ func TestManagerNodeInterfaceStatus(t *testing.T) {
 func TestDoRequestBadUrl(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
@@ -166,7 +155,7 @@ func TestPermissionDenied_ClusterNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
 		Password: badPassword,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
@@ -180,7 +169,7 @@ func TestPermissionDenied_Interfaces(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
 		Password: badPassword,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
@@ -194,7 +183,7 @@ func TestPermissionDenied_InterfaceStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
 		Password: badPassword,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
@@ -208,7 +197,7 @@ func TestPermissionDenied_NodeStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
 		Password: badPassword,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
@@ -222,7 +211,7 @@ func TestPermissionDenied_TransportNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
 		Password: badPassword,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())
@@ -236,7 +225,7 @@ func TestInternalServerError(t *testing.T) {
 	nsxMock := mockServer(t)
 	client, err := newClient(&Config{
 		Username: user500,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
 	}, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost(), zap.NewNop())

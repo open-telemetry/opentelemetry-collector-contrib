@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
@@ -42,11 +31,10 @@ func (n *NetMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 }
 
 func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*CAdvisorMetric {
-	var metrics []*CAdvisorMetric
 
 	// Just a protection here, there is no Container level Net metrics
 	if containerType == ci.TypePod || containerType == ci.TypeContainer {
-		return metrics
+		return nil
 	}
 
 	// Rename type to pod so the metric name prefix is pod_
@@ -58,11 +46,12 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 	curIfceStats := getInterfacesStats(curStats)
 
 	// used for aggregation
-	var netIfceMetrics []map[string]interface{}
+	netIfceMetrics := make([]map[string]any, len(curIfceStats))
+	metrics := make([]*CAdvisorMetric, len(curIfceStats))
 
-	for _, cur := range curIfceStats {
+	for i, cur := range curIfceStats {
 		mType := getNetMetricType(containerType, n.logger)
-		netIfceMetric := make(map[string]interface{})
+		netIfceMetric := make(map[string]any)
 
 		infoName := info.Name + containerType + cur.Name // used to identify the network interface
 		multiplier := float64(time.Second)
@@ -79,7 +68,7 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 			netIfceMetric[ci.NetTotalBytes] = netIfceMetric[ci.NetRxBytes].(float64) + netIfceMetric[ci.NetTxBytes].(float64)
 		}
 
-		netIfceMetrics = append(netIfceMetrics, netIfceMetric)
+		netIfceMetrics[i] = netIfceMetric
 
 		metric := newCadvisorMetric(mType, n.logger)
 		metric.tags[ci.NetIfce] = cur.Name
@@ -87,7 +76,7 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 			metric.fields[ci.MetricName(mType, k)] = v
 		}
 
-		metrics = append(metrics, metric)
+		metrics[i] = metric
 	}
 
 	aggregatedFields := ci.SumFields(netIfceMetrics)
@@ -100,6 +89,10 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 	}
 
 	return metrics
+}
+
+func (n *NetMetricExtractor) Shutdown() error {
+	return n.rateCalculator.Shutdown()
 }
 
 func NewNetMetricExtractor(logger *zap.Logger) *NetMetricExtractor {

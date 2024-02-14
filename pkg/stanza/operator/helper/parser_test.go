@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package helper
 
@@ -121,7 +110,7 @@ func TestParserMissingField(t *testing.T) {
 		},
 		ParseFrom: entry.NewBodyField("test"),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -140,7 +129,7 @@ func TestParserInvalidParseDrop(t *testing.T) {
 		},
 		ParseFrom: entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, fmt.Errorf("parse failure")
 	}
 	ctx := context.Background()
@@ -160,7 +149,7 @@ func TestParserInvalidParseSend(t *testing.T) {
 		},
 		ParseFrom: entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, fmt.Errorf("parse failure")
 	}
 	ctx := context.Background()
@@ -188,7 +177,7 @@ func TestParserInvalidTimeParseDrop(t *testing.T) {
 			}(),
 		},
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -215,7 +204,7 @@ func TestParserInvalidTimeParseSend(t *testing.T) {
 			}(),
 		},
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -239,7 +228,7 @@ func TestParserInvalidSeverityParseDrop(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 		ParseTo:   entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -277,7 +266,7 @@ func TestParserInvalidTimeValidSeverityParse(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 		ParseTo:   entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -329,7 +318,7 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 		ParseTo:   entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -364,7 +353,7 @@ func TestParserOutput(t *testing.T) {
 		ParseFrom: entry.NewBodyField(),
 		ParseTo:   entry.NewBodyField(),
 	}
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		return i, nil
 	}
 	ctx := context.Background()
@@ -397,7 +386,7 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": "value",
 				}
 				return e
@@ -418,7 +407,7 @@ func TestParserFields(t *testing.T) {
 				e := entry.New()
 				e.ObservedTimestamp = now
 				e.Body = keyValue
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "value",
 				}
 				return e
@@ -439,7 +428,7 @@ func TestParserFields(t *testing.T) {
 				e := entry.New()
 				e.ObservedTimestamp = now
 				e.Body = keyValue
-				e.Resource = map[string]interface{}{
+				e.Resource = map[string]any{
 					"key": "value",
 				}
 				return e
@@ -459,9 +448,9 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				e.Body = map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"key": "value",
 						},
 					},
@@ -484,9 +473,9 @@ func TestParserFields(t *testing.T) {
 				e := entry.New()
 				e.ObservedTimestamp = now
 				e.Body = keyValue
-				e.Attributes = map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				e.Attributes = map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"key": "value",
 						},
 					},
@@ -509,9 +498,9 @@ func TestParserFields(t *testing.T) {
 				e := entry.New()
 				e.ObservedTimestamp = now
 				e.Body = keyValue
-				e.Resource = map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				e.Resource = map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"key": "value",
 						},
 					},
@@ -534,7 +523,7 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "value",
 				}
 				e.Body = "value"
@@ -549,8 +538,8 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
-					"one": map[string]interface{}{
+				e.Body = map[string]any{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
@@ -559,12 +548,12 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
-					"one": map[string]interface{}{
+				e.Body = map[string]any{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "value",
 				}
 				return e
@@ -578,8 +567,8 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Attributes = map[string]interface{}{
-					"one": map[string]interface{}{
+				e.Attributes = map[string]any{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
@@ -588,9 +577,9 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "value",
-					"one": map[string]interface{}{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
@@ -605,8 +594,8 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Resource = map[string]interface{}{
-					"one": map[string]interface{}{
+				e.Resource = map[string]any{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
@@ -615,11 +604,11 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "value",
 				}
-				e.Resource = map[string]interface{}{
-					"one": map[string]interface{}{
+				e.Resource = map[string]any{
+					"one": map[string]any{
 						"two": keyValue,
 					},
 				}
@@ -628,9 +617,9 @@ func TestParserFields(t *testing.T) {
 		},
 	}
 
-	parse := func(i interface{}) (interface{}, error) {
+	parse := func(i any) (any, error) {
 		split := strings.Split(i.(string), ":")
-		return map[string]interface{}{split[0]: split[1]}, nil
+		return map[string]any{split[0]: split[1]}, nil
 	}
 
 	for _, tc := range cases {
@@ -658,7 +647,7 @@ func NewTestParserConfig() ParserConfig {
 	expect.TimeParser = &tp
 
 	sp := NewSeverityConfig()
-	sp.Mapping = map[string]interface{}{
+	sp.Mapping = map[string]any{
 		"info": "3xx",
 		"warn": "4xx",
 	}

@@ -11,3 +11,7 @@ statsd/receiver_settings:
       observer_type: "histogram"
       histogram:
         max_size: 170
+    - statsd_type: "distribution"
+      observer_type: "histogram"
+      histogram:
+        max_size: 170

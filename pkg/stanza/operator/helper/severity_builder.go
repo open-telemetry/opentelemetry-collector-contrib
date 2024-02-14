@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
@@ -122,13 +111,14 @@ func NewSeverityConfig() SeverityConfig {
 
 // SeverityConfig allows users to specify how to parse a severity from a field.
 type SeverityConfig struct {
-	ParseFrom *entry.Field           `mapstructure:"parse_from,omitempty"`
-	Preset    string                 `mapstructure:"preset,omitempty"`
-	Mapping   map[string]interface{} `mapstructure:"mapping,omitempty"`
+	ParseFrom     *entry.Field   `mapstructure:"parse_from,omitempty"`
+	Preset        string         `mapstructure:"preset,omitempty"`
+	Mapping       map[string]any `mapstructure:"mapping,omitempty"`
+	OverwriteText bool           `mapstructure:"overwrite_text,omitempty"`
 }
 
 // Build builds a SeverityParser from a SeverityConfig
-func (c *SeverityConfig) Build(logger *zap.SugaredLogger) (SeverityParser, error) {
+func (c *SeverityConfig) Build(_ *zap.SugaredLogger) (SeverityParser, error) {
 	operatorMapping := getBuiltinMapping(c.Preset)
 
 	for severity, unknown := range c.Mapping {
@@ -138,7 +128,7 @@ func (c *SeverityConfig) Build(logger *zap.SugaredLogger) (SeverityParser, error
 		}
 
 		switch u := unknown.(type) {
-		case []interface{}: // check before interface{}
+		case []any: // check before any
 			for _, value := range u {
 				v, err := parseableValues(value)
 				if err != nil {
@@ -146,7 +136,7 @@ func (c *SeverityConfig) Build(logger *zap.SugaredLogger) (SeverityParser, error
 				}
 				operatorMapping.add(sev, v...)
 			}
-		case interface{}:
+		case any:
 			v, err := parseableValues(u)
 			if err != nil {
 				return SeverityParser{}, err
@@ -160,20 +150,21 @@ func (c *SeverityConfig) Build(logger *zap.SugaredLogger) (SeverityParser, error
 	}
 
 	p := SeverityParser{
-		ParseFrom: *c.ParseFrom,
-		Mapping:   operatorMapping,
+		ParseFrom:     *c.ParseFrom,
+		Mapping:       operatorMapping,
+		overwriteText: c.OverwriteText,
 	}
 
 	return p, nil
 }
 
-func validateSeverity(severity interface{}) (entry.Severity, error) {
+func validateSeverity(severity any) (entry.Severity, error) {
 	sev, _, err := getBuiltinMapping("aliases").find(severity)
 	return sev, err
 }
 
-func isRange(value interface{}) (int, int, bool) {
-	rawMap, ok := value.(map[string]interface{})
+func isRange(value any) (int, int, bool) {
+	rawMap, ok := value.(map[string]any)
 	if !ok {
 		return 0, 0, false
 	}
@@ -205,7 +196,7 @@ func expandRange(min, max int) []string {
 	return rangeOfStrings
 }
 
-func parseableValues(value interface{}) ([]string, error) {
+func parseableValues(value any) ([]string, error) {
 	switch v := value.(type) {
 	case int:
 		return []string{strconv.Itoa(v)}, nil // store as string because we will compare as string

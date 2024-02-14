@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
@@ -31,6 +20,8 @@ type Settings struct {
 	ExternalLabels      map[string]string
 	DisableTargetInfo   bool
 	ExportCreatedMetric bool
+	AddMetricSuffixes   bool
+	SendMetadata        bool
 }
 
 // FromMetrics converts pmetric.Metrics to prometheus remote write format.
@@ -59,7 +50,10 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 					continue
 				}
 
+				promName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
+
 				// handle individual metric based on type
+				//exhaustive:enforce
 				switch metric.Type() {
 				case pmetric.MetricTypeGauge:
 					dataPoints := metric.Gauge().DataPoints()
@@ -67,7 +61,7 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 					}
 					for x := 0; x < dataPoints.Len(); x++ {
-						addSingleGaugeNumberDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
+						addSingleGaugeNumberDataPoint(dataPoints.At(x), resource, metric, settings, tsMap, promName)
 					}
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
@@ -75,7 +69,7 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 					}
 					for x := 0; x < dataPoints.Len(); x++ {
-						addSingleSumNumberDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
+						addSingleSumNumberDataPoint(dataPoints.At(x), resource, metric, settings, tsMap, promName)
 					}
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
@@ -83,19 +77,18 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 					}
 					for x := 0; x < dataPoints.Len(); x++ {
-						addSingleHistogramDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
+						addSingleHistogramDataPoint(dataPoints.At(x), resource, metric, settings, tsMap, promName)
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					dataPoints := metric.ExponentialHistogram().DataPoints()
 					if dataPoints.Len() == 0 {
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 					}
-					name := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
 					for x := 0; x < dataPoints.Len(); x++ {
 						errs = multierr.Append(
 							errs,
 							addSingleExponentialHistogramDataPoint(
-								name,
+								promName,
 								dataPoints.At(x),
 								resource,
 								settings,
@@ -109,7 +102,7 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 					}
 					for x := 0; x < dataPoints.Len(); x++ {
-						addSingleSummaryDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
+						addSingleSummaryDataPoint(dataPoints.At(x), resource, metric, settings, tsMap, promName)
 					}
 				default:
 					errs = multierr.Append(errs, errors.New("unsupported metric type"))

@@ -1,4 +1,12 @@
-name: expvarreceiver
+type: expvar
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, sumo]
+  codeowners:
+    active: [jamesmoessis, MovieStoreGuy]
 
 metrics:
   process.runtime.memstats.total_alloc:
@@ -9,7 +17,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.sys:
     enabled: true
@@ -19,7 +27,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.lookups:
     enabled: false
@@ -29,7 +37,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.mallocs:
     enabled: true
@@ -39,7 +47,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.frees:
     enabled: true
@@ -49,7 +57,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.heap_alloc:
     enabled: true
@@ -59,7 +67,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.heap_sys:
     enabled: true
@@ -69,7 +77,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.heap_idle:
     enabled: true
@@ -79,7 +87,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.heap_inuse:
     enabled: true
@@ -89,7 +97,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.heap_released:
     enabled: true
@@ -99,7 +107,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.heap_objects:
     enabled: true
@@ -109,7 +117,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.stack_inuse:
     enabled: true
@@ -119,7 +127,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.stack_sys:
     enabled: true
@@ -129,7 +137,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.mspan_inuse:
     enabled: true
@@ -139,7 +147,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.mspan_sys:
     enabled: true
@@ -149,7 +157,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.mcache_inuse:
     enabled: true
@@ -159,7 +167,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.mcache_sys:
     enabled: true
@@ -169,7 +177,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.buck_hash_sys:
     enabled: true
@@ -179,7 +187,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.gc_sys:
     enabled: true
@@ -189,7 +197,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.other_sys:
     enabled: true
@@ -199,7 +207,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.next_gc:
     enabled: true
@@ -209,7 +217,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.pause_total:
     enabled: true
@@ -219,7 +227,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.last_pause:
     enabled: true
@@ -237,7 +245,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.num_forced_gc:
     enabled: true
@@ -247,7 +255,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   process.runtime.memstats.gc_cpu_fraction:
     enabled: true
@@ -256,3 +264,5 @@ metrics:
     unit: 1
     gauge:
       value_type: double
+tests:
+  config:

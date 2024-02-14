@@ -1,4 +1,6 @@
-name: hostmetricsreceiver/memory
+type: hostmetricsreceiver/memory
+
+parent: hostmetrics
 
 sem_conv_version: 1.9.0
 
@@ -9,13 +11,22 @@ attributes:
     enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
 
 metrics:
+  system.memory.limit:
+    enabled: false
+    description: Total bytes of memory available.
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+
   system.memory.usage:
     enabled: true
     description: Bytes of memory in use.
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     attributes: [state]
 
@@ -26,3 +37,12 @@ metrics:
     gauge:
       value_type: double
     attributes: [state]
+
+  system.linux.memory.available:
+    enabled: false
+    description: An estimate of how much memory is available for starting new applications, without swapping. This is a more accurate alternative than system.memory.usage with state=free. (Linux only)
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false

@@ -1,0 +1,13 @@
+type: elasticsearch
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, logs]
+  distributions: [contrib, observiq]
+  codeowners:
+    active: [JaredTan95]
+
+tests:
+  config:
+    endpoints: [http://localhost:9200]

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
@@ -45,12 +34,12 @@ var distributionCounts = []uint64{4, 2, 3, 5}
 func Test_rawMetricsToAdxMetrics(t *testing.T) {
 	t.Parallel()
 	// Resource map
-	rmap := make(map[string]interface{})
+	rmap := make(map[string]any)
 	rmap["key"] = "value"
 	rmap[hostkey] = testhost
 
 	// Metric map , with scopes
-	mmap := make(map[string]interface{})
+	mmap := make(map[string]any)
 	mmap[scopename] = "SN"
 	mmap[scopeversion] = "SV"
 
@@ -186,10 +175,10 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 func Test_mapToAdxMetric(t *testing.T) {
 	t.Parallel()
 
-	rmap := make(map[string]interface{})
+	rmap := make(map[string]any)
 	rmap["key"] = "value"
 	rmap[hostkey] = testhost
-	mmap := make(map[string]interface{})
+	mmap := make(map[string]any)
 
 	tests := []struct {
 		name               string                  // name of the test
@@ -559,7 +548,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			res := tt.resourceFn()
 			md := tt.metricDataFn()
-			emptyscopemap := make(map[string]interface{}, 2)
+			emptyscopemap := make(map[string]any, 2)
 			actualMetrics := mapToAdxMetric(res, md, emptyscopemap, zap.NewNop())
 			encoder := json.NewEncoder(io.Discard)
 			for i, expectedMetric := range tt.expectedAdxMetrics {
@@ -589,12 +578,12 @@ func newDummyResource() pcommon.Resource {
 	return res
 }
 
-func newMapFromAttr(jsonStr string) map[string]interface{} {
-	dynamic := make(map[string]interface{})
+func newMapFromAttr(jsonStr string) map[string]any {
+	dynamic := make(map[string]any)
 	err := json.Unmarshal([]byte(jsonStr), &dynamic)
 	// If there is a failure , send the error back in a map
 	if err != nil {
-		return map[string]interface{}{"err": err.Error()}
+		return map[string]any{"err": err.Error()}
 	}
 	return dynamic
 }
@@ -605,7 +594,7 @@ func newMetrics(metricType pmetric.MetricType, ts pcommon.Timestamp) pmetric.Met
 	rms := metrics.ResourceMetrics().AppendEmpty()
 	rms.Resource().Attributes().PutStr("key", "value")
 	rms.Resource().Attributes().PutStr(hostkey, testhost)
-	// // Scope metric in a metric
+	// Scope metric in a metric
 	sms := rms.ScopeMetrics().AppendEmpty()
 	scope := sms.Scope()
 	scope.SetName("SN")

@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter
 
@@ -33,7 +22,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetricsExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopCreateSettings()
@@ -43,7 +32,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 func TestCreateTracesExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopCreateSettings()
@@ -53,7 +42,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 func TestCreateLogsExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopCreateSettings()
@@ -65,7 +54,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateMetricsExporter(
@@ -76,7 +65,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Set values that don't have a valid default.
 	cfg.Token = "testToken"
-	cfg.HTTPClientSettings.Endpoint = "https://example.com"
+	cfg.ClientConfig.Endpoint = "https://example.com"
 	exp, err = factory.CreateMetricsExporter(
 		context.Background(), params,
 		cfg)
@@ -89,7 +78,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 func TestFactory_CreateMetricsExporter(t *testing.T) {
 	config := &Config{
 		Token: "testToken",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "https://example.com:8000",
 		},
 	}

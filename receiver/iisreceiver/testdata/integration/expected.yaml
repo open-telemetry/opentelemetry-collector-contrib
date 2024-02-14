@@ -1,0 +1,245 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: iis.site
+          value:
+            stringValue: Default Web Site
+    scopeMetrics:
+      - metrics:
+          - description: Number of active connections.
+            name: iis.connection.active
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+            unit: "{connections}"
+          - description: Number of connections established anonymously.
+            name: iis.connection.anonymous
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+              isMonotonic: true
+            unit: "{connections}"
+          - description: Total number of attempts to connect to the server.
+            name: iis.connection.attempt.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+              isMonotonic: true
+            unit: "{attempts}"
+          - description: Number of bytes blocked due to bandwidth throttling.
+            name: iis.network.blocked
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+              isMonotonic: true
+            unit: By
+          - description: Number of transmitted files.
+            name: iis.network.file.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: sent
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+              isMonotonic: true
+            unit: "{files}"
+          - description: Total amount of bytes sent and received.
+            name: iis.network.io
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+                - asInt: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: sent
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+              isMonotonic: true
+            unit: By
+          - description: Total number of requests of a given type.
+            name: iis.request.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: request
+                      value:
+                        stringValue: put
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+                - asInt: "0"
+                  attributes:
+                    - key: request
+                      value:
+                        stringValue: trace
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+                - asInt: "0"
+                  attributes:
+                    - key: request
+                      value:
+                        stringValue: get
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+                - asInt: "0"
+                  attributes:
+                    - key: request
+                      value:
+                        stringValue: options
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+                - asInt: "0"
+                  attributes:
+                    - key: request
+                      value:
+                        stringValue: post
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+                - asInt: "0"
+                  attributes:
+                    - key: request
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+                - asInt: "0"
+                  attributes:
+                    - key: request
+                      value:
+                        stringValue: head
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+              isMonotonic: true
+            unit: "{requests}"
+          - description: The amount of time the server has been up.
+            gauge:
+              dataPoints:
+                - asInt: "471"
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+            name: iis.uptime
+            unit: s
+        scope:
+          name: otelcol/iisreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: iis.application_pool
+          value:
+            stringValue: "---1"
+    scopeMetrics:
+      - metrics:
+          - description: Age of oldest request in the queue.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1686199451535881700"
+                  timeUnixNano: "1686199511675213400"
+            name: iis.request.queue.age.max
+            unit: ms
+          - description: Current number of requests in the queue.
+            name: iis.request.queue.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+            unit: "{requests}"
+          - description: Total number of requests rejected.
+            name: iis.request.rejected
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+              isMonotonic: true
+            unit: "{requests}"
+        scope:
+          name: otelcol/iisreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: iis.application_pool
+          value:
+            stringValue: DefaultAppPool
+    scopeMetrics:
+      - metrics:
+          - description: Age of oldest request in the queue.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1686199451535881700"
+                  timeUnixNano: "1686199511675213400"
+            name: iis.request.queue.age.max
+            unit: ms
+          - description: Current number of requests in the queue.
+            name: iis.request.queue.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+            unit: "{requests}"
+          - description: Total number of requests rejected.
+            name: iis.request.rejected
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+              isMonotonic: true
+            unit: "{requests}"
+        scope:
+          name: otelcol/iisreceiver
+          version: latest
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Current number of active threads.
+            name: iis.thread.active
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1266"
+                  startTimeUnixNano: "1664375532837715300"
+                  timeUnixNano: "1664375533465547100"
+            unit: "{threads}"
+        scope:
+          name: otelcol/iisreceiver
+          version: latest

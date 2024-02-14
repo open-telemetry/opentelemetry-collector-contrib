@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package storagetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 
@@ -22,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
-var testStorageType component.Type = "test_storage"
+var testStorageType component.Type = component.MustNewType("test_storage")
 
 // TestStorage is an in memory storage extension designed for testing
 type TestStorage struct {
@@ -65,7 +54,7 @@ func (s *TestStorage) GetClient(ctx context.Context, kind component.Kind, ent co
 	return client, setCreatorID(ctx, client, s.ID)
 }
 
-var nonStorageType component.Type = "non_storage"
+var nonStorageType component.Type = component.MustNewType("non_storage")
 
 // NonStorage is useful for testing expected behaviors that involve
 // non-storage extensions

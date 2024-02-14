@@ -1,0 +1,77 @@
+# default configuration
+spanmetrics/default:
+
+# default configuration with explicit buckets histogram
+spanmetrics/default_explicit_histogram:
+  histogram:
+    explicit:
+
+# configuration with all possible parameters
+spanmetrics/full:
+  histogram:
+    unit: "s"
+    explicit:
+      buckets: [ 10ms, 100ms, 250ms ]
+  exemplars:
+    enabled: true
+  dimensions_cache_size: 1500
+  resource_metrics_cache_size: 1600
+
+  # Additional list of dimensions on top of:
+  # - service.name
+  # - span.name
+  # - span.kind
+  # - status.code
+  dimensions:
+    # If the span is missing http.method, the connector will insert
+    # the http.method dimension with value 'GET'.
+    - name: http.method
+      default: GET
+
+    # If a default is not provided, the http.status_code dimension will be omitted
+    # if the span does not contain http.status_code.
+    - name: http.status_code
+
+  # The aggregation temporality of the generated metrics.
+  # Default: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+  aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
+
+  # The period on which all metrics (whose dimension keys remain in cache) will be emitted.
+  # Default: 15s.
+  metrics_flush_interval: 30s
+
+# default configuration with exponential buckets histogram
+spanmetrics/exponential_histogram:
+  histogram:
+    exponential:
+      max_size: 10
+
+# invalid histogram configuration
+spanmetrics/exponential_and_explicit_histogram:
+  histogram:
+    exponential:
+      max_size: 10
+    explicit:
+      buckets: [ 10ms, 100ms, 250ms ]
+
+spanmetrics/invalid_histogram_unit:
+  histogram:
+    unit: "h"
+
+# exemplars enabled 
+spanmetrics/exemplars_enabled:
+  exemplars:
+    enabled: true
+
+# exemplars enabled with max per datapoint configured
+spanmetrics/exemplars_enabled_with_max_per_datapoint:
+  exemplars:
+    enabled: true
+    max_per_data_point: 5
+
+# resource metrics key attributes filter
+spanmetrics/resource_metrics_key_attributes:
+  resource_metrics_key_attributes:
+    - service.name
+    - telemetry.sdk.language
+    - telemetry.sdk.name

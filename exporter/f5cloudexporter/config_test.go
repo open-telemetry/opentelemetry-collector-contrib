@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package f5cloudexporter
 
@@ -25,9 +14,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	otlphttp "go.opentelemetry.io/collector/exporter/otlphttpexporter"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -36,37 +28,37 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "allsettings").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "allsettings").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	actualCfg := cfg.(*Config)
-	expectedCfg := &Config{
-		Config: otlphttp.Config{
-			RetrySettings: exporterhelper.RetrySettings{
-				Enabled:             true,
-				InitialInterval:     10 * time.Second,
-				MaxInterval:         1 * time.Minute,
-				MaxElapsedTime:      10 * time.Minute,
-				RandomizationFactor: backoff.DefaultRandomizationFactor,
-				Multiplier:          backoff.DefaultMultiplier,
-			},
-			QueueSettings: exporterhelper.QueueSettings{
-				Enabled:      true,
-				NumConsumers: 2,
-				QueueSize:    10,
-			},
-			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint:        "https://f5cloud",
-				ReadBufferSize:  123,
-				WriteBufferSize: 345,
-				Timeout:         time.Second * 10,
-				Headers: map[string]configopaque.String{
-					"User-Agent": "opentelemetry-collector-contrib {{version}}",
-				},
-				Compression: "gzip",
-			},
+	otlphttpCfg := otlphttp.NewFactory().CreateDefaultConfig().(*otlphttp.Config)
+	otlphttpCfg.RetryConfig = configretry.BackOffConfig{
+		Enabled:             true,
+		InitialInterval:     10 * time.Second,
+		MaxInterval:         1 * time.Minute,
+		MaxElapsedTime:      10 * time.Minute,
+		RandomizationFactor: backoff.DefaultRandomizationFactor,
+		Multiplier:          backoff.DefaultMultiplier,
+	}
+	otlphttpCfg.QueueConfig = exporterhelper.QueueSettings{
+		Enabled:      true,
+		NumConsumers: 2,
+		QueueSize:    10,
+	}
+	otlphttpCfg.ClientConfig = confighttp.ClientConfig{
+		Endpoint:        "https://f5cloud",
+		ReadBufferSize:  123,
+		WriteBufferSize: 345,
+		Timeout:         time.Second * 10,
+		Headers: map[string]configopaque.String{
+			"User-Agent": "opentelemetry-collector-contrib {{version}}",
 		},
+		Compression: "gzip",
+	}
+	expectedCfg := &Config{
+		Config: *otlphttpCfg,
 		Source: "dev",
 		AuthConfig: AuthConfig{
 			CredentialFile: "/etc/creds/key.json",
@@ -74,8 +66,8 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}
 	// testing function equality is not supported in Go hence these will be ignored for this test
-	expectedCfg.HTTPClientSettings.CustomRoundTripper = nil
-	actualCfg.HTTPClientSettings.CustomRoundTripper = nil
+	expectedCfg.ClientConfig.CustomRoundTripper = nil
+	actualCfg.ClientConfig.CustomRoundTripper = nil
 	assert.Equal(t, expectedCfg, actualCfg)
 }
 

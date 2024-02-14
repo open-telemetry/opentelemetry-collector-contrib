@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package consul // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/consul"
 
@@ -27,7 +16,7 @@ type Provider interface {
 
 type consulMetadataImpl struct {
 	consulClient  *api.Client
-	allowedLabels map[string]interface{}
+	allowedLabels map[string]any
 }
 
 type Metadata struct {
@@ -37,11 +26,11 @@ type Metadata struct {
 	HostMetadata map[string]string
 }
 
-func NewProvider(client *api.Client, allowedLabels map[string]interface{}) Provider {
+func NewProvider(client *api.Client, allowedLabels map[string]any) Provider {
 	return &consulMetadataImpl{consulClient: client, allowedLabels: allowedLabels}
 }
 
-func (d *consulMetadataImpl) Metadata(ctx context.Context) (*Metadata, error) {
+func (d *consulMetadataImpl) Metadata(_ context.Context) (*Metadata, error) {
 	var metadata Metadata
 	self, err := d.consulClient.Agent().Self()
 	if err != nil {

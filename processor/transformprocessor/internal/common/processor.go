@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
@@ -35,7 +24,7 @@ var _ consumer.Logs = &resourceStatements{}
 var _ baseContext = &resourceStatements{}
 
 type resourceStatements struct {
-	ottl.Statements[ottlresource.TransformContext]
+	ottl.StatementSequence[ottlresource.TransformContext]
 }
 
 func (r resourceStatements) Capabilities() consumer.Capabilities {
@@ -86,7 +75,7 @@ var _ consumer.Logs = &scopeStatements{}
 var _ baseContext = &scopeStatements{}
 
 type scopeStatements struct {
-	ottl.Statements[ottlscope.TransformContext]
+	ottl.StatementSequence[ottlscope.TransformContext]
 }
 
 func (s scopeStatements) Capabilities() consumer.Capabilities {
@@ -160,14 +149,14 @@ func (pc parserCollection) parseCommonContextStatements(contextStatement Context
 		if err != nil {
 			return nil, err
 		}
-		rStatements := ottlresource.NewStatements(parsedStatements, pc.settings, ottlresource.WithErrorMode(pc.errorMode))
+		rStatements := ottlresource.NewStatementSequence(parsedStatements, pc.settings, ottlresource.WithStatementSequenceErrorMode(pc.errorMode))
 		return resourceStatements{rStatements}, nil
 	case Scope:
 		parsedStatements, err := pc.scopeParser.ParseStatements(contextStatement.Statements)
 		if err != nil {
 			return nil, err
 		}
-		sStatements := ottlscope.NewStatements(parsedStatements, pc.settings, ottlscope.WithErrorMode(pc.errorMode))
+		sStatements := ottlscope.NewStatementSequence(parsedStatements, pc.settings, ottlscope.WithStatementSequenceErrorMode(pc.errorMode))
 		return scopeStatements{sStatements}, nil
 	default:
 		return nil, fmt.Errorf("unknown context %v", contextStatement.Context)

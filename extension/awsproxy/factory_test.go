@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package awsproxy
 
@@ -39,7 +28,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, &Config{
 		ProxyConfig: proxy.Config{
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: defaultEndpoint,
+				Endpoint: "0.0.0.0:2000",
 			},
 		},
 	}, cfg)
@@ -72,12 +61,15 @@ func TestFactory_CreateExtension(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
 
 	ctx := context.Background()
-	ext, err := createExtension(ctx, extensiontest.NewNopCreateSettings(), cfg)
+	cs := extensiontest.NewNopCreateSettings()
+	cs.ReportStatus = func(event *component.StatusEvent) {
+		assert.NoError(t, event.Err())
+	}
+	ext, err := createExtension(ctx, cs, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
 
-	mh := newAssertNoErrorHost(t)
-	err = ext.Start(ctx, mh)
+	err = ext.Start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	var resp *http.Response
@@ -96,22 +88,4 @@ func TestFactory_CreateExtension(t *testing.T) {
 
 	err = ext.Shutdown(ctx)
 	assert.NoError(t, err)
-}
-
-// assertNoErrorHost implements a component.Host that asserts that there were no errors.
-type assertNoErrorHost struct {
-	component.Host
-	*testing.T
-}
-
-// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
-func newAssertNoErrorHost(t *testing.T) component.Host {
-	return &assertNoErrorHost{
-		Host: componenttest.NewNopHost(),
-		T:    t,
-	}
-}
-
-func (aneh *assertNoErrorHost) ReportFatalError(err error) {
-	assert.NoError(aneh, err)
 }

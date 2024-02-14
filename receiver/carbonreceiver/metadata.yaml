@@ -1,0 +1,13 @@
+type: carbon
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [aboguszewski-sumo]
+
+tests:
+  config:
+  skip_lifecycle: true

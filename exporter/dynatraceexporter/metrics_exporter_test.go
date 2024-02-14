@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package dynatraceexporter
 
@@ -155,10 +144,10 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 		fields: fields{
 			settings: componenttest.NewNopTelemetrySettings(),
 			cfg: &config.Config{
-				APIToken:           "token",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
-				Prefix:             "prefix",
-				DefaultDimensions:  map[string]string{},
+				APIToken:          "token",
+				ClientConfig:      confighttp.ClientConfig{Endpoint: ts.URL},
+				Prefix:            "prefix",
+				DefaultDimensions: map[string]string{},
 			},
 			client: ts.Client(),
 		},
@@ -170,7 +159,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	}
 
 	t.Run(test.name, func(t *testing.T) {
-		e := &exporter{
+		e := &metricsExporter{
 			settings: test.fields.settings,
 			cfg:      test.fields.cfg,
 			client:   test.fields.client,
@@ -316,12 +305,12 @@ func Test_SumMetrics(t *testing.T) {
 			prevPts := ttlmap.New(cSweepIntervalSeconds, cMaxAgeSeconds)
 
 			// set up the exporter
-			exp := &exporter{
+			exp := &metricsExporter{
 				settings: componenttest.NewNopTelemetrySettings(),
 				cfg: &config.Config{
-					APIToken:           "token",
-					HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
-					Prefix:             "prefix",
+					APIToken:     "token",
+					ClientConfig: confighttp.ClientConfig{Endpoint: ts.URL},
+					Prefix:       "prefix",
 				},
 				client:  ts.Client(),
 				prevPts: prevPts,
@@ -379,10 +368,10 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 	noneMetric := metrics.AppendEmpty()
 	noneMetric.SetName("none")
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			ClientConfig: confighttp.ClientConfig{Endpoint: ts.URL},
 		},
 		client: ts.Client(),
 	}
@@ -416,10 +405,10 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			ClientConfig: confighttp.ClientConfig{Endpoint: ts.URL},
 		},
 		client:     ts.Client(),
 		isDisabled: true,
@@ -442,10 +431,10 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			ClientConfig: confighttp.ClientConfig{Endpoint: ts.URL},
 		},
 		client: ts.Client(),
 	}
@@ -467,10 +456,10 @@ func Test_exporter_send_Unauthorized(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			ClientConfig: confighttp.ClientConfig{Endpoint: ts.URL},
 		},
 		client: ts.Client(),
 	}
@@ -492,10 +481,10 @@ func Test_exporter_send_TooLarge(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			ClientConfig: confighttp.ClientConfig{Endpoint: ts.URL},
 		},
 		client: ts.Client(),
 	}
@@ -517,13 +506,13 @@ func Test_exporter_send_NotFound(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			APIToken:           "token",
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
-			Prefix:             "prefix",
-			DefaultDimensions:  map[string]string{},
+			APIToken:          "token",
+			ClientConfig:      confighttp.ClientConfig{Endpoint: ts.URL},
+			Prefix:            "prefix",
+			DefaultDimensions: map[string]string{},
 		},
 		client: ts.Client(),
 	}
@@ -545,13 +534,13 @@ func Test_exporter_send_TooManyRequests(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			APIToken:           "token",
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
-			Prefix:             "prefix",
-			DefaultDimensions:  map[string]string{},
+			APIToken:          "token",
+			ClientConfig:      confighttp.ClientConfig{Endpoint: ts.URL},
+			Prefix:            "prefix",
+			DefaultDimensions: map[string]string{},
 		},
 		client: ts.Client(),
 	}
@@ -568,13 +557,13 @@ func Test_exporter_send_MiscellaneousErrorCode(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			APIToken:           "token",
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
-			Prefix:             "prefix",
-			DefaultDimensions:  map[string]string{},
+			APIToken:          "token",
+			ClientConfig:      confighttp.ClientConfig{Endpoint: ts.URL},
+			Prefix:            "prefix",
+			DefaultDimensions: map[string]string{},
 		},
 		client: ts.Client(),
 	}
@@ -599,10 +588,10 @@ func Test_exporter_send_chunking(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			ClientConfig: confighttp.ClientConfig{Endpoint: ts.URL},
 		},
 		client: ts.Client(),
 	}
@@ -668,10 +657,10 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 		fields: fields{
 			logger: zap.NewNop(),
 			cfg: &config.Config{
-				APIToken:           "token",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
-				Prefix:             "prefix",
-				DefaultDimensions:  map[string]string{},
+				APIToken:          "token",
+				ClientConfig:      confighttp.ClientConfig{Endpoint: ts.URL},
+				Prefix:            "prefix",
+				DefaultDimensions: map[string]string{},
 			},
 			client: ts.Client(),
 		},
@@ -683,7 +672,7 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	}
 
 	t.Run(test.name, func(t *testing.T) {
-		e := &exporter{
+		e := &metricsExporter{
 			settings: componenttest.NewNopTelemetrySettings(),
 			cfg:      test.fields.cfg,
 			client:   test.fields.client,
@@ -696,9 +685,9 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	})
 }
 
-func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
+func Test_exporter_start_InvalidClientConfig(t *testing.T) {
 	cfg := &config.Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "localhost:9090",
 			TLSSetting: configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{

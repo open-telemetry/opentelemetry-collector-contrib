@@ -1,0 +1,14 @@
+type: podman_stats
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [rogercoll]
+  unsupported_platforms: [windows]
+
+tests:
+  config:
+  skip_lifecycle: true

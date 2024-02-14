@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package proxy
 
@@ -37,14 +26,14 @@ type mock struct {
 	sn              *session.Session
 }
 
-func (m *mock) getEC2Region(s *session.Session) (string, error) {
+func (m *mock) getEC2Region(_ *session.Session) (string, error) {
 	if m.getEC2RegionErr != nil {
 		return "", m.getEC2RegionErr
 	}
 	return ec2Region, nil
 }
 
-func (m *mock) newAWSSession(roleArn string, region string, logger *zap.Logger) (*session.Session, error) {
+func (m *mock) newAWSSession(_ string, _ string, _ *zap.Logger) (*session.Session, error) {
 	return m.sn, nil
 }
 

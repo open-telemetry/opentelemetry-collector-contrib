@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package opencensusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
 
@@ -23,28 +12,27 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/metadata"
 )
 
-const (
-	typeStr   = "opencensus"
-	stability = component.StabilityLevelBeta
-)
+const grpcPort = 55678
 
 // NewFactory creates a new OpenCensus receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTracesReceiver, stability),
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		GRPCServerSettings: configgrpc.GRPCServerSettings{
+		ServerConfig: configgrpc.ServerConfig{
 			NetAddr: confignet.NetAddr{
-				Endpoint:  "0.0.0.0:55678",
+				Endpoint:  localhostgate.EndpointForPort(grpcPort),
 				Transport: "tcp",
 			},
 			// We almost write 0 bytes, so no need to tune WriteBufferSize.

@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package observability // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/observability"
 
@@ -34,18 +23,27 @@ func init() {
 		viewNamespacesAdded,
 		viewNamespacesUpdated,
 		viewNamespacesDeleted,
+		viewNodesAdded,
+		viewNodesUpdated,
+		viewNodesDeleted,
 	)
 }
 
 var (
-	mPodsUpdated       = stats.Int64("otelsvc/k8s/pod_updated", "Number of pod update events received", "1")
-	mPodsAdded         = stats.Int64("otelsvc/k8s/pod_added", "Number of pod add events received", "1")
-	mPodsDeleted       = stats.Int64("otelsvc/k8s/pod_deleted", "Number of pod delete events received", "1")
-	mPodTableSize      = stats.Int64("otelsvc/k8s/pod_table_size", "Size of table containing pod info", "1")
-	mIPLookupMiss      = stats.Int64("otelsvc/k8s/ip_lookup_miss", "Number of times pod by IP lookup failed.", "1")
-	mNamespacesUpdated = stats.Int64("otelsvc/k8s/namespace_updated", "Number of namespace update events received", "1")
-	mNamespacesAdded   = stats.Int64("otelsvc/k8s/namespace_added", "Number of namespace add events received", "1")
-	mNamespacesDeleted = stats.Int64("otelsvc/k8s/namespace_deleted", "Number of namespace delete events received", "1")
+	mPodsUpdated        = stats.Int64("otelsvc/k8s/pod_updated", "Number of pod update events received", "1")
+	mPodsAdded          = stats.Int64("otelsvc/k8s/pod_added", "Number of pod add events received", "1")
+	mPodsDeleted        = stats.Int64("otelsvc/k8s/pod_deleted", "Number of pod delete events received", "1")
+	mPodTableSize       = stats.Int64("otelsvc/k8s/pod_table_size", "Size of table containing pod info", "1")
+	mIPLookupMiss       = stats.Int64("otelsvc/k8s/ip_lookup_miss", "Number of times pod by IP lookup failed.", "1")
+	mNamespacesUpdated  = stats.Int64("otelsvc/k8s/namespace_updated", "Number of namespace update events received", "1")
+	mNamespacesAdded    = stats.Int64("otelsvc/k8s/namespace_added", "Number of namespace add events received", "1")
+	mNamespacesDeleted  = stats.Int64("otelsvc/k8s/namespace_deleted", "Number of namespace delete events received", "1")
+	mNodesUpdated       = stats.Int64("otelsvc/k8s/node_updated", "Number of node update events received", "1")
+	mNodesAdded         = stats.Int64("otelsvc/k8s/node_added", "Number of node add events received", "1")
+	mNodesDeleted       = stats.Int64("otelsvc/k8s/node_deleted", "Number of node delete events received", "1")
+	mReplicaSetsUpdated = stats.Int64("otelsvc/k8s/replicaset_updated", "Number of ReplicaSet update events received", "1")
+	mReplicaSetsAdded   = stats.Int64("otelsvc/k8s/replicaset_added", "Number of ReplicaSet add events received", "1")
+	mReplicaSetsDeleted = stats.Int64("otelsvc/k8s/replicaset_deleted", "Number of ReplicaSet delete events received", "1")
 )
 
 var viewPodsUpdated = &view.View{
@@ -104,6 +102,27 @@ var viewNamespacesDeleted = &view.View{
 	Aggregation: view.Sum(),
 }
 
+var viewNodesUpdated = &view.View{
+	Name:        mNodesUpdated.Name(),
+	Description: mNodesUpdated.Description(),
+	Measure:     mNodesUpdated,
+	Aggregation: view.Sum(),
+}
+
+var viewNodesAdded = &view.View{
+	Name:        mNodesAdded.Name(),
+	Description: mNodesAdded.Description(),
+	Measure:     mNodesAdded,
+	Aggregation: view.Sum(),
+}
+
+var viewNodesDeleted = &view.View{
+	Name:        mNodesDeleted.Name(),
+	Description: mNodesDeleted.Description(),
+	Measure:     mNodesDeleted,
+	Aggregation: view.Sum(),
+}
+
 // RecordPodUpdated increments the metric that records pod update events received.
 func RecordPodUpdated() {
 	stats.Record(context.Background(), mPodsUpdated.M(int64(1)))
@@ -142,4 +161,34 @@ func RecordNamespaceAdded() {
 // RecordNamespaceDeleted increments the metric that records namespace events deleted.
 func RecordNamespaceDeleted() {
 	stats.Record(context.Background(), mNamespacesDeleted.M(int64(1)))
+}
+
+// RecordNodeUpdated increments the metric that records node update events received.
+func RecordNodeUpdated() {
+	stats.Record(context.Background(), mNodesUpdated.M(int64(1)))
+}
+
+// RecordNodeAdded increments the metric that records node add events receiver.
+func RecordNodeAdded() {
+	stats.Record(context.Background(), mNodesAdded.M(int64(1)))
+}
+
+// RecordNodeDeleted increments the metric that records node events deleted.
+func RecordNodeDeleted() {
+	stats.Record(context.Background(), mNodesDeleted.M(int64(1)))
+}
+
+// RecordReplicaSetUpdated increments the metric that records ReplicaSet update events received.
+func RecordReplicaSetUpdated() {
+	stats.Record(context.Background(), mReplicaSetsUpdated.M(int64(1)))
+}
+
+// RecordReplicaSetAdded increments the metric that records ReplicaSet add events receiver.
+func RecordReplicaSetAdded() {
+	stats.Record(context.Background(), mReplicaSetsAdded.M(int64(1)))
+}
+
+// RecordReplicaSetDeleted increments the metric that records ReplicaSet events deleted.
+func RecordReplicaSetDeleted() {
+	stats.Record(context.Background(), mReplicaSetsDeleted.M(int64(1)))
 }

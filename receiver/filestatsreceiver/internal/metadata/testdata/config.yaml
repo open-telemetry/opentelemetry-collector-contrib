@@ -1,0 +1,35 @@
+default:
+all_set:
+  metrics:
+    file.atime:
+      enabled: true
+    file.count:
+      enabled: true
+    file.ctime:
+      enabled: true
+    file.mtime:
+      enabled: true
+    file.size:
+      enabled: true
+  resource_attributes:
+    file.name:
+      enabled: true
+    file.path:
+      enabled: true
+none_set:
+  metrics:
+    file.atime:
+      enabled: false
+    file.count:
+      enabled: false
+    file.ctime:
+      enabled: false
+    file.mtime:
+      enabled: false
+    file.size:
+      enabled: false
+  resource_attributes:
+    file.name:
+      enabled: false
+    file.path:
+      enabled: false

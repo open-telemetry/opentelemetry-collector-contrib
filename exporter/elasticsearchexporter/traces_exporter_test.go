@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchexporter
 
@@ -18,16 +7,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
-	"os"
 	"runtime"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
@@ -36,14 +26,20 @@ func TestTracesExporter_New(t *testing.T) {
 	type validate func(*testing.T, *elasticsearchTracesExporter, error)
 
 	success := func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, exporter)
+	}
+	successWithInternalModel := func(expectedModel *encodeModel) validate {
+		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
+			assert.NoError(t, err)
+			assert.EqualValues(t, expectedModel, exporter.model)
+		}
 	}
 
 	failWith := func(want error) validate {
 		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
 			require.Nil(t, exporter)
-			require.NotNil(t, err)
+			require.Error(t, err)
 			if !errors.Is(err, want) {
 				t.Fatalf("Expected error '%v', but got '%v'", want, err)
 			}
@@ -53,7 +49,7 @@ func TestTracesExporter_New(t *testing.T) {
 	failWithMessage := func(msg string) validate {
 		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
 			require.Nil(t, exporter)
-			require.NotNil(t, err)
+			require.Error(t, err)
 			require.Contains(t, err.Error(), msg)
 		}
 	}
@@ -97,6 +93,14 @@ func TestTracesExporter_New(t *testing.T) {
 			}),
 			want: failWithMessage("Addresses and CloudID are set"),
 		},
+		"create with custom dedup and dedot values": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"test:9200"}
+				cfg.Mapping.Dedot = false
+				cfg.Mapping.Dedup = true
+			}),
+			want: successWithInternalModel(&encodeModel{dedot: false, dedup: true, mode: MappingECS}),
+		},
 	}
 
 	for name, test := range tests {
@@ -106,18 +110,8 @@ func TestTracesExporter_New(t *testing.T) {
 				env = map[string]string{defaultElasticsearchEnvName: ""}
 			}
 
-			oldEnv := make(map[string]string, len(env))
-			defer func() {
-				for k, v := range oldEnv {
-					os.Setenv(k, v)
-				}
-			}()
-
-			for k := range env {
-				oldEnv[k] = os.Getenv(k)
-			}
 			for k, v := range env {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			exporter, err := newTracesExporter(zap.NewNop(), test.config)
@@ -136,6 +130,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14759")
 	}
+
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -148,6 +143,127 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		mustSendTraces(t, exporter, `{"message": "test1"}`)
 
 		rec.WaitItems(2)
+	})
+
+	t.Run("publish with dynamic index", func(t *testing.T) {
+
+		rec := newBulkRecorder()
+		var (
+			prefix = "resprefix-"
+			suffix = "-attrsuffix"
+			index  = "someindex"
+		)
+
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.NoError(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.NoError(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+
+			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
+			assert.Equal(t, expected, create["_index"].(string))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesIndex = index
+			cfg.TracesDynamicIndex.Enabled = true
+		})
+
+		mustSendTracesWithAttributes(t, exporter,
+			map[string]string{
+				indexPrefix: "attrprefix-",
+				indexSuffix: suffix,
+			},
+			map[string]string{
+				indexPrefix: prefix,
+			},
+		)
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with logstash format index", func(t *testing.T) {
+		var defaultCfg Config
+
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.NoError(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.NoError(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+
+			assert.Equal(t, strings.Contains(create["_index"].(string), defaultCfg.TracesIndex), true)
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogstashFormat.Enabled = true
+			cfg.TracesIndex = "not-used-index"
+			defaultCfg = *cfg
+		})
+
+		mustSendTracesWithAttributes(t, exporter, nil, nil)
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with logstash format index and dynamic index enabled ", func(t *testing.T) {
+		var (
+			prefix = "resprefix-"
+			suffix = "-attrsuffix"
+			index  = "someindex"
+		)
+
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.NoError(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.NoError(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
+
+			assert.Equal(t, strings.Contains(create["_index"].(string), expected), true)
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesIndex = index
+			cfg.TracesDynamicIndex.Enabled = true
+			cfg.LogstashFormat.Enabled = true
+		})
+
+		mustSendTracesWithAttributes(t, exporter,
+			map[string]string{
+				indexPrefix: "attrprefix-",
+				indexSuffix: suffix,
+			},
+			map[string]string{
+				indexPrefix: prefix,
+			},
+		)
+		rec.WaitItems(1)
 	})
 
 	t.Run("retry http request", func(t *testing.T) {
@@ -187,13 +303,13 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		handlers := map[string]func(attempts *atomic.Int64) bulkHandler{
 			"fail http request": func(attempts *atomic.Int64) bulkHandler {
 				return func([]itemRequest) ([]itemResponse, error) {
-					attempts.Inc()
+					attempts.Add(1)
 					return nil, &httpTestError{message: "oops"}
 				}
 			},
 			"fail item": func(attempts *atomic.Int64) bulkHandler {
 				return func(docs []itemRequest) ([]itemResponse, error) {
-					attempts.Inc()
+					attempts.Add(1)
 					return itemsReportStatus(docs, http.StatusTooManyRequests)
 				}
 			},
@@ -205,7 +321,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 				for name, configurer := range configurations {
 					t.Run(name, func(t *testing.T) {
 						t.Parallel()
-						attempts := atomic.NewInt64(0)
+						attempts := &atomic.Int64{}
 						server := newESTestServer(t, handler(attempts))
 
 						testConfig := configurer(server.URL)
@@ -221,9 +337,9 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 	})
 
 	t.Run("do not retry invalid request", func(t *testing.T) {
-		attempts := atomic.NewInt64(0)
+		attempts := &atomic.Int64{}
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			attempts.Inc()
+			attempts.Add(1)
 			return nil, &httpTestError{message: "oops", status: http.StatusBadRequest}
 		})
 
@@ -255,9 +371,9 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 	})
 
 	t.Run("do not retry bad item", func(t *testing.T) {
-		attempts := atomic.NewInt64(0)
+		attempts := &atomic.Int64{}
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			attempts.Inc()
+			attempts.Add(1)
 			return itemsReportStatus(docs, http.StatusBadRequest)
 		})
 
@@ -311,6 +427,15 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		assert.Equal(t, [3]int{1, 2, 1}, attempts)
 	})
 }
+func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) *elasticsearchLogsExporter {
+	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestTracesExporterConfig(fns...)(url))
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		require.NoError(t, exporter.Shutdown(context.TODO()))
+	})
+	return exporter
+}
 
 func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) *elasticsearchTracesExporter {
 	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestTracesExporterConfig(fns...)(url))
@@ -337,5 +462,16 @@ func withTestTracesExporterConfig(fns ...func(*Config)) func(string) *Config {
 
 func mustSendTraces(t *testing.T, exporter *elasticsearchTracesExporter, contents string) {
 	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts)
+	require.NoError(t, err)
+}
+
+// send trace with span & resource attributes
+func mustSendTracesWithAttributes(t *testing.T, exporter *elasticsearchTracesExporter, attrMp map[string]string, resMp map[string]string) {
+	traces := newTracesWithAttributeAndResourceMap(attrMp, resMp)
+	resSpans := traces.ResourceSpans().At(0)
+	span := resSpans.ScopeSpans().At(0).Spans().At(0)
+	scope := resSpans.ScopeSpans().At(0).Scope()
+
+	err := exporter.pushTraceRecord(context.TODO(), resSpans.Resource(), span, scope)
 	require.NoError(t, err)
 }

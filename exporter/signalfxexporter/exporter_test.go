@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxexporter
 
@@ -78,18 +67,18 @@ func TestNew(t *testing.T) {
 		{
 			name: "successfully create exporter",
 			config: &Config{
-				AccessToken:        "someToken",
-				Realm:              "xyz",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
+				AccessToken:  "someToken",
+				Realm:        "xyz",
+				ClientConfig: confighttp.ClientConfig{Timeout: 1 * time.Second},
 			},
 		},
 		{
 			name: "create exporter with host metadata syncer",
 			config: &Config{
-				AccessToken:        "someToken",
-				Realm:              "xyz",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
-				SyncHostMetadata:   true,
+				AccessToken:      "someToken",
+				Realm:            "xyz",
+				ClientConfig:     confighttp.ClientConfig{Timeout: 1 * time.Second},
+				SyncHostMetadata: true,
 			},
 		},
 	}
@@ -191,7 +180,7 @@ func TestConsumeMetrics(t *testing.T) {
 			assert.NoError(t, err)
 
 			cfg := &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout: 1 * time.Second,
 					Headers: map[string]configopaque.String{"test_header_": "test"},
 				},
@@ -200,14 +189,14 @@ func TestConsumeMetrics(t *testing.T) {
 			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
 			require.NoError(t, err)
 
-			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "")
+			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false)
 			require.NoError(t, err)
 			require.NotNil(t, c)
 			dpClient := &sfxDPClient{
 				sfxClientBase: sfxClientBase{
 					ingestURL: serverURL,
 					client:    client,
-					zippers: sync.Pool{New: func() interface{} {
+					zippers: sync.Pool{New: func() any {
 						return gzip.NewWriter(nil)
 					}},
 				},
@@ -413,11 +402,11 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.HTTPClientSettings.Headers = make(map[string]configopaque.String)
+			cfg.ClientConfig.Headers = make(map[string]configopaque.String)
 			for k, v := range tt.additionalHeaders {
-				cfg.HTTPClientSettings.Headers[k] = configopaque.String(v)
+				cfg.ClientConfig.Headers[k] = configopaque.String(v)
 			}
-			cfg.HTTPClientSettings.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.ClientConfig.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
@@ -452,9 +441,9 @@ func TestNewEventExporter(t *testing.T) {
 	assert.Nil(t, got)
 
 	cfg := &Config{
-		AccessToken:        "someToken",
-		Realm:              "xyz",
-		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
+		AccessToken:  "someToken",
+		Realm:        "xyz",
+		ClientConfig: confighttp.ClientConfig{Timeout: 1 * time.Second},
 	}
 
 	got, err = newEventExporter(cfg, exportertest.NewNopCreateSettings())
@@ -568,7 +557,7 @@ func TestConsumeEventData(t *testing.T) {
 			assert.NoError(t, err)
 
 			cfg := &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout: 1 * time.Second,
 					Headers: map[string]configopaque.String{"test_header_": "test"},
 				},
@@ -740,13 +729,14 @@ func TestConsumeMetadata(t *testing.T) {
 		cfg.ExcludeMetrics,
 		cfg.IncludeMetrics,
 		cfg.NonAlphanumericDimensionChars,
+		false,
 	)
 	require.NoError(t, err)
 	type args struct {
 		metadata []*metadata.MetadataUpdate
 	}
 	type fields struct {
-		payLoad map[string]interface{}
+		payLoad map[string]any
 	}
 	tests := []struct {
 		name                   string
@@ -755,14 +745,14 @@ func TestConsumeMetadata(t *testing.T) {
 		excludeProperties      []dpfilters.PropertyFilter
 		expectedDimensionKey   string
 		expectedDimensionValue string
-		sendDelay              int
+		sendDelay              time.Duration
 		shouldNotSendUpdate    bool
 	}{
 		{
 			name: "Test property updates",
 			fields: fields{
-				map[string]interface{}{
-					"customProperties": map[string]interface{}{
+				map[string]any{
+					"customProperties": map[string]any{
 						"prop.erty1": "val1",
 						"property2":  nil,
 						"prop.erty3": "val33",
@@ -821,12 +811,12 @@ func TestConsumeMetadata(t *testing.T) {
 		{
 			name: "Test tag updates",
 			fields: fields{
-				map[string]interface{}{
-					"customProperties": map[string]interface{}{},
-					"tags": []interface{}{
+				map[string]any{
+					"customProperties": map[string]any{},
+					"tags": []any{
 						"tag.1",
 					},
-					"tagsToRemove": []interface{}{
+					"tagsToRemove": []any{
 						"tag/2",
 					},
 				},
@@ -863,16 +853,16 @@ func TestConsumeMetadata(t *testing.T) {
 		{
 			name: "Test quick successive updates",
 			fields: fields{
-				map[string]interface{}{
-					"customProperties": map[string]interface{}{
+				map[string]any{
+					"customProperties": map[string]any{
 						"property1": nil,
 						"property2": "val2",
 						"property3": nil,
 					},
-					"tags": []interface{}{
+					"tags": []any{
 						"tag/2",
 					},
-					"tagsToRemove": []interface{}{
+					"tagsToRemove": []any{
 						"tag.1",
 					},
 				},
@@ -928,13 +918,13 @@ func TestConsumeMetadata(t *testing.T) {
 			},
 			expectedDimensionKey:   "key",
 			expectedDimensionValue: "id",
-			sendDelay:              1,
+			sendDelay:              time.Second,
 		},
 		{
 			name: "Test updates on dimensions with nonalphanumeric characters (other than the default allow list)",
 			fields: fields{
-				map[string]interface{}{
-					"customProperties": map[string]interface{}{
+				map[string]any{
+					"customProperties": map[string]any{
 						"prop.erty1": "val1",
 						"property2":  nil,
 						"prop.erty3": "val33",
@@ -1022,7 +1012,7 @@ func TestConsumeMetadata(t *testing.T) {
 				assert.Equal(t, tt.expectedDimensionKey, dimPair[0])
 				assert.Equal(t, tt.expectedDimensionValue, dimPair[1])
 
-				p := map[string]interface{}{
+				p := map[string]any{
 					"customProperties": map[string]*string{},
 					"tags":             []string{},
 					"tagsToRemove":     []string{},
@@ -1044,14 +1034,14 @@ func TestConsumeMetadata(t *testing.T) {
 			dimClient := dimensions.NewDimensionClient(
 				context.Background(),
 				dimensions.DimensionClientOptions{
-					Token:                 "foo",
-					APIURL:                serverURL,
-					LogUpdates:            true,
-					Logger:                logger,
-					SendDelay:             tt.sendDelay,
-					PropertiesMaxBuffered: 10,
-					MetricsConverter:      *converter,
-					ExcludeProperties:     tt.excludeProperties,
+					Token:             "foo",
+					APIURL:            serverURL,
+					LogUpdates:        true,
+					Logger:            logger,
+					SendDelay:         tt.sendDelay,
+					MaxBuffered:       10,
+					MetricsConverter:  *converter,
+					ExcludeProperties: tt.excludeProperties,
 				})
 			dimClient.Start()
 
@@ -1075,7 +1065,7 @@ func TestConsumeMetadata(t *testing.T) {
 			select {
 			case <-c:
 			// wait 500ms longer than send delay
-			case <-time.After(time.Duration(tt.sendDelay)*time.Second + 500*time.Millisecond):
+			case <-time.After(tt.sendDelay + 500*time.Millisecond):
 				require.True(t, tt.shouldNotSendUpdate, "timeout waiting for response")
 			}
 
@@ -1099,7 +1089,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	serverURL, err := url.Parse(server.URL)
 	assert.NoError(b, err)
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "")
+	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false)
 	require.NoError(b, err)
 	require.NotNil(b, c)
 	dpClient := &sfxDPClient{
@@ -1108,7 +1098,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 			client: &http.Client{
 				Timeout: 1 * time.Second,
 			},
-			zippers: sync.Pool{New: func() interface{} {
+			zippers: sync.Pool{New: func() any {
 				return gzip.NewWriter(nil)
 			}},
 		},
@@ -1289,6 +1279,44 @@ func TestTLSIngestConnection(t *testing.T) {
 	}
 }
 
+func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
+	translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600)
+	require.NoError(t, err)
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), translator, defaultExcludeMetrics, nil, "_-.", false)
+	require.NoError(t, err)
+
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	sm := rm.ScopeMetrics().AppendEmpty()
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("system.cpu.time")
+	sum := m.SetEmptySum()
+	for _, state := range []string{"idle", "interrupt", "nice", "softirq", "steal", "system", "user", "wait"} {
+		for cpu := 0; cpu < 32; cpu++ {
+			dp := sum.DataPoints().AppendEmpty()
+			dp.SetDoubleValue(0)
+			dp.Attributes().PutStr("cpu", fmt.Sprintf("%d", cpu))
+			dp.Attributes().PutStr("state", state)
+		}
+	}
+	dps := converter.MetricsToSignalFxV2(md)
+	found := map[string]int64{}
+	for _, dp := range dps {
+		if dp.Metric == "cpu.num_processors" || dp.Metric == "cpu.idle" {
+			intVal := dp.Value.IntValue
+			require.NotNil(t, intVal, fmt.Sprintf("unexpected nil IntValue for %q", dp.Metric))
+			found[dp.Metric] = *intVal
+		} else {
+			// account for unexpected w/ test-failing placeholder
+			found[dp.Metric] = -1
+		}
+	}
+	require.Equal(t, map[string]int64{
+		"cpu.num_processors": 32,
+		"cpu.idle":           0,
+	}, found)
+}
+
 func TestTLSAPIConnection(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	converter, err := translation.NewMetricsConverter(
@@ -1297,7 +1325,7 @@ func TestTLSAPIConnection(t *testing.T) {
 		cfg.ExcludeMetrics,
 		cfg.IncludeMetrics,
 		cfg.NonAlphanumericDimensionChars,
-	)
+		false)
 	require.NoError(t, err)
 
 	metadata := []*metadata.MetadataUpdate{
@@ -1365,14 +1393,14 @@ func TestTLSAPIConnection(t *testing.T) {
 			dimClient := dimensions.NewDimensionClient(
 				cancellable,
 				dimensions.DimensionClientOptions{
-					Token:                 "",
-					APIURL:                serverURL,
-					LogUpdates:            true,
-					Logger:                logger,
-					SendDelay:             1,
-					PropertiesMaxBuffered: 10,
-					MetricsConverter:      *converter,
-					APITLSConfig:          apiTLSCfg,
+					Token:            "",
+					APIURL:           serverURL,
+					LogUpdates:       true,
+					Logger:           logger,
+					SendDelay:        1,
+					MaxBuffered:      10,
+					MetricsConverter: *converter,
+					APITLSConfig:     apiTLSCfg,
 				})
 			dimClient.Start()
 

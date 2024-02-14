@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 // Package elasticsearchexporter contains an opentelemetry-collector exporter
 // for Elasticsearch.
@@ -18,19 +7,22 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
 type elasticsearchTracesExporter struct {
 	logger *zap.Logger
 
-	index       string
-	maxAttempts int
+	index          string
+	logstashFormat LogstashFormatSettings
+	dynamicIndex   bool
+	maxAttempts    int
 
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
@@ -57,17 +49,22 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExp
 		maxAttempts = cfg.Retry.MaxRequests
 	}
 
-	// TODO: Apply encoding and field mapping settings.
-	model := &encodeModel{dedup: true, dedot: false}
+	model := &encodeModel{
+		dedup: cfg.Mapping.Dedup,
+		dedot: cfg.Mapping.Dedot,
+		mode:  cfg.MappingMode(),
+	}
 
 	return &elasticsearchTracesExporter{
 		logger:      logger,
 		client:      client,
 		bulkIndexer: bulkIndexer,
 
-		index:       cfg.TracesIndex,
-		maxAttempts: maxAttempts,
-		model:       model,
+		index:          cfg.TracesIndex,
+		dynamicIndex:   cfg.TracesDynamicIndex.Enabled,
+		maxAttempts:    maxAttempts,
+		model:          model,
+		logstashFormat: cfg.LogstashFormat,
 	}, nil
 }
 
@@ -86,9 +83,10 @@ func (e *elasticsearchTracesExporter) pushTraceData(
 		resource := il.Resource()
 		scopeSpans := il.ScopeSpans()
 		for j := 0; j < scopeSpans.Len(); j++ {
+			scope := scopeSpans.At(j).Scope()
 			spans := scopeSpans.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
-				if err := e.pushTraceRecord(ctx, resource, spans.At(k)); err != nil {
+				if err := e.pushTraceRecord(ctx, resource, spans.At(k), scope); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -98,13 +96,29 @@ func (e *elasticsearchTracesExporter) pushTraceData(
 		}
 	}
 
-	return multierr.Combine(errs...)
+	return errors.Join(errs...)
 }
 
-func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span) error {
-	document, err := e.model.encodeSpan(resource, span)
+func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) error {
+	fIndex := e.index
+	if e.dynamicIndex {
+		prefix := getFromBothResourceAndAttribute(indexPrefix, resource, span)
+		suffix := getFromBothResourceAndAttribute(indexSuffix, resource, span)
+
+		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+	}
+
+	if e.logstashFormat.Enabled {
+		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
+		if err != nil {
+			return err
+		}
+		fIndex = formattedIndex
+	}
+
+	document, err := e.model.encodeSpan(resource, span, scope)
 	if err != nil {
 		return fmt.Errorf("Failed to encode trace record: %w", err)
 	}
-	return pushDocuments(ctx, e.logger, e.index, document, e.bulkIndexer, e.maxAttempts)
+	return pushDocuments(ctx, e.logger, fIndex, document, e.bulkIndexer, e.maxAttempts)
 }

@@ -14,7 +14,7 @@ The `recombine` operator combines consecutive logs into single logs based on sim
 | `combine_field`      | required         | The [field](../types/field.md) from all the entries that will recombined. |
 | `combine_with`       | `"\n"`           | The string that is put between the combined entries. This can be an empty string as well. When using special characters like `\n`, be sure to enclose the value in double quotes: `"\n"`. |
 | `max_batch_size`     | 1000             | The maximum number of consecutive entries that will be combined into a single entry. |
-| `overwrite_with`     | `oldest`         | Whether to use the fields from the `oldest` or the `newest` entry for all the fields that are not combined. |
+| `overwrite_with`     | `newest`         | Whether to use the fields from the `oldest` or the `newest` entry for all the fields that are not combined. |
 | `force_flush_period` | `5s`             | Flush timeout after which entries will be flushed aborting the wait for their sub parts to be merged with. |
 | `source_identifier`  | `$attributes["file.path"]` | The [field](../types/field.md) to separate one source of logs from others when combining them. |
 | `max_sources`        | 1000             | The maximum number of unique sources allowed concurrently to be tracked for combining separately. |
@@ -101,8 +101,8 @@ This can be expressed with the following configuration:
 
 ```yaml
 - type: recombine
-  combine_field: body.message
-  is_first_entry: body.message matches "^[^\s]"
+  combine_field: body
+  is_first_entry: body matches "^[^\\s]"
 ```
 
 Given the following input file:
@@ -126,23 +126,17 @@ The following logs will be output:
   {
     "timestamp": "2020-12-04T13:03:38.41149-05:00",
     "severity": 0,
-    "body": {
-      "message": "Log message 1",
-    }
+    "body": "Log message 1"
   },
   {
     "timestamp": "2020-12-04T13:03:38.41149-05:00",
     "severity": 0,
-    "body": {
-      "message": "Error: java.lang.Exception: Stack trace\n        at java.lang.Thread.dumpStack(Thread.java:1336)\n        at Main.demo3(Main.java:15)\n        at Main.demo2(Main.java:12)\n        at Main.demo1(Main.java:9)\n        at Main.demo(Main.java:6)\n        at Main.main(Main.java:3)",
-    }
+    "body": "Error: java.lang.Exception: Stack trace\n        at java.lang.Thread.dumpStack(Thread.java:1336)\n        at Main.demo3(Main.java:15)\n        at Main.demo2(Main.java:12)\n        at Main.demo1(Main.java:9)\n        at Main.demo(Main.java:6)\n        at Main.main(Main.java:3)"
   },
   {
     "timestamp": "2020-12-04T13:03:38.41149-05:00",
     "severity": 0,
-    "body": {
-      "message": "Another log message",
-    }
+    "body": "Another log message",
   },
 ]
 ```

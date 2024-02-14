@@ -1,16 +1,5 @@
-// Copyright 2021, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package tencentcloudlogserviceexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 
@@ -83,7 +72,7 @@ func resourceToLogContents(resource pcommon.Resource) []*cls.Log_Content {
 		serviceName = service.AsString()
 	}
 
-	fields := map[string]interface{}{}
+	fields := map[string]any{}
 	attrs.Range(func(k string, v pcommon.Value) bool {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
 			return true
@@ -137,7 +126,7 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 	preAllocCount := 16
 	clsLog.Contents = make([]*cls.Log_Content, 0, preAllocCount+len(resourceContents)+len(instrumentationLibraryContents))
 
-	fields := map[string]interface{}{}
+	fields := map[string]any{}
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		fields[k] = v.AsString()
 		return true

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metadata
 
@@ -39,12 +28,12 @@ func TestMetricsMetadata_Timestamp(t *testing.T) {
 	testCases := map[string]struct {
 		metadata        *MetricsMetadata
 		rowColumnNames  []string
-		rowColumnValues []interface{}
+		rowColumnValues []any
 		errorRequired   bool
 	}{
-		"Happy path":               {&MetricsMetadata{TimestampColumnName: timestampColumnName}, []string{timestampColumnName}, []interface{}{time.Now().UTC()}, false},
-		"No timestamp column name": {&MetricsMetadata{}, []string{}, []interface{}{}, false},
-		"With error":               {&MetricsMetadata{TimestampColumnName: "nonExistingColumn"}, []string{timestampColumnName}, []interface{}{time.Now().UTC()}, true},
+		"Happy path":               {&MetricsMetadata{TimestampColumnName: timestampColumnName}, []string{timestampColumnName}, []any{time.Now().UTC()}, false},
+		"No timestamp column name": {&MetricsMetadata{}, []string{}, []any{}, false},
+		"With error":               {&MetricsMetadata{TimestampColumnName: "nonExistingColumn"}, []string{timestampColumnName}, []any{time.Now().UTC()}, true},
 	}
 
 	for name, testCase := range testCases {
@@ -73,8 +62,8 @@ func TestToLabelValue(t *testing.T) {
 	testCases := map[string]struct {
 		valueType                ValueType
 		expectedType             LabelValue
-		expectedValue            interface{}
-		expectedTransformedValue interface{}
+		expectedValue            any
+		expectedTransformedValue any
 	}{
 		"String label value metadata":             {StringValueType, stringLabelValue{}, stringValue, nil},
 		"Int64 label value metadata":              {IntValueType, int64LabelValue{}, int64Value, nil},
@@ -86,7 +75,7 @@ func TestToLabelValue(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			row, _ := spanner.NewRow(rowColumnNames, []interface{}{testCase.expectedValue})
+			row, _ := spanner.NewRow(rowColumnNames, []any{testCase.expectedValue})
 			metadata, _ := NewLabelValueMetadata(labelName, labelColumnName, testCase.valueType)
 
 			labelValue, _ := toLabelValue(metadata, row)
@@ -128,7 +117,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 			byteSliceLabelValueMetadata.ColumnName(),
 			lockRequestSliceLabelValueMetadata.ColumnName(),
 		},
-		[]interface{}{
+		[]any{
 			stringValue,
 			boolValue,
 			int64Value,
@@ -159,7 +148,7 @@ func TestMetricsMetadata_ToLabelValues_Error(t *testing.T) {
 	stringLabelValueMetadata, _ := NewLabelValueMetadata("nonExisting", "nonExistingColumn", StringValueType)
 	queryLabelValuesMetadata := []LabelValueMetadata{stringLabelValueMetadata}
 	metadata := MetricsMetadata{QueryLabelValuesMetadata: queryLabelValuesMetadata}
-	row, _ := spanner.NewRow([]string{}, []interface{}{})
+	row, _ := spanner.NewRow([]string{}, []any{})
 
 	labelValues, err := metadata.toLabelValues(row)
 
@@ -173,7 +162,7 @@ func TestToMetricValue(t *testing.T) {
 	testCases := map[string]struct {
 		valueType     ValueType
 		expectedType  MetricValue
-		expectedValue interface{}
+		expectedValue any
 	}{
 		"Int64 metric value metadata":   {IntValueType, int64MetricValue{}, int64Value},
 		"Float64 metric value metadata": {FloatValueType, float64MetricValue{}, float64Value},
@@ -181,7 +170,7 @@ func TestToMetricValue(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			row, _ := spanner.NewRow(rowColumnNames, []interface{}{testCase.expectedValue})
+			row, _ := spanner.NewRow(rowColumnNames, []any{testCase.expectedValue})
 			metadata, _ := NewMetricValueMetadata(metricName, metricColumnName, metricDataType, metricUnit, testCase.valueType)
 
 			metricValue, _ := toMetricValue(metadata, row)
@@ -209,7 +198,7 @@ func TestMetricsMetadata_ToMetricValues_AllPossibleMetadata(t *testing.T) {
 	metadata := MetricsMetadata{QueryMetricValuesMetadata: queryMetricValuesMetadata}
 	row, _ := spanner.NewRow(
 		[]string{int64MetricValueMetadata.ColumnName(), float64MetricValueMetadata.ColumnName()},
-		[]interface{}{int64Value, float64Value})
+		[]any{int64Value, float64Value})
 
 	metricValues, _ := metadata.toMetricValues(row)
 
@@ -228,7 +217,7 @@ func TestMetricsMetadata_ToMetricValues_Error(t *testing.T) {
 		"nonExistingMetricColumnName", metricDataType, metricUnit, IntValueType)
 	queryMetricValuesMetadata := []MetricValueMetadata{int64MetricValueMetadata}
 	metadata := MetricsMetadata{QueryMetricValuesMetadata: queryMetricValuesMetadata}
-	row, _ := spanner.NewRow([]string{}, []interface{}{})
+	row, _ := spanner.NewRow([]string{}, []any{})
 
 	metricValues, err := metadata.toMetricValues(row)
 
@@ -252,13 +241,13 @@ func TestMetricsMetadata_RowToMetricsDataPoints(t *testing.T) {
 	}
 	testCases := map[string]struct {
 		rowColumnNames  []string
-		rowColumnValues []interface{}
+		rowColumnValues []any
 		expectError     bool
 	}{
-		"Happy path":            {[]string{labelColumnName, metricColumnName, timestampColumnName}, []interface{}{stringValue, int64Value, timestamp}, false},
-		"Error on timestamp":    {[]string{labelColumnName, metricColumnName}, []interface{}{stringValue, int64Value}, true},
-		"Error on label value":  {[]string{metricColumnName, timestampColumnName}, []interface{}{int64Value, timestamp}, true},
-		"Error on metric value": {[]string{labelColumnName, timestampColumnName}, []interface{}{stringValue, timestamp}, true},
+		"Happy path":            {[]string{labelColumnName, metricColumnName, timestampColumnName}, []any{stringValue, int64Value, timestamp}, false},
+		"Error on timestamp":    {[]string{labelColumnName, metricColumnName}, []any{stringValue, int64Value}, true},
+		"Error on label value":  {[]string{metricColumnName, timestampColumnName}, []any{int64Value, timestamp}, true},
+		"Error on metric value": {[]string{labelColumnName, timestampColumnName}, []any{stringValue, timestamp}, true},
 	}
 
 	for name, testCase := range testCases {

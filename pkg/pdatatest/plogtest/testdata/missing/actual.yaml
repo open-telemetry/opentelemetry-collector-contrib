@@ -1,0 +1,6 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: type
+          value:
+            stringValue: one

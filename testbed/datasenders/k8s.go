@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datasenders // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 
@@ -186,7 +175,7 @@ func NewKubernetesContainerWriter() *FileLogK8sWriter {
         regex: '^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
         output: extract_metadata_from_filepath
         timestamp:
-          parse_from: body.time
+          parse_from: attributes.time
           layout_type: gotime
           layout: '2006-01-02T15:04:05.000000000-07:00'
       # Parse CRI-Containerd format
@@ -195,15 +184,18 @@ func NewKubernetesContainerWriter() *FileLogK8sWriter {
         regex: '^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
         output: extract_metadata_from_filepath
         timestamp:
-          parse_from: body.time
+          parse_from: attributes.time
           layout: '%%Y-%%m-%%dT%%H:%%M:%%S.%%LZ'
       # Parse Docker format
       - type: json_parser
         id: parser-docker
         output: extract_metadata_from_filepath
         timestamp:
-          parse_from: body.time
+          parse_from: attributes.time
           layout: '%%Y-%%m-%%dT%%H:%%M:%%S.%%LZ'
+      - type: move
+        from: attributes.log
+        to: body
       # Extract metadata from file path
       - type: regex_parser
         id: extract_metadata_from_filepath
@@ -211,26 +203,23 @@ func NewKubernetesContainerWriter() *FileLogK8sWriter {
         parse_from: attributes["log.file.path"]
       # Move out attributes to Attributes
       - type: move
-        from: body.stream
+        from: attributes.stream
         to: attributes["log.iostream"]
       - type: move
-        from: body.container_name
+        from: attributes.container_name
         to: attributes["k8s.container.name"]
       - type: move
-        from: body.namespace
+        from: attributes.namespace
         to: attributes["k8s.namespace.name"]
       - type: move
-        from: body.pod_name
+        from: attributes.pod_name
         to: attributes["k8s.pod.name"]
       - type: move
-        from: body.restart_count
+        from: attributes.restart_count
         to: attributes["k8s.container.restart_count"]
       - type: move
-        from: body.uid
+        from: attributes.uid
         to: attributes["k8s.pod.uid"]
-      - type: move
-        from: body.log
-        to: body
   `)
 }
 
@@ -250,35 +239,35 @@ func NewKubernetesCRIContainerdWriter() *FileLogK8sWriter {
         regex: '^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
         output: extract_metadata_from_filepath
         timestamp:
-          parse_from: body.time
+          parse_from: attributes.time
           layout: '%%Y-%%m-%%dT%%H:%%M:%%S.%%LZ'
       # Extract metadata from file path
       - type: regex_parser
         id: extract_metadata_from_filepath
         regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]{36})\/(?P<container_name>[^\._]+)\/(?P<restart_count>\d+)\.log$'
         parse_from: attributes["log.file.path"]
+      - type: move
+        from: attributes.log
+        to: body
       # Move out attributes to Attributes
       - type: move
-        from: body.stream
+        from: attributes.stream
         to: attributes["log.iostream"]
       - type: move
-        from: body.container_name
+        from: attributes.container_name
         to: attributes["k8s.container.name"]
       - type: move
-        from: body.namespace
+        from: attributes.namespace
         to: attributes["k8s.namespace.name"]
       - type: move
-        from: body.pod_name
+        from: attributes.pod_name
         to: attributes["k8s.pod.name"]
       - type: move
-        from: body.restart_count
+        from: attributes.restart_count
         to: attributes["k8s.container.restart_count"]
       - type: move
-        from: body.uid
+        from: attributes.uid
         to: attributes["k8s.pod.uid"]
-      - type: move
-        from: body.log
-        to: body
   `)
 }
 
@@ -298,7 +287,7 @@ func NewKubernetesCRIContainerdNoAttributesOpsWriter() *FileLogK8sWriter {
         regex: '^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
         output: extract_metadata_from_filepath
         timestamp:
-          parse_from: body.time
+          parse_from: attributes.time
           layout: '%%Y-%%m-%%dT%%H:%%M:%%S.%%LZ'
       # Extract metadata from file path
       - type: regex_parser
@@ -323,7 +312,7 @@ func NewCRIContainerdWriter() *FileLogK8sWriter {
         id: parser-containerd
         regex: '^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
         timestamp:
-          parse_from: body.time
+          parse_from: attributes.time
           layout: '%%Y-%%m-%%dT%%H:%%M:%%S.%%LZ'
   `)
 }

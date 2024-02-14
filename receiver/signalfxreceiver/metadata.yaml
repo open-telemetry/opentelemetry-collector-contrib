@@ -1,0 +1,13 @@
+type: signalfx
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics, logs]
+  distributions: [contrib, splunk, sumo]
+  codeowners:
+    active: ["dmitryax"]
+    emeritus:
+
+tests:
+  config:

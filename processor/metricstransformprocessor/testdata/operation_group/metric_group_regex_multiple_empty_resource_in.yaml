@@ -1,0 +1,13 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - gauge: {}
+            name: container.cpu.utilization
+          - gauge: {}
+            name: container.memory.usage
+          - gauge: {}
+            name: k8s.pod.cpu.utilization
+          - gauge: {}
+            name: k8s.pod.memory.usage
+        scope: {}

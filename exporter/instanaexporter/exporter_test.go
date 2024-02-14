@@ -1,16 +1,5 @@
-// Copyright 2022, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package instanaexporter
 
@@ -38,9 +27,9 @@ func TestPushConvertedTraces(t *testing.T) {
 	defer traceServer.Close()
 
 	cfg := Config{
-		AgentKey:           "key11",
-		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: traceServer.URL},
-		Endpoint:           traceServer.URL,
+		AgentKey:     "key11",
+		ClientConfig: confighttp.ClientConfig{Endpoint: traceServer.URL},
+		Endpoint:     traceServer.URL,
 	}
 
 	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopCreateSettings())
@@ -93,7 +82,7 @@ func TestSelfSignedBackend(t *testing.T) {
 
 	cfg := Config{
 		AgentKey: "key11",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: server.URL,
 			TLSSetting: configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
@@ -119,7 +108,7 @@ func TestSelfSignedBackend(t *testing.T) {
 func TestSelfSignedBackendCAFileNotFound(t *testing.T) {
 	cfg := Config{
 		AgentKey: "key11",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
 			TLSSetting: configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{

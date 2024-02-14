@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //lint:file-ignore U1000 t.Skip() flaky test causes unused function warning.
 
@@ -44,9 +33,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -57,9 +46,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/metadata"
 )
 
-var ocReceiverID = component.NewIDWithName(typeStr, "receiver_test")
+var ocReceiverID = component.NewIDWithName(metadata.Type, "receiver_test")
 
 func TestGrpcGateway_endToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
@@ -407,14 +397,14 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 			msg *agenttracepb.ExportTraceServiceRequest) error
 	}{
 		{
-			receiverID: component.NewIDWithName(typeStr, "traces"),
+			receiverID: component.NewIDWithName(metadata.Type, "traces"),
 			exportFn:   exportBidiFn,
 		},
 	}
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
-				testTel, err := obsreporttest.SetupTelemetry(exporter.receiverID)
+				testTel, err := componenttest.SetupTelemetry(exporter.receiverID)
 				require.NoError(t, err)
 				defer func() {
 					require.NoError(t, testTel.Shutdown(context.Background()))
@@ -423,8 +413,8 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
 				var opts []ocOption
-				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, testTel.ToReceiverCreateSettings(), opts...)
-				require.Nil(t, err)
+				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, receiver.CreateSettings{ID: exporter.receiverID, TelemetrySettings: testTel.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, opts...)
+				require.NoError(t, err)
 				require.NotNil(t, ocr)
 
 				ocr.traceConsumer = sink
@@ -558,14 +548,14 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 			msg *agentmetricspb.ExportMetricsServiceRequest) error
 	}{
 		{
-			receiverID: component.NewIDWithName(typeStr, "metrics"),
+			receiverID: component.NewIDWithName(metadata.Type, "metrics"),
 			exportFn:   exportBidiFn,
 		},
 	}
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
-				testTel, err := obsreporttest.SetupTelemetry(exporter.receiverID)
+				testTel, err := componenttest.SetupTelemetry(exporter.receiverID)
 				require.NoError(t, err)
 				defer func() {
 					require.NoError(t, testTel.Shutdown(context.Background()))
@@ -574,8 +564,8 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				sink := &errOrSinkConsumer{MetricsSink: new(consumertest.MetricsSink)}
 
 				var opts []ocOption
-				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, testTel.ToReceiverCreateSettings(), opts...)
-				require.Nil(t, err)
+				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, receiver.CreateSettings{ID: exporter.receiverID, TelemetrySettings: testTel.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, opts...)
+				require.NoError(t, err)
 				require.NotNil(t, ocr)
 
 				ocr.metricsConsumer = sink
@@ -611,7 +601,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 
 func TestInvalidTLSCredentials(t *testing.T) {
 	cfg := Config{
-		GRPCServerSettings: configgrpc.GRPCServerSettings{
+		ServerConfig: configgrpc.ServerConfig{
 			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
 					CertFile: "willfail",
@@ -628,7 +618,7 @@ func TestInvalidTLSCredentials(t *testing.T) {
 	assert.NotNil(t, ocr)
 
 	srv, err := ocr.grpcServer(componenttest.NewNopHost())
-	assert.EqualError(t, err, `failed to load TLS config: for auth via TLS, either both certificate and key must be supplied, or neither`)
+	assert.EqualError(t, err, `failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither`)
 	assert.Nil(t, srv)
 }
 

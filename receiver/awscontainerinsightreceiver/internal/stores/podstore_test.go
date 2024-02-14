@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package stores
 
@@ -22,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
@@ -208,7 +198,7 @@ func getPodStore() *PodStore {
 	}
 }
 
-func generateMetric(fields map[string]interface{}, tags map[string]string) CIMetric {
+func generateMetric(fields map[string]any, tags map[string]string) CIMetric {
 	return &mockCIMetric{
 		tags:   tags,
 		fields: fields,
@@ -217,12 +207,13 @@ func generateMetric(fields map[string]interface{}, tags map[string]string) CIMet
 
 func TestPodStore_decorateCpu(t *testing.T) {
 	podStore := getPodStore()
+	defer require.NoError(t, podStore.Shutdown())
 
 	pod := getBaseTestPodInfo()
 
 	// test pod metrics
 	tags := map[string]string{ci.MetricType: ci.TypePod}
-	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
+	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 
 	metric := generateMetric(fields, tags)
 	podStore.decorateCPU(metric, pod)
@@ -235,7 +226,7 @@ func TestPodStore_decorateCpu(t *testing.T) {
 
 	// test container metrics
 	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.ContainerNamekey: "ubuntu"}
-	fields = map[string]interface{}{ci.MetricName(ci.TypeContainer, ci.CPUTotal): float64(1)}
+	fields = map[string]any{ci.MetricName(ci.TypeContainer, ci.CPUTotal): float64(1)}
 	metric = generateMetric(fields, tags)
 	podStore.decorateCPU(metric, pod)
 
@@ -246,10 +237,11 @@ func TestPodStore_decorateCpu(t *testing.T) {
 
 func TestPodStore_decorateMem(t *testing.T) {
 	podStore := getPodStore()
+	defer require.NoError(t, podStore.Shutdown())
 	pod := getBaseTestPodInfo()
 
 	tags := map[string]string{ci.MetricType: ci.TypePod}
-	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.MemWorkingset): uint64(10 * 1024 * 1024)}
+	fields := map[string]any{ci.MetricName(ci.TypePod, ci.MemWorkingset): uint64(10 * 1024 * 1024)}
 
 	metric := generateMetric(fields, tags)
 	podStore.decorateMem(metric, pod)
@@ -261,7 +253,7 @@ func TestPodStore_decorateMem(t *testing.T) {
 	assert.Equal(t, uint64(10*1024*1024), metric.GetField("pod_memory_working_set").(uint64))
 
 	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.ContainerNamekey: "ubuntu"}
-	fields = map[string]interface{}{ci.MetricName(ci.TypeContainer, ci.MemWorkingset): float64(10 * 1024 * 1024)}
+	fields = map[string]any{ci.MetricName(ci.TypeContainer, ci.MemWorkingset): float64(10 * 1024 * 1024)}
 
 	metric = generateMetric(fields, tags)
 	podStore.decorateMem(metric, pod)
@@ -275,7 +267,7 @@ func TestPodStore_addContainerCount(t *testing.T) {
 	pod := getBaseTestPodInfo()
 
 	tags := map[string]string{ci.MetricType: ci.TypePod}
-	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
+	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 
 	metric := generateMetric(fields, tags)
 
@@ -294,8 +286,9 @@ func TestPodStore_addContainerCount(t *testing.T) {
 func TestPodStore_addStatus(t *testing.T) {
 	pod := getBaseTestPodInfo()
 	tags := map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.K8sPodNameKey: "cpu-limit"}
-	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
+	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	podStore := getPodStore()
+	defer require.NoError(t, podStore.Shutdown())
 	metric := generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
@@ -350,22 +343,22 @@ func TestPodStore_addStatus(t *testing.T) {
 func TestPodStore_addContainerID(t *testing.T) {
 	pod := getBaseTestPodInfo()
 	tags := map[string]string{ci.ContainerNamekey: "ubuntu", ci.ContainerIDkey: "123"}
-	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
-	kubernetesBlob := map[string]interface{}{}
+	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
+	kubernetesBlob := map[string]any{}
 	metric := generateMetric(fields, tags)
 	addContainerID(pod, metric, kubernetesBlob, zap.NewNop())
 
-	expected := map[string]interface{}{}
+	expected := map[string]any{}
 	expected["docker"] = map[string]string{"container_id": "637631e2634ea92c0c1aa5d24734cfe794f09c57933026592c12acafbaf6972c"}
 	assert.Equal(t, expected, kubernetesBlob)
 	assert.Equal(t, metric.GetTag(ci.ContainerNamekey), "ubuntu")
 
 	tags = map[string]string{ci.ContainerNamekey: "notUbuntu", ci.ContainerIDkey: "123"}
-	kubernetesBlob = map[string]interface{}{}
+	kubernetesBlob = map[string]any{}
 	metric = generateMetric(fields, tags)
 	addContainerID(pod, metric, kubernetesBlob, zap.NewNop())
 
-	expected = map[string]interface{}{}
+	expected = map[string]any{}
 	expected["container_id"] = "123"
 	assert.Equal(t, expected, kubernetesBlob)
 	assert.Equal(t, metric.GetTag(ci.ContainerNamekey), "notUbuntu")
@@ -373,9 +366,9 @@ func TestPodStore_addContainerID(t *testing.T) {
 
 func TestPodStore_addLabel(t *testing.T) {
 	pod := getBaseTestPodInfo()
-	kubernetesBlob := map[string]interface{}{}
+	kubernetesBlob := map[string]any{}
 	addLabels(pod, kubernetesBlob)
-	expected := map[string]interface{}{}
+	expected := map[string]any{}
 	expected["labels"] = map[string]string{"app": "hello_test"}
 	assert.Equal(t, expected, kubernetesBlob)
 }
@@ -421,7 +414,7 @@ func TestPodStore_addPodOwnersAndPodNameFallback(t *testing.T) {
 	podStore := &PodStore{k8sClient: &mockK8sClient1{}}
 	pod := getBaseTestPodInfo()
 	tags := map[string]string{ci.MetricType: ci.TypePod, ci.ContainerNamekey: "ubuntu"}
-	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
+	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	metric := generateMetric(fields, tags)
 
 	// Test ReplicaSet
@@ -429,10 +422,10 @@ func TestPodStore_addPodOwnersAndPodNameFallback(t *testing.T) {
 	suffix := "-42kcz"
 	pod.OwnerReferences[0].Kind = ci.ReplicaSet
 	pod.OwnerReferences[0].Name = rsName + suffix
-	kubernetesBlob := map[string]interface{}{}
+	kubernetesBlob := map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
-	expectedOwner := map[string]interface{}{}
-	expectedOwner["pod_owners"] = []interface{}{map[string]string{"owner_kind": ci.Deployment, "owner_name": rsName}}
+	expectedOwner := map[string]any{}
+	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.Deployment, "owner_name": rsName}}
 	expectedOwnerName := rsName
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
@@ -443,9 +436,9 @@ func TestPodStore_addPodOwnersAndPodNameFallback(t *testing.T) {
 	suffix = "-0123456789"
 	pod.OwnerReferences[0].Kind = ci.Job
 	pod.OwnerReferences[0].Name = jobName + suffix
-	kubernetesBlob = map[string]interface{}{}
+	kubernetesBlob = map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
-	expectedOwner["pod_owners"] = []interface{}{map[string]string{"owner_kind": ci.CronJob, "owner_name": jobName}}
+	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.CronJob, "owner_name": jobName}}
 	expectedOwnerName = jobName
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
@@ -456,15 +449,15 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 
 	pod := getBaseTestPodInfo()
 	tags := map[string]string{ci.MetricType: ci.TypePod, ci.ContainerNamekey: "ubuntu"}
-	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
+	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 
 	// Test DaemonSet
 	metric := generateMetric(fields, tags)
-	kubernetesBlob := map[string]interface{}{}
+	kubernetesBlob := map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
 
-	expectedOwner := map[string]interface{}{}
-	expectedOwner["pod_owners"] = []interface{}{map[string]string{"owner_kind": ci.DaemonSet, "owner_name": "DaemonSetTest"}}
+	expectedOwner := map[string]any{}
+	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.DaemonSet, "owner_name": "DaemonSetTest"}}
 	expectedOwnerName := "DaemonSetTest"
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
@@ -474,9 +467,9 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	rsName := "ReplicaSetTest"
 	pod.OwnerReferences[0].Kind = ci.ReplicaSet
 	pod.OwnerReferences[0].Name = rsName
-	kubernetesBlob = map[string]interface{}{}
+	kubernetesBlob = map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
-	expectedOwner["pod_owners"] = []interface{}{map[string]string{"owner_kind": ci.ReplicaSet, "owner_name": rsName}}
+	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.ReplicaSet, "owner_name": rsName}}
 	expectedOwnerName = rsName
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
@@ -486,9 +479,9 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	ssName := "StatefulSetTest"
 	pod.OwnerReferences[0].Kind = ci.StatefulSet
 	pod.OwnerReferences[0].Name = ssName
-	kubernetesBlob = map[string]interface{}{}
+	kubernetesBlob = map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
-	expectedOwner["pod_owners"] = []interface{}{map[string]string{"owner_kind": ci.StatefulSet, "owner_name": ssName}}
+	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.StatefulSet, "owner_name": ssName}}
 	expectedOwnerName = "cpu-limit"
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
@@ -498,9 +491,9 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	rcName := "ReplicationControllerTest"
 	pod.OwnerReferences[0].Kind = ci.ReplicationController
 	pod.OwnerReferences[0].Name = rcName
-	kubernetesBlob = map[string]interface{}{}
+	kubernetesBlob = map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
-	expectedOwner["pod_owners"] = []interface{}{map[string]string{"owner_kind": ci.ReplicationController, "owner_name": rcName}}
+	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.ReplicationController, "owner_name": rcName}}
 	expectedOwnerName = rcName
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, "", metric.GetTag(ci.FullPodNameKey))
@@ -515,18 +508,18 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	surfixHash := ".088123x12"
 	pod.Name = jobName + surfixHash
 	pod.OwnerReferences[0].Name = jobName + surfixHash
-	kubernetesBlob = map[string]interface{}{}
+	kubernetesBlob = map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
-	expectedOwner["pod_owners"] = []interface{}{map[string]string{"owner_kind": ci.Job, "owner_name": jobName + surfixHash}}
+	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.Job, "owner_name": jobName + surfixHash}}
 	expectedOwnerName = jobName + surfixHash
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, pod.Name, metric.GetTag(ci.FullPodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	podStore.prefFullPodName = false
-	kubernetesBlob = map[string]interface{}{}
+	kubernetesBlob = map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
-	expectedOwner["pod_owners"] = []interface{}{map[string]string{"owner_kind": ci.Job, "owner_name": jobName}}
+	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.Job, "owner_name": jobName}}
 	expectedOwnerName = jobName
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
@@ -536,9 +529,9 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	dpName := "DeploymentTest"
 	pod.OwnerReferences[0].Kind = ci.ReplicaSet
 	pod.OwnerReferences[0].Name = dpName + "-sftrz2785"
-	kubernetesBlob = map[string]interface{}{}
+	kubernetesBlob = map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
-	expectedOwner["pod_owners"] = []interface{}{map[string]string{"owner_kind": ci.Deployment, "owner_name": dpName}}
+	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.Deployment, "owner_name": dpName}}
 	expectedOwnerName = dpName
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
@@ -548,9 +541,9 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	cjName := "CronJobTest"
 	pod.OwnerReferences[0].Kind = ci.Job
 	pod.OwnerReferences[0].Name = cjName + "-1556582405"
-	kubernetesBlob = map[string]interface{}{}
+	kubernetesBlob = map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
-	expectedOwner["pod_owners"] = []interface{}{map[string]string{"owner_kind": ci.CronJob, "owner_name": cjName}}
+	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.CronJob, "owner_name": cjName}}
 	expectedOwnerName = cjName
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
@@ -561,7 +554,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	kpName := kubeProxy + "-xyz1"
 	pod.OwnerReferences = nil
 	pod.Name = kpName
-	kubernetesBlob = map[string]interface{}{}
+	kubernetesBlob = map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
 	assert.Equal(t, kpName, metric.GetTag(ci.PodNameKey))
 	assert.True(t, len(kubernetesBlob) == 0)
@@ -570,7 +563,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	metric = generateMetric(fields, tags)
 	pod.OwnerReferences = nil
 	pod.Name = kpName
-	kubernetesBlob = map[string]interface{}{}
+	kubernetesBlob = map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
 	assert.Equal(t, kubeProxy, metric.GetTag(ci.PodNameKey))
 	assert.True(t, len(kubernetesBlob) == 0)
@@ -586,8 +579,8 @@ func (m *mockPodClient) ListPods() ([]corev1.Pod, error) {
 }
 
 func TestPodStore_RefreshTick(t *testing.T) {
-
 	podStore := getPodStore()
+	defer require.NoError(t, podStore.Shutdown())
 	podStore.podClient = &mockPodClient{}
 	podStore.lastRefreshed = time.Now().Add(-time.Minute)
 	podStore.RefreshTick(context.Background())
@@ -602,12 +595,12 @@ func TestPodStore_RefreshTick(t *testing.T) {
 func TestPodStore_decorateNode(t *testing.T) {
 	pod := getBaseTestPodInfo()
 	podList := []corev1.Pod{*pod}
-
 	podStore := getPodStore()
+	defer require.NoError(t, podStore.Shutdown())
 	podStore.refreshInternal(time.Now(), podList)
 
 	tags := map[string]string{ci.MetricType: ci.TypeNode}
-	fields := map[string]interface{}{
+	fields := map[string]any{
 		ci.MetricName(ci.TypeNode, ci.CPUTotal):      float64(100),
 		ci.MetricName(ci.TypeNode, ci.CPULimit):      uint64(4000),
 		ci.MetricName(ci.TypeNode, ci.MemWorkingset): float64(100 * 1024 * 1024),
@@ -631,17 +624,75 @@ func TestPodStore_decorateNode(t *testing.T) {
 	assert.Equal(t, int(1), metric.GetField("node_number_of_running_pods").(int))
 }
 
+func TestPodStore_decorateNode_multiplePodStates(t *testing.T) {
+	podStore := getPodStore()
+	defer require.NoError(t, podStore.Shutdown())
+
+	tags := map[string]string{ci.MetricType: ci.TypeNode}
+	fields := map[string]any{
+		ci.MetricName(ci.TypeNode, ci.CPUTotal):      float64(100),
+		ci.MetricName(ci.TypeNode, ci.CPULimit):      uint64(4000),
+		ci.MetricName(ci.TypeNode, ci.MemWorkingset): float64(100 * 1024 * 1024),
+		ci.MetricName(ci.TypeNode, ci.MemLimit):      uint64(400 * 1024 * 1024),
+	}
+	metric := generateMetric(fields, tags)
+
+	// terminated pods should not contribute to requests
+	failedPod := getBaseTestPodInfo()
+	failedPod.Status.Phase = corev1.PodFailed
+	succeededPod := getBaseTestPodInfo()
+	succeededPod.Status.Phase = corev1.PodSucceeded
+	podList := []corev1.Pod{*failedPod, *succeededPod}
+	podStore.refreshInternal(time.Now(), podList)
+	podStore.decorateNode(metric)
+
+	assert.Equal(t, uint64(0), metric.GetField("node_cpu_request").(uint64))
+	assert.Equal(t, uint64(4000), metric.GetField("node_cpu_limit").(uint64))
+	assert.Equal(t, float64(0), metric.GetField("node_cpu_reserved_capacity").(float64))
+	assert.Equal(t, float64(100), metric.GetField("node_cpu_usage_total").(float64))
+
+	assert.Equal(t, uint64(0), metric.GetField("node_memory_request").(uint64))
+	assert.Equal(t, uint64(400*1024*1024), metric.GetField("node_memory_limit").(uint64))
+	assert.Equal(t, float64(0), metric.GetField("node_memory_reserved_capacity").(float64))
+	assert.Equal(t, float64(100*1024*1024), metric.GetField("node_memory_working_set").(float64))
+
+	// non-terminated pods should contribute to requests
+	pendingPod := getBaseTestPodInfo()
+	pendingPod.Status.Phase = corev1.PodPending
+	podList = append(podList, *pendingPod)
+	podStore.refreshInternal(time.Now(), podList)
+	podStore.decorateNode(metric)
+	assert.Equal(t, uint64(10), metric.GetField("node_cpu_request").(uint64))
+	assert.Equal(t, float64(0.25), metric.GetField("node_cpu_reserved_capacity").(float64))
+
+	assert.Equal(t, uint64(50*1024*1024), metric.GetField("node_memory_request").(uint64))
+	assert.Equal(t, float64(12.5), metric.GetField("node_memory_reserved_capacity").(float64))
+
+	runningPod := getBaseTestPodInfo()
+	runningPod.Status.Phase = corev1.PodRunning
+	podList = append(podList, *runningPod)
+	podStore.refreshInternal(time.Now(), podList)
+	podStore.decorateNode(metric)
+
+	assert.Equal(t, uint64(20), metric.GetField("node_cpu_request").(uint64))
+	assert.Equal(t, float64(0.5), metric.GetField("node_cpu_reserved_capacity").(float64))
+
+	assert.Equal(t, uint64(100*1024*1024), metric.GetField("node_memory_request").(uint64))
+	assert.Equal(t, float64(25), metric.GetField("node_memory_reserved_capacity").(float64))
+}
+
 func TestPodStore_Decorate(t *testing.T) {
 	// not the metrics for decoration
 	tags := map[string]string{}
 	metric := &mockCIMetric{
 		tags: tags,
 	}
-
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	podStore := getPodStore()
+	defer require.NoError(t, podStore.Shutdown())
 	podStore.podClient = &mockPodClient{}
-	kubernetesBlob := map[string]interface{}{}
-	ctx := context.Background()
+	kubernetesBlob := map[string]any{}
 	ok := podStore.Decorate(ctx, metric, kubernetesBlob)
 	assert.True(t, ok)
 

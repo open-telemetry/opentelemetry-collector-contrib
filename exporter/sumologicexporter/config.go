@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
@@ -20,14 +9,15 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Sumo Logic exporter.
 type Config struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
+	confighttp.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
 	// Compression encoding format, either empty string, gzip or deflate (default gzip)
 	// Empty string means no compression
@@ -70,9 +60,9 @@ type Config struct {
 	Client string `mapstructure:"client"`
 }
 
-// CreateDefaultHTTPClientSettings returns default http client settings
-func CreateDefaultHTTPClientSettings() confighttp.HTTPClientSettings {
-	return confighttp.HTTPClientSettings{
+// createDefaultClientConfig returns default http client settings
+func createDefaultClientConfig() confighttp.ClientConfig {
+	return confighttp.ClientConfig{
 		Timeout: defaultTimeout,
 	}
 }
@@ -158,7 +148,7 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("unexpected compression encoding: %s", cfg.CompressEncoding)
 	}
 
-	if len(cfg.HTTPClientSettings.Endpoint) == 0 {
+	if len(cfg.ClientConfig.Endpoint) == 0 {
 		return errors.New("endpoint is not set")
 	}
 

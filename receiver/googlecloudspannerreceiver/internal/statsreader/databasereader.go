@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package statsreader // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
 
@@ -18,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
@@ -72,26 +62,41 @@ func (databaseReader *DatabaseReader) Name() string {
 }
 
 func (databaseReader *DatabaseReader) Shutdown() {
-	databaseReader.logger.Debug("Closing connection to database",
-		zap.String("database", databaseReader.database.DatabaseID().ID()))
+	databaseReader.logger.Debug(
+		"Closing connection to database",
+		zap.String("database", databaseReader.database.DatabaseID().ID()),
+	)
 	databaseReader.database.Client().Close()
 }
 
 func (databaseReader *DatabaseReader) Read(ctx context.Context) ([]*metadata.MetricsDataPoint, error) {
-	databaseReader.logger.Debug("Executing read method for database",
-		zap.String("database", databaseReader.database.DatabaseID().ID()))
+	databaseReader.logger.Debug(
+		"Executing read method for database",
+		zap.String("database", databaseReader.database.DatabaseID().ID()),
+	)
 
-	var result []*metadata.MetricsDataPoint
+	var (
+		result []*metadata.MetricsDataPoint
+		err    error
+	)
 
 	for _, reader := range databaseReader.readers {
-		dataPoints, err := reader.Read(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("cannot read data for data points databaseReader %q because of an error: %w",
-				reader.Name(), err)
-		}
-
+		dataPoints, readErr := reader.Read(ctx)
 		result = append(result, dataPoints...)
+		if readErr != nil {
+			err = multierr.Append(
+				err,
+				fmt.Errorf("cannot read data for data points databaseReader %q because of an error: %w", reader.Name(), readErr),
+			)
+		}
+	}
+	if err != nil {
+		databaseReader.logger.Warn(
+			"Errors encountered while reading database",
+			zap.String("database", databaseReader.database.DatabaseID().ID()),
+			zap.Int("error_count", len(multierr.Errors(err))),
+		)
 	}
 
-	return result, nil
+	return result, err
 }

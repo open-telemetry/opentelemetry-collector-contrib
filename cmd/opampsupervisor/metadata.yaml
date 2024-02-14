@@ -1,0 +1,6 @@
+type: opampsupervisor
+
+status:
+  class: cmd
+  codeowners:
+    active: [evan-bradley, atoulme, tigrannajaryan]

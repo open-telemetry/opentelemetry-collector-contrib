@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobjectsreceiver
 
@@ -58,12 +47,22 @@ func (c mockDynamicClient) createPods(objects ...*unstructured.Unstructured) {
 	}
 }
 
-func generatePod(name, namespace string, labels map[string]interface{}) *unstructured.Unstructured {
+func (c mockDynamicClient) deletePods(objects ...*unstructured.Unstructured) {
+	pods := c.client.Resource(schema.GroupVersionResource{
+		Version:  "v1",
+		Resource: "pods",
+	})
+	for _, pod := range objects {
+		_ = pods.Namespace(pod.GetNamespace()).Delete(context.Background(), pod.GetName(), v1.DeleteOptions{})
+	}
+}
+
+func generatePod(name, namespace string, labels map[string]any, resourceVersion string) *unstructured.Unstructured {
 	pod := unstructured.Unstructured{
-		Object: map[string]interface{}{
+		Object: map[string]any{
 			"apiVersion": "v1",
 			"kind":       "Pods",
-			"metadata": map[string]interface{}{
+			"metadata": map[string]any{
 				"namespace": namespace,
 				"name":      name,
 				"labels":    labels,
@@ -71,6 +70,6 @@ func generatePod(name, namespace string, labels map[string]interface{}) *unstruc
 		},
 	}
 
-	pod.SetResourceVersion("1")
+	pod.SetResourceVersion(resourceVersion)
 	return &pod
 }

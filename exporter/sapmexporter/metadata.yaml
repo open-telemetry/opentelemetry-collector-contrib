@@ -1,0 +1,14 @@
+type: sapm
+
+status:
+  class: exporter
+  stability:
+    beta: [traces]
+  distributions: [contrib, splunk, observiq, aws]
+  codeowners:
+    active: [dmitryax, atoulme]
+
+
+tests:
+  config:
+  expect_consumer_error: true

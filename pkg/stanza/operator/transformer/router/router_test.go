@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package router
 
@@ -45,7 +34,7 @@ func TestTransformer(t *testing.T) {
 		routes             []*RouteConfig
 		defaultOutput      []string
 		expectedCounts     map[string]int
-		expectedAttributes map[string]interface{}
+		expectedAttributes map[string]any
 	}{
 		{
 			"DefaultRoute",
@@ -78,7 +67,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"SimpleMatch",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
 			},
@@ -101,7 +90,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"MatchWithAttribute",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
 			},
@@ -123,14 +112,14 @@ func TestTransformer(t *testing.T) {
 			},
 			nil,
 			map[string]int{"output2": 1},
-			map[string]interface{}{
+			map[string]any{
 				"label-key": "label-value",
 			},
 		},
 		{
 			"MatchEnv",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
 			},
@@ -153,7 +142,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"UseDefault",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
 			},
@@ -171,7 +160,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"MatchBeforeDefault",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
 			},
@@ -198,7 +187,7 @@ func TestTransformer(t *testing.T) {
 			require.NoError(t, err)
 
 			results := map[string]int{}
-			var attributes map[string]interface{}
+			var attributes map[string]any
 
 			mock1 := testutil.NewMockOperator("output1")
 			mock1.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {

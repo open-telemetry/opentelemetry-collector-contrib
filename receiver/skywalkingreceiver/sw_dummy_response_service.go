@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package skywalkingreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver"
 
@@ -35,34 +24,34 @@ type dummyReportService struct {
 }
 
 // for sw InstanceProperties
-func (d *dummyReportService) ReportInstanceProperties(ctx context.Context, in *management.InstanceProperties) (*common.Commands, error) {
+func (d *dummyReportService) ReportInstanceProperties(_ context.Context, _ *management.InstanceProperties) (*common.Commands, error) {
 	return &common.Commands{}, nil
 }
 
 // for sw InstancePingPkg
-func (d *dummyReportService) KeepAlive(ctx context.Context, in *management.InstancePingPkg) (*common.Commands, error) {
+func (d *dummyReportService) KeepAlive(_ context.Context, _ *management.InstancePingPkg) (*common.Commands, error) {
 	return &common.Commands{}, nil
 }
 
 // for sw JVMMetric
-func (d *dummyReportService) Collect(_ context.Context, jvm *agent.JVMMetricCollection) (*common.Commands, error) {
+func (d *dummyReportService) Collect(_ context.Context, _ *agent.JVMMetricCollection) (*common.Commands, error) {
 	return &common.Commands{}, nil
 }
 
 // for sw agent cds
-func (d *dummyReportService) FetchConfigurations(_ context.Context, req *v3c.ConfigurationSyncRequest) (*common.Commands, error) {
+func (d *dummyReportService) FetchConfigurations(_ context.Context, _ *v3c.ConfigurationSyncRequest) (*common.Commands, error) {
 	return &common.Commands{}, nil
 }
 
 // for sw profile
-func (d *dummyReportService) GetProfileTaskCommands(_ context.Context, q *profile.ProfileTaskCommandQuery) (*common.Commands, error) {
+func (d *dummyReportService) GetProfileTaskCommands(_ context.Context, _ *profile.ProfileTaskCommandQuery) (*common.Commands, error) {
 	return &common.Commands{}, nil
 }
 
-func (d *dummyReportService) CollectSnapshot(stream profile.ProfileTask_CollectSnapshotServer) error {
+func (d *dummyReportService) CollectSnapshot(_ profile.ProfileTask_CollectSnapshotServer) error {
 	return nil
 }
 
-func (d *dummyReportService) ReportTaskFinish(_ context.Context, report *profile.ProfileTaskFinishReport) (*common.Commands, error) {
+func (d *dummyReportService) ReportTaskFinish(_ context.Context, _ *profile.ProfileTaskFinishReport) (*common.Commands, error) {
 	return &common.Commands{}, nil
 }

@@ -1,0 +1,13 @@
+type: tencentcloud_logservice
+
+status:
+  class: exporter
+  stability:
+    beta: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [wgliang, yiyang5055]
+
+tests:
+  config:
+  skip_lifecycle: true

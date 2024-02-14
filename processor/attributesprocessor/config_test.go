@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package attributesprocessor
 
@@ -26,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -36,7 +26,7 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "insert"),
+			id: component.NewIDWithName(metadata.Type, "insert"),
 			expected: &Config{
 				Settings: attraction.Settings{
 					Actions: []attraction.ActionKeyValue{
@@ -47,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "update"),
+			id: component.NewIDWithName(metadata.Type, "update"),
 			expected: &Config{
 				Settings: attraction.Settings{
 					Actions: []attraction.ActionKeyValue{
@@ -58,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "upsert"),
+			id: component.NewIDWithName(metadata.Type, "upsert"),
 			expected: &Config{
 				Settings: attraction.Settings{
 					Actions: []attraction.ActionKeyValue{
@@ -69,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "delete"),
+			id: component.NewIDWithName(metadata.Type, "delete"),
 			expected: &Config{
 				Settings: attraction.Settings{
 					Actions: []attraction.ActionKeyValue{
@@ -80,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "hash"),
+			id: component.NewIDWithName(metadata.Type, "hash"),
 			expected: &Config{
 				Settings: attraction.Settings{
 					Actions: []attraction.ActionKeyValue{
@@ -90,7 +80,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "excludemulti"),
+			id: component.NewIDWithName(metadata.Type, "excludemulti"),
 			expected: &Config{
 				MatchConfig: filterconfig.MatchConfig{
 					Exclude: &filterconfig.MatchProperties{
@@ -111,7 +101,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "includeservices"),
+			id: component.NewIDWithName(metadata.Type, "includeservices"),
 			expected: &Config{
 				MatchConfig: filterconfig.MatchConfig{
 					Include: &filterconfig.MatchProperties{
@@ -128,7 +118,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "selectiveprocessing"),
+			id: component.NewIDWithName(metadata.Type, "selectiveprocessing"),
 			expected: &Config{
 				MatchConfig: filterconfig.MatchConfig{
 					Include: &filterconfig.MatchProperties{
@@ -151,7 +141,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "complex"),
+			id: component.NewIDWithName(metadata.Type, "complex"),
 			expected: &Config{
 				Settings: attraction.Settings{
 					Actions: []attraction.ActionKeyValue{
@@ -163,7 +153,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "example"),
+			id: component.NewIDWithName(metadata.Type, "example"),
 			expected: &Config{
 				Settings: attraction.Settings{
 					Actions: []attraction.ActionKeyValue{
@@ -177,7 +167,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "regexp"),
+			id: component.NewIDWithName(metadata.Type, "regexp"),
 			expected: &Config{
 				MatchConfig: filterconfig.MatchConfig{
 					Include: &filterconfig.MatchProperties{
@@ -198,7 +188,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "convert"),
+			id: component.NewIDWithName(metadata.Type, "convert"),
 			expected: &Config{
 				Settings: attraction.Settings{
 					Actions: []attraction.ActionKeyValue{

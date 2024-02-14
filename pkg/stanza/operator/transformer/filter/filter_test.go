@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filter
 
@@ -40,7 +29,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"BodyMatch",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
 			},
@@ -50,7 +39,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"NoMatchBody",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "invalid",
 				},
 			},
@@ -60,10 +49,10 @@ func TestTransformer(t *testing.T) {
 		{
 			"MatchAttribute",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"key": "value",
 				},
 			},
@@ -73,9 +62,9 @@ func TestTransformer(t *testing.T) {
 		{
 			"MatchBodyNested",
 			&entry.Entry{
-				Body: map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				Body: map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"key": "value",
 						},
 					},
@@ -87,12 +76,12 @@ func TestTransformer(t *testing.T) {
 		{
 			"MatchAttributeNested",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
-				Attributes: map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				Attributes: map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"key": "value",
 						},
 					},
@@ -104,12 +93,12 @@ func TestTransformer(t *testing.T) {
 		{
 			"MatchResourceNested",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
-				Resource: map[string]interface{}{
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+				Resource: map[string]any{
+					"one": map[string]any{
+						"two": map[string]any{
 							"key": "value",
 						},
 					},
@@ -121,11 +110,11 @@ func TestTransformer(t *testing.T) {
 		{
 			"MatchResourceBracketed",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
-				Resource: map[string]interface{}{
-					"one": map[string]interface{}{
+				Resource: map[string]any{
+					"one": map[string]any{
 						"two.stilltwo": "value",
 					},
 				},
@@ -136,7 +125,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"NoMatchAttribute",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
 			},
@@ -146,7 +135,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"MatchEnv",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
 			},
@@ -156,7 +145,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"NoMatchEnv",
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"message": "test_message",
 				},
 			},
@@ -209,7 +198,7 @@ func TestFilterDropRatio(t *testing.T) {
 	require.True(t, ok)
 
 	testEntry := &entry.Entry{
-		Body: map[string]interface{}{
+		Body: map[string]any{
 			"message": "test_message",
 		},
 	}

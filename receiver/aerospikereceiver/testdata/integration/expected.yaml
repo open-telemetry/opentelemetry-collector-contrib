@@ -1,0 +1,738 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: aerospike.node.name
+          value:
+            stringValue: BB9030011AC4202
+    scopeMetrics:
+      - metrics:
+          - description: Number of connections opened and closed to the node
+            name: aerospike.node.connection.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "346"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: close
+                    - key: type
+                      value:
+                        stringValue: client
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: close
+                    - key: type
+                      value:
+                        stringValue: fabric
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: close
+                    - key: type
+                      value:
+                        stringValue: heartbeat
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "397"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: open
+                    - key: type
+                      value:
+                        stringValue: client
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: open
+                    - key: type
+                      value:
+                        stringValue: fabric
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: open
+                    - key: type
+                      value:
+                        stringValue: heartbeat
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+              isMonotonic: true
+            unit: '{connections}'
+          - description: Current number of open connections to the node
+            name: aerospike.node.connection.open
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "51"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: client
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: fabric
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: heartbeat
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+            unit: '{connections}'
+          - description: Percentage of the node's memory which is still free
+            gauge:
+              dataPoints:
+                - asInt: "55"
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+            name: aerospike.node.memory.free
+            unit: '%'
+        scope:
+          name: otelcol/aerospikereceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: aerospike.namespace
+          value:
+            stringValue: test
+        - key: aerospike.node.name
+          value:
+            stringValue: BB9030011AC4202
+    scopeMetrics:
+      - metrics:
+          - description: Minimum percentage of contiguous disk space free to the namespace across all devices
+            gauge:
+              dataPoints:
+                - asInt: "99"
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+            name: aerospike.namespace.disk.available
+            unit: '%'
+          - description: Number of cell coverings for query region queried
+            name: aerospike.namespace.geojson.region_query_cells
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "9"
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+              isMonotonic: true
+            unit: '{cells}'
+          - description: Number of points outside the region.
+            name: aerospike.namespace.geojson.region_query_false_positive
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+              isMonotonic: true
+            unit: '{points}'
+          - description: Number of points within the region.
+            name: aerospike.namespace.geojson.region_query_points
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4"
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+              isMonotonic: true
+            unit: '{points}'
+          - description: Number of geojson queries on the system since the uptime of the node.
+            name: aerospike.namespace.geojson.region_query_requests
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+              isMonotonic: true
+            unit: '{queries}'
+          - description: Percentage of the namespace's memory which is still free
+            gauge:
+              dataPoints:
+                - asInt: "96"
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+            name: aerospike.namespace.memory.free
+            unit: '%'
+          - description: Memory currently used by each component of the namespace
+            name: aerospike.namespace.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: data
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "6720"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: index
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "33554432"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: secondary_index
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: component
+                      value:
+                        stringValue: set_index
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+            unit: By
+          - description: Number of query operations performed on the namespace
+            name: aerospike.namespace.query.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: primary
+                    - key: result
+                      value:
+                        stringValue: abort
+                    - key: type
+                      value:
+                        stringValue: aggregation
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: primary
+                    - key: result
+                      value:
+                        stringValue: abort
+                    - key: type
+                      value:
+                        stringValue: long_basic
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: primary
+                    - key: result
+                      value:
+                        stringValue: abort
+                    - key: type
+                      value:
+                        stringValue: ops_background
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: primary
+                    - key: result
+                      value:
+                        stringValue: abort
+                    - key: type
+                      value:
+                        stringValue: udf_background
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "1"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: primary
+                    - key: result
+                      value:
+                        stringValue: complete
+                    - key: type
+                      value:
+                        stringValue: aggregation
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "1"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: primary
+                    - key: result
+                      value:
+                        stringValue: complete
+                    - key: type
+                      value:
+                        stringValue: long_basic
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "1"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: primary
+                    - key: result
+                      value:
+                        stringValue: complete
+                    - key: type
+                      value:
+                        stringValue: short_basic
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "1"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: primary
+                    - key: result
+                      value:
+                        stringValue: complete
+                    - key: type
+                      value:
+                        stringValue: udf_background
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: primary
+                    - key: result
+                      value:
+                        stringValue: error
+                    - key: type
+                      value:
+                        stringValue: aggregation
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: primary
+                    - key: result
+                      value:
+                        stringValue: error
+                    - key: type
+                      value:
+                        stringValue: long_basic
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: primary
+                    - key: result
+                      value:
+                        stringValue: error
+                    - key: type
+                      value:
+                        stringValue: short_basic
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: primary
+                    - key: result
+                      value:
+                        stringValue: error
+                    - key: type
+                      value:
+                        stringValue: udf_background
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: primary
+                    - key: result
+                      value:
+                        stringValue: timeout
+                    - key: type
+                      value:
+                        stringValue: short_basic
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: secondary
+                    - key: result
+                      value:
+                        stringValue: abort
+                    - key: type
+                      value:
+                        stringValue: aggregation
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: secondary
+                    - key: result
+                      value:
+                        stringValue: abort
+                    - key: type
+                      value:
+                        stringValue: long_basic
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: secondary
+                    - key: result
+                      value:
+                        stringValue: abort
+                    - key: type
+                      value:
+                        stringValue: ops_background
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: secondary
+                    - key: result
+                      value:
+                        stringValue: abort
+                    - key: type
+                      value:
+                        stringValue: udf_background
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "1"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: secondary
+                    - key: result
+                      value:
+                        stringValue: complete
+                    - key: type
+                      value:
+                        stringValue: aggregation
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "2"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: secondary
+                    - key: result
+                      value:
+                        stringValue: complete
+                    - key: type
+                      value:
+                        stringValue: long_basic
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "1"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: secondary
+                    - key: result
+                      value:
+                        stringValue: complete
+                    - key: type
+                      value:
+                        stringValue: short_basic
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "1"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: secondary
+                    - key: result
+                      value:
+                        stringValue: complete
+                    - key: type
+                      value:
+                        stringValue: udf_background
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: secondary
+                    - key: result
+                      value:
+                        stringValue: error
+                    - key: type
+                      value:
+                        stringValue: aggregation
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: secondary
+                    - key: result
+                      value:
+                        stringValue: error
+                    - key: type
+                      value:
+                        stringValue: long_basic
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: secondary
+                    - key: result
+                      value:
+                        stringValue: error
+                    - key: type
+                      value:
+                        stringValue: short_basic
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: secondary
+                    - key: result
+                      value:
+                        stringValue: error
+                    - key: type
+                      value:
+                        stringValue: udf_background
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: index
+                      value:
+                        stringValue: secondary
+                    - key: result
+                      value:
+                        stringValue: timeout
+                    - key: type
+                      value:
+                        stringValue: short_basic
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+              isMonotonic: true
+            unit: '{queries}'
+          - description: Number of transactions performed on the namespace
+            name: aerospike.namespace.transaction.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: error
+                    - key: type
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: error
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: error
+                    - key: type
+                      value:
+                        stringValue: udf
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: error
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: filtered_out
+                    - key: type
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: filtered_out
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: filtered_out
+                    - key: type
+                      value:
+                        stringValue: udf
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: filtered_out
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: not_found
+                    - key: type
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: not_found
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: success
+                    - key: type
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: success
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "105"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: success
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: timeout
+                    - key: type
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: timeout
+                    - key: type
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: timeout
+                    - key: type
+                      value:
+                        stringValue: udf
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+                - asInt: "0"
+                  attributes:
+                    - key: result
+                      value:
+                        stringValue: timeout
+                    - key: type
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1687249906301031000"
+                  timeUnixNano: "1687249907414652000"
+              isMonotonic: true
+            unit: '{transactions}'
+        scope:
+          name: otelcol/aerospikereceiver
+          version: latest

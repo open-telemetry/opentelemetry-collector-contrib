@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 package csv
 
 import (
@@ -130,7 +119,7 @@ func TestParserCSV(t *testing.T) {
 			[]entry.Entry{
 				{
 					Body: "stanza,INFO,started agent",
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name": "stanza",
 						"sev":  "INFO",
 						"msg":  "started agent",
@@ -155,7 +144,7 @@ func TestParserCSV(t *testing.T) {
 			[]entry.Entry{
 				{
 					Body: "stanza|INFO|started agent",
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name": "stanza",
 						"sev":  "INFO",
 						"msg":  "started agent",
@@ -184,7 +173,7 @@ func TestParserCSV(t *testing.T) {
 			[]entry.Entry{
 				{
 					Body: "stanza,INFO,started agent",
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name": "stanza",
 						"sev":  "INFO",
 						"msg":  "started agent",
@@ -192,7 +181,7 @@ func TestParserCSV(t *testing.T) {
 				},
 				{
 					Body: "stanza,ERROR,agent killed",
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name": "stanza",
 						"sev":  "ERROR",
 						"msg":  "agent killed",
@@ -200,7 +189,7 @@ func TestParserCSV(t *testing.T) {
 				},
 				{
 					Body: "kernel,TRACE,oom",
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name": "kernel",
 						"sev":  "TRACE",
 						"msg":  "oom",
@@ -224,7 +213,7 @@ func TestParserCSV(t *testing.T) {
 			[]entry.Entry{
 				{
 					Body: "stanza;Evergreen;1;555-5555;agent",
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name":     "stanza",
 						"address":  "Evergreen",
 						"age":      "1",
@@ -244,7 +233,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"Fields": "name,age,height,number",
 					},
 					Body: "stanza dev,1,400,555-555-5555",
@@ -252,7 +241,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"Fields": "name,age,height,number",
 						"name":   "stanza dev",
 						"age":    "1",
@@ -274,7 +263,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"Fields": "name|age|height|number",
 					},
 					Body: "stanza dev,1,400,555-555-5555",
@@ -282,7 +271,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"Fields": "name|age|height|number",
 						"name":   "stanza dev",
 						"age":    "1",
@@ -303,19 +292,19 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"Fields": "name,age,height,number",
 					},
 					Body: "stanza dev,1,400,555-555-5555",
 				},
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"Fields": "x,y",
 					},
 					Body: "000100,2",
 				},
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"Fields": "a,b,c,d,e,f",
 					},
 					Body: "1,2,3,4,5,6",
@@ -323,7 +312,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"Fields": "name,age,height,number",
 						"name":   "stanza dev",
 						"age":    "1",
@@ -333,7 +322,7 @@ func TestParserCSV(t *testing.T) {
 					Body: "stanza dev,1,400,555-555-5555",
 				},
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"Fields": "x,y",
 						"x":      "000100",
 						"y":      "2",
@@ -341,7 +330,7 @@ func TestParserCSV(t *testing.T) {
 					Body: "000100,2",
 				},
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"Fields": "a,b,c,d,e,f",
 						"a":      "1",
 						"b":      "2",
@@ -364,7 +353,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"columns": "name	age	height	number",
 					},
 					Body: "stanza dev	1	400	555-555-5555",
@@ -372,8 +361,8 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: func() map[string]interface{} {
-						m := map[string]interface{}{
+					Attributes: func() map[string]any {
+						m := map[string]any{
 							"name":   "stanza dev",
 							"age":    "1",
 							"height": "400",
@@ -401,7 +390,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Body: map[string]interface{}{
+					Body: map[string]any{
 						"name":   "stanza dev",
 						"age":    "1",
 						"height": "400",
@@ -424,7 +413,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Body: map[string]interface{}{
+					Body: map[string]any{
 						"name":   "stanza",
 						"age":    "1",
 						"height": "400",
@@ -447,7 +436,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"timestamp":    "20210316 17:08:01",
 						"serverhost":   "oiq-int-mysql",
 						"username":     "load",
@@ -477,7 +466,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name":     "stanza",
 						"address":  "Evergreen",
 						"age":      "",
@@ -503,7 +492,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name":     "stanza",
 						"address":  "Evergreen",
 						"age":      "1",
@@ -528,7 +517,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name":     "stanza",
 						"address":  "Evergreen,49508",
 						"age":      "1",
@@ -553,7 +542,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name":     "bob \"the man\"",
 						"address":  "Evergreen",
 						"age":      "1",
@@ -579,7 +568,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name":   "stanza",
 						"age":    "1",
 						"height": "400",
@@ -605,7 +594,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name":   "stanza",
 						"age":    "1",
 						"height": "400",
@@ -631,7 +620,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name":   "stanza",
 						"age":    "1",
 						"height": "400",
@@ -656,7 +645,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name":   "stanza",
 						"age":    "1",
 						"height": "400",
@@ -681,7 +670,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name":   "stanza",
 						"age":    "1",
 						"height": "400",
@@ -706,7 +695,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name":   "stanza \"log parser\"",
 						"age":    "1",
 						"height": "6ft",
@@ -732,7 +721,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name":   "stanza log parser",
 						"age":    "1",
 						"height": "6ft",
@@ -758,7 +747,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name":   "stanza log parser",
 						"age":    "1",
 						"height": "6ft",
@@ -784,7 +773,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"name":   "stanza log parser",
 						"age":    "\"1",
 						"height": "\"6ft",
@@ -837,12 +826,12 @@ func TestParserCSVMultiline(t *testing.T) {
 	cases := []struct {
 		name     string
 		input    string
-		expected map[string]interface{}
+		expected map[string]any
 	}{
 		{
 			"no_newlines",
 			"aaaa,bbbb,cccc,dddd,eeee",
-			map[string]interface{}{
+			map[string]any{
 				"A": "aaaa",
 				"B": "bbbb",
 				"C": "cccc",
@@ -853,7 +842,7 @@ func TestParserCSVMultiline(t *testing.T) {
 		{
 			"first_field",
 			"aa\naa,bbbb,cccc,dddd,eeee",
-			map[string]interface{}{
+			map[string]any{
 				"A": "aa\naa",
 				"B": "bbbb",
 				"C": "cccc",
@@ -864,7 +853,7 @@ func TestParserCSVMultiline(t *testing.T) {
 		{
 			"middle_field",
 			"aaaa,bbbb,cc\ncc,dddd,eeee",
-			map[string]interface{}{
+			map[string]any{
 				"A": "aaaa",
 				"B": "bbbb",
 				"C": "cc\ncc",
@@ -875,7 +864,7 @@ func TestParserCSVMultiline(t *testing.T) {
 		{
 			"last_field",
 			"aaaa,bbbb,cccc,dddd,e\neee",
-			map[string]interface{}{
+			map[string]any{
 				"A": "aaaa",
 				"B": "bbbb",
 				"C": "cccc",
@@ -886,7 +875,7 @@ func TestParserCSVMultiline(t *testing.T) {
 		{
 			"multiple_fields",
 			"aaaa,bb\nbb,ccc\nc,dddd,e\neee",
-			map[string]interface{}{
+			map[string]any{
 				"A": "aaaa",
 				"B": "bb\nbb",
 				"C": "ccc\nc",
@@ -897,7 +886,7 @@ func TestParserCSVMultiline(t *testing.T) {
 		{
 			"multiple_first_field",
 			"a\na\na\na,bbbb,cccc,dddd,eeee",
-			map[string]interface{}{
+			map[string]any{
 				"A": "a\na\na\na",
 				"B": "bbbb",
 				"C": "cccc",
@@ -908,7 +897,7 @@ func TestParserCSVMultiline(t *testing.T) {
 		{
 			"multiple_middle_field",
 			"aaaa,bbbb,c\nc\nc\nc,dddd,eeee",
-			map[string]interface{}{
+			map[string]any{
 				"A": "aaaa",
 				"B": "bbbb",
 				"C": "c\nc\nc\nc",
@@ -919,7 +908,7 @@ func TestParserCSVMultiline(t *testing.T) {
 		{
 			"multiple_last_field",
 			"aaaa,bbbb,cccc,dddd,e\ne\ne\ne",
-			map[string]interface{}{
+			map[string]any{
 				"A": "aaaa",
 				"B": "bbbb",
 				"C": "cccc",
@@ -930,7 +919,7 @@ func TestParserCSVMultiline(t *testing.T) {
 		{
 			"leading_newline",
 			"\naaaa,bbbb,cccc,dddd,eeee",
-			map[string]interface{}{
+			map[string]any{
 				"A": "aaaa",
 				"B": "bbbb",
 				"C": "cccc",
@@ -941,7 +930,7 @@ func TestParserCSVMultiline(t *testing.T) {
 		{
 			"trailing_newline",
 			"aaaa,bbbb,cccc,dddd,eeee\n",
-			map[string]interface{}{
+			map[string]any{
 				"A": "aaaa",
 				"B": "bbbb",
 				"C": "cccc",
@@ -952,7 +941,7 @@ func TestParserCSVMultiline(t *testing.T) {
 		{
 			"leading_newline_field",
 			"aaaa,\nbbbb,\ncccc,\ndddd,eeee",
-			map[string]interface{}{
+			map[string]any{
 				"A": "aaaa",
 				"B": "\nbbbb",
 				"C": "\ncccc",
@@ -963,7 +952,7 @@ func TestParserCSVMultiline(t *testing.T) {
 		{
 			"trailing_newline_field",
 			"aaaa,bbbb\n,cccc\n,dddd\n,eeee",
-			map[string]interface{}{
+			map[string]any{
 				"A": "aaaa",
 				"B": "bbbb\n",
 				"C": "cccc\n",
@@ -974,7 +963,7 @@ func TestParserCSVMultiline(t *testing.T) {
 		{
 			"empty_lines_unquoted",
 			"aa\n\naa,bbbb,c\n\nccc,dddd,eee\n\ne",
-			map[string]interface{}{
+			map[string]any{
 				"A": "aa\naa",
 				"B": "bbbb",
 				"C": "c\nccc",
@@ -985,7 +974,7 @@ func TestParserCSVMultiline(t *testing.T) {
 		{
 			"empty_lines_quoted",
 			"\"aa\n\naa\",bbbb,\"c\n\nccc\",dddd,\"eee\n\ne\"",
-			map[string]interface{}{
+			map[string]any{
 				"A": "aa\n\naa",
 				"B": "bbbb",
 				"C": "c\n\nccc",
@@ -996,7 +985,7 @@ func TestParserCSVMultiline(t *testing.T) {
 		{
 			"everything",
 			"\n\na\na\n\naa,\n\nbb\nbb\n\n,\"cc\ncc\n\n\",\ndddd\n,eeee\n\n",
-			map[string]interface{}{
+			map[string]any{
 				"A": "a\na\naa",
 				"B": "\nbb\nbb\n",
 				"C": "cc\ncc\n\n",
@@ -1009,7 +998,7 @@ func TestParserCSVMultiline(t *testing.T) {
 			`aaaa,bb
 bb,cccc,dd
 dd,eeee`,
-			map[string]interface{}{
+			map[string]any{
 				"A": "aaaa",
 				"B": "bb\nbb",
 				"C": "cccc",
@@ -1020,7 +1009,7 @@ dd,eeee`,
 		{
 			"return_in_quotes",
 			"aaaa,\"bbbb\",\"cc\ncc\",dddd,eeee",
-			map[string]interface{}{
+			map[string]any{
 				"A": "aaaa",
 				"B": "bbbb",
 				"C": "cc\ncc",
@@ -1032,7 +1021,7 @@ dd,eeee`,
 			"return_in_double_quotes",
 			`aaaa,"""bbbb""","""cc
 cc""",dddd,eeee`,
-			map[string]interface{}{
+			map[string]any{
 				"A": "aaaa",
 				"B": "\"bbbb\"",
 				"C": "\"cc\ncc\"",

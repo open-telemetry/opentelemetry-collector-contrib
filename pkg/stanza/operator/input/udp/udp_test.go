@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package udp
 
@@ -29,11 +18,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func udpInputTest(input []byte, expected []string) func(t *testing.T) {
+func udpInputTest(input []byte, expected []string, cfg *Config) func(t *testing.T) {
 	return func(t *testing.T) {
-		cfg := NewConfigWithID("test_input")
-		cfg.ListenAddress = ":0"
-
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 
@@ -48,7 +34,7 @@ func udpInputTest(input []byte, expected []string) func(t *testing.T) {
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = udpInput.Start(testutil.NewMockPersister("test"))
+		err = udpInput.Start(testutil.NewUnscopedMockPersister())
 		require.NoError(t, err)
 		defer func() {
 			require.NoError(t, udpInput.Stop(), "expected to stop udp input operator without error")
@@ -99,7 +85,7 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = udpInput.Start(testutil.NewMockPersister("test"))
+		err = udpInput.Start(testutil.NewUnscopedMockPersister())
 		require.NoError(t, err)
 		defer func() {
 			require.NoError(t, udpInput.Stop(), "expected to stop udp input operator without error")
@@ -115,7 +101,7 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		for _, expectedBody := range expected {
 			select {
 			case entry := <-entryChan:
-				expectedAttributes := map[string]interface{}{
+				expectedAttributes := map[string]any{
 					"net.transport": "IP.UDP",
 				}
 				// LocalAddr for udpInput.connection is a server address
@@ -149,10 +135,20 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 }
 
 func TestInput(t *testing.T) {
-	t.Run("Simple", udpInputTest([]byte("message1"), []string{"message1"}))
-	t.Run("TrailingNewlines", udpInputTest([]byte("message1\n"), []string{"message1"}))
-	t.Run("TrailingCRNewlines", udpInputTest([]byte("message1\r\n"), []string{"message1"}))
-	t.Run("NewlineInMessage", udpInputTest([]byte("message1\nmessage2\n"), []string{"message1\nmessage2"}))
+	cfg := NewConfigWithID("test_input")
+	cfg.ListenAddress = ":0"
+
+	t.Run("Simple", udpInputTest([]byte("message1"), []string{"message1"}, cfg))
+	t.Run("TrailingNewlines", udpInputTest([]byte("message1\n"), []string{"message1"}, cfg))
+	t.Run("TrailingCRNewlines", udpInputTest([]byte("message1\r\n"), []string{"message1"}, cfg))
+	t.Run("NewlineInMessage", udpInputTest([]byte("message1\nmessage2\n"), []string{"message1\nmessage2"}, cfg))
+
+	cfg.AsyncConfig = &AsyncConfig{
+		Readers:        2,
+		Processors:     2,
+		MaxQueueLength: 100,
+	}
+	t.Run("SimpleAsync", udpInputTest([]byte("message1"), []string{"message1"}, cfg))
 }
 
 func TestInputAttributes(t *testing.T) {
@@ -197,7 +193,7 @@ func TestFailToBind(t *testing.T) {
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = udpInput.Start(testutil.NewMockPersister("test"))
+		err = udpInput.Start(testutil.NewUnscopedMockPersister())
 		return udpInput, err
 	}
 
@@ -222,7 +218,7 @@ func BenchmarkUDPInput(b *testing.B) {
 	udpInput := op.(*Input)
 	udpInput.InputOperator.OutputOperators = []operator.Operator{fakeOutput}
 
-	err = udpInput.Start(testutil.NewMockPersister("test"))
+	err = udpInput.Start(testutil.NewUnscopedMockPersister())
 	require.NoError(b, err)
 
 	done := make(chan struct{})

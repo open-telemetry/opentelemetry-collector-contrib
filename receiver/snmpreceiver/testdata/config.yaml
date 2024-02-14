@@ -9,7 +9,7 @@ snmp/v2c_connection_good:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/no_endpoint:
   collection_interval: 10s
   version: v2c
@@ -20,7 +20,7 @@ snmp/no_endpoint:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/invalid_endpoint:
   collection_interval: 10s
   endpoint: udp://a:a:a:a:a:a
@@ -44,7 +44,7 @@ snmp/no_port:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/no_port_trailing_colon:
   collection_interval: 10s
   endpoint: "udp://localhost:"
@@ -56,7 +56,7 @@ snmp/no_port_trailing_colon:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/bad_endpoint_scheme:
   collection_interval: 10s
   endpoint: "http://localhost:161"
@@ -68,7 +68,7 @@ snmp/bad_endpoint_scheme:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/no_endpoint_scheme:
   collection_interval: 10s
   endpoint: "localhost:161"
@@ -80,7 +80,7 @@ snmp/no_endpoint_scheme:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/no_version:
   collection_interval: 10s
   endpoint: "udp://localhost:161"
@@ -91,7 +91,7 @@ snmp/no_version:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1" 
+        - oid: "1"
 snmp/bad_version:
   collection_interval: 10s
   endpoint: "udp://localhost:161"
@@ -103,7 +103,7 @@ snmp/bad_version:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/v3_connection_good:
   collection_interval: 10s
   endpoint: udp://localhost:161
@@ -120,7 +120,7 @@ snmp/v3_connection_good:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/v3_no_user:
   collection_interval: 10s
   endpoint: "udp://localhost:161"
@@ -132,7 +132,7 @@ snmp/v3_no_user:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/v3_no_security_level:
   collection_interval: 10s
   endpoint: "udp://localhost:161"
@@ -144,7 +144,7 @@ snmp/v3_no_security_level:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/v3_bad_security_level:
   collection_interval: 10s
   endpoint: "udp://localhost:161"
@@ -157,7 +157,7 @@ snmp/v3_bad_security_level:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/v3_no_auth_type:
   collection_interval: 10s
   endpoint: "udp://localhost:161"
@@ -171,7 +171,7 @@ snmp/v3_no_auth_type:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/v3_bad_auth_type:
   collection_interval: 10s
   endpoint: "udp://localhost:161"
@@ -186,7 +186,7 @@ snmp/v3_bad_auth_type:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/v3_no_auth_password:
   collection_interval: 10s
   endpoint: "udp://localhost:161"
@@ -200,7 +200,7 @@ snmp/v3_no_auth_password:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/v3_no_privacy_type:
   collection_interval: 10s
   endpoint: "udp://localhost:161"
@@ -216,7 +216,7 @@ snmp/v3_no_privacy_type:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/v3_bad_privacy_type:
   collection_interval: 10s
   endpoint: "udp://localhost:161"
@@ -233,7 +233,7 @@ snmp/v3_bad_privacy_type:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/v3_no_privacy_password:
   collection_interval: 10s
   endpoint: "udp://localhost:161"
@@ -249,7 +249,7 @@ snmp/v3_no_privacy_password:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/no_metric_config:
   collection_interval: 10s
   endpoint: udp://localhost:161
@@ -265,7 +265,7 @@ snmp/no_metric_unit:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/no_metric_gauge_or_sum:
   collection_interval: 10s
   endpoint: udp://localhost:161
@@ -275,7 +275,7 @@ snmp/no_metric_gauge_or_sum:
     m3:
       unit: "By"
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/no_metric_oids:
   collection_interval: 10s
   endpoint: udp://localhost:161
@@ -297,7 +297,7 @@ snmp/no_metric_gauge_type:
       gauge:
         value_type:
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/bad_metric_gauge_type:
   collection_interval: 10s
   endpoint: udp://localhost:161
@@ -309,7 +309,7 @@ snmp/bad_metric_gauge_type:
       gauge:
         value_type: "Counter"
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/no_metric_sum_type:
   collection_interval: 10s
   endpoint: udp://localhost:161
@@ -322,7 +322,7 @@ snmp/no_metric_sum_type:
         aggregation: cumulative
         monotonic: true
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/bad_metric_sum_type:
   collection_interval: 10s
   endpoint: udp://localhost:161
@@ -336,7 +336,7 @@ snmp/bad_metric_sum_type:
         monotonic: true
         value_type: "Counter"
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/no_metric_sum_aggregation:
   collection_interval: 10s
   endpoint: udp://localhost:161
@@ -349,7 +349,7 @@ snmp/no_metric_sum_aggregation:
         monotonic: true
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/bad_metric_sum_aggregation:
   collection_interval: 10s
   endpoint: udp://localhost:161
@@ -363,7 +363,7 @@ snmp/bad_metric_sum_aggregation:
         monotonic: true
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
 snmp/no_scalar_oid_oid:
   collection_interval: 10s
   endpoint: udp://localhost:161
@@ -562,7 +562,7 @@ snmp/column_oid_no_indexed_attribute_or_resource_attribute:
           attributes:
             - name: a2
               value: val1
-snmp/no_resource_attribute_oid_or_prefix:
+snmp/no_resource_attribute_oid_or_scalar_oid_or_prefix:
   collection_interval: 10s
   endpoint: udp://localhost:161
   version: v2c
@@ -632,7 +632,7 @@ snmp/complex_good:
       gauge:
         value_type: double
       scalar_oids:
-        - oid: "1"  
+        - oid: "1"
           attributes:
             - name: a1
               value: val1
@@ -643,7 +643,7 @@ snmp/complex_good:
         monotonic: true
         value_type: int
       scalar_oids:
-        - oid: "1" 
+        - oid: "1"
     m5:
       unit: "{things}"
       sum:
@@ -651,7 +651,7 @@ snmp/complex_good:
         monotonic: false
         value_type: int
       scalar_oids:
-        - oid: "1" 
+        - oid: "1"
           attributes:
             - name: a1
               value: val1
@@ -662,11 +662,11 @@ snmp/complex_good:
         monotonic: true
         value_type: int
       scalar_oids:
-        - oid: "1" 
+        - oid: "1"
           attributes:
             - name: a2
               value: val1
-        - oid: "2" 
+        - oid: "2"
           attributes:
             - name: a2
               value: val2
@@ -709,3 +709,230 @@ snmp/complex_good:
               value: val1
             - name: a3
             - name: a4
+snmp/scalar_oid_resource_attribute_on_column_oid_metric_with_column_oid_attribute:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  attributes:
+    a2:
+      oid: "1"
+  resource_attributes:
+    ra1:
+      scalar_oid: "0"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      column_oids:
+        - oid: "1"
+          attributes:
+            - name: a2
+          resource_attributes:
+            - ra1
+snmp/scalar_oid_resource_attribute_on_column_oid_metric_with_indexed_value_prefix_attribute:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  attributes:
+    a2:
+      indexed_value_prefix: "p"
+  resource_attributes:
+    ra1:
+      scalar_oid: "0"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      column_oids:
+        - oid: "1"
+          attributes:
+            - name: a2
+          resource_attributes:
+            - ra1
+snmp/scalar_oid_resource_attribute_on_column_oid_metric_without_indexed_identifier:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      scalar_oid: "0"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      column_oids:
+        - oid: "1"
+          resource_attributes:
+            - ra1
+snmp/scalar_oid_resource_attribute_on_column_oid_metric_with_column_oid_resource_attribute:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      scalar_oid: "0"
+    ra2:
+      oid: "1"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      column_oids:
+        - oid: "1"
+          resource_attributes:
+            - ra1
+            - ra2
+snmp/scalar_oid_resource_attribute_on_column_oid_metric_with_indexed_value_prefix_resource_attribute:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      scalar_oid: "0"
+    ra2:
+      indexed_value_prefix: "p"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      column_oids:
+        - oid: "1"
+          resource_attributes:
+            - ra1
+            - ra2
+snmp/multiple_keys_on_resource_attribute:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      scalar_oid: "0"
+      oid: "1"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      column_oids:
+        - oid: "1"
+          resource_attributes:
+            - ra1
+snmp/scalar_oid_resource_attribute_ends_in_nonzero_digit:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      scalar_oid: "1"
+    ra2:
+      oid: "1"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      column_oids:
+        - oid: "1"
+          resource_attributes:
+            - ra1
+            - ra2
+snmp/column_oid_resource_attribute_ends_in_zero:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      oid: "0"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      column_oids:
+        - oid: "1"
+          resource_attributes:
+            - ra1
+snmp/scalar_oid_single_scalar_resource_attribute_is_valid:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      scalar_oid: "0"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      scalar_oids:
+        - oid: "1"
+          resource_attributes:
+            - ra1
+snmp/scalar_oid_multiple_scalar_resource_attribute_is_valid:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      scalar_oid: "0"
+    ra2:
+      scalar_oid: "0"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      scalar_oids:
+        - oid: "0"
+          resource_attributes:
+            - ra1
+            - ra2
+snmp/scalar_oid_with_coid_resource_attribute_is_invalid:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      oid: "2"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      scalar_oids:
+        - oid: "0"
+          resource_attributes:
+            - ra1
+snmp/scalar_oid_with_ivp_resource_attribute_is_invalid:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      indexed_value_prefix: p
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      scalar_oids:
+        - oid: "0"
+          resource_attributes:
+            - ra1

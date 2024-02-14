@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package add // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/add"
 
@@ -19,8 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antonmedv/expr"
-	"github.com/antonmedv/expr/vm"
+	"github.com/expr-lang/expr/vm"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -50,7 +38,7 @@ func NewConfigWithID(operatorID string) *Config {
 type Config struct {
 	helper.TransformerConfig `mapstructure:",squash"`
 	Field                    entry.Field `mapstructure:"field"`
-	Value                    interface{} `mapstructure:"value,omitempty"`
+	Value                    any         `mapstructure:"value,omitempty"`
 }
 
 // Build will build an add operator from the supplied configuration
@@ -72,7 +60,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	exprStr := strings.TrimPrefix(strVal, "EXPR(")
 	exprStr = strings.TrimSuffix(exprStr, ")")
 
-	compiled, err := expr.Compile(exprStr, expr.AllowUndefinedVariables())
+	compiled, err := helper.ExprCompile(exprStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile expression '%s': %w", c.IfExpr, err)
 	}
@@ -86,7 +74,7 @@ type Transformer struct {
 	helper.TransformerOperator
 
 	Field   entry.Field
-	Value   interface{}
+	Value   any
 	program *vm.Program
 }
 

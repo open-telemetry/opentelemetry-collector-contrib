@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package skywalkingreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver"
 
@@ -30,8 +19,8 @@ const (
 
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
-	GRPC *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
-	HTTP *confighttp.HTTPServerSettings `mapstructure:"http"`
+	GRPC *configgrpc.ServerConfig `mapstructure:"grpc"`
+	HTTP *confighttp.ServerConfig `mapstructure:"http"`
 }
 
 // Config defines configuration for skywalking receiver.
@@ -72,7 +61,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 	// UnmarshalExact will not set struct properties to nil even if no key is provided,
 	// so set the protocol structs to nil where the keys were omitted.
-	err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
+	err := componentParser.Unmarshal(cfg)
 	if err != nil {
 		return err
 	}

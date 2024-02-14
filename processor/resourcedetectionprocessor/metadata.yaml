@@ -1,0 +1,12 @@
+type: resourcedetection
+
+status:
+  class: processor
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib, splunk, observiq, sumo, aws, redhat, liatrio]
+  codeowners:
+    active: [Aneurysm9, dashpole]
+
+tests:
+  config:

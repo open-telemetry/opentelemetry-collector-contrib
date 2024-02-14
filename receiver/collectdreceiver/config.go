@@ -1,30 +1,32 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package collectdreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 // Config defines configuration for Collectd receiver.
 type Config struct {
-	confignet.TCPAddr `mapstructure:",squash"`
+	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	Timeout                 time.Duration            `mapstructure:"timeout"`
+	Encoding                string                   `mapstructure:"encoding"`
+	AttributesPrefix        string                   `mapstructure:"attributes_prefix"`
+}
 
-	Timeout          time.Duration `mapstructure:"timeout"`
-	AttributesPrefix string        `mapstructure:"attributes_prefix"`
-	Encoding         string        `mapstructure:"encoding"`
+func (c *Config) Validate() error {
+	// CollectD receiver only supports JSON encoding. We expose a config option
+	// to make it explicit and obvious to the users.
+	if strings.ToLower(c.Encoding) != defaultEncodingFormat {
+		return fmt.Errorf(
+			"CollectD only support JSON encoding format. %s is not supported",
+			c.Encoding,
+		)
+	}
+	return nil
 }

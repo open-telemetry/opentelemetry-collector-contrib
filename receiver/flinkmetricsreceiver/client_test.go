@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 
@@ -69,7 +58,7 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Invalid HTTP config",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
 					TLSSetting: configtls.TLSClientSetting{
 						TLSSetting: configtls.TLSSetting{
@@ -86,7 +75,7 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Valid Configuration",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					TLSSetting: configtls.TLSClientSetting{},
 					Endpoint:   defaultEndpoint,
 				},
@@ -186,7 +175,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 				require.Equal(t, expected, &actual.Metrics)
 
 				hostname, err := os.Hostname()
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.EqualValues(t, hostname, actual.Host)
 			},
 		},
@@ -389,7 +378,7 @@ func TestGetJobsMetrics(t *testing.T) {
 				require.EqualValues(t, "State machine job", actual[0].JobName)
 
 				hostname, err := os.Hostname()
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.EqualValues(t, hostname, actual[0].Host)
 			},
 		},

@@ -1,0 +1,41 @@
+type: resourcedetectionprocessor/ec2
+
+parent: resourcedetection
+
+resource_attributes:
+  host.name:
+    description: The hostname
+    type: string
+    enabled: true
+  host.id:
+    description: The host.id
+    type: string
+    enabled: true
+  cloud.provider:
+    description: The cloud provider
+    type: string
+    enabled: true
+  cloud.account.id:
+    description: The cloud account id
+    type: string
+    enabled: true
+  cloud.platform:
+    description: The cloud platform
+    type: string
+    enabled: true
+  cloud.region:
+    description: The cloud region
+    type: string
+    enabled: true
+  cloud.availability_zone:
+    description: The cloud availability zone
+    type: string
+    enabled: true
+  host.image.id:
+    description: The host image id
+    type: string
+    enabled: true
+  host.type:
+    description: The host id
+    type: string
+    enabled: true

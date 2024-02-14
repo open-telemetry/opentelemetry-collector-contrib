@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package ecsutil
 
@@ -47,7 +36,7 @@ func TestClient(t *testing.T) {
 
 func TestNewClientProvider(t *testing.T) {
 	baseURL, _ := url.Parse("http://localhost:8080")
-	provider := NewClientProvider(*baseURL, confighttp.HTTPClientSettings{}, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	provider := NewClientProvider(*baseURL, confighttp.ClientConfig{}, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, provider)
 	_, ok := provider.(*defaultClientProvider)
 	require.True(t, ok)
@@ -59,7 +48,7 @@ func TestNewClientProvider(t *testing.T) {
 
 func TestDefaultClient(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
-	client, err := defaultClient(*endpoint, confighttp.HTTPClientSettings{}, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	client, err := defaultClient(*endpoint, confighttp.ClientConfig{}, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, client.httpClient.Transport)
 	require.Equal(t, "http://localhost:8080", client.baseURL.String())

@@ -1,0 +1,89 @@
+name: splunk
+url: https://github.com/signalfx/splunk-otel-collector
+maintainers:
+    - atoulme
+    - crobert-1
+    - dmitryax
+    - hughesjj
+    - jeffreyc-splunk
+    - jinja2
+    - jvoravong
+    - panotti
+    - rmfitzpatrick
+    - samiura
+components:
+    connector:
+        - spanmetrics
+    exporter:
+        - awss3
+        - file
+        - kafka
+        - loadbalancing
+        - pulsar
+        - sapm
+        - signalfx
+        - splunk_hec
+    extension:
+        - basicauth
+        - docker_observer
+        - ecs_observer
+        - ecs_task_observer
+        - file_storage
+        - health_check
+        - host_observer
+        - http_forwarder
+        - k8s_observer
+        - pprof
+    processor:
+        - attributes
+        - filter
+        - groupbyattrs
+        - k8sattributes
+        - logstransform
+        - metricstransform
+        - probabilistic_sampler
+        - resource
+        - resourcedetection
+        - routing
+        - span
+        - spanmetrics
+        - tail_sampling
+        - transform
+    receiver:
+        - azureeventhub
+        - carbon
+        - cloudfoundry
+        - collectd
+        - filelog
+        - fluentforward
+        - hostmetrics
+        - jaeger
+        - jmx
+        - journald
+        - k8s_cluster
+        - k8s_events
+        - k8sobjects
+        - kafka
+        - kafkametrics
+        - kubeletstats
+        - mongodbatlas
+        - mysql
+        - oracledb
+        - postgresql
+        - prometheus
+        - prometheus_simple
+        - receiver_creator
+        - redis
+        - sapm
+        - signalfx
+        - solace
+        - splunk_hec
+        - sqlquery
+        - statsd
+        - syslog
+        - tcplog
+        - udplog
+        - wavefront
+        - windowseventlog
+        - windowsperfcounters
+        - zipkin

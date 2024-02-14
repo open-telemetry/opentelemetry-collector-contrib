@@ -1,56 +1,48 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//go:generate mdatagen metadata.yaml
 
 package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "clickhouse"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelAlpha
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for Elastic exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, stability),
-		exporter.WithTraces(createTracesExporter, stability),
-		exporter.WithMetrics(createMetricExporter, stability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricExporter, metadata.MetricsStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
+	queueSettings := exporterhelper.NewDefaultQueueSettings()
+	queueSettings.NumConsumers = 1
+
 	return &Config{
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		QueueSettings:    QueueSettings{QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize},
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    queueSettings,
+		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+		ConnectionParams: map[string]string{},
 		Database:         defaultDatabase,
 		LogsTableName:    "otel_logs",
 		TracesTableName:  "otel_traces",
 		MetricsTableName: "otel_metrics",
-		TTLDays:          7,
+		TTL:              0,
 	}
 }
 
@@ -75,8 +67,8 @@ func createLogsExporter(
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
-		exporterhelper.WithQueue(c.enforcedQueueSettings()),
-		exporterhelper.WithRetry(c.RetrySettings),
+		exporterhelper.WithQueue(c.QueueSettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
 	)
 }
 
@@ -101,8 +93,8 @@ func createTracesExporter(
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
-		exporterhelper.WithQueue(c.enforcedQueueSettings()),
-		exporterhelper.WithRetry(c.RetrySettings),
+		exporterhelper.WithQueue(c.QueueSettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
 	)
 }
 
@@ -125,7 +117,27 @@ func createMetricExporter(
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
-		exporterhelper.WithQueue(c.enforcedQueueSettings()),
-		exporterhelper.WithRetry(c.RetrySettings),
+		exporterhelper.WithQueue(c.QueueSettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
 	)
+}
+
+func generateTTLExpr(ttlDays uint, ttl time.Duration, timeField string) string {
+	if ttlDays > 0 {
+		return fmt.Sprintf(`TTL toDateTime(%s) + toIntervalDay(%d)`, timeField, ttlDays)
+	}
+
+	if ttl > 0 {
+		switch {
+		case ttl%(24*time.Hour) == 0:
+			return fmt.Sprintf(`TTL toDateTime(%s) + toIntervalDay(%d)`, timeField, ttl/(24*time.Hour))
+		case ttl%(time.Hour) == 0:
+			return fmt.Sprintf(`TTL toDateTime(%s) + toIntervalHour(%d)`, timeField, ttl/time.Hour)
+		case ttl%(time.Minute) == 0:
+			return fmt.Sprintf(`TTL toDateTime(%s) + toIntervalMinute(%d)`, timeField, ttl/time.Minute)
+		default:
+			return fmt.Sprintf(`TTL toDateTime(%s) + toIntervalSecond(%d)`, timeField, ttl/time.Second)
+		}
+	}
+	return ""
 }

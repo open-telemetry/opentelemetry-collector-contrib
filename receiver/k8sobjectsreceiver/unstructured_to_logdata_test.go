@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
@@ -114,17 +103,18 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		event := &watch.Event{
 			Type: watch.Added,
 			Object: &unstructured.Unstructured{
-				Object: map[string]interface{}{
+				Object: map[string]any{
 					"kind":       "Event",
 					"apiVersion": "v1",
-					"metadata": map[string]interface{}{
+					"metadata": map[string]any{
 						"name": "generic-name",
 					},
 				},
 			},
 		}
 
-		logs := watchObjectsToLogData(event, time.Now(), config)
+		logs, err := watchObjectsToLogData(event, time.Now(), config)
+		assert.NoError(t, err)
 
 		assert.Equal(t, logs.LogRecordCount(), 1)
 
@@ -153,10 +143,10 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		event := &watch.Event{
 			Type: watch.Added,
 			Object: &unstructured.Unstructured{
-				Object: map[string]interface{}{
+				Object: map[string]any{
 					"kind":       "Event",
 					"apiVersion": "v1",
-					"metadata": map[string]interface{}{
+					"metadata": map[string]any{
 						"name": "generic-name",
 					},
 				},
@@ -164,7 +154,8 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		}
 
 		observedAt := time.Now()
-		logs := watchObjectsToLogData(event, observedAt, config)
+		logs, err := watchObjectsToLogData(event, observedAt, config)
+		assert.NoError(t, err)
 
 		assert.Equal(t, logs.LogRecordCount(), 1)
 

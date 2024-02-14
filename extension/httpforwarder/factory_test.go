@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package httpforwarder
 
@@ -29,8 +18,8 @@ import (
 
 func TestFactory(t *testing.T) {
 	f := NewFactory()
-	expectType := "http_forwarder"
-	require.Equal(t, component.Type(expectType), f.Type())
+	expectType := component.MustNewType("http_forwarder")
+	require.Equal(t, expectType, f.Type())
 
 	cfg := f.CreateDefaultConfig().(*Config)
 	require.Equal(t, ":6060", cfg.Ingress.Endpoint)
@@ -50,13 +39,13 @@ func TestFactory(t *testing.T) {
 		},
 		{
 			name:           "Invalid config",
-			config:         &Config{Egress: confighttp.HTTPClientSettings{Endpoint: "123.456.7.89:9090"}},
+			config:         &Config{Egress: confighttp.ClientConfig{Endpoint: "123.456.7.89:9090"}},
 			wantErr:        true,
 			wantErrMessage: "enter a valid URL for 'egress.endpoint': parse \"123.456.7.89:9090\": first path segment in URL cannot",
 		},
 		{
 			name:   "Valid config",
-			config: &Config{Egress: confighttp.HTTPClientSettings{Endpoint: "localhost:9090"}},
+			config: &Config{Egress: confighttp.ClientConfig{Endpoint: "localhost:9090"}},
 		},
 	}
 	for _, test := range tests {

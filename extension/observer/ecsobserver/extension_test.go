@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package ecsobserver
 
@@ -108,12 +97,22 @@ func TestExtensionStartStop(t *testing.T) {
 
 	t.Run("critical error", func(t *testing.T) {
 		c := ecsmock.NewClusterWithName("different than default config")
-		ext := createTestExt(c, "testdata/ut_ext_critical_error.actual.yaml")
-		host := newInspectErrorHost()
-		require.NoError(t, ext.Start(context.TODO(), host))
-		time.Sleep(waitDuration)
-		err := host.(*inspectErrorHost).getError()
-		require.Error(t, err)
-		require.Error(t, hasCriticalError(zap.NewExample(), err))
+		f := newTestTaskFetcher(t, c)
+		cfg := createDefaultConfig()
+		sdCfg := cfg.(*Config)
+		sdCfg.RefreshInterval = 100 * time.Millisecond
+		sdCfg.ResultFile = "testdata/ut_ext_critical_error.actual.yaml"
+		cs := extensiontest.NewNopCreateSettings()
+		statusEventChan := make(chan *component.StatusEvent)
+		cs.TelemetrySettings.ReportStatus = func(e *component.StatusEvent) {
+			statusEventChan <- e
+		}
+		ext, err := createExtensionWithFetcher(cs, sdCfg, f)
+		require.NoError(t, err)
+		err = ext.Start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, err)
+		e := <-statusEventChan
+		require.Error(t, e.Err())
+		require.Error(t, hasCriticalError(zap.NewExample(), e.Err()))
 	})
 }

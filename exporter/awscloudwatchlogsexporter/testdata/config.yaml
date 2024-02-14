@@ -23,6 +23,12 @@ awscloudwatchlogs/invalid_queue_size:
   sending_queue:
     queue_size: 0
 
+awscloudwatchlogs/invalid_num_consumers:
+  log_group_name: "test-3"
+  log_stream_name: "testing"
+  sending_queue:
+    num_consumers: 0
+
 awscloudwatchlogs/invalid_required_field_stream:
   log_group_name: "test-1"
 

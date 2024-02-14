@@ -1,0 +1,24 @@
+type: attributes
+
+status:
+  class: processor
+  stability:
+    beta: [traces, metrics, logs]
+  distributions:
+  - core
+  - contrib
+  - aws
+  - grafana
+  - observiq
+  - redhat
+  - splunk
+  - sumo
+  warnings: [Identity Conflict]
+  codeowners:
+    active: [boostchicken]
+tests:
+  config:
+    actions:
+      - key: attribute1
+        value: 123
+        action: insert

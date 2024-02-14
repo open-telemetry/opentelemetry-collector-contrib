@@ -1,0 +1,10 @@
+type: datadog
+
+status:
+  class: connector
+  stability:
+    beta: [traces_to_metrics, traces_to_traces]
+  distributions: [contrib]
+  codeowners:
+    active: [mx-psi, dineshg13]
+    emeritus: [gbbr]

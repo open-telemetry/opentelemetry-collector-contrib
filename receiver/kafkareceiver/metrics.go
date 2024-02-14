@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
@@ -22,6 +11,7 @@ import (
 
 var (
 	tagInstanceName, _ = tag.NewKey("name")
+	tagPartition, _    = tag.NewKey("partition")
 
 	statMessageCount     = stats.Int64("kafka_receiver_messages", "Number of received messages", stats.UnitDimensionless)
 	statMessageOffset    = stats.Int64("kafka_receiver_current_offset", "Current message offset", stats.UnitDimensionless)
@@ -29,17 +19,22 @@ var (
 
 	statPartitionStart = stats.Int64("kafka_receiver_partition_start", "Number of started partitions", stats.UnitDimensionless)
 	statPartitionClose = stats.Int64("kafka_receiver_partition_close", "Number of finished partitions", stats.UnitDimensionless)
+
+	statUnmarshalFailedMetricPoints = stats.Int64("kafka_receiver_unmarshal_failed_metric_points", "Number of metric points failed to be unmarshaled", stats.UnitDimensionless)
+	statUnmarshalFailedLogRecords   = stats.Int64("kafka_receiver_unmarshal_failed_log_records", "Number of log records failed to be unmarshaled", stats.UnitDimensionless)
+	statUnmarshalFailedSpans        = stats.Int64("kafka_receiver_unmarshal_failed_spans", "Number of spans failed to be unmarshaled", stats.UnitDimensionless)
 )
 
-// MetricViews return metric views for Kafka receiver.
-func MetricViews() []*view.View {
-	tagKeys := []tag.Key{tagInstanceName}
+// metricViews return metric views for Kafka receiver.
+func metricViews() []*view.View {
+	partitionAgnosticTagKeys := []tag.Key{tagInstanceName}
+	partitionSpecificTagKeys := []tag.Key{tagInstanceName, tagPartition}
 
 	countMessages := &view.View{
 		Name:        statMessageCount.Name(),
 		Measure:     statMessageCount,
 		Description: statMessageCount.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     partitionSpecificTagKeys,
 		Aggregation: view.Sum(),
 	}
 
@@ -47,7 +42,7 @@ func MetricViews() []*view.View {
 		Name:        statMessageOffset.Name(),
 		Measure:     statMessageOffset,
 		Description: statMessageOffset.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     partitionSpecificTagKeys,
 		Aggregation: view.LastValue(),
 	}
 
@@ -55,7 +50,7 @@ func MetricViews() []*view.View {
 		Name:        statMessageOffsetLag.Name(),
 		Measure:     statMessageOffsetLag,
 		Description: statMessageOffsetLag.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     partitionSpecificTagKeys,
 		Aggregation: view.LastValue(),
 	}
 
@@ -63,7 +58,7 @@ func MetricViews() []*view.View {
 		Name:        statPartitionStart.Name(),
 		Measure:     statPartitionStart,
 		Description: statPartitionStart.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     partitionAgnosticTagKeys,
 		Aggregation: view.Sum(),
 	}
 
@@ -71,7 +66,31 @@ func MetricViews() []*view.View {
 		Name:        statPartitionClose.Name(),
 		Measure:     statPartitionClose,
 		Description: statPartitionClose.Description(),
-		TagKeys:     tagKeys,
+		TagKeys:     partitionAgnosticTagKeys,
+		Aggregation: view.Sum(),
+	}
+
+	countUnmarshalFailedMetricPoints := &view.View{
+		Name:        statUnmarshalFailedMetricPoints.Name(),
+		Measure:     statUnmarshalFailedMetricPoints,
+		Description: statUnmarshalFailedMetricPoints.Description(),
+		TagKeys:     partitionAgnosticTagKeys,
+		Aggregation: view.Sum(),
+	}
+
+	countUnmarshalFailedLogRecords := &view.View{
+		Name:        statUnmarshalFailedLogRecords.Name(),
+		Measure:     statUnmarshalFailedLogRecords,
+		Description: statUnmarshalFailedLogRecords.Description(),
+		TagKeys:     partitionAgnosticTagKeys,
+		Aggregation: view.Sum(),
+	}
+
+	countUnmarshalFailedSpans := &view.View{
+		Name:        statUnmarshalFailedSpans.Name(),
+		Measure:     statUnmarshalFailedSpans,
+		Description: statUnmarshalFailedSpans.Description(),
+		TagKeys:     partitionAgnosticTagKeys,
 		Aggregation: view.Sum(),
 	}
 
@@ -81,5 +100,8 @@ func MetricViews() []*view.View {
 		lastValueOffsetLag,
 		countPartitionStart,
 		countPartitionClose,
+		countUnmarshalFailedMetricPoints,
+		countUnmarshalFailedLogRecords,
+		countUnmarshalFailedSpans,
 	}
 }

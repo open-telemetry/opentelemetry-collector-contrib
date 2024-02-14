@@ -1,0 +1,12 @@
+type: remotetap
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [atoulme]
+
+tests:
+  config:

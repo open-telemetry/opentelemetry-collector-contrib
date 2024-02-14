@@ -1,23 +1,13 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package regexp // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/regexp"
 
 import (
+	"math"
 	"regexp"
 
-	"github.com/golang/groupcache/lru"
+	lru "github.com/hashicorp/golang-lru/v2"
 )
 
 // FilterSet encapsulates a set of filters and caches match results.
@@ -27,9 +17,8 @@ import (
 // FilterSet satisfies the FilterSet interface from
 // "go.opentelemetry.io/collector/internal/processor/filterset"
 type FilterSet struct {
-	regexes      []*regexp.Regexp
-	cacheEnabled bool
-	cache        *lru.Cache
+	regexes []*regexp.Regexp
+	cache   *lru.Cache[string, bool]
 }
 
 // NewFilterSet constructs a FilterSet of re2 regex strings.
@@ -39,13 +28,21 @@ func NewFilterSet(filters []string, cfg *Config) (*FilterSet, error) {
 		regexes: make([]*regexp.Regexp, 0, len(filters)),
 	}
 
-	if cfg != nil && cfg.CacheEnabled {
-		fs.cacheEnabled = true
-		fs.cache = lru.New(cfg.CacheMaxNumEntries)
-	}
-
 	if err := fs.addFilters(filters); err != nil {
 		return nil, err
+	}
+
+	if cfg != nil && cfg.CacheEnabled {
+		// Because of legacy behavior, CacheMaxNumEntries == 0 means unbounded cache.
+		numEntries := cfg.CacheMaxNumEntries
+		if numEntries == 0 {
+			numEntries = math.MaxInt
+		}
+		var err error
+		fs.cache, err = lru.New[string, bool](numEntries)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return fs, nil
@@ -54,29 +51,28 @@ func NewFilterSet(filters []string, cfg *Config) (*FilterSet, error) {
 // Matches returns true if the given string matches any of the FilterSet's filters.
 // The given string must be fully matched by at least one filter's re2 regex.
 func (rfs *FilterSet) Matches(toMatch string) bool {
-	if rfs.cacheEnabled {
+	if rfs.cache != nil {
 		if v, ok := rfs.cache.Get(toMatch); ok {
-			return v.(bool)
+			return v
 		}
 	}
 
 	for _, r := range rfs.regexes {
 		if r.MatchString(toMatch) {
-			if rfs.cacheEnabled {
+			if rfs.cache != nil {
 				rfs.cache.Add(toMatch, true)
 			}
 			return true
 		}
 	}
 
-	if rfs.cacheEnabled {
+	if rfs.cache != nil {
 		rfs.cache.Add(toMatch, false)
 	}
 	return false
 }
 
 // addFilters compiles all the given filters and stores them as regexes.
-// All regexes are automatically anchored to enforce full string matches.
 func (rfs *FilterSet) addFilters(filters []string) error {
 	dedup := make(map[string]struct{}, len(filters))
 	for _, f := range filters {

@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package receivercreator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 
@@ -19,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/antonmedv/expr"
+	"github.com/expr-lang/expr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -36,14 +25,14 @@ import (
 // of the expression. For instance:
 //
 //	`"secure" in pod.labels` -> true (boolean)
-func evalBackticksInConfigValue(configValue string, env observer.EndpointEnv) (interface{}, error) {
+func evalBackticksInConfigValue(configValue string, env observer.EndpointEnv) (any, error) {
 	// Tracks index into configValue where an expression (backtick) begins. -1 is unset.
 	exprStartIndex := -1
 	// Accumulate expanded string.
 	output := &strings.Builder{}
 	// Accumulate results of calls to eval for use at the end to return well-typed
 	// results if possible.
-	var expansions []interface{}
+	var expansions []any
 
 	// Loop through configValue one rune at a time using exprStartIndex to keep track of
 	// inside or outside of expressions.
@@ -102,16 +91,16 @@ func evalBackticksInConfigValue(configValue string, env observer.EndpointEnv) (i
 // expandConfig will walk the provided user config and expand any `backticked` content
 // with associated observer.EndpointEnv values.
 func expandConfig(cfg userConfigMap, env observer.EndpointEnv) (userConfigMap, error) {
-	expanded, err := expandAny(map[string]interface{}(cfg), env)
+	expanded, err := expandAny(map[string]any(cfg), env)
 	if err != nil {
 		return nil, err
 	}
-	return expanded.(map[string]interface{}), nil
+	return expanded.(map[string]any), nil
 }
 
 // expandAny recursively expands any expressions in backticks inside values of input using
 // env as variables available within the expression, returning a copy of input
-func expandAny(input interface{}, env observer.EndpointEnv) (interface{}, error) {
+func expandAny(input any, env observer.EndpointEnv) (any, error) {
 	switch v := input.(type) {
 	case string:
 		res, err := evalBackticksInConfigValue(v, env)
@@ -119,18 +108,18 @@ func expandAny(input interface{}, env observer.EndpointEnv) (interface{}, error)
 			return nil, fmt.Errorf("failed evaluating config expression for %v: %w", v, err)
 		}
 		return res, nil
-	case []string, []interface{}:
-		var vSlice []interface{}
+	case []string, []any:
+		var vSlice []any
 		if vss, ok := v.([]string); ok {
 			// expanded strings aren't guaranteed to remain them, so we
-			// coerce to interface{} for shared []interface{} expansion path
+			// coerce to any for shared []any expansion path
 			for _, vs := range vss {
 				vSlice = append(vSlice, vs)
 			}
 		} else {
-			vSlice = v.([]interface{})
+			vSlice = v.([]any)
 		}
-		expandedSlice := make([]interface{}, 0, len(vSlice))
+		expandedSlice := make([]any, 0, len(vSlice))
 		for _, val := range vSlice {
 			expanded, err := expandAny(val, env)
 			if err != nil {
@@ -139,8 +128,8 @@ func expandAny(input interface{}, env observer.EndpointEnv) (interface{}, error)
 			expandedSlice = append(expandedSlice, expanded)
 		}
 		return expandedSlice, nil
-	case map[string]interface{}:
-		expandedMap := map[string]interface{}{}
+	case map[string]any:
+		expandedMap := map[string]any{}
 		for key, val := range v {
 			expandedVal, err := expandAny(val, env)
 			if err != nil {

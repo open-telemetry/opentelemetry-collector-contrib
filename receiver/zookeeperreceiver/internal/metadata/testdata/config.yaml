@@ -25,6 +25,8 @@ all_set:
       enabled: true
     zookeeper.request.active:
       enabled: true
+    zookeeper.ruok:
+      enabled: true
     zookeeper.sync.pending:
       enabled: true
     zookeeper.watch.count:
@@ -61,6 +63,8 @@ none_set:
     zookeeper.packet.count:
       enabled: false
     zookeeper.request.active:
+      enabled: false
+    zookeeper.ruok:
       enabled: false
     zookeeper.sync.pending:
       enabled: false

@@ -1,0 +1,20 @@
+type: kafka
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics, logs, traces]
+  distributions:
+  - core
+  - contrib
+  - aws
+  - grafana
+  - observiq
+  - splunk
+  - sumo
+  codeowners:
+    active: [pavolloffay, MovieStoreGuy]
+
+tests:
+  config:
+  skip_lifecycle: true

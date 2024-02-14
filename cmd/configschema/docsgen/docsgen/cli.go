@@ -1,17 +1,8 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
+// Deprecated: [v0.92.0] This package is deprecated and will be removed in a future release.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30187
 package docsgen // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/docsgen/docsgen"
 
 import (
@@ -34,6 +25,8 @@ const mdFileName = "config.md"
 // CLI is the entrypoint for this package's functionality. It handles command-
 // line arguments for the docsgen executable and produces config documentation
 // for the specified components.
+// Deprecated: [v0.92.0] This package is deprecated and will be removed in a future release.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30187
 func CLI(factories otelcol.Factories, dr configschema.DirResolver) {
 	tableTmpl, err := tableTemplate()
 	if err != nil {

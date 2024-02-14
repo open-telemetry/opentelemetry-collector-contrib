@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 
@@ -18,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -59,9 +50,9 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for SignalFx exporter.
 type Config struct {
-	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
-	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
+	confighttp.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// AccessToken is the authentication token provided by SignalFx.
 	AccessToken configopaque.String `mapstructure:"access_token"`
@@ -92,6 +83,9 @@ type Config struct {
 
 	// Whether to log dimension updates being sent to SignalFx.
 	LogDimensionUpdates bool `mapstructure:"log_dimension_updates"`
+
+	// Dimension update client configuration used for metadata updates.
+	DimensionClient DimensionClientConfig `mapstructure:"dimension_client"`
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 
@@ -137,9 +131,19 @@ type Config struct {
 	// to be used in a dimension key.
 	NonAlphanumericDimensionChars string `mapstructure:"nonalphanumeric_dimension_chars"`
 
-	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
-	// Deprecated: use HTTPClientSettings.MaxIdleConns or HTTPClientSettings.MaxIdleConnsPerHost instead.
-	MaxConnections int `mapstructure:"max_connections"`
+	// Whether to drop  histogram bucket metrics dispatched to Splunk Observability.
+	// Default value is set to false.
+	DropHistogramBuckets bool `mapstructure:"drop_histogram_buckets"`
+}
+
+type DimensionClientConfig struct {
+	MaxBuffered         int           `mapstructure:"max_buffered"`
+	SendDelay           time.Duration `mapstructure:"send_delay"`
+	MaxIdleConns        int           `mapstructure:"max_idle_conns"`
+	MaxIdleConnsPerHost int           `mapstructure:"max_idle_conns_per_host"`
+	MaxConnsPerHost     int           `mapstructure:"max_conns_per_host"`
+	IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
+	Timeout             time.Duration `mapstructure:"timeout"`
 }
 
 func (cfg *Config) getMetricTranslator(logger *zap.Logger) (*translation.MetricTranslator, error) {
@@ -198,7 +202,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return nil
 	}
 
-	if err := componentParser.Unmarshal(cfg); err != nil {
+	if err := componentParser.Unmarshal(cfg, confmap.WithIgnoreUnused()); err != nil {
 		return err
 	}
 
@@ -216,12 +220,8 @@ func (cfg *Config) Validate() error {
 			` "ingest_url" and "api_url" should be explicitly set`)
 	}
 
-	if cfg.HTTPClientSettings.Timeout < 0 {
+	if cfg.ClientConfig.Timeout < 0 {
 		return errors.New(`cannot have a negative "timeout"`)
-	}
-
-	if cfg.MaxConnections < 0 {
-		return errors.New(`cannot have a negative "max_connections"`)
 	}
 
 	return nil
@@ -237,12 +237,12 @@ func setDefaultExcludes(cfg *Config) error {
 
 func loadConfig(bytes []byte) (Config, error) {
 	var cfg Config
-	var data map[string]interface{}
+	var data map[string]any
 	if err := yaml.Unmarshal(bytes, &data); err != nil {
 		return cfg, err
 	}
 
-	if err := confmap.NewFromStringMap(data).Unmarshal(&cfg, confmap.WithErrorUnused()); err != nil {
+	if err := confmap.NewFromStringMap(data).Unmarshal(&cfg); err != nil {
 		return cfg, fmt.Errorf("failed to load default exclude metrics: %w", err)
 	}
 

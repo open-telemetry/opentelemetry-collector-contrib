@@ -1,10 +1,12 @@
-name: hostmetricsreceiver/cpu
+type: hostmetricsreceiver/cpu
+
+parent: hostmetrics
 
 sem_conv_version: 1.9.0
 
 attributes:
   cpu:
-    description: CPU number starting at 0.
+    description: Logical CPU number starting at 0.
     type: string
 
   state:
@@ -15,18 +17,44 @@ attributes:
 metrics:
   system.cpu.time:
     enabled: true
-    description: Total CPU seconds broken down by different states.
+    description: Total seconds each logical CPU spent on each mode.
     unit: s
     sum:
       value_type: double
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [cpu, state]
 
   system.cpu.utilization:
     enabled: false
-    description: Percentage of CPU time broken down by different states.
+    description: Difference in system.cpu.time since the last measurement per logical CPU, divided by the elapsed time (value in interval [0,1]).
     unit: 1
     gauge:
       value_type: double
     attributes: [cpu, state]
+
+  system.cpu.physical.count:
+    enabled: false
+    description: Number of available physical CPUs.
+    unit: "{cpu}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+
+  system.cpu.logical.count:
+    enabled: false
+    description: Number of available logical CPUs.
+    unit: "{cpu}"
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+
+  system.cpu.frequency:
+    enabled: false
+    description: Current frequency of the CPU core in Hz.
+    unit: "Hz"
+    gauge:
+      value_type: double
+    attributes: [cpu]

@@ -1,0 +1,14 @@
+type: skywalking
+
+status:
+  class: exporter
+  stability:
+    unmaintained: [metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: []
+    emeritus: [liqiangz]
+
+tests:
+  config:
+  skip_lifecycle: true

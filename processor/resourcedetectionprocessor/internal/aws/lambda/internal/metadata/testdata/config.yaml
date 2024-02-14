@@ -1,0 +1,41 @@
+default:
+all_set:
+  resource_attributes:
+    aws.log.group.names:
+      enabled: true
+    aws.log.stream.names:
+      enabled: true
+    cloud.platform:
+      enabled: true
+    cloud.provider:
+      enabled: true
+    cloud.region:
+      enabled: true
+    faas.instance:
+      enabled: true
+    faas.max_memory:
+      enabled: true
+    faas.name:
+      enabled: true
+    faas.version:
+      enabled: true
+none_set:
+  resource_attributes:
+    aws.log.group.names:
+      enabled: false
+    aws.log.stream.names:
+      enabled: false
+    cloud.platform:
+      enabled: false
+    cloud.provider:
+      enabled: false
+    cloud.region:
+      enabled: false
+    faas.instance:
+      enabled: false
+    faas.max_memory:
+      enabled: false
+    faas.name:
+      enabled: false
+    faas.version:
+      enabled: false

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
@@ -29,19 +18,21 @@ import (
 
 // JSON representation of the LogRecord as described by https://developers.google.com/protocol-buffers/docs/proto3#json
 type lokiEntry struct {
-	Name                 string                 `json:"name,omitempty"`
-	Body                 json.RawMessage        `json:"body,omitempty"`
-	TraceID              string                 `json:"traceid,omitempty"`
-	SpanID               string                 `json:"spanid,omitempty"`
-	Severity             string                 `json:"severity,omitempty"`
-	Attributes           map[string]interface{} `json:"attributes,omitempty"`
-	Resources            map[string]interface{} `json:"resources,omitempty"`
-	InstrumentationScope *instrumentationScope  `json:"instrumentation_scope,omitempty"`
+	Name                 string                `json:"name,omitempty"`
+	Body                 json.RawMessage       `json:"body,omitempty"`
+	TraceID              string                `json:"traceid,omitempty"`
+	SpanID               string                `json:"spanid,omitempty"`
+	Severity             string                `json:"severity,omitempty"`
+	Flags                uint32                `json:"flags,omitempty"`
+	Attributes           map[string]any        `json:"attributes,omitempty"`
+	Resources            map[string]any        `json:"resources,omitempty"`
+	InstrumentationScope *instrumentationScope `json:"instrumentation_scope,omitempty"`
 }
 
 type instrumentationScope struct {
-	Name    string `json:"name,omitempty"`
-	Version string `json:"version,omitempty"`
+	Name       string         `json:"name,omitempty"`
+	Version    string         `json:"version,omitempty"`
+	Attributes map[string]any `json:"attributes,omitempty"`
 }
 
 // Encode converts an OTLP log record and its resource attributes into a JSON
@@ -64,17 +55,16 @@ func Encode(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrumentati
 		Severity:   lr.SeverityText(),
 		Attributes: lr.Attributes().AsRaw(),
 		Resources:  res.Attributes().AsRaw(),
+		Flags:      uint32(lr.Flags()),
 	}
 
 	scopeName := scope.Name()
-	scopeVersion := scope.Version()
 	if scopeName != "" {
 		logRecord.InstrumentationScope = &instrumentationScope{
 			Name: scopeName,
 		}
-		if scopeVersion != "" {
-			logRecord.InstrumentationScope.Version = scopeVersion
-		}
+		logRecord.InstrumentationScope.Version = scope.Version()
+		logRecord.InstrumentationScope.Attributes = scope.Attributes().AsRaw()
 	}
 
 	jsonRecord, err = json.Marshal(logRecord)
@@ -103,6 +93,11 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrum
 		keyvals = keyvalsReplaceOrAppend(keyvals, "severity", severity)
 	}
 
+	flags := lr.Flags()
+	if flags != 0 {
+		keyvals = keyvalsReplaceOrAppend(keyvals, "flags", lr.Flags())
+	}
+
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("attribute_%s", k), v)...)
 		return true
@@ -116,11 +111,16 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrum
 
 	scopeName := scope.Name()
 	scopeVersion := scope.Version()
+
 	if scopeName != "" {
 		keyvals = append(keyvals, "instrumentation_scope_name", scopeName)
 		if scopeVersion != "" {
 			keyvals = append(keyvals, "instrumentation_scope_version", scopeVersion)
 		}
+		scope.Attributes().Range(func(k string, v pcommon.Value) bool {
+			keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("instrumentation_scope_attribute_%s", k), v)...)
+			return true
+		})
 	}
 
 	logfmtLine, err := logfmt.MarshalKeyvals(keyvals...)
@@ -139,7 +139,7 @@ func serializeBodyJSON(body pcommon.Value) ([]byte, error) {
 	return json.Marshal(body.AsRaw())
 }
 
-func bodyToKeyvals(body pcommon.Value) []interface{} {
+func bodyToKeyvals(body pcommon.Value) []any {
 	switch body.Type() {
 	case pcommon.ValueTypeEmpty:
 		return nil
@@ -148,7 +148,7 @@ func bodyToKeyvals(body pcommon.Value) []interface{} {
 		value := body.Str()
 		keyvals, err := parseLogfmtLine(value)
 		if err != nil {
-			return []interface{}{"msg", body.Str()}
+			return []any{"msg", body.Str()}
 		}
 		return *keyvals
 	case pcommon.ValueTypeMap:
@@ -156,24 +156,24 @@ func bodyToKeyvals(body pcommon.Value) []interface{} {
 	case pcommon.ValueTypeSlice:
 		return valueToKeyvals("body", body)
 	default:
-		return []interface{}{"msg", body.AsRaw()}
+		return []any{"msg", body.AsRaw()}
 	}
 }
 
-func valueToKeyvals(key string, value pcommon.Value) []interface{} {
+func valueToKeyvals(key string, value pcommon.Value) []any {
 	switch value.Type() {
 	case pcommon.ValueTypeEmpty:
 		return nil
 	case pcommon.ValueTypeStr:
-		return []interface{}{key, value.Str()}
+		return []any{key, value.Str()}
 	case pcommon.ValueTypeBool:
-		return []interface{}{key, value.Bool()}
+		return []any{key, value.Bool()}
 	case pcommon.ValueTypeInt:
-		return []interface{}{key, value.Int()}
+		return []any{key, value.Int()}
 	case pcommon.ValueTypeDouble:
-		return []interface{}{key, value.Double()}
+		return []any{key, value.Double()}
 	case pcommon.ValueTypeMap:
-		var keyvals []interface{}
+		var keyvals []any
 		prefix := ""
 		if key != "" {
 			prefix = key + "_"
@@ -189,19 +189,19 @@ func valueToKeyvals(key string, value pcommon.Value) []interface{} {
 		if key != "" {
 			prefix = key + "_"
 		}
-		var keyvals []interface{}
+		var keyvals []any
 		for i := 0; i < value.Slice().Len(); i++ {
 			v := value.Slice().At(i)
 			keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("%s%d", prefix, i), v)...)
 		}
 		return keyvals
 	default:
-		return []interface{}{key, value.AsRaw()}
+		return []any{key, value.AsRaw()}
 	}
 }
 
 // if given key:value pair already exists in keyvals, replace value. Otherwise append
-func keyvalsReplaceOrAppend(keyvals []interface{}, key string, value interface{}) []interface{} {
+func keyvalsReplaceOrAppend(keyvals []any, key string, value any) []any {
 	for i := 0; i < len(keyvals); i += 2 {
 		if keyvals[i] == key {
 			keyvals[i+1] = value
@@ -211,8 +211,8 @@ func keyvalsReplaceOrAppend(keyvals []interface{}, key string, value interface{}
 	return append(keyvals, key, value)
 }
 
-func parseLogfmtLine(line string) (*[]interface{}, error) {
-	var keyvals []interface{}
+func parseLogfmtLine(line string) (*[]any, error) {
+	var keyvals []any
 	decoder := logfmt.NewDecoder(strings.NewReader(line))
 	decoder.ScanRecord()
 	for decoder.ScanKeyval() {

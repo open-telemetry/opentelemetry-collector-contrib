@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package oidcauthextension
 
@@ -47,13 +36,12 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 		Audience:    "unit-test",
 		GroupsClaim: "memberships",
 	}
-	p, err := newExtension(config, zap.NewNop())
-	require.NoError(t, err)
+	p := newExtension(config, zap.NewNop())
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	payload, _ := json.Marshal(map[string]interface{}{
+	payload, _ := json.Marshal(map[string]any{
 		"sub":         "jdoe@example.com",
 		"name":        "jdoe",
 		"iss":         oidcServer.URL,
@@ -206,11 +194,10 @@ func TestOIDCFailedToLoadIssuerCAFromPathInvalidContent(t *testing.T) {
 
 func TestOIDCInvalidAuthHeader(t *testing.T) {
 	// prepare
-	p, err := newExtension(&Config{
+	p := newExtension(&Config{
 		Audience:  "some-audience",
 		IssuerURL: "http://example.com",
 	}, zap.NewNop())
-	require.NoError(t, err)
 
 	// test
 	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {"some-value"}})
@@ -222,11 +209,10 @@ func TestOIDCInvalidAuthHeader(t *testing.T) {
 
 func TestOIDCNotAuthenticated(t *testing.T) {
 	// prepare
-	p, err := newExtension(&Config{
+	p := newExtension(&Config{
 		Audience:  "some-audience",
 		IssuerURL: "http://example.com",
 	}, zap.NewNop())
-	require.NoError(t, err)
 
 	// test
 	ctx, err := p.Authenticate(context.Background(), make(map[string][]string))
@@ -238,14 +224,13 @@ func TestOIDCNotAuthenticated(t *testing.T) {
 
 func TestProviderNotReacheable(t *testing.T) {
 	// prepare
-	p, err := newExtension(&Config{
+	p := newExtension(&Config{
 		Audience:  "some-audience",
 		IssuerURL: "http://example.com",
 	}, zap.NewNop())
-	require.NoError(t, err)
 
 	// test
-	err = p.Start(context.Background(), componenttest.NewNopHost())
+	err := p.Start(context.Background(), componenttest.NewNopHost())
 
 	// verify
 	assert.Error(t, err)
@@ -258,11 +243,10 @@ func TestFailedToVerifyToken(t *testing.T) {
 	oidcServer.Start()
 	defer oidcServer.Close()
 
-	p, err := newExtension(&Config{
+	p := newExtension(&Config{
 		IssuerURL: oidcServer.URL,
 		Audience:  "unit-test",
 	}, zap.NewNop())
-	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -316,13 +300,12 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 		},
 	} {
 		t.Run(tt.casename, func(t *testing.T) {
-			p, err := newExtension(tt.config, zap.NewNop())
-			require.NoError(t, err)
+			p := newExtension(tt.config, zap.NewNop())
 
 			err = p.Start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
-			payload, _ := json.Marshal(map[string]interface{}{
+			payload, _ := json.Marshal(map[string]any{
 				"iss":                   oidcServer.URL,
 				"some-non-string-field": 123,
 				"aud":                   "unit-test",
@@ -343,7 +326,7 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 
 func TestSubjectFromClaims(t *testing.T) {
 	// prepare
-	claims := map[string]interface{}{
+	claims := map[string]any{
 		"username": "jdoe",
 	}
 
@@ -357,7 +340,7 @@ func TestSubjectFromClaims(t *testing.T) {
 
 func TestSubjectFallback(t *testing.T) {
 	// prepare
-	claims := map[string]interface{}{
+	claims := map[string]any{
 		"sub": "jdoe",
 	}
 
@@ -373,7 +356,7 @@ func TestGroupsFromClaim(t *testing.T) {
 	// prepare
 	for _, tt := range []struct {
 		casename string
-		input    interface{}
+		input    any
 		expected []string
 	}{
 		{
@@ -388,12 +371,12 @@ func TestGroupsFromClaim(t *testing.T) {
 		},
 		{
 			"multiple-things",
-			[]interface{}{"department-1", 123},
+			[]any{"department-1", 123},
 			[]string{"department-1", "123"},
 		},
 	} {
 		t.Run(tt.casename, func(t *testing.T) {
-			claims := map[string]interface{}{
+			claims := map[string]any{
 				"sub":         "jdoe",
 				"memberships": tt.input,
 			}
@@ -408,7 +391,7 @@ func TestGroupsFromClaim(t *testing.T) {
 
 func TestEmptyGroupsClaim(t *testing.T) {
 	// prepare
-	claims := map[string]interface{}{
+	claims := map[string]any{
 		"sub": "jdoe",
 	}
 
@@ -425,10 +408,9 @@ func TestMissingClient(t *testing.T) {
 	}
 
 	// test
-	p, err := newExtension(config, zap.NewNop())
+	err := config.Validate()
 
 	// verify
-	assert.Nil(t, p)
 	assert.Equal(t, errNoAudienceProvided, err)
 }
 
@@ -439,10 +421,9 @@ func TestMissingIssuerURL(t *testing.T) {
 	}
 
 	// test
-	p, err := newExtension(config, zap.NewNop())
+	err := config.Validate()
 
 	// verify
-	assert.Nil(t, p)
 	assert.Equal(t, errNoIssuerURL, err)
 }
 
@@ -452,12 +433,11 @@ func TestShutdown(t *testing.T) {
 		Audience:  "some-audience",
 		IssuerURL: "http://example.com/",
 	}
-	p, err := newExtension(config, zap.NewNop())
-	require.NoError(t, err)
+	p := newExtension(config, zap.NewNop())
 	require.NotNil(t, p)
 
 	// test
-	err = p.Shutdown(context.Background()) // for now, we never fail
+	err := p.Shutdown(context.Background()) // for now, we never fail
 
 	// verify
 	assert.NoError(t, err)

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mockserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/mockserver"
 
@@ -41,7 +30,7 @@ type soapRequest struct {
 }
 
 type soapEnvelope struct {
-	Body map[string]interface{} `json:"Body"`
+	Body map[string]any `json:"Body"`
 }
 
 // MockServer has access to recorded SOAP responses and will serve them over http based off the scraper's API calls
@@ -78,7 +67,7 @@ func MockServer(t *testing.T, useTLS bool) *httptest.Server {
 	return httptest.NewServer(handlerFunc)
 }
 
-func routeBody(t *testing.T, requestType string, body map[string]interface{}) ([]byte, error) {
+func routeBody(t *testing.T, requestType string, body map[string]any) ([]byte, error) {
 	switch requestType {
 	case "RetrieveServiceContent":
 		return loadResponse("service-content.xml")
@@ -95,28 +84,28 @@ func routeBody(t *testing.T, requestType string, body map[string]interface{}) ([
 	return []byte{}, errNotFound
 }
 
-func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte, error) {
-	rp, ok := body["RetrieveProperties"].(map[string]interface{})
+func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) {
+	rp, ok := body["RetrieveProperties"].(map[string]any)
 	require.True(t, ok)
-	specSet := rp["specSet"].(map[string]interface{})
+	specSet := rp["specSet"].(map[string]any)
 
 	var objectSetArray = false
-	objectSet, ok := specSet["objectSet"].(map[string]interface{})
+	objectSet, ok := specSet["objectSet"].(map[string]any)
 	if !ok {
 		objectSetArray = true
 	}
 
 	var propSetArray = false
-	propSet, ok := specSet["propSet"].(map[string]interface{})
+	propSet, ok := specSet["propSet"].(map[string]any)
 	if !ok {
 		propSetArray = true
 	}
 
-	var obj map[string]interface{}
+	var obj map[string]any
 	var content string
 	var contentType string
 	if !objectSetArray {
-		obj = objectSet["obj"].(map[string]interface{})
+		obj = objectSet["obj"].(map[string]any)
 		content = obj["#content"].(string)
 		contentType = obj["-type"].(string)
 	}
@@ -130,9 +119,9 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 
 	case content == "domain-c8" && contentType == "ClusterComputeResource":
 		if propSetArray {
-			pSet := specSet["propSet"].([]interface{})
+			pSet := specSet["propSet"].([]any)
 			for _, prop := range pSet {
-				spec := prop.(map[string]interface{})
+				spec := prop.(map[string]any)
 				specType := spec["type"].(string)
 				if specType == "ResourcePool" {
 					return loadResponse("resource-pool.xml")
@@ -154,9 +143,9 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 
 	case content == "group-h5" && contentType == "Folder":
 		if propSetArray {
-			arr := specSet["propSet"].([]interface{})
+			arr := specSet["propSet"].([]any)
 			for _, i := range arr {
-				m, ok := i.(map[string]interface{})
+				m, ok := i.(map[string]any)
 				require.True(t, ok)
 				if m["type"] == "ClusterComputeResource" {
 					return loadResponse("host-cluster.xml")
@@ -172,7 +161,7 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 		return loadResponse("datastore-summary.xml")
 
 	case contentType == "HostSystem":
-		if ps, ok := propSet["pathSet"].([]interface{}); ok {
+		if ps, ok := propSet["pathSet"].([]any); ok {
 			for _, v := range ps {
 				if v == "summary.hardware" {
 					return loadResponse("host-properties.xml")
@@ -183,6 +172,9 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 			require.True(t, ok)
 			if ps == "name" {
 				return loadResponse("host-names.xml")
+			}
+			if ps == "summary.hardware" {
+				return loadResponse("host-properties.xml")
 			}
 
 		}
@@ -206,7 +198,7 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 		return loadResponse("vm-empty-folder.xml")
 
 	case contentType == "ResourcePool":
-		if ps, ok := propSet["pathSet"].([]interface{}); ok {
+		if ps, ok := propSet["pathSet"].([]any); ok {
 			for _, prop := range ps {
 				if prop == "summary" {
 					return loadResponse("resource-pool-summary.xml")
@@ -214,16 +206,16 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 			}
 		}
 
-		if ss, ok := objectSet["selectSet"].(map[string]interface{}); ok && ss["path"] == "resourcePool" {
+		if ss, ok := objectSet["selectSet"].(map[string]any); ok && ss["path"] == "resourcePool" {
 			return loadResponse("resource-pool-group.xml")
 		}
 
 	case objectSetArray:
-		objectArray := specSet["objectSet"].([]interface{})
+		objectArray := specSet["objectSet"].([]any)
 		for _, i := range objectArray {
-			m, ok := i.(map[string]interface{})
+			m, ok := i.(map[string]any)
 			require.True(t, ok)
-			mObj := m["obj"].(map[string](interface{}))
+			mObj := m["obj"].(map[string](any))
 			typeString := mObj["-type"]
 			if typeString == "HostSystem" {
 				return loadResponse("host-names.xml")
@@ -234,11 +226,11 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 	return []byte{}, errNotFound
 }
 
-func routePerformanceQuery(t *testing.T, body map[string]interface{}) ([]byte, error) {
-	queryPerf := body["QueryPerf"].(map[string]interface{})
+func routePerformanceQuery(t *testing.T, body map[string]any) ([]byte, error) {
+	queryPerf := body["QueryPerf"].(map[string]any)
 	require.NotNil(t, queryPerf)
-	querySpec := queryPerf["querySpec"].(map[string]interface{})
-	entity := querySpec["entity"].(map[string]interface{})
+	querySpec := queryPerf["querySpec"].(map[string]any)
+	entity := querySpec["entity"].(map[string]any)
 	switch entity["-type"] {
 	case "HostSystem":
 		return loadResponse("host-performance-counters.xml")

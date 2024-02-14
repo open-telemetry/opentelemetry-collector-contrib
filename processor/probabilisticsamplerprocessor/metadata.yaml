@@ -1,0 +1,13 @@
+type: probabilistic_sampler
+
+status:
+  class: processor
+  stability:
+    beta: [traces]
+    alpha: [logs]
+  distributions: [core, contrib, observiq, splunk, sumo, aws, grafana]
+  codeowners:
+    active: [jpkrohling]
+
+tests:
+  config:

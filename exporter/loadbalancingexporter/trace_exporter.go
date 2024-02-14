@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
@@ -34,6 +23,9 @@ import (
 )
 
 var _ exporter.Traces = (*traceExporterImp)(nil)
+
+type exporterTraces map[component.Component]map[string]ptrace.Traces
+type endpointTraces map[string]ptrace.Traces
 
 type traceExporterImp struct {
 	loadBalancer loadBalancer
@@ -89,48 +81,73 @@ func (e *traceExporterImp) Shutdown(context.Context) error {
 
 func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	var errs error
-	batches := batchpersignal.SplitTraces(td)
-	for _, batch := range batches {
-		errs = multierr.Append(errs, e.consumeTrace(ctx, batch))
-	}
-
-	return errs
-}
-
-func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces) error {
 	var exp component.Component
-	routingIds, err := routingIdentifiersFromTraces(td, e.routingKey)
-	if err != nil {
-		return err
-	}
-	for rid := range routingIds {
-		endpoint := e.loadBalancer.Endpoint([]byte(rid))
-		exp, err = e.loadBalancer.Exporter(endpoint)
+
+	batches := batchpersignal.SplitTraces(td)
+
+	exporterSegregatedTraces := make(exporterTraces)
+	endpointSegregatedTraces := make(endpointTraces)
+	for _, batch := range batches {
+		routingID, err := routingIdentifiersFromTraces(batch, e.routingKey)
 		if err != nil {
 			return err
 		}
 
-		te, ok := exp.(exporter.Traces)
-		if !ok {
-			return fmt.Errorf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", exp)
-		}
+		for rid := range routingID {
+			endpoint := e.loadBalancer.Endpoint([]byte(rid))
+			exp, err = e.loadBalancer.Exporter(endpoint)
+			if err != nil {
+				return err
+			}
+			_, ok := exp.(exporter.Traces)
+			if !ok {
+				return fmt.Errorf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", exp)
+			}
 
-		start := time.Now()
-		err = te.ConsumeTraces(ctx, td)
-		duration := time.Since(start)
+			_, ok = endpointSegregatedTraces[endpoint]
+			if !ok {
+				endpointSegregatedTraces[endpoint] = ptrace.NewTraces()
+			}
+			endpointSegregatedTraces[endpoint] = mergeTraces(endpointSegregatedTraces[endpoint], batch)
 
-		if err == nil {
-			_ = stats.RecordWithTags(
-				ctx,
-				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
-				mBackendLatency.M(duration.Milliseconds()))
-		} else {
-			_ = stats.RecordWithTags(
-				ctx,
-				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
-				mBackendLatency.M(duration.Milliseconds()))
+			_, ok = exporterSegregatedTraces[exp]
+			if !ok {
+				exporterSegregatedTraces[exp] = endpointTraces{}
+			}
+			exporterSegregatedTraces[exp][endpoint] = endpointSegregatedTraces[endpoint]
 		}
 	}
+
+	errs = multierr.Append(errs, e.consumeTrace(ctx, exporterSegregatedTraces))
+
+	return errs
+}
+
+func (e *traceExporterImp) consumeTrace(ctx context.Context, exporterSegregatedTraces exporterTraces) error {
+	var err error
+
+	for exp, endpointTraces := range exporterSegregatedTraces {
+		for endpoint, td := range endpointTraces {
+			te, _ := exp.(exporter.Traces)
+
+			start := time.Now()
+			err = te.ConsumeTraces(ctx, td)
+			duration := time.Since(start)
+
+			if err == nil {
+				_ = stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
+					mBackendLatency.M(duration.Milliseconds()))
+			} else {
+				_ = stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
+					mBackendLatency.M(duration.Milliseconds()))
+			}
+		}
+	}
+
 	return err
 }
 

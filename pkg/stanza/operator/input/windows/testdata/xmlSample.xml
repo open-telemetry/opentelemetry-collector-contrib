@@ -16,7 +16,7 @@
         <Security /> 
     </System> 
     <EventData> 
-        <Data>2022-04-28T19:48:52Z</Data> 
-        <Data>RulesEngine</Data> 
+        <Data Name="Time">2022-04-28T19:48:52Z</Data> 
+        <Data Name="Source">RulesEngine</Data> 
     </EventData> 
 </Event>

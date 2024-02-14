@@ -1,0 +1,65 @@
+type: resourcedetectionprocessor/ecs
+
+parent: resourcedetection
+
+resource_attributes:
+  cloud.provider:
+    description: The cloud.provider
+    type: string
+    enabled: true
+  cloud.platform:
+    description: The cloud.platform
+    type: string
+    enabled: true
+  cloud.account.id:
+    description: The cloud.account.id
+    type: string
+    enabled: true
+  cloud.region:
+    description: The cloud.region
+    type: string
+    enabled: true
+  cloud.availability_zone:
+    description: The cloud.availability_zone
+    type: string
+    enabled: true
+  aws.ecs.cluster.arn:
+    description: The aws.ecs.cluster.arn
+    type: string
+    enabled: true
+  aws.ecs.task.arn:
+    description: The aws.ecs.task.arn
+    type: string
+    enabled: true
+  aws.ecs.task.family:
+    description: The aws.ecs.task.family
+    type: string
+    enabled: true
+  aws.ecs.task.id:
+    description: The aws.ecs.task.id
+    type: string
+    enabled: true
+  aws.ecs.task.revision:
+    description: The aws.ecs.task.revision
+    type: string
+    enabled: true
+  aws.ecs.launchtype:
+    description: The aws.ecs.launchtype
+    type: string
+    enabled: true
+  aws.log.group.names:
+    description: The aws.log.group.names
+    type: slice
+    enabled: true
+  aws.log.group.arns:
+    description: The aws.log.group.arns
+    type: slice
+    enabled: true
+  aws.log.stream.names:
+    description: The aws.log.stream.names
+    type: slice
+    enabled: true
+  aws.log.stream.arns:
+    description: The aws.log.stream.arns
+    type: slice
+    enabled: true

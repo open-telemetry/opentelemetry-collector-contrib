@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package sapmreceiver
 
@@ -25,6 +14,7 @@ import (
 	"time"
 
 	"github.com/jaegertracing/jaeger/model"
+	"github.com/klauspost/compress/zstd"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/signalfx/sapm-proto/sapmprotocol"
 	"github.com/stretchr/testify/assert"
@@ -132,32 +122,34 @@ func grpcFixture(t1 time.Time) *model.Batch {
 }
 
 // sendSapm acts as a client for sending sapm to the receiver.  This could be replaced with a sapm exporter in the future.
-func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, tlsEnabled bool, token string) (*http.Response, error) {
+func sendSapm(
+	endpoint string,
+	sapm *splunksapm.PostSpansRequest,
+	compression string,
+	tlsEnabled bool,
+	token string,
+) (*http.Response, error) {
 	// marshal the sapm
 	reqBytes, err := sapm.Marshal()
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal sapm %w", err)
 	}
 
-	if zipped {
-		// create a gzip writer
-		var buff bytes.Buffer
-		writer := gzip.NewWriter(&buff)
-
-		// run the request bytes through the gzip writer
-		_, err = writer.Write(reqBytes)
+	switch compression {
+	case "gzip":
+		reqBytes, err = compressGzip(reqBytes)
 		if err != nil {
-			return nil, fmt.Errorf("failed to write gzip sapm %w", err)
+			return nil, err
 		}
-
-		// close the writer
-		err = writer.Close()
+	case "zstd":
+		reqBytes, err = compressZstd(reqBytes)
 		if err != nil {
-			return nil, fmt.Errorf("failed to close the gzip writer %w", err)
+			return nil, err
 		}
-
-		// save the gzipped bytes as the request bytes
-		reqBytes = buff.Bytes()
+	case "":
+		// no compression
+	default:
+		return nil, fmt.Errorf("unknown compression %q", compression)
 	}
 
 	// build the request
@@ -169,8 +161,8 @@ func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, t
 	req.Header.Set(sapmprotocol.ContentTypeHeaderName, sapmprotocol.ContentTypeHeaderValue)
 
 	// set headers for gzip
-	if zipped {
-		req.Header.Set(sapmprotocol.ContentEncodingHeaderName, sapmprotocol.GZipEncodingHeaderValue)
+	if compression != "" {
+		req.Header.Set(sapmprotocol.ContentEncodingHeaderName, compression)
 		req.Header.Set(sapmprotocol.AcceptEncodingHeaderName, sapmprotocol.GZipEncodingHeaderValue)
 	}
 
@@ -207,18 +199,61 @@ func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, t
 	return resp, nil
 }
 
+func compressGzip(reqBytes []byte) ([]byte, error) {
+	// create a gzip writer
+	var buff bytes.Buffer
+	writer := gzip.NewWriter(&buff)
+
+	// run the request bytes through the gzip writer
+	_, err := writer.Write(reqBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write gzip sapm %w", err)
+	}
+
+	// close the writer
+	err = writer.Close()
+	if err != nil {
+		return nil, fmt.Errorf("failed to close the gzip writer %w", err)
+	}
+
+	return buff.Bytes(), nil
+}
+
+func compressZstd(reqBytes []byte) ([]byte, error) {
+	// create a gzip writer
+	var buff bytes.Buffer
+	writer, err := zstd.NewWriter(&buff)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write zstd sapm %w", err)
+	}
+
+	// run the request bytes through the gzip writer
+	_, err = writer.Write(reqBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write zstd sapm %w", err)
+	}
+
+	// close the writer
+	err = writer.Close()
+	if err != nil {
+		return nil, fmt.Errorf("failed to close the zstd writer %w", err)
+	}
+
+	return buff.Bytes(), nil
+}
+
 func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) receiver.Traces {
 	params := receivertest.NewNopCreateSettings()
+	params.TelemetrySettings.ReportStatus = func(event *component.StatusEvent) {
+		require.NoError(t, event.Err())
+	}
 	sr, err := newReceiver(params, config, sink)
 	assert.NoError(t, err, "should not have failed to create the SAPM receiver")
 	t.Log("Starting")
 
-	mh := newAssertNoErrorHost(t)
-	require.NoError(t, sr.Start(context.Background(), mh), "should not have failed to start trace reception")
-	require.NoError(t, sr.Start(context.Background(), mh), "should not fail to start log on second Start call")
+	require.NoError(t, sr.Start(context.Background(), componenttest.NewNopHost()), "should not have failed to start trace reception")
+	require.NoError(t, sr.Start(context.Background(), componenttest.NewNopHost()), "should not fail to start log on second Start call")
 
-	// If there are errors reported through host.ReportFatalError() this will retrieve it.
-	<-time.After(500 * time.Millisecond)
 	t.Log("Trace Reception Started")
 	return sr
 }
@@ -230,10 +265,10 @@ func TestReception(t *testing.T) {
 	tlsAddress := testutil.GetAvailableLocalAddress(t)
 
 	type args struct {
-		config *Config
-		sapm   *splunksapm.PostSpansRequest
-		zipped bool
-		useTLS bool
+		config      *Config
+		sapm        *splunksapm.PostSpansRequest
+		compression string
+		useTLS      bool
 	}
 	tests := []struct {
 		name string
@@ -245,13 +280,13 @@ func TestReception(t *testing.T) {
 			args: args{
 				// 1. Create the SAPM receiver aka "server"
 				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
-						Endpoint: defaultEndpoint,
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "0.0.0.0:7226",
 					},
 				},
-				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
-				zipped: false,
-				useTLS: false,
+				sapm:        &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
+				compression: "",
+				useTLS:      false,
 			},
 			want: expectedTraceData(now, nowPlus10min, nowPlus10min2sec),
 		},
@@ -259,21 +294,21 @@ func TestReception(t *testing.T) {
 			name: "receive compressed sapm",
 			args: args{
 				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
-						Endpoint: defaultEndpoint,
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "0.0.0.0:7226",
 					},
 				},
-				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
-				zipped: true,
-				useTLS: false,
+				sapm:        &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
+				compression: "gzip",
+				useTLS:      false,
 			},
 			want: expectedTraceData(now, nowPlus10min, nowPlus10min2sec),
 		},
 		{
-			name: "connect via TLS compressed sapm",
+			name: "connect via TLS zstd compressed sapm",
 			args: args{
 				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+					ServerConfig: confighttp.ServerConfig{
 						Endpoint: tlsAddress,
 						TLSSetting: &configtls.TLSServerSetting{
 							TLSSetting: configtls.TLSSetting{
@@ -284,9 +319,9 @@ func TestReception(t *testing.T) {
 						},
 					},
 				},
-				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
-				zipped: false,
-				useTLS: true,
+				sapm:        &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
+				compression: "zstd",
+				useTLS:      true,
 			},
 			want: expectedTraceData(now, nowPlus10min, nowPlus10min2sec),
 		},
@@ -302,7 +337,7 @@ func TestReception(t *testing.T) {
 
 			t.Log("Sending Sapm Request")
 			var resp *http.Response
-			resp, err := sendSapm(tt.args.config.Endpoint, tt.args.sapm, tt.args.zipped, tt.args.useTLS, "")
+			resp, err := sendSapm(tt.args.config.Endpoint, tt.args.sapm, tt.args.compression, tt.args.useTLS, "")
 			require.NoError(t, err)
 			assert.Equal(t, 200, resp.StatusCode)
 			t.Log("SAPM Request Received")
@@ -348,8 +383,8 @@ func TestAccessTokenPassthrough(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config := &Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: defaultEndpoint,
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "0.0.0.0:7226",
 				},
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: tt.accessTokenPassthrough,
@@ -367,7 +402,7 @@ func TestAccessTokenPassthrough(t *testing.T) {
 			}()
 
 			var resp *http.Response
-			resp, err := sendSapm(config.Endpoint, sapm, true, false, tt.token)
+			resp, err := sendSapm(config.Endpoint, sapm, "gzip", false, tt.token)
 			require.NoErrorf(t, err, "should not have failed when sending sapm %v", err)
 			assert.Equal(t, 200, resp.StatusCode)
 
@@ -387,22 +422,4 @@ func TestAccessTokenPassthrough(t *testing.T) {
 			}
 		})
 	}
-}
-
-// assertNoErrorHost implements a component.Host that asserts that there were no errors.
-type assertNoErrorHost struct {
-	component.Host
-	*testing.T
-}
-
-// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
-func newAssertNoErrorHost(t *testing.T) component.Host {
-	return &assertNoErrorHost{
-		Host: componenttest.NewNopHost(),
-		T:    t,
-	}
-}
-
-func (aneh *assertNoErrorHost) ReportFatalError(err error) {
-	assert.NoError(aneh, err)
 }

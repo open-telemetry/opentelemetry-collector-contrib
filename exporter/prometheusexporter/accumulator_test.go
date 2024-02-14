@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusexporter
 
@@ -25,48 +14,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
-
-func TestAccumulateDeltaAggregation(t *testing.T) {
-	tests := []struct {
-		name       string
-		fillMetric func(time.Time, pmetric.Metric)
-	}{
-		{
-			name: "Histogram",
-			fillMetric: func(ts time.Time, metric pmetric.Metric) {
-				metric.SetName("test_metric")
-				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
-				metric.SetDescription("test description")
-				dp := metric.Histogram().DataPoints().AppendEmpty()
-				dp.BucketCounts().FromRaw([]uint64{5, 2})
-				dp.SetCount(7)
-				dp.ExplicitBounds().FromRaw([]float64{3.5, 10.0})
-				dp.SetSum(42.42)
-				dp.Attributes().PutStr("label_1", "1")
-				dp.Attributes().PutStr("label_2", "2")
-				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			resourceMetrics := pmetric.NewResourceMetrics()
-			ilm := resourceMetrics.ScopeMetrics().AppendEmpty()
-			ilm.Scope().SetName("test")
-			tt.fillMetric(time.Now(), ilm.Metrics().AppendEmpty())
-
-			a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
-			n := a.Accumulate(resourceMetrics)
-			require.Equal(t, 0, n)
-
-			signature := timeseriesSignature(ilm.Scope().Name(), ilm.Metrics().At(0), pcommon.NewMap(), pcommon.NewMap())
-			v, ok := a.registeredMetrics.Load(signature)
-			require.False(t, ok)
-			require.Nil(t, v)
-		})
-	}
-}
 
 func TestAccumulateMetrics(t *testing.T) {
 	tests := []struct {
@@ -431,6 +378,194 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 			require.Equal(t, ts3.Unix(), vTS.Unix())
 		})
 	}
+}
+
+func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
+	appendDeltaHistogram := func(startTs time.Time, ts time.Time, count uint64, sum float64, counts []uint64, bounds []float64, metrics pmetric.MetricSlice) {
+		metric := metrics.AppendEmpty()
+		metric.SetName("test_metric")
+		metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+		metric.SetDescription("test description")
+		dp := metric.Histogram().DataPoints().AppendEmpty()
+		dp.ExplicitBounds().FromRaw(bounds)
+		dp.BucketCounts().FromRaw(counts)
+		dp.SetCount(count)
+		dp.SetSum(sum)
+		dp.Attributes().PutStr("label_1", "1")
+		dp.Attributes().PutStr("label_2", "2")
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTs))
+	}
+
+	t.Run("AccumulateHappyPath", func(t *testing.T) {
+		startTs := time.Now().Add(-5 * time.Second)
+		ts1 := time.Now().Add(-4 * time.Second)
+		ts2 := time.Now().Add(-3 * time.Second)
+		resourceMetrics := pmetric.NewResourceMetrics()
+		ilm := resourceMetrics.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+		appendDeltaHistogram(startTs, ts1, 5, 2.5, []uint64{1, 3, 1, 0, 0}, []float64{0.1, 0.5, 1, 10}, ilm.Metrics())
+		appendDeltaHistogram(ts1, ts2, 4, 8.3, []uint64{1, 1, 2, 0, 0}, []float64{0.1, 0.5, 1, 10}, ilm.Metrics())
+
+		m1 := ilm.Metrics().At(0).Histogram().DataPoints().At(0)
+		m2 := ilm.Metrics().At(1).Histogram().DataPoints().At(0)
+		signature := timeseriesSignature(ilm.Scope().Name(), ilm.Metrics().At(0), m2.Attributes(), pcommon.NewMap())
+
+		a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
+		n := a.Accumulate(resourceMetrics)
+		require.Equal(t, 2, n)
+
+		m, ok := a.registeredMetrics.Load(signature)
+		v := m.(*accumulatedValue).value.Histogram().DataPoints().At(0)
+		require.True(t, ok)
+
+		require.Equal(t, m1.Sum()+m2.Sum(), v.Sum())
+		require.Equal(t, m1.Count()+m2.Count(), v.Count())
+
+		for i := 0; i < v.BucketCounts().Len(); i++ {
+			require.Equal(t, m1.BucketCounts().At(i)+m2.BucketCounts().At(i), v.BucketCounts().At(i))
+		}
+
+		for i := 0; i < v.ExplicitBounds().Len(); i++ {
+			require.Equal(t, m2.ExplicitBounds().At(i), v.ExplicitBounds().At(i))
+		}
+	})
+	t.Run("ResetBuckets/Ignore", func(t *testing.T) {
+		startTs := time.Now().Add(-5 * time.Second)
+		ts1 := time.Now().Add(-3 * time.Second)
+		ts2 := time.Now().Add(-4 * time.Second)
+		resourceMetrics := pmetric.NewResourceMetrics()
+		ilm := resourceMetrics.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+		appendDeltaHistogram(startTs, ts1, 5, 2.5, []uint64{1, 3, 1, 0, 0}, []float64{0.1, 0.5, 1, 10}, ilm.Metrics())
+		appendDeltaHistogram(startTs, ts2, 7, 5, []uint64{3, 1, 1, 0, 0}, []float64{0.1, 0.2, 1, 10}, ilm.Metrics())
+
+		m1 := ilm.Metrics().At(0).Histogram().DataPoints().At(0)
+		m2 := ilm.Metrics().At(1).Histogram().DataPoints().At(0)
+		signature := timeseriesSignature(ilm.Scope().Name(), ilm.Metrics().At(0), m2.Attributes(), pcommon.NewMap())
+
+		// should ignore metric with different buckets from the past
+		a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
+		n := a.Accumulate(resourceMetrics)
+		require.Equal(t, 1, n)
+
+		m, ok := a.registeredMetrics.Load(signature)
+		v := m.(*accumulatedValue).value.Histogram().DataPoints().At(0)
+		require.True(t, ok)
+
+		require.Equal(t, m1.Sum(), v.Sum())
+		require.Equal(t, m1.Count(), v.Count())
+
+		for i := 0; i < v.BucketCounts().Len(); i++ {
+			require.Equal(t, m1.BucketCounts().At(i), v.BucketCounts().At(i))
+		}
+
+		for i := 0; i < v.ExplicitBounds().Len(); i++ {
+			require.Equal(t, m1.ExplicitBounds().At(i), v.ExplicitBounds().At(i))
+		}
+	})
+	t.Run("ResetBuckets/Perform", func(t *testing.T) {
+		// should reset when different buckets arrive
+		startTs := time.Now().Add(-5 * time.Second)
+		ts1 := time.Now().Add(-3 * time.Second)
+		ts2 := time.Now().Add(-2 * time.Second)
+		resourceMetrics := pmetric.NewResourceMetrics()
+		ilm := resourceMetrics.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+		appendDeltaHistogram(startTs, ts1, 5, 2.5, []uint64{1, 3, 1, 0, 0}, []float64{0.1, 0.5, 1, 10}, ilm.Metrics())
+		appendDeltaHistogram(ts1, ts2, 7, 5, []uint64{3, 1, 1, 0, 0}, []float64{0.1, 0.2, 1, 10}, ilm.Metrics())
+
+		m2 := ilm.Metrics().At(1).Histogram().DataPoints().At(0)
+		signature := timeseriesSignature(ilm.Scope().Name(), ilm.Metrics().At(0), m2.Attributes(), pcommon.NewMap())
+
+		// should ignore metric with different buckets from the past
+		a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
+		n := a.Accumulate(resourceMetrics)
+		require.Equal(t, 2, n)
+
+		m, ok := a.registeredMetrics.Load(signature)
+		v := m.(*accumulatedValue).value.Histogram().DataPoints().At(0)
+		require.True(t, ok)
+
+		require.Equal(t, m2.Sum(), v.Sum())
+		require.Equal(t, m2.Count(), v.Count())
+
+		for i := 0; i < v.BucketCounts().Len(); i++ {
+			require.Equal(t, m2.BucketCounts().At(i), v.BucketCounts().At(i))
+		}
+
+		for i := 0; i < v.ExplicitBounds().Len(); i++ {
+			require.Equal(t, m2.ExplicitBounds().At(i), v.ExplicitBounds().At(i))
+		}
+	})
+	t.Run("MisalignedTimestamps/Drop", func(t *testing.T) {
+		// should drop data points with different start time that's before latest timestamp
+		startTs1 := time.Now().Add(-5 * time.Second)
+		startTs2 := time.Now().Add(-4 * time.Second)
+		ts1 := time.Now().Add(-3 * time.Second)
+		ts2 := time.Now().Add(-2 * time.Second)
+		resourceMetrics := pmetric.NewResourceMetrics()
+		ilm := resourceMetrics.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+		appendDeltaHistogram(startTs1, ts1, 5, 2.5, []uint64{1, 3, 1, 0, 0}, []float64{0.1, 0.5, 1, 10}, ilm.Metrics())
+		appendDeltaHistogram(startTs2, ts2, 7, 5, []uint64{3, 1, 1, 0, 0}, []float64{0.1, 0.2, 1, 10}, ilm.Metrics())
+
+		m1 := ilm.Metrics().At(0).Histogram().DataPoints().At(0)
+		signature := timeseriesSignature(ilm.Scope().Name(), ilm.Metrics().At(0), m1.Attributes(), pcommon.NewMap())
+
+		a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
+		n := a.Accumulate(resourceMetrics)
+		require.Equal(t, 1, n)
+
+		m, ok := a.registeredMetrics.Load(signature)
+		v := m.(*accumulatedValue).value.Histogram().DataPoints().At(0)
+		require.True(t, ok)
+
+		require.Equal(t, m1.Sum(), v.Sum())
+		require.Equal(t, m1.Count(), v.Count())
+
+		for i := 0; i < v.BucketCounts().Len(); i++ {
+			require.Equal(t, m1.BucketCounts().At(i), v.BucketCounts().At(i))
+		}
+
+		for i := 0; i < v.ExplicitBounds().Len(); i++ {
+			require.Equal(t, m1.ExplicitBounds().At(i), v.ExplicitBounds().At(i))
+		}
+	})
+	t.Run("MisalignedTimestamps/Reset", func(t *testing.T) {
+		// reset when start timestamp skips ahead
+		startTs1 := time.Now().Add(-5 * time.Second)
+		startTs2 := time.Now().Add(-2 * time.Second)
+		ts1 := time.Now().Add(-3 * time.Second)
+		ts2 := time.Now().Add(-1 * time.Second)
+		resourceMetrics := pmetric.NewResourceMetrics()
+		ilm := resourceMetrics.ScopeMetrics().AppendEmpty()
+		ilm.Scope().SetName("test")
+		appendDeltaHistogram(startTs1, ts1, 5, 2.5, []uint64{1, 3, 1, 0, 0}, []float64{0.1, 0.5, 1, 10}, ilm.Metrics())
+		appendDeltaHistogram(startTs2, ts2, 7, 5, []uint64{3, 1, 1, 0, 0}, []float64{0.1, 0.2, 1, 10}, ilm.Metrics())
+
+		m2 := ilm.Metrics().At(1).Histogram().DataPoints().At(0)
+		signature := timeseriesSignature(ilm.Scope().Name(), ilm.Metrics().At(0), m2.Attributes(), pcommon.NewMap())
+
+		a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
+		n := a.Accumulate(resourceMetrics)
+		require.Equal(t, 2, n)
+
+		m, ok := a.registeredMetrics.Load(signature)
+		v := m.(*accumulatedValue).value.Histogram().DataPoints().At(0)
+		require.True(t, ok)
+
+		require.Equal(t, m2.Sum(), v.Sum())
+		require.Equal(t, m2.Count(), v.Count())
+
+		for i := 0; i < v.BucketCounts().Len(); i++ {
+			require.Equal(t, m2.BucketCounts().At(i), v.BucketCounts().At(i))
+		}
+
+		for i := 0; i < v.ExplicitBounds().Len(); i++ {
+			require.Equal(t, m2.ExplicitBounds().At(i), v.ExplicitBounds().At(i))
+		}
+	})
 }
 
 func TestAccumulateDroppedMetrics(t *testing.T) {

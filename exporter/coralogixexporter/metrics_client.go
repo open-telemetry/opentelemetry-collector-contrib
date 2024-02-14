@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
@@ -24,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	exp "go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
@@ -35,19 +24,19 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func newMetricsExporter(cfg component.Config, set exp.CreateSettings) (*exporter, error) {
+func newMetricsExporter(cfg component.Config, set exporter.CreateSettings) (*metricsExporter, error) {
 	oCfg := cfg.(*Config)
 
-	if oCfg.Metrics.Endpoint == "" || oCfg.Metrics.Endpoint == "https://" || oCfg.Metrics.Endpoint == "http://" {
-		return nil, errors.New("coralogix exporter config requires `metrics.endpoint` configuration")
+	if isEmpty(oCfg.Domain) && isEmpty(oCfg.Metrics.Endpoint) {
+		return nil, errors.New("coralogix exporter config requires `domain` or `metrics.endpoint` configuration")
 	}
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
-	return &exporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}, nil
+	return &metricsExporter{config: oCfg, settings: set.TelemetrySettings, userAgent: userAgent}, nil
 }
 
-type exporter struct {
+type metricsExporter struct {
 	// Input configuration.
 	config *Config
 
@@ -61,9 +50,17 @@ type exporter struct {
 	userAgent string
 }
 
-func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
-	if e.clientConn, err = e.config.Metrics.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
-		return err
+func (e *metricsExporter) start(ctx context.Context, host component.Host) (err error) {
+
+	switch {
+	case !isEmpty(e.config.Metrics.Endpoint):
+		if e.clientConn, err = e.config.Metrics.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+			return err
+		}
+	case !isEmpty(e.config.Domain):
+		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+			return err
+		}
 	}
 
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
@@ -79,7 +76,7 @@ func (e *exporter) start(ctx context.Context, host component.Host) (err error) {
 	return
 }
 
-func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 
 	rss := md.ResourceMetrics()
 	for i := 0; i < rss.Len(); i++ {
@@ -97,11 +94,14 @@ func (e *exporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return nil
 }
 
-func (e *exporter) shutdown(context.Context) error {
+func (e *metricsExporter) shutdown(context.Context) error {
+	if e.clientConn == nil {
+		return nil
+	}
 	return e.clientConn.Close()
 }
 
-func (e *exporter) enhanceContext(ctx context.Context) context.Context {
+func (e *metricsExporter) enhanceContext(ctx context.Context) context.Context {
 	md := metadata.New(nil)
 	for k, v := range e.config.Metrics.Headers {
 		md.Set(k, string(v))

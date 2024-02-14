@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal
 
@@ -24,12 +13,9 @@ import (
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type testMetadataStore map[string]scrape.MetricMetadata
@@ -54,6 +40,12 @@ var mc = testMetadataStore{
 		Help:   "This is some help for a counter",
 		Unit:   "By",
 	},
+	"counter_created": scrape.MetricMetadata{
+		Metric: "counter",
+		Type:   textparse.MetricTypeCounter,
+		Help:   "This is some help for a counter",
+		Unit:   "By",
+	},
 	"gauge": scrape.MetricMetadata{
 		Metric: "ge",
 		Type:   textparse.MetricTypeGauge,
@@ -73,7 +65,7 @@ var mc = testMetadataStore{
 		Unit:   "ms",
 	},
 	"histogram_with_created": scrape.MetricMetadata{
-		Metric: "hg",
+		Metric: "histogram_with_created",
 		Type:   textparse.MetricTypeHistogram,
 		Help:   "This is some help for a histogram",
 		Unit:   "ms",
@@ -91,7 +83,7 @@ var mc = testMetadataStore{
 		Unit:   "ms",
 	},
 	"summary_with_created": scrape.MetricMetadata{
-		Metric: "s",
+		Metric: "summary_with_created",
 		Type:   textparse.MetricTypeSummary,
 		Help:   "This is some help for a summary",
 		Unit:   "ms",
@@ -232,6 +224,28 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name:                "histogram without buckets",
+			metricName:          "histogram",
+			intervalStartTimeMs: 11,
+			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			scrapes: []*scrape{
+				{at: 11, value: 66, metric: "histogram_count"},
+				{at: 11, value: 1004.78, metric: "histogram_sum"},
+			},
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetCount(66)
+				point.SetSum(1004.78)
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.BucketCounts().FromRaw([]uint64{66})
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -241,7 +255,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			for i, tv := range tt.scrapes {
 				var lbls labels.Labels
 				if tv.extraLabel.Name != "" {
-					lbls = labels.NewBuilder(tt.labels).Set(tv.extraLabel.Name, tv.extraLabel.Value).Labels(nil)
+					lbls = labels.NewBuilder(tt.labels).Set(tv.extraLabel.Name, tv.extraLabel.Value).Labels()
 				} else {
 					lbls = tt.labels.Copy()
 				}
@@ -263,7 +277,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			require.Len(t, mp.groups, 1)
 
 			sl := pmetric.NewMetricSlice()
-			mp.appendMetric(sl, prometheus.NewNormalizer(featuregate.GlobalRegistry()))
+			mp.appendMetric(sl, false)
 
 			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
 			metric := sl.At(0)
@@ -551,7 +565,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			require.Len(t, mp.groups, 1)
 
 			sl := pmetric.NewMetricSlice()
-			mp.appendMetric(sl, prometheus.NewNormalizer(featuregate.GlobalRegistry()))
+			mp.appendMetric(sl, false)
 
 			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
 			metric := sl.At(0)
@@ -589,6 +603,29 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			scrapes: []*scrape{
 				{at: 13, value: 33.7, metric: "value"},
 				{at: 13, value: 150, metric: "value_created"},
+			},
+			want: func() pmetric.NumberDataPoint {
+				point := pmetric.NewNumberDataPoint()
+				point.SetDoubleValue(150)
+
+				// the time in milliseconds -> nanoseconds.
+				point.SetTimestamp(pcommon.Timestamp(13 * time.Millisecond))
+				point.SetStartTimestamp(pcommon.Timestamp(13 * time.Millisecond))
+
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
+		{
+			metricKind:               "counter_created",
+			name:                     "counter:: startTimestampMs from _created",
+			intervalStartTimestampMs: 11,
+			labels:                   labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			scrapes: []*scrape{
+				{at: 13, value: 33.7, metric: "counter"},
+				{at: 13, value: 150, metric: "counter_created"},
 			},
 			want: func() pmetric.NumberDataPoint {
 				point := pmetric.NewNumberDataPoint()
@@ -657,7 +694,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			require.Len(t, mp.groups, 1)
 
 			sl := pmetric.NewMetricSlice()
-			mp.appendMetric(sl, prometheus.NewNormalizer(featuregate.GlobalRegistry()))
+			mp.appendMetric(sl, false)
 
 			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
 			metric := sl.At(0)

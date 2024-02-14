@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kafkareceiver
 
@@ -20,16 +9,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type expectedView struct {
+	name     string
+	tagCount int
+}
+
 func TestMetrics(t *testing.T) {
-	metricViews := MetricViews()
-	viewNames := []string{
-		"kafka_receiver_messages",
-		"kafka_receiver_current_offset",
-		"kafka_receiver_offset_lag",
-		"kafka_receiver_partition_start",
-		"kafka_receiver_partition_close",
+	metricViews := metricViews()
+	viewNames := []expectedView{
+		{name: "kafka_receiver_messages", tagCount: 2},
+		{name: "kafka_receiver_current_offset", tagCount: 2},
+		{name: "kafka_receiver_offset_lag", tagCount: 2},
+		{name: "kafka_receiver_partition_start", tagCount: 1},
+		{name: "kafka_receiver_partition_close", tagCount: 1},
+		{name: "kafka_receiver_unmarshal_failed_metric_points", tagCount: 1},
+		{name: "kafka_receiver_unmarshal_failed_log_records", tagCount: 1},
+		{name: "kafka_receiver_unmarshal_failed_spans", tagCount: 1},
 	}
-	for i, viewName := range viewNames {
-		assert.Equal(t, viewName, metricViews[i].Name)
+
+	for i, expectedView := range viewNames {
+		assert.Equal(t, expectedView.name, metricViews[i].Name)
+		assert.Equal(t, expectedView.tagCount, len(metricViews[i].TagKeys))
 	}
 }

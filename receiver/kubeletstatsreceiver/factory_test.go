@@ -1,19 +1,7 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 // TODO review if tests should succeed on Windows
 
@@ -38,12 +26,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	ft := factory.Type()
-	require.EqualValues(t, "kubeletstats", ft)
+	require.EqualValues(t, metadata.Type, ft)
 }
 
 func TestValidConfig(t *testing.T) {
@@ -126,6 +115,7 @@ func tlsConfig() *Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
+			InitialDelay:       time.Second,
 		},
 		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
@@ -150,7 +140,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		args                  args
 		result                *Config
 		mockUnmarshallFailure bool
-		configOverride        map[string]interface{}
+		configOverride        map[string]any
 		wantErr               bool
 	}{
 		{
@@ -190,16 +180,18 @@ func TestCustomUnmarshaller(t *testing.T) {
 				intoCfg: &Config{
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 						CollectionInterval: 10 * time.Second,
+						InitialDelay:       time.Second,
 					},
 				},
 			},
-			configOverride: map[string]interface{}{
+			configOverride: map[string]any{
 				"metric_groups":       []string{string(kubelet.ContainerMetricGroup)},
 				"collection_interval": 20 * time.Second,
 			},
 			result: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 20 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				MetricGroupsToCollect: []kubelet.MetricGroup{kubelet.ContainerMetricGroup},
 			},
@@ -209,7 +201,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.mockUnmarshallFailure {
 				// some arbitrary failure.
-				err := tt.args.componentParser.Merge(confmap.NewFromStringMap(map[string]interface{}{metricGroupsConfig: map[string]string{"foo": "bar"}}))
+				err := tt.args.componentParser.Merge(confmap.NewFromStringMap(map[string]any{metricGroupsConfig: map[string]string{"foo": "bar"}}))
 				require.NoError(t, err)
 			}
 

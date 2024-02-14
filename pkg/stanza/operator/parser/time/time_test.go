@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package time
 
@@ -110,7 +99,7 @@ func TestProcess(t *testing.T) {
 			input: func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"app_time": "Mon Jan 2 15:04:05 UTC 2006",
 				}
 				return e
@@ -118,7 +107,7 @@ func TestProcess(t *testing.T) {
 			expect: &entry.Entry{
 				ObservedTimestamp: now,
 				Timestamp:         time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC),
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"app_time": "Mon Jan 2 15:04:05 UTC 2006",
 				},
 			},
@@ -158,7 +147,7 @@ func TestTimeParser(t *testing.T) {
 
 	testCases := []struct {
 		name           string
-		sample         interface{}
+		sample         any
 		expected       time.Time
 		gotimeLayout   string
 		strptimeLayout string
@@ -280,7 +269,7 @@ func TestTimeParser(t *testing.T) {
 func TestTimeEpochs(t *testing.T) {
 	testCases := []struct {
 		name     string
-		sample   interface{}
+		sample   any
 		layout   string
 		expected time.Time
 		maxLoss  time.Duration
@@ -441,7 +430,7 @@ func TestTimeEpochs(t *testing.T) {
 func TestTimeErrors(t *testing.T) {
 	testCases := []struct {
 		name       string
-		sample     interface{}
+		sample     any
 		layoutType string
 		layout     string
 		buildErr   bool
@@ -500,7 +489,7 @@ func TestTimeErrors(t *testing.T) {
 	}
 }
 
-func makeTestEntry(t *testing.T, field entry.Field, value interface{}) *entry.Entry {
+func makeTestEntry(t *testing.T, field entry.Field, value any) *entry.Entry {
 	e := entry.New()
 	require.NoError(t, e.Set(field, value))
 	return e

@@ -1,0 +1,31 @@
+type: loadbalancing
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, logs]
+    development: [metrics]
+  distributions:
+  - contrib
+  - grafana
+  - observiq
+  - sumo
+  - aws
+  - splunk
+  codeowners:
+    active: [jpkrohling]
+
+tests:
+  config:
+    routing_key: "service"
+    protocol:
+      otlp:
+        timeout: 1s
+    resolver:
+      static:
+        hostnames:
+          - backend-1:4317
+          - backend-2:4317
+          - backend-3:4317
+          - backend-4:4317
+  expect_consumer_error: true

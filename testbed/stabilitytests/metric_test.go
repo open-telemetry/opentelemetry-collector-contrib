@@ -1,22 +1,12 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package tests
 
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -26,8 +16,8 @@ import (
 func TestStabilityMetricsOTLP(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-		testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+		testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      50,
 			ExpectedMaxRAM:      80,
@@ -42,8 +32,8 @@ func TestStabilityMetricsOTLP(t *testing.T) {
 func TestStabilityMetricsOpenCensus(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		datasenders.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-		datareceivers.NewOCDataReceiver(testbed.GetAvailablePort(t)),
+		datasenders.NewOCMetricDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		datareceivers.NewOCDataReceiver(testutil.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      85,
 			ExpectedMaxRAM:      86,
@@ -58,8 +48,8 @@ func TestStabilityMetricsOpenCensus(t *testing.T) {
 func TestStabilityMetricsCarbon(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		datasenders.NewCarbonDataSender(testbed.GetAvailablePort(t)),
-		datareceivers.NewCarbonDataReceiver(testbed.GetAvailablePort(t)),
+		datasenders.NewCarbonDataSender(testutil.GetAvailablePort(t)),
+		datareceivers.NewCarbonDataReceiver(testutil.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      237,
 			ExpectedMaxRAM:      120,
@@ -74,8 +64,8 @@ func TestStabilityMetricsCarbon(t *testing.T) {
 func TestStabilityMetricsSignalFx(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		datasenders.NewSFxMetricDataSender(testbed.GetAvailablePort(t)),
-		datareceivers.NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
+		datasenders.NewSFxMetricDataSender(testutil.GetAvailablePort(t)),
+		datareceivers.NewSFxMetricsDataReceiver(testutil.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      120,
 			ExpectedMaxRAM:      95,

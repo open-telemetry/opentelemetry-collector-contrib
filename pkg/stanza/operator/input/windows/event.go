@@ -1,19 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
@@ -36,8 +24,8 @@ func (e *Event) RenderSimple(buffer Buffer) (EventXML, error) {
 		return EventXML{}, fmt.Errorf("event handle does not exist")
 	}
 
-	bufferUsed, _, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
-	if err == ErrorInsufficientBuffer {
+	bufferUsed, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
+	if errors.Is(err, ErrorInsufficientBuffer) {
 		buffer.UpdateSizeBytes(*bufferUsed)
 		return e.RenderSimple(buffer)
 	}
@@ -61,7 +49,7 @@ func (e *Event) RenderFormatted(buffer Buffer, publisher Publisher) (EventXML, e
 	}
 
 	bufferUsed, err := evtFormatMessage(publisher.handle, e.handle, 0, 0, 0, EvtFormatMessageXML, buffer.SizeWide(), buffer.FirstByte())
-	if err == ErrorInsufficientBuffer {
+	if errors.Is(err, ErrorInsufficientBuffer) {
 		// If the bufferUsed is 0 return an error as we don't want to make a recursive call with no buffer
 		if *bufferUsed == 0 {
 			return EventXML{}, errUnknownNextFrame
@@ -102,8 +90,8 @@ func (e *Event) RenderRaw(buffer Buffer) (EventRaw, error) {
 		return EventRaw{}, fmt.Errorf("event handle does not exist")
 	}
 
-	bufferUsed, _, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
-	if err == ErrorInsufficientBuffer {
+	bufferUsed, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
+	if errors.Is(err, ErrorInsufficientBuffer) {
 		// If the bufferUsed is 0 return an error as we don't want to make a recursive call with no buffer
 		if *bufferUsed == 0 {
 			return EventRaw{}, errUnknownNextFrame
@@ -112,7 +100,7 @@ func (e *Event) RenderRaw(buffer Buffer) (EventRaw, error) {
 		buffer.UpdateSizeBytes(*bufferUsed)
 		return e.RenderRaw(buffer)
 	}
-	bytes, err := buffer.ReadWideChars(*bufferUsed)
+	bytes, err := buffer.ReadBytes(*bufferUsed)
 	if err != nil {
 		return EventRaw{}, fmt.Errorf("failed to read bytes from buffer: %w", err)
 	}

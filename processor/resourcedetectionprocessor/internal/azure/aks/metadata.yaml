@@ -1,0 +1,17 @@
+type: resourcedetectionprocessor/aks
+
+parent: resourcedetection
+
+resource_attributes:
+  cloud.provider:
+    description: The cloud.provider
+    type: string
+    enabled: true
+  cloud.platform:
+    description: The cloud.platform
+    type: string
+    enabled: true
+  k8s.cluster.name:
+    description: The k8s.cluster.name parsed from the Azure Instance Metadata Service's infrastructure resource group field
+    type: string
+    enabled: false

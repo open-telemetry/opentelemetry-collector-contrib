@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter
 
@@ -22,7 +11,9 @@ import (
 	"testing"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -75,7 +66,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return gauge
 			},
 			wantSplunkMetrics: []*splunk.Event{
-				commonSplunkMetric("gauge_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []interface{}{"v0", "v1", "Gauge"}, "NaN", "", "", "", "unknown"),
+				commonSplunkMetric("gauge_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []any{"v0", "v1", "Gauge"}, "NaN", "", "", "", "unknown"),
 			},
 			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
@@ -93,7 +84,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return gauge
 			},
 			wantSplunkMetrics: []*splunk.Event{
-				commonSplunkMetric("gauge_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []interface{}{"v0", "v1", "Gauge"}, "+Inf", "", "", "", "unknown"),
+				commonSplunkMetric("gauge_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []any{"v0", "v1", "Gauge"}, "+Inf", "", "", "", "unknown"),
 			},
 			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
@@ -111,7 +102,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return gauge
 			},
 			wantSplunkMetrics: []*splunk.Event{
-				commonSplunkMetric("gauge_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []interface{}{"v0", "v1", "Gauge"}, "-Inf", "", "", "", "unknown"),
+				commonSplunkMetric("gauge_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []any{"v0", "v1", "Gauge"}, "-Inf", "", "", "", "unknown"),
 			},
 			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
@@ -205,7 +196,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return intGauge
 			},
 			wantSplunkMetrics: []*splunk.Event{
-				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []interface{}{"v0", "v1", "Gauge"}, int64Val, "mysource", "mysourcetype", "myindex", "myhost"),
+				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []any{"v0", "v1", "Gauge"}, int64Val, "mysource", "mysourcetype", "myindex", "myhost"),
 			},
 			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
@@ -235,7 +226,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return doubleGauge
 			},
 			wantSplunkMetrics: []*splunk.Event{
-				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []interface{}{"v0", "v1", "Gauge"}, doubleVal, "mysource", "mysourcetype", "myindex", "myhost"),
+				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []any{"v0", "v1", "Gauge"}, doubleVal, "mysource", "mysourcetype", "myindex", "myhost"),
 			},
 			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
@@ -281,7 +272,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					SourceType: "",
 					Event:      "metric",
 					Time:       tsMSecs,
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"k0": "v0",
 						"k1": "v1",
 						"metric_name:double_histogram_with_dims_sum": float64(23),
@@ -294,7 +285,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					SourceType: "",
 					Event:      "metric",
 					Time:       tsMSecs,
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"k0": "v0",
 						"k1": "v1",
 						"metric_name:double_histogram_with_dims_count": uint64(7),
@@ -307,7 +298,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					SourceType: "",
 					Event:      "metric",
 					Time:       tsMSecs,
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"k0": "v0",
 						"k1": "v1",
 						"le": "1",
@@ -321,7 +312,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					SourceType: "",
 					Event:      "metric",
 					Time:       tsMSecs,
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"k0": "v0",
 						"k1": "v1",
 						"le": "2",
@@ -335,7 +326,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					SourceType: "",
 					Event:      "metric",
 					Time:       tsMSecs,
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"k0": "v0",
 						"k1": "v1",
 						"le": "4",
@@ -349,7 +340,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					SourceType: "",
 					Event:      "metric",
 					Time:       tsMSecs,
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"k0": "v0",
 						"k1": "v1",
 						"le": "+Inf",
@@ -381,7 +372,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					SourceType: "",
 					Event:      "metric",
 					Time:       tsMSecs,
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"k0":                            "v0",
 						"k1":                            "v1",
 						"metric_name:int_sum_with_dims": int64(62),
@@ -411,7 +402,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					SourceType: "",
 					Event:      "metric",
 					Time:       tsMSecs,
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"k0":                               "v0",
 						"k1":                               "v1",
 						"metric_name:double_sum_with_dims": float64(62),
@@ -449,7 +440,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					SourceType: "",
 					Event:      "metric",
 					Time:       tsMSecs,
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"k0":                      "v0",
 						"k1":                      "v1",
 						"metric_name:summary_sum": float64(42),
@@ -462,7 +453,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					SourceType: "",
 					Event:      "metric",
 					Time:       tsMSecs,
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"k0":                        "v0",
 						"k1":                        "v1",
 						"metric_name:summary_count": uint64(2),
@@ -475,7 +466,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					SourceType: "",
 					Event:      "metric",
 					Time:       tsMSecs,
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"k0":                      "v0",
 						"k1":                      "v1",
 						"qt":                      "0.5",
@@ -489,7 +480,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					SourceType: "",
 					Event:      "metric",
 					Time:       tsMSecs,
-					Fields: map[string]interface{}{
+					Fields: map[string]any{
 						"k0":                      "v0",
 						"k1":                      "v1",
 						"qt":                      "0.6",
@@ -538,7 +529,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return doubleGauge
 			},
 			wantSplunkMetrics: []*splunk.Event{
-				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []interface{}{"v0", "v1", "Gauge"}, doubleVal, "mysource2", "mysourcetype2", "myindex2", "myhost2"),
+				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []any{"v0", "v1", "Gauge"}, doubleVal, "mysource2", "mysourcetype2", "myindex2", "myhost2"),
 			},
 			configFn: func() *Config {
 				cfg := createDefaultConfig().(*Config)
@@ -584,17 +575,17 @@ func Test_mergeEventsToMultiMetricFormat(t *testing.T) {
 		{
 			name: "two events that can merge",
 			events: []*splunk.Event{
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]any{
 					"foo":             "bar",
 					"metric_name:mem": 123,
 				}),
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]any{
 					"foo":                  "bar",
 					"metric_name:othermem": 1233.4,
 				}),
 			},
 			merged: []*splunk.Event{
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]any{
 					"foo":                  "bar",
 					"metric_name:mem":      123,
 					"metric_name:othermem": 1233.4,
@@ -604,21 +595,21 @@ func Test_mergeEventsToMultiMetricFormat(t *testing.T) {
 		{
 			name: "two events that cannot merge",
 			events: []*splunk.Event{
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]any{
 					"foo":             "bar",
 					"metric_name:mem": 123,
 				}),
-				createEvent(ts, "host2", "source", "sourcetype", "index", map[string]interface{}{
+				createEvent(ts, "host2", "source", "sourcetype", "index", map[string]any{
 					"foo":                  "bar",
 					"metric_name:othermem": 1233.4,
 				}),
 			},
 			merged: []*splunk.Event{
-				createEvent(ts, "host2", "source", "sourcetype", "index", map[string]interface{}{
+				createEvent(ts, "host2", "source", "sourcetype", "index", map[string]any{
 					"foo":                  "bar",
 					"metric_name:othermem": 1233.4,
 				}),
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]any{
 					"foo":             "bar",
 					"metric_name:mem": 123,
 				}),
@@ -627,17 +618,17 @@ func Test_mergeEventsToMultiMetricFormat(t *testing.T) {
 		{
 			name: "two events with the same fields, but different metric value, last value wins",
 			events: []*splunk.Event{
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]any{
 					"foo":             "bar",
 					"metric_name:mem": 123,
 				}),
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]any{
 					"foo":             "bar",
 					"metric_name:mem": 1233.4,
 				}),
 			},
 			merged: []*splunk.Event{
-				createEvent(ts, "host", "source", "sourcetype", "index", map[string]interface{}{
+				createEvent(ts, "host", "source", "sourcetype", "index", map[string]any{
 					"foo":             "bar",
 					"metric_name:mem": 1233.4,
 				}),
@@ -665,16 +656,16 @@ func Test_mergeEventsToMultiMetricFormat(t *testing.T) {
 
 func commonSplunkMetric(
 	metricName string,
-	ts *float64,
+	ts float64,
 	keys []string,
-	values []interface{},
-	val interface{},
+	values []any,
+	val any,
 	source string,
 	sourcetype string,
 	index string,
 	host string,
 ) *splunk.Event {
-	fields := map[string]interface{}{fmt.Sprintf("metric_name:%s", metricName): val}
+	fields := map[string]any{fmt.Sprintf("metric_name:%s", metricName): val}
 
 	for i, k := range keys {
 		fields[k] = values[i]
@@ -693,22 +684,40 @@ func commonSplunkMetric(
 
 func TestTimestampFormat(t *testing.T) {
 	ts := pcommon.Timestamp(32001000345)
-	assert.Equal(t, 32.001, *timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Equal(t, 32.001, timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestTimestampFormatRounding(t *testing.T) {
 	ts := pcommon.Timestamp(32001999345)
-	assert.Equal(t, 32.002, *timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Equal(t, 32.002, timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestTimestampFormatRoundingWithNanos(t *testing.T) {
 	ts := pcommon.Timestamp(9999999999991500001)
-	assert.Equal(t, 9999999999.992, *timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Equal(t, 9999999999.992, timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestNilTimeWhenTimestampIsZero(t *testing.T) {
 	ts := pcommon.Timestamp(0)
-	assert.Nil(t, timestampToSecondsWithMillisecondPrecision(ts))
+	assert.Zero(t, timestampToSecondsWithMillisecondPrecision(ts))
+}
+
+func TestMergeEvents(t *testing.T) {
+	json1 := `{"event":"metric","fields":{"IF-Azure":"azure-env","k8s.cluster.name":"devops-uat","k8s.namespace.name":"splunk-collector-tests","k8s.node.name":"myk8snodename","k8s.pod.name":"my-otel-collector-pod","metric_type":"Gauge","metricsIndex":"test_metrics","metricsPlatform":"unset","resourceAttrs":"NO","testNumber":"number42","testRun":"42","metric_name:otel.collector.test":3411}}`
+	json2 := `{"event":"metric","fields":{"IF-Azure":"azure-env","k8s.cluster.name":"devops-uat","k8s.namespace.name":"splunk-collector-tests","k8s.node.name":"myk8snodename","k8s.pod.name":"my-otel-collector-pod","metric_type":"Gauge","metricsIndex":"test_metrics","metricsPlatform":"unset","resourceAttrs":"NO","testNumber":"number42","testRun":"42","metric_name:otel.collector.test2":26059}}`
+	ev1 := &splunk.Event{}
+	err := jsoniter.Unmarshal([]byte(json1), ev1)
+	require.NoError(t, err)
+	ev2 := &splunk.Event{}
+	err = jsoniter.Unmarshal([]byte(json2), ev2)
+	require.NoError(t, err)
+	events := []*splunk.Event{ev1, ev2}
+	merged, err := mergeEventsToMultiMetricFormat(events)
+	require.NoError(t, err)
+	require.Len(t, merged, 1)
+	b, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(merged[0])
+	require.NoError(t, err)
+	require.Equal(t, `{"host":"","event":"metric","fields":{"IF-Azure":"azure-env","k8s.cluster.name":"devops-uat","k8s.namespace.name":"splunk-collector-tests","k8s.node.name":"myk8snodename","k8s.pod.name":"my-otel-collector-pod","metric_name:otel.collector.test":3411,"metric_name:otel.collector.test2":26059,"metric_type":"Gauge","metricsIndex":"test_metrics","metricsPlatform":"unset","resourceAttrs":"NO","testNumber":"number42","testRun":"42"}}`, string(b))
 }
 
 func newMetricsWithResources() pcommon.Resource {

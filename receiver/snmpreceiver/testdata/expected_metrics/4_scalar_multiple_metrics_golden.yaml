@@ -1,0 +1,21 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: test description
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  timeUnixNano: "1000000"
+            name: metric1
+            unit: By
+          - description: test description2
+            gauge:
+              dataPoints:
+                - asInt: "2"
+                  timeUnixNano: "1000000"
+            name: metric2
+            unit: '{things}'
+        scope:
+          name: otelcol/snmpreceiver
+          version: latest

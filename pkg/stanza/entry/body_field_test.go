@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package entry
 
@@ -24,15 +13,15 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-func testMap() map[string]interface{} {
-	return map[string]interface{}{
+func testMap() map[string]any {
+	return map[string]any{
 		"simple_key": "simple_value",
 		"map_key":    nestedMap(),
 	}
 }
 
-func nestedMap() map[string]interface{} {
-	return map[string]interface{}{
+func nestedMap() map[string]any {
+	return map[string]any{
 		"nested_key": "nested_value",
 	}
 }
@@ -41,8 +30,8 @@ func TestNewBodyFieldGet(t *testing.T) {
 	cases := []struct {
 		name        string
 		field       Field
-		body        interface{}
-		expectedVal interface{}
+		body        any
+		expectedVal any
 		expectedOk  bool
 	}{
 		{
@@ -116,16 +105,16 @@ func TestBodyFieldDelete(t *testing.T) {
 	cases := []struct {
 		name             string
 		field            Field
-		body             interface{}
-		expectedBody     interface{}
-		expectedReturned interface{}
+		body             any
+		expectedBody     any
+		expectedReturned any
 		expectedOk       bool
 	}{
 		{
 			"SimpleKey",
 			NewBodyField("simple_key"),
 			testMap(),
-			map[string]interface{}{
+			map[string]any{
 				"map_key": nestedMap(),
 			},
 			"simple_value",
@@ -134,9 +123,9 @@ func TestBodyFieldDelete(t *testing.T) {
 		{
 			"EmptyBodyAndField",
 			NewBodyField(),
-			map[string]interface{}{},
+			map[string]any{},
 			nil,
-			map[string]interface{}{},
+			map[string]any{},
 			true,
 		},
 		{
@@ -159,9 +148,9 @@ func TestBodyFieldDelete(t *testing.T) {
 			"NestedKey",
 			NewBodyField("map_key", "nested_key"),
 			testMap(),
-			map[string]interface{}{
+			map[string]any{
 				"simple_key": "simple_value",
-				"map_key":    map[string]interface{}{},
+				"map_key":    map[string]any{},
 			},
 			"nested_value",
 			true,
@@ -170,7 +159,7 @@ func TestBodyFieldDelete(t *testing.T) {
 			"MapKey",
 			NewBodyField("map_key"),
 			testMap(),
-			map[string]interface{}{
+			map[string]any{
 				"simple_key": "simple_value",
 			},
 			nestedMap(),
@@ -202,9 +191,9 @@ func TestBodyFieldSet(t *testing.T) {
 	cases := []struct {
 		name        string
 		field       Field
-		body        interface{}
-		setTo       interface{}
-		expectedVal interface{}
+		body        any
+		setTo       any
+		expectedVal any
 	}{
 		{
 			"OverwriteMap",
@@ -225,8 +214,8 @@ func TestBodyFieldSet(t *testing.T) {
 			NewBodyField("embedded", "field"),
 			"raw_value",
 			"new_value",
-			map[string]interface{}{
-				"embedded": map[string]interface{}{
+			map[string]any{
+				"embedded": map[string]any{
 					"field": "new_value",
 				},
 			},
@@ -234,26 +223,26 @@ func TestBodyFieldSet(t *testing.T) {
 		{
 			"NewMapValue",
 			NewBodyField(),
-			map[string]interface{}{},
+			map[string]any{},
 			testMap(),
 			testMap(),
 		},
 		{
 			"NewRootField",
 			NewBodyField("new_key"),
-			map[string]interface{}{},
+			map[string]any{},
 			"new_value",
-			map[string]interface{}{
+			map[string]any{
 				"new_key": "new_value",
 			},
 		},
 		{
 			"NewNestedField",
 			NewBodyField("new_key", "nested_key"),
-			map[string]interface{}{},
+			map[string]any{},
 			"nested_value",
-			map[string]interface{}{
-				"new_key": map[string]interface{}{
+			map[string]any{
+				"new_key": map[string]any{
 					"nested_key": "nested_value",
 				},
 			},
@@ -263,7 +252,7 @@ func TestBodyFieldSet(t *testing.T) {
 			NewBodyField("map_key"),
 			testMap(),
 			"new_value",
-			map[string]interface{}{
+			map[string]any{
 				"simple_key": "simple_value",
 				"map_key":    "new_value",
 			},
@@ -272,12 +261,12 @@ func TestBodyFieldSet(t *testing.T) {
 			"MergedNestedValue",
 			NewBodyField("map_key"),
 			testMap(),
-			map[string]interface{}{
+			map[string]any{
 				"merged_key": "merged_value",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"simple_key": "simple_value",
-				"map_key": map[string]interface{}{
+				"map_key": map[string]any{
 					"nested_key": "nested_value",
 					"merged_key": "merged_value",
 				},
@@ -316,9 +305,9 @@ func TestBodyFieldMerge(t *testing.T) {
 	entry := &Entry{}
 	entry.Body = "raw_value"
 	field := BodyField{[]string{"embedded"}}
-	values := map[string]interface{}{"new": "values"}
+	values := map[string]any{"new": "values"}
 	field.Merge(entry, values)
-	expected := map[string]interface{}{"embedded": values}
+	expected := map[string]any{"embedded": values}
 	require.Equal(t, expected, entry.Body)
 }
 

@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package saphanareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver"
 
@@ -34,7 +23,7 @@ type client interface {
 
 // Wraps the result of a query so that it can be mocked in tests
 type resultWrapper interface {
-	Scan(dest ...interface{}) error
+	Scan(dest ...any) error
 	Close() error
 	Next() bool
 }
@@ -54,7 +43,7 @@ func (w *standardResultWrapper) Next() bool {
 	return w.rows.Next()
 }
 
-func (w *standardResultWrapper) Scan(dest ...interface{}) error {
+func (w *standardResultWrapper) Scan(dest ...any) error {
 	return w.rows.Scan(dest...)
 }
 
@@ -113,7 +102,7 @@ func newSapHanaClient(cfg *Config, factory sapHanaConnectionFactory) client {
 }
 
 func (c *sapHanaClient) Connect(ctx context.Context) error {
-	connector, err := sapdriver.NewDSNConnector(fmt.Sprintf("hdb://%s:%s@%s", c.receiverConfig.Username, c.receiverConfig.Password, c.receiverConfig.TCPAddr.Endpoint))
+	connector, err := sapdriver.NewDSNConnector(fmt.Sprintf("hdb://%s:%s@%s", c.receiverConfig.Username, string(c.receiverConfig.Password), c.receiverConfig.TCPAddr.Endpoint))
 	if err != nil {
 		return fmt.Errorf("error generating DSN for SAP HANA connection: %w", err)
 	}
@@ -159,7 +148,7 @@ func (c *sapHanaClient) collectDataFromQuery(ctx context.Context, query *monitor
 ROW_ITERATOR:
 	for rows.Next() {
 		expectedFields := len(query.orderedMetricLabels) + len(query.orderedResourceLabels) + len(query.orderedStats)
-		rowFields := make([]interface{}, expectedFields)
+		rowFields := make([]any, expectedFields)
 
 		// Build a list of addresses that rows.Scan will load column data into
 		for i := range rowFields {
@@ -217,7 +206,7 @@ ROW_ITERATOR:
 	return data, errors.Combine()
 }
 
-func convertInterfaceToString(input interface{}) (sql.NullString, error) {
+func convertInterfaceToString(input any) (sql.NullString, error) {
 	if val, ok := input.(*sql.NullString); ok {
 		return *val, nil
 	}

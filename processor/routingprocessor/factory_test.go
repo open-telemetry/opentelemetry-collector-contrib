@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package routingprocessor
 
@@ -31,8 +20,16 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 )
+
+var noopTelemetrySettings = component.TelemetrySettings{
+	TracerProvider: nooptrace.NewTracerProvider(),
+	MeterProvider:  noopmetric.NewMeterProvider(),
+	Logger:         zap.NewNop(),
+}
 
 func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
@@ -142,7 +139,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T) {
 	otlpExporterFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: "example.com:1234",
 		},
 	}
@@ -155,10 +152,10 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
-			component.NewID("otlp/traces"): otlpTracesExporter,
+			component.MustNewIDWithName("otlp", "traces"): otlpTracesExporter,
 		},
 		component.DataTypeMetrics: {
-			component.NewID("otlp/metrics"): otlpMetricsExporter,
+			component.MustNewIDWithName("otlp", "metrics"): otlpMetricsExporter,
 		},
 	})
 
@@ -174,7 +171,9 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-			exp := newMetricProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, cfg)
+			exp, err := newMetricProcessor(noopTelemetrySettings, cfg)
+			require.NoError(t, err)
+
 			err = exp.Start(context.Background(), host)
 			// assert that no error is thrown due to multiple pipelines and exporters not using the routing processor
 			assert.NoError(t, err)
@@ -199,7 +198,7 @@ func TestShutdown(t *testing.T) {
 	}
 
 	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, exp)
 
 	// test

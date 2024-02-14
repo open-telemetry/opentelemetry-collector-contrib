@@ -1,4 +1,12 @@
-name: kafkametricsreceiver
+type: kafkametrics
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, splunk, sumo]
+  codeowners:
+    active: [dmitryax]
 
 attributes:
   topic:
@@ -12,20 +20,24 @@ attributes:
     type: string
 
 metrics:
-#  brokers scraper
+  #  brokers scraper
   kafka.brokers:
     enabled: true
     description: Number of brokers in the cluster.
     unit: "{brokers}"
-    gauge:
+    sum:
+      monotonic: false
       value_type: int
-#  topics scraper
+      aggregation_temporality: cumulative
+  #  topics scraper
   kafka.topic.partitions:
     enabled: true
     description: Number of partitions in topic.
     unit: "{partitions}"
-    gauge:
+    sum:
+      monotonic: false
       value_type: int
+      aggregation_temporality: cumulative
     attributes: [topic]
   kafka.partition.current_offset:
     enabled: true
@@ -45,23 +57,29 @@ metrics:
     enabled: true
     description: Number of replicas for partition of topic
     unit: "{replicas}"
-    gauge:
+    sum:
+      monotonic: false
       value_type: int
+      aggregation_temporality: cumulative
     attributes: [topic, partition]
   kafka.partition.replicas_in_sync:
     enabled: true
     description: Number of synchronized replicas of partition
     unit: "{replicas}"
-    gauge:
+    sum:
+      monotonic: false
       value_type: int
+      aggregation_temporality: cumulative
     attributes: [topic, partition]
-#  consumers scraper
+  #  consumers scraper
   kafka.consumer_group.members:
     enabled: true
     description: Count of members in the consumer group
     unit: "{members}"
-    gauge:
+    sum:
+      monotonic: false
       value_type: int
+      aggregation_temporality: cumulative
     attributes: [group]
   kafka.consumer_group.offset:
     enabled: true
@@ -91,3 +109,6 @@ metrics:
     gauge:
       value_type: int
     attributes: [group, topic]
+
+tests:
+  config:

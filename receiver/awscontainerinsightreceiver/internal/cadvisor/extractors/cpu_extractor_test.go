@@ -1,23 +1,14 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package extractors
 
 import (
 	"testing"
 
-	. "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
 )
 
@@ -28,7 +19,7 @@ func TestCPUStats(t *testing.T) {
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
 
 	// test container type
-	containerType := TypeContainer
+	containerType := containerinsight.TypeContainer
 	extractor := NewCPUMetricExtractor(nil)
 
 	var cMetrics []*CAdvisorMetric
@@ -46,7 +37,8 @@ func TestCPUStats(t *testing.T) {
 	AssertContainsTaggedFloat(t, cMetrics[0], "container_cpu_utilization", 0.5, 0)
 
 	// test node type
-	containerType = TypeNode
+	containerType = containerinsight.TypeNode
+	require.NoError(t, extractor.Shutdown())
 	extractor = NewCPUMetricExtractor(nil)
 
 	if extractor.HasValue(result[0]) {
@@ -64,7 +56,8 @@ func TestCPUStats(t *testing.T) {
 	AssertContainsTaggedInt(t, cMetrics[0], "node_cpu_limit", 2000)
 
 	// test instance type
-	containerType = TypeInstance
+	containerType = containerinsight.TypeInstance
+	require.NoError(t, extractor.Shutdown())
 	extractor = NewCPUMetricExtractor(nil)
 
 	if extractor.HasValue(result[0]) {
@@ -80,4 +73,5 @@ func TestCPUStats(t *testing.T) {
 	AssertContainsTaggedFloat(t, cMetrics[0], "instance_cpu_usage_system", 10, 0)
 	AssertContainsTaggedFloat(t, cMetrics[0], "instance_cpu_utilization", 0.5, 0)
 	AssertContainsTaggedInt(t, cMetrics[0], "instance_cpu_limit", 2000)
+	require.NoError(t, extractor.Shutdown())
 }

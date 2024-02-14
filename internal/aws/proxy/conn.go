@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package proxy // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 
@@ -169,7 +158,7 @@ func getRegionFromECSMetadata() (string, error) {
 			return "", fmt.Errorf("unable to open ECS metadata file, path: %s, error: %w",
 				metadataFilePath, err)
 		}
-		var dat map[string]interface{}
+		var dat map[string]any
 		err = json.Unmarshal(metadata, &dat)
 		if err != nil {
 			return "", fmt.Errorf("invalid json in read ECS metadata file content, path: %s, error: %w",

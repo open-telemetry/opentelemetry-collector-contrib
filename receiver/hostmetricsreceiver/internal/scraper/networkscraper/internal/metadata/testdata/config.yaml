@@ -15,7 +15,6 @@ all_set:
       enabled: true
     system.network.packets:
       enabled: true
-  resource_attributes:
 none_set:
   metrics:
     system.network.connections:
@@ -32,4 +31,3 @@ none_set:
       enabled: false
     system.network.packets:
       enabled: false
-  resource_attributes:

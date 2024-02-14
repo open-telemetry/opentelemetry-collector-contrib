@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
@@ -46,22 +35,22 @@ const (
 type AdxMetric struct {
 	Timestamp string // The timestamp of the occurrence. A metric is measured at a point of time. Formatted into string as RFC3339Nano
 	// Including name, the Metric object is defined by the following properties:
-	MetricName        string                 // Name of the metric field
-	MetricType        string                 // The data point type (e.g. Sum, Gauge, Histogram ExponentialHistogram, Summary)
-	MetricUnit        string                 // The metric stream’s unit
-	MetricDescription string                 // The metric stream’s description
-	MetricValue       float64                // the value of the metric
-	MetricAttributes  map[string]interface{} // JSON attributes that can then be parsed. Extrinsic properties
+	MetricName        string         // Name of the metric field
+	MetricType        string         // The data point type (e.g. Sum, Gauge, Histogram ExponentialHistogram, Summary)
+	MetricUnit        string         // The metric stream’s unit
+	MetricDescription string         // The metric stream’s description
+	MetricValue       float64        // the value of the metric
+	MetricAttributes  map[string]any // JSON attributes that can then be parsed. Extrinsic properties
 	// Additional properties
-	Host               string                 // The hostname for analysis of the metric. Extracted from https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/host/
-	ResourceAttributes map[string]interface{} // The originating Resource attributes. Refer https://opentelemetry.io/docs/reference/specification/resource/sdk/
+	Host               string         // The hostname for analysis of the metric. Extracted from https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/host/
+	ResourceAttributes map[string]any // The originating Resource attributes. Refer https://opentelemetry.io/docs/reference/specification/resource/sdk/
 }
 
 /*
 	Convert the pMetric to the type ADXMetric , this matches the scheme in the OTELMetric table in the database
 */
 
-func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[string]interface{}, logger *zap.Logger) []*AdxMetric {
+func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[string]any, logger *zap.Logger) []*AdxMetric {
 	logger.Debug("Entering processing of toAdxMetric function")
 	// default to collectors host name. Ignore the error here. This should not cause the failure of the process
 	host, err := os.Hostname()
@@ -92,6 +81,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			ResourceAttributes: resourceAttrs,
 		}
 	}
+	//exhaustive:enforce
 	switch md.Type() {
 	case pmetric.MetricTypeGauge:
 		dataPoints := md.Gauge().DataPoints()
@@ -144,7 +134,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			// now create buckets for each bound.
 			for bi := 0; bi < bounds.Len(); bi++ {
 				customMap :=
-					copyMap(map[string]interface{}{"le": float64ToDimValue(bounds.At(bi))}, dataPoint.Attributes().AsRaw())
+					copyMap(map[string]any{"le": float64ToDimValue(bounds.At(bi))}, dataPoint.Attributes().AsRaw())
 
 				value += counts.At(bi)
 				vMap := pcommon.NewMap()
@@ -162,7 +152,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			{
 				// Add the LE field for the bucket's bound
 				customMap :=
-					copyMap(map[string]interface{}{
+					copyMap(map[string]any{
 						"le": float64ToDimValue(math.Inf(1)),
 					}, dataPoint.Attributes().AsRaw())
 				vMap := pcommon.NewMap()
@@ -224,7 +214,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			for bi := 0; bi < dataPoint.QuantileValues().Len(); bi++ {
 				dp := dataPoint.QuantileValues().At(bi)
 				quantileName := fmt.Sprintf("%s_%s", md.Name(), strconv.FormatFloat(dp.Quantile(), 'f', -1, 64))
-				metricQuantile := map[string]interface{}{
+				metricQuantile := map[string]any{
 					"qt":         float64ToDimValue(dp.Quantile()),
 					quantileName: sanitizeFloat(dp.Value()).(float64),
 				}
@@ -241,7 +231,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			}
 		}
 		return adxMetrics
-	case pmetric.MetricTypeEmpty:
+	case pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeEmpty:
 		fallthrough
 	default:
 		logger.Warn(
@@ -271,15 +261,15 @@ func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, logger *
 	return transformedAdxMetrics
 }
 
-func copyMap(toAttrib map[string]interface{}, fromAttrib map[string]interface{}) map[string]interface{} {
+func copyMap(toAttrib map[string]any, fromAttrib map[string]any) map[string]any {
 	for k, v := range fromAttrib {
 		toAttrib[k] = v
 	}
 	return toAttrib
 }
 
-func cloneMap(fields map[string]interface{}) map[string]interface{} {
-	newFields := make(map[string]interface{}, len(fields))
+func cloneMap(fields map[string]any) map[string]any {
+	newFields := make(map[string]any, len(fields))
 	return copyMap(newFields, fields)
 }
 
@@ -287,7 +277,7 @@ func float64ToDimValue(f float64) string {
 	return strconv.FormatFloat(f, 'g', -1, 64)
 }
 
-func sanitizeFloat(value float64) interface{} {
+func sanitizeFloat(value float64) any {
 	if math.IsNaN(value) {
 		return math.NaN()
 	}

@@ -1,0 +1,13 @@
+type: syslog
+
+status:
+  class: exporter
+  stability: 
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [kkujawa-sumo, rnishtala-sumo, astencel-sumo]
+
+tests:
+  config:
+  skip_lifecycle: true

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package zipkinexporter
 
@@ -59,7 +48,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	defer cst.Close()
 
 	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: cst.URL,
 		},
 		Format: "json",
@@ -77,7 +66,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	addr := testutil.GetAvailableLocalAddress(t)
 	recvCfg := &zipkinreceiver.Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: addr,
 		},
 	}
@@ -282,7 +271,7 @@ const zipkinSpansJSONJavaLibrary = `
 
 func TestZipkinExporter_invalidFormat(t *testing.T) {
 	config := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "1.2.3.4",
 		},
 		Format: "foobar",
@@ -306,7 +295,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	defer cst.Close()
 
 	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: cst.URL,
 		},
 		Format: "proto",
@@ -325,7 +314,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	addr := testutil.GetAvailableLocalAddress(t)
 	recvCfg := &zipkinreceiver.Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: addr,
 		},
 	}

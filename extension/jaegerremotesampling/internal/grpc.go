@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal"
 
@@ -44,7 +33,7 @@ type grpcServer interface {
 // NewGRPC returns a new sampling gRPC Server.
 func NewGRPC(
 	telemetry component.TelemetrySettings,
-	settings configgrpc.GRPCServerSettings,
+	settings configgrpc.ServerConfig,
 	strategyStore strategystore.StrategyStore,
 ) (*SamplingGRPCServer, error) {
 	if strategyStore == nil {
@@ -61,13 +50,13 @@ func NewGRPC(
 // SamplingGRPCServer implements component.Component to make the life cycle easy to manage.
 type SamplingGRPCServer struct {
 	telemetry     component.TelemetrySettings
-	settings      configgrpc.GRPCServerSettings
+	settings      configgrpc.ServerConfig
 	strategyStore strategystore.StrategyStore
 
 	grpcServer grpcServer
 }
 
-func (s *SamplingGRPCServer) Start(_ context.Context, host component.Host) error {
+func (s *SamplingGRPCServer) Start(ctx context.Context, host component.Host) error {
 	server, err := s.settings.ToServer(host, s.telemetry)
 	if err != nil {
 		return err
@@ -81,7 +70,7 @@ func (s *SamplingGRPCServer) Start(_ context.Context, host component.Host) error
 	healthServer.SetServingStatus("jaeger.api_v2.SamplingManager", grpc_health_v1.HealthCheckResponse_SERVING)
 	grpc_health_v1.RegisterHealthServer(server, healthServer)
 
-	listener, err := s.settings.ToListener()
+	listener, err := s.settings.ToListenerContext(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to listen on gRPC port: %w", err)
 	}

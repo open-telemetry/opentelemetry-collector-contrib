@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
@@ -33,6 +22,10 @@ import (
 // ExceptionEventName the name of the exception event.
 // TODO: Remove this when collector defines this semantic convention.
 const ExceptionEventName = "exception"
+const AwsIndividualHTTPEventName = "HTTP request failure"
+const AwsIndividualHTTPErrorEventType = "aws.http.error.event"
+const AwsIndividualHTTPErrorCodeAttr = "http.response.status_code"
+const AwsIndividualHTTPErrorMsgAttr = "aws.http.error_message"
 
 func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource pcommon.Resource) (isError, isFault, isThrottle bool,
 	filtered map[string]pcommon.Value, cause *awsxray.CauseData) {
@@ -45,20 +38,31 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		errorKind string
 	)
 
-	hasExceptions := false
+	isAwsSdkSpan := isAwsSdkSpan(span)
+	hasExceptionEvents := false
+	hasAwsIndividualHTTPError := false
 	for i := 0; i < span.Events().Len(); i++ {
 		event := span.Events().At(i)
 		if event.Name() == ExceptionEventName {
-			hasExceptions = true
+			hasExceptionEvents = true
+			break
+		}
+		if isAwsSdkSpan && event.Name() == AwsIndividualHTTPEventName {
+			hasAwsIndividualHTTPError = true
 			break
 		}
 	}
+	hasExceptions := hasExceptionEvents || hasAwsIndividualHTTPError
 
 	switch {
 	case hasExceptions:
 		language := ""
 		if val, ok := resource.Attributes().Get(conventions.AttributeTelemetrySDKLanguage); ok {
 			language = val.Str()
+		}
+		isRemote := false
+		if span.Kind() == ptrace.SpanKindClient || span.Kind() == ptrace.SpanKindProducer {
+			isRemote = true
 		}
 
 		var exceptions []awsxray.Exception
@@ -81,8 +85,28 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 					stacktrace = val.Str()
 				}
 
-				parsed := parseException(exceptionType, message, stacktrace, language)
+				parsed := parseException(exceptionType, message, stacktrace, isRemote, language)
 				exceptions = append(exceptions, parsed...)
+			} else if isAwsSdkSpan && event.Name() == AwsIndividualHTTPEventName {
+				errorCode, ok1 := event.Attributes().Get(AwsIndividualHTTPErrorCodeAttr)
+				errorMessage, ok2 := event.Attributes().Get(AwsIndividualHTTPErrorMsgAttr)
+				if ok1 && ok2 {
+					eventEpochTime := event.Timestamp().AsTime().UnixMicro()
+					strs := []string{
+						errorCode.AsString(),
+						strconv.FormatFloat(float64(eventEpochTime)/1_000_000, 'f', 6, 64),
+						errorMessage.Str(),
+					}
+					message = strings.Join(strs, "@")
+					segmentID := newSegmentID()
+					exception := awsxray.Exception{
+						ID:      aws.String(hex.EncodeToString(segmentID[:])),
+						Type:    aws.String(AwsIndividualHTTPErrorEventType),
+						Remote:  aws.Bool(true),
+						Message: aws.String(message),
+					}
+					exceptions = append(exceptions, exception)
+				}
 			}
 		}
 		cause = &awsxray.CauseData{
@@ -127,40 +151,42 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 
 	val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode)
 
+	// The segment status for http spans will be based on their http.statuscode as we found some http
+	// spans does not fill with status.Code() but always filled with http.statuscode
+	var code int64
+	if ok {
+		code = val.Int()
+	}
+
+	// Default values
+	isThrottle = false
+	isError = false
+	isFault = false
+
 	switch {
-	case status.Code() != ptrace.StatusCodeError:
-		isError = false
-		isThrottle = false
-		isFault = false
-	case ok:
-		code := val.Int()
-		// We only differentiate between faults (server errors) and errors (client errors) for HTTP spans.
-		if code >= 400 && code <= 499 {
-			isError = true
-			isFault = false
-			if code == 429 {
-				isThrottle = true
-			}
-		} else {
-			isError = false
-			isThrottle = false
+	case !ok || code < 400 || code > 599:
+		if status.Code() == ptrace.StatusCodeError {
 			isFault = true
 		}
-	default:
-		isError = false
-		isThrottle = false
+	case code >= 400 && code <= 499:
+		isError = true
+		if code == 429 {
+			isThrottle = true
+		}
+	case code >= 500 && code <= 599:
 		isFault = true
 	}
 
 	return isError, isFault, isThrottle, filtered, cause
 }
 
-func parseException(exceptionType string, message string, stacktrace string, language string) []awsxray.Exception {
+func parseException(exceptionType string, message string, stacktrace string, isRemote bool, language string) []awsxray.Exception {
 	exceptions := make([]awsxray.Exception, 0, 1)
 	segmentID := newSegmentID()
 	exceptions = append(exceptions, awsxray.Exception{
 		ID:      aws.String(hex.EncodeToString(segmentID[:])),
 		Type:    aws.String(exceptionType),
+		Remote:  aws.Bool(isRemote),
 		Message: aws.String(message),
 	})
 
@@ -192,6 +218,7 @@ func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []aws
 
 	// Skip first line containing top level message
 	exception := &exceptions[0]
+	isRemote := exception.Remote
 	_, err := r.ReadLine()
 	if err != nil {
 		return exceptions
@@ -250,16 +277,16 @@ func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []aws
 				if strings.HasPrefix(line, "\tat ") && strings.IndexByte(line, '(') >= 0 && line[len(line)-1] == ')' {
 					// Stack frame (hopefully, user can masquerade since we only have a string), process above.
 					break
-				} else {
-					// String append overhead in this case, but multiline messages should be far less common than single
-					// line ones.
-					causeMessage += line
 				}
+				// String append overhead in this case, but multiline messages should be far less common than single
+				// line ones.
+				causeMessage += line
 			}
 			segmentID := newSegmentID()
 			exceptions = append(exceptions, awsxray.Exception{
 				ID:      aws.String(hex.EncodeToString(segmentID[:])),
 				Type:    aws.String(causeType),
+				Remote:  isRemote,
 				Message: aws.String(causeMessage),
 				Stack:   nil,
 			})
@@ -299,6 +326,7 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 	}
 	line := lines[lineIdx]
 	exception := &exceptions[0]
+	isRemote := exception.Remote
 
 	exception.Stack = nil
 	for {
@@ -356,6 +384,7 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 			exceptions = append(exceptions, awsxray.Exception{
 				ID:      aws.String(hex.EncodeToString(segmentID[:])),
 				Type:    aws.String(causeType),
+				Remote:  isRemote,
 				Message: aws.String(causeMessage),
 			})
 			// when append causes `exceptions` to outgrow its existing

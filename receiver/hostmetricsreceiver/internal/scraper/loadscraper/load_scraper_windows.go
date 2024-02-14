@@ -1,19 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package loadscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 
@@ -147,17 +135,22 @@ func stopSampling(_ context.Context) error {
 	startupLock.Lock()
 	defer startupLock.Unlock()
 
+	if scraperCount == 0 {
+		// no load scraper is running nothing to do
+		return nil
+	}
 	// only stop sampling if all load scrapers have been closed
 	scraperCount--
 	if scraperCount > 0 {
 		return nil
 	}
 
+	// no more load scrapers are running, stop the sampler
 	close(samplerInstance.done)
 	return nil
 }
 
-func getSampledLoadAverages() (*load.AvgStat, error) {
+func getSampledLoadAverages(_ context.Context) (*load.AvgStat, error) {
 	samplerInstance.lock.RLock()
 	defer samplerInstance.lock.RUnlock()
 

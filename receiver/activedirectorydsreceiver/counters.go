@@ -1,19 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package activedirectorydsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
 
@@ -35,9 +23,9 @@ const (
 	draOutboundObjects                     = "DRA Outbound Objects/sec"
 	draInboundProperties                   = "DRA Inbound Properties Total/sec"
 	draOutboundProperties                  = "DRA Outbound Properties/sec"
-	draInboundValuesDNs                    = "DRA Inbound Values (DNs only)/sec"
+	draInboundValuesDNs                    = "DRA Inbound Values (DNs only)/sec" //revive:disable-line:var-naming
 	draInboundValuesTotal                  = "DRA Inbound Values Total/sec"
-	draOutboundValuesDNs                   = "DRA Outbound Values (DNs only)/sec"
+	draOutboundValuesDNs                   = "DRA Outbound Values (DNs only)/sec" //revive:disable-line:var-naming
 	draOutboundValuesTotal                 = "DRA Outbound Values Total/sec"
 	draPendingReplicationOperations        = "DRA Pending Replication Operations"
 	draSyncFailuresSchemaMismatch          = "DRA Sync Failures on Schema Mismatch"
@@ -81,7 +69,7 @@ func (w *watchers) Scrape(name string) (float64, error) {
 }
 
 func (w *watchers) Close() error {
-	if w.closed {
+	if w == nil || w.closed {
 		return nil
 	}
 

@@ -1,23 +1,16 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
+
+	"github.com/docker/docker/api/types/versions"
 )
 
 type Config struct {
@@ -31,21 +24,19 @@ type Config struct {
 	ExcludedImages []string `mapstructure:"excluded_images"`
 
 	// Docker client API version.
-	DockerAPIVersion float64 `mapstructure:"api_version"`
+	DockerAPIVersion string `mapstructure:"api_version"`
 }
 
 // NewConfig creates a new config to be used when creating
 // a docker client
-func NewConfig(endpoint string, timeout time.Duration, excludedImages []string, apiVersion float64) (*Config, error) {
+func NewConfig(endpoint string, timeout time.Duration, excludedImages []string, apiVersion string) (*Config, error) {
 	cfg := &Config{
 		Endpoint:         endpoint,
 		Timeout:          timeout,
 		ExcludedImages:   excludedImages,
 		DockerAPIVersion: apiVersion,
 	}
-
-	err := cfg.validate()
-	return cfg, err
+	return cfg, cfg.validate()
 }
 
 // NewDefaultConfig creates a new config with default values
@@ -54,7 +45,7 @@ func NewDefaultConfig() *Config {
 	cfg := &Config{
 		Endpoint:         "unix:///var/run/docker.sock",
 		Timeout:          5 * time.Second,
-		DockerAPIVersion: minimalRequiredDockerAPIVersion,
+		DockerAPIVersion: minimumRequiredDockerAPIVersion,
 	}
 
 	return cfg
@@ -66,8 +57,61 @@ func (config Config) validate() error {
 	if config.Endpoint == "" {
 		return errors.New("config.Endpoint must be specified")
 	}
-	if config.DockerAPIVersion < minimalRequiredDockerAPIVersion {
-		return fmt.Errorf("Docker API version must be at least %v", minimalRequiredDockerAPIVersion)
+	if err := VersionIsValidAndGTE(config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
+		return err
+	}
+	return nil
+}
+
+type apiVersion struct {
+	major int
+	minor int
+}
+
+func NewAPIVersion(version string) (string, error) {
+	s := strings.TrimSpace(version)
+	split := strings.Split(s, ".")
+
+	invalidVersion := "invalid version %q"
+
+	nParts := len(split)
+	if s == "" || nParts < 1 || nParts > 2 {
+		return "", fmt.Errorf(invalidVersion, s)
+	}
+
+	apiVer := new(apiVersion)
+	var err error
+	target := map[int]*int{0: &apiVer.major, 1: &apiVer.minor}
+	for i, part := range split {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			if *target[i], err = strconv.Atoi(part); err != nil {
+				return "", fmt.Errorf(invalidVersion+": %w", s, err)
+			}
+		}
+	}
+
+	return fmt.Sprintf("%d.%d", apiVer.major, apiVer.minor), nil
+}
+
+// MustNewAPIVersion evaluates version as a client api version and panics if invalid.
+func MustNewAPIVersion(version string) string {
+	v, err := NewAPIVersion(version)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// VersionIsValidAndGTE evalutes version as a client api version and returns an error if invalid or less than gte.
+// gte is assumed to be valid (easiest if result of MustNewAPIVersion on initialization)
+func VersionIsValidAndGTE(version, gte string) error {
+	v, err := NewAPIVersion(version)
+	if err != nil {
+		return err
+	}
+	if versions.LessThan(v, gte) {
+		return fmt.Errorf(`"api_version" %s must be at least %s`, version, gte)
 	}
 	return nil
 }

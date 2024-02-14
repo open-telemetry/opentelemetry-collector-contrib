@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package basicauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 
@@ -44,18 +33,14 @@ type basicAuth struct {
 	matchFunc  func(username, password string) bool
 }
 
-func newClientAuthExtension(cfg *Config) (auth.Client, error) {
-	if cfg.ClientAuth == nil || cfg.ClientAuth.Username == "" {
-		return nil, errNoCredentialSource
-	}
-
+func newClientAuthExtension(cfg *Config) auth.Client {
 	ba := basicAuth{
 		clientAuth: cfg.ClientAuth,
 	}
 	return auth.NewClient(
 		auth.WithClientRoundTripper(ba.roundTripper),
 		auth.WithClientPerRPCCredentials(ba.perRPCCredentials),
-	), nil
+	)
 }
 
 func newServerAuthExtension(cfg *Config) (auth.Server, error) {
@@ -73,7 +58,7 @@ func newServerAuthExtension(cfg *Config) (auth.Server, error) {
 	), nil
 }
 
-func (ba *basicAuth) serverStart(ctx context.Context, host component.Host) error {
+func (ba *basicAuth) serverStart(_ context.Context, _ component.Host) error {
 	var rs []io.Reader
 
 	if ba.htpasswd.File != "" {
@@ -184,7 +169,7 @@ type authData struct {
 	raw      string
 }
 
-func (a *authData) GetAttribute(name string) interface{} {
+func (a *authData) GetAttribute(name string) any {
 	switch name {
 	case "username":
 		return a.username

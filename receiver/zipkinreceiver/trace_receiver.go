@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package zipkinreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 
@@ -27,9 +16,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
@@ -43,6 +33,7 @@ const (
 )
 
 var errNextConsumerRespBody = []byte(`"Internal Server Error"`)
+var errBadRequestRespBody = []byte(`"Bad Request"`)
 
 // zipkinReceiver type is used to handle spans received in the Zipkin format.
 type zipkinReceiver struct {
@@ -59,7 +50,7 @@ type zipkinReceiver struct {
 	protobufDebugUnmarshaler ptrace.Unmarshaler
 
 	settings  receiver.CreateSettings
-	obsrecvrs map[string]*obsreport.Receiver
+	obsrecvrs map[string]*receiverhelper.ObsReport
 }
 
 var _ http.Handler = (*zipkinReceiver)(nil)
@@ -71,9 +62,9 @@ func newReceiver(config *Config, nextConsumer consumer.Traces, settings receiver
 	}
 
 	transports := []string{receiverTransportV1Thrift, receiverTransportV1JSON, receiverTransportV2JSON, receiverTransportV2PROTO}
-	obsrecvrs := make(map[string]*obsreport.Receiver)
+	obsrecvrs := make(map[string]*receiverhelper.ObsReport)
 	for _, transport := range transports {
-		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 			ReceiverID:             settings.ID,
 			Transport:              transport,
 			ReceiverCreateSettings: settings,
@@ -105,13 +96,13 @@ func (zr *zipkinReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	var err error
-	zr.server, err = zr.config.HTTPServerSettings.ToServer(host, zr.settings.TelemetrySettings, zr)
+	zr.server, err = zr.config.ServerConfig.ToServer(host, zr.settings.TelemetrySettings, zr)
 	if err != nil {
 		return err
 	}
 
 	var listener net.Listener
-	listener, err = zr.config.HTTPServerSettings.ToListener()
+	listener, err = zr.config.ServerConfig.ToListener()
 	if err != nil {
 		return err
 	}
@@ -120,7 +111,7 @@ func (zr *zipkinReceiver) Start(_ context.Context, host component.Host) error {
 		defer zr.shutdownWG.Done()
 
 		if errHTTP := zr.server.Serve(listener); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			host.ReportFatalError(errHTTP)
+			zr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
@@ -243,24 +234,30 @@ func (zr *zipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	numReceivedSpans := td.SpanCount()
 	consumerErr := zr.nextConsumer.ConsumeTraces(ctx, td)
 
 	receiverTagValue := zipkinV2TagValue
 	if asZipkinv1 {
 		receiverTagValue = zipkinV1TagValue
 	}
-	obsrecv.EndTracesOp(ctx, receiverTagValue, td.SpanCount(), consumerErr)
-
-	if consumerErr != nil {
-		// Transient error, due to some internal condition.
-		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write(errNextConsumerRespBody)
+	obsrecv.EndTracesOp(ctx, receiverTagValue, numReceivedSpans, consumerErr)
+	if consumerErr == nil {
+		// Send back the response "Accepted" as
+		// required at https://zipkin.io/zipkin-api/#/default/post_spans
+		w.WriteHeader(http.StatusAccepted)
 		return
 	}
 
-	// Finally send back the response "Accepted" as
-	// required at https://zipkin.io/zipkin-api/#/default/post_spans
-	w.WriteHeader(http.StatusAccepted)
+	if consumererror.IsPermanent(consumerErr) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write(errBadRequestRespBody)
+	} else {
+		// Transient error, due to some internal condition.
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write(errNextConsumerRespBody)
+	}
+
 }
 
 func transportType(r *http.Request, asZipkinv1 bool) string {

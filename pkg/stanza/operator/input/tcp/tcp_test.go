@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package tcp
 
@@ -101,7 +90,7 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = tcpInput.Start(testutil.NewMockPersister("test"))
+		err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 		require.NoError(t, err)
 		defer func() {
 			require.NoError(t, tcpInput.Stop(), "expected to stop tcp input operator without error")
@@ -150,7 +139,7 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = tcpInput.Start(testutil.NewMockPersister("test"))
+		err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 		require.NoError(t, err)
 		defer func() {
 			require.NoError(t, tcpInput.Stop(), "expected to stop tcp input operator without error")
@@ -166,7 +155,7 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		for _, expectedMessage := range expected {
 			select {
 			case entry := <-entryChan:
-				expectedAttributes := map[string]interface{}{
+				expectedAttributes := map[string]any{
 					"net.transport": "IP.TCP",
 				}
 				if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
@@ -236,7 +225,7 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		err = tcpInput.Start(testutil.NewMockPersister("test"))
+		err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 		require.NoError(t, err)
 		defer func() {
 			require.NoError(t, tcpInput.Stop(), "expected to stop tcp input operator without error")
@@ -408,7 +397,7 @@ func TestFailToBind(t *testing.T) {
 		mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 			entryChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
-		err = tcpInput.Start(testutil.NewMockPersister("test"))
+		err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 		return tcpInput, err
 	}
 
@@ -433,7 +422,7 @@ func BenchmarkTCPInput(b *testing.B) {
 	tcpInput := op.(*Input)
 	tcpInput.InputOperator.OutputOperators = []operator.Operator{fakeOutput}
 
-	err = tcpInput.Start(testutil.NewMockPersister("test"))
+	err = tcpInput.Start(testutil.NewUnscopedMockPersister())
 	require.NoError(b, err)
 
 	done := make(chan struct{})

@@ -1,0 +1,103 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Measures the duration of the HTTP check.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: http.url
+                      value:
+                        stringValue: http://127.0.0.1:8000
+            name: httpcheck.duration
+            unit: ms
+          - description: 1 if the check resulted in status_code matching the status_class, otherwise 0.
+            name: httpcheck.status
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: GET
+                    - key: http.status_class
+                      value:
+                        stringValue: 1xx
+                    - key: http.status_code
+                      value:
+                        intValue: "404"
+                    - key: http.url
+                      value:
+                        stringValue: http://invalid-endpoint
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: GET
+                    - key: http.status_class
+                      value:
+                        stringValue: 2xx
+                    - key: http.status_code
+                      value:
+                        intValue: "404"
+                    - key: http.url
+                      value:
+                        stringValue: http://127.0.0.1:8000
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: GET
+                    - key: http.status_class
+                      value:
+                        stringValue: 3xx
+                    - key: http.status_code
+                      value:
+                        intValue: "404"
+                    - key: http.url
+                      value:
+                        stringValue: http://invalid-endpoint
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: GET
+                    - key: http.status_class
+                      value:
+                        stringValue: 4xx
+                    - key: http.status_code
+                      value:
+                        intValue: "404"
+                    - key: http.url
+                      value:
+                        stringValue: http://invalid-endpoint
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: GET
+                    - key: http.status_class
+                      value:
+                        stringValue: 5xx
+                    - key: http.status_code
+                      value:
+                        intValue: "404"
+                    - key: http.url
+                      value:
+                        stringValue: http://127.0.0.1:8000
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+        scope:
+          name: otelcol/httpcheckreceiver
+          version: latest

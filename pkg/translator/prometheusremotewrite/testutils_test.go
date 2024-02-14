@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusremotewrite
 
@@ -313,10 +302,10 @@ func getSummaryMetric(name string, attributes pcommon.Map, ts uint64, sum float6
 }
 
 func getBucketBoundsData(values []float64) []bucketBoundsData {
-	var b []bucketBoundsData
+	b := make([]bucketBoundsData, len(values))
 
-	for _, value := range values {
-		b = append(b, bucketBoundsData{sig: lb1Sig, bound: value})
+	for i, value := range values {
+		b[i] = bucketBoundsData{sig: lb1Sig, bound: value}
 	}
 
 	return b

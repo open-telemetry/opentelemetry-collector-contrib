@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package awsxray // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 
@@ -18,11 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-)
-
-const (
-	// TypeStr is the type and ingest format of this receiver
-	TypeStr = "awsxray"
 )
 
 type CauseType int
@@ -45,24 +29,25 @@ type Segment struct {
 	StartTime *float64 `json:"start_time"`
 
 	// Segment-only optional fields
-	Service     *ServiceData `json:"service,omitempty"`
-	Origin      *string      `json:"origin,omitempty"`
-	User        *string      `json:"user,omitempty"`
-	ResourceARN *string      `json:"resource_arn,omitempty"`
+	Service     *ServiceData   `json:"service,omitempty"`
+	Origin      *string        `json:"origin,omitempty"`
+	User        *string        `json:"user,omitempty"`
+	ResourceARN *string        `json:"resource_arn,omitempty"`
+	Links       []SpanLinkData `json:"links,omitempty"`
 
 	// Optional fields for both Segment and subsegments
-	TraceID     *string                           `json:"trace_id,omitempty"`
-	EndTime     *float64                          `json:"end_time,omitempty"`
-	InProgress  *bool                             `json:"in_progress,omitempty"`
-	HTTP        *HTTPData                         `json:"http,omitempty"`
-	Fault       *bool                             `json:"fault,omitempty"`
-	Error       *bool                             `json:"error,omitempty"`
-	Throttle    *bool                             `json:"throttle,omitempty"`
-	Cause       *CauseData                        `json:"cause,omitempty"`
-	AWS         *AWSData                          `json:"aws,omitempty"`
-	Annotations map[string]interface{}            `json:"annotations,omitempty"`
-	Metadata    map[string]map[string]interface{} `json:"metadata,omitempty"`
-	Subsegments []Segment                         `json:"subsegments,omitempty"`
+	TraceID     *string                   `json:"trace_id,omitempty"`
+	EndTime     *float64                  `json:"end_time,omitempty"`
+	InProgress  *bool                     `json:"in_progress,omitempty"`
+	HTTP        *HTTPData                 `json:"http,omitempty"`
+	Fault       *bool                     `json:"fault,omitempty"`
+	Error       *bool                     `json:"error,omitempty"`
+	Throttle    *bool                     `json:"throttle,omitempty"`
+	Cause       *CauseData                `json:"cause,omitempty"`
+	AWS         *AWSData                  `json:"aws,omitempty"`
+	Annotations map[string]any            `json:"annotations,omitempty"`
+	Metadata    map[string]map[string]any `json:"metadata,omitempty"`
+	Subsegments []Segment                 `json:"subsegments,omitempty"`
 
 	// (for both embedded and independent) subsegment-only (optional) fields.
 	// Please refer to https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-subsegments
@@ -111,13 +96,14 @@ type AWSData struct {
 	XRay      *XRayMetaData      `json:"xray,omitempty"`
 
 	// For both segment and subsegments
-	AccountID    *string `json:"account_id,omitempty"`
-	Operation    *string `json:"operation,omitempty"`
-	RemoteRegion *string `json:"region,omitempty"`
-	RequestID    *string `json:"request_id,omitempty"`
-	QueueURL     *string `json:"queue_url,omitempty"`
-	TableName    *string `json:"table_name,omitempty"`
-	Retries      *int64  `json:"retries,omitempty"`
+	AccountID    *string  `json:"account_id,omitempty"`
+	Operation    *string  `json:"operation,omitempty"`
+	RemoteRegion *string  `json:"region,omitempty"`
+	RequestID    *string  `json:"request_id,omitempty"`
+	QueueURL     *string  `json:"queue_url,omitempty"`
+	TableName    *string  `json:"table_name,omitempty"`
+	TableNames   []string `json:"table_names,omitempty"`
+	Retries      *int64   `json:"retries,omitempty"`
 }
 
 // EC2Metadata represents the EC2 metadata field
@@ -233,8 +219,8 @@ type RequestData struct {
 
 // ResponseData provides the shape for unmarshalling the response field.
 type ResponseData struct {
-	Status        *int64      `json:"status,omitempty"`
-	ContentLength interface{} `json:"content_length,omitempty"`
+	Status        *int64 `json:"status,omitempty"`
+	ContentLength any    `json:"content_length,omitempty"`
 }
 
 // ECSData provides the shape for unmarshalling the ecs field.
@@ -279,4 +265,11 @@ type ServiceData struct {
 	Version         *string `json:"version,omitempty"`
 	CompilerVersion *string `json:"compiler_version,omitempty"`
 	Compiler        *string `json:"compiler,omitempty"`
+}
+
+// SpanLinkData provides the shape for unmarshalling the span links in the span link field.
+type SpanLinkData struct {
+	TraceID    *string        `json:"trace_id"`
+	SpanID     *string        `json:"id"`
+	Attributes map[string]any `json:"attributes,omitempty"`
 }

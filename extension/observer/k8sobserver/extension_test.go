@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobserver
 
@@ -26,6 +15,7 @@ import (
 	framework "k8s.io/client-go/tools/cache/testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
@@ -50,13 +40,102 @@ func TestNewExtension(t *testing.T) {
 	require.NotNil(t, ext)
 }
 
+func TestExtensionObserveServices(t *testing.T) {
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+	config.ObservePods = false // avoid causing data race when multiple test cases running in the same process using podListerWatcher
+	mockServiceHost(t, config)
+
+	set := extensiontest.NewNopCreateSettings()
+	set.ID = component.NewID(metadata.Type)
+	ext, err := newObserver(config, set)
+	require.NoError(t, err)
+	require.NotNil(t, ext)
+
+	obs := ext.(*k8sObserver)
+	serviceListerWatcher := framework.NewFakeControllerSource()
+	obs.serviceListerWatcher = serviceListerWatcher
+
+	serviceListerWatcher.Add(serviceWithClusterIP)
+
+	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+	sink := &endpointSink{}
+	obs.ListAndWatch(sink)
+
+	requireSink(t, sink, func() bool {
+		return len(sink.added) == 1
+	})
+
+	assert.Equal(t, observer.Endpoint{
+		ID:     "k8s_observer/service-1-UID",
+		Target: "service-1.default.svc.cluster.local",
+		Details: &observer.K8sService{
+			Name:      "service-1",
+			Namespace: "default",
+			UID:       "service-1-UID",
+			Labels: map[string]string{
+				"env": "prod",
+			},
+			ClusterIP:   "1.2.3.4",
+			ServiceType: "ClusterIP",
+		},
+	}, sink.added[0])
+
+	serviceListerWatcher.Modify(serviceWithClusterIPV2)
+
+	requireSink(t, sink, func() bool {
+		return len(sink.changed) == 1
+	})
+
+	assert.Equal(t, observer.Endpoint{
+		ID:     "k8s_observer/service-1-UID",
+		Target: "service-1.default.svc.cluster.local",
+		Details: &observer.K8sService{
+			Name:      "service-1",
+			Namespace: "default",
+			UID:       "service-1-UID",
+			Labels: map[string]string{
+				"env":             "prod",
+				"service-version": "2",
+			},
+			ClusterIP:   "1.2.3.4",
+			ServiceType: "ClusterIP",
+		},
+	}, sink.changed[0])
+
+	serviceListerWatcher.Delete(serviceWithClusterIPV2)
+
+	requireSink(t, sink, func() bool {
+		return len(sink.removed) == 1
+	})
+
+	assert.Equal(t, observer.Endpoint{
+		ID:     "k8s_observer/service-1-UID",
+		Target: "service-1.default.svc.cluster.local",
+		Details: &observer.K8sService{
+			Name:      "service-1",
+			Namespace: "default",
+			UID:       "service-1-UID",
+			Labels: map[string]string{
+				"env":             "prod",
+				"service-version": "2",
+			},
+			ClusterIP:   "1.2.3.4",
+			ServiceType: "ClusterIP",
+		},
+	}, sink.removed[0])
+
+	require.NoError(t, ext.Shutdown(context.Background()))
+}
+
 func TestExtensionObservePods(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
 	mockServiceHost(t, config)
 
 	set := extensiontest.NewNopCreateSettings()
-	set.ID = component.NewID(typeStr)
+	set.ID = component.NewID(metadata.Type)
 	ext, err := newObserver(config, set)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
@@ -135,10 +214,11 @@ func TestExtensionObservePods(t *testing.T) {
 func TestExtensionObserveNodes(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
+	config.ObservePods = false // avoid causing data race when multiple test cases running in the same process using podListerWatcher
 	mockServiceHost(t, config)
 
 	set := extensiontest.NewNopCreateSettings()
-	set.ID = component.NewID(typeStr)
+	set.ID = component.NewID(metadata.Type)
 	ext, err := newObserver(config, set)
 	require.NoError(t, err)
 	require.NotNil(t, ext)

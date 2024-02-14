@@ -1,0 +1,19 @@
+type: signalfx
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib, splunk, observiq, aws]
+  codeowners:
+    active: [dmitryax, crobert-1]
+tests:
+  config:
+    access_token: "my_fake_token"
+    ingest_url: "http://localhost:1234"
+    api_url: "http://localhost:1234"
+    sending_queue:
+      enabled: false
+    retry_on_failure:
+      enabled: false
+  expect_consumer_error: true

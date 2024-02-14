@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchexporter
 
@@ -25,6 +14,11 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type itemRequest struct {
@@ -50,7 +44,7 @@ type httpTestError struct {
 	cause   error
 }
 
-const currentESVersion = "8.4.0"
+const currentESVersion = "7.17.7"
 
 func (e *httpTestError) Error() string {
 	return fmt.Sprintf("http request failed (status=%v): %v", e.Status(), e.Message())
@@ -137,8 +131,8 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 		w.Header().Add("X-Elastic-Product", "Elasticsearch")
 
 		enc := json.NewEncoder(w)
-		return enc.Encode(map[string]interface{}{
-			"version": map[string]interface{}{
+		return enc.Encode(map[string]any{
+			"version": map[string]any{
 				"number": currentESVersion,
 			},
 		})
@@ -222,4 +216,64 @@ func itemsHasError(resp []itemResponse) bool {
 		}
 	}
 	return false
+}
+
+func newLogsWithAttributeAndResourceMap(attrMp map[string]string, resMp map[string]string) plog.Logs {
+	logs := plog.NewLogs()
+	resourceSpans := logs.ResourceLogs()
+	rs := resourceSpans.AppendEmpty()
+
+	scopeAttr := rs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes()
+	fillResourceAttributeMap(scopeAttr, attrMp)
+
+	resAttr := rs.Resource().Attributes()
+	fillResourceAttributeMap(resAttr, resMp)
+
+	return logs
+}
+
+func newTracesWithAttributeAndResourceMap(attrMp map[string]string, resMp map[string]string) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	resourceSpans := traces.ResourceSpans()
+	rs := resourceSpans.AppendEmpty()
+
+	scopeAttr := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes()
+	fillResourceAttributeMap(scopeAttr, attrMp)
+
+	resAttr := rs.Resource().Attributes()
+	fillResourceAttributeMap(resAttr, resMp)
+
+	return traces
+}
+
+func fillResourceAttributeMap(attrs pcommon.Map, mp map[string]string) {
+	attrs.EnsureCapacity(len(mp))
+	for k, v := range mp {
+		attrs.PutStr(k, v)
+	}
+}
+
+func TestGetSuffixTime(t *testing.T) {
+	defaultCfg := createDefaultConfig().(*Config)
+	defaultCfg.LogstashFormat.Enabled = true
+	testTime := time.Date(2023, 12, 2, 10, 10, 10, 1, time.UTC)
+	index, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.NoError(t, err)
+	assert.Equal(t, index, "logs-generic-default-2023.12.02")
+
+	defaultCfg.LogsIndex = "logstash"
+	defaultCfg.LogstashFormat.PrefixSeparator = "."
+	otelLogsIndex, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.NoError(t, err)
+	assert.Equal(t, otelLogsIndex, "logstash.2023.12.02")
+
+	defaultCfg.LogstashFormat.DateFormat = "%Y-%m-%d"
+	newOtelLogsIndex, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.NoError(t, err)
+	assert.Equal(t, newOtelLogsIndex, "logstash.2023-12-02")
+
+	defaultCfg.LogstashFormat.DateFormat = "%d/%m/%Y"
+	newOtelLogsIndexWithSpecDataFormat, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
+	assert.NoError(t, err)
+	assert.Equal(t, newOtelLogsIndexWithSpecDataFormat, "logstash.02/12/2023")
 }

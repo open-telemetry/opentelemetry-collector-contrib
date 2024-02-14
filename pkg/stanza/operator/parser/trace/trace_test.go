@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package trace
 
@@ -142,7 +131,7 @@ func TestProcess(t *testing.T) {
 				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"app_span_id":       "480140f3d770a5ae32f0a22b6a812cff",
 					"app_trace_id":      "92c3792d54ba94f3",
 					"trace_flags_field": "01",
@@ -152,7 +141,7 @@ func TestProcess(t *testing.T) {
 				SpanID:     testSpanIDBytes,
 				TraceID:    testTraceIDBytes,
 				TraceFlags: testTraceFlagsBytes,
-				Body: map[string]interface{}{
+				Body: map[string]any{
 					"app_span_id":       "480140f3d770a5ae32f0a22b6a812cff",
 					"app_trace_id":      "92c3792d54ba94f3",
 					"trace_flags_field": "01",
@@ -176,8 +165,8 @@ func TestProcess(t *testing.T) {
 func TestTraceParserParse(t *testing.T) {
 	cases := []struct {
 		name           string
-		inputRecord    map[string]interface{}
-		expectedRecord map[string]interface{}
+		inputRecord    map[string]any
+		expectedRecord map[string]any
 		expectErr      bool
 		traceID        string
 		spanID         string
@@ -185,12 +174,12 @@ func TestTraceParserParse(t *testing.T) {
 	}{
 		{
 			"AllFields",
-			map[string]interface{}{
+			map[string]any{
 				"trace_id":    "480140f3d770a5ae32f0a22b6a812cff",
 				"span_id":     "92c3792d54ba94f3",
 				"trace_flags": "01",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"trace_id":    "480140f3d770a5ae32f0a22b6a812cff",
 				"span_id":     "92c3792d54ba94f3",
 				"trace_flags": "01",
@@ -202,12 +191,12 @@ func TestTraceParserParse(t *testing.T) {
 		},
 		{
 			"WrongFields",
-			map[string]interface{}{
+			map[string]any{
 				"traceId":    "480140f3d770a5ae32f0a22b6a812cff",
 				"traceFlags": "01",
 				"spanId":     "92c3792d54ba94f3",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"traceId":    "480140f3d770a5ae32f0a22b6a812cff",
 				"spanId":     "92c3792d54ba94f3",
 				"traceFlags": "01",
@@ -219,10 +208,10 @@ func TestTraceParserParse(t *testing.T) {
 		},
 		{
 			"OnlyTraceId",
-			map[string]interface{}{
+			map[string]any{
 				"trace_id": "480140f3d770a5ae32f0a22b6a812cff",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"trace_id": "480140f3d770a5ae32f0a22b6a812cff",
 			},
 			false,
@@ -232,12 +221,12 @@ func TestTraceParserParse(t *testing.T) {
 		},
 		{
 			"WrongTraceIdFormat",
-			map[string]interface{}{
+			map[string]any{
 				"trace_id":    "foo_bar",
 				"span_id":     "92c3792d54ba94f3",
 				"trace_flags": "01",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"trace_id":    "foo_bar",
 				"span_id":     "92c3792d54ba94f3",
 				"trace_flags": "01",
@@ -249,12 +238,12 @@ func TestTraceParserParse(t *testing.T) {
 		},
 		{
 			"WrongTraceFlagFormat",
-			map[string]interface{}{
+			map[string]any{
 				"trace_id":    "480140f3d770a5ae32f0a22b6a812cff",
 				"span_id":     "92c3792d54ba94f3",
 				"trace_flags": "foo_bar",
 			},
-			map[string]interface{}{
+			map[string]any{
 				"trace_id":    "480140f3d770a5ae32f0a22b6a812cff",
 				"span_id":     "92c3792d54ba94f3",
 				"trace_flags": "foo_bar",

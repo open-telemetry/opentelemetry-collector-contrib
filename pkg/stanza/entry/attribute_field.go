@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package entry // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 
@@ -64,7 +53,7 @@ func (f AttributeField) String() string {
 }
 
 // Get will return the attribute value and a boolean indicating if it exists
-func (f AttributeField) Get(entry *Entry) (interface{}, bool) {
+func (f AttributeField) Get(entry *Entry) (any, bool) {
 	if entry.Attributes == nil {
 		return "", false
 	}
@@ -79,7 +68,7 @@ func (f AttributeField) Get(entry *Entry) (interface{}, bool) {
 	}
 
 	for _, key := range f.Keys[1:] {
-		currentMap, ok := currentValue.(map[string]interface{})
+		currentMap, ok := currentValue.(map[string]any)
 		if !ok {
 			return nil, false
 		}
@@ -95,12 +84,12 @@ func (f AttributeField) Get(entry *Entry) (interface{}, bool) {
 
 // Set will set a value on an entry's attributes using the field.
 // If a key already exists, it will be overwritten.
-func (f AttributeField) Set(entry *Entry, value interface{}) error {
+func (f AttributeField) Set(entry *Entry, value any) error {
 	if entry.Attributes == nil {
-		entry.Attributes = map[string]interface{}{}
+		entry.Attributes = map[string]any{}
 	}
 
-	mapValue, isMapValue := value.(map[string]interface{})
+	mapValue, isMapValue := value.(map[string]any)
 	if isMapValue {
 		f.Merge(entry, mapValue)
 		return nil
@@ -123,7 +112,7 @@ func (f AttributeField) Set(entry *Entry, value interface{}) error {
 
 // Merge will attempt to merge the contents of a map into an entry's attributes.
 // It will overwrite any intermediate values as necessary.
-func (f AttributeField) Merge(entry *Entry, mapValues map[string]interface{}) {
+func (f AttributeField) Merge(entry *Entry, mapValues map[string]any) {
 	currentMap := entry.Attributes
 
 	for _, key := range f.Keys {
@@ -137,7 +126,7 @@ func (f AttributeField) Merge(entry *Entry, mapValues map[string]interface{}) {
 
 // Delete removes a value from an entry's attributes using the field.
 // It will return the deleted value and whether the field existed.
-func (f AttributeField) Delete(entry *Entry) (interface{}, bool) {
+func (f AttributeField) Delete(entry *Entry) (any, bool) {
 	if entry.Attributes == nil {
 		return "", false
 	}
@@ -160,7 +149,7 @@ func (f AttributeField) Delete(entry *Entry) (interface{}, bool) {
 			return currentValue, true
 		}
 
-		currentMap, ok = currentValue.(map[string]interface{})
+		currentMap, ok = currentValue.(map[string]any)
 		if !ok {
 			break
 		}
@@ -194,7 +183,7 @@ func (f *AttributeField) UnmarshalJSON(raw []byte) error {
 }
 
 // UnmarshalYAML will attempt to unmarshal a field from YAML.
-func (f *AttributeField) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (f *AttributeField) UnmarshalYAML(unmarshal func(any) error) error {
 	var value string
 	if err := unmarshal(&value); err != nil {
 		return fmt.Errorf("the field is not a string: %w", err)

@@ -1,0 +1,10 @@
+type: f5cloud
+
+status:
+  class: exporter
+  stability:
+    deprecated: [traces, metrics, logs]
+  distributions: [contrib, observiq]
+  codeowners:
+    active: []
+    emeritus: [gramidt]

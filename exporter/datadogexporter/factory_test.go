@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datadogexporter
 
@@ -18,21 +7,63 @@ import (
 	"context"
 	"encoding/json"
 	"path/filepath"
+	"sync"
 	"testing"
 
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
+
+var _ inframetadata.Pusher = (*testPusher)(nil)
+
+type testPusher struct {
+	mu       sync.Mutex
+	payloads []payload.HostMetadata
+	stopped  bool
+	logger   *zap.Logger
+	t        *testing.T
+}
+
+func newTestPusher(t *testing.T) *testPusher {
+	return &testPusher{
+		logger: zaptest.NewLogger(t),
+		t:      t,
+	}
+}
+
+func (p *testPusher) Push(_ context.Context, hm payload.HostMetadata) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.stopped {
+		p.logger.Error("Trying to push payload after stopping", zap.Any("payload", hm))
+		p.t.Fail()
+	}
+	p.logger.Info("Storing host metadata payload", zap.Any("payload", hm))
+	p.payloads = append(p.payloads, hm)
+	return nil
+}
+
+func (p *testPusher) Payloads() []payload.HostMetadata {
+	p.mu.Lock()
+	p.stopped = true
+	defer p.mu.Unlock()
+	return p.payloads
+}
 
 // Test that the factory creates the default configuration
 func TestCreateDefaultConfig(t *testing.T) {
@@ -41,7 +72,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		TimeoutSettings: defaulttimeoutSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 
 		API: APIConfig{
@@ -54,11 +85,12 @@ func TestCreateDefaultConfig(t *testing.T) {
 			},
 			DeltaTTL: 3600,
 			HistConfig: HistogramConfig{
-				Mode:         "distributions",
-				SendCountSum: false,
+				Mode:             "distributions",
+				SendAggregations: false,
 			},
 			SumConfig: SumConfig{
-				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+				CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+				InitialCumulativeMonotonicMode: InitialValueModeAuto,
 			},
 			SummaryConfig: SummaryConfig{
 				Mode: SummaryModeGauges,
@@ -98,10 +130,10 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "default"),
+			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
 				TimeoutSettings: defaulttimeoutSettings(),
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				API: APIConfig{
 					Key:              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -115,11 +147,12 @@ func TestLoadConfig(t *testing.T) {
 					},
 					DeltaTTL: 3600,
 					HistConfig: HistogramConfig{
-						Mode:         "distributions",
-						SendCountSum: false,
+						Mode:             "distributions",
+						SendAggregations: false,
 					},
 					SumConfig: SumConfig{
-						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+						CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+						InitialCumulativeMonotonicMode: InitialValueModeAuto,
 					},
 					SummaryConfig: SummaryConfig{
 						Mode: SummaryModeGauges,
@@ -145,10 +178,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "api"),
+			id: component.NewIDWithName(metadata.Type, "api"),
 			expected: &Config{
 				TimeoutSettings: defaulttimeoutSettings(),
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
@@ -164,11 +197,12 @@ func TestLoadConfig(t *testing.T) {
 					},
 					DeltaTTL: 3600,
 					HistConfig: HistogramConfig{
-						Mode:         "distributions",
-						SendCountSum: false,
+						Mode:             "distributions",
+						SendAggregations: false,
 					},
 					SumConfig: SumConfig{
-						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+						CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+						InitialCumulativeMonotonicMode: InitialValueModeAuto,
 					},
 					SummaryConfig: SummaryConfig{
 						Mode: SummaryModeGauges,
@@ -184,6 +218,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					SpanNameAsResourceName: true,
 					IgnoreResources:        []string{},
+					TraceBuffer:            10,
 				},
 				Logs: LogsConfig{
 					TCPAddr: confignet.TCPAddr{
@@ -198,10 +233,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "api2"),
+			id: component.NewIDWithName(metadata.Type, "api2"),
 			expected: &Config{
 				TimeoutSettings: defaulttimeoutSettings(),
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
@@ -217,11 +252,12 @@ func TestLoadConfig(t *testing.T) {
 					},
 					DeltaTTL: 3600,
 					HistConfig: HistogramConfig{
-						Mode:         "distributions",
-						SendCountSum: false,
+						Mode:             "distributions",
+						SendAggregations: false,
 					},
 					SumConfig: SumConfig{
-						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+						CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+						InitialCumulativeMonotonicMode: InitialValueModeAuto,
 					},
 					SummaryConfig: SummaryConfig{
 						Mode: SummaryModeGauges,
@@ -347,7 +383,7 @@ func TestOverrideEndpoints(t *testing.T) {
 	for _, testInstance := range tests {
 		t.Run(testInstance.componentID, func(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
-			sub, err := cm.Sub(component.NewIDWithName(typeStr, testInstance.componentID).String())
+			sub, err := cm.Sub(component.NewIDWithName(metadata.Type, testInstance.componentID).String())
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -370,7 +406,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "api").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -403,7 +439,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "api").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -448,7 +484,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 
 		texp, err := factory.CreateTracesExporter(
@@ -456,7 +492,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, texp)
 
 		lexp, err := factory.CreateLogsExporter(
@@ -464,7 +500,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, lexp)
 	})
 }
@@ -483,7 +519,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "api").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -528,7 +564,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 
 		texp, err := factory.CreateTracesExporter(
@@ -536,7 +572,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, texp)
 
 		lexp, err := factory.CreateLogsExporter(
@@ -544,7 +580,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, lexp)
 	})
 }
@@ -558,7 +594,7 @@ func TestCreateAPILogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "api").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -585,7 +621,7 @@ func TestOnlyMetadata(t *testing.T) {
 	ctx := context.Background()
 	cfg := &Config{
 		TimeoutSettings: defaulttimeoutSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 
 		API:          APIConfig{Key: "notnull"},
@@ -627,7 +663,7 @@ func TestOnlyMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	body := <-server.MetadataChan
-	var recvMetadata metadata.HostMetadata
+	var recvMetadata payload.HostMetadata
 	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")

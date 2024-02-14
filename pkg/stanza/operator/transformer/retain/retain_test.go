@@ -1,18 +1,7 @@
-package retain
-
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
+
+package retain
 
 import (
 	"context"
@@ -40,9 +29,9 @@ func TestBuildAndProcess(t *testing.T) {
 		e := entry.New()
 		e.ObservedTimestamp = now
 		e.Timestamp = time.Unix(1586632809, 0)
-		e.Body = map[string]interface{}{
+		e.Body = map[string]any{
 			"key": "val",
-			"nested": map[string]interface{}{
+			"nested": map[string]any{
 				"nestedkey": "nestedval",
 			},
 		}
@@ -61,7 +50,7 @@ func TestBuildAndProcess(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": "val",
 				}
 				return e
@@ -78,12 +67,12 @@ func TestBuildAndProcess(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": "val",
-					"nested": map[string]interface{}{
+					"nested": map[string]any{
 						"nestedkey": "nestedval",
 					},
-					"nested2": map[string]interface{}{
+					"nested2": map[string]any{
 						"nestedkey": "nestedval",
 					},
 				}
@@ -91,9 +80,9 @@ func TestBuildAndProcess(t *testing.T) {
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": "val",
-					"nested2": map[string]interface{}{
+					"nested2": map[string]any{
 						"nestedkey": "nestedval",
 					},
 				}
@@ -115,30 +104,30 @@ func TestBuildAndProcess(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"foo": "bar",
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+					"one": map[string]any{
+						"two": map[string]any{
 							"keepme": 1,
 						},
 						"deleteme": "yes",
 					},
 					"hello": "world",
 				}
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"foo": "bar",
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+					"one": map[string]any{
+						"two": map[string]any{
 							"keepme": 1,
 						},
 						"deleteme": "yes",
 					},
 					"hello": "world",
 				}
-				e.Resource = map[string]interface{}{
+				e.Resource = map[string]any{
 					"foo": "bar",
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+					"one": map[string]any{
+						"two": map[string]any{
 							"keepme": 1,
 						},
 						"deleteme": "yes",
@@ -149,26 +138,26 @@ func TestBuildAndProcess(t *testing.T) {
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"foo": "bar",
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+					"one": map[string]any{
+						"two": map[string]any{
 							"keepme": 1,
 						},
 					},
 				}
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"foo": "bar",
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+					"one": map[string]any{
+						"two": map[string]any{
 							"keepme": 1,
 						},
 					},
 				}
-				e.Resource = map[string]interface{}{
+				e.Resource = map[string]any{
 					"foo": "bar",
-					"one": map[string]interface{}{
-						"two": map[string]interface{}{
+					"one": map[string]any{
+						"two": map[string]any{
 							"keepme": 1,
 						},
 					},
@@ -186,12 +175,12 @@ func TestBuildAndProcess(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": "val",
-					"nested": map[string]interface{}{
+					"nested": map[string]any{
 						"nestedkey": "nestedval",
 					},
-					"nested2": map[string]interface{}{
+					"nested2": map[string]any{
 						"nestedkey": "nestedval",
 					},
 				}
@@ -199,8 +188,8 @@ func TestBuildAndProcess(t *testing.T) {
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
-					"nested2": map[string]interface{}{
+				e.Body = map[string]any{
+					"nested2": map[string]any{
 						"nestedkey": "nestedval",
 					},
 				}
@@ -217,12 +206,12 @@ func TestBuildAndProcess(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": "val",
-					"nested": map[string]interface{}{
+					"nested": map[string]any{
 						"nestedkey": "nestedval",
 					},
-					"nested2": map[string]interface{}{
+					"nested2": map[string]any{
 						"nestedkey2": "nestedval",
 					},
 				}
@@ -230,8 +219,8 @@ func TestBuildAndProcess(t *testing.T) {
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Body = map[string]interface{}{
-					"nested2": map[string]interface{}{
+				e.Body = map[string]any{
+					"nested2": map[string]any{
 						"nestedkey2": "nestedval",
 					},
 				}
@@ -248,14 +237,14 @@ func TestBuildAndProcess(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "val",
 				}
 				return e
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key": "val",
 				}
 				return e
@@ -272,7 +261,7 @@ func TestBuildAndProcess(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key1": "val",
 					"key2": "val",
 					"key3": "val",
@@ -281,7 +270,7 @@ func TestBuildAndProcess(t *testing.T) {
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key1": "val",
 					"key2": "val",
 				}
@@ -298,14 +287,14 @@ func TestBuildAndProcess(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]interface{}{
+				e.Resource = map[string]any{
 					"key": "val",
 				}
 				return e
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]interface{}{
+				e.Resource = map[string]any{
 					"key": "val",
 				}
 				return e
@@ -322,7 +311,7 @@ func TestBuildAndProcess(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]interface{}{
+				e.Resource = map[string]any{
 					"key1": "val",
 					"key2": "val",
 					"key3": "val",
@@ -331,7 +320,7 @@ func TestBuildAndProcess(t *testing.T) {
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]interface{}{
+				e.Resource = map[string]any{
 					"key1": "val",
 					"key2": "val",
 				}
@@ -350,11 +339,11 @@ func TestBuildAndProcess(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]interface{}{
+				e.Resource = map[string]any{
 					"key1": "val",
 					"key2": "val",
 				}
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key3": "val",
 					"key4": "val",
 				}
@@ -362,13 +351,13 @@ func TestBuildAndProcess(t *testing.T) {
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]interface{}{
+				e.Resource = map[string]any{
 					"key1": "val",
 				}
-				e.Attributes = map[string]interface{}{
+				e.Attributes = map[string]any{
 					"key3": "val",
 				}
-				e.Body = map[string]interface{}{
+				e.Body = map[string]any{
 					"key": "val",
 				}
 				return e

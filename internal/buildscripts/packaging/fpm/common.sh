@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
 FPM_DIR="$( cd "$( dirname ${BASH_SOURCE[0]} )" && pwd )"
 
 PKG_NAME="otel-contrib-collector"
@@ -14,7 +17,7 @@ PKG_GROUP="otel"
 SERVICE_NAME="otel-contrib-collector"
 PROCESS_NAME="otelcontribcol"
 
-CONFIG_PATH="$REPO_DIR/examples/tracing/otel-collector-config.yml"
+CONFIG_PATH="$REPO_DIR/examples/demo/otel-collector-config.yaml"
 SERVICE_PATH="$FPM_DIR/$SERVICE_NAME.service"
 ENVFILE_PATH="$FPM_DIR/$SERVICE_NAME.conf"
 PREINSTALL_PATH="$FPM_DIR/preinstall.sh"
@@ -28,8 +31,8 @@ docker_cp() {
     local dest_dir="$( dirname "$dest" )"
 
     echo "Copying $src to $container:$dest ..."
-    docker exec $container mkdir -p "$dest_dir"
-    docker cp "$src" $container:"$dest"
+    podman exec $container mkdir -p "$dest_dir"
+    podman cp "$src" $container:"$dest"
 }
 
 install_pkg() {
@@ -40,9 +43,9 @@ install_pkg() {
     echo "Installing $pkg_base ..."
     docker_cp $container "$pkg_path" /tmp/$pkg_base
     if [[ "${pkg_base##*.}" = "deb" ]]; then
-        docker exec $container dpkg -i /tmp/$pkg_base
+        podman exec $container dpkg -i /tmp/$pkg_base
     else
-        docker exec $container rpm -ivh /tmp/$pkg_base
+        podman exec $container rpm -ivh /tmp/$pkg_base
     fi
 }
 
@@ -53,8 +56,8 @@ uninstall_pkg() {
 
     echo "Uninstalling $pkg_name ..."
     if [[ "$pkg_type" = "deb" ]]; then
-        docker exec $container dpkg -r $pkg_name
+        podman exec $container dpkg -r $pkg_name
     else
-        docker exec $container rpm -e $pkg_name
+        podman exec $container rpm -e $pkg_name
     fi
 }

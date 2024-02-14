@@ -1,0 +1,13 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asDouble: 123.456
+            name: gauge.one
+          - name: sum.one
+            sum:
+              dataPoints:
+                - asInt: "123"
+        scope: {}

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package zipkinv2 // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 
@@ -166,8 +155,8 @@ func populateSpanStatus(tags map[string]string, status ptrace.Status) {
 	}
 
 	if val, ok := tags[tracetranslator.TagError]; ok {
+		status.SetCode(ptrace.StatusCodeError)
 		if val == "true" {
-			status.SetCode(ptrace.StatusCodeError)
 			delete(tags, tracetranslator.TagError)
 		}
 	}
@@ -235,7 +224,7 @@ func zTagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
 			jsonParts := parts[3 : partCnt-1]
 			jsonStr = strings.Join(jsonParts, "|")
 		}
-		var attrs map[string]interface{}
+		var attrs map[string]any
 		if err := json.Unmarshal([]byte(jsonStr), &attrs); err != nil {
 			return err
 		}
@@ -272,7 +261,7 @@ func populateSpanEvents(zspan *zipkinmodel.SpanModel, events ptrace.SpanEventSli
 			jsonParts := parts[1 : partCnt-1]
 			jsonStr = strings.Join(jsonParts, "|")
 		}
-		var attrs map[string]interface{}
+		var attrs map[string]any
 		if err := json.Unmarshal([]byte(jsonStr), &attrs); err != nil {
 			return err
 		}
@@ -289,7 +278,7 @@ func populateSpanEvents(zspan *zipkinmodel.SpanModel, events ptrace.SpanEventSli
 	return nil
 }
 
-func jsonMapToAttributeMap(attrs map[string]interface{}, dest pcommon.Map) error {
+func jsonMapToAttributeMap(attrs map[string]any, dest pcommon.Map) error {
 	for key, val := range attrs {
 		if s, ok := val.(string); ok {
 			dest.PutStr(key, s)
@@ -475,4 +464,9 @@ var statusCodeValue = map[string]int32{
 	"STATUS_CODE_UNSET": 0,
 	"STATUS_CODE_OK":    1,
 	"STATUS_CODE_ERROR": 2,
+	// As reported in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14965
+	// The Zipkin exporter used a different set of names when serializing span state.
+	"Unset": 0,
+	"Ok":    1,
+	"Error": 2,
 }

@@ -1,4 +1,12 @@
-name: nginxreceiver
+type: nginx
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski]
 
 attributes:
   state:
@@ -18,7 +26,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   nginx.connections_accepted:
     enabled: true
@@ -27,7 +35,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   nginx.connections_handled:
     enabled: true
@@ -36,12 +44,17 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   nginx.connections_current:
     enabled: true
     description: The current number of nginx connections by state
     unit: connections
-    gauge:
+    sum:
       value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
     attributes: [state]
+
+tests:
+  config:
