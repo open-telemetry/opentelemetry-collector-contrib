@@ -26,12 +26,14 @@ func removeAccessToken(dest pmetric.ResourceMetrics) {
 // Within this resource specifically the scope metric at index 1 contain Histograms.
 // Lastly, the scope metric at index 1 has two Histogram type metric which can be found at index 0 and 2.
 func matchedHistogramResourceMetrics(md pmetric.Metrics) (matchedRMIdx map[int]map[int][]int) {
-	matchedRMIdx = map[int]map[int][]int{}
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		matchedSMIdx := matchedHistogramScopeMetrics(rm)
 		if len(matchedSMIdx) > 0 {
+			if matchedRMIdx == nil {
+				matchedRMIdx = map[int]map[int][]int{}
+			}
 			matchedRMIdx[i] = matchedSMIdx
 		}
 	}
@@ -45,12 +47,14 @@ func matchedHistogramResourceMetrics(md pmetric.Metrics) (matchedRMIdx map[int]m
 // The above output can be interpreted as scope metrics at index 1 contains Histogram metrics.
 // And that the scope metric at index 1 has two Histogram type metric which can be found at index 0 and 2.
 func matchedHistogramScopeMetrics(rm pmetric.ResourceMetrics) (matchedSMIdx map[int][]int) {
-	matchedSMIdx = map[int][]int{}
 	ilms := rm.ScopeMetrics()
 	for i := 0; i < ilms.Len(); i++ {
 		ilm := ilms.At(i)
 		matchedMetricsIdx := matchedHistogramMetrics(ilm)
 		if len(matchedMetricsIdx) > 0 {
+			if matchedSMIdx == nil {
+				matchedSMIdx = map[int][]int{}
+			}
 			matchedSMIdx[i] = matchedMetricsIdx
 		}
 	}
@@ -62,7 +66,6 @@ func matchedHistogramScopeMetrics(rm pmetric.ResourceMetrics) (matchedSMIdx map[
 // Example output [0,2].
 // The above output can be interpreted as input scope metric has Histogram type metric at index 0 and 2.
 func matchedHistogramMetrics(ilm pmetric.ScopeMetrics) (matchedMetricsIdx []int) {
-	matchedMetricsIdx = []int{}
 	ms := ilm.Metrics()
 	for i := 0; i < ms.Len(); i++ {
 		metric := ms.At(i)
