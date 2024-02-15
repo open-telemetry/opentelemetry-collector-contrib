@@ -190,7 +190,7 @@ receiver/awsfirehosereceiver/                            @open-telemetry/collect
 receiver/awsxrayreceiver/                                @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 receiver/azureblobreceiver/                              @open-telemetry/collector-contrib-approvers @eedorenko @mx-psi
 receiver/azureeventhubreceiver/                          @open-telemetry/collector-contrib-approvers @atoulme @djaglowski
-receiver/azuremonitorreceiver/                           @open-telemetry/collector-contrib-approvers @altuner @codeboten
+receiver/azuremonitorreceiver/                           @open-telemetry/collector-contrib-approvers @nslaughter @codeboten
 receiver/bigipreceiver/                                  @open-telemetry/collector-contrib-approvers @djaglowski @StefanKurek
 receiver/carbonreceiver/                                 @open-telemetry/collector-contrib-approvers @aboguszewski-sumo
 receiver/chronyreceiver/                                 @open-telemetry/collector-contrib-approvers @MovieStoreGuy @jamesmoessis

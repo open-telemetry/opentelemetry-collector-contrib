@@ -47,7 +47,7 @@ var metricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegis
 // noAPMStatsFeatureGate causes the trace consumer to skip APM stats computation.
 var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.DisableAPMStats",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Datadog Exporter will not compute APM Stats"),
 )
 
