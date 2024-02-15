@@ -193,18 +193,18 @@ func (s *azureScraper) loadCredentials() (err error) {
 func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	s.getResources(ctx)
-	resourcesIdsWithDefinitions := make(chan string)
+	resourcesIDsWithDefinitions := make(chan string)
 
 	go func() {
-		defer close(resourcesIdsWithDefinitions)
+		defer close(resourcesIDsWithDefinitions)
 		for resourceID := range s.resources {
 			s.getResourceMetricsDefinitions(ctx, resourceID)
-			resourcesIdsWithDefinitions <- resourceID
+			resourcesIDsWithDefinitions <- resourceID
 		}
 	}()
 
 	var wg sync.WaitGroup
-	for resourceID := range resourcesIdsWithDefinitions {
+	for resourceID := range resourcesIDsWithDefinitions {
 		wg.Add(1)
 		go func(resourceID string) {
 			defer wg.Done()

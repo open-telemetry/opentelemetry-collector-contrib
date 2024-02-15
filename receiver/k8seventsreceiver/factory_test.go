@@ -48,7 +48,7 @@ func TestCreateReceiver(t *testing.T) {
 	assert.Error(t, err)
 
 	// Override for test.
-	rCfg.makeClient = func(apiConf k8sconfig.APIConfig) (k8s.Interface, error) {
+	rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
 		return fake.NewSimpleClientset(), nil
 	}
 	r, err = createLogsReceiver(
