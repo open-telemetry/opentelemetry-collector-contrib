@@ -152,7 +152,7 @@ pkg/winperfcounters/                                     @open-telemetry/collect
 
 processor/attributesprocessor/                           @open-telemetry/collector-contrib-approvers @boostchicken
 processor/cumulativetodeltaprocessor/                    @open-telemetry/collector-contrib-approvers @TylerHelmuth
-processor/deltatocumulativeprocessor/                    @open-telemetry/collector-contrib-approvers @sh0rez
+processor/deltatocumulativeprocessor/                    @open-telemetry/collector-contrib-approvers @sh0rez @RichieSams
 processor/deltatorateprocessor/                          @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/filterprocessor/                               @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken
 processor/groupbyattrsprocessor/                         @open-telemetry/collector-contrib-approvers @rnishtala-sumo
