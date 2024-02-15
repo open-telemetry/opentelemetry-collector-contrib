@@ -4,6 +4,7 @@ package {{ .Package }}
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pentity"
 )
 
 // ResourceBuilder is a helper struct to build resources predefined in metadata.yaml.
@@ -11,6 +12,7 @@ import (
 type ResourceBuilder struct {
 	config ResourceAttributesConfig
 	res	pcommon.Resource
+	ent pentity.Entity
 }
 
 // NewResourceBuilder creates a new ResourceBuilder. This method should be called on the start of the application.

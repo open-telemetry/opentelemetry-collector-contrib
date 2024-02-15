@@ -52,7 +52,15 @@ resource_attributes:
       # A warning that will be displayed if the resource_attribute is configured by user in any way.
       # Should be used for deprecated optional resource_attributes that will be removed soon.
       if_configured:
+    # Optional: true if the attribute is identifying for the entity. See "entity" section.
+    entity_identifying: bool
 
+entity:
+  # Optional: the type of the entity to produce.
+  # If specified will produce an entity of this type. The Id of the entity will be
+  # composed of all resource attributes where "identifying=true" and all other resource
+  # attributes will be recorded as non-identifying attributes of the entity.
+  type: string
 
 # Optional: map of attribute definitions with the key being the attribute name and value
 # being described below.

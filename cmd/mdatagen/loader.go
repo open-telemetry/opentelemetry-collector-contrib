@@ -164,6 +164,9 @@ type attribute struct {
 	FullName attributeName `mapstructure:"-"`
 	// Warnings that will be shown to user under specified conditions.
 	Warnings warnings `mapstructure:"warnings"`
+	// EntityIdentifying is true if the attribute is identifying for the entity.
+	// See also entity struct.
+	EntityIdentifying bool `mapstructure:"entity_identifying"`
 }
 
 // Name returns actual name of the attribute that is set on the metric after applying NameOverride.
@@ -205,6 +208,10 @@ type tests struct {
 	ExpectConsumerError bool `mapstructure:"expect_consumer_error"`
 }
 
+type entity struct {
+	Type string `mapstructure:"type"`
+}
+
 type metadata struct {
 	// Type of the component.
 	Type string `mapstructure:"type"`
@@ -224,6 +231,8 @@ type metadata struct {
 	ScopeName string `mapstructure:"-"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
+
+	Entity entity `mapstructure:"entity"`
 
 	Tests *tests `mapstructure:"tests"`
 }
