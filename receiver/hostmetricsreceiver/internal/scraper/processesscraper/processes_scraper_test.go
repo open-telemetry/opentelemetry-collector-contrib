@@ -43,7 +43,7 @@ func TestScrape(t *testing.T) {
 		validate: validateRealData,
 	}, {
 		name:         "FakeData",
-		getMiscStats: func(ctx context.Context) (*load.MiscStat, error) { return &fakeData, nil },
+		getMiscStats: func(context.Context) (*load.MiscStat, error) { return &fakeData, nil },
 		getProcesses: func() ([]proc, error) { return fakeProcessesData, nil },
 		validate:     validateFakeData,
 	}, {
