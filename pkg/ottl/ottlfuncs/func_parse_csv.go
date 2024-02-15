@@ -47,15 +47,6 @@ func (p ParseCSVArguments[K]) validate() error {
 		}
 	}
 
-	if !p.Mode.IsEmpty() {
-		mode := p.Mode.Get()
-		switch mode {
-		case parseCSVModeStrict, parseCSVModeLazyQuotes, parseCSVModeIgnoreQuotes: //OK
-		default:
-			return fmt.Errorf("unknown mode: %s", mode)
-		}
-	}
-
 	return nil
 }
 
@@ -90,10 +81,24 @@ func createParseCSVFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 		mode = args.Mode.Get()
 	}
 
-	return parseCSV(args.Target, args.Header, delimiter, headerDelimiter, mode), nil
+	var parseRow parseCSVRowFunc
+	switch mode {
+	case parseCSVModeStrict:
+		parseRow = parseCSVRow(false)
+	case parseCSVModeLazyQuotes:
+		parseRow = parseCSVRow(true)
+	case parseCSVModeIgnoreQuotes:
+		parseRow = parseCSVRowIgnoreQuotes()
+	default:
+		return nil, fmt.Errorf("unknown mode: %s", mode)
+	}
+
+	return parseCSV(args.Target, args.Header, delimiter, headerDelimiter, parseRow), nil
 }
 
-func parseCSV[K any](target, header ottl.StringGetter[K], delimiter rune, headerDelimiter string, mode string) ottl.ExprFunc[K] {
+type parseCSVRowFunc func(row string, delimiter rune) ([]string, error)
+
+func parseCSV[K any](target, header ottl.StringGetter[K], delimiter rune, headerDelimiter string, parseRow parseCSVRowFunc) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		targetStr, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -111,17 +116,9 @@ func parseCSV[K any](target, header ottl.StringGetter[K], delimiter rune, header
 
 		headers := strings.Split(headerStr, headerDelimiter)
 
-		var fields []string
-		switch mode {
-		case parseCSVModeStrict, parseCSVModeLazyQuotes:
-			lazyQuotes := mode == parseCSVModeLazyQuotes
-			fields, err = parseutils.ReadCSVRow(targetStr, delimiter, lazyQuotes)
-			if err != nil {
-				return nil, err
-			}
-		case parseCSVModeIgnoreQuotes:
-			// Ignoring quotes makes CSV parseable with just string.Split
-			fields = strings.Split(targetStr, string([]rune{delimiter}))
+		fields, err := parseRow(targetStr, delimiter)
+		if err != nil {
+			return nil, err
 		}
 
 		headersToFields, err := parseutils.MapCSVHeaders(headers, fields)
@@ -132,5 +129,17 @@ func parseCSV[K any](target, header ottl.StringGetter[K], delimiter rune, header
 		pMap := pcommon.NewMap()
 		err = pMap.FromRaw(headersToFields)
 		return pMap, err
+	}
+}
+
+func parseCSVRow(lazyQuotes bool) parseCSVRowFunc {
+	return func(row string, delimiter rune) ([]string, error) {
+		return parseutils.ReadCSVRow(row, delimiter, lazyQuotes)
+	}
+}
+
+func parseCSVRowIgnoreQuotes() parseCSVRowFunc {
+	return func(row string, delimiter rune) ([]string, error) {
+		return strings.Split(row, string([]rune{delimiter})), nil
 	}
 }
