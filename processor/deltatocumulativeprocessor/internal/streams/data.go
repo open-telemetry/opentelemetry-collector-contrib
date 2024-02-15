@@ -6,10 +6,11 @@ package streams // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // Iterator as per https://go.dev/wiki/RangefuncExperiment

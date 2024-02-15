@@ -10,15 +10,16 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testdata/random"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var result any = nil
+var result any
 
 func BenchmarkAccumulator(b *testing.B) {
 	acc := delta.Numbers()
@@ -110,7 +111,7 @@ func TestTimes(t *testing.T) {
 	last := start
 	sum := int64(0)
 	for i := 0; i < 10; i++ {
-		last += 1
+		last++
 		dp := data.Clone()
 		dp.SetStartTimestamp(start)
 		dp.SetTimestamp(last)
@@ -190,10 +191,6 @@ func TestErrs(t *testing.T) {
 		})
 	}
 
-}
-
-func randv() int64 {
-	return int64(rand.Intn(255))
 }
 
 func time(ts int) pcommon.Timestamp {
