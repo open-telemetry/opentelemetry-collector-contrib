@@ -38,11 +38,11 @@ func GetTLSCredentialsForGRPCExporter(caFile string, cAuth ClientAuth) (credenti
 	var creds credentials.TransportCredentials
 
 	if caFile != "" {
-	    creds = credentials.NewTLS(&tls.Config{
-	        RootCAs: pool,
-	    })
+		creds = credentials.NewTLS(&tls.Config{
+			RootCAs: pool,
+		})
 	} else {
-	    creds = credentials.NewTLS(&tls.Config{})
+		creds = credentials.NewTLS(&tls.Config{})
 	}
 
 	// Configuration for mTLS
@@ -69,11 +69,11 @@ func GetTLSCredentialsForHTTPExporter(caFile string, cAuth ClientAuth) (*tls.Con
 	var tlsCfg tls.Config
 
 	if caFile != "" {
-	    tlsCfg = tls.Config{
-	        RootCAs: pool,
-	    }
+		tlsCfg = tls.Config{
+			RootCAs: pool,
+		}
 	} else {
-	    tlsCfg = tls.Config{}
+		tlsCfg = tls.Config{}
 	}
 
 	// Configuration for mTLS
