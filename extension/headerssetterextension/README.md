@@ -72,7 +72,10 @@ receivers:
         include_metadata: true
 
 processors:
-  nop:
+  batch:
+    # Preserve the tenant-id metadata.
+    metadata_keys:
+    - tenant_id
 
 exporters:
   loki:
@@ -89,7 +92,7 @@ service:
   pipelines:
     traces:
       receivers: [ otlp ]
-      processors: [ nop ]
+      processors: [ batch ]
       exporters: [ loki ]
 ```
 
