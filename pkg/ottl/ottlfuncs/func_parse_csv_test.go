@@ -262,7 +262,7 @@ func Test_ParseCSV(t *testing.T) {
 					},
 				},
 			},
-			parseError: "error getting value in ottl.StandardStringGetter[interface {}]: cannot get",
+			parseError: "error getting value for target in ParseCSV: error getting value in ottl.StandardStringGetter[interface {}]: cannot get",
 		},
 		{
 			name: "Invalid header (strict mode)",
@@ -278,7 +278,7 @@ func Test_ParseCSV(t *testing.T) {
 					},
 				},
 			},
-			parseError: "error getting value in ottl.StandardStringGetter[interface {}]: cannot get",
+			parseError: "error getting value for header in ParseCSV: error getting value in ottl.StandardStringGetter[interface {}]: cannot get",
 		},
 		{
 			name:        "Invalid args",
@@ -443,7 +443,7 @@ func Test_ParseCSV(t *testing.T) {
 				},
 				Mode: ottl.NewTestingOptional("ignoreQuotes"),
 			},
-			parseError: "error getting value in ottl.StandardStringGetter[interface {}]: cannot get",
+			parseError: "error getting value for target in ParseCSV: error getting value in ottl.StandardStringGetter[interface {}]: cannot get",
 		},
 		{
 			name: "Invalid header (ignoreQuotes mode)",
@@ -460,7 +460,7 @@ func Test_ParseCSV(t *testing.T) {
 				},
 				Mode: ottl.NewTestingOptional("ignoreQuotes"),
 			},
-			parseError: "error getting value in ottl.StandardStringGetter[interface {}]: cannot get",
+			parseError: "error getting value for header in ParseCSV: error getting value in ottl.StandardStringGetter[interface {}]: cannot get",
 		},
 		{
 			name: "Empty header string (ignoreQuotes)",
