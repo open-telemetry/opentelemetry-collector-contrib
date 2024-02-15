@@ -99,6 +99,7 @@ func (s *SamplingGRPCServer) Shutdown(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		s.grpcServer.Stop()
+		<-ch // wait for the graceful stop goroutine to return
 	case <-ch:
 	}
 
