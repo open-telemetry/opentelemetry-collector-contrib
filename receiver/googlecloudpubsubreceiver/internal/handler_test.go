@@ -43,7 +43,7 @@ func TestCancelStream(t *testing.T) {
 	assert.NoError(t, err)
 
 	handler, err := NewHandler(context.Background(), zaptest.NewLogger(t), client, "client-id", "projects/my-project/subscriptions/otlp",
-		func(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
+		func(context.Context, *pubsubpb.ReceivedMessage) error {
 			return nil
 		})
 	handler.ackBatchWait = 10 * time.Millisecond

@@ -349,7 +349,7 @@ func (c *mockClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 		s.lastIOError = text[35]
 		s.lastSQLErrno, _ = parseInt(text[36])
 		s.lastSQLError = text[37]
-		s.replicateIgnoreServerIds = text[38]
+		s.replicateIgnoreServerIDs = text[38]
 		s.sourceServerID, _ = parseInt(text[39])
 		s.sourceUUID = text[40]
 		s.sourceInfoFile = text[41]
