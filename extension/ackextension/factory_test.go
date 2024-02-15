@@ -16,5 +16,5 @@ func TestFactory(t *testing.T) {
 	require.Equal(t, expectType, f.Type())
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	require.Equal(t, "in-memory", cfg.StorageType)
+	require.Equal(t, defaultStorageType, cfg.StorageID)
 }

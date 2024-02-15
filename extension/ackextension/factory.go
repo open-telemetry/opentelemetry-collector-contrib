@@ -12,10 +12,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension/internal/metadata"
 )
 
-const (
-	defaultStorageType = "in-memory"
-)
+var defaultStorageType = (*component.ID)(nil)
 
+// NewFactory creates a factory for ack extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
 		metadata.Type,
@@ -27,7 +26,7 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		StorageType: defaultStorageType,
+		StorageID: defaultStorageType,
 	}
 }
 

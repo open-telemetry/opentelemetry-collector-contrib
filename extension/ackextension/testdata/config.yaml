@@ -1,7 +1,8 @@
 ack:
 
 ack/withmemorystorage:
-  storageType: "in-memory"
+  storageID:
 
 ack/withpersistentstorage:
-  storageType: "disk"
+  storageID: file_storage/otc
+
