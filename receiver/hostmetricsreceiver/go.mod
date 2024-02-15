@@ -11,7 +11,7 @@ require (
 	github.com/prometheus/procfs v0.12.0
 	github.com/shirou/gopsutil/v3 v3.24.1
 	github.com/stretchr/testify v1.8.4
-	github.com/yusufpapurcu/wmi v1.2.3
+	github.com/yusufpapurcu/wmi v1.2.4
 	go.opentelemetry.io/collector/component v0.94.1
 	go.opentelemetry.io/collector/confmap v0.94.1
 	go.opentelemetry.io/collector/consumer v0.94.1
