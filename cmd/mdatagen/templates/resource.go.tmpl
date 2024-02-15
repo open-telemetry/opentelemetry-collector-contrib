@@ -12,14 +12,19 @@ import (
 type ResourceBuilder struct {
 	config ResourceAttributesConfig
 	res	pcommon.Resource
-	ent pentity.Entity
+	ent pentity.EntityEvent
 }
 
 // NewResourceBuilder creates a new ResourceBuilder. This method should be called on the start of the application.
 func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
+    ent := pentity.NewEntityEvent()
+    ent.SetEmptyEntityState()
+    ent.SetEntityType("{{ .Entity.Type }}")
+
 	return &ResourceBuilder{
 		config: rac,
 		res: pcommon.NewResource(),
+		ent: ent,
 	}
 }
 
@@ -29,6 +34,9 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 func (rb *ResourceBuilder) Set{{ $name.Render }}{{ . | publicVar }}() {
 	if rb.config.{{ $name.Render }}.Enabled {
 		rb.res.Attributes().PutStr("{{ $name }}", "{{ . }}")
+		{{- if eq $attr.EntityIdentifying true }}
+        rb.ent.Id().PutStr("{{ $name }}", "{{ . }}")
+        {{- end }}
 	}
 }
 {{- else }}
@@ -40,6 +48,13 @@ func (rb *ResourceBuilder) Set{{ $name.Render }}(val {{ $attr.Type.Primitive }})
 		{{- else }}
 		rb.res.Attributes().Put{{ $attr.Type }}("{{ $name }}", val)
 		{{- end }}
+		{{- if eq $attr.EntityIdentifying true }}
+		{{- if or (eq $attr.Type.String "Bytes") (eq $attr.Type.String "Slice") (eq $attr.Type.String "Map") }}
+		rb.ent.Id().PutEmpty{{ $attr.Type }}("{{ $name }}").FromRaw(val)
+		{{- else }}
+		rb.ent.Id().Put{{ $attr.Type }}("{{ $name }}", val)
+		{{- end }}
+        {{- end }}
 	}
 }
 {{- end }}

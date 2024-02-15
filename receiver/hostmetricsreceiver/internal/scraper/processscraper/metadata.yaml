@@ -4,11 +4,15 @@ parent: hostmetrics
 
 sem_conv_version: 1.9.0
 
+entity:
+  type: process
+
 resource_attributes:
   process.pid:
     description: Process identifier (PID).
     enabled: true
     type: int
+    entity_identifying: true
   process.parent_pid:
     description: Parent Process identifier (PPID).
     enabled: true
