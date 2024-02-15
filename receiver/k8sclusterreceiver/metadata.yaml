@@ -212,6 +212,10 @@ attributes:
     description: "the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure"
     type: string
     enabled: true
+  reason:
+    description: "the container status terminated reason"
+    type: string
+    enabled: true
 
 metrics:
   k8s.container.cpu_request:
@@ -272,6 +276,14 @@ metrics:
     enabled: true
     description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
     unit: ""
+    gauge:
+      value_type: int
+  k8s.container.status_last_terminated_reason:
+    enabled: false
+    description: Last terminated reason of container. The unit is always 1.
+    unit: ""
+    attributes:
+      - reason
     gauge:
       value_type: int
 

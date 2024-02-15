@@ -396,6 +396,20 @@ metrics:
     enabled: true
 ```
 
+### k8s.container.status_last_terminated_reason
+
+Last terminated reason of container. The unit is always 1.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+|  | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| reason | the container status terminated reason | Any Str |
+
 ### k8s.node.condition
 
 The condition of a particular Node.

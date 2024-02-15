@@ -68,6 +68,9 @@ func RecordSpecMetrics(logger *zap.Logger, mb *imetadata.MetricsBuilder, c corev
 			imageStr = cs.Image
 			mb.RecordK8sContainerRestartsDataPoint(ts, int64(cs.RestartCount))
 			mb.RecordK8sContainerReadyDataPoint(ts, boolToInt64(cs.Ready))
+			if cs.LastTerminationState.Terminated != nil {
+				mb.RecordK8sContainerStatusLastTerminatedReasonDataPoint(ts, 1, cs.LastTerminationState.Terminated.Reason)
+			}
 			break
 		}
 	}

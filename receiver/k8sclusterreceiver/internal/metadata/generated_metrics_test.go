@@ -91,6 +91,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sContainerRestartsDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordK8sContainerStatusLastTerminatedReasonDataPoint(ts, 1, "reason-val")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sContainerStorageLimitDataPoint(ts, 1)
@@ -389,6 +392,21 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.container.status_last_terminated_reason":
+					assert.False(t, validatedMetrics["k8s.container.status_last_terminated_reason"], "Found a duplicate in the metrics slice: k8s.container.status_last_terminated_reason")
+					validatedMetrics["k8s.container.status_last_terminated_reason"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Last terminated reason of container. The unit is always 1.", ms.At(i).Description())
+					assert.Equal(t, "", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("reason")
+					assert.True(t, ok)
+					assert.EqualValues(t, "reason-val", attrVal.Str())
 				case "k8s.container.storage_limit":
 					assert.False(t, validatedMetrics["k8s.container.storage_limit"], "Found a duplicate in the metrics slice: k8s.container.storage_limit")
 					validatedMetrics["k8s.container.storage_limit"] = true

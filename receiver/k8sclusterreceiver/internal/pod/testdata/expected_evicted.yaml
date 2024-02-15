@@ -31,6 +31,7 @@ resourceMetrics:
                 - asInt: "1"
             name: k8s.pod.status_reason
             unit: ""
+
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
@@ -87,6 +88,17 @@ resourceMetrics:
                 - asDouble: 20
             name: k8s.container.cpu_limit
             unit: "{cpu}"
+          - description: "Last terminated reason of container. The unit is always 1."
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: reason
+                      value:
+                        stringValue: Evicted
+            name: k8s.container.status_last_terminated_reason
+            unit: ""
+
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
