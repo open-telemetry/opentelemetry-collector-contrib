@@ -4,6 +4,7 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
+	"net"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -21,7 +22,6 @@ const (
 	AttributeServerPort             = "server.port"
 	AttributeNetworkPeerAddress     = "network.peer.address"
 	AttributeClientAddress          = "client.address"
-	AttributeClientPort             = "client.port"
 	AttributeURLScheme              = "url.scheme"
 	AttributeURLFull                = "url.full"
 	AttributeURLPath                = "url.path"
@@ -44,13 +44,14 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 
 	hasHTTP := false
 	hasHTTPRequestURLAttributes := false
+	hasNetPeerAddr := false
 
 	span.Attributes().Range(func(key string, value pcommon.Value) bool {
 		switch key {
 		case conventions.AttributeHTTPMethod, AttributeHTTPRequestMethod:
 			info.Request.Method = awsxray.String(value.Str())
 			hasHTTP = true
-		case conventions.AttributeHTTPClientIP, AttributeClientAddress:
+		case conventions.AttributeHTTPClientIP:
 			info.Request.ClientIP = awsxray.String(value.Str())
 			hasHTTP = true
 		case conventions.AttributeHTTPUserAgent, AttributeUserAgentOriginal:
@@ -66,52 +67,75 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 		case conventions.AttributeHTTPScheme, AttributeURLScheme:
 			urlParts[conventions.AttributeHTTPScheme] = value.Str()
 			hasHTTP = true
-		case conventions.AttributeHTTPHost, AttributeServerAddress:
-			urlParts[conventions.AttributeHTTPHost] = value.Str()
-			hasHTTP = true
-			hasHTTPRequestURLAttributes = true
-		case conventions.AttributeHTTPTarget, AttributeURLPath:
-			urlParts[conventions.AttributeHTTPTarget] = value.Str()
-			hasHTTP = true
-		case conventions.AttributeHTTPServerName: // Deprecated, use `server.address`
+		case conventions.AttributeHTTPHost:
 			urlParts[key] = value.Str()
 			hasHTTP = true
 			hasHTTPRequestURLAttributes = true
-		case conventions.AttributeNetHostPort, AttributeServerPort:
-			urlParts[conventions.AttributeNetHostPort] = value.Str()
+		case conventions.AttributeHTTPTarget:
+			urlParts[key] = value.Str()
 			hasHTTP = true
-			if len(urlParts[conventions.AttributeNetHostPort]) == 0 {
-				urlParts[conventions.AttributeNetHostPort] = strconv.FormatInt(value.Int(), 10)
-			}
-		case conventions.AttributeHostName: // Deprecated, use `server.address`
+		case conventions.AttributeHTTPServerName:
 			urlParts[key] = value.Str()
+			hasHTTP = true
 			hasHTTPRequestURLAttributes = true
-		case conventions.AttributeNetHostName: // Deprecated, use `server.address`
+		case conventions.AttributeNetHostPort:
 			urlParts[key] = value.Str()
-			hasHTTPRequestURLAttributes = true
-		case conventions.AttributeNetPeerName: // Deprecated, use `client.address`
-			urlParts[key] = value.Str()
-		case conventions.AttributeNetPeerPort, AttributeClientPort:
-			urlParts[conventions.AttributeNetPeerPort] = value.Str()
-			if len(urlParts[conventions.AttributeNetPeerPort]) == 0 {
+			hasHTTP = true
+			if len(urlParts[key]) == 0 {
 				urlParts[key] = strconv.FormatInt(value.Int(), 10)
 			}
-		case conventions.AttributeNetPeerIP, AttributeNetworkPeerAddress:
+		case conventions.AttributeHostName:
+			urlParts[key] = value.Str()
+			hasHTTPRequestURLAttributes = true
+		case conventions.AttributeNetHostName:
+			urlParts[key] = value.Str()
+			hasHTTPRequestURLAttributes = true
+		case conventions.AttributeNetPeerName:
+			urlParts[key] = value.Str()
+		case conventions.AttributeNetPeerPort:
+			urlParts[key] = value.Str()
+			if len(urlParts[key]) == 0 {
+				urlParts[key] = strconv.FormatInt(value.Int(), 10)
+			}
+		case conventions.AttributeNetPeerIP:
 			// Prefer HTTP forwarded information (AttributeHTTPClientIP) when present.
 			if info.Request.ClientIP == nil {
 				info.Request.ClientIP = awsxray.String(value.Str())
 			}
-			urlParts[conventions.AttributeNetPeerIP] = value.Str()
+			urlParts[key] = value.Str()
 			hasHTTPRequestURLAttributes = true
+			hasNetPeerAddr = true
+		case AttributeNetworkPeerAddress:
+			// Prefer HTTP forwarded information (AttributeHTTPClientIP) when present.
+			if net.ParseIP(value.Str()) != nil {
+				if info.Request.ClientIP == nil {
+					info.Request.ClientIP = awsxray.String(value.Str())
+				}
+				hasHTTPRequestURLAttributes = true
+				hasNetPeerAddr = true
+			}
+		case AttributeClientAddress:
+			if net.ParseIP(value.Str()) != nil {
+				info.Request.ClientIP = awsxray.String(value.Str())
+			}
+		case AttributeURLPath:
+			urlParts[key] = value.Str()
+			hasHTTP = true
+		case AttributeServerAddress:
+			urlParts[key] = value.Str()
+			hasHTTPRequestURLAttributes = true
+		case AttributeServerPort:
+			urlParts[key] = value.Str()
+			if len(urlParts[key]) == 0 {
+				urlParts[key] = strconv.FormatInt(value.Int(), 10)
+			}
 		default:
 			filtered[key] = value
 		}
 		return true
 	})
 
-	// if there is no network peer address, then `client.address` is from X-Forwarded-For.
-	_, ok := urlParts[conventions.AttributeNetPeerIP]
-	if !ok && info.Request.ClientIP != nil {
+	if !hasNetPeerAddr && info.Request.ClientIP != nil {
 		info.Request.XForwardedFor = aws.Bool(true)
 	}
 
@@ -161,7 +185,7 @@ func extractResponseSizeFromAttributes(attributes pcommon.Map) int64 {
 
 func constructClientURL(urlParts map[string]string) string {
 	// follows OpenTelemetry specification-defined combinations for client spans described in
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-client
+	// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/http/http-spans.md#http-client
 
 	url, ok := urlParts[conventions.AttributeHTTPURL]
 	if ok {
@@ -200,7 +224,7 @@ func constructClientURL(urlParts map[string]string) string {
 
 func constructServerURL(urlParts map[string]string) string {
 	// follows OpenTelemetry specification-defined combinations for server spans described in
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-server-semantic-conventions
+	// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/http/http-spans.md#http-server
 
 	url, ok := urlParts[conventions.AttributeHTTPURL]
 	if ok {
@@ -212,19 +236,24 @@ func constructServerURL(urlParts map[string]string) string {
 	if !ok {
 		scheme = "http"
 	}
-
-	port, ok := urlParts[conventions.AttributeNetHostPort]
-	if !ok {
-		port = ""
-	}
-
+	port := ""
 	host, ok := urlParts[conventions.AttributeHTTPHost]
 	if !ok {
 		host, ok = urlParts[conventions.AttributeHTTPServerName]
 		if !ok {
 			host, ok = urlParts[conventions.AttributeNetHostName]
 			if !ok {
-				host = urlParts[conventions.AttributeHostName]
+				host, ok = urlParts[conventions.AttributeHostName]
+				if !ok {
+					host = urlParts[AttributeServerAddress]
+				}
+			}
+		}
+		port, ok = urlParts[conventions.AttributeNetHostPort]
+		if !ok {
+			port, ok = urlParts[AttributeServerPort]
+			if !ok {
+				port = ""
 			}
 		}
 	}
@@ -236,7 +265,12 @@ func constructServerURL(urlParts map[string]string) string {
 	if ok {
 		url += target
 	} else {
-		url += "/"
+		path, ok := urlParts[AttributeURLPath]
+		if ok {
+			url += path
+		} else {
+			url += "/"
+		}
 	}
 	return url
 }
