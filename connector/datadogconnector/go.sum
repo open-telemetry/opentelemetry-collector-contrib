@@ -111,8 +111,8 @@ github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137/go.mod h1:OMCwj8V
 github.com/armon/go-metrics v0.4.1 h1:hR91U9KYmb6bLBYLQjyM+3j+rcd/UhE+G78SFnF8gJA=
 github.com/armon/go-metrics v0.4.1/go.mod h1:E6amYzXo6aW1tqzoZGT755KkbgrJsSdpwZ+3JqfkOG4=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
-github.com/aws/aws-sdk-go v1.50.14 h1:m1bxKtd1lJpNnl+Owah0+UPRuS9f3GFvxBPgc8RiodE=
-github.com/aws/aws-sdk-go v1.50.14/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
+github.com/aws/aws-sdk-go v1.50.17 h1:KsbzUKDgGNlkDHGvoQDhiJ63a9jtZd+O+/s3pTOr/ns=
+github.com/aws/aws-sdk-go v1.50.17/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/bmatcuk/doublestar/v4 v4.6.1 h1:FH9SifrbvJhnlQpztAx++wlkk70QBf0iBWDwNy7PA4I=
@@ -326,8 +326,8 @@ github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd/go.mod h1:M5qHK+eWf
 github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7/go.mod h1:FecbI9+v66THATjSRHfNgh1IVFe/9kFxbXtjV0ctIMA=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.0 h1:Wqo399gCIufwto+VfwCSvsnfGpF/w5E9CNxSwbpD6No=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.0/go.mod h1:qmOFXW2epJhM0qSnUUYpldc7gVz2KMQwJ/QYCDIa7XU=
-github.com/haimrubinstein/go-syslog/v3 v3.0.0 h1:wuTrxJE60wx2pfwdERdbLNlcXEk3hk1MPagAaD2fq2g=
-github.com/haimrubinstein/go-syslog/v3 v3.0.0/go.mod h1:/IKKpe5PS9pB5vJY1APQQM0ZPBrm95HWE1SQwsXWmVI=
+github.com/haimrubinstein/go-syslog/v3 v3.0.3 h1:6vHBlaBT7QYW3Lg3SRH6ktd4RXDtysxtJ2sbbmnR984=
+github.com/haimrubinstein/go-syslog/v3 v3.0.3/go.mod h1:eoxN4jiSgfvW5ZozHBsvBMVVOa8kUBnCghxP5PRL2Hs=
 github.com/hashicorp/consul/api v1.27.0 h1:gmJ6DPKQog1426xsdmgk5iqDyoRiNc+ipBdJOqKQFjc=
 github.com/hashicorp/consul/api v1.27.0/go.mod h1:JkekNRSou9lANFdt+4IKx3Za7XY0JzzpQjEb4Ivo1c8=
 github.com/hashicorp/cronexpr v1.1.2 h1:wG/ZYIKT+RT3QkOdgYc+xsKWVRgnxJ1OJtjjy84fJ9A=
