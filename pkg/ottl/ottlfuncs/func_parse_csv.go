@@ -71,9 +71,9 @@ func createParseCSVFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 
 	// headerDelimiter defaults to the chosen delimter,
 	// since in most cases headerDelimiter == delmiter.
-	headerDelimiter := delimiter
+	headerDelimiter := string(delimiter)
 	if !args.HeaderDelimiter.IsEmpty() {
-		headerDelimiter = []rune(args.HeaderDelimiter.Get())[0]
+		headerDelimiter = args.HeaderDelimiter.Get()
 	}
 
 	mode := parseCSVDefaultMode
@@ -93,9 +93,7 @@ func createParseCSVFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 	return nil, fmt.Errorf("unknown mode: %s", mode)
 }
 
-func parseCSV[K any](target, header ottl.StringGetter[K], delimiter, headerDelimiter rune, lazyQuotes bool) ottl.ExprFunc[K] {
-	headerDelimiterString := string([]rune{headerDelimiter})
-
+func parseCSV[K any](target, header ottl.StringGetter[K], delimiter rune, headerDelimiter string, lazyQuotes bool) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		targetStr, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -111,7 +109,7 @@ func parseCSV[K any](target, header ottl.StringGetter[K], delimiter, headerDelim
 			return nil, errors.New("headers must not be an empty string")
 		}
 
-		headers := strings.Split(headerStr, headerDelimiterString)
+		headers := strings.Split(headerStr, headerDelimiter)
 		fields, err := parseutils.ReadCSVRow(targetStr, delimiter, lazyQuotes)
 		if err != nil {
 			return nil, err
@@ -132,8 +130,7 @@ func parseCSV[K any](target, header ottl.StringGetter[K], delimiter, headerDelim
 	}
 }
 
-func parseCSVIgnoreQuotes[K any](target, header ottl.StringGetter[K], delimiter, headerDelimiter rune) ottl.ExprFunc[K] {
-	headerDelimiterString := string([]rune{headerDelimiter})
+func parseCSVIgnoreQuotes[K any](target, header ottl.StringGetter[K], delimiter rune, headerDelimiter string) ottl.ExprFunc[K] {
 	delimiterString := string([]rune{delimiter})
 
 	return func(ctx context.Context, tCtx K) (any, error) {
@@ -151,7 +148,7 @@ func parseCSVIgnoreQuotes[K any](target, header ottl.StringGetter[K], delimiter,
 			return nil, errors.New("headers must not be an empty string")
 		}
 
-		headers := strings.Split(headerStr, headerDelimiterString)
+		headers := strings.Split(headerStr, headerDelimiter)
 
 		// Ignoring quotes makes CSV parseable with just string.Split
 		fields := strings.Split(targetStr, delimiterString)
