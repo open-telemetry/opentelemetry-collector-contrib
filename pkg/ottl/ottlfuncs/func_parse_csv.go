@@ -102,12 +102,12 @@ func parseCSV[K any](target, header ottl.StringGetter[K], delimiter rune, header
 	return func(ctx context.Context, tCtx K) (any, error) {
 		targetStr, err := target.Get(ctx, tCtx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error getting value for target in ParseCSV: %w", err)
 		}
 
 		headerStr, err := header.Get(ctx, tCtx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error getting value for header in ParseCSV: %w", err)
 		}
 
 		if headerStr == "" {
