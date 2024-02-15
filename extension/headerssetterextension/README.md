@@ -43,7 +43,7 @@ The following settings are required:
 The `value` and `from_context` properties are mutually exclusive.
 
 In order for `from_context` to work, other components in the pipeline also need to be configured appropriately:
-* The [batch processor][batch-processor] must be configured to [preserve client metadata][batch-processor-preserve-metadata]. 
+* If a [batch processor][batch-processor] is present in the pipeline, it must be configured to [preserve client metadata][batch-processor-preserve-metadata]. 
   Add the value which `from_context` needs to the `metadata_keys` of the batch processor.
 * Receivers must be configured with `include_metadata: true` so that metadata keys are available to the pipeline.
 
