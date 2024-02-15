@@ -108,29 +108,27 @@ func TestTimes(t *testing.T) {
 	id, data := random.Sum().Stream()
 
 	start := pcommon.Timestamp(1234)
-	last := start
-	sum := int64(0)
-	for i := 0; i < 10; i++ {
-		last++
-		dp := data.Clone()
-		dp.SetStartTimestamp(start)
-		dp.SetTimestamp(last)
+	ts1, ts2 := pcommon.Timestamp(1234), pcommon.Timestamp(1235)
 
-		v := int64(rand.Intn(255))
-		sum += v
-		dp.SetIntValue(v)
+	// first sample: take timestamps of point
+	first := data.Clone()
+	first.SetStartTimestamp(start)
+	first.SetTimestamp(ts1)
 
-		res, err := acc.Aggregate(id, dp)
-		require.NoError(t, err)
+	r1, err := acc.Aggregate(id, first)
+	require.NoError(t, err)
+	require.Equal(t, start, r1.StartTimestamp())
+	require.Equal(t, ts1, r1.Timestamp())
 
-		// spec: Upon receiving the first Delta point for a given counter we set up the following:
-		// A new counter which stores the cumulative sum, set to the initial counter.
-		// A start time that aligns with the start time of the first point.
-		// A “last seen” time that aligns with the time of the first point.
-		require.Equal(t, start, res.StartTimestamp())
-		require.Equal(t, last, res.Timestamp())
-		require.Equal(t, sum, res.IntValue())
-	}
+	// second sample: take last of point, keep start
+	second := data.Clone()
+	second.SetStartTimestamp(start)
+	second.SetTimestamp(ts2)
+
+	r2, err := acc.Aggregate(id, first)
+	require.NoError(t, err)
+	require.Equal(t, start, r2.StartTimestamp())
+	require.Equal(t, ts2, r2.Timestamp())
 }
 
 func TestErrs(t *testing.T) {

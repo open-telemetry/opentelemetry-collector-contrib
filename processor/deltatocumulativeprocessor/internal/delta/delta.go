@@ -70,7 +70,7 @@ type ErrOlderStart struct {
 }
 
 func (e ErrOlderStart) Error() string {
-	return fmt.Sprintf("dropped sample with start_time=%s, because series only starts at start_time=%s", e.Sample, e.Start)
+	return fmt.Sprintf("dropped sample with start_time=%s, because series only starts at start_time=%s. consider checking for multiple processes sending the exact same series", e.Sample, e.Start)
 }
 
 type ErrOutOfOrder struct {
