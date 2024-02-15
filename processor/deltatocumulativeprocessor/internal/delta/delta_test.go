@@ -125,7 +125,7 @@ func TestTimes(t *testing.T) {
 	second.SetStartTimestamp(start)
 	second.SetTimestamp(ts2)
 
-	r2, err := acc.Aggregate(id, first)
+	r2, err := acc.Aggregate(id, second)
 	require.NoError(t, err)
 	require.Equal(t, start, r2.StartTimestamp())
 	require.Equal(t, ts2, r2.Timestamp())
