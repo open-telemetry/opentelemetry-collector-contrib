@@ -97,12 +97,12 @@ func parseCSV[K any](target, header ottl.StringGetter[K], delimiter rune, header
 	return func(ctx context.Context, tCtx K) (any, error) {
 		targetStr, err := target.Get(ctx, tCtx)
 		if err != nil {
-			return nil, fmt.Errorf("get target: %w", err)
+			return nil, err
 		}
 
 		headerStr, err := header.Get(ctx, tCtx)
 		if err != nil {
-			return nil, fmt.Errorf("get header: %w", err)
+			return nil, err
 		}
 
 		if headerStr == "" {
@@ -122,11 +122,7 @@ func parseCSV[K any](target, header ottl.StringGetter[K], delimiter rune, header
 
 		pMap := pcommon.NewMap()
 		err = pMap.FromRaw(headersToFields)
-		if err != nil {
-			return nil, fmt.Errorf("create pcommon.Map: %w", err)
-		}
-
-		return pMap, nil
+		return pMap, err
 	}
 }
 
@@ -136,12 +132,12 @@ func parseCSVIgnoreQuotes[K any](target, header ottl.StringGetter[K], delimiter 
 	return func(ctx context.Context, tCtx K) (any, error) {
 		targetStr, err := target.Get(ctx, tCtx)
 		if err != nil {
-			return nil, fmt.Errorf("get target: %w", err)
+			return nil, err
 		}
 
 		headerStr, err := header.Get(ctx, tCtx)
 		if err != nil {
-			return nil, fmt.Errorf("get header: %w", err)
+			return nil, err
 		}
 
 		if headerStr == "" {
@@ -160,10 +156,6 @@ func parseCSVIgnoreQuotes[K any](target, header ottl.StringGetter[K], delimiter 
 
 		pMap := pcommon.NewMap()
 		err = pMap.FromRaw(headersToFields)
-		if err != nil {
-			return nil, fmt.Errorf("create pcommon.Map: %w", err)
-		}
-
-		return pMap, nil
+		return pMap, err
 	}
 }
