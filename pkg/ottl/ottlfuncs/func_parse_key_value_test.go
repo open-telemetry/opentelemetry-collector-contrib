@@ -330,7 +330,7 @@ func Test_parseKeyValue_bad_split(t *testing.T) {
 	exprFunc, err := parseKeyValue[any](target, delimiter, pairDelimiter)
 	assert.NoError(t, err)
 	_, err = exprFunc(context.Background(), nil)
-	assert.ErrorContains(t, err, "cannot split \"hello_world\" into 2 items, got 1 item(s)")
+	assert.ErrorContains(t, err, "failed to split pairs into key-values: cannot split \"hello_world\" into 2 items, got 1 item(s)")
 }
 
 func Test_parseKeyValue_mismatch_quotes(t *testing.T) {
@@ -357,7 +357,7 @@ func Test_parseKeyValue_bad_delimiter(t *testing.T) {
 	exprFunc, err := parseKeyValue[any](target, delimiter, ottl.Optional[string]{})
 	assert.NoError(t, err)
 	_, err = exprFunc(context.Background(), nil)
-	assert.ErrorContains(t, err, "cannot split \"a=b\" into 2 items, got 1 item(s)")
+	assert.ErrorContains(t, err, "failed to split pairs into key-values: cannot split \"a=b\" into 2 items, got 1 item(s)")
 }
 
 func Test_parseKeyValue_empty_delimiters(t *testing.T) {

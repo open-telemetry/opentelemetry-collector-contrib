@@ -184,3 +184,93 @@ h`,
 		})
 	}
 }
+
+func Test_ParseKeyValuePairs(t *testing.T) {
+	testCases := []struct {
+		name        string
+		pairs       []string
+		delimiter   string
+		expected    map[string]any
+		expectedErr error
+	}{
+		{
+			name:      "multiple delimiters",
+			pairs:     []string{"a==b", "c=d=", "e=f"},
+			delimiter: "=",
+			expected: map[string]any{
+				"a": "=b",
+				"c": "d=",
+				"e": "f",
+			},
+		},
+		{
+			name:        "no delimiter found",
+			pairs:       []string{"ab"},
+			delimiter:   "=",
+			expectedErr: fmt.Errorf("cannot split \"ab\" into 2 items, got 1 item(s)"),
+		},
+		{
+			name:        "no delimiter found 2x",
+			pairs:       []string{"ab", "cd"},
+			delimiter:   "=",
+			expectedErr: fmt.Errorf("cannot split \"ab\" into 2 items, got 1 item(s); cannot split \"cd\" into 2 items, got 1 item(s)"),
+		},
+		{
+			name:      "empty pairs",
+			pairs:     []string{},
+			delimiter: "=",
+			expected:  map[string]any{},
+		},
+		{
+			name:        "empty pair string",
+			pairs:       []string{""},
+			delimiter:   "=",
+			expectedErr: fmt.Errorf("cannot split \"\" into 2 items, got 1 item(s)"),
+		},
+		{
+			name:      "empty delimiter",
+			pairs:     []string{"a=b", "c=d"},
+			delimiter: "",
+			expected: map[string]any{
+				"a": "=b",
+				"c": "=d",
+			},
+		},
+		{
+			name:      "empty pairs & delimiter",
+			pairs:     []string{},
+			delimiter: "",
+			expected:  map[string]any{},
+		},
+		{
+			name:      "early delimiter",
+			pairs:     []string{"=a=b"},
+			delimiter: "=",
+			expected: map[string]any{
+				"": "a=b",
+			},
+		},
+		{
+			name:      "weird spacing",
+			pairs:     []string{"        a=   b    ", "     c       =  d "},
+			delimiter: "=",
+			expected: map[string]any{
+				"a": "b",
+				"c": "d",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := ParseKeyValuePairs(tc.pairs, tc.delimiter)
+
+			if tc.expectedErr == nil {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expected, result)
+			} else {
+				assert.EqualError(t, err, tc.expectedErr.Error())
+			}
+		})
+	}
+}

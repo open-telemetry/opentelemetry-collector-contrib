@@ -1,9 +1,14 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package parseutils
+package parseutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/parseutils"
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+
+	"go.uber.org/multierr"
+)
 
 // SplitString will split the input on the delimiter and return the resulting slice while respecting quotes. Outer quotes are stripped.
 // Use in place of `strings.Split` when quotes need to be respected.
@@ -46,4 +51,23 @@ func SplitString(input, delimiter string) ([]string, error) {
 	}
 
 	return result, nil
+}
+
+// ParseKeyValuePairs will split each string in `pairs` on the `delimiter` into a key and value string that get added to a map and returned.
+func ParseKeyValuePairs(pairs []string, delimiter string) (map[string]any, error) {
+	parsed := make(map[string]any)
+	var err error
+	for _, p := range pairs {
+		pair := strings.SplitN(p, delimiter, 2)
+		if len(pair) != 2 {
+			err = multierr.Append(err, fmt.Errorf("cannot split %q into 2 items, got %d item(s)", p, len(pair)))
+			continue
+		}
+
+		key := strings.TrimSpace(pair[0])
+		value := strings.TrimSpace(pair[1])
+
+		parsed[key] = value
+	}
+	return parsed, err
 }

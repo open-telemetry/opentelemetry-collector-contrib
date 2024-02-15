@@ -1,12 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottlfuncs
+package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -70,15 +69,9 @@ func parseKeyValue[K any](target ottl.StringGetter[K], d ottl.Optional[string], 
 			return nil, fmt.Errorf("splitting source %q into pairs failed: %w", source, err)
 		}
 
-		parsed := make(map[string]any)
-		for _, p := range pairs {
-			pair := strings.SplitN(p, delimiter, 2)
-			if len(pair) != 2 {
-				return nil, fmt.Errorf("cannot split %q into 2 items, got %d item(s)", p, len(pair))
-			}
-			key := strings.TrimSpace(pair[0])
-			value := strings.TrimSpace(pair[1])
-			parsed[key] = value
+		parsed, err := parseutils.ParseKeyValuePairs(pairs, delimiter)
+		if err != nil {
+			return nil, fmt.Errorf("failed to split pairs into key-values: %w", err)
 		}
 
 		result := pcommon.NewMap()
