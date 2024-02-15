@@ -84,22 +84,22 @@ func TestScaperScrape(t *testing.T) {
 	}{
 		{
 			desc: "Nil client",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				return nil
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
 			expectedErr: errClientNotInit,
 		},
 		{
 			desc: "API Call Failure",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("GetQueues", mock.Anything).Return(nil, errors.New("some api error"))
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 
 				return pmetric.NewMetrics()
 			},
