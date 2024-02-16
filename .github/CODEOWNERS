@@ -24,6 +24,7 @@ cmd/oteltestbedcol/                                      @open-telemetry/collect
 cmd/telemetrygen/                                        @open-telemetry/collector-contrib-approvers @mx-psi @codeboten
 
 confmap/provider/s3provider/                             @open-telemetry/collector-contrib-approvers @Aneurysm9
+confmap/provider/secretsmanagerprovider/                 @open-telemetry/collector-contrib-approvers @driverpt @atoulme
 
 connector/countconnector/                                @open-telemetry/collector-contrib-approvers @djaglowski @jpkrohling
 connector/datadogconnector/                              @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13
@@ -51,7 +52,7 @@ exporter/datadogexporter/                                @open-telemetry/collect
 exporter/datasetexporter/                                @open-telemetry/collector-contrib-approvers @atoulme @martin-majlis-s1 @zdaratom-s1 @tomaz-s1
 exporter/dynatraceexporter/                              @open-telemetry/collector-contrib-approvers @dyladan @arminru @evan-bradley
 exporter/elasticsearchexporter/                          @open-telemetry/collector-contrib-approvers @JaredTan95
-exporter/f5cloudexporter/                                @open-telemetry/collector-contrib-approvers @gramidt
+exporter/f5cloudexporter/                                @open-telemetry/collector-contrib-approvers
 exporter/fileexporter/                                   @open-telemetry/collector-contrib-approvers @atingchen
 exporter/googlecloudexporter/                            @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @damemi @psx95
 exporter/googlecloudpubsubexporter/                      @open-telemetry/collector-contrib-approvers @alexvanboxel
@@ -279,12 +280,12 @@ testbed/mockdatasenders/mockdatadogagentexporter/        @open-telemetry/collect
 # List of distribution maintainers for OpenTelemetry Collector Contrib
 #
 #####################################################
-reports/distributions/core.yaml     @open-telemetry/collector-contrib-approvers
-reports/distributions/contrib.yaml  @open-telemetry/collector-contrib-approvers
-reports/distributions/aws.yaml      @open-telemetry/collector-contrib-approvers
-reports/distributions/grafana.yaml  @open-telemetry/collector-contrib-approvers
-reports/distributions/observiq.yaml @open-telemetry/collector-contrib-approvers
-reports/distributions/redhat.yaml   @open-telemetry/collector-contrib-approvers
+reports/distributions/core.yaml     @open-telemetry/collector-contrib-approvers 
+reports/distributions/contrib.yaml  @open-telemetry/collector-contrib-approvers 
+reports/distributions/aws.yaml      @open-telemetry/collector-contrib-approvers 
+reports/distributions/grafana.yaml  @open-telemetry/collector-contrib-approvers 
+reports/distributions/observiq.yaml @open-telemetry/collector-contrib-approvers 
+reports/distributions/redhat.yaml   @open-telemetry/collector-contrib-approvers 
 reports/distributions/splunk.yaml   @open-telemetry/collector-contrib-approvers @atoulme @crobert-1 @dmitryax @hughesjj @jeffreyc-splunk @jinja2 @jvoravong @panotti @rmfitzpatrick @samiura
 reports/distributions/sumo.yaml     @open-telemetry/collector-contrib-approvers @aboguszewski-sumo @astencel-sumo @kkujawa-sumo @rnishtala-sumo @sumo-drosiek @swiatekm-sumo
 reports/distributions/liatrio.yaml  @open-telemetry/collector-contrib-approvers @adrielp
@@ -292,5 +293,5 @@ reports/distributions/liatrio.yaml  @open-telemetry/collector-contrib-approvers 
 
 ## UNMAINTAINED components
 
-exporter/alibabacloudlogserviceexporter/                 @open-telemetry/collector-contrib-approvers
-exporter/skywalkingexporter/                             @open-telemetry/collector-contrib-approvers
+exporter/alibabacloudlogserviceexporter/                 @open-telemetry/collector-contrib-approvers 
+exporter/skywalkingexporter/                             @open-telemetry/collector-contrib-approvers 
