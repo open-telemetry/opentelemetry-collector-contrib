@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.94.1
 	go.opentelemetry.io/collector/confmap v0.94.1
 	go.opentelemetry.io/collector/consumer v0.94.1
+	go.opentelemetry.io/collector/featuregate v1.1.0
 	go.opentelemetry.io/collector/pdata v1.1.0
 	go.opentelemetry.io/collector/processor v0.94.1
 	go.opentelemetry.io/otel/metric v1.23.1
@@ -33,6 +34,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

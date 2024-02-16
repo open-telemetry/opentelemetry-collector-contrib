@@ -401,7 +401,9 @@ Available Converters:
 - [Minutes](#minutes)
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
+- [ParseCSV](#parsecsv)
 - [ParseJSON](#parsejson)
+- [ParseKeyValue](#parsekeyvalue)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
@@ -798,6 +800,38 @@ Examples:
 - `UnixSeconds(Now())`
 - `set(start_time, Now())`
 
+### ParseCSV
+
+`ParseCSV(target, headers, Optional[delimiter], Optional[headerDelimiter], Optional[mode])`
+
+The `ParseCSV` Converter returns a `pcommon.Map` struct that contains the result of parsing the `target` string as CSV. The resultant map is structured such that it is a mapping of field name -> field value.
+
+`target` is a Getter that returns a string. This string should be a CSV row. if `target` is not a properly formatted CSV row, or if the number of fields in `target` does not match the number of fields in `headers`, `ParseCSV` will return an error. Leading and trailing newlines in `target` will be stripped. Newlines elswhere in `target` are not treated as row delimiters during parsing, and will be treated as though they are part of the field that are placed in.
+
+`headers` is a Getter that returns a string. This string should be a CSV header, specifying the names of the CSV fields.
+
+`delimiter` is an optional string parameter that specifies the delimiter used to split `target` into fields. By default, it is set to `,`.
+
+`headerDelimiter` is an optional string parameter that specified the delimiter used to split `headers` into fields. By default, it is set to the value of `delimiter`.
+
+`mode` is an optional string paramater that specifies the parsing mode. Valid values are `strict`, `lazyQuotes`, and `ignoreQuotes`. By default, it is set to `strict`.
+- The `strict` mode provides typical CSV parsing.
+- The `lazyQotes` mode provides a relaxed version of CSV parsing where a quote may appear in the middle of a unquoted field.
+- The `ignoreQuotes` mode completely ignores any quoting rules for CSV and just splits the row on the delimiter.
+
+Examples:
+
+- `ParseCSV("999-999-9999,Joe Smith,joe.smith@example.com", "phone,name,email")`
+
+
+- `ParseCSV(body, "phone|name|email", delimiter="|")`
+
+
+- `ParseCSV(attributes["csv_line"], attributes["csv_headers"], delimiter="|", headerDelimiter=",", mode="lazyQuotes")`
+
+
+- `ParseCSV("\"555-555-5556,Joe Smith\",joe.smith@example.com", "phone,name,email", mode="ignoreQuotes")`
+
 ### ParseJSON
 
 `ParseJSON(target)`
@@ -828,6 +862,26 @@ Examples:
 
 
 - `ParseJSON(body)`
+
+### ParseKeyValue
+
+`ParseKeyValue(target, Optional[delimiter], Optional[pair_delimiter])`
+
+The `ParseKeyValue` Converter returns a `pcommon.Map` that is a result of parsing the target string for key value pairs.
+
+`target` is a Getter that returns a string. If the returned string is empty, an error will be returned. `delimiter` is an optional string that is used to split the key and value in a pair, the default is `=`. `pair_delimiter` is an optional string that is used to split key value pairs, the default is a single space (` `).
+
+For example, the following target `"k1=v1 k2=v2 k3=v3"` will use default delimiters and be parsed into the following map:
+```
+{ "k1": "v1", "k2": "v2", "k3": "v3" }
+```
+
+Examples:
+
+- `ParseKeyValue("k1=v1 k2=v2 k3=v3")`
+- `ParseKeyValue("k1!v1_k2!v2_k3!v3", "!", "_")`
+- `ParseKeyValue(attributes["pairs"])`
+
 
 ### Seconds
 
