@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("cloudflare")
+)
+
 const (
-	Type          = "cloudflare"
 	LogsStability = component.StabilityLevelAlpha
 )
 

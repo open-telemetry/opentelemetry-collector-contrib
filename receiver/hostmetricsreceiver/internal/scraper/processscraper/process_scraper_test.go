@@ -68,7 +68,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name: "Enable memory utilization",
-			mutateMetricsConfig: func(t *testing.T, ms *metadata.MetricsConfig) {
+			mutateMetricsConfig: func(_ *testing.T, ms *metadata.MetricsConfig) {
 				ms.ProcessMemoryUtilization.Enabled = true
 			},
 		},
@@ -92,7 +92,7 @@ func TestScrape(t *testing.T) {
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
-			scraper.getProcessCreateTime = func(p processHandle, ctx context.Context) (int64, error) { return createTime, nil }
+			scraper.getProcessCreateTime = func(processHandle, context.Context) (int64, error) { return createTime, nil }
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)

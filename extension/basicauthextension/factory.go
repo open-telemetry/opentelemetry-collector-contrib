@@ -31,5 +31,5 @@ func createExtension(_ context.Context, _ extension.CreateSettings, cfg componen
 	if cfg.(*Config).Htpasswd != nil {
 		return newServerAuthExtension(cfg.(*Config))
 	}
-	return newClientAuthExtension(cfg.(*Config))
+	return newClientAuthExtension(cfg.(*Config)), nil
 }

@@ -34,13 +34,13 @@ type Option func(*Cadvisor)
 
 // WithDecorator constructs an option for configuring the metric decorator
 func WithDecorator(_ any) Option {
-	return func(c *Cadvisor) {
+	return func(*Cadvisor) {
 		// do nothing
 	}
 }
 
 func WithECSInfoCreator(_ any) Option {
-	return func(c *Cadvisor) {
+	return func(*Cadvisor) {
 		// do nothing
 	}
 }

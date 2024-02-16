@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
@@ -104,8 +105,8 @@ func componentFactories(t *testing.T) otelcol.Factories {
 
 func complementaryTest(t *testing.T, rfc string, expectedData []expectedDataType) {
 	// Prepare ports
-	port := testbed.GetAvailablePort(t)
-	inputPort := testbed.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
+	inputPort := testutil.GetAvailablePort(t)
 
 	// Start SyslogDataReceiver
 	syslogReceiver := datareceivers.NewSyslogDataReceiver(rfc, port)

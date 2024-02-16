@@ -438,6 +438,30 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], ParseKeyValue("k1=v1 k2=v2"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("k1", "v1")
+				m.PutStr("k2", "v2")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseKeyValue("k1!v1_k2!v2", "!", "_"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("k1", "v1")
+				m.PutStr("k2", "v2")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseKeyValue("k1!v1_k2!\"v2__!__v2\"", "!", "_"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("k1", "v1")
+				m.PutStr("k2", "v2__!__v2")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Seconds(Duration("1m")))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutDouble("test", 60)
@@ -516,6 +540,44 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["test"], "pass") where IsString(UUID())`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "\\")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "\\")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "\\\\")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "\\\\")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "\\\\\\")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "\\\\\\")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "\\\\\\\\")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "\\\\\\\\")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "\"")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", `"`)
+			},
+		},
+		{
+			statement: `keep_keys(attributes["foo"], ["\\", "bar"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				// keep_keys should see two arguments
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("foo")
+				m.PutStr("bar", "pass")
 			},
 		},
 	}

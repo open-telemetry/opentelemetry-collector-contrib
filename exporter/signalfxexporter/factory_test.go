@@ -102,7 +102,7 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	config := &Config{
 		AccessToken: "testToken",
 		Realm:       "us1",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Timeout: 2 * time.Second,
 			Headers: map[string]configopaque.String{
 				"added-entry": "added value",
@@ -121,9 +121,9 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.NotNil(t, rules, "rules are nil")
 	tr, err := translation.NewMetricTranslator(rules, 1)
 	require.NoError(t, err)
-	data := testMetricsData()
+	data := testMetricsData(false)
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "", false)
+	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "", false, true)
 	require.NoError(t, err)
 	translated := c.MetricsToSignalFxV2(data)
 	require.NotNil(t, translated)
@@ -210,7 +210,7 @@ func requireDimension(t *testing.T, dims []*sfxpb.Dimension, key, val string) {
 	require.True(t, found, `missing dimension: %s`, key)
 }
 
-func testMetricsData() pmetric.Metrics {
+func testMetricsData(addHistogram bool) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 
 	m1 := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
@@ -231,6 +231,10 @@ func testMetricsData() pmetric.Metrics {
 	dp12.Attributes().PutStr("kubernetes_cluster", "cluster0")
 	dp12.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp12.SetIntValue(6e9)
+
+	if addHistogram {
+		buildHistogram(m1, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
 
 	sm2 := md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty().Metrics()
 	m2 := sm2.AppendEmpty()
@@ -263,6 +267,10 @@ func testMetricsData() pmetric.Metrics {
 	dp24.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp24.SetIntValue(8e9)
 
+	if addHistogram {
+		buildHistogram(m2, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
+
 	m3 := sm2.AppendEmpty()
 	m3.SetName("system.disk.operations")
 	m3.SetDescription("Disk operations count.")
@@ -293,6 +301,10 @@ func testMetricsData() pmetric.Metrics {
 	dp34.Attributes().PutStr("device", "sda2")
 	dp34.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp34.SetIntValue(5e3)
+
+	if addHistogram {
+		buildHistogram(m3, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
 
 	m4 := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m4.SetName("system.disk.operations")
@@ -325,6 +337,10 @@ func testMetricsData() pmetric.Metrics {
 	dp44.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000060, 0)))
 	dp44.SetIntValue(7e3)
 
+	if addHistogram {
+		buildHistogram(m4, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
+
 	sm5 := md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty().Metrics()
 	m5 := sm5.AppendEmpty()
 	m5.SetName("system.network.io")
@@ -347,6 +363,10 @@ func testMetricsData() pmetric.Metrics {
 	dp52.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp52.SetIntValue(6e9)
 
+	if addHistogram {
+		buildHistogram(m5, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
+
 	m6 := sm5.AppendEmpty()
 	m6.SetName("system.network.packets")
 	m6.SetDescription("The number of packets transferred")
@@ -367,6 +387,10 @@ func testMetricsData() pmetric.Metrics {
 	dp62.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp62.SetIntValue(150)
 
+	if addHistogram {
+		buildHistogram(m6, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
+
 	sm7 := md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty().Metrics()
 	m7 := sm7.AppendEmpty()
 	m7.SetName("container.memory.working_set")
@@ -378,6 +402,10 @@ func testMetricsData() pmetric.Metrics {
 	dp71.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp71.SetIntValue(1000)
 
+	if addHistogram {
+		buildHistogram(m7, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
+
 	m8 := sm7.AppendEmpty()
 	m8.SetName("container.memory.page_faults")
 	dp81 := m8.SetEmptyGauge().DataPoints().AppendEmpty()
@@ -387,6 +415,10 @@ func testMetricsData() pmetric.Metrics {
 	dp81.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp81.SetIntValue(1000)
 
+	if addHistogram {
+		buildHistogram(m8, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
+
 	m9 := sm7.AppendEmpty()
 	m9.SetName("container.memory.major_page_faults")
 	dp91 := m9.SetEmptyGauge().DataPoints().AppendEmpty()
@@ -395,6 +427,10 @@ func testMetricsData() pmetric.Metrics {
 	dp91.Attributes().PutStr("kubernetes_cluster", "cluster0")
 	dp91.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp91.SetIntValue(1000)
+
+	if addHistogram {
+		buildHistogram(m9, "histogram", pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)), 5)
+	}
 
 	return md
 }
@@ -493,7 +529,7 @@ func TestHostmetricsCPUTranslations(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	require.NoError(t, setDefaultExcludes(cfg))
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false)
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false, true)
 	require.NoError(t, err)
 
 	md1, err := golden.ReadMetrics(filepath.Join("testdata", "hostmetrics_system_cpu_time_1.yaml"))
@@ -534,7 +570,7 @@ func TestDefaultExcludesTranslated(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	require.NoError(t, setDefaultExcludes(cfg))
 
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false)
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false, true)
 	require.NoError(t, err)
 
 	var metrics []map[string]string
@@ -557,7 +593,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	require.NoError(t, setDefaultExcludes(cfg))
 
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false)
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false, true)
 	require.NoError(t, err)
 
 	var metrics []map[string]string
@@ -577,7 +613,7 @@ func BenchmarkMetricConversion(b *testing.B) {
 	tr, err := translation.NewMetricTranslator(rules, 1)
 	require.NoError(b, err)
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "", false)
+	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "", false, true)
 	require.NoError(b, err)
 
 	bytes, err := os.ReadFile("testdata/json/hostmetrics.json")
@@ -621,4 +657,30 @@ func testReadJSON(f string, v any) error {
 		return err
 	}
 	return json.Unmarshal(bytes, &v)
+}
+
+func buildHistogramDP(dp pmetric.HistogramDataPoint, timestamp pcommon.Timestamp) {
+	dp.SetStartTimestamp(timestamp)
+	dp.SetTimestamp(timestamp)
+	dp.SetMin(1.0)
+	dp.SetMax(2)
+	dp.SetCount(5)
+	dp.SetSum(7.0)
+	dp.BucketCounts().FromRaw([]uint64{3, 2})
+	dp.ExplicitBounds().FromRaw([]float64{1, 2})
+	dp.Attributes().PutStr("k1", "v1")
+}
+
+func buildHistogram(im pmetric.Metric, name string, timestamp pcommon.Timestamp, dpCount int) {
+	im.SetName(name)
+	im.SetDescription("Histogram")
+	im.SetUnit("1")
+	im.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	idps := im.Histogram().DataPoints()
+	idps.EnsureCapacity(dpCount)
+
+	for i := 0; i < dpCount; i++ {
+		dp := idps.AppendEmpty()
+		buildHistogramDP(dp, timestamp)
+	}
 }

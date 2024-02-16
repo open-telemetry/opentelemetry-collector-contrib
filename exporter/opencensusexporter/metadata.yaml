@@ -4,6 +4,11 @@ status:
   class: exporter
   stability:
     beta: [traces, metrics]
-  distributions: [contrib, observiq]
+  distributions: [core, contrib, observiq]
   codeowners:
     active: [open-telemetry/collector-approvers]
+
+tests:
+  config:
+    endpoint: opencensus2:55678
+  expect_consumer_error: true

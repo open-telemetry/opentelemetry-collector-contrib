@@ -251,20 +251,19 @@ Examples:
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
 `target` is a path expression to a `pcommon.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string. `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching string with the hash value of `replacement`.
+`replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one `%s` format specifier as shown in the example below. No other format specifiers are supported.
 
 Each string value in `target` that matches `pattern` will get replaced with `replacement`. Non-string values are ignored.
-
-There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
 - `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
-- `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}", SHA256)`
+- `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}", SHA256, "/user/%s")`
 
 ### replace_all_patterns
 
 `replace_all_patterns(target, mode, regex, replacement, Optional[function])`
+`replace_all_patterns(target, mode, regex, replacement, function, replacementFormat)`
 
 The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
@@ -274,20 +273,17 @@ The `replace_all_patterns` function replaces any segments in a string value or k
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
-The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand). `replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one `%s` format specifier as shown in the example below. No other format specifiers are supported.
 
 The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching regex pattern with the hash value of `replacement`.
-
-There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
-If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
 - `replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")`
 - `replace_all_patterns(attributes, "key", "/account/\\d{4}", "/account/{accountId}")`
 - `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
-- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "k8s.$$1.", SHA256)`
+- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.")`
+- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.", SHA256, "k8s.%s")`
 
 Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
@@ -300,22 +296,22 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 The `replace_match` function allows replacing entire strings if they match a glob pattern.
 
 `target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string.
+`replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one `%s` format specifier as shown in the example below. No other format specifiers are supported.
 
 If `target` matches `pattern` it will get replaced with `replacement`.
 
 The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching glob pattern with the hash value of `replacement`.
 
-There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
-
 Examples:
 
 - `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
-- `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}", SHA256)`
+- `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}", SHA256, "/user/%s")`
 
 ### replace_pattern
 
 `replace_pattern(target, regex, replacement, Optional[function])`
+`replace_pattern(target, regex, replacement, function)`
+`replace_pattern(target, regex, replacement, function, replacementFormat)`
 
 The `replace_pattern` function allows replacing all string sections that match a regex pattern with a new value.
 
@@ -323,19 +319,15 @@ The `replace_pattern` function allows replacing all string sections that match a
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
-The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand). `replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one `%s` format specifier as shown in the example below. No other format specifiers are supported
 
 The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces a matching regex pattern with the hash value of `replacement`.
-
-There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
-If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
 - `replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")`
 - `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
-- `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "k8s.$$1.", SHA256)`
+- `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "$$1.", SHA256, "k8s.%s")`
 
 Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
@@ -410,6 +402,7 @@ Available Converters:
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
 - [ParseJSON](#parsejson)
+- [ParseKeyValue](#parsekeyvalue)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
@@ -674,9 +667,6 @@ If target is not a string, it will be converted to one:
 
 If target is nil, false is always returned.
 
-There is currently a bug with OTTL that does not allow the target string to end with `\\"`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
-
 Examples:
 
 - `IsMatch(attributes["http.path"], "foo")`
@@ -840,6 +830,26 @@ Examples:
 
 - `ParseJSON(body)`
 
+### ParseKeyValue
+
+`ParseKeyValue(target, Optional[delimiter], Optional[pair_delimiter])`
+
+The `ParseKeyValue` Converter returns a `pcommon.Map` that is a result of parsing the target string for key value pairs.
+
+`target` is a Getter that returns a string. If the returned string is empty, an error will be returned. `delimiter` is an optional string that is used to split the key and value in a pair, the default is `=`. `pair_delimiter` is an optional string that is used to split key value pairs, the default is a single space (` `).
+
+For example, the following target `"k1=v1 k2=v2 k3=v3"` will use default delimiters and be parsed into the following map:
+```
+{ "k1": "v1", "k2": "v2", "k3": "v3" }
+```
+
+Examples:
+
+- `ParseKeyValue("k1=v1 k2=v2 k3=v3")`
+- `ParseKeyValue("k1!v1_k2!v2_k3!v3", "!", "_")`
+- `ParseKeyValue(attributes["pairs"])`
+
+
 ### Seconds
 
 `Seconds(value)`
@@ -917,9 +927,6 @@ The `Split` Converter separates a string by the delimiter, and returns an array 
 `target` is a string. `delimiter` is a string.
 
 If the `target` is not a string or does not exist, the `Split` Converter will return an error.
-
-There is currently a bug with OTTL that does not allow the target string to end with `\\"`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 

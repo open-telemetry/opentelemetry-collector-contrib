@@ -24,7 +24,7 @@ func TestConfigValidation(t *testing.T) {
 				LogFormat:        "test_format",
 				MetricFormat:     "carbon2",
 				CompressEncoding: "gzip",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout:  defaultTimeout,
 					Endpoint: "test_endpoint",
 				},
@@ -36,7 +36,7 @@ func TestConfigValidation(t *testing.T) {
 			cfg: &Config{
 				LogFormat:    "json",
 				MetricFormat: "test_format",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout:  defaultTimeout,
 					Endpoint: "test_endpoint",
 				},
@@ -50,7 +50,7 @@ func TestConfigValidation(t *testing.T) {
 				LogFormat:        "json",
 				MetricFormat:     "carbon2",
 				CompressEncoding: "test_format",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout:  defaultTimeout,
 					Endpoint: "test_endpoint",
 				},
@@ -63,7 +63,7 @@ func TestConfigValidation(t *testing.T) {
 				LogFormat:        "json",
 				MetricFormat:     "carbon2",
 				CompressEncoding: "gzip",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout: defaultTimeout,
 				},
 			},
@@ -75,7 +75,7 @@ func TestConfigValidation(t *testing.T) {
 				LogFormat:        "json",
 				MetricFormat:     "carbon2",
 				CompressEncoding: "gzip",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout:  defaultTimeout,
 					Endpoint: "test_endpoint",
 				},
@@ -92,7 +92,7 @@ func TestConfigValidation(t *testing.T) {
 				LogFormat:        "json",
 				MetricFormat:     "carbon2",
 				CompressEncoding: "gzip",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout:  defaultTimeout,
 					Endpoint: "test_endpoint",
 				},

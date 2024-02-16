@@ -15,3 +15,6 @@ status:
   codeowners:
     active: [jpkrohling, frzifus]
     emeritus: [svrakitin]
+
+tests:
+  config:

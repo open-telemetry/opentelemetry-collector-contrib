@@ -156,7 +156,7 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 		return nil
 	}
 	// set up the listener
-	ln, err := sr.config.HTTPServerSettings.ToListener()
+	ln, err := sr.config.ServerConfig.ToListener()
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", sr.config.Endpoint, err)
 	}
@@ -166,7 +166,7 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 	nr.HandleFunc(sapmprotocol.TraceEndpointV2, sr.HTTPHandlerFunc)
 
 	// create a server with the handler
-	sr.server, err = sr.config.HTTPServerSettings.ToServer(host, sr.settings, nr)
+	sr.server, err = sr.config.ServerConfig.ToServer(host, sr.settings, nr)
 	if err != nil {
 		return err
 	}

@@ -58,13 +58,6 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "nil_nextConsumer",
-			args: args{
-				config: *defaultConfig,
-			},
-			wantErr: errNilNextLogsConsumer,
-		},
-		{
 			name: "empty_endpoint",
 			args: args{
 				config:       *emptyEndpointConfig,
@@ -83,7 +76,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+					ServerConfig: confighttp.ServerConfig{
 						Endpoint: "localhost:1234",
 					},
 				},
@@ -118,13 +111,6 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "nil_nextConsumer",
-			args: args{
-				config: *defaultConfig,
-			},
-			wantErr: errNilNextMetricsConsumer,
-		},
-		{
 			name: "empty_endpoint",
 			args: args{
 				config:          *emptyEndpointConfig,
@@ -143,7 +129,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+					ServerConfig: confighttp.ServerConfig{
 						Endpoint: "localhost:1234",
 					},
 				},
