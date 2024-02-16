@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("http_forwarder")
+)
+
 const (
-	Type               = "http_forwarder"
 	ExtensionStability = component.StabilityLevelBeta
 )
 
