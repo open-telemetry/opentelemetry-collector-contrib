@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -50,7 +51,8 @@ func TestSecretsManagerFetchSecret(t *testing.T) {
 			}
 
 			b, _ := json.Marshal(response)
-			writer.Write(b)
+			_, err := writer.Write(b)
+			require.NoError(t, err)
 			writer.WriteHeader(http.StatusOK)
 		}
 	}))
