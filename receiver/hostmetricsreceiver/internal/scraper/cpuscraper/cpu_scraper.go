@@ -5,6 +5,7 @@ package cpuscraper // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/common"
@@ -21,6 +22,7 @@ import (
 )
 
 const metricsLen = 2
+const hzInAMHz = 1_000_000
 
 // scraper for CPU Metrics
 type scraper struct {
@@ -33,6 +35,11 @@ type scraper struct {
 	bootTime func(context.Context) (uint64, error)
 	times    func(context.Context, bool) ([]cpu.TimesStat, error)
 	now      func() time.Time
+}
+
+type cpuInfo struct {
+	frequency float64
+	processor uint
 }
 
 // newCPUScraper creates a set of CPU related metrics
@@ -78,6 +85,16 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 	s.mb.RecordSystemCPULogicalCountDataPoint(now, int64(numCPU))
+
+	if s.config.MetricsBuilderConfig.Metrics.SystemCPUFrequency.Enabled {
+		cpuInfos, err := s.getCPUInfo()
+		if err != nil {
+			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
+		}
+		for _, cInfo := range cpuInfos {
+			s.mb.RecordSystemCPUFrequencyDataPoint(now, cInfo.frequency*hzInAMHz, fmt.Sprintf("cpu%d", cInfo.processor))
+		}
+	}
 
 	return s.mb.Emit(), nil
 }

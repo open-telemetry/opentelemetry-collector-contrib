@@ -41,7 +41,7 @@ only unmatched container image names should be excluded.
     - Globs are non-regex items (e.g. `/items/`) containing any of the following: `*[]{}?`.  Negations are supported:
     `!my*container` will exclude all containers whose image name doesn't match the blob `my*container`.
 - `timeout` (default = `5s`): The request timeout for any docker daemon query.
-- `api_version` (default = `1.22`): The Docker client API version (must be 1.22+). [Docker API versions](https://docs.docker.com/engine/api/).
+- `api_version` (default = `1.25`): The Docker client API version (must be 1.25+). If using one with a terminating zero, input as a string to prevent undesired truncation (e.g. `"1.40"` instead of `1.40`, which is parsed as `1.4`). [Docker API versions](https://docs.docker.com/engine/api/).
 - `metrics` (defaults at [./documentation.md](./documentation.md)): Enables/disables individual metrics. See [./documentation.md](./documentation.md) for full detail.
 
 Example:
@@ -87,10 +87,10 @@ which defines [container.cpu.utilization] as the name for this metric.
 To align the emitted metric names with the OpenTelemetry specification,
 the following process will be followed to phase out the old metrics:
 
-- Between `v0.79.0` and `v0.81.0`, the new metric is introduced and the old metric is marked as deprecated.
+- Between `v0.79.0` and `v0.86.0`, the new metric is introduced and the old metric is marked as deprecated.
   Only the old metric are emitted by default.
-- Between `v0.82.0` and `v0.84.0`, the old metric is disabled and the new one enabled by default.
-- In `v0.85.0` and up, the old metric is removed.
+- In `v0.88.0`, the old metric is disabled and the new one enabled by default.
+- In `v0.89.0` and up, the old metric is removed.
 
 To change the enabled state for the specific metrics, use the standard configuration options that are available for all metrics.
 

@@ -421,3 +421,6 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+
+tests:
+  config:

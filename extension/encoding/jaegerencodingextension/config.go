@@ -10,6 +10,7 @@ type JaegerProtocol string
 
 const (
 	JaegerProtocolProtobuf JaegerProtocol = "protobuf"
+	JaegerProtocolJSON     JaegerProtocol = "json"
 )
 
 type Config struct {
@@ -19,6 +20,7 @@ type Config struct {
 func (c *Config) Validate() error {
 	switch c.Protocol {
 	case JaegerProtocolProtobuf:
+	case JaegerProtocolJSON:
 	default:
 		return fmt.Errorf("invalid protocol %q", c.Protocol)
 	}

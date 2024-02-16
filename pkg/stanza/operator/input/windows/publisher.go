@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
@@ -34,6 +33,10 @@ func (p *Publisher) Open(provider string) error {
 
 	p.handle = handle
 	return nil
+}
+
+func (p *Publisher) Valid() bool {
+	return p.handle != 0
 }
 
 // Close will close the publisher handle.

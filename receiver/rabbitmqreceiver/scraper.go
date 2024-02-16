@@ -129,7 +129,7 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestam
 // convertValToInt64 values from message state unmarshal as float64s but should be int64.
 // Need to do a double cast to get an int64.
 // This should never fail but worth checking just in case.
-func convertValToInt64(val interface{}) (int64, bool) {
+func convertValToInt64(val any) (int64, bool) {
 	f64Val, ok := val.(float64)
 	if !ok {
 		return 0, ok

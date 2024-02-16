@@ -24,7 +24,7 @@ to report metrics from a target MBean server using a built-in `otel` helper-util
 
 This receiver will launch a child JRE process running the JMX Metric Gatherer configured with your specified JMX
 connection information and target Groovy script.  It then reports metrics to an implicitly created OTLP receiver.
-In order to use you will need to download the most [recent release](https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/)
+In order to use you will need to download the most [recent release](https://github.com/open-telemetry/opentelemetry-java-contrib/releases)
 of the JMX Metric Gatherer JAR and configure the receiver with its path.  It is assumed that the JRE is
 available on your system.
 
@@ -48,7 +48,9 @@ receivers:
     username: my_jmx_username
     # determined by the environment variable value
     password: ${env:MY_JMX_PASSWORD}
-    resource_attributes: my.attr=my.value,my.other.attr=my.other.value
+    resource_attributes:
+      my.attr: my.value
+      my.other.attr: my.other.value
     log_level: info
     additional_jars:
       - /path/to/other.jar
@@ -186,7 +188,7 @@ Additional JARs to be included in the java command classpath. This is currently 
 
 ### resource_attributes
 
-List of resource attributes that will be applied to any metrics emitted from the metrics gatherer.
+Map of resource attributes that will be applied to any metrics emitted from the metrics gatherer.
 
 Corresponds to the `otel.resource.attributes` property.
 

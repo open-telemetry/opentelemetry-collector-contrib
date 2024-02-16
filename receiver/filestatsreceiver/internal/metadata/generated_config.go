@@ -15,7 +15,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
@@ -26,6 +26,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 // MetricsConfig provides config for filestats metrics.
 type MetricsConfig struct {
 	FileAtime MetricConfig `mapstructure:"file.atime"`
+	FileCount MetricConfig `mapstructure:"file.count"`
 	FileCtime MetricConfig `mapstructure:"file.ctime"`
 	FileMtime MetricConfig `mapstructure:"file.mtime"`
 	FileSize  MetricConfig `mapstructure:"file.size"`
@@ -34,6 +35,9 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		FileAtime: MetricConfig{
+			Enabled: false,
+		},
+		FileCount: MetricConfig{
 			Enabled: false,
 		},
 		FileCtime: MetricConfig{
@@ -51,6 +55,20 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for filestats resource attributes.

@@ -117,6 +117,47 @@ func TestValidate(t *testing.T) {
 			expectedErr: errNoCert.Error(),
 		},
 		{
+			name: "Valid Metrics Config",
+			input: Config{
+				Projects: []*ProjectConfig{
+					{
+						Name: "Project1",
+					},
+				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+			},
+		},
+		{
+			name: "Valid Metrics Config with multiple projects with an inclusion or exclusion",
+			input: Config{
+				Projects: []*ProjectConfig{
+					{
+						Name:            "Project1",
+						IncludeClusters: []string{"Cluster1"},
+					},
+					{
+						Name:            "Project2",
+						ExcludeClusters: []string{"Cluster1"},
+					},
+				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+			},
+		},
+		{
+			name: "invalid Metrics Config",
+			input: Config{
+				Projects: []*ProjectConfig{
+					{
+						Name:            "Project1",
+						IncludeClusters: []string{"Cluster1"},
+						ExcludeClusters: []string{"Cluster2"},
+					},
+				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+			},
+			expectedErr: errClusterConfig.Error(),
+		},
+		{
 			name: "Valid Logs Config",
 			input: Config{
 				Logs: LogConfig{

@@ -1673,6 +1673,55 @@ func newMetricRedisReplicationOffset(cfg MetricConfig) metricRedisReplicationOff
 	return m
 }
 
+type metricRedisReplicationReplicaOffset struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills redis.replication.replica_offset metric with initial data.
+func (m *metricRedisReplicationReplicaOffset) init() {
+	m.data.SetName("redis.replication.replica_offset")
+	m.data.SetDescription("Offset for redis replica")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricRedisReplicationReplicaOffset) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRedisReplicationReplicaOffset) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRedisReplicationReplicaOffset) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRedisReplicationReplicaOffset(cfg MetricConfig) metricRedisReplicationReplicaOffset {
+	m := metricRedisReplicationReplicaOffset{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricRedisRole struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1867,6 +1916,7 @@ type MetricsBuilder struct {
 	metricRedisRdbChangesSinceLastSave           metricRedisRdbChangesSinceLastSave
 	metricRedisReplicationBacklogFirstByteOffset metricRedisReplicationBacklogFirstByteOffset
 	metricRedisReplicationOffset                 metricRedisReplicationOffset
+	metricRedisReplicationReplicaOffset          metricRedisReplicationReplicaOffset
 	metricRedisRole                              metricRedisRole
 	metricRedisSlavesConnected                   metricRedisSlavesConnected
 	metricRedisUptime                            metricRedisUptime
@@ -1919,6 +1969,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricRedisRdbChangesSinceLastSave:           newMetricRedisRdbChangesSinceLastSave(mbc.Metrics.RedisRdbChangesSinceLastSave),
 		metricRedisReplicationBacklogFirstByteOffset: newMetricRedisReplicationBacklogFirstByteOffset(mbc.Metrics.RedisReplicationBacklogFirstByteOffset),
 		metricRedisReplicationOffset:                 newMetricRedisReplicationOffset(mbc.Metrics.RedisReplicationOffset),
+		metricRedisReplicationReplicaOffset:          newMetricRedisReplicationReplicaOffset(mbc.Metrics.RedisReplicationReplicaOffset),
 		metricRedisRole:                              newMetricRedisRole(mbc.Metrics.RedisRole),
 		metricRedisSlavesConnected:                   newMetricRedisSlavesConnected(mbc.Metrics.RedisSlavesConnected),
 		metricRedisUptime:                            newMetricRedisUptime(mbc.Metrics.RedisUptime),
@@ -2014,6 +2065,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricRedisRdbChangesSinceLastSave.emit(ils.Metrics())
 	mb.metricRedisReplicationBacklogFirstByteOffset.emit(ils.Metrics())
 	mb.metricRedisReplicationOffset.emit(ils.Metrics())
+	mb.metricRedisReplicationReplicaOffset.emit(ils.Metrics())
 	mb.metricRedisRole.emit(ils.Metrics())
 	mb.metricRedisSlavesConnected.emit(ils.Metrics())
 	mb.metricRedisUptime.emit(ils.Metrics())
@@ -2190,6 +2242,11 @@ func (mb *MetricsBuilder) RecordRedisReplicationBacklogFirstByteOffsetDataPoint(
 // RecordRedisReplicationOffsetDataPoint adds a data point to redis.replication.offset metric.
 func (mb *MetricsBuilder) RecordRedisReplicationOffsetDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricRedisReplicationOffset.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordRedisReplicationReplicaOffsetDataPoint adds a data point to redis.replication.replica_offset metric.
+func (mb *MetricsBuilder) RecordRedisReplicationReplicaOffsetDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricRedisReplicationReplicaOffset.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisRoleDataPoint adds a data point to redis.role metric.

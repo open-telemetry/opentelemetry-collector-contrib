@@ -88,7 +88,7 @@ func sendToCollector(endpoint string, contentType string, contentEncoding string
 func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 	config := &Config{
 		Protocols: Protocols{
-			GRPC: &configgrpc.GRPCServerSettings{
+			GRPC: &configgrpc.ServerConfig{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: "tcp",
@@ -115,7 +115,7 @@ func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	config := &Config{
 		Protocols: Protocols{
-			HTTP: &confighttp.HTTPServerSettings{
+			HTTP: &confighttp.ServerConfig{
 				Endpoint: addr,
 			},
 		},
@@ -162,7 +162,7 @@ func TestSendingProtobufPushRequestToHTTPEndpoint(t *testing.T) {
 			expected: generateLogs([]Log{
 				{
 					Timestamp: 1676888496000000000,
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"foo": "bar",
 					},
 					Body: pcommon.NewValueStr("logline 1"),
@@ -208,14 +208,14 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			expected: generateLogs([]Log{
 				{
 					Timestamp: 1676888496000000000,
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"foo": "bar",
 					},
 					Body: pcommon.NewValueStr("logline 1"),
 				},
 				{
 					Timestamp: 1676888497000000000,
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"foo": "bar",
 					},
 					Body: pcommon.NewValueStr("logline 2"),
@@ -231,14 +231,14 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			expected: generateLogs([]Log{
 				{
 					Timestamp: 1676888496000000000,
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"foo": "bar",
 					},
 					Body: pcommon.NewValueStr("logline 1"),
 				},
 				{
 					Timestamp: 1676888497000000000,
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"foo": "bar",
 					},
 					Body: pcommon.NewValueStr("logline 2"),
@@ -254,14 +254,14 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			expected: generateLogs([]Log{
 				{
 					Timestamp: 1676888496000000000,
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"foo": "bar",
 					},
 					Body: pcommon.NewValueStr("logline 1"),
 				},
 				{
 					Timestamp: 1676888497000000000,
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"foo": "bar",
 					},
 					Body: pcommon.NewValueStr("logline 2"),
@@ -277,14 +277,14 @@ func TestSendingPushRequestToHTTPEndpoint(t *testing.T) {
 			expected: generateLogs([]Log{
 				{
 					Timestamp: 1676888496000000000,
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"foo": "bar",
 					},
 					Body: pcommon.NewValueStr("logline 1"),
 				},
 				{
 					Timestamp: 1676888497000000000,
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"foo": "bar",
 					},
 					Body: pcommon.NewValueStr("logline 2"),
@@ -341,7 +341,7 @@ func TestSendingPushRequestToGRPCEndpoint(t *testing.T) {
 			expected: generateLogs([]Log{
 				{
 					Timestamp: 1676888496000000000,
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"foo": "bar",
 					},
 					Body: pcommon.NewValueStr("logline 1"),
@@ -365,7 +365,7 @@ func TestSendingPushRequestToGRPCEndpoint(t *testing.T) {
 type Log struct {
 	Timestamp  int64
 	Body       pcommon.Value
-	Attributes map[string]interface{}
+	Attributes map[string]any
 }
 
 func generateLogs(logs []Log) plog.Logs {

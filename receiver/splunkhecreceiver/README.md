@@ -30,6 +30,8 @@ The following settings are required:
 * `endpoint` (default = `0.0.0.0:8088`): Address and port that the Splunk HEC
   receiver should bind to.
 
+The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:8088. This will become the default in a future release.
+
 The following settings are optional:
 
 * `access_token_passthrough` (default = `false`): Whether to preserve incoming
@@ -39,7 +41,7 @@ The following settings are optional:
   exporter](../../exporter/splunkhecexporter/README.md) to preserve datapoint
   origin.
 * `tls_settings` (no default): This is an optional object used to specify if TLS should be used for
-  incoming connections.
+  incoming connections. Please consult [configtls] for the complete list of options available.
     * `cert_file`: Specifies the certificate file to use for TLS connection.
       Note: Both `key_file` and `cert_file` are required for TLS connection.
     * `key_file`: Specifies the key file to use for TLS connection. Note: Both
@@ -71,3 +73,5 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+[configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls

@@ -29,8 +29,9 @@ type router[C any] struct {
 	logger *zap.Logger
 	parser ottl.Parser[ottlresource.TransformContext]
 
-	table  []RoutingTableItem
-	routes map[string]routingItem[C]
+	table      []RoutingTableItem
+	routes     map[string]routingItem[C]
+	routeSlice []routingItem[C]
 
 	defaultConsumer  C
 	consumerProvider consumerProvider[C]
@@ -125,6 +126,9 @@ func (r *router[C]) registerRouteConsumers() error {
 			return fmt.Errorf("%w: %s", errPipelineNotFound, err.Error())
 		}
 		route.consumer = consumer
+		if !ok {
+			r.routeSlice = append(r.routeSlice, route)
+		}
 
 		r.routes[key(item)] = route
 	}

@@ -28,7 +28,7 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 	source := config.Source
 	sourcetype := config.SourceType
 	index := config.Index
-	fields := map[string]interface{}{}
+	fields := map[string]any{}
 	sourceKey := config.HecToOtelAttrs.Source
 	sourceTypeKey := config.HecToOtelAttrs.SourceType
 	indexKey := config.HecToOtelAttrs.Index
@@ -83,13 +83,18 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		return true
 	})
 
+	body := lr.Body().AsRaw()
+	if body == nil {
+		body = ""
+	}
+
 	return &splunk.Event{
 		Time:       nanoTimestampToEpochMilliseconds(lr.Timestamp()),
 		Host:       host,
 		Source:     source,
 		SourceType: sourcetype,
 		Index:      index,
-		Event:      lr.Body().AsRaw(),
+		Event:      body,
 		Fields:     fields,
 	}
 }

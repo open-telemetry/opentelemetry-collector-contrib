@@ -31,7 +31,7 @@ func createConcatFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 }
 
 func concat[K any](vals []ottl.StringLikeGetter[K], delimiter string) ottl.ExprFunc[K] {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		builder := strings.Builder{}
 		for i, rv := range vals {
 			val, err := rv.Get(ctx, tCtx)

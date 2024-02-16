@@ -43,7 +43,7 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 	cfg := castConfig(config)
 	e, err := newDatasetExporter("logs", cfg, set)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get DataSetExpoter: %w", err)
+		return nil, fmt.Errorf("cannot get DataSetExporter: %w", err)
 	}
 
 	return exporterhelper.NewLogsExporter(
@@ -52,13 +52,13 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 		config,
 		e.consumeLogs,
 		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 		exporterhelper.WithShutdown(e.shutdown),
 	)
 }
 
-func buildBody(settings LogsSettings, attrs map[string]interface{}, value pcommon.Value) string {
+func buildBody(settings LogsSettings, attrs map[string]any, value pcommon.Value) string {
 	// The message / body is stored as part of the "message" field on the DataSet event.
 	message := value.AsString()
 
@@ -72,7 +72,7 @@ func buildBody(settings LogsSettings, attrs map[string]interface{}, value pcommo
 	// (e.g. attribute processor or similar) or on the server (DataSet server side JSON parser
 	// for the message field).
 	if settings.DecomposeComplexMessageField && value.Type() == pcommon.ValueTypeMap {
-		updateWithPrefixedValues(attrs, "body.map.", ".", value.Map().AsRaw(), 0)
+		updateWithPrefixedValues(attrs, settings.DecomposedComplexMessagePrefix, settings.ExportSeparator, settings.ExportDistinguishingSuffix, value.Map().AsRaw(), 0)
 	}
 
 	return message
@@ -169,7 +169,7 @@ func buildEventFromLog(
 	serverHost string,
 	logSettings LogsSettings,
 ) *add_events.EventBundle {
-	attrs := make(map[string]interface{})
+	attrs := make(map[string]any)
 	event := add_events.Event{}
 
 	observedTs := log.ObservedTimestamp().AsTime()
@@ -212,17 +212,17 @@ func buildEventFromLog(
 	}
 
 	if logSettings.ExportResourceInfo {
-		updateWithPrefixedValues(attrs, "resource.attributes.", ".", resource.Attributes().AsRaw(), 0)
+		updateWithPrefixedValues(attrs, logSettings.ExportResourcePrefix, logSettings.ExportSeparator, logSettings.ExportDistinguishingSuffix, resource.Attributes().AsRaw(), 0)
 	}
 
 	if logSettings.ExportScopeInfo {
 		if scope.Name() != "" {
 			attrs["scope.name"] = scope.Name()
 		}
-		updateWithPrefixedValues(attrs, "scope.attributes.", ".", scope.Attributes().AsRaw(), 0)
+		updateWithPrefixedValues(attrs, logSettings.ExportScopePrefix, logSettings.ExportSeparator, logSettings.ExportDistinguishingSuffix, scope.Attributes().AsRaw(), 0)
 	}
 
-	updateWithPrefixedValues(attrs, "", "_", log.Attributes().AsRaw(), 0)
+	updateWithPrefixedValues(attrs, "", logSettings.ExportSeparator, logSettings.ExportDistinguishingSuffix, log.Attributes().AsRaw(), 0)
 
 	event.Attrs = attrs
 	event.Log = "LL"
@@ -231,7 +231,7 @@ func buildEventFromLog(
 	return &add_events.EventBundle{
 		Event:  &event,
 		Thread: &add_events.Thread{Id: "TL", Name: "logs"},
-		Log:    &add_events.Log{Id: "LL", Attrs: map[string]interface{}{}},
+		Log:    &add_events.Log{Id: "LL", Attrs: map[string]any{}},
 	}
 }
 

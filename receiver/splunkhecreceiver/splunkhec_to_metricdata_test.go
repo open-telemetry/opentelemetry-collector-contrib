@@ -32,7 +32,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			SourceType: "sourcetype",
 			Index:      "index",
 			Event:      "metrics",
-			Fields: map[string]interface{}{
+			Fields: map[string]any{
 				"metric_name:single": int64Ptr(13),
 				"k0":                 "v0",
 				"k1":                 "v1",
@@ -315,7 +315,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			Source:     "1",
 			SourceType: "1",
 			Index:      "1",
-			Fields: map[string]interface{}{
+			Fields: map[string]any{
 				"field":          "value1",
 				"metric_name:m1": int64(1),
 			},
@@ -326,7 +326,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			Source:     "2",
 			SourceType: "2",
 			Index:      "2",
-			Fields: map[string]interface{}{
+			Fields: map[string]any{
 				"field":          "value2",
 				"metric_name:m2": int64(2),
 			},
@@ -337,7 +337,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			Source:     "1",
 			SourceType: "1",
 			Index:      "1",
-			Fields: map[string]interface{}{
+			Fields: map[string]any{
 				"field":          "value1",
 				"metric_name:m1": int64(3),
 			},
@@ -349,7 +349,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			SourceType: "2",
 			Index:      "2",
 			Event:      "Event-4",
-			Fields: map[string]interface{}{
+			Fields: map[string]any{
 				"field":          "value2",
 				"metric_name:m2": int64(4),
 			},
@@ -360,7 +360,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			Source:     "2",
 			SourceType: "1",
 			Index:      "2",
-			Fields: map[string]interface{}{
+			Fields: map[string]any{
 				"field":           "value1-2",
 				"metric_name:m12": int64(5),
 			},
@@ -372,7 +372,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			SourceType: "2",
 			Index:      "1",
 			Event:      "Event-6",
-			Fields: map[string]interface{}{
+			Fields: map[string]any{
 				"field":           "value2-1",
 				"metric_name:m21": int64(6),
 			},

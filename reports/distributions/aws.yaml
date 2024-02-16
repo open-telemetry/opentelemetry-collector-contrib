@@ -1,0 +1,46 @@
+name: aws
+url: https://github.com/aws-observability/aws-otel-collector
+maintainers: []
+components:
+    exporter:
+        - awsemf
+        - awsxray
+        - datadog
+        - dynatrace
+        - file
+        - kafka
+        - loadbalancing
+        - logzio
+        - prometheus
+        - prometheusremotewrite
+        - sapm
+        - signalfx
+    extension:
+        - awsproxy
+        - ecs_observer
+        - health_check
+        - pprof
+        - sigv4auth
+    processor:
+        - attributes
+        - cumulativetodelta
+        - deltatorate
+        - experimental_metricsgeneration
+        - filter
+        - groupbytrace
+        - k8sattributes
+        - metricstransform
+        - probabilistic_sampler
+        - resource
+        - resourcedetection
+        - span
+        - tail_sampling
+    receiver:
+        - awscontainerinsightreceiver
+        - awsecscontainermetrics
+        - awsxray
+        - jaeger
+        - kafka
+        - prometheus
+        - statsd
+        - zipkin

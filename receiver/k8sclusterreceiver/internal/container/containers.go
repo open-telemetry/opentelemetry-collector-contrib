@@ -77,7 +77,6 @@ func RecordSpecMetrics(logger *zap.Logger, mb *imetadata.MetricsBuilder, c corev
 	rb.SetK8sPodName(pod.Name)
 	rb.SetK8sNodeName(pod.Spec.NodeName)
 	rb.SetK8sNamespaceName(pod.Namespace)
-	rb.SetOpencensusResourcetype("container")
 	rb.SetContainerID(utils.StripContainerID(containerID))
 	rb.SetK8sContainerName(c.Name)
 	image, err := docker.ParseImageName(imageStr)

@@ -21,7 +21,7 @@ type handler struct {
 	logger    *zap.Logger
 }
 
-func (h handler) OnAdd(obj interface{}, _ bool) {
+func (h handler) OnAdd(obj any, _ bool) {
 	var endpoints []string
 
 	switch object := obj.(type) {
@@ -43,7 +43,7 @@ func (h handler) OnAdd(obj interface{}, _ bool) {
 	}
 }
 
-func (h handler) OnUpdate(oldObj, newObj interface{}) {
+func (h handler) OnUpdate(oldObj, newObj any) {
 	switch oldEps := oldObj.(type) {
 	case *corev1.Endpoints:
 		epRemove := convertToEndpoints(oldEps)
@@ -76,7 +76,7 @@ func (h handler) OnUpdate(oldObj, newObj interface{}) {
 	}
 }
 
-func (h handler) OnDelete(obj interface{}) {
+func (h handler) OnDelete(obj any) {
 	var endpoints []string
 	switch object := obj.(type) {
 	case *cache.DeletedFinalStateUnknown:

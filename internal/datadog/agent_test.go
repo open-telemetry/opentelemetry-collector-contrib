@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadog // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadog"
+package datadog // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/testutil"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestTraceAgentConfig(t *testing.T) {
@@ -41,7 +40,7 @@ func TestTraceAgent(t *testing.T) {
 		{
 			LibName:    "libname",
 			LibVersion: "1.2",
-			Attributes: map[string]interface{}{},
+			Attributes: map[string]any{},
 			Spans: []*testutil.OTLPSpan{
 				{Name: "1"},
 				{Name: "2"},
@@ -51,7 +50,7 @@ func TestTraceAgent(t *testing.T) {
 		{
 			LibName:    "other-libname",
 			LibVersion: "2.1",
-			Attributes: map[string]interface{}{},
+			Attributes: map[string]any{},
 			Spans: []*testutil.OTLPSpan{
 				{Name: "4", TraceID: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}},
 				{Name: "5", TraceID: [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}},
@@ -79,26 +78,4 @@ loop:
 	// of groups
 	require.Len(t, stats.Stats[0].Stats[0].Stats, traces.SpanCount())
 	require.Len(t, a.TraceWriter.In, 0) // the trace writer channel should've been drained
-
-	// Check that the payload is labeled
-	val, ok := traces.ResourceSpans().At(0).Resource().Attributes().Get(keyStatsComputed)
-	require.True(t, ok)
-	require.Equal(t, pcommon.ValueTypeBool, val.Type())
-	require.True(t, val.Bool())
-
-	// Ingest again
-	a.Ingest(ctx, traces)
-	timeout = time.After(500 * time.Millisecond)
-loop2:
-	for {
-		select {
-		case stats = <-out:
-			if len(stats.Stats) != 0 {
-				t.Fatal("got payload when none was expected")
-			}
-		case <-timeout:
-			// We got no stats (expected), thus we end the test
-			break loop2
-		}
-	}
 }

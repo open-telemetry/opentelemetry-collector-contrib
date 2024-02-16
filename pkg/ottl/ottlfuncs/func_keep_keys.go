@@ -37,7 +37,7 @@ func keepKeys[K any](target ottl.PMapGetter[K], keys []string) ottl.ExprFunc[K] 
 		keySet[key] = struct{}{}
 	}
 
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

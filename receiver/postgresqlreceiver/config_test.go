@@ -27,7 +27,7 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			desc:                  "missing username and password",
-			defaultConfigModifier: func(cfg *Config) {},
+			defaultConfigModifier: func(*Config) {},
 			expected: multierr.Combine(
 				errors.New(ErrNoUsername),
 				errors.New(ErrNoPassword),
@@ -139,6 +139,7 @@ func TestLoadConfig(t *testing.T) {
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.Databases = []string{"otel"}
+		expected.ExcludeDatabases = []string{"template0"}
 		expected.CollectionInterval = 10 * time.Second
 		expected.TLSClientSetting = configtls.TLSClientSetting{
 			Insecure:           false,

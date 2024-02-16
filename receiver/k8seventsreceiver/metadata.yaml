@@ -7,3 +7,7 @@ status:
   distributions: [contrib, splunk, observiq, sumo]
   codeowners:
     active: [dmitryax, TylerHelmuth]
+
+tests:
+  config:
+  skip_lifecycle: true

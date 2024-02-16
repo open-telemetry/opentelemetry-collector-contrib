@@ -8,6 +8,7 @@ import (
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -22,6 +23,12 @@ const (
 	// TypeStr is type of detector.
 	TypeStr = "gcp"
 )
+
+var removeGCPFaasID = featuregate.GlobalRegistry().MustRegister(
+	"processor.resourcedetection.removeGCPFaasID",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Remove faas.id from the GCP detector. Use faas.instance instead."),
+	featuregate.WithRegisterFromVersion("v0.87.0"))
 
 // NewDetector returns a detector which can detect resource attributes on:
 // * Google Compute Engine (GCE).
@@ -72,43 +79,58 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 		errs = multierr.Combine(errs,
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
 			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.FaaSVersion),
-			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID),
+			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
 		)
+		if !removeGCPFaasID.IsEnabled() {
+			errs = multierr.Combine(errs, d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID))
+		}
 	case gcp.CloudRunJob:
 		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPCloudRun)
 		errs = multierr.Combine(errs,
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
-			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID),
+			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
 			d.rb.SetFromCallable(d.rb.SetGcpCloudRunJobExecution, d.detector.CloudRunJobExecution),
 			d.rb.SetFromCallable(d.rb.SetGcpCloudRunJobTaskIndex, d.detector.CloudRunJobTaskIndex),
 		)
+		if !removeGCPFaasID.IsEnabled() {
+			errs = multierr.Combine(errs, d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID))
+		}
 	case gcp.CloudFunctions:
 		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPCloudFunctions)
 		errs = multierr.Combine(errs,
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
 			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.FaaSVersion),
-			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID),
+			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
 		)
+		if !removeGCPFaasID.IsEnabled() {
+			errs = multierr.Combine(errs, d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID))
+		}
 	case gcp.AppEngineFlex:
 		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPAppEngine)
 		errs = multierr.Combine(errs,
 			d.rb.SetZoneAndRegion(d.detector.AppEngineFlexAvailabilityZoneAndRegion),
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.AppEngineServiceName),
 			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.AppEngineServiceVersion),
-			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.AppEngineServiceInstance),
+			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.AppEngineServiceInstance),
 		)
+		if !removeGCPFaasID.IsEnabled() {
+			errs = multierr.Combine(errs, d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.AppEngineServiceInstance))
+		}
 	case gcp.AppEngineStandard:
 		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPAppEngine)
 		errs = multierr.Combine(errs,
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.AppEngineServiceName),
 			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.AppEngineServiceVersion),
-			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.AppEngineServiceInstance),
+			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.AppEngineServiceInstance),
 			d.rb.SetFromCallable(d.rb.SetCloudAvailabilityZone, d.detector.AppEngineStandardAvailabilityZone),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.AppEngineStandardCloudRegion),
 		)
+		if !removeGCPFaasID.IsEnabled() {
+			errs = multierr.Combine(errs, d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.AppEngineServiceInstance))
+		}
 	case gcp.GCE:
 		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPComputeEngine)
 		errs = multierr.Combine(errs,

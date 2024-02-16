@@ -101,16 +101,16 @@ func (g *Input) Stop() error {
 	return nil
 }
 
-func recursiveMapInterfaceToMapString(m interface{}) interface{} {
+func recursiveMapInterfaceToMapString(m any) any {
 	switch m := m.(type) {
-	case map[string]interface{}:
-		newMap := make(map[string]interface{})
+	case map[string]any:
+		newMap := make(map[string]any)
 		for k, v := range m {
 			newMap[k] = recursiveMapInterfaceToMapString(v)
 		}
 		return newMap
-	case map[interface{}]interface{}:
-		newMap := make(map[string]interface{})
+	case map[any]any:
+		newMap := make(map[string]any)
 		for k, v := range m {
 			str, ok := k.(string)
 			if !ok {

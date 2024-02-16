@@ -204,7 +204,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 			want: func() *ptrace.Traces {
 				traces := ptrace.NewTraces()
 				resource := traces.ResourceSpans().AppendEmpty()
-				populateAttributes(t, resource.Resource().Attributes(), map[string]interface{}{
+				populateAttributes(t, resource.Resource().Attributes(), map[string]any{
 					"service.name":        "someRouterName",
 					"service.instance.id": "someVpnName",
 					"service.version":     "10.0.0",
@@ -220,7 +220,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				span.SetName("(topic) receive")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
 				spanAttrs := span.Attributes()
-				populateAttributes(t, spanAttrs, map[string]interface{}{
+				populateAttributes(t, spanAttrs, map[string]any{
 					"messaging.system":                                        "SolacePubSub+",
 					"messaging.operation":                                     "receive",
 					"messaging.protocol":                                      "MQTT",
@@ -247,15 +247,15 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 					"net.peer.port":                                           int64(12345),
 					"messaging.solace.user_properties.special_key":            true,
 				})
-				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
+				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]any{
 					"messaging.solace.destination_type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
-				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]interface{}{
+				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]any{
 					"messaging.solace.destination_type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
-				populateEvent(t, span, "session_timeout", 123456789, map[string]interface{}{
+				populateEvent(t, span, "session_timeout", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator":   "client",
 					"messaging.solace.transaction_id":          12345,
 					"messaging.solace.transacted_session_name": "my-session-name",
@@ -298,7 +298,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 			want: func() *ptrace.Traces {
 				traces := ptrace.NewTraces()
 				resource := traces.ResourceSpans().AppendEmpty()
-				populateAttributes(t, resource.Resource().Attributes(), map[string]interface{}{
+				populateAttributes(t, resource.Resource().Attributes(), map[string]any{
 					"service.name":        "someRouterName",
 					"service.instance.id": "someVpnName",
 					"service.version":     "10.0.0",
@@ -376,14 +376,14 @@ func compareSpans(t *testing.T, expected, actual ptrace.Span) {
 	}
 }
 
-func populateEvent(t *testing.T, span ptrace.Span, name string, timestamp uint64, attributes map[string]interface{}) {
+func populateEvent(t *testing.T, span ptrace.Span, name string, timestamp uint64, attributes map[string]any) {
 	spanEvent := span.Events().AppendEmpty()
 	spanEvent.SetName(name)
 	spanEvent.SetTimestamp(pcommon.Timestamp(timestamp))
 	populateAttributes(t, spanEvent.Attributes(), attributes)
 }
 
-func populateAttributes(t *testing.T, attrMap pcommon.Map, attributes map[string]interface{}) {
+func populateAttributes(t *testing.T, attrMap pcommon.Map, attributes map[string]any) {
 	for key, val := range attributes {
 		switch casted := val.(type) {
 		case string:

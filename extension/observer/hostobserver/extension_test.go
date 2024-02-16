@@ -123,7 +123,7 @@ type hostPort struct {
 	err  error
 }
 
-func getHostAndPort(i interface{}) hostPort {
+func getHostAndPort(i any) hostPort {
 	var host, port string
 	var err error
 	switch conn := i.(type) {
@@ -304,12 +304,12 @@ func TestPortTypeToProtocol(t *testing.T) {
 func TestCollectConnectionDetails(t *testing.T) {
 	tests := []struct {
 		name string
-		conn psnet.ConnectionStat
+		conn *psnet.ConnectionStat
 		want connectionDetails
 	}{
 		{
 			name: "TCPv4 connection",
-			conn: psnet.ConnectionStat{
+			conn: &psnet.ConnectionStat{
 				Family: syscall.AF_INET,
 				Type:   syscall.SOCK_STREAM,
 				Laddr: psnet.Addr{
@@ -327,7 +327,7 @@ func TestCollectConnectionDetails(t *testing.T) {
 		},
 		{
 			name: "TCPv6 connection",
-			conn: psnet.ConnectionStat{
+			conn: &psnet.ConnectionStat{
 				Family: syscall.AF_INET6,
 				Type:   syscall.SOCK_STREAM,
 				Laddr: psnet.Addr{
@@ -345,7 +345,7 @@ func TestCollectConnectionDetails(t *testing.T) {
 		},
 		{
 			name: "TCPv4 connection - 0.0.0.0",
-			conn: psnet.ConnectionStat{
+			conn: &psnet.ConnectionStat{
 				Family: syscall.AF_INET,
 				Type:   syscall.SOCK_STREAM,
 				Laddr: psnet.Addr{
@@ -363,7 +363,7 @@ func TestCollectConnectionDetails(t *testing.T) {
 		},
 		{
 			name: "UDPv4 connection",
-			conn: psnet.ConnectionStat{
+			conn: &psnet.ConnectionStat{
 				Family: syscall.AF_INET,
 				Type:   syscall.SOCK_DGRAM,
 				Laddr: psnet.Addr{
@@ -381,7 +381,7 @@ func TestCollectConnectionDetails(t *testing.T) {
 		},
 		{
 			name: "UDPv6 connection",
-			conn: psnet.ConnectionStat{
+			conn: &psnet.ConnectionStat{
 				Family: syscall.AF_INET6,
 				Type:   syscall.SOCK_DGRAM,
 				Laddr: psnet.Addr{
@@ -399,7 +399,7 @@ func TestCollectConnectionDetails(t *testing.T) {
 		},
 		{
 			name: "Listening on all interfaces (Darwin)",
-			conn: psnet.ConnectionStat{
+			conn: &psnet.ConnectionStat{
 				Family: syscall.AF_INET,
 				Type:   syscall.SOCK_DGRAM,
 				Laddr: psnet.Addr{
@@ -418,7 +418,7 @@ func TestCollectConnectionDetails(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, collectConnectionDetails(&tt.conn))
+			assert.Equal(t, tt.want, collectConnectionDetails(tt.conn))
 		})
 	}
 }

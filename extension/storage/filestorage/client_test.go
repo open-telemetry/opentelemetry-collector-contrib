@@ -21,7 +21,7 @@ import (
 func TestClientOperations(t *testing.T) {
 	dbFile := filepath.Join(t.TempDir(), "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, client.Close(context.TODO()))
@@ -59,7 +59,7 @@ func TestClientBatchOperations(t *testing.T) {
 	tempDir := t.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, client.Close(context.TODO()))
@@ -180,7 +180,7 @@ func TestNewClientTransactionErrors(t *testing.T) {
 			tempDir := t.TempDir()
 			dbFile := filepath.Join(tempDir, "my_db")
 
-			client, err := newClient(zap.NewNop(), dbFile, timeout, &CompactionConfig{})
+			client, err := newClient(zap.NewNop(), dbFile, timeout, &CompactionConfig{}, false)
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				require.NoError(t, client.Close(context.TODO()))
@@ -204,7 +204,7 @@ func TestNewClientErrorsOnInvalidBucket(t *testing.T) {
 	tempDir := t.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 	require.Error(t, err)
 	require.Nil(t, client)
 
@@ -259,7 +259,7 @@ func TestClientReboundCompaction(t *testing.T) {
 				CheckInterval:              checkInterval,
 				ReboundNeededThresholdMiB:  testCase.reboundNeededThresholdMiB,
 				ReboundTriggerThresholdMiB: testCase.reboundTriggerThresholdMiB,
-			})
+			}, false)
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				require.NoError(t, client.Close(context.TODO()))
@@ -348,7 +348,7 @@ func TestClientConcurrentCompaction(t *testing.T) {
 		CheckInterval:              stepInterval * 2,
 		ReboundNeededThresholdMiB:  1,
 		ReboundTriggerThresholdMiB: 5,
-	})
+	}, false)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -408,7 +408,7 @@ func BenchmarkClientGet(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 	require.NoError(b, err)
 	b.Cleanup(func() {
 		require.NoError(b, client.Close(context.TODO()))
@@ -428,7 +428,7 @@ func BenchmarkClientGet100(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 	require.NoError(b, err)
 	b.Cleanup(func() {
 		require.NoError(b, client.Close(context.TODO()))
@@ -451,7 +451,7 @@ func BenchmarkClientSet(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 	require.NoError(b, err)
 	b.Cleanup(func() {
 		require.NoError(b, client.Close(context.TODO()))
@@ -471,7 +471,7 @@ func BenchmarkClientSet100(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 	require.NoError(b, err)
 	b.Cleanup(func() {
 		require.NoError(b, client.Close(context.TODO()))
@@ -493,7 +493,7 @@ func BenchmarkClientDelete(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 	require.NoError(b, err)
 	b.Cleanup(func() {
 		require.NoError(b, client.Close(context.TODO()))
@@ -519,7 +519,7 @@ func BenchmarkClientSetLargeDB(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 	require.NoError(b, err)
 	b.Cleanup(func() {
 		require.NoError(b, client.Close(context.TODO()))
@@ -556,7 +556,7 @@ func BenchmarkClientInitLargeDB(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 	require.NoError(b, err)
 	b.Cleanup(func() {
 		require.NoError(b, client.Close(context.TODO()))
@@ -575,7 +575,7 @@ func BenchmarkClientInitLargeDB(b *testing.B) {
 	var tempClient *fileStorageClient
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		tempClient, err = newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
+		tempClient, err = newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 		require.NoError(b, err)
 		b.StopTimer()
 		err = tempClient.Close(ctx)
@@ -593,7 +593,7 @@ func BenchmarkClientCompactLargeDBFile(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 	require.NoError(b, err)
 	b.Cleanup(func() {
 		require.NoError(b, client.Close(context.TODO()))
@@ -620,7 +620,7 @@ func BenchmarkClientCompactLargeDBFile(b *testing.B) {
 		testDbFile := filepath.Join(tempDir, fmt.Sprintf("my_db%d", n))
 		err = os.Link(dbFile, testDbFile)
 		require.NoError(b, err)
-		client, err = newClient(zap.NewNop(), testDbFile, time.Second, &CompactionConfig{})
+		client, err = newClient(zap.NewNop(), testDbFile, time.Second, &CompactionConfig{}, false)
 		require.NoError(b, err)
 		b.StartTimer()
 		require.NoError(b, client.Compact(tempDir, time.Second, 65536))
@@ -637,7 +637,7 @@ func BenchmarkClientCompactDb(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
 
-	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{})
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{}, false)
 	require.NoError(b, err)
 	b.Cleanup(func() {
 		require.NoError(b, client.Close(context.TODO()))
@@ -664,7 +664,7 @@ func BenchmarkClientCompactDb(b *testing.B) {
 		testDbFile := filepath.Join(tempDir, fmt.Sprintf("my_db%d", n))
 		err = os.Link(dbFile, testDbFile)
 		require.NoError(b, err)
-		client, err = newClient(zap.NewNop(), testDbFile, time.Second, &CompactionConfig{})
+		client, err = newClient(zap.NewNop(), testDbFile, time.Second, &CompactionConfig{}, false)
 		require.NoError(b, err)
 		b.StartTimer()
 		require.NoError(b, client.Compact(tempDir, time.Second, 65536))

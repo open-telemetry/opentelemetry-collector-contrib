@@ -49,6 +49,11 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+			if test.configSet == testSetAll || test.configSet == testSetNone {
+				assert.Equal(t, "[WARNING] `k8s.kubeproxy.version` should not be configured: k8s.kubeproxy.version resource attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -162,6 +167,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sNamespacePhaseDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordK8sNodeConditionDataPoint(ts, 1, "condition-val")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodPhaseDataPoint(ts, 1)
@@ -229,6 +237,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetContainerID("container.id-val")
 			rb.SetContainerImageName("container.image.name-val")
 			rb.SetContainerImageTag("container.image.tag-val")
+			rb.SetContainerRuntime("container.runtime-val")
+			rb.SetContainerRuntimeVersion("container.runtime.version-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sCronjobName("k8s.cronjob.name-val")
 			rb.SetK8sCronjobUID("k8s.cronjob.uid-val")
@@ -247,6 +257,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sNodeName("k8s.node.name-val")
 			rb.SetK8sNodeUID("k8s.node.uid-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
+			rb.SetK8sPodQosClass("k8s.pod.qos_class-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
 			rb.SetK8sReplicasetName("k8s.replicaset.name-val")
 			rb.SetK8sReplicasetUID("k8s.replicaset.uid-val")
@@ -256,9 +267,10 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sResourcequotaUID("k8s.resourcequota.uid-val")
 			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
-			rb.SetOpencensusResourcetype("opencensus.resourcetype-val")
 			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
 			rb.SetOpenshiftClusterquotaUID("openshift.clusterquota.uid-val")
+			rb.SetOsDescription("os.description-val")
+			rb.SetOsType("os.type-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
@@ -359,7 +371,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Whether a container has passed its readiness probe (0 for no, 1 for yes)", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, "", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -599,19 +611,34 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The current phase of namespaces (1 for active and 0 for terminating)", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, "", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.condition":
+					assert.False(t, validatedMetrics["k8s.node.condition"], "Found a duplicate in the metrics slice: k8s.node.condition")
+					validatedMetrics["k8s.node.condition"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The condition of a particular Node.", ms.At(i).Description())
+					assert.Equal(t, "{condition}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("condition")
+					assert.True(t, ok)
+					assert.EqualValues(t, "condition-val", attrVal.Str())
 				case "k8s.pod.phase":
 					assert.False(t, validatedMetrics["k8s.pod.phase"], "Found a duplicate in the metrics slice: k8s.pod.phase")
 					validatedMetrics["k8s.pod.phase"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, "", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -623,7 +650,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, "", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -683,7 +710,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, "{resource}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -698,7 +725,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The usage for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, "{resource}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -761,7 +788,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The upper limit for a particular resource in a specific namespace.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, "{resource}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -779,7 +806,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The usage for a particular resource in a specific namespace.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, "{resource}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -797,7 +824,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The configured upper limit for a particular resource.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, "{resource}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -812,7 +839,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The usage for a particular resource with a configured limit.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, "{resource}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

@@ -28,7 +28,7 @@ func makeSpanLinks(links ptrace.SpanLinkSlice, skipTimestampValidation bool) ([]
 		spanLinkData.TraceID = &traceID
 
 		if link.Attributes().Len() > 0 {
-			spanLinkData.Attributes = make(map[string]interface{})
+			spanLinkData.Attributes = make(map[string]any)
 
 			link.Attributes().Range(func(k string, v pcommon.Value) bool {
 				spanLinkData.Attributes[k] = v.AsRaw()

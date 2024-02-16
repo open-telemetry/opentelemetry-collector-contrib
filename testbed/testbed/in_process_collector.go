@@ -71,7 +71,7 @@ func (ipp *inProcessCollector) Start(_ StartParams) error {
 
 	settings := otelcol.CollectorSettings{
 		BuildInfo:             component.NewDefaultBuildInfo(),
-		Factories:             ipp.factories,
+		Factories:             func() (otelcol.Factories, error) { return ipp.factories, nil },
 		ConfigProvider:        configProvider,
 		SkipSettingGRPCLogger: true,
 	}

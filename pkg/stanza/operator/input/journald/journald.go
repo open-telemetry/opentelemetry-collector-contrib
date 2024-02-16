@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build linux
-// +build linux
 
 package journald // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/journald"
 
@@ -28,43 +27,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-const operatorType = "journald_input"
 const waitDuration = 1 * time.Second
 
 func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
-
-// NewConfig creates a new input config with default values
-func NewConfig() *Config {
-	return NewConfigWithID(operatorType)
-}
-
-// NewConfigWithID creates a new input config with default values
-func NewConfigWithID(operatorID string) *Config {
-	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, operatorType),
-		StartAt:     "end",
-		Priority:    "info",
-	}
-}
-
-// Config is the configuration of a journald input operator
-type Config struct {
-	helper.InputConfig `mapstructure:",squash"`
-
-	Directory   *string       `mapstructure:"directory,omitempty"`
-	Files       []string      `mapstructure:"files,omitempty"`
-	StartAt     string        `mapstructure:"start_at,omitempty"`
-	Units       []string      `mapstructure:"units,omitempty"`
-	Priority    string        `mapstructure:"priority,omitempty"`
-	Matches     []MatchConfig `mapstructure:"matches,omitempty"`
-	Identifiers []string      `mapstructure:"identifiers,omitempty"`
-	Grep        string        `mapstructure:"grep,omitempty"`
-	Dmesg       bool          `mapstructure:"dmesg,omitempty"`
-}
-
-type MatchConfig map[string]string
 
 // Build will build a journald input operator from the supplied configuration
 func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
@@ -144,6 +111,10 @@ func (c Config) buildArgs() ([]string, error) {
 			return nil, err
 		}
 		args = append(args, matches...)
+	}
+
+	if c.All {
+		args = append(args, "--all")
 	}
 
 	return args, nil
@@ -333,7 +304,7 @@ func (operator *Input) Start(persister operator.Persister) error {
 }
 
 func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, error) {
-	var body map[string]interface{}
+	var body map[string]any
 	err := operator.json.Unmarshal(line, &body)
 	if err != nil {
 		return nil, "", err

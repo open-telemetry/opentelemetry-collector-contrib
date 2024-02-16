@@ -36,5 +36,12 @@ func DeleteObject(client *dynamic.DynamicClient, obj *unstructured.Unstructured)
 		Version:  gvk.Version,
 		Resource: strings.ToLower(gvk.Kind + "s"),
 	}
-	return client.Resource(gvr).Namespace(obj.GetNamespace()).Delete(context.Background(), obj.GetName(), metav1.DeleteOptions{})
+
+	options := metav1.DeleteOptions{}
+	policy := metav1.DeletePropagationBackground
+	if gvk.Kind == "Job" {
+		options.PropagationPolicy = &policy
+	}
+
+	return client.Resource(gvr).Namespace(obj.GetNamespace()).Delete(context.Background(), obj.GetName(), options)
 }

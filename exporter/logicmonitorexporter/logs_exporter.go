@@ -6,8 +6,10 @@ package logicmonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
+	lmsdklogs "github.com/logicmonitor/lm-data-sdk-go/api/logs"
 	"github.com/logicmonitor/lm-data-sdk-go/model"
 	"github.com/logicmonitor/lm-data-sdk-go/utils"
 	"github.com/logicmonitor/lm-data-sdk-go/utils/translator"
@@ -30,6 +32,7 @@ type logExporter struct {
 	config   *Config
 	sender   *logs.Sender
 	settings component.TelemetrySettings
+	cancel   context.CancelFunc
 }
 
 // Create new logicmonitor logs exporter
@@ -43,18 +46,15 @@ func newLogsExporter(_ context.Context, cfg component.Config, set exporter.Creat
 }
 
 func (e *logExporter) start(ctx context.Context, host component.Host) error {
-	client, err := e.config.HTTPClientSettings.ToClient(host, e.settings)
+	client, err := e.config.ClientConfig.ToClient(host, e.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create http client: %w", err)
 	}
 
-	authParams := utils.AuthParams{
-		AccessID:    e.config.APIToken.AccessID,
-		AccessKey:   string(e.config.APIToken.AccessKey),
-		BearerToken: string(e.config.Headers["Authorization"]),
-	}
+	opts := buildLogIngestOpts(e.config, client)
 
-	e.sender, err = logs.NewSender(ctx, e.config.Endpoint, client, authParams, e.settings.Logger)
+	ctx, e.cancel = context.WithCancel(ctx)
+	e.sender, err = logs.NewSender(ctx, e.settings.Logger, opts...)
 	if err != nil {
 		return err
 	}
@@ -72,8 +72,8 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 			libraryLog := libraryLogs.At(j)
 			logs := libraryLog.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				logMetadataMap := make(map[string]interface{})
-				resourceMapperMap := make(map[string]interface{})
+				logMetadataMap := make(map[string]any)
+				resourceMapperMap := make(map[string]any)
 				log := logs.At(k)
 
 				log.Attributes().Range(func(key string, value pcommon.Value) bool {
@@ -95,6 +95,35 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 		}
 	}
 	return e.sender.SendLogs(ctx, payload)
+}
+
+func (e *logExporter) shutdown(_ context.Context) error {
+	if e.cancel != nil {
+		e.cancel()
+	}
+
+	return nil
+}
+
+func buildLogIngestOpts(config *Config, client *http.Client) []lmsdklogs.Option {
+	authParams := utils.AuthParams{
+		AccessID:    config.APIToken.AccessID,
+		AccessKey:   string(config.APIToken.AccessKey),
+		BearerToken: string(config.Headers["Authorization"]),
+	}
+
+	opts := []lmsdklogs.Option{
+		lmsdklogs.WithLogBatchingDisabled(),
+		lmsdklogs.WithAuthentication(authParams),
+		lmsdklogs.WithHTTPClient(client),
+		lmsdklogs.WithEndpoint(config.Endpoint),
+	}
+
+	if config.Logs.ResourceMappingOperation != "" {
+		opts = append(opts, lmsdklogs.WithResourceMappingOperation(string(config.Logs.ResourceMappingOperation)))
+	}
+
+	return opts
 }
 
 func timestampFromLogRecord(lr plog.LogRecord) pcommon.Timestamp {

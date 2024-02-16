@@ -53,7 +53,7 @@ func TestAddFileResolvedFields(t *testing.T) {
 	resolved, err := filepath.Abs(realPath)
 	require.NoError(t, err)
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -75,7 +75,7 @@ func TestReadExistingLogs(t *testing.T) {
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\ntestlog2\n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -140,7 +140,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 			bytesWritten, err := temp.Write(tc.input)
 			require.Greater(t, bytesWritten, 0)
 			require.NoError(t, err)
-			require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+			require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 			defer func() {
 				require.NoError(t, operator.Stop())
 			}()
@@ -156,7 +156,7 @@ func TestReadNewLogs(t *testing.T) {
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, nil)
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -181,7 +181,7 @@ func TestReadExistingAndNewLogs(t *testing.T) {
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -208,7 +208,7 @@ func TestStartAtEnd(t *testing.T) {
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -230,7 +230,7 @@ func TestSkipEmpty(t *testing.T) {
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\n\ntestlog2\n")
 
-	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()

@@ -21,55 +21,6 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
-// SetAzureResourcegroupName sets provided value as "azure.resourcegroup.name" attribute.
-func (rb *ResourceBuilder) SetAzureResourcegroupName(val string) {
-	if rb.config.AzureResourcegroupName.Enabled {
-		rb.res.Attributes().PutStr("azure.resourcegroup.name", val)
-	}
-}
-
-// SetAzureVMName sets provided value as "azure.vm.name" attribute.
-func (rb *ResourceBuilder) SetAzureVMName(val string) {
-	if rb.config.AzureVMName.Enabled {
-		rb.res.Attributes().PutStr("azure.vm.name", val)
-	}
-}
-
-// SetAzureVMScalesetName sets provided value as "azure.vm.scaleset.name" attribute.
-func (rb *ResourceBuilder) SetAzureVMScalesetName(val string) {
-	if rb.config.AzureVMScalesetName.Enabled {
-		rb.res.Attributes().PutStr("azure.vm.scaleset.name", val)
-	}
-}
-
-// SetAzureVMSize sets provided value as "azure.vm.size" attribute.
-func (rb *ResourceBuilder) SetAzureVMSize(val string) {
-	if rb.config.AzureVMSize.Enabled {
-		rb.res.Attributes().PutStr("azure.vm.size", val)
-	}
-}
-
-// SetCloudAccountID sets provided value as "cloud.account.id" attribute.
-func (rb *ResourceBuilder) SetCloudAccountID(val string) {
-	if rb.config.CloudAccountID.Enabled {
-		rb.res.Attributes().PutStr("cloud.account.id", val)
-	}
-}
-
-// SetCloudPlatform sets provided value as "cloud.platform" attribute.
-func (rb *ResourceBuilder) SetCloudPlatform(val string) {
-	if rb.config.CloudPlatform.Enabled {
-		rb.res.Attributes().PutStr("cloud.platform", val)
-	}
-}
-
-// SetCloudProvider sets provided value as "cloud.provider" attribute.
-func (rb *ResourceBuilder) SetCloudProvider(val string) {
-	if rb.config.CloudProvider.Enabled {
-		rb.res.Attributes().PutStr("cloud.provider", val)
-	}
-}
-
 // SetCloudRegion sets provided value as "cloud.region" attribute.
 func (rb *ResourceBuilder) SetCloudRegion(val string) {
 	if rb.config.CloudRegion.Enabled {

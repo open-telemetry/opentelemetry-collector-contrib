@@ -9,7 +9,7 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func addAnnotations(annos map[string]interface{}, attrs pcommon.Map) {
+func addAnnotations(annos map[string]any, attrs pcommon.Map) {
 	if len(annos) > 0 {
 		keys := attrs.PutEmptySlice(awsxray.AWSXraySegmentAnnotationsAttribute)
 		keys.EnsureCapacity(len(annos))

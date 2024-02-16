@@ -60,6 +60,9 @@ func TestParserInvalidType(t *testing.T) {
 
 func TestParserCache(t *testing.T) {
 	parser := newTestParser(t, "^(?P<key>cache)", 200)
+	defer func() {
+		require.NoError(t, parser.Stop())
+	}()
 	_, err := parser.parse([]int{})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as regex")
@@ -84,7 +87,7 @@ func TestParserRegex(t *testing.T) {
 			},
 			&entry.Entry{
 				Body: "a=b",
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"a": "b",
 				},
 			},
@@ -100,7 +103,7 @@ func TestParserRegex(t *testing.T) {
 			},
 			&entry.Entry{
 				Body: "a=b",
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"a": "b",
 				},
 			},
@@ -116,7 +119,7 @@ func TestParserRegex(t *testing.T) {
 			},
 			&entry.Entry{
 				Body: "coredns-5644d7b6d9-mzngq_kube-system_coredns-901f7510281180a402936c92f5bc0f3557f5a21ccb5a4591c5bf98f3ddbffdd6.log",
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"container_id":   "901f7510281180a402936c92f5bc0f3557f5a21ccb5a4591c5bf98f3ddbffdd6",
 					"container_name": "coredns",
 					"namespace":      "kube-system",
@@ -134,6 +137,10 @@ func TestParserRegex(t *testing.T) {
 
 			op, err := cfg.Build(testutil.Logger(t))
 			require.NoError(t, err)
+
+			defer func() {
+				require.NoError(t, op.Stop())
+			}()
 
 			fake := testutil.NewFakeOutput(t)
 			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))

@@ -56,9 +56,11 @@ func run(ymlPath string) error {
 		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
 	}
 	if md.Status != nil {
-		if err = generateFile(filepath.Join(tmplDir, "status.go.tmpl"),
-			filepath.Join(codeDir, "generated_status.go"), md); err != nil {
-			return err
+		if md.Status.Class != "cmd" && md.Status.Class != "pkg" {
+			if err = generateFile(filepath.Join(tmplDir, "status.go.tmpl"),
+				filepath.Join(codeDir, "generated_status.go"), md, "metadata"); err != nil {
+				return err
+			}
 		}
 
 		if _, err = os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
@@ -70,6 +72,14 @@ func run(ymlPath string) error {
 			}
 		}
 	}
+
+	if md.Tests != nil {
+		if err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
+			filepath.Join(ymlDir, "generated_component_test.go"), md, md.ShortFolderName+md.Status.Class); err != nil {
+			return err
+		}
+	}
+
 	if len(md.Metrics) == 0 && len(md.ResourceAttributes) == 0 {
 		return nil
 	}
@@ -78,26 +88,26 @@ func run(ymlPath string) error {
 		return fmt.Errorf("unable to create output directory %q: %w", filepath.Join(codeDir, "testdata"), err)
 	}
 	if err = generateFile(filepath.Join(tmplDir, "testdata", "config.yaml.tmpl"),
-		filepath.Join(codeDir, "testdata", "config.yaml"), md); err != nil {
+		filepath.Join(codeDir, "testdata", "config.yaml"), md, "metadata"); err != nil {
 		return err
 	}
 
 	if err = generateFile(filepath.Join(tmplDir, "config.go.tmpl"),
-		filepath.Join(codeDir, "generated_config.go"), md); err != nil {
+		filepath.Join(codeDir, "generated_config.go"), md, "metadata"); err != nil {
 		return err
 	}
 	if err = generateFile(filepath.Join(tmplDir, "config_test.go.tmpl"),
-		filepath.Join(codeDir, "generated_config_test.go"), md); err != nil {
+		filepath.Join(codeDir, "generated_config_test.go"), md, "metadata"); err != nil {
 		return err
 	}
 
 	if len(md.ResourceAttributes) > 0 {
 		if err = generateFile(filepath.Join(tmplDir, "resource.go.tmpl"),
-			filepath.Join(codeDir, "generated_resource.go"), md); err != nil {
+			filepath.Join(codeDir, "generated_resource.go"), md, "metadata"); err != nil {
 			return err
 		}
 		if err = generateFile(filepath.Join(tmplDir, "resource_test.go.tmpl"),
-			filepath.Join(codeDir, "generated_resource_test.go"), md); err != nil {
+			filepath.Join(codeDir, "generated_resource_test.go"), md, "metadata"); err != nil {
 			return err
 		}
 	}
@@ -107,15 +117,15 @@ func run(ymlPath string) error {
 	}
 
 	if err = generateFile(filepath.Join(tmplDir, "metrics.go.tmpl"),
-		filepath.Join(codeDir, "generated_metrics.go"), md); err != nil {
+		filepath.Join(codeDir, "generated_metrics.go"), md, "metadata"); err != nil {
 		return err
 	}
 	if err = generateFile(filepath.Join(tmplDir, "metrics_test.go.tmpl"),
-		filepath.Join(codeDir, "generated_metrics_test.go"), md); err != nil {
+		filepath.Join(codeDir, "generated_metrics_test.go"), md, "metadata"); err != nil {
 		return err
 	}
 
-	return generateFile(filepath.Join(tmplDir, "documentation.md.tmpl"), filepath.Join(ymlDir, "documentation.md"), md)
+	return generateFile(filepath.Join(tmplDir, "documentation.md.tmpl"), filepath.Join(ymlDir, "documentation.md"), md, "metadata")
 }
 
 func templatize(tmplFile string, md metadata) *template.Template {
@@ -123,7 +133,7 @@ func templatize(tmplFile string, md metadata) *template.Template {
 		template.
 			New(filepath.Base(tmplFile)).
 			Option("missingkey=error").
-			Funcs(map[string]interface{}{
+			Funcs(map[string]any{
 				"publicVar": func(s string) (string, error) {
 					return formatIdentifier(s, true)
 				},
@@ -168,6 +178,148 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				"distroURL": func(name string) string {
 					return distros[name]
 				},
+				"isExporter": func() bool {
+					return md.Status.Class == "exporter"
+				},
+				"isProcessor": func() bool {
+					return md.Status.Class == "processor"
+				},
+				"isReceiver": func() bool {
+					return md.Status.Class == "receiver"
+				},
+				"isExtension": func() bool {
+					return md.Status.Class == "extension"
+				},
+				"isConnector": func() bool {
+					return md.Status.Class == "connector"
+				},
+				"skipLifecycle": func() bool {
+					return md.Tests.SkipLifecycle
+				},
+				"supportsLogs": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "logs" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsMetrics": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "metrics" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsTraces": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "traces" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsLogsToLogs": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "logs_to_logs" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsLogsToMetrics": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "logs_to_metrics" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsLogsToTraces": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "logs_to_traces" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsMetricsToLogs": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "metrics_to_logs" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsMetricsToMetrics": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "metrics_to_metrics" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsMetricsToTraces": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "metrics_to_traces" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+
+				"supportsTracesToLogs": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "traces_to_logs" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsTracesToMetrics": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "traces_to_metrics" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsTracesToTraces": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "traces_to_traces" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"expectConsumerError": func() bool {
+					return md.Tests.ExpectConsumerError
+				},
 				// ParseFS delegates the parsing of the files to `Glob`
 				// which uses the `\` as a special character.
 				// Meaning on windows based machines, the `\` needs to be replaced
@@ -204,11 +356,11 @@ func inlineReplace(tmplFile string, outputFile string, md metadata, start string
 	return nil
 }
 
-func generateFile(tmplFile string, outputFile string, md metadata) error {
+func generateFile(tmplFile string, outputFile string, md metadata, goPackage string) error {
 	tmpl := templatize(tmplFile, md)
 	buf := bytes.Buffer{}
 
-	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
+	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: goPackage}); err != nil {
 		return fmt.Errorf("failed executing template: %w", err)
 	}
 

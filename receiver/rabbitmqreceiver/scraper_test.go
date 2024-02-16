@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/models"
@@ -35,7 +35,7 @@ func TestScraperStart(t *testing.T) {
 			desc: "Bad Config",
 			scraper: &rabbitmqScraper{
 				cfg: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: defaultEndpoint,
 						TLSSetting: configtls.TLSClientSetting{
 							TLSSetting: configtls.TLSSetting{
@@ -52,7 +52,7 @@ func TestScraperStart(t *testing.T) {
 			desc: "Valid Config",
 			scraper: &rabbitmqScraper{
 				cfg: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						TLSSetting: configtls.TLSClientSetting{},
 						Endpoint:   defaultEndpoint,
 					},
@@ -84,22 +84,22 @@ func TestScaperScrape(t *testing.T) {
 	}{
 		{
 			desc: "Nil client",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				return nil
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
 			expectedErr: errClientNotInit,
 		},
 		{
 			desc: "API Call Failure",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("GetQueues", mock.Anything).Return(nil, errors.New("some api error"))
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 
 				return pmetric.NewMetrics()
 			},

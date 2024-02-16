@@ -166,7 +166,7 @@ func TestMetadataErrorCases(t *testing.T) {
 					},
 				},
 			}, nil),
-			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+			detailedPVCLabelsSetterOverride: func(*metadata.ResourceBuilder, string, string, string) error {
 				// Mock failure cases.
 				return errors.New("")
 			},

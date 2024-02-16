@@ -32,6 +32,7 @@ Metrics collected by the associated scraper are listed [here](metadata.yaml)
 Optional Settings (with defaults):
 
 - `brokers` (default = localhost:9092): the list of brokers to read from.
+- `resolve_canonical_bootstrap_servers_only` (default = false): whether to resolve then reverse-lookup broker IPs during startup.
 - `topic_match` (default = ^[^_].*$): regex pattern of topics to filter on metrics collection. The default filter excludes internal topics (starting with `_`).
 - `group_match` (default = .*): regex pattern of consumer groups to filter on for metrics.
 - `client_id` (default = otel-metrics-receiver): consumer client id

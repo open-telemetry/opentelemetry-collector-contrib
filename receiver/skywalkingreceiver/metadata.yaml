@@ -8,3 +8,9 @@ status:
   distributions: [contrib, sumo]
   codeowners:
     active: [JaredTan95]
+
+tests:
+  config:
+    protocols:
+      grpc:
+        endpoint: localhost:1234

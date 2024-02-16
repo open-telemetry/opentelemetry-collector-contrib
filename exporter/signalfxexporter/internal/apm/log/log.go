@@ -5,7 +5,7 @@
 package log // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/log"
 
 // Fields is a map that is used to populated logging context.
-type Fields map[string]interface{}
+type Fields map[string]any
 
 type nilLogger struct {
 }

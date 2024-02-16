@@ -98,3 +98,5 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [ operation ]
+tests:
+  config:

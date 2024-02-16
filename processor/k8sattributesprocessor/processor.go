@@ -25,14 +25,17 @@ const (
 )
 
 type kubernetesprocessor struct {
-	logger          *zap.Logger
-	apiConfig       k8sconfig.APIConfig
-	kc              kube.Client
-	passthroughMode bool
-	rules           kube.ExtractionRules
-	filters         kube.Filters
-	podAssociations []kube.Association
-	podIgnore       kube.Excludes
+	cfg               component.Config
+	options           []option
+	telemetrySettings component.TelemetrySettings
+	logger            *zap.Logger
+	apiConfig         k8sconfig.APIConfig
+	kc                kube.Client
+	passthroughMode   bool
+	rules             kube.ExtractionRules
+	filters           kube.Filters
+	podAssociations   []kube.Association
+	podIgnore         kube.Excludes
 }
 
 func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kube.ClientProvider) error {
@@ -50,12 +53,23 @@ func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kub
 }
 
 func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error {
-	if kp.rules.StartTime {
-		kp.logger.Warn("k8s.pod.start_time value will be changed to use RFC3339 format in v0.83.0. " +
-			"see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/24016 for more information. " +
-			"enable feature-gate k8sattr.rfc3339 to opt into this change.")
+	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
+
+	for _, opt := range allOptions {
+		if err := opt(kp); err != nil {
+			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			return nil
+		}
 	}
 
+	// This might have been set by an option already
+	if kp.kc == nil {
+		err := kp.initKubeClient(kp.logger, kubeClientProvider)
+		if err != nil {
+			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			return nil
+		}
+	}
 	if !kp.passthroughMode {
 		go kp.kc.Start()
 	}
@@ -119,8 +133,10 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		return
 	}
 
+	var pod *kube.Pod
 	if podIdentifierValue.IsNotEmpty() {
-		if pod, ok := kp.kc.GetPod(podIdentifierValue); ok {
+		var podFound bool
+		if pod, podFound = kp.kc.GetPod(podIdentifierValue); podFound {
 			kp.logger.Debug("getting the pod", zap.Any("pod", pod))
 
 			for key, val := range pod.Attributes {
@@ -132,7 +148,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		}
 	}
 
-	namespace := stringAttributeFromMap(resource.Attributes(), conventions.AttributeK8SNamespaceName)
+	namespace := getNamespace(pod, resource.Attributes())
 	if namespace != "" {
 		attrsToAdd := kp.getAttributesForPodsNamespace(namespace)
 		for key, val := range attrsToAdd {
@@ -141,6 +157,30 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			}
 		}
 	}
+
+	nodeName := getNodeName(pod, resource.Attributes())
+	if nodeName != "" {
+		attrsToAdd := kp.getAttributesForPodsNode(nodeName)
+		for key, val := range attrsToAdd {
+			if _, found := resource.Attributes().Get(key); !found {
+				resource.Attributes().PutStr(key, val)
+			}
+		}
+	}
+}
+
+func getNamespace(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.Namespace != "" {
+		return pod.Namespace
+	}
+	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SNamespaceName)
+}
+
+func getNodeName(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.NodeName != "" {
+		return pod.NodeName
+	}
+	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SNodeName)
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
@@ -213,6 +253,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsNamespace(namespace string) m
 		return nil
 	}
 	return ns.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsNode(nodeName string) map[string]string {
+	node, ok := kp.kc.GetNode(nodeName)
+	if !ok {
+		return nil
+	}
+	return node.Attributes
 }
 
 // intFromAttribute extracts int value from an attribute stored as string or int

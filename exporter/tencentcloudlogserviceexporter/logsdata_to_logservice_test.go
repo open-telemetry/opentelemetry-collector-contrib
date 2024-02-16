@@ -115,7 +115,7 @@ func TestConvertLogs(t *testing.T) {
 	}
 }
 
-func loadFromJSON(file string, obj interface{}) error {
+func loadFromJSON(file string, obj any) error {
 	blob, err := os.ReadFile(file)
 	if err == nil {
 		err = json.Unmarshal(blob, obj)

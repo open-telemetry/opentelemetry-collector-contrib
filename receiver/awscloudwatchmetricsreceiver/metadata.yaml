@@ -4,6 +4,9 @@ status:
   class: receiver
   stability:
     development: [metrics]
-  distributions: [contrib]
+  distributions: []
   codeowners:
     active: [jpkrohling]
+
+tests:
+  config:

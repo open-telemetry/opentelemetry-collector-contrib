@@ -14,7 +14,6 @@ exclude_metrics:
 # Metrics in SignalFx Agent Format.
 - metric_names:
   # CPU metrics.
-  # Derived from https://docs.signalfx.com/en/latest/integrations/agent/monitors/cpu.html.
   - cpu.interrupt
   - cpu.nice
   - cpu.softirq
@@ -25,7 +24,6 @@ exclude_metrics:
   - cpu.wait
 
   # Disk-IO metrics.
-  # Derived from https://docs.signalfx.com/en/latest/integrations/agent/monitors/disk-io.html.
   - disk_ops.pending
 
   # Virtual memory metrics

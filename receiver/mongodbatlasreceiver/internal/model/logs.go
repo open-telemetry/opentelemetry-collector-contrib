@@ -9,13 +9,13 @@ import (
 
 // LogEntry represents a MongoDB Atlas JSON log entry
 type LogEntry struct {
-	Timestamp  LogTimestamp           `json:"t"`
-	Severity   string                 `json:"s"`
-	Component  string                 `json:"c"`
-	ID         int64                  `json:"id"`
-	Context    string                 `json:"ctx"`
-	Message    string                 `json:"msg"`
-	Attributes map[string]interface{} `json:"attr"`
+	Timestamp  LogTimestamp   `json:"t"`
+	Severity   string         `json:"s"`
+	Component  string         `json:"c"`
+	ID         int64          `json:"id"`
+	Context    string         `json:"ctx"`
+	Message    string         `json:"msg"`
+	Attributes map[string]any `json:"attr"`
 	// Raw is the original log line. It is not a part of the payload, but transient data added during decoding.
 	Raw string `json:"-"`
 }

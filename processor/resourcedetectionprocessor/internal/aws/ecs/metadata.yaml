@@ -35,6 +35,10 @@ resource_attributes:
     description: The aws.ecs.task.family
     type: string
     enabled: true
+  aws.ecs.task.id:
+    description: The aws.ecs.task.id
+    type: string
+    enabled: true
   aws.ecs.task.revision:
     description: The aws.ecs.task.revision
     type: string

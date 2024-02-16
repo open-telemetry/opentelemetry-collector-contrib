@@ -16,7 +16,7 @@ import (
 func Test_mapToAdxTrace(t *testing.T) {
 	epoch, _ := time.Parse("2006-01-02T15:04:05.999999999Z07:00", "1970-01-01T00:00:00.000000000Z")
 	defaultTime := pcommon.NewTimestampFromTime(epoch).AsTime().Format(time.RFC3339Nano)
-	tmap := make(map[string]interface{})
+	tmap := make(map[string]any)
 	tmap["key"] = "value"
 	tmap[hostkey] = testhost
 

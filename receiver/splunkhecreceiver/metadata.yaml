@@ -8,3 +8,5 @@ status:
   codeowners:
     active: ["atoulme"]
     emeritus:
+tests:
+  config:

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
@@ -18,36 +17,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-const operatorType = "windows_eventlog_input"
-
 func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
-}
-
-// NewConfig will return an event log config with default values.
-func NewConfig() *Config {
-	return NewConfigWithID(operatorType)
-}
-
-// NewConfig will return an event log config with default values.
-func NewConfigWithID(operatorID string) *Config {
-	return &Config{
-		InputConfig:  helper.NewInputConfig(operatorID, operatorType),
-		MaxReads:     100,
-		StartAt:      "end",
-		PollInterval: 1 * time.Second,
-	}
-}
-
-// Config is the configuration of a windows event log operator.
-type Config struct {
-	helper.InputConfig `mapstructure:",squash"`
-	Channel            string        `mapstructure:"channel"`
-	MaxReads           int           `mapstructure:"max_reads,omitempty"`
-	StartAt            string        `mapstructure:"start_at,omitempty"`
-	PollInterval       time.Duration `mapstructure:"poll_interval,omitempty"`
-	Raw                bool          `mapstructure:"raw,omitempty"`
-	ExcludeProviders   []string      `mapstructure:"exclude_providers,omitempty"`
 }
 
 // Build will build a windows event log operator.
@@ -94,6 +65,7 @@ type Input struct {
 	excludeProviders []string
 	pollInterval     time.Duration
 	persister        operator.Persister
+	publisherCache   publisherCache
 	cancel           context.CancelFunc
 	wg               sync.WaitGroup
 }
@@ -109,7 +81,7 @@ func (e *Input) Start(persister operator.Persister) error {
 	offsetXML, err := e.getBookmarkOffset(ctx)
 	if err != nil {
 		e.Errorf("Failed to open bookmark, continuing without previous bookmark: %s", err)
-		e.persister.Delete(ctx, e.channel)
+		_ = e.persister.Delete(ctx, e.channel)
 	}
 
 	if offsetXML != "" {
@@ -122,6 +94,8 @@ func (e *Input) Start(persister operator.Persister) error {
 	if err := e.subscription.Open(e.channel, e.startAt, e.bookmark); err != nil {
 		return fmt.Errorf("failed to open subscription: %w", err)
 	}
+
+	e.publisherCache = newPublisherCache()
 
 	e.wg.Add(1)
 	go e.readOnInterval(ctx)
@@ -139,6 +113,10 @@ func (e *Input) Stop() error {
 
 	if err := e.bookmark.Close(); err != nil {
 		return fmt.Errorf("failed to close bookmark: %w", err)
+	}
+
+	if err := e.publisherCache.evictAll(); err != nil {
+		return fmt.Errorf("failed to close publishers: %w", err)
 	}
 
 	return nil
@@ -231,13 +209,15 @@ func (e *Input) processEvent(ctx context.Context, event Event) {
 		}
 	}
 
-	publisher := NewPublisher()
-	if err := publisher.Open(simpleEvent.Provider.Name); err != nil {
-		e.Errorf("Failed to open publisher: %s: writing log entry to pipeline without metadata", err)
+	publisher, openPublisherErr := e.publisherCache.get(simpleEvent.Provider.Name)
+	if openPublisherErr != nil {
+		e.Warnf("Failed to open the %q event source, respective log entries can't be formatted: %s", simpleEvent.Provider.Name, openPublisherErr)
+	}
+
+	if !publisher.Valid() {
 		e.sendEvent(ctx, simpleEvent)
 		return
 	}
-	defer publisher.Close()
 
 	formattedEvent, err := event.RenderFormatted(e.buffer, publisher)
 	if err != nil {

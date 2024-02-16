@@ -7,3 +7,6 @@ status:
   distributions: [contrib, sumo, aws]
   codeowners:
     active: [Aneurysm9]
+
+tests:
+  config:

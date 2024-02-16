@@ -18,13 +18,13 @@ const (
 // CalculateFunc defines how to process metric values by the calculator. It
 // passes previously received MetricValue, and the current raw value and timestamp
 // as parameters. Returns true if the calculation is executed successfully.
-type CalculateFunc func(prev *MetricValue, val interface{}, timestamp time.Time) (interface{}, bool)
+type CalculateFunc func(prev *MetricValue, val any, timestamp time.Time) (any, bool)
 
 func NewFloat64DeltaCalculator() MetricCalculator {
 	return NewMetricCalculator(calculateDelta)
 }
 
-func calculateDelta(prev *MetricValue, val interface{}, _ time.Time) (interface{}, bool) {
+func calculateDelta(prev *MetricValue, val any, _ time.Time) (any, bool) {
 	var deltaValue float64
 	if prev != nil {
 		deltaValue = val.(float64) - prev.RawValue.(float64)
@@ -57,10 +57,10 @@ func NewMetricCalculator(calculateFunc CalculateFunc) MetricCalculator {
 // https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/eacfde3fcbd46ba60a6db0e9a41977390c4883bd/internal/aws/metrics/metric_calculator.go#L88-L91
 // and delegates the calculation with value and timestamp back to CalculateFunc for the result. Returns
 // true if the calculation is executed successfully.
-func (rm *MetricCalculator) Calculate(mKey Key, value interface{}, timestamp time.Time) (interface{}, bool) {
+func (rm *MetricCalculator) Calculate(mKey Key, value any, timestamp time.Time) (any, bool) {
 	cacheStore := rm.cache
 
-	var result interface{}
+	var result any
 	var done bool
 
 	rm.lock.Lock()
@@ -87,11 +87,11 @@ func (rm *MetricCalculator) Shutdown() error {
 }
 
 type Key struct {
-	MetricMetadata interface{}
+	MetricMetadata any
 	MetricLabels   attribute.Distinct
 }
 
-func NewKey(metricMetadata interface{}, labels map[string]string) Key {
+func NewKey(metricMetadata any, labels map[string]string) Key {
 	kvs := make([]attribute.KeyValue, 0, len(labels))
 	var sortable attribute.Sortable
 	for k, v := range labels {
@@ -107,7 +107,7 @@ func NewKey(metricMetadata interface{}, labels map[string]string) Key {
 }
 
 type MetricValue struct {
-	RawValue  interface{}
+	RawValue  any
 	Timestamp time.Time
 }
 
@@ -116,14 +116,14 @@ type MetricValue struct {
 type MapWithExpiry struct {
 	lock     *sync.Mutex
 	ttl      time.Duration
-	entries  map[interface{}]*MetricValue
+	entries  map[any]*MetricValue
 	doneChan chan struct{}
 }
 
 // NewMapWithExpiry automatically starts a sweeper to enforce the maps TTL. ShutDown() must be called to ensure that these
 // go routines are properly cleaned up ShutDown() must be called.
 func NewMapWithExpiry(ttl time.Duration) *MapWithExpiry {
-	m := &MapWithExpiry{lock: &sync.Mutex{}, ttl: ttl, entries: make(map[interface{}]*MetricValue), doneChan: make(chan struct{})}
+	m := &MapWithExpiry{lock: &sync.Mutex{}, ttl: ttl, entries: make(map[any]*MetricValue), doneChan: make(chan struct{})}
 	go m.sweep(m.CleanUp)
 	return m
 }

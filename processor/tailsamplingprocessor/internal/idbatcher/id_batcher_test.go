@@ -103,11 +103,17 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 
 	ids := generateSequentialIds(10000)
 	wg := &sync.WaitGroup{}
+	// Limit the concurrency here to avoid creating too many goroutines and hit
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9126
+	concurrencyLimiter := make(chan struct{}, 128)
+	defer close(concurrencyLimiter)
 	for i := 0; i < len(ids); i++ {
 		wg.Add(1)
+		concurrencyLimiter <- struct{}{}
 		go func(id pcommon.TraceID) {
 			batcher.AddToCurrentBatch(id)
 			wg.Done()
+			<-concurrencyLimiter
 		}(ids[i])
 	}
 

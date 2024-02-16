@@ -109,3 +109,6 @@ metrics:
     gauge:
       value_type: int
     attributes: [group, topic]
+
+tests:
+  config:

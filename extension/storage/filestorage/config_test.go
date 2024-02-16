@@ -47,6 +47,7 @@ func TestLoadConfig(t *testing.T) {
 					CheckInterval:              time.Second * 5,
 				},
 				Timeout: 2 * time.Second,
+				FSync:   true,
 			},
 		},
 	}

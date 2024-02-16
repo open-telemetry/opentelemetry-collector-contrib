@@ -42,6 +42,11 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
 - `granularity` (default `PT1M` - See [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/reference/api/process-measurements/))
 - `collection_interval` (default `3m`) This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 - `storage` (optional) The component ID of a storage extension which can be used when polling for `alerts` or `events` . The storage extension prevents duplication of data after a collector restart by remembering which data were previously collected.
+- `projects` (optional for metrics) a slice of projects this receiver collects metrics from instead of all projects in an organization
+  - `name` Name of the project to discover metrics from
+  - `include_clusters` (default empty, exclusive with `exclude_clusters`)
+  - `exclude_clusters` (default empty, exclusive with `include_clusters`)
+    - If both `include_clusters` and `exclude_clusters` are empty, then all clusters in the project will be included
 - `retry_on_failure`
   - `enabled` (default true)
   - `initial_interval` (default 5s)

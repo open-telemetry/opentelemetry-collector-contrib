@@ -94,11 +94,25 @@ func TestValidate(t *testing.T) {
 			name: "TLS settings are valid",
 			cfg: &Config{
 				API: APIConfig{Key: "notnull"},
-				LimitedHTTPClientSettings: LimitedHTTPClientSettings{
+				LimitedClientConfig: LimitedClientConfig{
 					TLSSetting: LimitedTLSClientSettings{
 						InsecureSkipVerify: true,
 					},
 				},
+			},
+		},
+		{
+			name: "With trace_buffer",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{TraceBuffer: 10},
+			},
+		},
+		{
+			name: "With peer_tags",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{PeerTags: []string{"tag1", "tag2"}},
 			},
 		},
 	}
@@ -123,9 +137,9 @@ func TestUnmarshal(t *testing.T) {
 	}{
 		{
 			name: "invalid cumulative monotonic mode",
-			configMap: confmap.NewFromStringMap(map[string]interface{}{
-				"metrics": map[string]interface{}{
-					"sums": map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"metrics": map[string]any{
+					"sums": map[string]any{
 						"cumulative_monotonic_mode": "invalid_mode",
 					},
 				},
@@ -134,8 +148,8 @@ func TestUnmarshal(t *testing.T) {
 		},
 		{
 			name: "invalid host metadata hostname source",
-			configMap: confmap.NewFromStringMap(map[string]interface{}{
-				"host_metadata": map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"host_metadata": map[string]any{
 					"hostname_source": "invalid_source",
 				},
 			}),
@@ -143,9 +157,9 @@ func TestUnmarshal(t *testing.T) {
 		},
 		{
 			name: "invalid summary mode",
-			configMap: confmap.NewFromStringMap(map[string]interface{}{
-				"metrics": map[string]interface{}{
-					"summaries": map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"metrics": map[string]any{
+					"summaries": map[string]any{
 						"mode": "invalid_mode",
 					},
 				},
@@ -154,8 +168,8 @@ func TestUnmarshal(t *testing.T) {
 		},
 		{
 			name: "metrics::send_monotonic_counter custom error",
-			configMap: confmap.NewFromStringMap(map[string]interface{}{
-				"metrics": map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"metrics": map[string]any{
 					"send_monotonic_counter": true,
 				},
 			}),
@@ -163,29 +177,29 @@ func TestUnmarshal(t *testing.T) {
 		},
 		{
 			name: "tags custom error",
-			configMap: confmap.NewFromStringMap(map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]any{
 				"tags": []string{},
 			}),
 			err: "\"tags\" was removed in favor of \"host_metadata::tags\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099",
 		},
 		{
 			name: "send_metadata custom error",
-			configMap: confmap.NewFromStringMap(map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]any{
 				"send_metadata": false,
 			}),
 			err: "\"send_metadata\" was removed in favor of \"host_metadata::enabled\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099",
 		},
 		{
 			name: "use_resource_metadata custom error",
-			configMap: confmap.NewFromStringMap(map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]any{
 				"use_resource_metadata": false,
 			}),
 			err: "\"use_resource_metadata\" was removed in favor of \"host_metadata::hostname_source\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099",
 		},
 		{
 			name: "metrics::report_quantiles custom error",
-			configMap: confmap.NewFromStringMap(map[string]interface{}{
-				"metrics": map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"metrics": map[string]any{
 					"report_quantiles": true,
 				},
 			}),
@@ -193,8 +207,8 @@ func TestUnmarshal(t *testing.T) {
 		},
 		{
 			name: "instrumentation_library_metadata_as_tags custom error",
-			configMap: confmap.NewFromStringMap(map[string]interface{}{
-				"metrics": map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"metrics": map[string]any{
 					"instrumentation_library_metadata_as_tags": true,
 				},
 			}),
@@ -202,8 +216,8 @@ func TestUnmarshal(t *testing.T) {
 		},
 		{
 			name: "Empty metric endpoint",
-			configMap: confmap.NewFromStringMap(map[string]interface{}{
-				"metrics": map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"metrics": map[string]any{
 					"endpoint": "",
 				},
 			}),
@@ -211,8 +225,8 @@ func TestUnmarshal(t *testing.T) {
 		},
 		{
 			name: "Empty trace endpoint",
-			configMap: confmap.NewFromStringMap(map[string]interface{}{
-				"traces": map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"traces": map[string]any{
 					"endpoint": "",
 				},
 			}),
@@ -220,8 +234,8 @@ func TestUnmarshal(t *testing.T) {
 		},
 		{
 			name: "Empty log endpoint",
-			configMap: confmap.NewFromStringMap(map[string]interface{}{
-				"logs": map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"logs": map[string]any{
 					"endpoint": "",
 				},
 			}),
@@ -229,9 +243,9 @@ func TestUnmarshal(t *testing.T) {
 		},
 		{
 			name: "invalid initial cumulative monotonic value mode",
-			configMap: confmap.NewFromStringMap(map[string]interface{}{
-				"metrics": map[string]interface{}{
-					"sums": map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"metrics": map[string]any{
+					"sums": map[string]any{
 						"initial_cumulative_monotonic_value": "invalid_mode",
 					},
 				},
@@ -240,9 +254,9 @@ func TestUnmarshal(t *testing.T) {
 		},
 		{
 			name: "initial cumulative monotonic value mode set with raw_value",
-			configMap: confmap.NewFromStringMap(map[string]interface{}{
-				"metrics": map[string]interface{}{
-					"sums": map[string]interface{}{
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"metrics": map[string]any{
+					"sums": map[string]any{
 						"cumulative_monotonic_mode":          "raw_value",
 						"initial_cumulative_monotonic_value": "drop",
 					},

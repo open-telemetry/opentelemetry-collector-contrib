@@ -6,4 +6,6 @@ http_forwarder/1:
     endpoint: http://target/
     headers:
       otel_http_forwarder: dev
+    idle_conn_timeout: 80s
+    max_idle_conns: 42
     timeout: 5s

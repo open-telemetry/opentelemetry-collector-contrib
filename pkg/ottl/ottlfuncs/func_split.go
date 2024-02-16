@@ -31,7 +31,7 @@ func createSplitFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (o
 }
 
 func split[K any](target ottl.StringGetter[K], delimiter string) ottl.ExprFunc[K] {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

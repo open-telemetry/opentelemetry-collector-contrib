@@ -146,7 +146,7 @@ func (cc *Client) putRequestOnChan(r *request) error {
 
 func (cc *Client) putRequestOnRetryChan(r *request) error {
 	// handle request counter
-	if requestcounter.GetRequestCount(r.ctx) == cc.maxAttempts {
+	if requestcounter.GetRequestCount(r.ctx) >= cc.maxAttempts {
 		return errMaxAttempts
 	}
 	requestcounter.IncrementRequestCount(r.ctx)

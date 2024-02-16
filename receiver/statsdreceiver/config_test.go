@@ -93,6 +93,7 @@ func TestValidate(t *testing.T) {
 		noObjectNameErr                = "must specify object id for all TimerHistogramMappings"
 		statsdTypeNotSupportErr        = "statsd_type is not a supported mapping for histogram and timing metrics: %s"
 		observerTypeNotSupportErr      = "observer_type is not supported for histogram and timing metrics: %s"
+		invalidHistogramErr            = "histogram configuration requires observer_type: histogram"
 	)
 
 	tests := []test{
@@ -160,7 +161,7 @@ func TestValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "histogram configuration requires observer_type: histogram",
+			expectedErr: invalidHistogramErr,
 		},
 		{
 			name: "negativeAggregationInterval",
@@ -170,7 +171,7 @@ func TestValidate(t *testing.T) {
 					{StatsdType: "timing", ObserverType: "gauge"},
 				},
 			},
-			expectedErr: "aggregation_interval must be a positive duration",
+			expectedErr: negativeAggregationIntervalErr,
 		},
 	}
 

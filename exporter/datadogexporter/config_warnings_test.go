@@ -94,3 +94,80 @@ func TestSendAggregations(t *testing.T) {
 	}
 
 }
+
+func TestPeerTags(t *testing.T) {
+	tests := []struct {
+		name                  string
+		cfgMap                *confmap.Conf
+		expectedPeerTagsValue bool
+		warnings              []string
+		err                   string
+	}{
+		{
+			name: "both traces::peer_service_aggregation and traces::peer_tags_aggregation",
+			cfgMap: confmap.NewFromStringMap(map[string]any{
+				"traces": map[string]any{
+					"peer_service_aggregation": true,
+					"peer_tags_aggregation":    true,
+				},
+			}),
+			err: "\"traces::peer_service_aggregation\" and \"traces::peer_tags_aggregation\" can't be both set at the same time: use \"traces::peer_tags_aggregation\" only instead",
+		},
+		{
+			name: "traces::peer_service_aggregation set to true",
+			cfgMap: confmap.NewFromStringMap(map[string]any{
+				"traces": map[string]any{
+					"peer_service_aggregation": true,
+				},
+			}),
+			expectedPeerTagsValue: true,
+			warnings: []string{
+				"\"traces::peer_service_aggregation\" has been deprecated in favor of \"traces::peer_tags_aggregation\"",
+			},
+		},
+		{
+			name: "traces::peer_service_aggregation set to false",
+			cfgMap: confmap.NewFromStringMap(map[string]any{
+				"traces": map[string]any{
+					"peer_service_aggregation": false,
+				},
+			}),
+			warnings: []string{
+				"\"traces::peer_service_aggregation\" has been deprecated in favor of \"traces::peer_tags_aggregation\"",
+			},
+		},
+		{
+			name:                  "traces::peer_service_aggregation and traces::peer_tags_aggregation unset",
+			cfgMap:                confmap.New(),
+			expectedPeerTagsValue: false,
+		},
+		{
+			name: "traces::peer_tags_aggregation set",
+			cfgMap: confmap.NewFromStringMap(map[string]any{
+				"traces": map[string]any{
+					"peer_tags_aggregation": true,
+				},
+			}),
+			expectedPeerTagsValue: true,
+		},
+	}
+
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			f := NewFactory()
+			cfg := f.CreateDefaultConfig().(*Config)
+			err := cfg.Unmarshal(testInstance.cfgMap)
+			if err != nil || testInstance.err != "" {
+				assert.EqualError(t, err, testInstance.err)
+			} else {
+				assert.Equal(t, testInstance.expectedPeerTagsValue, cfg.Traces.PeerTagsAggregation)
+				var warningStr []string
+				for _, warning := range cfg.warnings {
+					warningStr = append(warningStr, warning.Error())
+				}
+				assert.ElementsMatch(t, testInstance.warnings, warningStr)
+			}
+		})
+	}
+
+}

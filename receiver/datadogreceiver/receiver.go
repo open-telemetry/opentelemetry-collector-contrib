@@ -52,9 +52,10 @@ func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error 
 	ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
 	ddmux.HandleFunc("/v0.5/traces", ddr.handleTraces)
 	ddmux.HandleFunc("/v0.7/traces", ddr.handleTraces)
+	ddmux.HandleFunc("/api/v0.2/traces", ddr.handleTraces)
 
 	var err error
-	ddr.server, err = ddr.config.HTTPServerSettings.ToServer(
+	ddr.server, err = ddr.config.ServerConfig.ToServer(
 		host,
 		ddr.params.TelemetrySettings,
 		ddmux,
@@ -62,7 +63,7 @@ func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error 
 	if err != nil {
 		return fmt.Errorf("failed to create server definition: %w", err)
 	}
-	hln, err := ddr.config.HTTPServerSettings.ToListener()
+	hln, err := ddr.config.ServerConfig.ToListener()
 	if err != nil {
 		return fmt.Errorf("failed to create datadog listener: %w", err)
 	}
@@ -71,7 +72,7 @@ func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error 
 
 	go func() {
 		if err := ddr.server.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %w", err))
+			ddr.params.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(fmt.Errorf("error starting datadog receiver: %w", err)))
 		}
 	}()
 	return nil
@@ -88,22 +89,25 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 	defer func(spanCount *int) {
 		ddr.tReceiver.EndTracesOp(obsCtx, "datadog", *spanCount, err)
 	}(&spanCount)
-	var ddTraces *pb.TracerPayload
 
+	var ddTraces []*pb.TracerPayload
 	ddTraces, err = handlePayload(req)
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusBadRequest)
 		ddr.params.Logger.Error("Unable to unmarshal reqs")
 		return
 	}
-
-	otelTraces := toTraces(ddTraces, req)
-	spanCount = otelTraces.SpanCount()
-	err = ddr.nextConsumer.ConsumeTraces(obsCtx, otelTraces)
-	if err != nil {
-		http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
-		ddr.params.Logger.Error("Trace consumer errored out")
-	} else {
-		_, _ = w.Write([]byte("OK"))
+	for _, ddTrace := range ddTraces {
+		otelTraces := toTraces(ddTrace, req)
+		spanCount = otelTraces.SpanCount()
+		err = ddr.nextConsumer.ConsumeTraces(obsCtx, otelTraces)
+		if err != nil {
+			http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
+			ddr.params.Logger.Error("Trace consumer errored out")
+			return
+		}
 	}
+
+	_, _ = w.Write([]byte("OK"))
+
 }

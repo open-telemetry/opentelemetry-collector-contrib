@@ -49,7 +49,7 @@ func Test_ecsMetadata_fetchContainer(t *testing.T) {
 	md := ecsMetadataProviderImpl{logger: zap.NewNop(), client: mockRestClient}
 	fetchResp, err := md.FetchContainerMetadata()
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, fetchResp)
 	assert.Equal(t, "325c979aea914acd93be2fdd2429e1d9-3811061257", fetchResp.DockerID)
 	assert.Equal(t, "arn:aws:ecs:us-east-1:123456789123:an-image/123", fetchResp.ContainerARN)

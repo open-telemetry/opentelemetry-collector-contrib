@@ -17,12 +17,9 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
-
-// keyStatsComputed specifies the resource attribute key which indicates if stats have been
-// computed for the resource spans.
-const keyStatsComputed = "_dd.stats_computed"
 
 // TraceAgent specifies a minimal trace agent instance that is able to process traces and output stats.
 type TraceAgent struct {
@@ -38,6 +35,13 @@ type TraceAgent struct {
 	// exit signals the agent to shut down.
 	exit chan struct{}
 }
+
+// ConnectorPerformanceFeatureGate uses optimized code paths for the Datadog Connector.
+var ConnectorPerformanceFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"connector.datadogconnector.performance",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("Datadog Connector will use optimized code"),
+)
 
 // newAgent creates a new unstarted traceagent using the given context. Call Start to start the traceagent.
 // The out channel will receive outoing stats payloads resulting from spans ingested using the Ingest method.
@@ -140,9 +144,6 @@ func (p *TraceAgent) Ingest(ctx context.Context, traces ptrace.Traces) {
 		// ...the call transforms the OTLP Spans into a Datadog payload and sends the result
 		// down the p.pchan channel
 
-		// Stats will be computed for p. Mark the original resource spans to ensure that they don't
-		// get computed twice in case these spans pass through here again.
-		rspans.Resource().Attributes().PutBool(keyStatsComputed, true)
 	}
 }
 

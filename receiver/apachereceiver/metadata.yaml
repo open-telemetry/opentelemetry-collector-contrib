@@ -173,3 +173,6 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [scoreboard_state]
+
+tests:
+  config:

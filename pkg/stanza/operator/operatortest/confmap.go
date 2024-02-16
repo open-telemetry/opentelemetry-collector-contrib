@@ -25,7 +25,7 @@ type ConfigUnmarshalTests struct {
 // ConfigUnmarshalTest is used for testing golden configs
 type ConfigUnmarshalTest struct {
 	Name      string
-	Expect    interface{}
+	Expect    any
 	ExpectErr bool
 }
 

@@ -22,7 +22,7 @@ format](https://github.com/signalfx/com_signalfx_metrics_protobuf).
 format](https://github.com/signalfx/com_signalfx_metrics_protobuf/blob/master/proto/signalfx_metrics.proto#L137).
 More information about sending custom events can be found in the [SignalFx
 Developers
-Guide](https://developers.signalfx.com/ingest_data_reference.html#tag/Send-Custom-Events).
+Guide](https://dev.splunk.com/observability/reference/api/ingest_data/latest).
 
 ## Configuration
 
@@ -30,6 +30,7 @@ The following settings are required:
 
 - `endpoint` (default = `0.0.0.0:9943`): Address and port that the SignalFx
   receiver should bind to.
+  The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:9943. This will become the default in a future release.
 
 The following settings are optional:
 

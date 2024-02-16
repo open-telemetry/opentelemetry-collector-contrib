@@ -88,7 +88,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return errors.New("empty config for file exporter")
 	}
 	// first load the config normally
-	err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
+	err := componentParser.Unmarshal(cfg)
 	if err != nil {
 		return err
 	}

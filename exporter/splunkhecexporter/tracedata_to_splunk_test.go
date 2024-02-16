@@ -126,7 +126,7 @@ func commonSplunkEvent(
 			TraceID:    "",
 			SpanID:     "",
 			ParentSpan: "",
-			Attributes: map[string]interface{}{
+			Attributes: map[string]any{
 				"foo": "bar",
 			},
 			EndTime: 0x0,
@@ -134,20 +134,20 @@ func commonSplunkEvent(
 			Status:  hecSpanStatus{Message: "", Code: "STATUS_CODE_UNSET"},
 			Events: []hecEvent{
 				{
-					Attributes: map[string]interface{}{"foo": "bar"},
+					Attributes: map[string]any{"foo": "bar"},
 					Name:       "myEvent",
 					Timestamp:  ts + 3,
 				},
 			},
 			Links: []hecLink{
 				{
-					Attributes: map[string]interface{}{"foo": int64(1), "bar": false, "foobar": []interface{}{"a", "b"}},
+					Attributes: map[string]any{"foo": int64(1), "bar": false, "foobar": []any{"a", "b"}},
 					TraceID:    "12345678000000000000000000000000",
 					SpanID:     "1234000000000000",
 					TraceState: "OK",
 				},
 			},
 		},
-		Fields: map[string]interface{}{},
+		Fields: map[string]any{},
 	}
 }

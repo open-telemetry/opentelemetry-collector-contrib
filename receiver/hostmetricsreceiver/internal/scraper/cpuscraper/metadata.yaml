@@ -50,3 +50,11 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
+
+  system.cpu.frequency:
+    enabled: false
+    description: Current frequency of the CPU core in Hz.
+    unit: "Hz"
+    gauge:
+      value_type: double
+    attributes: [cpu]

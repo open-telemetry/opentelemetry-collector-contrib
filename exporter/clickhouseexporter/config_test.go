@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -31,6 +32,8 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoint = defaultEndpoint
 
+	storageID := component.MustNewIDWithName("file_storage", "clickhouse")
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -47,14 +50,14 @@ func TestLoadConfig(t *testing.T) {
 				Database:         "otel",
 				Username:         "foo",
 				Password:         "bar",
-				TTLDays:          3,
+				TTL:              72 * time.Hour,
 				LogsTableName:    "otel_logs",
 				TracesTableName:  "otel_traces",
 				MetricsTableName: "otel_metrics",
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 5 * time.Second,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     5 * time.Second,
 					MaxInterval:         30 * time.Second,
@@ -63,8 +66,11 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          backoff.DefaultMultiplier,
 				},
 				ConnectionParams: map[string]string{},
-				QueueSettings: QueueSettings{
-					QueueSize: 100,
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 1,
+					QueueSize:    100,
+					StorageID:    &storageID,
 				},
 			},
 		},
@@ -255,7 +261,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			} else {
 				// Validate DSN
 				opts, err := clickhouse.ParseDSN(got)
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 				assert.Equalf(t, tt.wantChOptions.Secure, opts.TLS != nil, "TLSConfig is not nil")
 				assert.Equalf(t, tt.wantChOptions.DialTimeout, opts.DialTimeout, "DialTimeout is not nil")
 				if tt.wantChOptions.Compress != 0 {

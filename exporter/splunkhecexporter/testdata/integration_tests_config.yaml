@@ -1,0 +1,20 @@
+# SPLUNK DATA
+SPLUNK_IMAGE : "splunk/splunk:9.1"
+HOST : "non"
+
+#credentials:
+USER : "admin"
+PASSWORD : "helloworld"
+
+# ports
+UI_PORT: "8000"
+HEC_PORT: "8088"
+MANAGEMENT_PORT: "8089"
+
+# indexes
+EVENT_INDEX : "sck-otel"
+METRIC_INDEX: "sck-metrics"
+TRACE_INDEX: "sck-traces"
+
+# hec tokens
+HEC_TOKEN : "00000000-0000-0000-0000-000000000000"

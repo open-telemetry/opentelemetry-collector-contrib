@@ -10,22 +10,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
-)
-
-const (
-	connectionsAsSum = "receiver.nginx.emitConnectionsCurrentAsSum"
-)
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	connectionsAsSum,
-	featuregate.StageStable,
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4326"),
-	featuregate.WithRegisterToVersion("v0.87.0"),
 )
 
 // NewFactory creates a factory for nginx receiver.
@@ -42,7 +30,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ScraperControllerSettings: cfg,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "http://localhost:80/status",
 			Timeout:  10 * time.Second,
 		},
@@ -59,7 +47,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	ns := newNginxScraper(params, cfg)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err
 	}

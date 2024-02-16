@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 
@@ -40,8 +42,12 @@ func NewCarbonDataSender(port int) *CarbonDataSender {
 func (cs *CarbonDataSender) Start() error {
 	factory := carbonexporter.NewFactory()
 	cfg := &carbonexporter.Config{
-		Endpoint: cs.GetEndpoint().String(),
-		Timeout:  5 * time.Second,
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: cs.GetEndpoint().String(),
+		},
+		TimeoutSettings: exporterhelper.TimeoutSettings{
+			Timeout: 5 * time.Second,
+		},
 	}
 	params := exportertest.NewNopCreateSettings()
 	params.Logger = zap.L()

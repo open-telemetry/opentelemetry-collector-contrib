@@ -48,6 +48,8 @@ The UDP address and port on which this receiver listens for X-Ray segment docume
 
 Default: `0.0.0.0:2000`
 
+The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:2000. This will become the default in a future release.
+
 ### transport (Optional)
 This should always be "udp" as X-Ray SDKs only send segments using UDP.
 
@@ -60,6 +62,8 @@ Defines configurations related to the local TCP proxy server.
 The TCP address and port on which this receiver listens for calls from the X-Ray SDK and relays them to the AWS X-Ray backend to get sampling rules and report sampling statistics.
 
 Default: `0.0.0.0:2000`
+
+The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:2000. This will become the default in a future release.
 
 ### proxy_address (Optional)
 Defines the proxy address that the local TCP server forwards HTTP requests to AWS X-Ray backend through. If left unconfigured, requests will be sent directly.

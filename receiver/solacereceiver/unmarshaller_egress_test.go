@@ -38,8 +38,8 @@ func TestEgressUnmarshallerMapResourceSpan(t *testing.T) {
 	tests := []struct {
 		name                        string
 		spanData                    *egress_v1.SpanData
-		want                        map[string]interface{}
-		expectedUnmarshallingErrors interface{}
+		want                        map[string]any
+		expectedUnmarshallingErrors any
 	}{
 		{
 			name: "Maps All Fields When Present",
@@ -48,7 +48,7 @@ func TestEgressUnmarshallerMapResourceSpan(t *testing.T) {
 				MessageVpnName: &vpnName,
 				SolosVersion:   version,
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"service.name":        routerName,
 				"service.instance.id": vpnName,
 				"service.version":     version,
@@ -57,7 +57,7 @@ func TestEgressUnmarshallerMapResourceSpan(t *testing.T) {
 		{
 			name:     "Does Not Map Fields When Not Present",
 			spanData: &egress_v1.SpanData{},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"service.version": "",
 				"service.name":    "",
 			},
@@ -264,7 +264,7 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 		name                        string
 		spanData                    *egress_v1.SpanData_EgressSpan
 		want                        *ptrace.Span
-		expectedUnmarshallingErrors interface{}
+		expectedUnmarshallingErrors any
 	}
 	tests := []testCase{
 		{
@@ -311,8 +311,8 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 	// creates a base attribute map that additional data can be added to
 	// does not include outcome or source. Attributes will override all fields in base
-	getSpan := func(attributes map[string]interface{}, name string) ptrace.Span {
-		base := map[string]interface{}{
+	getSpan := func(attributes map[string]any, name string) ptrace.Span {
+		base := map[string]any{
 			"messaging.system":                  "SolacePubSub+",
 			"messaging.operation":               "send",
 			"messaging.protocol":                "MQTT",
@@ -345,7 +345,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 		name                        string
 		spanData                    *egress_v1.SpanData_SendSpan
 		want                        ptrace.Span
-		expectedUnmarshallingErrors interface{}
+		expectedUnmarshallingErrors any
 	}{
 		{
 			name: "With Queue source",
@@ -354,7 +354,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 					QueueName: "someQueue",
 				},
 			}),
-			want: getSpan(map[string]interface{}{
+			want: getSpan(map[string]any{
 				"messaging.source.name": "someQueue",
 				"messaging.source.kind": "queue",
 			}, "someQueue send"),
@@ -366,7 +366,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 					TopicEndpointName: "0123456789abcdef0123456789abcdeg",
 				},
 			}),
-			want: getSpan(map[string]interface{}{
+			want: getSpan(map[string]any{
 				"messaging.source.name": "0123456789abcdef0123456789abcdeg",
 				"messaging.source.kind": "topic-endpoint",
 			}, "0123456789abcdef0123456789abcdeg send"),
@@ -378,7 +378,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 					QueueName: "#P2P/QTMP/myQueue",
 				},
 			}),
-			want: getSpan(map[string]interface{}{
+			want: getSpan(map[string]any{
 				"messaging.source.name": "#P2P/QTMP/myQueue",
 				"messaging.source.kind": "queue",
 			}, "(anonymous) send"),
@@ -390,7 +390,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 					TopicEndpointName: "0123456789abcdef0123456789abcdef",
 				},
 			}),
-			want: getSpan(map[string]interface{}{
+			want: getSpan(map[string]any{
 				"messaging.source.name": "0123456789abcdef0123456789abcdef",
 				"messaging.source.kind": "topic-endpoint",
 			}, "(anonymous) send"),
@@ -398,7 +398,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 		{
 			name:                        "With Unknown Endpoint source",
 			spanData:                    getSendSpan(&egress_v1.SpanData_SendSpan{}),
-			want:                        getSpan(map[string]interface{}{}, "(unknown) send"),
+			want:                        getSpan(map[string]any{}, "(unknown) send"),
 			expectedUnmarshallingErrors: 1,
 		},
 	}
@@ -425,7 +425,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 	for outcomeKey, outcomeName := range outcomes {
 		t.Run("With outcome "+outcomeName, func(t *testing.T) {
 			u := newTestEgressV1Unmarshaller(t)
-			expected := getSpan(map[string]interface{}{
+			expected := getSpan(map[string]any{
 				"messaging.source.name":         "someQueue",
 				"messaging.source.kind":         "queue",
 				"messaging.solace.send.outcome": outcomeName,
@@ -449,7 +449,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 		name                 string
 		spanData             *egress_v1.SpanData_TransactionEvent
 		populateExpectedSpan func(span ptrace.Span)
-		unmarshallingErrors  interface{}
+		unmarshallingErrors  any
 	}{
 		{ // Local Transaction
 			name: "Local Transaction Event",
@@ -466,7 +466,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "commit", 123456789, map[string]interface{}{
+				populateEvent(t, span, "commit", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator":   "client",
 					"messaging.solace.transaction_id":          12345,
 					"messaging.solace.transacted_session_name": "my-session-name",
@@ -489,7 +489,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "session_timeout", 123456789, map[string]interface{}{
+				populateEvent(t, span, "session_timeout", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator":   "client",
 					"messaging.solace.transaction_id":          12345,
 					"messaging.solace.transacted_session_name": "my-session-name",
@@ -512,7 +512,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "rollback_only", 123456789, map[string]interface{}{
+				populateEvent(t, span, "rollback_only", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator":   "client",
 					"messaging.solace.transaction_id":          12345,
 					"messaging.solace.transacted_session_name": "my-session-name",
@@ -535,7 +535,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "end", 123456789, map[string]interface{}{
+				populateEvent(t, span, "end", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator": "administrator",
 					"messaging.solace.transaction_xid":       "0000007b-000814fe-804020100804020100",
 				})
@@ -557,7 +557,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 				ErrorDescription: &someErrorString,
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "prepare", 123456789, map[string]interface{}{
+				populateEvent(t, span, "prepare", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator":     "broker",
 					"messaging.solace.transaction_xid":           "0000007b--",
 					"messaging.solace.transaction_error_message": someErrorString,
@@ -571,7 +571,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 				Type:         egress_v1.SpanData_TransactionEvent_Type(12345),
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "Unknown Transaction Event (12345)", 123456789, map[string]interface{}{
+				populateEvent(t, span, "Unknown Transaction Event (12345)", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator": "client",
 				})
 			},
@@ -586,7 +586,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 				TransactionId: nil,
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
-				populateEvent(t, span, "rollback", 123456789, map[string]interface{}{
+				populateEvent(t, span, "rollback", 123456789, map[string]any{
 					"messaging.solace.transaction_initiator": "Unknown Transaction Initiator (12345)",
 				})
 			},

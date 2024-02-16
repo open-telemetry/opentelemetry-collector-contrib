@@ -1,0 +1,33 @@
+name: liatrio
+url: https://github.com/liatrio/liatrio-otel-collector
+maintainers:
+    - adrielp
+components:
+    connector:
+        - spanmetrics
+    exporter:
+        - awscloudwatchlogs
+        - awsxray
+        - influxdb
+        - prometheus
+        - prometheusremotewrite
+        - zipkin
+    extension:
+        - basicauth
+        - bearertokenauth
+        - health_check
+        - pprof
+        - sigv4auth
+    processor:
+        - filter
+        - k8sattributes
+        - resource
+        - resourcedetection
+        - transform
+    receiver:
+        - gitprovider
+        - jaeger
+        - k8s_cluster
+        - kubeletstats
+        - prometheus
+        - zipkin

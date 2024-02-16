@@ -14,12 +14,12 @@ import (
 
 // Field holds attributes and subfields of a config struct.
 type Field struct {
-	Name    string      `yaml:",omitempty"`
-	Type    string      `yaml:",omitempty"`
-	Kind    string      `yaml:",omitempty"`
-	Default interface{} `yaml:",omitempty"`
-	Doc     string      `yaml:",omitempty"`
-	Fields  []*Field    `yaml:",omitempty"`
+	Name    string   `yaml:",omitempty"`
+	Type    string   `yaml:",omitempty"`
+	Kind    string   `yaml:",omitempty"`
+	Default any      `yaml:",omitempty"`
+	Doc     string   `yaml:",omitempty"`
+	Fields  []*Field `yaml:",omitempty"`
 }
 
 // ReadFields accepts both a config struct's Value, as well as a DirResolver,

@@ -15,7 +15,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
@@ -56,6 +56,7 @@ type MetricsConfig struct {
 	RedisRdbChangesSinceLastSave           MetricConfig `mapstructure:"redis.rdb.changes_since_last_save"`
 	RedisReplicationBacklogFirstByteOffset MetricConfig `mapstructure:"redis.replication.backlog_first_byte_offset"`
 	RedisReplicationOffset                 MetricConfig `mapstructure:"redis.replication.offset"`
+	RedisReplicationReplicaOffset          MetricConfig `mapstructure:"redis.replication.replica_offset"`
 	RedisRole                              MetricConfig `mapstructure:"redis.role"`
 	RedisSlavesConnected                   MetricConfig `mapstructure:"redis.slaves.connected"`
 	RedisUptime                            MetricConfig `mapstructure:"redis.uptime"`
@@ -156,6 +157,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		RedisReplicationOffset: MetricConfig{
 			Enabled: true,
 		},
+		RedisReplicationReplicaOffset: MetricConfig{
+			Enabled: false,
+		},
 		RedisRole: MetricConfig{
 			Enabled: false,
 		},
@@ -171,17 +175,39 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for redis resource attributes.
 type ResourceAttributesConfig struct {
-	RedisVersion ResourceAttributeConfig `mapstructure:"redis.version"`
+	RedisVersion  ResourceAttributeConfig `mapstructure:"redis.version"`
+	ServerAddress ResourceAttributeConfig `mapstructure:"server.address"`
+	ServerPort    ResourceAttributeConfig `mapstructure:"server.port"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		RedisVersion: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		ServerAddress: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ServerPort: ResourceAttributeConfig{
+			Enabled: false,
 		},
 	}
 }

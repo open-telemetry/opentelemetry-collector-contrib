@@ -74,3 +74,17 @@ func (c *Cache[K, V]) Purge() {
 	c.lru.Purge()
 	c.RemoveEvictedItems()
 }
+
+// ForEach iterates over all the items within the cache, as well as the evicted items (if any).
+func (c *Cache[K, V]) ForEach(fn func(k K, v V)) {
+	for _, k := range c.lru.Keys() {
+		v, ok := c.lru.Get(k)
+		if ok {
+			fn(k.(K), v.(V))
+		}
+	}
+
+	for k, v := range c.evictedItems {
+		fn(k, v)
+	}
+}

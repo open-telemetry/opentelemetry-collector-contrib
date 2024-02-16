@@ -165,6 +165,23 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	}
 	{{- end }}
 	{{- end }}
+	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if $attr.Warnings.IfEnabled }}
+	if mbc.ResourceAttributes.{{ $name.Render }}.Enabled {
+		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be enabled: {{ $attr.Warnings.IfEnabled }}")
+	}
+	{{- end }}
+	{{- if $attr.Warnings.IfEnabledNotSet }}
+	if !mbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $attr.Warnings.IfEnabledNotSet }}")
+	}
+	{{- end }}
+	{{- if $attr.Warnings.IfConfigured }}
+	if mbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $attr.Warnings.IfConfigured }}")
+	}
+	{{- end }}
+	{{- end }}
 	mb := &MetricsBuilder{
 		config:        mbc,
 		startTime:     pcommon.NewTimestampFromTime(time.Now()),

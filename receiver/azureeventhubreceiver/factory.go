@@ -15,13 +15,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
-const (
+var (
 	// The receiver scope name
-	receiverScopeName = "otelcol/" + metadata.Type + "receiver"
+	receiverScopeName = "otelcol/" + metadata.Type.String() + "receiver"
 )
 
 var (
-	errUnexpectedConfigurationType = errors.New("Failed to cast configuration to Azure Event Hub Config")
+	errUnexpectedConfigurationType = errors.New("failed to cast configuration to azure event hub config")
 )
 
 type eventhubReceiverFactory struct {

@@ -29,7 +29,7 @@ type Event interface {
 	Compressed() string
 }
 
-type OptionsMap map[string]interface{}
+type OptionsMap map[string]any
 
 // Chunk returns the `chunk` option or blank string if it was not set.
 func (om OptionsMap) Chunk() string {
@@ -73,7 +73,7 @@ func (em EventMode) String() string {
 
 // parseInterfaceToMap takes map of interface objects and returns
 // AttributeValueMap
-func parseInterfaceToMap(msi map[string]interface{}, dest pcommon.Value) {
+func parseInterfaceToMap(msi map[string]any, dest pcommon.Value) {
 	am := dest.SetEmptyMap()
 	am.EnsureCapacity(len(msi))
 	for k, value := range msi {
@@ -83,7 +83,7 @@ func parseInterfaceToMap(msi map[string]interface{}, dest pcommon.Value) {
 
 // parseInterfaceToArray takes array of interface objects and returns
 // AttributeValueArray
-func parseInterfaceToArray(ai []interface{}, dest pcommon.Value) {
+func parseInterfaceToArray(ai []any, dest pcommon.Value) {
 	av := dest.SetEmptySlice()
 	av.EnsureCapacity(len(ai))
 	for _, value := range ai {
@@ -92,7 +92,7 @@ func parseInterfaceToArray(ai []interface{}, dest pcommon.Value) {
 }
 
 // parseToAttributeValue converts interface object to AttributeValue
-func parseToAttributeValue(val interface{}, dest pcommon.Value) {
+func parseToAttributeValue(val any, dest pcommon.Value) {
 	// See https://github.com/tinylib/msgp/wiki/Type-Mapping-Rules
 	switch r := val.(type) {
 	case bool:
@@ -106,9 +106,9 @@ func parseToAttributeValue(val interface{}, dest pcommon.Value) {
 	// Sometimes strings come in as bytes array
 	case []byte:
 		dest.SetStr(string(r))
-	case map[string]interface{}:
+	case map[string]any:
 		parseInterfaceToMap(r, dest)
-	case []interface{}:
+	case []any:
 		parseInterfaceToArray(r, dest)
 	case float32:
 		dest.SetDouble(float64(r))
@@ -120,7 +120,7 @@ func parseToAttributeValue(val interface{}, dest pcommon.Value) {
 	}
 }
 
-func timeFromTimestamp(ts interface{}) (time.Time, error) {
+func timeFromTimestamp(ts any) (time.Time, error) {
 	switch v := ts.(type) {
 	case uint64:
 		return time.Unix(int64(v), 0), nil

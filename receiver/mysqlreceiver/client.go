@@ -137,7 +137,7 @@ type ReplicaStatusStats struct {
 	lastIOError               string
 	lastSQLErrno              int64
 	lastSQLError              string
-	replicateIgnoreServerIds  string
+	replicateIgnoreServerIDs  string
 	sourceServerID            int64
 	sourceUUID                string
 	sourceInfoFile            string
@@ -163,7 +163,20 @@ type ReplicaStatusStats struct {
 
 var _ client = (*mySQLClient)(nil)
 
-func newMySQLClient(conf *Config) client {
+func newMySQLClient(conf *Config) (client, error) {
+	tls, err := conf.TLS.LoadTLSConfig()
+	if err != nil {
+		return nil, err
+	}
+	tlsConfig := ""
+	if tls != nil {
+		err := mysql.RegisterTLSConfig("custom", tls)
+		if err != nil {
+			return nil, err
+		}
+		tlsConfig = "custom"
+	}
+
 	driverConf := mysql.Config{
 		User:                 conf.Username,
 		Passwd:               string(conf.Password),
@@ -171,6 +184,8 @@ func newMySQLClient(conf *Config) client {
 		Addr:                 conf.Endpoint,
 		DBName:               conf.Database,
 		AllowNativePasswords: conf.AllowNativePasswords,
+		TLS:                  tls,
+		TLSConfig:            tlsConfig,
 	}
 	connStr := driverConf.FormatDSN()
 
@@ -179,7 +194,7 @@ func newMySQLClient(conf *Config) client {
 		statementEventsDigestTextLimit: conf.StatementEvents.DigestTextLimit,
 		statementEventsLimit:           conf.StatementEvents.Limit,
 		statementEventsTimeLimit:       conf.StatementEvents.TimeLimit,
-	}
+	}, nil
 }
 
 func (c *mySQLClient) Connect() error {
@@ -367,7 +382,7 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 	var stats []ReplicaStatusStats
 	for rows.Next() {
 		var s ReplicaStatusStats
-		dest := []interface{}{}
+		dest := []any{}
 		for _, col := range cols {
 			switch strings.ToLower(col) {
 			case "replica_io_state":
@@ -447,7 +462,7 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 			case "last_sql_error":
 				dest = append(dest, &s.lastSQLError)
 			case "replicate_ignore_server_ids":
-				dest = append(dest, &s.replicateIgnoreServerIds)
+				dest = append(dest, &s.replicateIgnoreServerIDs)
 			case "source_server_id":
 				dest = append(dest, &s.sourceServerID)
 			case "source_uuid":

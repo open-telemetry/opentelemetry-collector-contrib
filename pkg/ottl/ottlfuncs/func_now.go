@@ -11,7 +11,7 @@ import (
 )
 
 func now[K any]() (ottl.ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		return time.Now(), nil
 	}, nil
 }

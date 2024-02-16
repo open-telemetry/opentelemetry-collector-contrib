@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
 )
@@ -29,6 +29,7 @@ func TestLoadConfig(t *testing.T) {
 	sampleEndpoint := "https://opensearch.example.com:9200"
 	sampleCfg := withDefaultConfig(func(config *Config) {
 		config.Endpoint = sampleEndpoint
+		config.BulkAction = defaultBulkAction
 	})
 	maxIdleConns := 100
 	idleConnTimeout := 90 * time.Second
@@ -48,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Dataset:   "ngnix",
 				Namespace: "eu",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: sampleEndpoint,
 					Timeout:  2 * time.Minute,
 					Headers: map[string]configopaque.String{
@@ -56,15 +57,19 @@ func TestLoadConfig(t *testing.T) {
 					},
 					MaxIdleConns:    &maxIdleConns,
 					IdleConnTimeout: &idleConnTimeout,
-					Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("sample_basic_auth")},
+					Auth:            &configauth.Authentication{AuthenticatorID: component.MustNewID("sample_basic_auth")},
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     100 * time.Millisecond,
 					MaxInterval:         30 * time.Second,
 					MaxElapsedTime:      5 * time.Minute,
 					Multiplier:          1.5,
 					RandomizationFactor: 0.5,
+				},
+				BulkAction: defaultBulkAction,
+				MappingsSettings: MappingsSettings{
+					Mode: "ss4o",
 				},
 			},
 			configValidateAssert: assert.NoError,
@@ -76,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 				config.Dataset = ""
 				config.Namespace = "eu"
 			}),
-			configValidateAssert: func(t assert.TestingT, err error, i ...interface{}) bool {
+			configValidateAssert: func(t assert.TestingT, err error, i ...any) bool {
 				return assert.ErrorContains(t, err, errDatasetNoValue.Error())
 			},
 		},
@@ -87,8 +92,18 @@ func TestLoadConfig(t *testing.T) {
 				config.Dataset = "ngnix"
 				config.Namespace = ""
 			}),
-			configValidateAssert: func(t assert.TestingT, err error, i ...interface{}) bool {
+			configValidateAssert: func(t assert.TestingT, err error, i ...any) bool {
 				return assert.ErrorContains(t, err, errNamespaceNoValue.Error())
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "invalid_bulk_action"),
+			expected: withDefaultConfig(func(config *Config) {
+				config.Endpoint = sampleEndpoint
+				config.BulkAction = "delete"
+			}),
+			configValidateAssert: func(t assert.TestingT, err error, i ...any) bool {
+				return assert.ErrorContains(t, err, errBulkActionInvalid.Error())
 			},
 		},
 	}

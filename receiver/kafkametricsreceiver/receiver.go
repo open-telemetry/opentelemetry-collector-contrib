@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 const (
@@ -39,6 +39,9 @@ var newMetricsReceiver = func(
 ) (receiver.Metrics, error) {
 	sc := sarama.NewConfig()
 	sc.ClientID = config.ClientID
+	if config.ResolveCanonicalBootstrapServersOnly {
+		sc.Net.ResolveCanonicalBootstrapServers = true
+	}
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
@@ -46,7 +49,7 @@ var newMetricsReceiver = func(
 		}
 		sc.Version = version
 	}
-	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, sc); err != nil {
+	if err := kafka.ConfigureAuthentication(config.Authentication, sc); err != nil {
 		return nil, err
 	}
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))

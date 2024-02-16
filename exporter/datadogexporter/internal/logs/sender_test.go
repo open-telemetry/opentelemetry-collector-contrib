@@ -35,7 +35,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 1",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag1:true",
 					"hostname": "hostname",
@@ -48,7 +48,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 2",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag1:true",
 					"hostname": "hostname",
@@ -75,7 +75,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 1",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag1:true",
 					"hostname": "hostname",
@@ -88,7 +88,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 2",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag2:true",
 					"hostname": "hostname",
@@ -118,7 +118,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 1",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag1:true",
 					"hostname": "hostname",
@@ -131,7 +131,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 2",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag1:true",
 					"hostname": "hostname",
@@ -144,7 +144,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 3",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag2:true",
 					"hostname": "hostname",
@@ -157,7 +157,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 4",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag2:true",
 					"hostname": "hostname",

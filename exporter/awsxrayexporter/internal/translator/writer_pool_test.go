@@ -65,7 +65,7 @@ func BenchmarkWithPool(b *testing.B) {
 }
 
 func constructWriterPoolSpan() ptrace.Span {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"

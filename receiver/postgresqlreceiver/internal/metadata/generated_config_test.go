@@ -51,11 +51,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlTableVacuumCount:         MetricConfig{Enabled: true},
 					PostgresqlTempFiles:                MetricConfig{Enabled: true},
 					PostgresqlWalAge:                   MetricConfig{Enabled: true},
+					PostgresqlWalDelay:                 MetricConfig{Enabled: true},
 					PostgresqlWalLag:                   MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: true},
 					PostgresqlIndexName:    ResourceAttributeConfig{Enabled: true},
+					PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: true},
 					PostgresqlTableName:    ResourceAttributeConfig{Enabled: true},
 				},
 			},
@@ -89,11 +91,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlTableVacuumCount:         MetricConfig{Enabled: false},
 					PostgresqlTempFiles:                MetricConfig{Enabled: false},
 					PostgresqlWalAge:                   MetricConfig{Enabled: false},
+					PostgresqlWalDelay:                 MetricConfig{Enabled: false},
 					PostgresqlWalLag:                   MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: false},
 					PostgresqlIndexName:    ResourceAttributeConfig{Enabled: false},
+					PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: false},
 					PostgresqlTableName:    ResourceAttributeConfig{Enabled: false},
 				},
 			},
@@ -133,6 +137,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: true},
 				PostgresqlIndexName:    ResourceAttributeConfig{Enabled: true},
+				PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: true},
 				PostgresqlTableName:    ResourceAttributeConfig{Enabled: true},
 			},
 		},
@@ -141,6 +146,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: false},
 				PostgresqlIndexName:    ResourceAttributeConfig{Enabled: false},
+				PostgresqlSchemaName:   ResourceAttributeConfig{Enabled: false},
 				PostgresqlTableName:    ResourceAttributeConfig{Enabled: false},
 			},
 		},

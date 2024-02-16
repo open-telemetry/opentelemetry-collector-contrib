@@ -92,7 +92,7 @@ func TestValidate(t *testing.T) {
 			}
 			err := component.ValidateConfig(cfg)
 			if tc.expected == nil {
-				require.Nil(t, err)
+				require.NoError(t, err)
 			} else {
 				require.Contains(t, err.Error(), tc.expected.Error())
 			}

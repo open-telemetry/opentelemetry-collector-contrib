@@ -6,6 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/multierr"
@@ -21,6 +22,17 @@ func ChangeResourceAttributeValue(res pcommon.Resource, attr string, changeFn fu
 	if _, ok := res.Attributes().Get(attr); ok {
 		if v, ok := res.Attributes().Get(attr); ok {
 			res.Attributes().PutStr(attr, changeFn(v.Str()))
+		}
+	}
+}
+
+func MatchResourceAttributeValue(res pcommon.Resource, attr string, re *regexp.Regexp) {
+	if _, ok := res.Attributes().Get(attr); ok {
+		if v, ok := res.Attributes().Get(attr); ok {
+			results := re.FindStringSubmatch(v.Str())
+			if len(results) > 0 {
+				res.Attributes().PutStr(attr, results[0])
+			}
 		}
 	}
 }

@@ -219,7 +219,9 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 		username, err := handle.UsernameWithContext(ctx)
 		if err != nil {
-			errs.AddPartial(0, fmt.Errorf("error reading username for process %q (pid %v): %w", executable.name, pid, err))
+			if !s.config.MuteProcessUserError {
+				errs.AddPartial(0, fmt.Errorf("error reading username for process %q (pid %v): %w", executable.name, pid, err))
+			}
 		}
 
 		createTime, err := s.getProcessCreateTime(handle, ctx)

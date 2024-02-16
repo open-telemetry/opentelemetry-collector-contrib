@@ -7,7 +7,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -28,10 +33,16 @@ const (
 	kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
 	authConfigmapNS             = "kube-system"
 	authConfigmapName           = "aws-auth"
+
+	clusterNameAwsEksTag     = "aws:eks:cluster-name"
+	clusterNameEksTag        = "eks:cluster-name"
+	kubernetesClusterNameTag = "kubernetes.io/cluster/"
 )
 
 type detectorUtils interface {
 	getConfigMap(ctx context.Context, namespace string, name string) (map[string]string, error)
+	getClusterName(ctx context.Context, logger *zap.Logger) string
+	getClusterNameTagFromReservations([]*ec2.Reservation) string
 }
 
 type eksDetectorUtils struct {
@@ -43,6 +54,7 @@ type detector struct {
 	utils  detectorUtils
 	logger *zap.Logger
 	err    error
+	ra     metadata.ResourceAttributesConfig
 	rb     *metadata.ResourceBuilder
 }
 
@@ -54,10 +66,12 @@ var _ detectorUtils = (*eksDetectorUtils)(nil)
 func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	utils, err := newK8sDetectorUtils()
+
 	return &detector{
 		utils:  utils,
 		logger: set.Logger,
 		err:    err,
+		ra:     cfg.ResourceAttributes,
 		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
 	}, nil
 }
@@ -73,6 +87,11 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
 	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEKS)
+
+	if d.ra.K8sClusterName.Enabled {
+		clusterName := d.utils.getClusterName(ctx, d.logger)
+		d.rb.SetK8sClusterName(clusterName)
+	}
 
 	return d.rb.Emit(), conventions.SchemaURL, nil
 }
@@ -113,4 +132,65 @@ func (e eksDetectorUtils) getConfigMap(ctx context.Context, namespace string, na
 		return nil, fmt.Errorf("failed to retrieve ConfigMap %s/%s: %w", namespace, name, err)
 	}
 	return cm.Data, nil
+}
+
+func (e eksDetectorUtils) getClusterName(ctx context.Context, logger *zap.Logger) string {
+	defaultErrorMessage := "Unable to get EKS cluster name"
+	sess, err := session.NewSession()
+	if err != nil {
+		logger.Warn(defaultErrorMessage, zap.Error(err))
+		return ""
+	}
+
+	ec2Svc := ec2metadata.New(sess)
+	region, err := ec2Svc.Region()
+	if err != nil {
+		logger.Warn(defaultErrorMessage, zap.Error(err))
+		return ""
+	}
+
+	svc := ec2.New(sess, aws.NewConfig().WithRegion(region))
+	instanceIdentityDocument, err := ec2Svc.GetInstanceIdentityDocumentWithContext(ctx)
+	if err != nil {
+		logger.Warn(defaultErrorMessage, zap.Error(err))
+		return ""
+	}
+
+	instances, err := svc.DescribeInstances(&ec2.DescribeInstancesInput{
+		InstanceIds: []*string{
+			aws.String(instanceIdentityDocument.InstanceID),
+		},
+	})
+	if err != nil {
+		logger.Warn(defaultErrorMessage, zap.Error(err))
+		return ""
+	}
+
+	clusterName := e.getClusterNameTagFromReservations(instances.Reservations)
+	if len(clusterName) == 0 {
+		logger.Warn("Failed to detect EKS cluster name. No tag for cluster name found on EC2 instance")
+		return ""
+	}
+
+	return clusterName
+}
+
+func (e eksDetectorUtils) getClusterNameTagFromReservations(reservations []*ec2.Reservation) string {
+	for _, reservation := range reservations {
+		for _, instance := range reservation.Instances {
+			for _, tag := range instance.Tags {
+				if tag.Key == nil {
+					continue
+				}
+
+				if *tag.Key == clusterNameAwsEksTag || *tag.Key == clusterNameEksTag {
+					return *tag.Value
+				} else if strings.HasPrefix(*tag.Key, kubernetesClusterNameTag) {
+					return strings.TrimPrefix(*tag.Key, kubernetesClusterNameTag)
+				}
+			}
+		}
+	}
+
+	return ""
 }

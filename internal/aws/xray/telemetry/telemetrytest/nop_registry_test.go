@@ -16,9 +16,9 @@ func TestNopRegistry(t *testing.T) {
 	assert.Same(t, nopRegistryInstance, NewNopRegistry())
 	r := NewNopRegistry()
 	assert.NotPanics(t, func() {
-		recorder := r.Register(component.NewID("a"), telemetry.Config{}, nil)
-		assert.Same(t, recorder, r.Load(component.NewID("b")))
-		r.LoadOrStore(component.NewID("c"), recorder)
-		r.LoadOrNop(component.NewID("d"))
+		recorder := r.Register(component.MustNewID("a"), telemetry.Config{}, nil)
+		assert.Same(t, recorder, r.Load(component.MustNewID("b")))
+		r.LoadOrStore(component.MustNewID("c"), recorder)
+		r.LoadOrNop(component.MustNewID("d"))
 	})
 }

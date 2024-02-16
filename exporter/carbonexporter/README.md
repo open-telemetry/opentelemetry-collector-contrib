@@ -24,8 +24,6 @@ The following settings are required:
 
 - `endpoint` (default = `localhost:2003`): Address and port that the
   exporter should send data to.
-- `timeout` (default = `5s`): Maximum duration allowed to connect
-  and send data to the configured `endpoint`.
 
 Example:
 
@@ -45,3 +43,10 @@ exporters:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+## Advanced Configuration
+
+Several helper files are leveraged to provide additional capabilities automatically:
+
+- [net settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confignet/README.md)
+- [Queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)

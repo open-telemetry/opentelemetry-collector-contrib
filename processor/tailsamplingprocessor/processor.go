@@ -26,6 +26,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
+var (
+	tagUpsertSampled    = tag.Upsert(tagSampledKey, "true")
+	tagUpsertNotSampled = tag.Upsert(tagSampledKey, "false")
+)
+
 // policy combines a sampling policy evaluator with the destinations to be
 // used for that policy.
 type policy struct {
@@ -51,6 +56,10 @@ type tailSamplingSpanProcessor struct {
 	decisionBatcher idbatcher.Batcher
 	deleteChan      chan pcommon.TraceID
 	numTracesOnMap  *atomic.Uint64
+
+	// This is for reusing the slice by each call of `makeDecision`. This
+	// was previously identified to be a bottleneck using profiling.
+	mutatorsBuf []tag.Mutator
 }
 
 // spanAndScope a structure for holding information about span and its instrumentation scope.
@@ -115,6 +124,10 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 		policies:        policies,
 		tickerFrequency: time.Second,
 		numTracesOnMap:  &atomic.Uint64{},
+
+		// We allocate exactly 1 element, because that's the exact amount
+		// used in any place.
+		mutatorsBuf: make([]tag.Mutator, 1),
 	}
 
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
@@ -142,7 +155,7 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewAlwaysSample(settings), nil
 	case Latency:
 		lfCfg := cfg.LatencyCfg
-		return sampling.NewLatency(settings, lfCfg.ThresholdMs), nil
+		return sampling.NewLatency(settings, lfCfg.ThresholdMs, lfCfg.UpperThresholdmsMs), nil
 	case NumericAttribute:
 		nafCfg := cfg.NumericAttributeCfg
 		return sampling.NewNumericAttributeFilter(settings, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue, nafCfg.InvertMatch), nil
@@ -279,6 +292,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		finalDecision = sampling.Sampled
 	}
 
+	mutators := tsp.mutatorsBuf
 	for i, p := range tsp.policies {
 		switch trace.Decisions[i] {
 		case sampling.Sampled:
@@ -288,17 +302,19 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 				matchingPolicy = p
 			}
 
+			mutators[0] = tagUpsertSampled
 			_ = stats.RecordWithTags(
 				p.ctx,
-				[]tag.Mutator{tag.Upsert(tagSampledKey, "true")},
+				mutators,
 				statCountTracesSampled.M(int64(1)),
 			)
 			metrics.decisionSampled++
 
 		case sampling.NotSampled:
+			mutators[0] = tagUpsertNotSampled
 			_ = stats.RecordWithTags(
 				p.ctx,
-				[]tag.Mutator{tag.Upsert(tagSampledKey, "false")},
+				mutators,
 				statCountTracesSampled.M(int64(1)),
 			)
 			metrics.decisionNotSampled++
@@ -307,15 +323,17 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 
 	switch finalDecision {
 	case sampling.Sampled:
+		mutators[0] = tagUpsertSampled
 		_ = stats.RecordWithTags(
 			tsp.ctx,
-			[]tag.Mutator{tag.Upsert(tagSampledKey, "true")},
+			mutators,
 			statCountGlobalTracesSampled.M(int64(1)),
 		)
 	case sampling.NotSampled:
+		mutators[0] = tagUpsertNotSampled
 		_ = stats.RecordWithTags(
 			tsp.ctx,
-			[]tag.Mutator{tag.Upsert(tagSampledKey, "false")},
+			mutators,
 			statCountGlobalTracesSampled.M(int64(1)),
 		)
 	}

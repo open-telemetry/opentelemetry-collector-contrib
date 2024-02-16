@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -25,18 +26,18 @@ func TestExporter_New(t *testing.T) {
 	type validate func(*testing.T, *elasticsearchLogsExporter, error)
 
 	success := func(t *testing.T, exporter *elasticsearchLogsExporter, err error) {
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, exporter)
 	}
 	successWithInternalModel := func(expectedModel *encodeModel) validate {
 		return func(t *testing.T, exporter *elasticsearchLogsExporter, err error) {
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.EqualValues(t, expectedModel, exporter.model)
 		}
 	}
 	successWithDeprecatedIndexOption := func(index string) validate {
 		return func(t *testing.T, exporter *elasticsearchLogsExporter, err error) {
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, exporter)
 			require.EqualValues(t, index, exporter.index)
 		}
@@ -45,7 +46,7 @@ func TestExporter_New(t *testing.T) {
 	failWith := func(want error) validate {
 		return func(t *testing.T, exporter *elasticsearchLogsExporter, err error) {
 			require.Nil(t, exporter)
-			require.NotNil(t, err)
+			require.Error(t, err)
 			if !errors.Is(err, want) {
 				t.Fatalf("Expected error '%v', but got '%v'", want, err)
 			}
@@ -55,7 +56,7 @@ func TestExporter_New(t *testing.T) {
 	failWithMessage := func(msg string) validate {
 		return func(t *testing.T, exporter *elasticsearchLogsExporter, err error) {
 			require.Nil(t, exporter)
-			require.NotNil(t, err)
+			require.Error(t, err)
 			require.Contains(t, err.Error(), msg)
 		}
 	}
@@ -121,7 +122,7 @@ func TestExporter_New(t *testing.T) {
 				cfg.Mapping.Dedot = false
 				cfg.Mapping.Dedup = true
 			}),
-			want: successWithInternalModel(&encodeModel{dedot: false, dedup: true}),
+			want: successWithInternalModel(&encodeModel{dedot: false, dedup: true, mode: MappingECS}),
 		},
 	}
 
@@ -179,13 +180,13 @@ func TestExporter_PushEvent(t *testing.T) {
 			rec.Record(docs)
 
 			data, err := docs[0].Action.MarshalJSON()
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
-			jsonVal := map[string]interface{}{}
+			jsonVal := map[string]any{}
 			err = json.Unmarshal(data, &jsonVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
-			create := jsonVal["create"].(map[string]interface{})
+			create := jsonVal["create"].(map[string]any)
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
 			assert.Equal(t, expected, create["_index"].(string))
 
@@ -207,6 +208,80 @@ func TestExporter_PushEvent(t *testing.T) {
 			},
 		)
 
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with logstash index format enabled and dynamic index disabled", func(t *testing.T) {
+		var defaultCfg Config
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.NoError(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.NoError(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+
+			assert.Equal(t, strings.Contains(create["_index"].(string), defaultCfg.LogsIndex), true)
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogstashFormat.Enabled = true
+			cfg.LogsIndex = "not-used-index"
+			defaultCfg = *cfg
+		})
+
+		mustSendLogsWithAttributes(t, exporter, nil, nil)
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with logstash index format enabled and dynamic index enabled", func(t *testing.T) {
+		var (
+			prefix = "resprefix-"
+			suffix = "-attrsuffix"
+			index  = "someindex"
+		)
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.NoError(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.NoError(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
+
+			assert.Equal(t, strings.Contains(create["_index"].(string), expected), true)
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsIndex = index
+			cfg.LogsDynamicIndex.Enabled = true
+			cfg.LogstashFormat.Enabled = true
+		})
+
+		mustSendLogsWithAttributes(t, exporter,
+			map[string]string{
+				indexPrefix: "attrprefix-",
+				indexSuffix: suffix,
+			},
+			map[string]string{
+				indexPrefix: prefix,
+			},
+		)
 		rec.WaitItems(1)
 	})
 
@@ -403,9 +478,12 @@ func mustSend(t *testing.T, exporter *elasticsearchLogsExporter, contents string
 // send trace with span & resource attributes
 func mustSendLogsWithAttributes(t *testing.T, exporter *elasticsearchLogsExporter, attrMp map[string]string, resMp map[string]string) {
 	logs := newLogsWithAttributeAndResourceMap(attrMp, resMp)
-	resSpans := logs.ResourceLogs().At(0)
-	logRecords := resSpans.ScopeLogs().At(0).LogRecords().At(0)
+	resLogs := logs.ResourceLogs().At(0)
+	logRecords := resLogs.ScopeLogs().At(0).LogRecords().At(0)
 
-	err := exporter.pushLogRecord(context.TODO(), resSpans.Resource(), logRecords)
+	scopeLogs := resLogs.ScopeLogs().AppendEmpty()
+	scope := scopeLogs.Scope()
+
+	err := exporter.pushLogRecord(context.TODO(), resLogs.Resource(), logRecords, scope)
 	require.NoError(t, err)
 }

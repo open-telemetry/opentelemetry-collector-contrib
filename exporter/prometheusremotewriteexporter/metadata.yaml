@@ -4,6 +4,10 @@ status:
   class: exporter
   stability:
     beta: [metrics]
-  distributions: [core, contrib, aws, observiq]
+  distributions: [core, contrib, aws, observiq, liatrio]
   codeowners:
     active: [Aneurysm9, rapphil]
+
+tests:
+  config:
+  expect_consumer_error: true

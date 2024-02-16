@@ -41,6 +41,27 @@ resource_attributes:
     type: map 
     enabled: true
 
+  string.resource.attr_disable_warning:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: true 
+    warnings:
+      if_enabled_not_set: This resource_attribute will be disabled by default soon.
+
+  string.resource.attr_remove_warning:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: false 
+    warnings:
+      if_configured: This resource_attribute is deprecated and will be removed soon.
+
+  string.resource.attr_to_be_removed:
+    description: Resource attribute with any string value.
+    type: string
+    enabled: true 
+    warnings:
+      if_enabled: This resource_attribute is deprecated and will be removed soon.
+
 attributes:
   string_attr:
     description: Attribute with any string value.

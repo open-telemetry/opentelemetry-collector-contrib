@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
@@ -48,7 +49,9 @@ func getS3Key(time time.Time, keyPrefix string, partition string, filePrefix str
 
 func getSessionConfig(config *Config) *aws.Config {
 	sessionConfig := &aws.Config{
-		Region: aws.String(config.S3Uploader.Region),
+		Region:           aws.String(config.S3Uploader.Region),
+		S3ForcePathStyle: &config.S3Uploader.S3ForcePathStyle,
+		DisableSSL:       &config.S3Uploader.DisableSSL,
 	}
 
 	endpoint := config.S3Uploader.Endpoint
@@ -57,6 +60,17 @@ func getSessionConfig(config *Config) *aws.Config {
 	}
 
 	return sessionConfig
+}
+
+func getSession(config *Config, sessionConfig *aws.Config) (*session.Session, error) {
+	sess, err := session.NewSession(sessionConfig)
+
+	if config.S3Uploader.RoleArn != "" {
+		credentials := stscreds.NewCredentials(sess, config.S3Uploader.RoleArn)
+		sess.Config.Credentials = credentials
+	}
+
+	return sess, err
 }
 
 func (s3writer *s3Writer) writeBuffer(_ context.Context, buf []byte, config *Config, metadata string, format string) error {
@@ -69,7 +83,7 @@ func (s3writer *s3Writer) writeBuffer(_ context.Context, buf []byte, config *Con
 	reader := bytes.NewReader(buf)
 
 	sessionConfig := getSessionConfig(config)
-	sess, err := session.NewSession(sessionConfig)
+	sess, err := getSession(config, sessionConfig)
 
 	if err != nil {
 		return err

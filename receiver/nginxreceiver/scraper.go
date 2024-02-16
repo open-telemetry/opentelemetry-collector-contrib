@@ -31,7 +31,7 @@ func newNginxScraper(
 	settings receiver.CreateSettings,
 	cfg *Config,
 ) *nginxScraper {
-	mb := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings, metadata.WithCurrentConnectionsAsGaugeDisabled())
+	mb := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
 	return &nginxScraper{
 		settings: settings.TelemetrySettings,
 		cfg:      cfg,
@@ -53,7 +53,7 @@ func (r *nginxScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// Init client in scrape method in case there are transient errors in the constructor.
 	if r.client == nil {
 		var err error
-		r.client, err = client.NewNginxClient(r.httpClient, r.cfg.HTTPClientSettings.Endpoint)
+		r.client, err = client.NewNginxClient(r.httpClient, r.cfg.ClientConfig.Endpoint)
 		if err != nil {
 			r.client = nil
 			return pmetric.Metrics{}, err

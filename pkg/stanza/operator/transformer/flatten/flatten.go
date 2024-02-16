@@ -95,7 +95,7 @@ func (p *Transformer[T]) Transform(entry *entry.Entry) error {
 		return fmt.Errorf("apply flatten: field %s does not exist on entry", p.Field)
 	}
 
-	valMap, ok := val.(map[string]interface{})
+	valMap, ok := val.(map[string]any)
 	if !ok {
 		// The field we were asked to flatten was not a map, so put it back
 		err := entry.Set(p.Field, val)

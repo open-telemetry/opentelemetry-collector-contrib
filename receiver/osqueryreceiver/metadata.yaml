@@ -1,0 +1,8 @@
+type: osquery
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  codeowners:
+    active: [codeboten, nslaughter, smithclay]

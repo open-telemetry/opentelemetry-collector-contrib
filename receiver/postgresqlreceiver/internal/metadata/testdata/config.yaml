@@ -51,12 +51,16 @@ all_set:
       enabled: true
     postgresql.wal.age:
       enabled: true
+    postgresql.wal.delay:
+      enabled: true
     postgresql.wal.lag:
       enabled: true
   resource_attributes:
     postgresql.database.name:
       enabled: true
     postgresql.index.name:
+      enabled: true
+    postgresql.schema.name:
       enabled: true
     postgresql.table.name:
       enabled: true
@@ -112,12 +116,16 @@ none_set:
       enabled: false
     postgresql.wal.age:
       enabled: false
+    postgresql.wal.delay:
+      enabled: false
     postgresql.wal.lag:
       enabled: false
   resource_attributes:
     postgresql.database.name:
       enabled: false
     postgresql.index.name:
+      enabled: false
+    postgresql.schema.name:
       enabled: false
     postgresql.table.name:
       enabled: false

@@ -17,7 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
@@ -66,6 +66,10 @@ func TestNodeOptionalMetrics(t *testing.T) {
 	rac := metadata.DefaultResourceAttributesConfig()
 	rac.K8sKubeletVersion.Enabled = true
 	rac.K8sKubeproxyVersion.Enabled = true
+	rac.ContainerRuntime.Enabled = true
+	rac.ContainerRuntimeVersion.Enabled = true
+	rac.OsType.Enabled = true
+	rac.OsDescription.Enabled = true
 
 	rb := metadata.NewResourceBuilder(rac)
 	rm := CustomMetrics(receivertest.NewNopCreateSettings(), rb, n,
@@ -158,6 +162,30 @@ func TestNodeConditionValue(t *testing.T) {
 	}
 }
 
+func TestNodeMetrics(t *testing.T) {
+	n := testutils.NewNode("1")
+
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mbc := metadata.DefaultMetricsBuilderConfig()
+	mbc.Metrics.K8sNodeCondition.Enabled = true
+	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopCreateSettings())
+	RecordMetrics(mb, n, ts)
+	m := mb.Emit()
+
+	expectedFile := filepath.Join("testdata", "expected_mdatagen.yaml")
+	expected, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	),
+	)
+}
+
 func TestTransform(t *testing.T) {
 	originalNode := &corev1.Node{
 		ObjectMeta: metav1.ObjectMeta{
@@ -226,8 +254,11 @@ func TestTransform(t *testing.T) {
 				corev1.ResourceMemory: resource.MustParse("8Gi"),
 			},
 			NodeInfo: corev1.NodeSystemInfo{
-				KubeletVersion:   "v1.25.3",
-				KubeProxyVersion: "v1.25.3",
+				KubeletVersion:          "v1.25.3",
+				KubeProxyVersion:        "v1.25.3",
+				OSImage:                 "Ubuntu 22.04.1 LTS",
+				ContainerRuntimeVersion: "containerd://1.6.9",
+				OperatingSystem:         "linux",
 			},
 		},
 	}

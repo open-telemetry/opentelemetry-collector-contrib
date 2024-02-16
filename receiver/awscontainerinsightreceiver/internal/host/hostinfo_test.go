@@ -79,7 +79,7 @@ func TestInfo(t *testing.T) {
 	}
 	m, err := NewInfo(ci.EKS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt)
 	assert.Nil(t, m)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	// test the case when aws session fails to initialize
 	nodeCapacityCreatorOpt = func(m *Info) {
@@ -94,7 +94,7 @@ func TestInfo(t *testing.T) {
 	}
 	m, err = NewInfo(ci.EKS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt, awsSessionCreatorOpt)
 	assert.Nil(t, m)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	// test normal case where everything is working
 	awsSessionCreatorOpt = func(m *Info) {
@@ -122,7 +122,7 @@ func TestInfo(t *testing.T) {
 	}
 	m, err = NewInfo(ci.EKS, time.Minute, zap.NewNop(), awsSessionCreatorOpt,
 		nodeCapacityCreatorOpt, ec2MetadataCreatorOpt, ebsVolumeCreatorOpt, ec2TagsCreatorOpt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, m)
 
 	// befoe ebsVolume and ec2Tags are initialized
@@ -153,7 +153,7 @@ func TestInfoForECS(t *testing.T) {
 	}
 	m, err := NewInfo(ci.ECS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt)
 	assert.Nil(t, m)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	// test the case when aws session fails to initialize
 	nodeCapacityCreatorOpt = func(m *Info) {
@@ -168,7 +168,7 @@ func TestInfoForECS(t *testing.T) {
 	}
 	m, err = NewInfo(ci.ECS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt, awsSessionCreatorOpt)
 	assert.Nil(t, m)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	// test normal case where everything is working
 	awsSessionCreatorOpt = func(m *Info) {
@@ -196,7 +196,7 @@ func TestInfoForECS(t *testing.T) {
 	}
 	m, err = NewInfo(ci.ECS, time.Minute, zap.NewNop(), awsSessionCreatorOpt,
 		nodeCapacityCreatorOpt, ec2MetadataCreatorOpt, ebsVolumeCreatorOpt, ec2TagsCreatorOpt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, m)
 
 	// befoe ebsVolume and ec2Tags are initialized

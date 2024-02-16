@@ -77,7 +77,7 @@ func constructSQLSpan(attributes map[string]pcommon.Value) ptrace.Span {
 	startTime := endTime.Add(-90 * time.Second)
 
 	// constructSpanAttributes() in segment_test accepts a map of interfaces...
-	interfaceAttributes := make(map[string]interface{})
+	interfaceAttributes := make(map[string]any)
 	for k, v := range attributes {
 		interfaceAttributes[k] = v
 	}

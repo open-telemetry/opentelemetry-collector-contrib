@@ -9,8 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -26,12 +26,12 @@ func TestTracesExporter_New(t *testing.T) {
 	type validate func(*testing.T, *elasticsearchTracesExporter, error)
 
 	success := func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, exporter)
 	}
 	successWithInternalModel := func(expectedModel *encodeModel) validate {
 		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.EqualValues(t, expectedModel, exporter.model)
 		}
 	}
@@ -39,7 +39,7 @@ func TestTracesExporter_New(t *testing.T) {
 	failWith := func(want error) validate {
 		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
 			require.Nil(t, exporter)
-			require.NotNil(t, err)
+			require.Error(t, err)
 			if !errors.Is(err, want) {
 				t.Fatalf("Expected error '%v', but got '%v'", want, err)
 			}
@@ -49,7 +49,7 @@ func TestTracesExporter_New(t *testing.T) {
 	failWithMessage := func(msg string) validate {
 		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
 			require.Nil(t, exporter)
-			require.NotNil(t, err)
+			require.Error(t, err)
 			require.Contains(t, err.Error(), msg)
 		}
 	}
@@ -99,7 +99,7 @@ func TestTracesExporter_New(t *testing.T) {
 				cfg.Mapping.Dedot = false
 				cfg.Mapping.Dedup = true
 			}),
-			want: successWithInternalModel(&encodeModel{dedot: false, dedup: true}),
+			want: successWithInternalModel(&encodeModel{dedot: false, dedup: true, mode: MappingECS}),
 		},
 	}
 
@@ -110,18 +110,8 @@ func TestTracesExporter_New(t *testing.T) {
 				env = map[string]string{defaultElasticsearchEnvName: ""}
 			}
 
-			oldEnv := make(map[string]string, len(env))
-			defer func() {
-				for k, v := range oldEnv {
-					os.Setenv(k, v)
-				}
-			}()
-
-			for k := range env {
-				oldEnv[k] = os.Getenv(k)
-			}
 			for k, v := range env {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			exporter, err := newTracesExporter(zap.NewNop(), test.config)
@@ -168,13 +158,13 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 			rec.Record(docs)
 
 			data, err := docs[0].Action.MarshalJSON()
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
-			jsonVal := map[string]interface{}{}
+			jsonVal := map[string]any{}
 			err = json.Unmarshal(data, &jsonVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
-			create := jsonVal["create"].(map[string]interface{})
+			create := jsonVal["create"].(map[string]any)
 
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
 			assert.Equal(t, expected, create["_index"].(string))
@@ -197,6 +187,82 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 			},
 		)
 
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with logstash format index", func(t *testing.T) {
+		var defaultCfg Config
+
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.NoError(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.NoError(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+
+			assert.Equal(t, strings.Contains(create["_index"].(string), defaultCfg.TracesIndex), true)
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogstashFormat.Enabled = true
+			cfg.TracesIndex = "not-used-index"
+			defaultCfg = *cfg
+		})
+
+		mustSendTracesWithAttributes(t, exporter, nil, nil)
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with logstash format index and dynamic index enabled ", func(t *testing.T) {
+		var (
+			prefix = "resprefix-"
+			suffix = "-attrsuffix"
+			index  = "someindex"
+		)
+
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.NoError(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.NoError(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
+
+			assert.Equal(t, strings.Contains(create["_index"].(string), expected), true)
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesIndex = index
+			cfg.TracesDynamicIndex.Enabled = true
+			cfg.LogstashFormat.Enabled = true
+		})
+
+		mustSendTracesWithAttributes(t, exporter,
+			map[string]string{
+				indexPrefix: "attrprefix-",
+				indexSuffix: suffix,
+			},
+			map[string]string{
+				indexPrefix: prefix,
+			},
+		)
 		rec.WaitItems(1)
 	})
 
@@ -404,7 +470,8 @@ func mustSendTracesWithAttributes(t *testing.T, exporter *elasticsearchTracesExp
 	traces := newTracesWithAttributeAndResourceMap(attrMp, resMp)
 	resSpans := traces.ResourceSpans().At(0)
 	span := resSpans.ScopeSpans().At(0).Spans().At(0)
+	scope := resSpans.ScopeSpans().At(0).Scope()
 
-	err := exporter.pushTraceRecord(context.TODO(), resSpans.Resource(), span)
+	err := exporter.pushTraceRecord(context.TODO(), resSpans.Resource(), span, scope)
 	require.NoError(t, err)
 }

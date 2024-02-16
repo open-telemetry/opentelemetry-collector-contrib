@@ -71,7 +71,7 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *ev
 		Subject         string
 		EventType       string
 		ID              string
-		Data            map[string]interface{}
+		Data            map[string]any
 		DataVersion     string
 		MetadataVersion string
 		EsventTime      string

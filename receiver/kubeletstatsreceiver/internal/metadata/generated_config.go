@@ -15,7 +15,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
@@ -26,6 +26,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 // MetricsConfig provides config for kubeletstats metrics.
 type MetricsConfig struct {
 	ContainerCPUTime                     MetricConfig `mapstructure:"container.cpu.time"`
+	ContainerCPUUsage                    MetricConfig `mapstructure:"container.cpu.usage"`
 	ContainerCPUUtilization              MetricConfig `mapstructure:"container.cpu.utilization"`
 	ContainerFilesystemAvailable         MetricConfig `mapstructure:"container.filesystem.available"`
 	ContainerFilesystemCapacity          MetricConfig `mapstructure:"container.filesystem.capacity"`
@@ -37,9 +38,12 @@ type MetricsConfig struct {
 	ContainerMemoryUsage                 MetricConfig `mapstructure:"container.memory.usage"`
 	ContainerMemoryWorkingSet            MetricConfig `mapstructure:"container.memory.working_set"`
 	ContainerUptime                      MetricConfig `mapstructure:"container.uptime"`
+	K8sContainerCPULimitUtilization      MetricConfig `mapstructure:"k8s.container.cpu_limit_utilization"`
+	K8sContainerCPURequestUtilization    MetricConfig `mapstructure:"k8s.container.cpu_request_utilization"`
 	K8sContainerMemoryLimitUtilization   MetricConfig `mapstructure:"k8s.container.memory_limit_utilization"`
 	K8sContainerMemoryRequestUtilization MetricConfig `mapstructure:"k8s.container.memory_request_utilization"`
 	K8sNodeCPUTime                       MetricConfig `mapstructure:"k8s.node.cpu.time"`
+	K8sNodeCPUUsage                      MetricConfig `mapstructure:"k8s.node.cpu.usage"`
 	K8sNodeCPUUtilization                MetricConfig `mapstructure:"k8s.node.cpu.utilization"`
 	K8sNodeFilesystemAvailable           MetricConfig `mapstructure:"k8s.node.filesystem.available"`
 	K8sNodeFilesystemCapacity            MetricConfig `mapstructure:"k8s.node.filesystem.capacity"`
@@ -54,7 +58,10 @@ type MetricsConfig struct {
 	K8sNodeNetworkIo                     MetricConfig `mapstructure:"k8s.node.network.io"`
 	K8sNodeUptime                        MetricConfig `mapstructure:"k8s.node.uptime"`
 	K8sPodCPUTime                        MetricConfig `mapstructure:"k8s.pod.cpu.time"`
+	K8sPodCPUUsage                       MetricConfig `mapstructure:"k8s.pod.cpu.usage"`
 	K8sPodCPUUtilization                 MetricConfig `mapstructure:"k8s.pod.cpu.utilization"`
+	K8sPodCPULimitUtilization            MetricConfig `mapstructure:"k8s.pod.cpu_limit_utilization"`
+	K8sPodCPURequestUtilization          MetricConfig `mapstructure:"k8s.pod.cpu_request_utilization"`
 	K8sPodFilesystemAvailable            MetricConfig `mapstructure:"k8s.pod.filesystem.available"`
 	K8sPodFilesystemCapacity             MetricConfig `mapstructure:"k8s.pod.filesystem.capacity"`
 	K8sPodFilesystemUsage                MetricConfig `mapstructure:"k8s.pod.filesystem.usage"`
@@ -80,6 +87,9 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		ContainerCPUTime: MetricConfig{
 			Enabled: true,
+		},
+		ContainerCPUUsage: MetricConfig{
+			Enabled: false,
 		},
 		ContainerCPUUtilization: MetricConfig{
 			Enabled: true,
@@ -114,6 +124,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerUptime: MetricConfig{
 			Enabled: false,
 		},
+		K8sContainerCPULimitUtilization: MetricConfig{
+			Enabled: false,
+		},
+		K8sContainerCPURequestUtilization: MetricConfig{
+			Enabled: false,
+		},
 		K8sContainerMemoryLimitUtilization: MetricConfig{
 			Enabled: false,
 		},
@@ -122,6 +138,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sNodeCPUTime: MetricConfig{
 			Enabled: true,
+		},
+		K8sNodeCPUUsage: MetricConfig{
+			Enabled: false,
 		},
 		K8sNodeCPUUtilization: MetricConfig{
 			Enabled: true,
@@ -165,8 +184,17 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sPodCPUTime: MetricConfig{
 			Enabled: true,
 		},
+		K8sPodCPUUsage: MetricConfig{
+			Enabled: false,
+		},
 		K8sPodCPUUtilization: MetricConfig{
 			Enabled: true,
+		},
+		K8sPodCPULimitUtilization: MetricConfig{
+			Enabled: false,
+		},
+		K8sPodCPURequestUtilization: MetricConfig{
+			Enabled: false,
 		},
 		K8sPodFilesystemAvailable: MetricConfig{
 			Enabled: true,
@@ -231,6 +259,20 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for kubeletstats resource attributes.

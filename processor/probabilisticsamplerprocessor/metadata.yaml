@@ -5,6 +5,9 @@ status:
   stability:
     beta: [traces]
     alpha: [logs]
-  distributions: [core, contrib, observiq, splunk, sumo, aws]
+  distributions: [core, contrib, observiq, splunk, sumo, aws, grafana]
   codeowners:
     active: [jpkrohling]
+
+tests:
+  config:

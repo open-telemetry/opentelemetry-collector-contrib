@@ -1647,7 +1647,7 @@ func file_receive_v1_proto_rawDescGZIP() []byte {
 
 var file_receive_v1_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_receive_v1_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
-var file_receive_v1_proto_goTypes = []interface{}{
+var file_receive_v1_proto_goTypes = []any{
 	(SpanData_DeliveryMode)(0),                           // 0: solace.messaging.proto.broker.trace.receive.v1.SpanData.DeliveryMode
 	(SpanData_TransactionEvent_Type)(0),                  // 1: solace.messaging.proto.broker.trace.receive.v1.SpanData.TransactionEvent.Type
 	(SpanData_TransactionEvent_Initiator)(0),             // 2: solace.messaging.proto.broker.trace.receive.v1.SpanData.TransactionEvent.Initiator
@@ -1682,7 +1682,7 @@ func file_receive_v1_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_receive_v1_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_receive_v1_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*SpanData); i {
 			case 0:
 				return &v.state
@@ -1694,7 +1694,7 @@ func file_receive_v1_proto_init() {
 				return nil
 			}
 		}
-		file_receive_v1_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_receive_v1_proto_msgTypes[2].Exporter = func(v any, i int) any {
 			switch v := v.(*SpanData_UserPropertyValue); i {
 			case 0:
 				return &v.state
@@ -1706,7 +1706,7 @@ func file_receive_v1_proto_init() {
 				return nil
 			}
 		}
-		file_receive_v1_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_receive_v1_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*SpanData_TransactionEvent); i {
 			case 0:
 				return &v.state
@@ -1718,7 +1718,7 @@ func file_receive_v1_proto_init() {
 				return nil
 			}
 		}
-		file_receive_v1_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_receive_v1_proto_msgTypes[4].Exporter = func(v any, i int) any {
 			switch v := v.(*SpanData_EnqueueEvent); i {
 			case 0:
 				return &v.state
@@ -1730,7 +1730,7 @@ func file_receive_v1_proto_init() {
 				return nil
 			}
 		}
-		file_receive_v1_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_receive_v1_proto_msgTypes[5].Exporter = func(v any, i int) any {
 			switch v := v.(*SpanData_TransactionEvent_Xid); i {
 			case 0:
 				return &v.state
@@ -1742,7 +1742,7 @@ func file_receive_v1_proto_init() {
 				return nil
 			}
 		}
-		file_receive_v1_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_receive_v1_proto_msgTypes[6].Exporter = func(v any, i int) any {
 			switch v := v.(*SpanData_TransactionEvent_LocalTransactionId); i {
 			case 0:
 				return &v.state
@@ -1755,8 +1755,8 @@ func file_receive_v1_proto_init() {
 			}
 		}
 	}
-	file_receive_v1_proto_msgTypes[0].OneofWrappers = []interface{}{}
-	file_receive_v1_proto_msgTypes[2].OneofWrappers = []interface{}{
+	file_receive_v1_proto_msgTypes[0].OneofWrappers = []any{}
+	file_receive_v1_proto_msgTypes[2].OneofWrappers = []any{
 		(*SpanData_UserPropertyValue_NullValue)(nil),
 		(*SpanData_UserPropertyValue_BoolValue)(nil),
 		(*SpanData_UserPropertyValue_Uint8Value)(nil),
@@ -1774,11 +1774,11 @@ func file_receive_v1_proto_init() {
 		(*SpanData_UserPropertyValue_DoubleValue)(nil),
 		(*SpanData_UserPropertyValue_DestinationValue)(nil),
 	}
-	file_receive_v1_proto_msgTypes[3].OneofWrappers = []interface{}{
+	file_receive_v1_proto_msgTypes[3].OneofWrappers = []any{
 		(*SpanData_TransactionEvent_Xid_)(nil),
 		(*SpanData_TransactionEvent_LocalId)(nil),
 	}
-	file_receive_v1_proto_msgTypes[4].OneofWrappers = []interface{}{
+	file_receive_v1_proto_msgTypes[4].OneofWrappers = []any{
 		(*SpanData_EnqueueEvent_QueueName)(nil),
 		(*SpanData_EnqueueEvent_TopicEndpointName)(nil),
 	}

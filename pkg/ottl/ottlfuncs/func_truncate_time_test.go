@@ -17,19 +17,19 @@ import (
 func Test_TruncateTime(t *testing.T) {
 	tests := []struct {
 		name     string
-		time     ottl.TimeGetter[interface{}]
-		duration ottl.DurationGetter[interface{}]
+		time     ottl.TimeGetter[any]
+		duration ottl.DurationGetter[any]
 		expected time.Time
 	}{
 		{
 			name: "truncate to 1s",
-			time: &ottl.StandardTimeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			time: &ottl.StandardTimeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return time.Date(2022, 1, 1, 1, 1, 1, 999999999, time.Local), nil
 				},
 			},
-			duration: &ottl.StandardDurationGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			duration: &ottl.StandardDurationGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					d, _ := time.ParseDuration("1s")
 					return d, nil
 				},
@@ -38,13 +38,13 @@ func Test_TruncateTime(t *testing.T) {
 		},
 		{
 			name: "truncate to 1ms",
-			time: &ottl.StandardTimeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			time: &ottl.StandardTimeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return time.Date(2022, 1, 1, 1, 1, 1, 999999999, time.Local), nil
 				},
 			},
-			duration: &ottl.StandardDurationGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			duration: &ottl.StandardDurationGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					d, _ := time.ParseDuration("1ms")
 					return d, nil
 				},
@@ -53,13 +53,13 @@ func Test_TruncateTime(t *testing.T) {
 		},
 		{
 			name: "truncate old time",
-			time: &ottl.StandardTimeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			time: &ottl.StandardTimeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return time.Date(1980, 9, 9, 9, 59, 59, 999999999, time.Local), nil
 				},
 			},
-			duration: &ottl.StandardDurationGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			duration: &ottl.StandardDurationGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					d, _ := time.ParseDuration("1h")
 					return d, nil
 				},
@@ -81,19 +81,19 @@ func Test_TruncateTime(t *testing.T) {
 func Test_TruncateTimeError(t *testing.T) {
 	tests := []struct {
 		name          string
-		time          ottl.TimeGetter[interface{}]
-		duration      ottl.DurationGetter[interface{}]
+		time          ottl.TimeGetter[any]
+		duration      ottl.DurationGetter[any]
 		expectedError string
 	}{
 		{
 			name: "not a time",
-			time: &ottl.StandardTimeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			time: &ottl.StandardTimeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "11/11/11", nil
 				},
 			},
-			duration: &ottl.StandardDurationGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			duration: &ottl.StandardDurationGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					d, _ := time.ParseDuration("1ms")
 					return d, nil
 				},
@@ -102,13 +102,13 @@ func Test_TruncateTimeError(t *testing.T) {
 		},
 		{
 			name: "not a duration",
-			time: &ottl.StandardTimeGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			time: &ottl.StandardTimeGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return time.Now(), nil
 				},
 			},
-			duration: &ottl.StandardDurationGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			duration: &ottl.StandardDurationGetter[any]{
+				Getter: func(ctx context.Context, tCtx any) (any, error) {
 					return "string", nil
 				},
 			},

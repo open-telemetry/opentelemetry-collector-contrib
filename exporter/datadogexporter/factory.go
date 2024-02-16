@@ -6,14 +6,20 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"sync"
 	"time"
 
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
+	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/trace/writer"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -22,32 +28,42 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
-var mertricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
+var metricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.metricexportnativeclient",
 	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
 )
 
+// noAPMStatsFeatureGate causes the trace consumer to skip APM stats computation.
+var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.DisableAPMStats",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("Datadog Exporter will not compute APM Stats"),
+)
+
 // isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
 func isMetricExportV2Enabled() bool {
-	return mertricExportNativeClientFeatureGate.IsEnabled()
+	return metricExportNativeClientFeatureGate.IsEnabled()
 }
 
 // enableNativeMetricExport switches metric export to call native Datadog APIs instead of Zorkian APIs.
 func enableNativeMetricExport() error {
-	return featuregate.GlobalRegistry().Set(mertricExportNativeClientFeatureGate.ID(), true)
+	return featuregate.GlobalRegistry().Set(metricExportNativeClientFeatureGate.ID(), true)
 }
 
 // enableZorkianMetricExport switches metric export to call Zorkian APIs instead of native Datadog APIs.
 func enableZorkianMetricExport() error {
-	return featuregate.GlobalRegistry().Set(mertricExportNativeClientFeatureGate.ID(), false)
+	return featuregate.GlobalRegistry().Set(metricExportNativeClientFeatureGate.ID(), false)
 }
 
 const metadataReporterPeriod = 30 * time.Minute
@@ -70,6 +86,10 @@ type factory struct {
 	reporter         *inframetadata.Reporter
 	reporterErr      error
 
+	onceAttributesTranslator sync.Once
+	attributesTranslator     *attributes.Translator
+	attributesErr            error
+
 	wg sync.WaitGroup // waits for agent to exit
 
 	registry *featuregate.Registry
@@ -80,6 +100,16 @@ func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname
 		f.sourceProvider, f.providerErr = hostmetadata.GetSourceProvider(set, configHostname)
 	})
 	return f.sourceProvider, f.providerErr
+}
+
+func (f *factory) AttributesTranslator(set component.TelemetrySettings) (*attributes.Translator, error) {
+	f.onceAttributesTranslator.Do(func() {
+		// disable metrics for the translator
+		// Metrics are disabled until we figure out the details on how do we want to report the metric.
+		set.MeterProvider = noop.NewMeterProvider()
+		f.attributesTranslator, f.attributesErr = attributes.NewTranslator(set)
+	})
+	return f.attributesTranslator, f.attributesErr
 }
 
 // Reporter builds and returns an *inframetadata.Reporter.
@@ -111,6 +141,7 @@ func (f *factory) StopReporter() {
 }
 
 func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
+	datadog.InitializeMetricClient(params.MeterProvider)
 	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider)
 	if err != nil {
 		return nil, err
@@ -149,7 +180,7 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 func (f *factory) createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings: defaulttimeoutSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 
 		API: APIConfig{
@@ -209,6 +240,35 @@ func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
 	return cfg
 }
 
+func (f *factory) consumeStatsPayload(ctx context.Context, statsIn <-chan []byte, statsToAgent chan<- *pb.StatsPayload, tracerVersion string, logger *zap.Logger) {
+	for i := 0; i < runtime.NumCPU(); i++ {
+		f.wg.Add(1)
+		go func() {
+			defer f.wg.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case msg := <-statsIn:
+					sp := &pb.StatsPayload{}
+
+					err := proto.Unmarshal(msg, sp)
+					if err != nil {
+						logger.Error("failed to unmarshal stats payload", zap.Error(err))
+						continue
+					}
+					for _, csp := range sp.Stats {
+						if csp.TracerVersion == "" {
+							csp.TracerVersion = tracerVersion
+						}
+					}
+					statsToAgent <- sp
+				}
+			}
+		}()
+	}
+}
+
 // createMetricsExporter creates a metrics exporter based on this config.
 func (f *factory) createMetricsExporter(
 	ctx context.Context,
@@ -216,7 +276,6 @@ func (f *factory) createMetricsExporter(
 	c component.Config,
 ) (exporter.Metrics, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
-
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
@@ -225,17 +284,34 @@ func (f *factory) createMetricsExporter(
 	ctx, cancel := context.WithCancel(ctx)
 	// cancel() runs on shutdown
 	var pushMetricsFn consumer.ConsumeMetricsFunc
-	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider)
+	acfg, err := newTraceAgentConfig(ctx, set, cfg, hostProvider)
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
+		return nil, err
 	}
+	statsToAgent := make(chan *pb.StatsPayload)
+	statsWriter := writer.NewStatsWriter(acfg, statsToAgent, telemetry.NewNoopCollector())
 
+	set.Logger.Debug("Starting Datadog Trace-Agent StatsWriter")
+	go statsWriter.Run()
+
+	var statsIn chan []byte
+	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
+		statsIn = make(chan []byte, 1000)
+		statsv := set.BuildInfo.Command + set.BuildInfo.Version
+		f.consumeStatsPayload(ctx, statsIn, statsToAgent, statsv, set.Logger)
+	}
 	pcfg := newMetadataConfigfromConfig(cfg)
 	metadataReporter, err := f.Reporter(set, pcfg)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+	}
+
+	attrsTranslator, err := f.AttributesTranslator(set.TelemetrySettings)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
 	}
 
 	if cfg.OnlyMetadata {
@@ -257,7 +333,7 @@ func (f *factory) createMetricsExporter(
 			return nil
 		}
 	} else {
-		exp, metricsErr := newMetricsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent, metadataReporter)
+		exp, metricsErr := newMetricsExporter(ctx, set, cfg, acfg, &f.onceMetadata, attrsTranslator, hostProvider, statsToAgent, metadataReporter, statsIn)
 		if metricsErr != nil {
 			cancel()    // first cancel context
 			f.wg.Wait() // then wait for shutdown
@@ -274,13 +350,20 @@ func (f *factory) createMetricsExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
 		// We use our own custom mechanism for retries, since we hit several endpoints.
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
 		// The metrics remapping code mutates data
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			f.StopReporter()
+			statsWriter.Stop()
+			if statsIn != nil {
+				close(statsIn)
+			}
+			if statsToAgent != nil {
+				close(statsToAgent)
+			}
 			return nil
 		}),
 	)
@@ -368,7 +451,7 @@ func (f *factory) createTracesExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
 		// We don't do retries on traces because of deduping concerns on APM Events.
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithRetry(configretry.BackOffConfig{Enabled: false}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(stop),
 	)
@@ -397,6 +480,12 @@ func (f *factory) createLogsExporter(
 		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
 	}
 
+	attributesTranslator, err := f.AttributesTranslator(set.TelemetrySettings)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
+	}
+
 	if cfg.OnlyMetadata {
 		// only host metadata needs to be sent, once.
 		pusher = func(_ context.Context, td plog.Logs) error {
@@ -411,7 +500,7 @@ func (f *factory) createLogsExporter(
 			return nil
 		}
 	} else {
-		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, metadataReporter)
+		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, attributesTranslator, hostProvider, metadataReporter)
 		if err != nil {
 			cancel()
 			f.wg.Wait() // then wait for shutdown
@@ -426,7 +515,7 @@ func (f *factory) createLogsExporter(
 		pusher,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()

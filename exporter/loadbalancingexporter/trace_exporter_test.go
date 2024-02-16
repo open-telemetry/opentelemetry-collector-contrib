@@ -170,10 +170,11 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
+	lb.addMissingExporters(context.Background(), []string{"endpoint-2"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(ctx context.Context) ([]string, error) {
-			return []string{"endpoint-1"}, nil
+			return []string{"endpoint-1", "endpoint-2"}, nil
 		},
 	}
 	p.loadBalancer = lb
@@ -309,13 +310,13 @@ func TestBuildExporterConfig(t *testing.T) {
 	exporterCfg := buildExporterConfig(c.(*Config), "the-endpoint")
 
 	// verify
-	grpcSettings := defaultCfg.GRPCClientSettings
+	grpcSettings := defaultCfg.ClientConfig
 	grpcSettings.Endpoint = "the-endpoint"
-	assert.Equal(t, grpcSettings, exporterCfg.GRPCClientSettings)
+	assert.Equal(t, grpcSettings, exporterCfg.ClientConfig)
 
 	assert.Equal(t, defaultCfg.TimeoutSettings, exporterCfg.TimeoutSettings)
-	assert.Equal(t, defaultCfg.QueueSettings, exporterCfg.QueueSettings)
-	assert.Equal(t, defaultCfg.RetrySettings, exporterCfg.RetrySettings)
+	assert.Equal(t, defaultCfg.QueueConfig, exporterCfg.QueueConfig)
+	assert.Equal(t, defaultCfg.RetryConfig, exporterCfg.RetryConfig)
 }
 
 func TestBatchWithTwoTraces(t *testing.T) {
@@ -345,7 +346,8 @@ func TestBatchWithTwoTraces(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
-	assert.Len(t, sink.AllTraces(), 2)
+	assert.Len(t, sink.AllTraces(), 1)
+	assert.Equal(t, sink.AllTraces()[0].SpanCount(), 2)
 }
 
 func TestNoTracesInBatch(t *testing.T) {
@@ -532,6 +534,89 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	require.Greater(t, counter2.Load(), int64(0))
 }
 
+func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
+	sink := new(consumertest.TracesSink)
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+		return newMockTracesExporter(sink.ConsumeTraces), nil
+	}
+
+	endpoints := []string{}
+	for i := 0; i < endpointsCount; i++ {
+		endpoints = append(endpoints, fmt.Sprintf("endpoint-%d", i))
+	}
+
+	config := &Config{
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{Hostnames: endpoints},
+		},
+	}
+
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), config, componentFactory)
+	require.NotNil(b, lb)
+	require.NoError(b, err)
+
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), config)
+	require.NotNil(b, p)
+	require.NoError(b, err)
+
+	p.loadBalancer = lb
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(b, err)
+
+	trace1 := ptrace.NewTraces()
+	trace2 := ptrace.NewTraces()
+	for i := 0; i < endpointsCount; i++ {
+		for j := 0; j < tracesCount/endpointsCount; j++ {
+			appendSimpleTraceWithID(trace2.ResourceSpans().AppendEmpty(), [16]byte{1, 2, 6, byte(i)})
+		}
+	}
+	td := mergeTraces(trace1, trace2)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		err = p.ConsumeTraces(context.Background(), td)
+		require.NoError(b, err)
+	}
+
+	b.StopTimer()
+	err = p.Shutdown(context.Background())
+	require.NoError(b, err)
+}
+
+func BenchmarkConsumeTraces_1E100T(b *testing.B) {
+	benchConsumeTraces(b, 1, 100)
+}
+
+func BenchmarkConsumeTraces_1E1000T(b *testing.B) {
+	benchConsumeTraces(b, 1, 1000)
+}
+
+func BenchmarkConsumeTraces_5E100T(b *testing.B) {
+	benchConsumeTraces(b, 5, 100)
+}
+
+func BenchmarkConsumeTraces_5E500T(b *testing.B) {
+	benchConsumeTraces(b, 5, 500)
+}
+
+func BenchmarkConsumeTraces_5E1000T(b *testing.B) {
+	benchConsumeTraces(b, 5, 1000)
+}
+
+func BenchmarkConsumeTraces_10E100T(b *testing.B) {
+	benchConsumeTraces(b, 10, 100)
+}
+
+func BenchmarkConsumeTraces_10E500T(b *testing.B) {
+	benchConsumeTraces(b, 10, 500)
+}
+
+func BenchmarkConsumeTraces_10E1000T(b *testing.B) {
+	benchConsumeTraces(b, 10, 1000)
+}
+
 func randomTraces() ptrace.Traces {
 	v1 := uint8(rand.Intn(256))
 	v2 := uint8(rand.Intn(256))
@@ -551,9 +636,19 @@ func simpleTraces() ptrace.Traces {
 func simpleTracesWithServiceName() ptrace.Traces {
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(1)
+
 	rspans := traces.ResourceSpans().AppendEmpty()
 	rspans.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service-name-1")
 	rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
+
+	bspans := traces.ResourceSpans().AppendEmpty()
+	bspans.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service-name-2")
+	bspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
+
+	aspans := traces.ResourceSpans().AppendEmpty()
+	aspans.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service-name-3")
+	aspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 5})
+
 	return traces
 }
 
@@ -584,7 +679,7 @@ func simpleConfig() *Config {
 func serviceBasedRoutingConfig() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
-			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
 		},
 		RoutingKey: "service",
 	}

@@ -7,3 +7,6 @@ status:
   distributions: [contrib, observiq, sumo]
   codeowners:
     active: [Aneurysm9]
+
+tests:
+  config:

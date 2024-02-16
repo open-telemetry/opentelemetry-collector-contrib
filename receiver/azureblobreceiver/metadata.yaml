@@ -7,3 +7,8 @@ status:
   distributions: [contrib]
   codeowners:
     active: [eedorenko, mx-psi]
+
+tests:
+  config:
+    connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
+  skip_lifecycle: true

@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	. "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
 )
 
@@ -19,7 +19,7 @@ func TestCPUStats(t *testing.T) {
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
 
 	// test container type
-	containerType := TypeContainer
+	containerType := containerinsight.TypeContainer
 	extractor := NewCPUMetricExtractor(nil)
 
 	var cMetrics []*CAdvisorMetric
@@ -37,7 +37,7 @@ func TestCPUStats(t *testing.T) {
 	AssertContainsTaggedFloat(t, cMetrics[0], "container_cpu_utilization", 0.5, 0)
 
 	// test node type
-	containerType = TypeNode
+	containerType = containerinsight.TypeNode
 	require.NoError(t, extractor.Shutdown())
 	extractor = NewCPUMetricExtractor(nil)
 
@@ -56,7 +56,7 @@ func TestCPUStats(t *testing.T) {
 	AssertContainsTaggedInt(t, cMetrics[0], "node_cpu_limit", 2000)
 
 	// test instance type
-	containerType = TypeInstance
+	containerType = containerinsight.TypeInstance
 	require.NoError(t, extractor.Shutdown())
 	extractor = NewCPUMetricExtractor(nil)
 

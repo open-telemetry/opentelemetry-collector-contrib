@@ -37,13 +37,13 @@ func newNodeInfo(logger *zap.Logger) *nodeInfo {
 	return nc
 }
 
-func (n *nodeInfo) setCPUCapacity(cpuCapacity interface{}) {
+func (n *nodeInfo) setCPUCapacity(cpuCapacity any) {
 	n.cpuLock.Lock()
 	defer n.cpuLock.Unlock()
 	n.CPUCapacity = forceConvertToInt64(cpuCapacity, n.logger)
 }
 
-func (n *nodeInfo) setMemCapacity(memCapacity interface{}) {
+func (n *nodeInfo) setMemCapacity(memCapacity any) {
 	n.memLock.Lock()
 	defer n.memLock.Unlock()
 	n.MemCapacity = forceConvertToInt64(memCapacity, n.logger)
@@ -73,7 +73,7 @@ func (n *nodeInfo) getNodeStats() nodeStats {
 	return n.nodeStats
 }
 
-func forceConvertToInt64(v interface{}, logger *zap.Logger) uint64 {
+func forceConvertToInt64(v any, logger *zap.Logger) uint64 {
 	var value uint64
 
 	switch t := v.(type) {

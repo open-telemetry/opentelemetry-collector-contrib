@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 func TestNewExporter_err_version(t *testing.T) {
@@ -81,7 +82,7 @@ func TestNewLogsExporter_err_traces_encoding(t *testing.T) {
 func TestNewExporter_err_auth_type(t *testing.T) {
 	c := Config{
 		ProtocolVersion: "2.0.0",
-		Authentication: Authentication{
+		Authentication: kafka.Authentication{
 			TLS: &configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
 					CAFile: "/doesnotexist",

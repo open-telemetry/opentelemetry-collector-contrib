@@ -6,7 +6,7 @@
 | Stability     | [alpha]: logs, traces   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fdataset%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fdataset) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fdataset%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fdataset) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@martin-majlis-s1](https://www.github.com/martin-majlis-s1), [@zdaratom](https://www.github.com/zdaratom), [@tomaz-s1](https://www.github.com/tomaz-s1) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@martin-majlis-s1](https://www.github.com/martin-majlis-s1), [@zdaratom-s1](https://www.github.com/zdaratom-s1), [@tomaz-s1](https://www.github.com/tomaz-s1) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -45,22 +45,161 @@ Make sure to provide the appropriate server host value in the `serverHost` attri
 
 ### Optional Settings
 
+- `debug` (default = false): Adds `session_key` to the server fields. It's useful for debugging throughput issues.
 - `buffer`:
   - `max_lifetime` (default = 5s): The maximum delay between sending batches from the same source.
-  - `group_by` (default = []): The list of attributes based on which events should be grouped.
+  - `group_by` (default = []): The list of attributes based on which events should be grouped. They are moved from the event attributes to the session info and shown as server fields in the UI.
   - `retry_initial_interval` (default = 5s): Time to wait after the first failure before retrying.
   - `retry_max_interval` (default = 30s): Is the upper bound on backoff.
   - `retry_max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a buffer.
   - `retry_shutdown_timeout` (default = 30s): The maximum time for which it will try to send data to the DataSet during shutdown. This value should be shorter than container's grace period.
 - `logs`:
-    - `export_scope_info_on_event` (default = false): Include LogRecord scope information (if available) on the DataSet event.
-    - `decompose_complex_message_field` (default = true): Set this to false to disable decomposing complex body / message field types (e.g. a map) into separate fields.
+    - `export_resource_info_on_event` (default = false): Include LogRecord resource information (if available) on the DataSet event.
+    - `export_resource_prefix` (default = 'resource.attributes.'): A prefix string for the resource, if `export_resource_info_on_event` is enabled.
+    - `export_scope_info_on_event` (default = true): Include LogRecord scope information (if available) on the DataSet event.
+    - `export_scope_prefix` (default = 'scope.attributes.'):  A prefix string for the scope, if `export_scope_info_on_event` is enabled.
+    - `export_separator` (default = '.'): The separator to add between keys when flattening nested structures (maps, arrays).
+    - `export_distinguishing_suffix` (default = '_'): A suffix string to resolve naming collisions when flattening.
+    - `decompose_complex_message_field` (default = false): Decompose complex body / message field types (e.g. a maps, arrays) into separate fields.
+    - `decomposed_complex_message_prefix` (default = 'body.map.'): A prefix string to use when a complex message is decomposed.
+- `traces`:
+    - `export_separator` (default = '.'): The separator to add between keys when flattening nested structures (maps, arrays).
+    - `export_distinguishing_suffix` (default = '_'): A suffix string to resolve naming collisions when flattening.
 - `server_host`:
   - `server_host` (default = ''): Specifies the server host to be used for the events.
   - `use_hostname` (default = true): Determines whether the `hostname` of the node should be used as the server host for the events. When set to `true`, the node's `hostname` is automatically used.
 - `retry_on_failure`: See [retry_on_failure](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `timeout`: See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
+
+
+### Attributes
+
+Enabled attributes are exported in the order:
+
+1. Log properties
+2. Body
+3. Resource attributes
+4. Scope attributes
+5. Log attributes
+
+If there is a name conflict, the `export_distinguishing_suffix` value is appended to the later attribute's name. If the `export_distinguishing_suffix` value is an empty string, then the value from the last attribute is used.
+
+#### Example
+
+Example LogRecord:
+```
+Log
+- body:
+  - b: 1
+  - x: "b"
+- resource:
+  - r: 2
+  - x: "r"
+- scope:
+  - s: 3
+  - x: "s"
+- attribute:
+  - a: 4
+  - x: "a"
+  - map:
+    - m1: 5
+    - m2: 6
+```
+
+Then the event will look like:
+* Default settings for `logs`:
+  * Event:
+    ```
+    - message: "{\"b\": 1, \"x\": \"b\"}"
+    - scope.attributes.s: 3
+    - scope.attributes.x: "s"
+    - a: 4
+    - x: "a"
+    - map.m1: 5
+    - map.m2: 6
+    ```
+* Everything enabled:
+  * Configuration:
+    ```
+      logs:
+        export_resource_info_on_event: true
+        export_resource_prefix: "r."
+        export_scope_info_on_event: true
+        export_scope_prefix: "s."
+        decompose_complex_message_field: true
+        decomposed_complex_message_prefix: "m."
+        export_separator: "-"
+        export_distinguishing_suffix: "_"
+    ```
+  * Event:
+    ```
+    - message: "{\"b\": 1, \"x\": \"b\"}"
+    - m.b: 1
+    - m.x: "b"
+    - r.r: 2
+    - r.x: "r"
+    - s.s: 3
+    - s.x: "s"
+    - a: 4
+    - x: "a"
+    - map-m1: 5
+    - map-m2: 6
+    ```
+* Everything enabled, prefixes are empty strings:
+  * Configuration:
+    ```
+      logs:
+        export_resource_info_on_event: true
+        export_resource_prefix: ""
+        export_scope_info_on_event: true
+        export_scope_prefix: ""
+        decompose_complex_message_field: true
+        decomposed_complex_message_prefix: ""
+        export_separator: "-"
+        export_distinguishing_suffix: "_"
+    ```
+  * Event:
+    ```
+    - message: "{\"b\": 1, \"x\": \"b\"}"
+    - b: 1
+    - x: "b"
+    - r: 2
+    - x_: "r"
+    - s: 3
+    - x__: "s"
+    - a: 4
+    - x___: "a"
+    - map-m1: 5
+    - map-m2: 6
+    ```
+* Everything enabled, prefixes are empty strings, suffix is empty string:
+    * Configuration:
+      ```
+        logs:
+          export_resource_info_on_event: true
+          export_resource_prefix: ""
+          export_scope_info_on_event: true
+          export_scope_prefix: ""
+          decompose_complex_message_field: true
+          decomposed_complex_message_prefix: ""
+          export_separator: "-"
+          export_distinguishing_suffix: ""
+      ```
+    * Event:
+      ```
+      - message: "{\"b\": 1, \"x\": \"b\"}"
+      - b: 1
+      - r: 2
+      - s: 3
+      - a: 4
+      - x: "a"
+      - map-m1: 5
+      - map-m2: 6
+      ```
+
+Field names can have `.` dots, `_` underscores, and `-` hyphens. You must escape slashes in Search and PowerQueries. For example, search the field name `app.kubernetes.io/component` as `app.kubernetes.io\/component`.
+
 
 ### Example
 
@@ -121,8 +260,6 @@ service:
       exporters: [dataset/traces]
 ```
 
-## Examples
-
 ### Handling `serverHost` Attribute
 
 Based on the given configuration and scenarios, here's the expected behavior:
@@ -142,3 +279,41 @@ Based on the given configuration and scenarios, here's the expected behavior:
 5. Resource: `{}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST=''`, Hostname: `ip-172-31-27-19`
    * Since the attribute `container_id` is not set and the environmental variable `SERVER_HOST` is empty, the `hostname` of the node (`ip-172-31-27-19`) will be used as the fallback value for `serverHost`.
    * Used `serverHost` will be `ip-172-31-27-19`.
+
+## Metrics
+
+To enable metrics you have to:
+1. Run collector with enabled feature gate `telemetry.useOtelForInternalMetrics`. This can be done by executing it with one additional parameter - `--feature-gates=telemetry.useOtelForInternalMetrics`.
+2. Enable metrics scraping as part of the configuration and add receiver into services:
+   ```yaml
+   receivers:
+     prometheus:
+       config:
+         scrape_configs:
+           - job_name: 'otel-collector'
+             scrape_interval: 5s
+             static_configs:
+               - targets: ['0.0.0.0:8888']
+   ...
+   service:
+     pipelines:
+       metrics:
+         # add prometheus among metrics receivers
+         receivers: [prometheus]
+         processors: [batch]
+         exporters: [otlphttp/prometheus, debug]
+   ```
+
+### Available Metrics
+
+Available metrics contain `dataset` in their name. There are counters related to the
+number of processed events (`events`), buffers (`buffer`), and transferred bytes (`bytes`).
+There are also histograms related to response times (`responseTime`) and payload size (`payloadSize`).
+
+There are several counters related to events/buffers:
+* `enqueued` - the number of received entities
+* `processed` - the number of entities that were accepted by the next layer
+* `dropped` - the number of entities that were not accepted by the next layer
+* `broken` - the number of entities that were somehow corrupted during processing (should be 0)
+
+The number of entities, that are still in the queue can be computed as `enqueued - (processed + dropped + broken)`.

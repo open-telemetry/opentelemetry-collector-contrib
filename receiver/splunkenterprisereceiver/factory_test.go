@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -18,15 +20,21 @@ import (
 
 func TestFactoryCreate(t *testing.T) {
 	factory := NewFactory()
-	require.EqualValues(t, "splunkenterprise", factory.Type())
+	require.EqualValues(t, metadata.Type, factory.Type())
 }
 
 func TestDefaultConfig(t *testing.T) {
+	cfg := confighttp.NewDefaultClientConfig()
+	cfg.Headers = map[string]configopaque.String{
+		"Content-Type": "application/x-www-form-urlencoded",
+	}
+
 	expectedConf := &Config{
-		MaxSearchWaitTime: 60 * time.Second,
+		ClientConfig: cfg,
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Minute,
 			InitialDelay:       1 * time.Second,
+			Timeout:            60 * time.Second,
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}

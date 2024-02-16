@@ -34,7 +34,7 @@ func TestCreateMetricsReceiver_errors(t *testing.T) {
 
 func TestCreateMetricsReceiver(t *testing.T) {
 	prev := newMetricsReceiver
-	newMetricsReceiver = func(ctx context.Context, config Config, params receiver.CreateSettings, consumer consumer.Metrics) (receiver.Metrics, error) {
+	newMetricsReceiver = func(context.Context, Config, receiver.CreateSettings, consumer.Metrics) (receiver.Metrics, error) {
 		return nil, nil
 	}
 	factory := NewFactory()
@@ -44,5 +44,5 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	cfg.Scrapers = []string{"topics"}
 	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	newMetricsReceiver = prev
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }

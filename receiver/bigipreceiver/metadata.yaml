@@ -286,3 +286,6 @@ metrics:
       value_type: int
     attributes: [enabled.status]
     enabled: true
+
+tests:
+  config:

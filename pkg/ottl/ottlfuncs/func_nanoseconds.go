@@ -28,7 +28,7 @@ func createNanosecondsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 }
 
 func Nanoseconds[K any](duration ottl.DurationGetter[K]) (ottl.ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		d, err := duration.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

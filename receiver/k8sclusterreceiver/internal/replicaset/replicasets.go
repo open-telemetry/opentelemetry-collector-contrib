@@ -36,7 +36,6 @@ func RecordMetrics(mb *metadata.MetricsBuilder, rs *appsv1.ReplicaSet, ts pcommo
 	rb.SetK8sNamespaceName(rs.Namespace)
 	rb.SetK8sReplicasetName(rs.Name)
 	rb.SetK8sReplicasetUID(string(rs.UID))
-	rb.SetOpencensusResourcetype("k8s")
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 

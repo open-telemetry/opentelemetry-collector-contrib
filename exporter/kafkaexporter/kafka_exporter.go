@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
@@ -120,6 +122,9 @@ func (e *kafkaLogsProducer) Close(context.Context) error {
 
 func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c := sarama.NewConfig()
+
+	c.ClientID = config.ClientID
+
 	// These setting are required by the sarama.SyncProducer implementation.
 	c.Producer.Return.Successes = true
 	c.Producer.Return.Errors = true
@@ -132,6 +137,10 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c.Producer.MaxMessageBytes = config.Producer.MaxMessageBytes
 	c.Producer.Flush.MaxMessages = config.Producer.FlushMaxMessages
 
+	if config.ResolveCanonicalBootstrapServersOnly {
+		c.Net.ResolveCanonicalBootstrapServers = true
+	}
+
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
@@ -140,7 +149,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 		c.Version = version
 	}
 
-	if err := ConfigureAuthentication(config.Authentication, c); err != nil {
+	if err := kafka.ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
 
@@ -181,6 +190,11 @@ func newTracesExporter(config Config, set exporter.CreateSettings, marshalers ma
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
+	}
+	if config.PartitionTracesByID {
+		if keyableMarshaler, ok := marshaler.(KeyableTracesMarshaler); ok {
+			keyableMarshaler.Key()
+		}
 	}
 	producer, err := newSaramaProducer(config)
 	if err != nil {

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
 
@@ -35,39 +36,46 @@ func TestComponentsArePresent(t *testing.T) {
 				tt.Skip("no status present, skipping", metadataComponent)
 				return
 			}
-			inDevelopment := true
-			deprecated := true
+			inDevelopment := len(m.Status.Stability) == 0
+			deprecated := false
+			inUse := false
 			for stability, pipelines := range m.Status.Stability {
-				if stability != "development" && len(pipelines) > 0 {
-					inDevelopment = false
-					break
-				}
-				if stability != "deprecated" && len(pipelines) > 0 {
-					deprecated = false
-					break
+				if len(pipelines) > 0 {
+					switch stability {
+					case "development":
+						inDevelopment = true
+					case "deprecated":
+						deprecated = true
+					case "unmaintained":
+						// consider not in use.
+					default: // alpha, beta, stable
+						inUse = true
+					}
 				}
 			}
 
-			if inDevelopment {
+			if inDevelopment && !inUse {
 				tt.Skip("component in development, skipping", metadataComponent)
 				return
 			}
 
-			if deprecated {
+			if deprecated && !inUse {
 				tt.Skip("component deprecated, skipping", metadataComponent)
 				return
 			}
+
+			cType := component.MustNewType(m.Type)
 			switch m.Status.Class {
 			case "connector":
-				assert.NotNil(tt, components.Connectors[component.Type(m.Type)], "missing connector: %s", m.Type)
+				assert.NotNil(tt, components.Connectors[cType], "missing connector: %s", m.Type)
 			case "exporter":
-				assert.NotNil(tt, components.Exporters[component.Type(m.Type)], "missing exporter: %s", m.Type)
+				assert.NotNil(tt, components.Exporters[cType], "missing exporter: %s", m.Type)
 			case "extension":
-				assert.NotNil(tt, components.Extensions[component.Type(m.Type)], "missing extension: %s", m.Type)
+				assert.NotNil(tt, components.Extensions[cType], "missing extension: %s", m.Type)
 			case "processor":
-				assert.NotNil(tt, components.Processors[component.Type(m.Type)], "missing processor: %s", m.Type)
+				assert.NotNil(tt, components.Processors[cType], "missing processor: %s", m.Type)
 			case "receiver":
-				assert.NotNil(tt, components.Receivers[component.Type(m.Type)], "missing receiver: %s", m.Type)
+				assert.NotNil(tt, components.Receivers[cType], "missing receiver: %s", m.Type)
 			}
 		})
 	}
@@ -85,7 +93,7 @@ func loadMetadata(filePath string) (metadata, error) {
 	}
 
 	md := metadata{}
-	if err := conf.Unmarshal(&md); err != nil {
+	if err := conf.Unmarshal(&md, confmap.WithIgnoreUnused()); err != nil {
 		return md, err
 	}
 

@@ -21,9 +21,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -63,12 +63,12 @@ func TestPayloadToLogRecord(t *testing.T) {
 				rl := logs.ResourceLogs().AppendEmpty()
 				lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-				assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]any{
 					"mongodbatlas.group.id":        "some-group-id",
 					"mongodbatlas.alert.config.id": "123",
 				}))
 
-				assert.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, lr.Attributes().FromRaw(map[string]any{
 					"created":      "2022-06-03T22:30:31Z",
 					"message":      "Some event happened",
 					"event.domain": "mongodbatlas",
@@ -120,14 +120,14 @@ func TestPayloadToLogRecord(t *testing.T) {
 				rl := logs.ResourceLogs().AppendEmpty()
 				lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-				assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]any{
 					"mongodbatlas.group.id":         "some-group-id",
 					"mongodbatlas.alert.config.id":  "123",
 					"mongodbatlas.cluster.name":     "cluster-name",
 					"mongodbatlas.replica_set.name": "replica-set",
 				}))
 
-				assert.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
+				assert.NoError(t, lr.Attributes().FromRaw(map[string]any{
 					"acknowledgement.comment":  "Scheduled maintenance",
 					"acknowledgement.until":    "2022-06-03T22:32:34Z",
 					"acknowledgement.username": "devops",
@@ -434,6 +434,8 @@ const (
 	testTypeName        = "OUTSIDE_METRIC_THRESHOLD"
 	testHostNameAndPort = "127.0.0.1:27017"
 	testClusterName     = "Cluster1"
+	testRegionName      = "region-name"
+	testProviderName    = "provider-name"
 )
 
 func TestAlertsRetrieval(t *testing.T) {
@@ -449,7 +451,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				return &Config{
 					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					BackOffConfig:             configretry.NewDefaultBackOffConfig(),
 					Alerts: AlertConfig{
 						Mode: alertModePoll,
 						Projects: []*ProjectConfig{
@@ -495,7 +497,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				return &Config{
 					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					BackOffConfig:             configretry.NewDefaultBackOffConfig(),
 					Alerts: AlertConfig{
 						Mode: alertModePoll,
 						Projects: []*ProjectConfig{
@@ -523,7 +525,7 @@ func TestAlertsRetrieval(t *testing.T) {
 				return &Config{
 					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					BackOffConfig:             configretry.NewDefaultBackOffConfig(),
 					Alerts: AlertConfig{
 						Mode: alertModePoll,
 						Projects: []*ProjectConfig{

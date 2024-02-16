@@ -3,7 +3,12 @@ type: skywalking
 status:
   class: exporter
   stability:
-    beta: [metrics, logs]
+    unmaintained: [metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [liqiangz]
+    active: []
+    emeritus: [liqiangz]
+
+tests:
+  config:
+  skip_lifecycle: true

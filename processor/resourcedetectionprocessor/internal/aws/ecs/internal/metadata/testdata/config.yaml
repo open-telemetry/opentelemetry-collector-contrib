@@ -9,6 +9,8 @@ all_set:
       enabled: true
     aws.ecs.task.family:
       enabled: true
+    aws.ecs.task.id:
+      enabled: true
     aws.ecs.task.revision:
       enabled: true
     aws.log.group.arns:
@@ -38,6 +40,8 @@ none_set:
     aws.ecs.task.arn:
       enabled: false
     aws.ecs.task.family:
+      enabled: false
+    aws.ecs.task.id:
       enabled: false
     aws.ecs.task.revision:
       enabled: false

@@ -18,7 +18,6 @@ import (
 
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
-	promConfig "github.com/prometheus/prometheus/config"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -42,7 +41,7 @@ type mockTargetAllocatorResponse struct {
 
 type mockTargetAllocatorResponseRaw struct {
 	code int
-	data interface{}
+	data any
 }
 
 type hTTPSDResponse struct {
@@ -162,7 +161,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			responses: Responses{
 				responses: map[string][]mockTargetAllocatorResponseRaw{
 					"/scrape_configs": {
-						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]interface{}{
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
 							"job1": {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
@@ -218,11 +217,11 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				PrometheusConfig: &promConfig.Config{},
-				TargetAllocator: &targetAllocator{
+				PrometheusConfig: &PromConfig{},
+				TargetAllocator: &TargetAllocator{
 					Interval:    10 * time.Second,
 					CollectorID: "collector-1",
-					HTTPSDConfig: &promHTTP.SDConfig{
+					HTTPSDConfig: &PromHTTPSDConfig{
 						HTTPClientConfig: commonconfig.HTTPClientConfig{
 							BasicAuth: &commonconfig.BasicAuth{
 								Username: "user",
@@ -256,7 +255,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			responses: Responses{
 				responses: map[string][]mockTargetAllocatorResponseRaw{
 					"/scrape_configs": {
-						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]interface{}{
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
 							"job1": {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
@@ -312,11 +311,11 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				PrometheusConfig: &promConfig.Config{},
-				TargetAllocator: &targetAllocator{
+				PrometheusConfig: &PromConfig{},
+				TargetAllocator: &TargetAllocator{
 					Interval:    10 * time.Second,
 					CollectorID: "collector-1",
-					HTTPSDConfig: &promHTTP.SDConfig{
+					HTTPSDConfig: &PromHTTPSDConfig{
 						HTTPClientConfig: commonconfig.HTTPClientConfig{},
 						RefreshInterval:  model.Duration(60 * time.Second),
 					},
@@ -348,7 +347,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 				responses: map[string][]mockTargetAllocatorResponseRaw{
 					"/scrape_configs": {
-						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]interface{}{
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
 							"job1": {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
@@ -368,7 +367,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"metric_relabel_configs": nil,
 							},
 						}},
-						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]interface{}{
+						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
 							"job1": {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
@@ -424,11 +423,11 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				PrometheusConfig: &promConfig.Config{},
-				TargetAllocator: &targetAllocator{
+				PrometheusConfig: &PromConfig{},
+				TargetAllocator: &TargetAllocator{
 					Interval:    10 * time.Second,
 					CollectorID: "collector-1",
-					HTTPSDConfig: &promHTTP.SDConfig{
+					HTTPSDConfig: &PromHTTPSDConfig{
 						HTTPClientConfig: commonconfig.HTTPClientConfig{},
 						RefreshInterval:  model.Duration(60 * time.Second),
 					},
@@ -460,17 +459,17 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 				responses: map[string][]mockTargetAllocatorResponseRaw{
 					"/scrape_configs": {
-						mockTargetAllocatorResponseRaw{code: 404, data: map[string]map[string]interface{}{}},
-						mockTargetAllocatorResponseRaw{code: 404, data: map[string]map[string]interface{}{}},
+						mockTargetAllocatorResponseRaw{code: 404, data: map[string]map[string]any{}},
+						mockTargetAllocatorResponseRaw{code: 404, data: map[string]map[string]any{}},
 					},
 				},
 			},
 			cfg: &Config{
-				PrometheusConfig: &promConfig.Config{},
-				TargetAllocator: &targetAllocator{
+				PrometheusConfig: &PromConfig{},
+				TargetAllocator: &TargetAllocator{
 					Interval:    50 * time.Millisecond,
 					CollectorID: "collector-1",
-					HTTPSDConfig: &promHTTP.SDConfig{
+					HTTPSDConfig: &PromHTTPSDConfig{
 						HTTPClientConfig: commonconfig.HTTPClientConfig{},
 						RefreshInterval:  model.Duration(60 * time.Second),
 					},

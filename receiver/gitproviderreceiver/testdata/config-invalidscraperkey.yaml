@@ -1,0 +1,20 @@
+---
+receivers:
+    gitprovider:
+        initial_delay: 1s
+        collection_interval: 60s
+        scrapers:
+            invalidscraperkey:
+
+processors:
+    nop:
+
+exporters:
+    nop:
+
+service:
+    pipelines:
+        metrics:
+            receivers: [gitprovider]
+            processors: [nop]
+            exporters: [nop]

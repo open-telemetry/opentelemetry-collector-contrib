@@ -12,6 +12,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -27,12 +28,14 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	queueSettings := exporterhelper.NewDefaultQueueSettings()
+	// For backwards compatibilitiy, we default to 1 consumer
+	queueSettings.NumConsumers = 1
+
 	return &Config{
-		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: QueueSettings{
-			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
-		},
+		QueueSettings:      queueSettings,
 	}
 }
 

@@ -39,8 +39,8 @@ func TestUnmarshal(t *testing.T) {
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.Field = entry.NewBodyField("new")
-					cfg.Value = map[string]interface{}{
-						"nest": map[string]interface{}{"key": "val"},
+					cfg.Value = map[string]any{
+						"nest": map[string]any{"key": "val"},
 					}
 					return cfg
 				}(),
@@ -68,8 +68,8 @@ func TestUnmarshal(t *testing.T) {
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.Field = entry.NewAttributeField("one", "two")
-					cfg.Value = map[string]interface{}{
-						"nest": map[string]interface{}{"key": "val"},
+					cfg.Value = map[string]any{
+						"nest": map[string]any{"key": "val"},
 					}
 					return cfg
 				}(),
@@ -97,8 +97,8 @@ func TestUnmarshal(t *testing.T) {
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.Field = entry.NewResourceField("one", "two")
-					cfg.Value = map[string]interface{}{
-						"nest": map[string]interface{}{"key": "val"},
+					cfg.Value = map[string]any{
+						"nest": map[string]any{"key": "val"},
 					}
 					return cfg
 				}(),
@@ -117,7 +117,7 @@ func TestUnmarshal(t *testing.T) {
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.Field = entry.NewBodyField("new")
-					cfg.Value = []interface{}{1, 2, 3, 4}
+					cfg.Value = []any{1, 2, 3, 4}
 					return cfg
 				}(),
 			},
@@ -126,7 +126,7 @@ func TestUnmarshal(t *testing.T) {
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.Field = entry.NewAttributeField("new")
-					cfg.Value = []interface{}{1, 2, 3, 4}
+					cfg.Value = []any{1, 2, 3, 4}
 					return cfg
 				}(),
 			},
@@ -136,7 +136,7 @@ func TestUnmarshal(t *testing.T) {
 				Expect: func() *Config {
 					cfg := NewConfig()
 					cfg.Field = entry.NewResourceField("new")
-					cfg.Value = []interface{}{1, 2, 3, 4}
+					cfg.Value = []any{1, 2, 3, 4}
 					return cfg
 				}(),
 			},

@@ -33,6 +33,8 @@ The Following settings are optional:
 
 - `enable_metric_type: true`(default value is false): Enable the statsd receiver to be able to emit the metric type(gauge, counter, timer(in the future), histogram(in the future)) as a label.
 
+- `enable_simple_tags: true`(default value is false): Enable parsing tags that do not have a value, e.g. `#mykey` instead of `#mykey:myvalue`. DogStatsD supports such tagging.
+
 - `is_monotonic_counter` (default value is false): Set all counter-type metrics the statsd receiver received as monotonic.
 
 - `timer_histogram_mapping:`(default value is below): Specify what OTLP type to convert received timing/histogram data to.
@@ -164,4 +166,9 @@ service:
 
 A simple way to send a metric to `localhost:8125`:
 
-`echo "test.metric:42|c|#myKey:myVal" | nc -w 1 -u localhost 8125`
+```shell
+echo "test.metric:42|c|#myKey:myVal" | nc -w 1 -u -4 localhost 8125;
+echo "test.metric:42|c|#myKey:myVal" | nc -w 1 -u -6 localhost 8125;
+```
+
+Which sends a UDP packet using both IPV4 and IPV6, which is needed because the receiver's UDP server only accepts one or the other.

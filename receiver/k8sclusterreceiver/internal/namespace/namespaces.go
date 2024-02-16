@@ -15,7 +15,6 @@ func RecordMetrics(mb *imetadata.MetricsBuilder, ns *corev1.Namespace, ts pcommo
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceUID(string(ns.UID))
 	rb.SetK8sNamespaceName(ns.Name)
-	rb.SetOpencensusResourcetype("k8s")
 	mb.EmitForResource(imetadata.WithResource(rb.Emit()))
 }
 

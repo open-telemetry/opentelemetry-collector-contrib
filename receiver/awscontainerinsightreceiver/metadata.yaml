@@ -8,3 +8,7 @@ status:
   warnings: [Other]
   codeowners:
     active: [Aneurysm9, pxaws]
+
+tests:
+  config:
+  skip_lifecycle: true

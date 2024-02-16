@@ -122,7 +122,7 @@ func appendSplunkMetadata(rl plog.ResourceLogs, attrs splunk.HecToOtelAttrs, hos
 	}
 }
 
-func convertToValue(logger *zap.Logger, src interface{}, dest pcommon.Value) error {
+func convertToValue(logger *zap.Logger, src any, dest pcommon.Value) error {
 	switch value := src.(type) {
 	case nil:
 	case string:
@@ -133,9 +133,9 @@ func convertToValue(logger *zap.Logger, src interface{}, dest pcommon.Value) err
 		dest.SetDouble(value)
 	case bool:
 		dest.SetBool(value)
-	case map[string]interface{}:
+	case map[string]any:
 		return convertToAttributeMap(logger, value, dest)
-	case []interface{}:
+	case []any:
 		return convertToSliceVal(logger, value, dest)
 	default:
 		logger.Debug("Unsupported value conversion", zap.Any("value", src))
@@ -145,7 +145,7 @@ func convertToValue(logger *zap.Logger, src interface{}, dest pcommon.Value) err
 	return nil
 }
 
-func convertToSliceVal(logger *zap.Logger, value []interface{}, dest pcommon.Value) error {
+func convertToSliceVal(logger *zap.Logger, value []any, dest pcommon.Value) error {
 	arr := dest.SetEmptySlice()
 	for _, elt := range value {
 		err := convertToValue(logger, elt, arr.AppendEmpty())
@@ -156,7 +156,7 @@ func convertToSliceVal(logger *zap.Logger, value []interface{}, dest pcommon.Val
 	return nil
 }
 
-func convertToAttributeMap(logger *zap.Logger, value map[string]interface{}, dest pcommon.Value) error {
+func convertToAttributeMap(logger *zap.Logger, value map[string]any, dest pcommon.Value) error {
 	attrMap := dest.SetEmptyMap()
 	keys := make([]string, 0, len(value))
 	for k := range value {

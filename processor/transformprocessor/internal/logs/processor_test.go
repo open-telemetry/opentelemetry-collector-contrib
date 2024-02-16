@@ -329,6 +329,10 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutDouble("test", 0.0)
 			},
 		},
+		{
+			statement: `replace_match(body["metadata"]["uid"], "*", "12345")`,
+			want:      func(td plog.Logs) {},
+		},
 	}
 
 	for _, tt := range tests {

@@ -42,7 +42,7 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 	}))
 
 	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: testServer.URL,
 			Timeout:  defaultTimeout,
 		},
@@ -73,7 +73,7 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 		s: newSender(
 			cfg,
 			&http.Client{
-				Timeout: cfg.HTTPClientSettings.Timeout,
+				Timeout: cfg.ClientConfig.Timeout,
 			},
 			f,
 			sourceFormats{
@@ -269,7 +269,7 @@ func TestSendLogsSplitFailedAll(t *testing.T) {
 	assert.EqualError(
 		t,
 		err,
-		"error during sending data: 500 Internal Server Error; error during sending data: 404 Not Found",
+		"error during sending data: 500 Internal Server Error\nerror during sending data: 404 Not Found",
 	)
 	assert.Equal(t, test.s.logBuffer[0:2], dropped)
 }
@@ -381,7 +381,7 @@ func TestSendLogsJsonSplitFailedAll(t *testing.T) {
 	assert.EqualError(
 		t,
 		err,
-		"error during sending data: 500 Internal Server Error; error during sending data: 404 Not Found",
+		"error during sending data: 500 Internal Server Error\nerror during sending data: 404 Not Found",
 	)
 	assert.Equal(t, test.s.logBuffer[0:2], dropped)
 }
@@ -474,7 +474,7 @@ func TestInvalidEndpoint(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.HTTPClientSettings.Endpoint = ":"
+	test.s.config.ClientConfig.Endpoint = ":"
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
@@ -485,7 +485,7 @@ func TestInvalidPostRequest(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.HTTPClientSettings.Endpoint = ""
+	test.s.config.ClientConfig.Endpoint = ""
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
@@ -496,7 +496,7 @@ func TestLogsBufferOverflow(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.HTTPClientSettings.Endpoint = ":"
+	test.s.config.ClientConfig.Endpoint = ":"
 	log := exampleLog()
 	flds := newFields(pcommon.NewMap())
 
@@ -712,7 +712,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 	assert.EqualError(
 		t,
 		err,
-		"error during sending data: 500 Internal Server Error; error during sending data: 404 Not Found",
+		"error during sending data: 500 Internal Server Error\nerror during sending data: 404 Not Found",
 	)
 	assert.Equal(t, test.s.metricBuffer[0:2], dropped)
 }
@@ -766,7 +766,7 @@ func TestMetricsBufferOverflow(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.HTTPClientSettings.Endpoint = ":"
+	test.s.config.ClientConfig.Endpoint = ":"
 	test.s.config.MetricFormat = PrometheusFormat
 	test.s.config.MaxRequestBodySize = 1024 * 1024 * 1024 * 1024
 	metric := exampleIntMetric()

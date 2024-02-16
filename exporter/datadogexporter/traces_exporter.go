@@ -62,7 +62,7 @@ func newTracesExporter(
 		onceMetadata:     onceMetadata,
 		scrubber:         scrubber,
 		sourceProvider:   sourceProvider,
-		retrier:          clientutil.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		retrier:          clientutil.NewRetrier(params.Logger, cfg.BackOffConfig, scrubber),
 		metadataReporter: metadataReporter,
 	}
 	// client to send running metric to the backend & perform API key validation
@@ -72,7 +72,7 @@ func newTracesExporter(
 			params.BuildInfo,
 			cfg.Metrics.TCPAddr.Endpoint,
 			cfg.TimeoutSettings,
-			cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
+			cfg.LimitedClientConfig.TLSSetting.InsecureSkipVerify)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
@@ -89,6 +89,10 @@ func newTracesExporter(
 }
 
 var _ consumer.ConsumeTracesFunc = (*traceExporter)(nil).consumeTraces
+
+// headerComputedStats specifies the HTTP header which indicates whether APM stats
+// have already been computed for a payload.
+const headerComputedStats = "Datadog-Client-Computed-Stats"
 
 func (exp *traceExporter) consumeTraces(
 	ctx context.Context,
@@ -115,9 +119,13 @@ func (exp *traceExporter) consumeTraces(
 	rspans := td.ResourceSpans()
 	hosts := make(map[string]struct{})
 	tags := make(map[string]struct{})
+	header := make(http.Header)
+	if noAPMStatsFeatureGate.IsEnabled() {
+		header[headerComputedStats] = []string{"true"}
+	}
 	for i := 0; i < rspans.Len(); i++ {
 		rspan := rspans.At(i)
-		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, http.Header{})
+		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, header)
 		switch src.Kind {
 		case source.HostnameKind:
 			hosts[src.Identifier] = struct{}{}
@@ -174,6 +182,14 @@ func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[stri
 }
 
 func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
+	acfg, err := newTraceAgentConfig(ctx, params, cfg, sourceProvider)
+	if err != nil {
+		return nil, err
+	}
+	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector()), nil
+}
+
+func newTraceAgentConfig(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*traceconfig.AgentConfig, error) {
 	acfg := traceconfig.New()
 	src, err := sourceProvider.Source(ctx)
 	if err != nil {
@@ -188,15 +204,20 @@ func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Con
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
 	acfg.ReceiverPort = 0 // disable HTTP receiver
 	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
-	acfg.SkipSSLValidation = cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify
+	acfg.SkipSSLValidation = cfg.LimitedClientConfig.TLSSetting.InsecureSkipVerify
 	acfg.ComputeStatsBySpanKind = cfg.Traces.ComputeStatsBySpanKind
 	acfg.PeerServiceAggregation = cfg.Traces.PeerServiceAggregation
+	acfg.PeerTagsAggregation = cfg.Traces.PeerTagsAggregation
+	acfg.PeerTags = cfg.Traces.PeerTags
 	if v := cfg.Traces.flushInterval; v > 0 {
 		acfg.TraceWriter.FlushPeriodSeconds = v
+	}
+	if v := cfg.Traces.TraceBuffer; v > 0 {
+		acfg.TraceBuffer = v
 	}
 	if addr := cfg.Traces.Endpoint; addr != "" {
 		acfg.Endpoints[0].Host = addr
 	}
-	tracelog.SetLogger(&zaplogger{params.Logger})
-	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector()), nil
+	tracelog.SetLogger(&zaplogger{params.Logger}) //TODO: This shouldn't be a singleton
+	return acfg, nil
 }

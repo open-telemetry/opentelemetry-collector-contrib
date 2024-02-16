@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/transport"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
 )
 
 var (
@@ -35,8 +35,8 @@ type carbonReceiver struct {
 
 var _ receiver.Metrics = (*carbonReceiver)(nil)
 
-// New creates the Carbon receiver with the given configuration.
-func New(
+// newMetricsReceiver creates the Carbon receiver with the given configuration.
+func newMetricsReceiver(
 	set receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,
@@ -93,7 +93,7 @@ func buildTransportServer(config Config) (transport.Server, error) {
 // Start tells the receiver to start its processing.
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
-func (r *carbonReceiver) Start(_ context.Context, host component.Host) error {
+func (r *carbonReceiver) Start(_ context.Context, _ component.Host) error {
 	server, err := buildTransportServer(*r.config)
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func (r *carbonReceiver) Start(_ context.Context, host component.Host) error {
 	r.server = server
 	go func() {
 		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter); err != nil {
-			host.ReportFatalError(err)
+			r.settings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil

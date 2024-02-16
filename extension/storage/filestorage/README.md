@@ -25,6 +25,8 @@ The default directory is `%ProgramData%\Otelcol\FileStorage` on Windows and `/va
 `timeout` is the maximum time to wait for a file lock. This value does not need to be modified in most circumstances.
 The default timeout is `1s`.
 
+`fsync` when set, will force the database to perform an fsync after each write.  This helps to ensure database integretity if there is an interruption to the database process, but at the cost of performance.  See [DB.NoSync](https://pkg.go.dev/go.etcd.io/bbolt#DB) for more information.
+
 ## Compaction
 `compaction` defines how and when files should be compacted. There are two modes of compaction available (both of which can be set concurrently):
 - `compaction.on_start` (default: false), which happens when collector starts
@@ -78,6 +80,7 @@ extensions:
       on_start: true
       directory: /tmp/
       max_transaction_size: 65_536
+    fsync: false
 
 service:
   extensions: [file_storage, file_storage/all_settings]
@@ -128,7 +131,7 @@ For more details, see the following issues:
 The schedule for this feature gate is:
 
 - Introduced in v0.87.0 (October 2023) as `alpha` - disabled by default.
-- Moved to `beta` in January 2024 - enabled by default.
+- Moved to `beta` in v0.92.0 (January 2024) - enabled by default.
 - Moved to `stable` in April 2024 - cannot be disabled.
 - Removed three releases after `stable`.
 

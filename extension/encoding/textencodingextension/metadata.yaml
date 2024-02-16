@@ -1,4 +1,4 @@
-type: textencoding
+type: text_encoding
 
 status:
   class: extension
@@ -7,3 +7,6 @@ status:
   distributions: []
   codeowners:
     active: [MovieStoreGuy, atoulme]
+
+tests:
+  config:

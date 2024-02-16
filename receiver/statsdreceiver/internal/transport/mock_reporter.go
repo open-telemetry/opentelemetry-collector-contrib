@@ -4,7 +4,6 @@
 package transport // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport"
 
 import (
-	"context"
 	"sync"
 )
 
@@ -23,17 +22,7 @@ func NewMockReporter(expectedOnMetricsProcessedCalls int) *MockReporter {
 	return &m
 }
 
-func (m *MockReporter) OnDataReceived(ctx context.Context) context.Context {
-	return ctx
-}
-
-func (m *MockReporter) OnTranslationError(_ context.Context, _ error) {}
-
-func (m *MockReporter) OnMetricsProcessed(_ context.Context, _ int, _ error) {
-	m.wgMetricsProcessed.Done()
-}
-
-func (m *MockReporter) OnDebugf(_ string, _ ...interface{}) {
+func (m *MockReporter) OnDebugf(_ string, _ ...any) {
 }
 
 // WaitAllOnMetricsProcessedCalls blocks until the number of expected calls

@@ -12,5 +12,11 @@ status:
   - observiq
   - splunk
   - sumo
+  - liatrio
   codeowners:
     active: [Aneurysm9, dashpole]
+tests:
+  config:
+    config:
+      scrape_configs:
+        - job_name: 'test'

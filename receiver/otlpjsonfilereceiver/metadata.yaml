@@ -7,3 +7,7 @@ status:
   distributions: [contrib, sumo]
   codeowners:
     active: [djaglowski, atoulme]
+tests:
+  config:
+    include:
+      - "/tmp/*.log"

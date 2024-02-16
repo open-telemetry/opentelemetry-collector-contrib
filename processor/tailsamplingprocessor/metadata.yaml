@@ -13,3 +13,6 @@ status:
   - sumo
   codeowners:
     active: [jpkrohling]
+
+tests:
+  config:

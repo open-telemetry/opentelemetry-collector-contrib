@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -16,7 +17,7 @@ import (
 // Config defines configuration for Remote Write exporter.
 type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 
 	// prefix attached to each exported metric name
 	// See: https://prometheus.io/docs/practices/naming/#metric-names
@@ -29,7 +30,10 @@ type Config struct {
 	// ExternalLabels defines a map of label keys and values that are allowed to start with reserved prefix "__"
 	ExternalLabels map[string]string `mapstructure:"external_labels"`
 
-	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	ClientConfig confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+
+	// maximum size in bytes of time series batch sent to remote storage
+	MaxBatchSizeBytes int `mapstructure:"max_batch_size_bytes"`
 
 	// ResourceToTelemetrySettings is the option for converting resource attributes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
@@ -45,6 +49,9 @@ type Config struct {
 
 	// AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
+
+	// SendMetadata controls whether prometheus metadata will be generated and sent
+	SendMetadata bool `mapstructure:"send_metadata"`
 }
 
 type CreatedMetric struct {
@@ -100,5 +107,13 @@ func (cfg *Config) Validate() error {
 			Enabled: false,
 		}
 	}
+	if cfg.MaxBatchSizeBytes < 0 {
+		return fmt.Errorf("max_batch_byte_size must be greater than 0")
+	}
+	if cfg.MaxBatchSizeBytes == 0 {
+		// Defaults to ~2.81MB
+		cfg.MaxBatchSizeBytes = 3000000
+	}
+
 	return nil
 }

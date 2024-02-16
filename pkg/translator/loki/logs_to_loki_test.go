@@ -48,10 +48,10 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant_id="1"}`,
+								Labels: `{exporter="OTLP"}`,
 								Entries: []push.Entry{
 									{
-										Line: `{"attributes":{"http.status":200}}`,
+										Line: `{"attributes":{"http.status":200,"tenant.id":"1"}}`,
 									},
 								}},
 						},
@@ -61,10 +61,10 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant_id="2"}`,
+								Labels: `{exporter="OTLP"}`,
 								Entries: []push.Entry{
 									{
-										Line: `{"attributes":{"http.status":200}}`,
+										Line: `{"attributes":{"http.status":200,"tenant.id":"2"}}`,
 									},
 								},
 							},
@@ -100,10 +100,10 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant_id="11"}`,
+								Labels: `{exporter="OTLP"}`,
 								Entries: []push.Entry{
 									{
-										Line: `{"attributes":{"http.status":200}}`,
+										Line: `{"attributes":{"http.status":200},"resources":{"tenant.id":"11"}}`,
 									},
 								}},
 						},
@@ -113,10 +113,10 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant_id="12"}`,
+								Labels: `{exporter="OTLP"}`,
 								Entries: []push.Entry{
 									{
-										Line: `{"attributes":{"http.status":200}}`,
+										Line: `{"attributes":{"http.status":200},"resources":{"tenant.id":"12"}}`,
 									},
 								},
 							},
@@ -186,10 +186,10 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant_id="21"}`,
+								Labels: `{exporter="OTLP"}`,
 								Entries: []push.Entry{
 									{
-										Line: `{"attributes":{"http.status":200}}`,
+										Line: `{"attributes":{"http.status":200,"tenant.id":"31"},"resources":{"tenant.id":"21"}}`,
 									},
 								}},
 						},
@@ -199,10 +199,10 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 					PushRequest: &push.PushRequest{
 						Streams: []push.Stream{
 							{
-								Labels: `{exporter="OTLP", tenant_id="22"}`,
+								Labels: `{exporter="OTLP"}`,
 								Entries: []push.Entry{
 									{
-										Line: `{"attributes":{"http.status":200}}`,
+										Line: `{"attributes":{"http.status":200,"tenant.id":"32"},"resources":{"tenant.id":"22"}}`,
 									},
 								},
 							},
@@ -238,9 +238,9 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 	testCases := []struct {
 		desc                 string
-		hints                map[string]interface{}
-		attrs                map[string]interface{}
-		res                  map[string]interface{}
+		hints                map[string]any
+		attrs                map[string]any
+		res                  map[string]any
 		severity             plog.SeverityNumber
 		levelAttribute       string
 		expectedLabel        string
@@ -249,11 +249,11 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 	}{
 		{
 			desc: "with attribute to label and regular attribute",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"host.name":   "guarana",
 				"http.status": 200,
 			},
-			hints: map[string]interface{}{
+			hints: map[string]any{
 				hintAttributes: "host.name",
 			},
 			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,
@@ -265,11 +265,11 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 		},
 		{
 			desc: "with resource to label and regular resource",
-			res: map[string]interface{}{
+			res: map[string]any{
 				"host.name": "guarana",
 				"region.az": "eu-west-1a",
 			},
-			hints: map[string]interface{}{
+			hints: map[string]any{
 				hintResources: "host.name",
 			},
 			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,
@@ -281,11 +281,11 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 		},
 		{
 			desc: "with logfmt format",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"host.name":   "guarana",
 				"http.status": 200,
 			},
-			hints: map[string]interface{}{
+			hints: map[string]any{
 				hintAttributes: "host.name",
 				hintFormat:     formatLogfmt,
 			},
@@ -346,10 +346,10 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 		},
 		{
 			desc: "with severity, already existing level and hint attribute",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"host.name": "guarana",
 			},
-			hints: map[string]interface{}{
+			hints: map[string]any{
 				hintAttributes: "host.name",
 			},
 			severity:       plog.SeverityNumberDebug4,
@@ -363,10 +363,10 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 		},
 		{
 			desc: "with existing level and hint attributes contain level",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"host.name": "guarana",
 			},
-			hints: map[string]interface{}{
+			hints: map[string]any{
 				hintAttributes: "level, host.name",
 			},
 			levelAttribute: "dummy",
@@ -379,15 +379,15 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 		},
 		{
 			desc: "with hint attributes and resource attributes as string",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"host.name": "guarana",
 				"host.ip":   "127.0.0.1",
 			},
-			res: map[string]interface{}{
+			res: map[string]any{
 				"service.name":      "my-service",
 				"service.namespace": "my-namespace",
 			},
-			hints: map[string]interface{}{
+			hints: map[string]any{
 				hintAttributes: "host.name, host.ip",
 				hintResources:  "service.name, service.namespace",
 			},
@@ -401,15 +401,15 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 		},
 		{
 			desc: "with hint attributes as slice",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"host.name": "guarana",
 				"host.ip":   "127.0.0.1",
 			},
-			res: map[string]interface{}{
+			res: map[string]any{
 				"service.name":      "my-service",
 				"service.namespace": "my-namespace",
 			},
-			hints: map[string]interface{}{
+			hints: map[string]any{
 				hintAttributes: []any{"host.name", "host.ip"},
 				hintResources:  []any{"service.name", "service.namespace"},
 			},
@@ -449,7 +449,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 					logs := slogs.At(j).LogRecords()
 					for k := 0; k < logs.Len(); k++ {
 						log := logs.At(k)
-						attrs := map[string]interface{}{}
+						attrs := map[string]any{}
 						if len(tt.attrs) > 0 {
 							attrs = tt.attrs
 						}
@@ -496,9 +496,9 @@ func TestLogToLokiEntry(t *testing.T) {
 		timestamp            time.Time
 		severity             plog.SeverityNumber
 		levelAttribute       string
-		res                  map[string]interface{}
-		attrs                map[string]interface{}
-		hints                map[string]interface{}
+		res                  map[string]any
+		attrs                map[string]any
+		hints                map[string]any
 		instrumentationScope *instrumentationScope
 		expected             *PushEntry
 		err                  error
@@ -507,11 +507,11 @@ func TestLogToLokiEntry(t *testing.T) {
 		{
 			name:      "with attribute to label and regular attribute",
 			timestamp: time.Unix(0, 1677592916000000000),
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"host.name":   "guarana",
 				"http.status": 200,
 			},
-			hints: map[string]interface{}{
+			hints: map[string]any{
 				hintAttributes: "host.name",
 			},
 			expected: &PushEntry{
@@ -529,11 +529,11 @@ func TestLogToLokiEntry(t *testing.T) {
 		{
 			name:      "with resource to label and regular resource",
 			timestamp: time.Unix(0, 1677592916000000000),
-			res: map[string]interface{}{
+			res: map[string]any{
 				"host.name": "guarana",
 				"region.az": "eu-west-1a",
 			},
-			hints: map[string]interface{}{
+			hints: map[string]any{
 				hintResources: "host.name",
 			},
 			expected: &PushEntry{
@@ -550,11 +550,11 @@ func TestLogToLokiEntry(t *testing.T) {
 		{
 			name:      "with logfmt format",
 			timestamp: time.Unix(0, 1677592916000000000),
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"host.name":   "guarana",
 				"http.status": 200,
 			},
-			hints: map[string]interface{}{
+			hints: map[string]any{
 				hintAttributes: "host.name",
 				hintFormat:     formatLogfmt,
 			},
@@ -623,7 +623,7 @@ func TestLogToLokiEntry(t *testing.T) {
 			instrumentationScope: &instrumentationScope{
 				Name:    "otlp",
 				Version: "v1",
-				Attributes: map[string]interface{}{
+				Attributes: map[string]any{
 					"foo": "bar",
 				},
 			},
@@ -640,7 +640,7 @@ func TestLogToLokiEntry(t *testing.T) {
 		{
 			name:      "with unknown format hint",
 			timestamp: time.Unix(0, 1677592916000000000),
-			hints: map[string]interface{}{
+			hints: map[string]any{
 				hintFormat: "my-format",
 			},
 			expected: nil,
@@ -695,13 +695,13 @@ func TestLogToLokiEntry(t *testing.T) {
 func TestGetTenantFromTenantHint(t *testing.T) {
 	testCases := []struct {
 		name     string
-		attrs    map[string]interface{}
-		res      map[string]interface{}
+		attrs    map[string]any
+		res      map[string]any
 		expected string
 	}{
 		{
 			name: "tenant in attributes",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				hintTenant:  "tenant.id",
 				"tenant.id": "1",
 			},
@@ -709,7 +709,7 @@ func TestGetTenantFromTenantHint(t *testing.T) {
 		},
 		{
 			name: "tenant in resources",
-			res: map[string]interface{}{
+			res: map[string]any{
 				hintTenant:  "tenant.id",
 				"tenant.id": "1",
 			},
@@ -717,11 +717,11 @@ func TestGetTenantFromTenantHint(t *testing.T) {
 		},
 		{
 			name: "if tenant set in resources and attributes, the one in resource should win",
-			res: map[string]interface{}{
+			res: map[string]any{
 				hintTenant:  "tenant.id",
 				"tenant.id": "1",
 			},
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				hintTenant:  "tenant.id",
 				"tenant.id": "2",
 			},

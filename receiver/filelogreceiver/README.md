@@ -22,7 +22,7 @@ Tails and parses logs from files.
 | Field                               | Default                              | Description                                                                                                                                                                                                                                                     |
 |-------------------------------------|--------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `include`                           | required                             | A list of file glob patterns that match the file paths to be read.                                                                                                                                                                                              |
-| `exclude`                           | []                                   | A list of file glob patterns to exclude from reading.                                                                                                                                                                                                           |
+| `exclude`                           | []                                   | A list of file glob patterns to exclude from reading. This is applied against the paths matched by `include`.                                                                                                                                                 |
 | `start_at`                          | `end`                                | At startup, where to start reading logs from the file. Options are `beginning` or `end`.                                                                                                                                                                        |
 | `multiline`                         |                                      | A `multiline` configuration block. See [below](#multiline-configuration) for more details.                                                                                                                                                                      |
 | `force_flush_period`                | `500ms`                              | [Time](#time-parameters) since last read of data from file, after which currently buffered log should be send to pipeline. A value of `0` will disable forced flushing.                                                                                         |
@@ -42,7 +42,7 @@ Tails and parses logs from files.
 | `attributes`                        | {}                                   | A map of `key: value` pairs to add to the entry's attributes.                                                                                                                                                                                                   |
 | `resource`                          | {}                                   | A map of `key: value` pairs to add to the entry's resource.                                                                                                                                                                                                     |
 | `operators`                         | []                                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details.                                                                                                                                    |
-| `storage`                           | none                                 | The ID of a storage extension to be used to store file checkpoints. File checkpoints allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage checkpoints in memory only.  |
+| `storage`                           | none                                 | The ID of a storage extension to be used to store file offsets. File offsets allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage offsets in memory only.  |
 | `header`                            | nil                                  | Specifies options for parsing header metadata. Requires that the `filelog.allowHeaderMetadataParsing` feature gate is enabled. See below for details. Must be `false` when `start_at` is set to `end`.                                                          |
 | `header.pattern`                    | required for header metadata parsing | A regex that matches every header line.                                                                                                                                                                                                                         |
 | `header.metadata_operators`         | required for header metadata parsing | A list of operators used to parse metadata from the header.                                                                                                                                                                                                     |
@@ -51,7 +51,8 @@ Tails and parses logs from files.
 | `retry_on_failure.max_interval`     | `30s`                                | Upper bound on retry backoff [interval](#time-parameters). Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                        |
 | `retry_on_failure.max_elapsed_time` | `5m`                                 | Maximum amount of [time](#time-parameters) (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.     
 | `ordering_criteria.regex`     |                                      | Regular expression used for sorting, should contain a named capture groups that are to be used in `regex_key`.                                                                                                                               |
-| `ordering_criteria.sort_by.sort_type` |                                      | Type of sorting to be performed (e.g., `numeric`, `alphabetical`, `timestamp`)                                                                                                                                                                                  |
+| `ordering_criteria.top_n`     | 1 | The number of files to track when using file ordering. The top N files are tracked after applying the ordering criteria. |
+| `ordering_criteria.sort_by.sort_type` |                                      | Type of sorting to be performed (e.g., `numeric`, `alphabetical`, `timestamp`, `mtime`)                                                                                                                                                                                  |
 | `ordering_criteria.sort_by.location`  |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the location of the timestamp of the file.                                                                                                                                                               |
 | `ordering_criteria.sort_by.format`    |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the strptime format of the timestamp being sorted.                                                                                                                                                       |
 | `ordering_criteria.sort_by.ascending` |                                      | Sort direction                                              |
@@ -152,4 +153,34 @@ The above configuration will read logs from the "simple.log" file. Some examples
 2023-06-20 12:50:00 DEBUG This is a test debug message
 ```
 
+## Example - Multiline logs parsing
 
+Receiver Configuration
+```yaml
+receivers:
+  filelog:
+    include:
+    - /var/log/example/multiline.log
+    multiline:
+      line_start_pattern: ^Exception
+```
+
+The above configuration will be able to parse multiline logs, splitting every time the `^Exception` pattern is met.
+
+```
+Exception in thread 1 "main" java.lang.NullPointerException
+        at com.example.myproject.Book.getTitle(Book.java:16)
+        at com.example.myproject.Author.getBookTitles(Author.java:25)
+        at com.example.myproject.Bootstrap.main(Bootstrap.java:14)
+Exception in thread 2 "main" java.lang.NullPointerException
+        at com.example.myproject.Book.getTitle(Book.java:16)
+        at com.example.myproject.Author.getBookTitles(Author.java:25)
+        at com.example.myproject.Bootstrap.main(Bootstrap.java:44)
+```
+
+## Offset tracking
+
+`storage` setting allows to define the proper storage extension to be used for storing file offsets. 
+While the storage parameter can ensure that log files are consumed accurately, it is possible that
+logs are dropped while moving downstream through other components in the collector.
+For additional resiliency, see [Fault tolerant log collection example](../../examples/fault-tolerant-logs-collection/README.md)

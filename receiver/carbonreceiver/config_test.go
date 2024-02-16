@@ -92,3 +92,18 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigValidate(t *testing.T) {
+	cfg := &Config{
+		NetAddr: confignet.NetAddr{
+			Endpoint:  "localhost:2003",
+			Transport: "tcp",
+		},
+		TCPIdleTimeout: -1 * time.Second,
+		Parser: &protocol.Config{
+			Type:   "plaintext",
+			Config: &protocol.PlaintextConfig{},
+		},
+	}
+	assert.Error(t, cfg.Validate())
+}

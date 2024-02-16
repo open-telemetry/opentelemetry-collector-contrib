@@ -19,24 +19,33 @@ type MetricsBuilders struct {
 }
 
 type CPUMetrics struct {
-	Time         RecordDoubleDataPointFunc
-	Utilization  RecordDoubleDataPointFunc
-	UsagePercent RecordDoubleDataPointFunc
+	Time               RecordDoubleDataPointFunc
+	Usage              RecordDoubleDataPointFunc
+	Utilization        RecordDoubleDataPointFunc
+	LimitUtilization   RecordDoubleDataPointFunc
+	RequestUtilization RecordDoubleDataPointFunc
 }
 
 var NodeCPUMetrics = CPUMetrics{
 	Time:        (*MetricsBuilder).RecordK8sNodeCPUTimeDataPoint,
+	Usage:       (*MetricsBuilder).RecordK8sNodeCPUUsageDataPoint,
 	Utilization: (*MetricsBuilder).RecordK8sNodeCPUUtilizationDataPoint,
 }
 
 var PodCPUMetrics = CPUMetrics{
-	Time:        (*MetricsBuilder).RecordK8sPodCPUTimeDataPoint,
-	Utilization: (*MetricsBuilder).RecordK8sPodCPUUtilizationDataPoint,
+	Time:               (*MetricsBuilder).RecordK8sPodCPUTimeDataPoint,
+	Usage:              (*MetricsBuilder).RecordK8sPodCPUUsageDataPoint,
+	Utilization:        (*MetricsBuilder).RecordK8sPodCPUUtilizationDataPoint,
+	LimitUtilization:   (*MetricsBuilder).RecordK8sPodCPULimitUtilizationDataPoint,
+	RequestUtilization: (*MetricsBuilder).RecordK8sPodCPURequestUtilizationDataPoint,
 }
 
 var ContainerCPUMetrics = CPUMetrics{
-	Time:        (*MetricsBuilder).RecordContainerCPUTimeDataPoint,
-	Utilization: (*MetricsBuilder).RecordContainerCPUUtilizationDataPoint,
+	Time:               (*MetricsBuilder).RecordContainerCPUTimeDataPoint,
+	Usage:              (*MetricsBuilder).RecordContainerCPUUsageDataPoint,
+	Utilization:        (*MetricsBuilder).RecordContainerCPUUtilizationDataPoint,
+	LimitUtilization:   (*MetricsBuilder).RecordK8sContainerCPULimitUtilizationDataPoint,
+	RequestUtilization: (*MetricsBuilder).RecordK8sContainerCPURequestUtilizationDataPoint,
 }
 
 type MemoryMetrics struct {

@@ -20,10 +20,10 @@ func TestCurrentStatsStatement(t *testing.T) {
 	testCases := map[string]struct {
 		topMetricsQueryMaxRows int
 		expectedSQL            string
-		expectedParams         map[string]interface{}
+		expectedParams         map[string]any
 	}{
-		"Statement with top metrics query max rows":    {topMetricsQueryMaxRows, query + topMetricsQueryLimitCondition, map[string]interface{}{topMetricsQueryLimitParameterName: topMetricsQueryMaxRows}},
-		"Statement without top metrics query max rows": {0, query, map[string]interface{}{}},
+		"Statement with top metrics query max rows":    {topMetricsQueryMaxRows, query + topMetricsQueryLimitCondition, map[string]any{topMetricsQueryLimitParameterName: topMetricsQueryMaxRows}},
+		"Statement without top metrics query max rows": {0, query, map[string]any{}},
 	}
 
 	for name, testCase := range testCases {
@@ -49,13 +49,13 @@ func TestIntervalStatsStatement(t *testing.T) {
 	testCases := map[string]struct {
 		topMetricsQueryMaxRows int
 		expectedSQL            string
-		expectedParams         map[string]interface{}
+		expectedParams         map[string]any
 	}{
-		"Statement with top metrics query max rows": {topMetricsQueryMaxRows, query + topMetricsQueryLimitCondition, map[string]interface{}{
+		"Statement with top metrics query max rows": {topMetricsQueryMaxRows, query + topMetricsQueryLimitCondition, map[string]any{
 			topMetricsQueryLimitParameterName: topMetricsQueryMaxRows,
 			pullTimestampParameterName:        pullTimestamp,
 		}},
-		"Statement without top metrics query max rows": {0, query, map[string]interface{}{pullTimestampParameterName: pullTimestamp}},
+		"Statement without top metrics query max rows": {0, query, map[string]any{pullTimestampParameterName: pullTimestamp}},
 	}
 
 	for name, testCase := range testCases {

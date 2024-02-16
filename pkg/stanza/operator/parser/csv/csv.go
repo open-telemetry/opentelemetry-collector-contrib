@@ -66,9 +66,6 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, errors.New("only one of 'ignore_quotes' or 'lazy_quotes' can be true")
 	}
 
-	fieldDelimiter := []rune(c.FieldDelimiter)[0]
-	headerDelimiter := []rune(c.HeaderDelimiter)[0]
-
 	if len([]rune(c.FieldDelimiter)) != 1 {
 		return nil, fmt.Errorf("invalid 'delimiter': '%s'", c.FieldDelimiter)
 	}
@@ -77,28 +74,32 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, fmt.Errorf("invalid 'header_delimiter': '%s'", c.HeaderDelimiter)
 	}
 
-	var headers []string
-	switch {
-	case c.Header == "" && c.HeaderAttribute == "":
+	if c.Header == "" && c.HeaderAttribute == "" {
 		return nil, errors.New("missing required field 'header' or 'header_attribute'")
-	case c.Header != "" && c.HeaderAttribute != "":
-		return nil, errors.New("only one header parameter can be set: 'header' or 'header_attribute'")
-	case c.Header != "" && !strings.Contains(c.Header, c.HeaderDelimiter):
-		return nil, errors.New("missing field delimiter in header")
-	case c.Header != "":
-		headers = strings.Split(c.Header, c.HeaderDelimiter)
 	}
 
-	return &Parser{
+	if c.Header != "" && c.HeaderAttribute != "" {
+		return nil, errors.New("only one header parameter can be set: 'header' or 'header_attribute'")
+	}
+
+	if c.Header != "" && !strings.Contains(c.Header, c.HeaderDelimiter) {
+		return nil, errors.New("missing field delimiter in header")
+	}
+
+	p := &Parser{
 		ParserOperator:  parserOperator,
-		header:          headers,
 		headerAttribute: c.HeaderAttribute,
-		fieldDelimiter:  fieldDelimiter,
-		headerDelimiter: headerDelimiter,
+		fieldDelimiter:  []rune(c.FieldDelimiter)[0],
+		headerDelimiter: []rune(c.HeaderDelimiter)[0],
 		lazyQuotes:      c.LazyQuotes,
 		ignoreQuotes:    c.IgnoreQuotes,
-		parse:           generateParseFunc(headers, fieldDelimiter, c.LazyQuotes, c.IgnoreQuotes),
-	}, nil
+	}
+
+	if c.Header != "" {
+		p.parse = generateParseFunc(strings.Split(c.Header, c.HeaderDelimiter), p.fieldDelimiter, c.LazyQuotes, c.IgnoreQuotes)
+	}
+
+	return p, nil
 }
 
 // Parser is an operator that parses csv in an entry.
@@ -106,37 +107,36 @@ type Parser struct {
 	helper.ParserOperator
 	fieldDelimiter  rune
 	headerDelimiter rune
-	header          []string
 	headerAttribute string
 	lazyQuotes      bool
 	ignoreQuotes    bool
 	parse           parseFunc
 }
 
-type parseFunc func(interface{}) (interface{}, error)
+type parseFunc func(any) (any, error)
 
 // Process will parse an entry for csv.
 func (r *Parser) Process(ctx context.Context, e *entry.Entry) error {
-	parse := r.parse
-
-	// If we have a headerAttribute set we need to dynamically generate our parser function
-	if r.headerAttribute != "" {
-		h, ok := e.Attributes[r.headerAttribute]
-		if !ok {
-			err := fmt.Errorf("failed to read dynamic header attribute %s", r.headerAttribute)
-			r.Error(err)
-			return err
-		}
-		headerString, ok := h.(string)
-		if !ok {
-			err := fmt.Errorf("header is expected to be a string but is %T", h)
-			r.Error(err)
-			return err
-		}
-		headers := strings.Split(headerString, string([]rune{r.headerDelimiter}))
-		parse = generateParseFunc(headers, r.fieldDelimiter, r.lazyQuotes, r.ignoreQuotes)
+	// Static parse function
+	if r.parse != nil {
+		return r.ParserOperator.ProcessWith(ctx, e, r.parse)
 	}
 
+	// Dynamically generate the parse function based on a header attribute
+	h, ok := e.Attributes[r.headerAttribute]
+	if !ok {
+		err := fmt.Errorf("failed to read dynamic header attribute %s", r.headerAttribute)
+		r.Error(err)
+		return err
+	}
+	headerString, ok := h.(string)
+	if !ok {
+		err := fmt.Errorf("header is expected to be a string but is %T", h)
+		r.Error(err)
+		return err
+	}
+	headers := strings.Split(headerString, string([]rune{r.headerDelimiter}))
+	parse := generateParseFunc(headers, r.fieldDelimiter, r.lazyQuotes, r.ignoreQuotes)
 	return r.ParserOperator.ProcessWith(ctx, e, parse)
 }
 
@@ -152,7 +152,7 @@ func generateParseFunc(headers []string, fieldDelimiter rune, lazyQuotes bool, i
 
 // generateCSVParseFunc returns a parse function for a given header and field delimiter, which parses a line of CSV text.
 func generateCSVParseFunc(headers []string, fieldDelimiter rune, lazyQuotes bool) parseFunc {
-	return func(value interface{}) (interface{}, error) {
+	return func(value any) (any, error) {
 		csvLine, err := valueAsString(value)
 		if err != nil {
 			return nil, err
@@ -209,7 +209,7 @@ func generateCSVParseFunc(headers []string, fieldDelimiter rune, lazyQuotes bool
 
 // generateSplitParseFunc returns a parse function (which ignores quotes) for a given header and field delimiter.
 func generateSplitParseFunc(headers []string, fieldDelimiter rune) parseFunc {
-	return func(value interface{}) (interface{}, error) {
+	return func(value any) (any, error) {
 		csvLine, err := valueAsString(value)
 		if err != nil {
 			return nil, err
@@ -222,7 +222,7 @@ func generateSplitParseFunc(headers []string, fieldDelimiter rune) parseFunc {
 }
 
 // valueAsString interprets the given value as a string.
-func valueAsString(value interface{}) (string, error) {
+func valueAsString(value any) (string, error) {
 	var s string
 	switch t := value.(type) {
 	case string:
@@ -237,8 +237,8 @@ func valueAsString(value interface{}) (string, error) {
 }
 
 // headersMap creates a map of headers[i] -> fields[i].
-func headersMap(headers []string, fields []string) (map[string]interface{}, error) {
-	parsedValues := make(map[string]interface{})
+func headersMap(headers []string, fields []string) (map[string]any, error) {
+	parsedValues := make(map[string]any)
 
 	if len(fields) != len(headers) {
 		return nil, fmt.Errorf("wrong number of fields: expected %d, found %d", len(headers), len(fields))

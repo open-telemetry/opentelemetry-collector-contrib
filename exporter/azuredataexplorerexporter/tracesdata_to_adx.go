@@ -13,32 +13,32 @@ import (
 )
 
 type AdxTrace struct {
-	TraceID            string                 // TraceID associated to the Trace
-	SpanID             string                 // SpanID associated to the Trace
-	ParentID           string                 // ParentID associated to the Trace
-	SpanName           string                 // The SpanName of the Trace
-	SpanStatus         string                 // The SpanStatus Code associated to the Trace
-	SpanStatusMessage  string                 // The SpanStatusMessage associated to the Trace
-	SpanKind           string                 // The SpanKind of the Trace
-	StartTime          string                 // The start time of the occurrence. Formatted into string as RFC3339Nano
-	EndTime            string                 // The end time of the occurrence. Formatted into string as RFC3339Nano
-	ResourceAttributes map[string]interface{} // JSON Resource attributes that can then be parsed.
-	TraceAttributes    map[string]interface{} // JSON attributes that can then be parsed.
-	Events             []*Event               // Array containing the events in a span
-	Links              []*Link                // Array containing the link in a span
+	TraceID            string         // TraceID associated to the Trace
+	SpanID             string         // SpanID associated to the Trace
+	ParentID           string         // ParentID associated to the Trace
+	SpanName           string         // The SpanName of the Trace
+	SpanStatus         string         // The SpanStatus Code associated to the Trace
+	SpanStatusMessage  string         // The SpanStatusMessage associated to the Trace
+	SpanKind           string         // The SpanKind of the Trace
+	StartTime          string         // The start time of the occurrence. Formatted into string as RFC3339Nano
+	EndTime            string         // The end time of the occurrence. Formatted into string as RFC3339Nano
+	ResourceAttributes map[string]any // JSON Resource attributes that can then be parsed.
+	TraceAttributes    map[string]any // JSON attributes that can then be parsed.
+	Events             []*Event       // Array containing the events in a span
+	Links              []*Link        // Array containing the link in a span
 }
 
 type Event struct {
 	EventName       string
 	Timestamp       string
-	EventAttributes map[string]interface{}
+	EventAttributes map[string]any
 }
 
 type Link struct {
 	TraceID            string
 	SpanID             string
 	TraceState         string
-	SpanLinkAttributes map[string]interface{}
+	SpanLinkAttributes map[string]any
 }
 
 type Status struct {

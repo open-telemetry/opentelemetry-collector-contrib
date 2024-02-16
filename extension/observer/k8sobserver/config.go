@@ -34,12 +34,14 @@ type Config struct {
 	// it will only discover node endpoints whose `metadata.name` matches the provided node name. If `true` and
 	// Node isn't specified, it will discover all available node endpoints. `false` by default.
 	ObserveNodes bool `mapstructure:"observe_nodes"`
+	// ObserveServices determines whether to report observer service and port endpoints. `false` by default.
+	ObserveServices bool `mapstructure:"observe_services"`
 }
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if !cfg.ObservePods && !cfg.ObserveNodes {
-		return fmt.Errorf("one of observe_pods and observe_nodes must be true")
+	if !cfg.ObservePods && !cfg.ObserveNodes && !cfg.ObserveServices {
+		return fmt.Errorf("one of observe_pods, observe_nodes and observe_services must be true")
 	}
 	return nil
 }

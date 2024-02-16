@@ -11,7 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -36,7 +35,7 @@ type metricNameTest struct {
 
 type metricWithResource struct {
 	metricNames        []string
-	resourceAttributes map[string]interface{}
+	resourceAttributes map[string]any
 }
 
 var (
@@ -71,7 +70,7 @@ var (
 	inMetricForResourceTest = []metricWithResource{
 		{
 			metricNames: []string{"metric1", "metric2"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val1",
 				"attr2": "attr2/val2",
 				"attr3": "attr3/val3",
@@ -82,13 +81,13 @@ var (
 	inMetricForTwoResource = []metricWithResource{
 		{
 			metricNames: []string{"metric1", "metric2"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val1",
 			},
 		},
 		{
 			metricNames: []string{"metric3", "metric4"},
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"attr1": "attr1/val2",
 			},
 		},
@@ -336,7 +335,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 				next,
 			)
 			assert.NotNil(t, fmp)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			caps := fmp.Capabilities()
 			assert.True(t, caps.MutatesData)
@@ -364,6 +363,77 @@ func TestFilterMetricProcessor(t *testing.T) {
 			assert.NoError(t, fmp.Shutdown(ctx))
 		})
 	}
+}
+
+func TestFilterMetricProcessorTelemetry(t *testing.T) {
+	telemetryTest(t, "FilterMetricProcessorTelemetry", func(t *testing.T, tel testTelemetry) {
+		next := new(consumertest.MetricsSink)
+		cfg := &Config{
+			Metrics: MetricFilters{
+				MetricConditions: []string{
+					"name==\"metric1\"",
+				},
+			},
+		}
+		factory := NewFactory()
+		fmp, err := factory.CreateMetricsProcessor(
+			context.Background(),
+			tel.NewProcessorCreateSettings(),
+			cfg,
+			next,
+		)
+		assert.NotNil(t, fmp)
+		assert.NoError(t, err)
+
+		caps := fmp.Capabilities()
+		assert.True(t, caps.MutatesData)
+		ctx := context.Background()
+		assert.NoError(t, fmp.Start(ctx, nil))
+
+		err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
+			{
+				metricNames: []string{"foo", "bar"},
+				resourceAttributes: map[string]any{
+					"attr1": "attr1/val1",
+				},
+			},
+		}))
+		assert.NoError(t, err)
+
+		tel.assertMetrics(t, expectedMetrics{
+			metricDataPointsFiltered: 0,
+		})
+
+		err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
+			{
+				metricNames: []string{"metric1", "metric2"},
+				resourceAttributes: map[string]any{
+					"attr1": "attr1/val1",
+				},
+			},
+		}))
+		assert.NoError(t, err)
+
+		tel.assertMetrics(t, expectedMetrics{
+			metricDataPointsFiltered: 1,
+		})
+
+		err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
+			{
+				metricNames: []string{"metric1"},
+				resourceAttributes: map[string]any{
+					"attr1": "attr1/val1",
+				},
+			},
+		}))
+		assert.NoError(t, err)
+
+		tel.assertMetrics(t, expectedMetrics{
+			metricDataPointsFiltered: 2,
+		})
+
+		assert.NoError(t, fmp.Shutdown(ctx))
+	})
 }
 
 func testResourceMetrics(mwrs []metricWithResource) pmetric.Metrics {
@@ -728,7 +798,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterMetricProcessor(componenttest.NewNopTelemetrySettings(), &Config{Metrics: tt.conditions, ErrorMode: tt.errorMode})
+			processor, err := newFilterMetricProcessor(processortest.NewNopCreateSettings(), &Config{Metrics: tt.conditions, ErrorMode: tt.errorMode})
 			assert.NoError(t, err)
 
 			got, err := processor.processMetrics(context.Background(), constructMetrics())

@@ -78,7 +78,7 @@ func (m *mockDataConsumer) consume(ctx context.Context, event *eventhub.Event) e
 	}
 
 	err = m.nextLogsConsumer.ConsumeLogs(logsContext, logs)
-	m.obsrecv.EndLogsOp(logsContext, metadata.Type, 1, err)
+	m.obsrecv.EndLogsOp(logsContext, metadata.Type.String(), 1, err)
 
 	return err
 }
@@ -134,7 +134,7 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 	err = ehHandler.newMessageHandler(context.Background(), &eventhub.Event{
 		Data:         []byte("hello"),
 		PartitionKey: nil,
-		Properties:   map[string]interface{}{"foo": "bar"},
+		Properties:   map[string]any{"foo": "bar"},
 		ID:           "11234",
 		SystemProperties: &eventhub.SystemProperties{
 			SequenceNumber: nil,

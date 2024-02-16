@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -19,12 +20,31 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
+const (
+	readmeURL            = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
+	separateSchemaAttrID = "receiver.postgresql.separateSchemaAttr"
+)
+
+var (
+	separateSchemaAttrGate = featuregate.GlobalRegistry().MustRegister(
+		separateSchemaAttrID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("Moves Schema Names into dedicated Attribute"),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559"),
+	)
+)
+
 type postgreSQLScraper struct {
 	logger        *zap.Logger
 	config        *Config
 	clientFactory postgreSQLClientFactory
 	mb            *metadata.MetricsBuilder
+	excludes      map[string]struct{}
+
+	// if enabled, uses a separated attribute for the schema
+	separateSchemaAttr bool
 }
+
 type errsMux struct {
 	sync.RWMutex
 	errs scrapererror.ScrapeErrors
@@ -69,11 +89,26 @@ func newPostgreSQLScraper(
 	config *Config,
 	clientFactory postgreSQLClientFactory,
 ) *postgreSQLScraper {
+	excludes := make(map[string]struct{})
+	for _, db := range config.ExcludeDatabases {
+		excludes[db] = struct{}{}
+	}
+	separateSchemaAttr := separateSchemaAttrGate.IsEnabled()
+
+	if !separateSchemaAttr {
+		settings.Logger.Warn(
+			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", separateSchemaAttrID, readmeURL),
+		)
+	}
+
 	return &postgreSQLScraper{
 		logger:        settings.Logger,
 		config:        config,
 		clientFactory: clientFactory,
 		mb:            metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		excludes:      excludes,
+
+		separateSchemaAttr: separateSchemaAttr,
 	}
 }
 
@@ -102,6 +137,13 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		}
 		databases = dbList
 	}
+	var filteredDatabases []string
+	for _, db := range databases {
+		if _, ok := p.excludes[db]; !ok {
+			filteredDatabases = append(filteredDatabases, db)
+		}
+	}
+	databases = filteredDatabases
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
@@ -209,7 +251,12 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 		}
 		rb := p.mb.NewResourceBuilder()
 		rb.SetPostgresqlDatabaseName(db)
-		rb.SetPostgresqlTableName(tm.table)
+		if p.separateSchemaAttr {
+			rb.SetPostgresqlSchemaName(tm.schema)
+			rb.SetPostgresqlTableName(tm.table)
+		} else {
+			rb.SetPostgresqlTableName(fmt.Sprintf("%s.%s", tm.schema, tm.table))
+		}
 		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return int64(len(tableMetrics))
@@ -233,7 +280,12 @@ func (p *postgreSQLScraper) collectIndexes(
 		p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size)
 		rb := p.mb.NewResourceBuilder()
 		rb.SetPostgresqlDatabaseName(database)
-		rb.SetPostgresqlTableName(stat.table)
+		if p.separateSchemaAttr {
+			rb.SetPostgresqlSchemaName(stat.schema)
+			rb.SetPostgresqlTableName(stat.table)
+		} else {
+			rb.SetPostgresqlTableName(stat.table)
+		}
 		rb.SetPostgresqlIndexName(stat.index)
 		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
@@ -313,14 +365,26 @@ func (p *postgreSQLScraper) collectReplicationStats(
 		if rs.pendingBytes >= 0 {
 			p.mb.RecordPostgresqlReplicationDataDelayDataPoint(now, rs.pendingBytes, rs.clientAddr)
 		}
-		if rs.writeLag >= 0 {
-			p.mb.RecordPostgresqlWalLagDataPoint(now, rs.writeLag, metadata.AttributeWalOperationLagWrite, rs.clientAddr)
-		}
-		if rs.replayLag >= 0 {
-			p.mb.RecordPostgresqlWalLagDataPoint(now, rs.replayLag, metadata.AttributeWalOperationLagReplay, rs.clientAddr)
-		}
-		if rs.flushLag >= 0 {
-			p.mb.RecordPostgresqlWalLagDataPoint(now, rs.flushLag, metadata.AttributeWalOperationLagFlush, rs.clientAddr)
+		if preciseLagMetricsFg.IsEnabled() {
+			if rs.writeLag >= 0 {
+				p.mb.RecordPostgresqlWalDelayDataPoint(now, rs.writeLag, metadata.AttributeWalOperationLagWrite, rs.clientAddr)
+			}
+			if rs.replayLag >= 0 {
+				p.mb.RecordPostgresqlWalDelayDataPoint(now, rs.replayLag, metadata.AttributeWalOperationLagReplay, rs.clientAddr)
+			}
+			if rs.flushLag >= 0 {
+				p.mb.RecordPostgresqlWalDelayDataPoint(now, rs.flushLag, metadata.AttributeWalOperationLagFlush, rs.clientAddr)
+			}
+		} else {
+			if rs.writeLagInt >= 0 {
+				p.mb.RecordPostgresqlWalLagDataPoint(now, rs.writeLagInt, metadata.AttributeWalOperationLagWrite, rs.clientAddr)
+			}
+			if rs.replayLagInt >= 0 {
+				p.mb.RecordPostgresqlWalLagDataPoint(now, rs.replayLagInt, metadata.AttributeWalOperationLagReplay, rs.clientAddr)
+			}
+			if rs.flushLagInt >= 0 {
+				p.mb.RecordPostgresqlWalLagDataPoint(now, rs.flushLagInt, metadata.AttributeWalOperationLagFlush, rs.clientAddr)
+			}
 		}
 	}
 }

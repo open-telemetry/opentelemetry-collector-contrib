@@ -53,7 +53,7 @@ func (f ResourceField) String() string {
 }
 
 // Get will return the resource value and a boolean indicating if it exists
-func (f ResourceField) Get(entry *Entry) (interface{}, bool) {
+func (f ResourceField) Get(entry *Entry) (any, bool) {
 	if entry.Resource == nil {
 		return "", false
 	}
@@ -68,7 +68,7 @@ func (f ResourceField) Get(entry *Entry) (interface{}, bool) {
 	}
 
 	for _, key := range f.Keys[1:] {
-		currentMap, ok := currentValue.(map[string]interface{})
+		currentMap, ok := currentValue.(map[string]any)
 		if !ok {
 			return nil, false
 		}
@@ -84,12 +84,12 @@ func (f ResourceField) Get(entry *Entry) (interface{}, bool) {
 
 // Set will set a value on an entry's resource using the field.
 // If a key already exists, it will be overwritten.
-func (f ResourceField) Set(entry *Entry, value interface{}) error {
+func (f ResourceField) Set(entry *Entry, value any) error {
 	if entry.Resource == nil {
-		entry.Resource = map[string]interface{}{}
+		entry.Resource = map[string]any{}
 	}
 
-	mapValue, isMapValue := value.(map[string]interface{})
+	mapValue, isMapValue := value.(map[string]any)
 	if isMapValue {
 		f.Merge(entry, mapValue)
 		return nil
@@ -112,7 +112,7 @@ func (f ResourceField) Set(entry *Entry, value interface{}) error {
 
 // Merge will attempt to merge the contents of a map into an entry's resource.
 // It will overwrite any intermediate values as necessary.
-func (f ResourceField) Merge(entry *Entry, mapValues map[string]interface{}) {
+func (f ResourceField) Merge(entry *Entry, mapValues map[string]any) {
 	currentMap := entry.Resource
 
 	for _, key := range f.Keys {
@@ -126,7 +126,7 @@ func (f ResourceField) Merge(entry *Entry, mapValues map[string]interface{}) {
 
 // Delete removes a value from an entry's resource using the field.
 // It will return the deleted value and whether the field existed.
-func (f ResourceField) Delete(entry *Entry) (interface{}, bool) {
+func (f ResourceField) Delete(entry *Entry) (any, bool) {
 	if entry.Resource == nil {
 		return "", false
 	}
@@ -149,7 +149,7 @@ func (f ResourceField) Delete(entry *Entry) (interface{}, bool) {
 			return currentValue, true
 		}
 
-		currentMap, ok = currentValue.(map[string]interface{})
+		currentMap, ok = currentValue.(map[string]any)
 		if !ok {
 			break
 		}
@@ -183,7 +183,7 @@ func (f *ResourceField) UnmarshalJSON(raw []byte) error {
 }
 
 // UnmarshalYAML will attempt to unmarshal a field from YAML.
-func (f *ResourceField) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (f *ResourceField) UnmarshalYAML(unmarshal func(any) error) error {
 	var value string
 	if err := unmarshal(&value); err != nil {
 		return fmt.Errorf("the field is not a string: %w", err)

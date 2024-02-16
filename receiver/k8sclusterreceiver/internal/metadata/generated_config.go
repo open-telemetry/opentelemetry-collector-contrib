@@ -15,7 +15,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
@@ -52,6 +52,7 @@ type MetricsConfig struct {
 	K8sJobMaxParallelPods               MetricConfig `mapstructure:"k8s.job.max_parallel_pods"`
 	K8sJobSuccessfulPods                MetricConfig `mapstructure:"k8s.job.successful_pods"`
 	K8sNamespacePhase                   MetricConfig `mapstructure:"k8s.namespace.phase"`
+	K8sNodeCondition                    MetricConfig `mapstructure:"k8s.node.condition"`
 	K8sPodPhase                         MetricConfig `mapstructure:"k8s.pod.phase"`
 	K8sPodStatusReason                  MetricConfig `mapstructure:"k8s.pod.status_reason"`
 	K8sReplicasetAvailable              MetricConfig `mapstructure:"k8s.replicaset.available"`
@@ -153,6 +154,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sNamespacePhase: MetricConfig{
 			Enabled: true,
 		},
+		K8sNodeCondition: MetricConfig{
+			Enabled: false,
+		},
 		K8sPodPhase: MetricConfig{
 			Enabled: true,
 		},
@@ -207,6 +211,20 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for k8s_cluster resource attributes.
@@ -214,6 +232,8 @@ type ResourceAttributesConfig struct {
 	ContainerID                  ResourceAttributeConfig `mapstructure:"container.id"`
 	ContainerImageName           ResourceAttributeConfig `mapstructure:"container.image.name"`
 	ContainerImageTag            ResourceAttributeConfig `mapstructure:"container.image.tag"`
+	ContainerRuntime             ResourceAttributeConfig `mapstructure:"container.runtime"`
+	ContainerRuntimeVersion      ResourceAttributeConfig `mapstructure:"container.runtime.version"`
 	K8sContainerName             ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sCronjobName               ResourceAttributeConfig `mapstructure:"k8s.cronjob.name"`
 	K8sCronjobUID                ResourceAttributeConfig `mapstructure:"k8s.cronjob.uid"`
@@ -232,6 +252,7 @@ type ResourceAttributesConfig struct {
 	K8sNodeName                  ResourceAttributeConfig `mapstructure:"k8s.node.name"`
 	K8sNodeUID                   ResourceAttributeConfig `mapstructure:"k8s.node.uid"`
 	K8sPodName                   ResourceAttributeConfig `mapstructure:"k8s.pod.name"`
+	K8sPodQosClass               ResourceAttributeConfig `mapstructure:"k8s.pod.qos_class"`
 	K8sPodUID                    ResourceAttributeConfig `mapstructure:"k8s.pod.uid"`
 	K8sReplicasetName            ResourceAttributeConfig `mapstructure:"k8s.replicaset.name"`
 	K8sReplicasetUID             ResourceAttributeConfig `mapstructure:"k8s.replicaset.uid"`
@@ -241,9 +262,10 @@ type ResourceAttributesConfig struct {
 	K8sResourcequotaUID          ResourceAttributeConfig `mapstructure:"k8s.resourcequota.uid"`
 	K8sStatefulsetName           ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
 	K8sStatefulsetUID            ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
-	OpencensusResourcetype       ResourceAttributeConfig `mapstructure:"opencensus.resourcetype"`
 	OpenshiftClusterquotaName    ResourceAttributeConfig `mapstructure:"openshift.clusterquota.name"`
 	OpenshiftClusterquotaUID     ResourceAttributeConfig `mapstructure:"openshift.clusterquota.uid"`
+	OsDescription                ResourceAttributeConfig `mapstructure:"os.description"`
+	OsType                       ResourceAttributeConfig `mapstructure:"os.type"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -256,6 +278,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		ContainerImageTag: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		ContainerRuntime: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ContainerRuntimeVersion: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		K8sContainerName: ResourceAttributeConfig{
 			Enabled: true,
@@ -311,6 +339,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		K8sPodName: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		K8sPodQosClass: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		K8sPodUID: ResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -338,14 +369,17 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		K8sStatefulsetUID: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		OpencensusResourcetype: ResourceAttributeConfig{
-			Enabled: true,
-		},
 		OpenshiftClusterquotaName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		OpenshiftClusterquotaUID: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		OsDescription: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		OsType: ResourceAttributeConfig{
+			Enabled: false,
 		},
 	}
 }

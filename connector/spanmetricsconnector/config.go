@@ -46,6 +46,20 @@ type Config struct {
 	// Optional. See defaultDimensionsCacheSize in connector.go for the default value.
 	DimensionsCacheSize int `mapstructure:"dimensions_cache_size"`
 
+	// ResourceMetricsCacheSize defines the size of the cache holding metrics for a service. This is mostly relevant for
+	// cumulative temporality to avoid memory leaks and correct metric timestamp resets.
+	// Optional. See defaultResourceMetricsCacheSize in connector.go for the default value.
+	ResourceMetricsCacheSize int `mapstructure:"resource_metrics_cache_size"`
+
+	// ResourceMetricsKeyAttributes filters the resource attributes used to create the resource metrics key hash.
+	// This can be used to avoid situations where resource attributes may change across service restarts, causing
+	// metric counters to break (and duplicate). A resource does not need to have all of the attributes. The list
+	// must include enough attributes to properly identify unique resources or risk aggregating data from more
+	// than one service and span.
+	// e.g. ["service.name", "telemetry.sdk.language", "telemetry.sdk.name"]
+	// See https://opentelemetry.io/docs/specs/semconv/resource/ for possible attributes.
+	ResourceMetricsKeyAttributes []string `mapstructure:"resource_metrics_key_attributes"`
+
 	AggregationTemporality string `mapstructure:"aggregation_temporality"`
 
 	Histogram HistogramConfig `mapstructure:"histogram"`
@@ -58,6 +72,9 @@ type Config struct {
 
 	// Exemplars defines the configuration for exemplars.
 	Exemplars ExemplarsConfig `mapstructure:"exemplars"`
+
+	// Events defines the configuration for events section of spans.
+	Events EventsConfig `mapstructure:"events"`
 }
 
 type HistogramConfig struct {
@@ -68,7 +85,8 @@ type HistogramConfig struct {
 }
 
 type ExemplarsConfig struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled         bool `mapstructure:"enabled"`
+	MaxPerDataPoint *int `mapstructure:"max_per_data_point"`
 }
 
 type ExponentialHistogramConfig struct {
@@ -80,13 +98,22 @@ type ExplicitHistogramConfig struct {
 	Buckets []time.Duration `mapstructure:"buckets"`
 }
 
+type EventsConfig struct {
+	// Enabled is a flag to enable events.
+	Enabled bool `mapstructure:"enabled"`
+	// Dimensions defines the list of dimensions to add to the events metric.
+	Dimensions []Dimension `mapstructure:"dimensions"`
+}
+
 var _ component.ConfigValidator = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (c Config) Validate() error {
-	err := validateDimensions(c.Dimensions)
-	if err != nil {
-		return err
+	if err := validateDimensions(c.Dimensions); err != nil {
+		return fmt.Errorf("failed validating dimensions: %w", err)
+	}
+	if err := validateEventDimensions(c.Events.Enabled, c.Events.Dimensions); err != nil {
+		return fmt.Errorf("failed validating event dimensions: %w", err)
 	}
 
 	if c.DimensionsCacheSize <= 0 {
@@ -99,6 +126,7 @@ func (c Config) Validate() error {
 	if c.Histogram.Explicit != nil && c.Histogram.Exponential != nil {
 		return errors.New("use either `explicit` or `exponential` buckets histogram")
 	}
+
 	return nil
 }
 
@@ -126,4 +154,15 @@ func validateDimensions(dimensions []Dimension) error {
 	}
 
 	return nil
+}
+
+// validateEventDimensions checks for empty and duplicates for the dimensions configured.
+func validateEventDimensions(enabled bool, dimensions []Dimension) error {
+	if !enabled {
+		return nil
+	}
+	if len(dimensions) == 0 {
+		return fmt.Errorf("no dimensions configured for events")
+	}
+	return validateDimensions(dimensions)
 }

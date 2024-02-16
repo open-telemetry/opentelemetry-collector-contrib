@@ -44,7 +44,11 @@ resource_attributes:
     type: string
     enabled: true
   faas.id:
-    description: The faas.id
+    description: The faas.id.
+    type: string
+    enabled: true
+  faas.instance:
+    description: The faas.instance
     type: string
     enabled: true
   k8s.cluster.name:

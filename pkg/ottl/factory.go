@@ -7,7 +7,7 @@ import "go.opentelemetry.io/collector/component"
 
 // Arguments holds the arguments for an OTTL function, with arguments
 // specified as fields on a struct. Argument ordering is defined
-type Arguments interface{}
+type Arguments any
 
 // FunctionContext contains data provided by the Collector
 // component to the OTTL for use in functions.

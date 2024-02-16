@@ -13,7 +13,7 @@ import (
 type Log struct {
 	Timestamp  int64
 	Body       pcommon.Value
-	Attributes map[string]interface{}
+	Attributes map[string]any
 }
 
 // logConstructor is a convenience function for constructing logs for tests in a way that is

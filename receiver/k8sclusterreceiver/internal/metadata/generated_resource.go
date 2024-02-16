@@ -42,6 +42,20 @@ func (rb *ResourceBuilder) SetContainerImageTag(val string) {
 	}
 }
 
+// SetContainerRuntime sets provided value as "container.runtime" attribute.
+func (rb *ResourceBuilder) SetContainerRuntime(val string) {
+	if rb.config.ContainerRuntime.Enabled {
+		rb.res.Attributes().PutStr("container.runtime", val)
+	}
+}
+
+// SetContainerRuntimeVersion sets provided value as "container.runtime.version" attribute.
+func (rb *ResourceBuilder) SetContainerRuntimeVersion(val string) {
+	if rb.config.ContainerRuntimeVersion.Enabled {
+		rb.res.Attributes().PutStr("container.runtime.version", val)
+	}
+}
+
 // SetK8sContainerName sets provided value as "k8s.container.name" attribute.
 func (rb *ResourceBuilder) SetK8sContainerName(val string) {
 	if rb.config.K8sContainerName.Enabled {
@@ -168,6 +182,13 @@ func (rb *ResourceBuilder) SetK8sPodName(val string) {
 	}
 }
 
+// SetK8sPodQosClass sets provided value as "k8s.pod.qos_class" attribute.
+func (rb *ResourceBuilder) SetK8sPodQosClass(val string) {
+	if rb.config.K8sPodQosClass.Enabled {
+		rb.res.Attributes().PutStr("k8s.pod.qos_class", val)
+	}
+}
+
 // SetK8sPodUID sets provided value as "k8s.pod.uid" attribute.
 func (rb *ResourceBuilder) SetK8sPodUID(val string) {
 	if rb.config.K8sPodUID.Enabled {
@@ -231,13 +252,6 @@ func (rb *ResourceBuilder) SetK8sStatefulsetUID(val string) {
 	}
 }
 
-// SetOpencensusResourcetype sets provided value as "opencensus.resourcetype" attribute.
-func (rb *ResourceBuilder) SetOpencensusResourcetype(val string) {
-	if rb.config.OpencensusResourcetype.Enabled {
-		rb.res.Attributes().PutStr("opencensus.resourcetype", val)
-	}
-}
-
 // SetOpenshiftClusterquotaName sets provided value as "openshift.clusterquota.name" attribute.
 func (rb *ResourceBuilder) SetOpenshiftClusterquotaName(val string) {
 	if rb.config.OpenshiftClusterquotaName.Enabled {
@@ -249,6 +263,20 @@ func (rb *ResourceBuilder) SetOpenshiftClusterquotaName(val string) {
 func (rb *ResourceBuilder) SetOpenshiftClusterquotaUID(val string) {
 	if rb.config.OpenshiftClusterquotaUID.Enabled {
 		rb.res.Attributes().PutStr("openshift.clusterquota.uid", val)
+	}
+}
+
+// SetOsDescription sets provided value as "os.description" attribute.
+func (rb *ResourceBuilder) SetOsDescription(val string) {
+	if rb.config.OsDescription.Enabled {
+		rb.res.Attributes().PutStr("os.description", val)
+	}
+}
+
+// SetOsType sets provided value as "os.type" attribute.
+func (rb *ResourceBuilder) SetOsType(val string) {
+	if rb.config.OsType.Enabled {
+		rb.res.Attributes().PutStr("os.type", val)
 	}
 }
 
