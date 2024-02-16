@@ -119,6 +119,8 @@ func (r *router[C]) registerRouteConsumers() error {
 		route, ok := r.routes[key(item)]
 		if !ok {
 			route.statement = statement
+		} else {
+			r.logger.Warn("statement already exists in the routing table, the existing routing item will be overwritten")
 		}
 
 		consumer, err := r.consumerProvider(item.Pipelines...)
