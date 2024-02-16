@@ -6,7 +6,7 @@ package filelogreceiver
 import (
 	"context"
 	"fmt"
-	"log"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/observiq/nanojack"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -127,28 +126,16 @@ func TestReadRotatingFiles(t *testing.T) {
 
 	tests := []rotationTest{
 		{
-			name:         "CopyTruncateTimestamped",
+			name:         "CopyTruncate",
 			copyTruncate: true,
-			sequential:   false,
-		},
-		{
-			name:         "CopyTruncateSequential",
-			copyTruncate: true,
-			sequential:   true,
 		},
 	}
 	if runtime.GOOS != "windows" {
 		// Windows has very poor support for moving active files, so rotation is less commonly used
 		tests = append(tests, []rotationTest{
 			{
-				name:         "MoveCreateTimestamped",
+				name:         "MoveCreate",
 				copyTruncate: false,
-				sequential:   false,
-			},
-			{
-				name:         "MoveCreateSequential",
-				copyTruncate: false,
-				sequential:   true,
 			},
 		}...)
 	}
@@ -161,24 +148,24 @@ func TestReadRotatingFiles(t *testing.T) {
 type rotationTest struct {
 	name         string
 	copyTruncate bool
-	sequential   bool
 }
 
 func (rt *rotationTest) Run(t *testing.T) {
 	t.Parallel()
 
-	tempDir := t.TempDir()
-
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 
+	tempDir := t.TempDir()
 	cfg := rotationTestConfig(tempDir)
 
 	// With a max of 100 logs per file and 1 backup file, rotation will occur
 	// when more than 100 logs are written, and deletion when more than 200 are written.
 	// Write 300 and validate that we got the all despite rotation and deletion.
-	logger := newRotatingLogger(t, tempDir, 100, 1, rt.copyTruncate, rt.sequential)
+	maxLinesPerFile := 100
 	numLogs := 300
+	fileName := filepath.Join(tempDir, "test.log")
+	backupFileName := filepath.Join(tempDir, "test-backup.log")
 
 	// Build expected outputs
 	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
@@ -193,7 +180,37 @@ func (rt *rotationTest) Run(t *testing.T) {
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
+	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0600)
+	require.NoError(t, err)
+
 	for i := 0; i < numLogs; i++ {
+		if (i+1)%maxLinesPerFile == 0 {
+			if rt.copyTruncate {
+				// Recreate the backup file
+				require.NoError(t, os.Remove(backupFileName))
+				backupFile, openErr := os.OpenFile(backupFileName, os.O_CREATE|os.O_RDWR, 0600)
+				require.NoError(t, openErr)
+
+				// Copy the current file to the backup file
+				require.NoError(t, file.Sync())
+				_, err = file.Seek(0, 0)
+				require.NoError(t, err)
+				_, err = io.Copy(backupFile, file)
+				require.NoError(t, err)
+				require.NoError(t, backupFile.Close())
+
+				// Truncate the original file
+				require.NoError(t, file.Truncate(0))
+				_, err = file.Seek(0, 0)
+				require.NoError(t, err)
+			} else {
+				require.NoError(t, file.Close())
+				require.NoError(t, os.Rename(fileName, backupFileName))
+				file, err = os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0600)
+				require.NoError(t, err)
+			}
+		}
+
 		msg := fmt.Sprintf("This is a simple log line with the number %3d", i)
 
 		// Build the expected set by converting entries to pdata Logs...
@@ -203,7 +220,8 @@ func (rt *rotationTest) Run(t *testing.T) {
 		require.NoError(t, converter.Batch([]*entry.Entry{e}))
 
 		// ... and write the logs lines to the actual file consumed by receiver.
-		logger.Printf("2020-08-25 %s", msg)
+		_, err := file.WriteString(fmt.Sprintf("2020-08-25 %s\n", msg))
+		require.NoError(t, err)
 		time.Sleep(time.Millisecond)
 	}
 
@@ -229,21 +247,6 @@ func consumeNLogsFromConverter(ch <-chan plog.Logs, count int, wg *sync.WaitGrou
 			return
 		}
 	}
-}
-
-func newRotatingLogger(t *testing.T, tempDir string, maxLines, maxBackups int, copyTruncate, sequential bool) *log.Logger {
-	path := filepath.Join(tempDir, "test.log")
-	rotator := &nanojack.Logger{
-		Filename:     path,
-		MaxLines:     maxLines,
-		MaxBackups:   maxBackups,
-		CopyTruncate: copyTruncate,
-		Sequential:   sequential,
-	}
-
-	t.Cleanup(func() { _ = rotator.Close() })
-
-	return log.New(rotator, "", 0)
 }
 
 func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {

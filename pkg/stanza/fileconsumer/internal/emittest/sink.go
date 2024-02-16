@@ -111,7 +111,7 @@ func (s *Sink) ExpectTokens(t *testing.T, expected ...[]byte) {
 		case call := <-s.emitChan:
 			actual = append(actual, call.Token)
 		case <-time.After(s.timeout):
-			assert.Fail(t, "Timed out waiting for message")
+			assert.Fail(t, fmt.Sprintf("timeout: expected: %d, actual: %d", len(expected), i))
 			return
 		}
 	}
@@ -135,7 +135,7 @@ func (s *Sink) ExpectCalls(t *testing.T, expected ...*Call) {
 		case call := <-s.emitChan:
 			actual = append(actual, call)
 		case <-time.After(s.timeout):
-			assert.Fail(t, "Timed out waiting for message")
+			assert.Fail(t, fmt.Sprintf("timeout: expected: %d, actual: %d", len(expected), i))
 			return
 		}
 	}
