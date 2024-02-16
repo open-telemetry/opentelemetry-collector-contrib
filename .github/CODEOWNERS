@@ -257,7 +257,7 @@ receiver/snowflakereceiver/                              @open-telemetry/collect
 receiver/solacereceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski @mcardy
 receiver/splunkenterprisereceiver/                       @open-telemetry/collector-contrib-approvers @shalper2 @MovieStoreGuy @greatestusername
 receiver/splunkhecreceiver/                              @open-telemetry/collector-contrib-approvers @atoulme
-receiver/sqlqueryreceiver/                               @open-telemetry/collector-contrib-approvers @dmitryax
+receiver/sqlqueryreceiver/                               @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1
 receiver/sqlserverreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski @StefanKurek
 receiver/sshcheckreceiver/                               @open-telemetry/collector-contrib-approvers @nslaughter @codeboten
 receiver/statsdreceiver/                                 @open-telemetry/collector-contrib-approvers @jmacd @dmitryax
