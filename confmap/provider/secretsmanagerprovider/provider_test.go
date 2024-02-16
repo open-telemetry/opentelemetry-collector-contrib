@@ -13,23 +13,30 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	transport "github.com/aws/smithy-go/endpoints"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
 )
 
+type resolver struct {
+	url string
+}
+
+func (r resolver) ResolveEndpoint(ctx context.Context, params secretsmanager.EndpointParameters) (transport.Endpoint, error) {
+	region := "us-east-1"
+	params.Region = &region
+	params.Endpoint = &r.url
+
+	old := secretsmanager.NewDefaultEndpointResolverV2()
+	return old.ResolveEndpoint(ctx, params)
+}
+
 // Create a provider mocking s3provider works in normal cases
 func NewTestProvider(url string) confmap.Provider {
 	cfg := aws.NewConfig()
-	cfg.EndpointResolverWithOptions = aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-		return aws.Endpoint{
-			PartitionID:   "aws",
-			URL:           url,
-			SigningRegion: "us-east-1",
-		}, nil
-	})
 
-	return &provider{client: secretsmanager.NewFromConfig(*cfg)}
+	return &provider{client: secretsmanager.NewFromConfig(*cfg, secretsmanager.WithEndpointResolverV2(resolver{url: url}))}
 }
 
 func TestSecretsManagerFetchSecret(t *testing.T) {
