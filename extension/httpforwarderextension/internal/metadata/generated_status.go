@@ -13,13 +13,13 @@ var (
 )
 
 const (
-	ExtensionStability = component.StabilityLevelDeprecated
+	ExtensionStability = component.StabilityLevelBeta
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol")
+	return settings.MeterProvider.Meter("otelcol/httpforwarder")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol")
+	return settings.TracerProvider.Tracer("otelcol/httpforwarder")
 }

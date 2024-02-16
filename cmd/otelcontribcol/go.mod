@@ -68,7 +68,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver v0.94.0
@@ -1059,7 +1059,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apach
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver => ../../receiver/apachesparkreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder => ../../extension/httpforwarder
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension => ../../extension/httpforwarderextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter => ../../exporter/elasticsearchexporter
 
