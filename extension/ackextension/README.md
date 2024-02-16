@@ -23,7 +23,7 @@ extensions:
 
 receivers:
   splunk_hec:
-    ackExtension: ack
+    ack_extensions: ack
 
 
 service:
