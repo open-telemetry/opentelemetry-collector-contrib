@@ -4,14 +4,13 @@ package csv // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
-	csvparser "encoding/csv"
 	"errors"
 	"fmt"
-	"io"
 	"strings"
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/parseutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -158,52 +157,12 @@ func generateCSVParseFunc(headers []string, fieldDelimiter rune, lazyQuotes bool
 			return nil, err
 		}
 
-		reader := csvparser.NewReader(strings.NewReader(csvLine))
-		reader.Comma = fieldDelimiter
-		reader.FieldsPerRecord = len(headers)
-		reader.LazyQuotes = lazyQuotes
-
-		// Typically only need one
-		lines := make([][]string, 0, 1)
-		for {
-			line, err := reader.Read()
-			if errors.Is(err, io.EOF) {
-				break
-			}
-
-			if err != nil && len(line) == 0 {
-				return nil, errors.New("failed to parse entry")
-			}
-
-			lines = append(lines, line)
+		joinedLine, err := parseutils.ReadCSVRow(csvLine, fieldDelimiter, lazyQuotes)
+		if err != nil {
+			return nil, err
 		}
 
-		/*
-			This parser is parsing a single value, which came from a single log entry.
-			Therefore, if there are multiple lines here, it should be assumed that each
-			subsequent line contains a continuation of the last field in the previous line.
-
-			Given a file w/ headers "A,B,C,D,E" and contents "aa,b\nb,cc,d\nd,ee",
-			expect reader.Read() to return bodies:
-			- ["aa","b"]
-			- ["b","cc","d"]
-			- ["d","ee"]
-		*/
-
-		joinedLine := lines[0]
-		for i := 1; i < len(lines); i++ {
-			nextLine := lines[i]
-
-			// The first element of the next line is a continuation of the previous line's last element
-			joinedLine[len(joinedLine)-1] += "\n" + nextLine[0]
-
-			// The remainder are separate elements
-			for n := 1; n < len(nextLine); n++ {
-				joinedLine = append(joinedLine, nextLine[n])
-			}
-		}
-
-		return headersMap(headers, joinedLine)
+		return parseutils.MapCSVHeaders(headers, joinedLine)
 	}
 }
 
@@ -217,7 +176,7 @@ func generateSplitParseFunc(headers []string, fieldDelimiter rune) parseFunc {
 
 		// This parse function does not do any special quote handling; Splitting on the delimiter is sufficient.
 		fields := strings.Split(csvLine, string(fieldDelimiter))
-		return headersMap(headers, fields)
+		return parseutils.MapCSVHeaders(headers, fields)
 	}
 }
 
@@ -234,18 +193,4 @@ func valueAsString(value any) (string, error) {
 	}
 
 	return s, nil
-}
-
-// headersMap creates a map of headers[i] -> fields[i].
-func headersMap(headers []string, fields []string) (map[string]any, error) {
-	parsedValues := make(map[string]any)
-
-	if len(fields) != len(headers) {
-		return nil, fmt.Errorf("wrong number of fields: expected %d, found %d", len(headers), len(fields))
-	}
-
-	for i, val := range fields {
-		parsedValues[headers[i]] = val
-	}
-	return parsedValues, nil
 }
