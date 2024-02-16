@@ -176,6 +176,11 @@ config:
       send_batch_max_size: 1000
       send_batch_size: 100
       timeout: 10s
+    probabilistic_sampler:
+      hash_seed: 22
+      sampling_percentage: 15.3
+  connectors:
+    datadog/connector:
   service:
     telemetry:
       logs:
@@ -184,12 +189,16 @@ config:
           - service: "otel-collector"
     pipelines:
       metrics:
-        receivers: [otlp, hostmetrics, prometheus]
+        receivers: [otlp, hostmetrics, prometheus, datadog/connector]
         processors: [resourcedetection, k8sattributes, batch]
         exporters: [datadog]
       traces:
         receivers: [otlp]
         processors: [resourcedetection, k8sattributes, batch]
+        exporters: [datadog/connector]
+      traces/sampled:
+        receivers: [datadog/connector]
+        processors: [probabilistic_sampler, batch]
         exporters: [datadog]
       logs:
         processors: [memory_limiter, resourcedetection, k8sattributes, attributes, attributes/kafkasrc, batch]
