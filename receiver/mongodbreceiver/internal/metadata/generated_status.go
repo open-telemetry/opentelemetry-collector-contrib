@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("mongodb")
+)
+
 const (
-	Type             = "mongodb"
 	MetricsStability = component.StabilityLevelBeta
 )
 

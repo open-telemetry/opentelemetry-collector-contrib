@@ -431,10 +431,52 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], ParseCSV("val1;val2;val3","header1|header2|header3",";","|","strict"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("header1", "val1")
+				m.PutStr("header2", "val2")
+				m.PutStr("header3", "val3")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseCSV("val1,val2,val3","header1|header2|header3",headerDelimiter="|",mode="strict"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("header1", "val1")
+				m.PutStr("header2", "val2")
+				m.PutStr("header3", "val3")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ParseJSON("{\"id\":1}"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
 				m.PutDouble("id", 1)
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseKeyValue("k1=v1 k2=v2"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("k1", "v1")
+				m.PutStr("k2", "v2")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseKeyValue("k1!v1_k2!v2", "!", "_"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("k1", "v1")
+				m.PutStr("k2", "v2")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseKeyValue("k1!v1_k2!\"v2__!__v2\"", "!", "_"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("k1", "v1")
+				m.PutStr("k2", "v2__!__v2")
 			},
 		},
 		{

@@ -40,6 +40,10 @@ func newMarshaler(mType MarshalerType, logger *zap.Logger) (marshaler, error) {
 		sumomarshaler := newSumoICMarshaler()
 		marshaler.logsMarshaler = &sumomarshaler
 		marshaler.fileFormat = "json.gz"
+	case Body:
+		exportbodyMarshaler := newbodyMarshaler()
+		marshaler.logsMarshaler = &exportbodyMarshaler
+		marshaler.fileFormat = exportbodyMarshaler.format()
 	default:
 		return nil, ErrUnknownMarshaler
 	}

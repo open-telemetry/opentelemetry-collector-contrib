@@ -721,7 +721,7 @@ func initSpan(span span, s ptrace.Span) {
 
 func newOTLPExporters(t *testing.T) (component.ID, exporter.Metrics, exporter.Traces) {
 	otlpExpFactory := otlpexporter.NewFactory()
-	otlpID := component.NewID("otlp")
+	otlpID := component.MustNewID("otlp")
 	otlpConfig := &otlpexporter.Config{
 		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: "example.com:1234",

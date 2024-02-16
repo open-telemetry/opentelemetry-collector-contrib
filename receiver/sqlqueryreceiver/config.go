@@ -17,10 +17,6 @@ type Config struct {
 	sqlquery.Config `mapstructure:",squash"`
 }
 
-func (c Config) Validate() error {
-	return nil
-}
-
 func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
 	cfg.CollectionInterval = 10 * time.Second

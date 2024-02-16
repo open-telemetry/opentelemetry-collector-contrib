@@ -44,12 +44,12 @@ func TestScraper(t *testing.T) {
 	}{
 		{
 			desc: "Exits on failure to get app ids",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("Applications").Return(nil, errors.New("could not retrieve app ids"))
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
 			config:      createDefaultConfig().(*Config),
@@ -57,12 +57,12 @@ func TestScraper(t *testing.T) {
 		},
 		{
 			desc: "No Matching Allowed Apps",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("Applications").Return([]models.Application{}, nil)
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
 			config: &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
@@ -78,7 +78,7 @@ func TestScraper(t *testing.T) {
 		},
 		{
 			desc: "Successful Full Empty Collection",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("ClusterStats").Return(&models.ClusterProperties{}, nil)
 				mockClient.On("Applications").Return([]models.Application{}, nil)

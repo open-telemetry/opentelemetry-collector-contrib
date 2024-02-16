@@ -253,7 +253,7 @@ func loadMetadata(filePath string) (metadata, error) {
 	}
 
 	md := metadata{ScopeName: scopeName(filePath), ShortFolderName: shortFolderName(filePath)}
-	if err := conf.Unmarshal(&md, confmap.WithErrorUnused()); err != nil {
+	if err := conf.Unmarshal(&md); err != nil {
 		return md, err
 	}
 

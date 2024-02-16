@@ -7,6 +7,127 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.94.0
+
+### 🛑 Breaking changes 🛑
+
+- `servicegraphprocessor`: removed deprecated component, use the servicegraph connector instead. (#26091)
+- `datadogconnector`: Enable feature gate `connector.datadogconnector.performance` by default. (#30829)
+  See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/connector/datadogconnector#feature-gate-for-performance for caveats of this feature gate.
+- `datadogprocessor`: Delete datadogprocessor which has been deprecated since v0.84.0 (#31026)
+  Use datadogconnector instead.
+- `kafkareceiver`: standardizes the default topic name for metrics and logs receivers to the same topic name as the metrics and logs exporters of the kafkaexporter (#27292)
+  If you are using the Kafka receiver in a logs and/or a metrics pipeline
+  and you are not customizing the name of the topic to read from with the `topic` property,
+  the receiver will now read from `otlp_logs` or `otlp_metrics` topic instead of `otlp_spans` topic.
+  To maintain previous behavior, set the `topic` property to `otlp_spans`.
+  
+- `pkg/stanza`: Entries are no longer logged during error conditions. (#26670)
+  This change is being made to ensure sensitive information contained in logs are never logged inadvertently.
+  This change is a breaking change because it may change user expectations. However, it should require
+  no action on the part of the user unless they are relying on logs from a few specific error cases.
+  
+- `pkg/stanza`: Invert recombine operator's 'overwrite_with' default value. (#30783)
+  Previously, the default value was `oldest`, meaning that the recombine operator _should_ emit the
+  first entry from each batch (with the recombined field). However, the actual behavior was inverted.
+  This fixes the bug but also inverts the default setting so as to effectively cancel out the bug fix
+  for users who were not using this setting. For users who were explicitly setting `overwrite_with`,
+  this corrects the intended behavior.
+  
+
+### 🚩 Deprecations 🚩
+
+- `skywalkingexporter`: Mark the component as unmaintained. If we don't find new maintainers, it will be deprecated and removed. (#23796)
+
+### 🚀 New components 🚀
+
+- `sumologicextension`: add configuration and readme (#29601)
+- `failoverconnector`: Refactor of connector to seperate concerns between managing indexes and core failover component (#20766)
+- `otelarrow`: Skeleton of new OpenTelemetry Protocol with Apache Arrow Receiver (#26491)
+- `processor/interval`: Adds the initial structure for a new processor that aggregates metrics and periodically forwards the latest values to the next component in the pipeline. (#29461)
+  As per the CONTRIBUTING.md recommendations, this PR only creates the basic structure of the processor. The concrete implementation will come as a separate followup PR
+  
+
+### 💡 Enhancements 💡
+
+- `receiver/journald`: add a new config option "all" that turns on full output from journalctl, including lines that are too long. (#30920)
+- `pkg/stanza`: Add support in a header configuration for json array parser. (#30321)
+- `awss3exporter`: Add the ability to export trace/log/metrics in OTLP ProtoBuf format. (#30682)
+- `dockerobserver`: Upgrading Docker API version default from 1.22 to 1.24 (#30900)
+- `filterprocessor`: move metrics from OpenCensus to OpenTelemetry (#30736)
+- `groupbyattrsprocessor`: move metrics from OpenCensus to OpenTelemetry (#30763)
+- `datadogconnector`: Add trace configs that mirror datadog exporter (#30787)
+  ignore_resources: disable certain traces based on their resource name
+  span_name_remappings: map of datadog span names and preferred name to map to
+  span_name_as_resource_name: use OTLP span name as datadog operation name
+  compute_stats_by_span_kind: enables an additional stats computation check based on span kind
+  peer_tags_aggregation: enables aggregation of peer related tags
+  trace_buffer: specifies the buffer size for datadog trace payloads
+  
+- `elasticsearchexporter`: Add `mapping.mode: raw` configuration option (#26647)
+  Setting `mapping.mode: raw` in the Elasticsearch exporter's configuration
+  will result logs and traces being indexed into Elasticsearch with their
+  attribute fields directly at the root level of the document instead inside an
+  `Attributes` object. Similarly, this setting will also result in traces being
+  indexed into Elasticsearch with their event fields directly at the root level
+  of the document instead of inside an `Events` object.
+  
+- `loadbalancingexporter`: Optimize metrics and traces export (#30141)
+- `gitproviderreceiver`: Add pull request metrics (#22028)
+  - git.repository.pull_request.open.count
+  - git.repository.pull_request.open.time
+  - git.repository.pull_request.merged.count
+  - git.repository.pull_request.merged.time
+  - git.repository.pull_request.approved.time
+  
+- `all`: Add `component.UseLocalHostAsDefaultHost` feature gate that changes default endpoints from 0.0.0.0 to localhost (#30702)
+  This change affects the following components:
+    - extension/awsproxy
+    - extension/health_check
+    - extension/jaegerremotesampling
+    - internal/aws/proxy
+    - processor/remotetap
+    - receiver/awsfirehose
+    - receiver/awsxray
+    - receiver/influxdb
+    - receiver/jaeger
+    - receiver/loki
+    - receiver/opencensus
+    - receiver/sapm
+    - receiver/signalfx
+    - receiver/skywalking
+    - receiver/splunk_hec
+    - receiver/zipkin
+    - receiver/zookeeper
+  
+- `googlepubsubreceiver`: Add support for GoogleCloud logging encoding (#29299)
+- `processor/resourcedetectionprocessor`: Detect Azure cluster name from IMDS metadata (#26794)
+- `processor/transform`: Add `copy_metric` function to allow duplicating a metric (#30846)
+
+### 🧰 Bug fixes 🧰
+
+- `basicauthextension`: Accept empty usernames. (#30470)
+  Per https://datatracker.ietf.org/doc/html/rfc2617#section-2, username and password may be empty strings ("").
+  The validation used to enforce that usernames cannot be empty.
+  
+- `servicegraphconnector`: update prefix to match the component type (#31023)
+- `datadog/connector`: Create a separate connector in the Datadog connector for the trace-to-metrics and trace-to-trace pipelines. It should reduce the number of conversions we do and help with Datadog connector performance. (#30828)
+  Simplify datadog/connector with two separate connectors in trace-to-metrics pipeline and trace-to-trace pipeline.
+- `datadogreceiver`: Set AppVersion to allow Datadog version property to transform properly to service.version resource attribute (#30225)
+- `cmd/opampsupervisor`: Fix memory leak on shutdown (#30438)
+- `exporter/datadog`: Fixes a bug where empty histograms were not being sent to the backend in the distributions mode. (#31019)
+- `pkg/ottl`: Fix parsing of string escapes in OTTL (#23238)
+- `pkg/stanza`: Recombine operator should always recombine partial logs (#30797)
+  Previously, certain circumstances could result in partial logs being emitted without any
+  recombiniation. This could occur when using `is_first_entry`, if the first partial log from
+  a source was emitted before a matching "start of log" indicator was found. This could also
+  occur when the collector was shutting down.
+  
+- `pkg/stanza`: Fix bug where recombine operator's 'overwrite_with' condition was inverted. (#30783)
+- `exporter/signalfx`: Use "unknown" value for the environment correlation calls as fallback. (#31052)
+  This fixed the APM/IM correlation in the Splunk Observability UI for the users that send traces with no "deployment.environment" resource attribute value set.
+- `namedpipereceiver`: Fix SIGSEGV when named pipe creation fails (#31088)
+
 ## v0.93.0
 
 ### 🛑 Breaking changes 🛑

@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	skywalkingReceiver = component.NewIDWithName("skywalking", "receiver_test")
+	skywalkingReceiver = component.MustNewIDWithName("skywalking", "receiver_test")
 )
 
 var traceJSON = []byte(`

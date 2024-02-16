@@ -74,7 +74,7 @@ func createMetricsReceiver(
 	}
 
 	ns := newApacheScraper(params, cfg, serverName, port)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err
 	}

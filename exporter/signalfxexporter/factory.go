@@ -105,7 +105,7 @@ func createTracesExporter(
 		ctx,
 		set,
 		cfg,
-		tracker.AddSpans,
+		tracker.ProcessTraces,
 		exporterhelper.WithStart(tracker.Start),
 		exporterhelper.WithShutdown(tracker.Shutdown))
 }

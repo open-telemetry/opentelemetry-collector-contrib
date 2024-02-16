@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoint = defaultEndpoint
 
-	storageID := component.NewIDWithName(component.Type("file_storage"), "clickhouse")
+	storageID := component.MustNewIDWithName("file_storage", "clickhouse")
 
 	tests := []struct {
 		id       component.ID

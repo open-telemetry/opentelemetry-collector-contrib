@@ -99,7 +99,7 @@ func TestTracesExporter_New(t *testing.T) {
 				cfg.Mapping.Dedot = false
 				cfg.Mapping.Dedup = true
 			}),
-			want: successWithInternalModel(&encodeModel{dedot: false, dedup: true}),
+			want: successWithInternalModel(&encodeModel{dedot: false, dedup: true, mode: MappingECS}),
 		},
 	}
 
