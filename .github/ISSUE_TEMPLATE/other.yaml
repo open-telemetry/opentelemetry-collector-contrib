@@ -20,6 +20,7 @@ body:
       - cmd/oteltestbedcol
       - cmd/telemetrygen
       - confmap/provider/s3provider
+      - confmap/provider/secretsmanagerprovider
       - connector/count
       - connector/datadog
       - connector/exceptions
