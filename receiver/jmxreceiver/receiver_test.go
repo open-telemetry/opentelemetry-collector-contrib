@@ -5,6 +5,8 @@ package jmxreceiver
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -36,6 +38,13 @@ func TestReceiver(t *testing.T) {
 }
 
 func TestBuildJMXMetricGathererConfig(t *testing.T) {
+	passwordFileContents := `
+myusername mypassword
+keystore: keypass
+truststore = trustpass
+`
+	passwordFilePath := filepath.Join(t.TempDir(), "test.properties")
+	require.NoError(t, os.WriteFile(passwordFilePath, []byte(passwordFileContents), 0600))
 	tests := []struct {
 		name           string
 		config         *Config
@@ -95,6 +104,29 @@ otel.jmx.target.system = mytargetsystem
 otel.jmx.username = myuser\nname
 otel.metrics.exporter = otlp
 otel.resource.attributes = abc=123,one=two`,
+			"",
+		},
+		{
+			"handles password file",
+			&Config{
+				Endpoint:     "myhost:12345",
+				TargetSystem: "mytargetsystem",
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "https://myotlpendpoint",
+				},
+				Username:     "myusername",
+				PasswordFile: passwordFilePath,
+			},
+			`javax.net.ssl.keyStorePassword = keypass
+javax.net.ssl.trustStorePassword = trustpass
+otel.exporter.otlp.endpoint = https://myotlpendpoint
+otel.exporter.otlp.timeout = 0
+otel.jmx.interval.milliseconds = 0
+otel.jmx.password = mypassword
+otel.jmx.service.url = service:jmx:rmi:///jndi/rmi://myhost:12345/jmxrmi
+otel.jmx.target.system = mytargetsystem
+otel.jmx.username = myusername
+otel.metrics.exporter = otlp`,
 			"",
 		},
 		{

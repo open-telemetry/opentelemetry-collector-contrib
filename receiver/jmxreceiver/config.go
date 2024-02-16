@@ -33,34 +33,36 @@ type Config struct {
 	// The exporter settings for
 	OTLPExporterConfig otlpExporterConfig `mapstructure:"otlp"`
 	// The JMX username
-	Username string `mapstructure:"username"`
+	Username string `mapstructure:"username,omitempty"`
 	// The JMX password
-	Password configopaque.String `mapstructure:"password"`
+	Password configopaque.String `mapstructure:"password,omitempty"`
+	// The JMX password file. Retrieves the Password based on the Username.
+	PasswordFile string `mapstructure:"password_file,omitempty"`
 	// The keystore path for SSL
-	KeystorePath string `mapstructure:"keystore_path"`
+	KeystorePath string `mapstructure:"keystore_path,omitempty"`
 	// The keystore password for SSL
-	KeystorePassword configopaque.String `mapstructure:"keystore_password"`
+	KeystorePassword configopaque.String `mapstructure:"keystore_password,omitempty"`
 	// The keystore type for SSL
-	KeystoreType string `mapstructure:"keystore_type"`
+	KeystoreType string `mapstructure:"keystore_type,omitempty"`
 	// The truststore path for SSL
-	TruststorePath string `mapstructure:"truststore_path"`
+	TruststorePath string `mapstructure:"truststore_path,omitempty"`
 	// The truststore password for SSL
-	TruststorePassword configopaque.String `mapstructure:"truststore_password"`
+	TruststorePassword configopaque.String `mapstructure:"truststore_password,omitempty"`
 	// The truststore type for SSL
-	TruststoreType string `mapstructure:"truststore_type"`
+	TruststoreType string `mapstructure:"truststore_type,omitempty"`
 	// The JMX remote profile.  Should be one of:
 	// `"SASL/PLAIN"`, `"SASL/DIGEST-MD5"`, `"SASL/CRAM-MD5"`, `"TLS SASL/PLAIN"`, `"TLS SASL/DIGEST-MD5"`, or
 	// `"TLS SASL/CRAM-MD5"`, though no enforcement is applied.
-	RemoteProfile string `mapstructure:"remote_profile"`
+	RemoteProfile string `mapstructure:"remote_profile,omitempty"`
 	// The SASL/DIGEST-MD5 realm
-	Realm string `mapstructure:"realm"`
-	// Array of additional JARs to be added to the the class path when launching the JMX Metric Gatherer JAR
-	AdditionalJars []string `mapstructure:"additional_jars"`
+	Realm string `mapstructure:"realm,omitempty"`
+	// Array of additional JARs to be added to the class path when launching the JMX Metric Gatherer JAR
+	AdditionalJars []string `mapstructure:"additional_jars,omitempty"`
 	// Map of resource attributes used by the Java SDK Autoconfigure to set resource attributes
-	ResourceAttributes map[string]string `mapstructure:"resource_attributes"`
+	ResourceAttributes map[string]string `mapstructure:"resource_attributes,omitempty"`
 	// Log level used by the JMX metric gatherer. Should be one of:
 	// `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`
-	LogLevel string `mapstructure:"log_level"`
+	LogLevel string `mapstructure:"log_level,omitempty"`
 }
 
 // We don't embed the existing OTLP Exporter config as most fields are unsupported
@@ -260,6 +262,19 @@ func (c *Config) Validate() error {
 	for _, system := range strings.Split(c.TargetSystem, ",") {
 		if _, ok := validTargetSystems[strings.ToLower(system)]; !ok {
 			return fmt.Errorf("`target_system` list may only be a subset of %s", listKeys(validTargetSystems))
+		}
+	}
+
+	if c.PasswordFile != "" {
+		info, err := os.Stat(c.PasswordFile)
+		if err != nil {
+			return fmt.Errorf("`password_file` is inaccessible: %w", err)
+		}
+		switch info.Mode().Perm() {
+		// Matches JMX agent requirements for password file.
+		case 0400, 0600:
+		default:
+			return fmt.Errorf("`password_file` read access must be restricted to owner-only: %s", c.PasswordFile)
 		}
 	}
 

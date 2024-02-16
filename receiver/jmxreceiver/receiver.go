@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/magiconair/properties"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
@@ -23,8 +24,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/subprocess"
 )
 
-// jmxMainClass the class containing the main function for the JMX Metric Gatherer JAR
-const jmxMainClass = "io.opentelemetry.contrib.jmxmetrics.JmxMetrics"
+const (
+	// jmxMainClass the class containing the main function for the JMX Metric Gatherer JAR
+	jmxMainClass = "io.opentelemetry.contrib.jmxmetrics.JmxMetrics"
+
+	// The role names can be used in conjunction with the password file to avoid configuring them directly in the
+	// receiver config.
+	roleNameKeyStore   = "keystore"
+	roleNameTrustStore = "truststore"
+)
 
 var _ receiver.Metrics = (*jmxMetricReceiver)(nil)
 
@@ -157,9 +165,9 @@ func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
 func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 	config := map[string]string{}
 	failedToParse := `failed to parse Endpoint "%s": %w`
-	parsed, err := url.Parse(jmx.config.Endpoint)
-	if err != nil {
-		return "", fmt.Errorf(failedToParse, jmx.config.Endpoint, err)
+	parsed, parseErr := url.Parse(jmx.config.Endpoint)
+	if parseErr != nil {
+		return "", fmt.Errorf(failedToParse, jmx.config.Endpoint, parseErr)
 	}
 
 	if !(parsed.Scheme == "service" && strings.HasPrefix(parsed.Opaque, "jmx:")) {
@@ -191,12 +199,23 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 		config["otel.exporter.otlp.headers"] = jmx.config.OTLPExporterConfig.headersToString()
 	}
 
+	var passwordMap map[string]string
+	if jmx.config.PasswordFile != "" {
+		var err error
+		passwordMap, err = parsePasswordFile(jmx.config.PasswordFile)
+		if err != nil {
+			jmx.logger.Error("Unable to retrieve password from file", zap.Error(err))
+		}
+	}
+
 	if jmx.config.Username != "" {
 		config["otel.jmx.username"] = jmx.config.Username
 	}
 
 	if jmx.config.Password != "" {
 		config["otel.jmx.password"] = string(jmx.config.Password)
+	} else if password, ok := passwordMap[jmx.config.Username]; ok && jmx.config.Username != "" {
+		config["otel.jmx.password"] = password
 	}
 
 	if jmx.config.RemoteProfile != "" {
@@ -212,6 +231,8 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 	}
 	if jmx.config.KeystorePassword != "" {
 		config["javax.net.ssl.keyStorePassword"] = string(jmx.config.KeystorePassword)
+	} else if password, ok := passwordMap[roleNameKeyStore]; ok {
+		config["javax.net.ssl.keyStorePassword"] = password
 	}
 	if jmx.config.KeystoreType != "" {
 		config["javax.net.ssl.keyStoreType"] = jmx.config.KeystoreType
@@ -221,6 +242,8 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 	}
 	if jmx.config.TruststorePassword != "" {
 		config["javax.net.ssl.trustStorePassword"] = string(jmx.config.TruststorePassword)
+	} else if password, ok := passwordMap[roleNameTrustStore]; ok {
+		config["javax.net.ssl.trustStorePassword"] = password
 	}
 	if jmx.config.TruststoreType != "" {
 		config["javax.net.ssl.trustStoreType"] = jmx.config.TruststoreType
@@ -258,4 +281,17 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 	sort.Strings(content)
 
 	return strings.Join(content, "\n"), nil
+}
+
+func parsePasswordFile(path string) (map[string]string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	loader := properties.Loader{Encoding: properties.UTF8, DisableExpansion: true}
+	p, err := loader.LoadBytes(content)
+	if err != nil {
+		return nil, err
+	}
+	return p.Map(), nil
 }
