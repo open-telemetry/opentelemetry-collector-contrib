@@ -51,64 +51,64 @@ func samplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 	sampledTagKeys := []tag.Key{tagPolicyKey, tagSampledKey}
 	views = append(views,
 		&view.View{
-			Name:        processorhelper.BuildCustomMetricName(metadata.Type, statDecisionLatencyMicroSec.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), statDecisionLatencyMicroSec.Name()),
 			Measure:     statDecisionLatencyMicroSec,
 			Description: statDecisionLatencyMicroSec.Description(),
 			TagKeys:     policyTagKeys,
 			Aggregation: latencyDistributionAggregation,
 		},
 		&view.View{
-			Name:        processorhelper.BuildCustomMetricName(metadata.Type, statOverallDecisionLatencyUs.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), statOverallDecisionLatencyUs.Name()),
 			Measure:     statOverallDecisionLatencyUs,
 			Description: statOverallDecisionLatencyUs.Description(),
 			Aggregation: latencyDistributionAggregation,
 		},
 		&view.View{
-			Name:        processorhelper.BuildCustomMetricName(metadata.Type, statTraceRemovalAgeSec.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), statTraceRemovalAgeSec.Name()),
 			Measure:     statTraceRemovalAgeSec,
 			Description: statTraceRemovalAgeSec.Description(),
 			Aggregation: ageDistributionAggregation,
 		},
 		&view.View{
-			Name:        processorhelper.BuildCustomMetricName(metadata.Type, statLateSpanArrivalAfterDecision.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), statLateSpanArrivalAfterDecision.Name()),
 			Measure:     statLateSpanArrivalAfterDecision,
 			Description: statLateSpanArrivalAfterDecision.Description(),
 			Aggregation: ageDistributionAggregation,
 		},
 		&view.View{
-			Name:        processorhelper.BuildCustomMetricName(metadata.Type, statPolicyEvaluationErrorCount.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), statPolicyEvaluationErrorCount.Name()),
 			Measure:     statPolicyEvaluationErrorCount,
 			Description: statPolicyEvaluationErrorCount.Description(),
 			Aggregation: view.Sum(),
 		},
 		&view.View{
-			Name:        processorhelper.BuildCustomMetricName(metadata.Type, statCountTracesSampled.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), statCountTracesSampled.Name()),
 			Measure:     statCountTracesSampled,
 			Description: statCountTracesSampled.Description(),
 			TagKeys:     sampledTagKeys,
 			Aggregation: view.Sum(),
 		},
 		&view.View{
-			Name:        processorhelper.BuildCustomMetricName(metadata.Type, statCountGlobalTracesSampled.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), statCountGlobalTracesSampled.Name()),
 			Measure:     statCountGlobalTracesSampled,
 			Description: statCountGlobalTracesSampled.Description(),
 			TagKeys:     []tag.Key{tagSampledKey},
 			Aggregation: view.Sum(),
 		},
 		&view.View{
-			Name:        processorhelper.BuildCustomMetricName(metadata.Type, statDroppedTooEarlyCount.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), statDroppedTooEarlyCount.Name()),
 			Measure:     statDroppedTooEarlyCount,
 			Description: statDroppedTooEarlyCount.Description(),
 			Aggregation: view.Sum(),
 		},
 		&view.View{
-			Name:        processorhelper.BuildCustomMetricName(metadata.Type, statNewTraceIDReceivedCount.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), statNewTraceIDReceivedCount.Name()),
 			Measure:     statNewTraceIDReceivedCount,
 			Description: statNewTraceIDReceivedCount.Description(),
 			Aggregation: view.Sum(),
 		},
 		&view.View{
-			Name:        processorhelper.BuildCustomMetricName(metadata.Type, statTracesOnMemoryGauge.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), statTracesOnMemoryGauge.Name()),
 			Measure:     statTracesOnMemoryGauge,
 			Description: statTracesOnMemoryGauge.Description(),
 			Aggregation: view.LastValue(),
@@ -116,7 +116,7 @@ func samplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 
 	if isMetricStatCountSpansSampledEnabled() {
 		views = append(views, &view.View{
-			Name:        processorhelper.BuildCustomMetricName(metadata.Type, statCountSpansSampled.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), statCountSpansSampled.Name()),
 			Measure:     statCountSpansSampled,
 			Description: statCountSpansSampled.Description(),
 			TagKeys:     sampledTagKeys,
