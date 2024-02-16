@@ -66,13 +66,6 @@ config:
           endpoint: 0.0.0.0:4317
         http:
           endpoint: 0.0.0.0:4318
-    prometheus:
-      config:
-        scrape_configs:
-        - job_name: 'otelcol'
-          scrape_interval: 10s
-          static_configs:
-          - targets: ['0.0.0.0:8888']
   exporters:
     # Disable debug exporter until we pull change that adds it from upstream
     debug: null
