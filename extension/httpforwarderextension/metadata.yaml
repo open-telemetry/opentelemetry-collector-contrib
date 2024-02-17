@@ -3,7 +3,7 @@ type: http_forwarder
 status:
   class: extension
   stability:
-    deprecated: [extension]
-  distributions: [contrib, splunk, sumo]
+    beta: [extension]
+  distributions: []
   codeowners:
     active: [atoulme, rmfitzpatrick]
