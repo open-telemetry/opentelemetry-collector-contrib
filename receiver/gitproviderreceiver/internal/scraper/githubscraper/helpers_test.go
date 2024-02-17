@@ -128,7 +128,7 @@ func MockServer(responses *responses) *http.ServeMux {
 			}
 		}
 	})
-	mux.HandleFunc(restEndpoint, func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(restEndpoint, func(w http.ResponseWriter, _ *http.Request) {
 		contribResp := &responses.contribResponse
 		if contribResp.responseCode == http.StatusOK {
 			contribs, err := json.Marshal(contribResp.contribs[contribResp.page])
