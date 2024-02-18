@@ -435,11 +435,6 @@ func (p *processHandleMock) MemoryInfo() (*process.MemoryInfoStat, error) {
 	return args.Get(0).(*process.MemoryInfoStat), args.Error(1)
 }
 
-func (p *processHandleMock) MemoryPercent() (float32, error) {
-	args := p.MethodCalled("MemoryPercent")
-	return args.Get(0).(float32), args.Error(1)
-}
-
 func (p *processHandleMock) IOCounters() (*process.IOCountersStat, error) {
 	args := p.MethodCalled("IOCounters")
 	return args.Get(0).(*process.IOCountersStat), args.Error(1)
