@@ -48,6 +48,8 @@ type Config struct {
 	// trace ID as the message key by default.
 	PartitionTracesByID bool `mapstructure:"partition_traces_by_id"`
 
+	PartitionMetricsByResourceAttributes bool `mapstructure:"partition_metrics_by_resource_attributes"`
+
 	// Metadata is the namespace for metadata management properties used by the
 	// Client, and shared by the Producer/Consumer.
 	Metadata Metadata `mapstructure:"metadata"`

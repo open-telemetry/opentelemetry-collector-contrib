@@ -13,6 +13,7 @@ kafka:
     required_acks: -1 # WaitForAll
   timeout: 10s
   partition_traces_by_id: true
+  partition_metrics_by_resource_attributes: true
   auth:
     plain_text:
       username: jdoe

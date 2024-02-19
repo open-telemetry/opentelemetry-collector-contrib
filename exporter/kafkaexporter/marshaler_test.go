@@ -6,6 +6,7 @@ package kafkaexporter
 import (
 	"encoding/json"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"testing"
 	"time"
 
@@ -69,6 +70,49 @@ func TestDefaultLogsMarshalers(t *testing.T) {
 			assert.NotNil(t, m)
 		})
 	}
+}
+
+func TestOTLPMetricsJsonMarshaling(t *testing.T) {
+	now := time.Unix(1, 0)
+
+	metric := pmetric.NewMetrics()
+	r := pcommon.NewResource()
+	r.Attributes().PutStr("service.name", "my_service_name")
+	r.Attributes().PutStr("service.instance.id", "kek_x_1")
+	r.CopyTo(metric.ResourceMetrics().AppendEmpty().Resource())
+
+	rm := metric.ResourceMetrics().At(0)
+	rm.SetSchemaUrl(conventions.SchemaURL)
+
+	sm := rm.ScopeMetrics().AppendEmpty()
+	pmetric.NewScopeMetrics()
+	m := sm.Metrics().AppendEmpty()
+	m.SetEmptyGauge()
+	m.Gauge().DataPoints().AppendEmpty().SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+	m.Gauge().DataPoints().At(0).Attributes().PutStr("gauage_attribute", "attr")
+	m.Gauge().DataPoints().At(0).SetDoubleValue(1.0)
+
+	r1 := pcommon.NewResource()
+	r1.Attributes().PutStr("service.name", "my_service_name")
+	r1.Attributes().PutStr("service.instance.id", "kek_x_2")
+	r1.CopyTo(metric.ResourceMetrics().AppendEmpty().Resource())
+
+	standardMarshaler := metricsMarshalers()["otlp_json"]
+	msgs, err := standardMarshaler.Marshal(metric, "KafkaTopicX")
+	require.NoError(t, err, "Must have marshaled the data without error")
+	require.Len(t, msgs, 1, "Expected number of messages in the message")
+	require.Equal(t, nil, msgs[0].Key)
+
+	keyableMarshaler, ok := standardMarshaler.(KeyableMetricsMarshaler)
+	require.True(t, ok, "Must be a KeyableMetricsMarshaler")
+	keyableMarshaler.Key()
+
+	msgs, err = keyableMarshaler.Marshal(metric, "KafkaTopicX")
+	require.NoError(t, err, "Must have marshaled the data without error")
+	require.Len(t, msgs, 2, "Expected number of messages in the message")
+
+	require.Equal(t, sarama.ByteEncoder("90e74a8334a89993bd3f6ad05f9ca02438032a78d4399fb6fecf6c94fcdb13ef"), msgs[0].Key)
+	require.Equal(t, sarama.ByteEncoder("55e1113a2eace57b91ef58911d811c28e936365f03ac068e8ce23090d9ea748f"), msgs[1].Key)
 }
 
 func TestOTLPTracesJsonMarshaling(t *testing.T) {

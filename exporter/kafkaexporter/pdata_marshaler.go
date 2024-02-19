@@ -5,12 +5,12 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"github.com/IBM/sarama"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/resourceutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
 type pdataLogsMarshaler struct {
@@ -42,22 +42,58 @@ func newPdataLogsMarshaler(marshaler plog.Marshaler, encoding string) LogsMarsha
 	}
 }
 
+// KeyableMetricsMarshaler is an extension of the MetricsMarshaler interface intended to provide partition key capabilities
+// for metrics messages
+type KeyableMetricsMarshaler interface {
+	MetricsMarshaler
+	Key()
+}
+
 type pdataMetricsMarshaler struct {
 	marshaler pmetric.Marshaler
 	encoding  string
+	keyed     bool
+}
+
+// Key configures the pdataMetricsMarshaler to set the message key on the kafka messages
+func (p *pdataMetricsMarshaler) Key() {
+	p.keyed = true
 }
 
 func (p pdataMetricsMarshaler) Marshal(ld pmetric.Metrics, topic string) ([]*sarama.ProducerMessage, error) {
-	bts, err := p.marshaler.MarshalMetrics(ld)
-	if err != nil {
-		return nil, err
-	}
-	return []*sarama.ProducerMessage{
-		{
+	var msgs []*sarama.ProducerMessage
+	if p.keyed {
+		metrics := ld.ResourceMetrics()
+
+		for i := 0; i < metrics.Len(); i++ {
+			resourceMetrics := metrics.At(i)
+			hash := resourceutil.CalculateResourceAttributesHash(resourceMetrics.Resource())
+
+			newMetrics := pmetric.NewMetrics()
+			resourceMetrics.MoveTo(newMetrics.ResourceMetrics().AppendEmpty())
+
+			bts, err := p.marshaler.MarshalMetrics(newMetrics)
+			if err != nil {
+				return nil, err
+			}
+			msgs = append(msgs, &sarama.ProducerMessage{
+				Topic: topic,
+				Value: sarama.ByteEncoder(bts),
+				Key:   sarama.ByteEncoder(hash),
+			})
+		}
+	} else {
+		bts, err := p.marshaler.MarshalMetrics(ld)
+		if err != nil {
+			return nil, err
+		}
+		msgs = append(msgs, &sarama.ProducerMessage{
 			Topic: topic,
 			Value: sarama.ByteEncoder(bts),
-		},
-	}, nil
+		})
+	}
+
+	return msgs, nil
 }
 
 func (p pdataMetricsMarshaler) Encoding() string {
@@ -65,13 +101,13 @@ func (p pdataMetricsMarshaler) Encoding() string {
 }
 
 func newPdataMetricsMarshaler(marshaler pmetric.Marshaler, encoding string) MetricsMarshaler {
-	return pdataMetricsMarshaler{
+	return &pdataMetricsMarshaler{
 		marshaler: marshaler,
 		encoding:  encoding,
 	}
 }
 
-// KeyableTracesMarshaler is an extension of the TracesMarshaler interface inteded to provide partition key capabilities
+// KeyableTracesMarshaler is an extension of the TracesMarshaler interface intended to provide partition key capabilities
 // for trace messages
 type KeyableTracesMarshaler interface {
 	TracesMarshaler
