@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sync"
 
 	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling"
 	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/strategystore"
@@ -54,6 +55,7 @@ type SamplingGRPCServer struct {
 	strategyStore strategystore.StrategyStore
 
 	grpcServer grpcServer
+	shutdownWG sync.WaitGroup
 }
 
 func (s *SamplingGRPCServer) Start(ctx context.Context, host component.Host) error {
@@ -75,7 +77,10 @@ func (s *SamplingGRPCServer) Start(ctx context.Context, host component.Host) err
 		return fmt.Errorf("failed to listen on gRPC port: %w", err)
 	}
 
+	s.shutdownWG.Add(1)
 	go func() {
+		defer s.shutdownWG.Done()
+
 		if err := s.grpcServer.Serve(listener); err != nil {
 			s.telemetry.Logger.Error("could not launch gRPC service", zap.Error(err))
 		}
@@ -84,24 +89,15 @@ func (s *SamplingGRPCServer) Start(ctx context.Context, host component.Host) err
 	return nil
 }
 
-// Shutdown tries to terminate connections gracefully as long as the passed context is valid.
-func (s *SamplingGRPCServer) Shutdown(ctx context.Context) error {
+// Shutdown stops the grps server gracefully.
+func (s *SamplingGRPCServer) Shutdown(_ context.Context) error {
 	if s.grpcServer == nil {
 		return errGRPCServerNotRunning
 	}
 
-	ch := make(chan struct{})
-	go func() {
-		s.grpcServer.GracefulStop()
-		ch <- struct{}{}
-	}()
+	s.grpcServer.GracefulStop()
 
-	select {
-	case <-ctx.Done():
-		s.grpcServer.Stop()
-		<-ch // wait for the graceful stop goroutine to return
-	case <-ch:
-	}
+	s.shutdownWG.Wait()
 
 	return nil
 }
