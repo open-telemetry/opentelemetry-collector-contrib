@@ -50,7 +50,7 @@ require (
 	go.opentelemetry.io/collector/extension/ballastextension v0.94.1
 	go.opentelemetry.io/collector/extension/zpagesextension v0.94.1
 	go.opentelemetry.io/collector/otelcol v0.94.1
-	go.opentelemetry.io/collector/pdata v1.1.0
+	go.opentelemetry.io/collector/pdata v1.1.1-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/processor v0.94.1
 	go.opentelemetry.io/collector/processor/batchprocessor v0.94.1
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.94.1
@@ -215,12 +215,12 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.94.1 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.94.1 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.94.1 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.1.1-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.94.1 // indirect
 	go.opentelemetry.io/collector/config/internal v0.94.1 // indirect
 	go.opentelemetry.io/collector/connector v0.94.1 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.94.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.1.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.1.1-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/service v0.94.1 // indirect
 	go.opentelemetry.io/contrib/config v0.3.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.47.0 // indirect
