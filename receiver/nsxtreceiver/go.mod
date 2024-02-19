@@ -10,7 +10,7 @@ require (
 	github.com/vmware/go-vmware-nsxt v0.0.0-20230223012718-d31b8a1ca05e
 	go.opentelemetry.io/collector/component v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/config/confighttp v0.94.2-0.20240216233521-0ab8f4443937
-	go.opentelemetry.io/collector/config/configopaque v0.94.2-0.20240216233521-0ab8f4443937
+	go.opentelemetry.io/collector/config/configopaque v1.1.1-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/confmap v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/consumer v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/pdata v1.1.1-0.20240216233521-0ab8f4443937
