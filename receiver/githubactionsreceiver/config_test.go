@@ -73,7 +73,7 @@ func TestLoadConfig(t *testing.T) {
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "localhost:8080",
 		},
-		Path:   "/events",
+		Path:   "/ghaevents",
 		Secret: "mysecret",
 	}
 

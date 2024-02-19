@@ -77,3 +77,86 @@ You can create a webhook to subscribe to events that occur in a specific reposit
 You can use the GitHub web interface or the REST API to create a repository webhook. For more information about using the REST API to create a repository webhook, see [Repository Webhooks](https://docs.github.com/en/rest/webhooks/repos?apiVersion=2022-11-28#create-a-repository-webhook).
 
 Alternatively you can use a configuration management tool such as [`terraform`](https://www.terraform.io/) with the [`github_repository_webhook`](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_webhook.html) resource, to configure webhooks.
+
+
+### Deterministic IDs
+
+The GitHub Actions Receiver generates deterministic IDs to ensure traceability and consistency across emitted spans. Here’s how the IDs are generated:
+
+* **Trace ID**: Generated based on the run ID and run attempt, ensuring uniqueness across workflow runs.
+* **Parent Span ID**: Derived from the workflow job ID, run attempt, and an optional step number, allowing association of all steps under a job.
+* **Span ID**: Specifically generated for each step within a job, using the job ID, run attempt, step name, and step number.
+
+These IDs allow for the correlation of telemetry data within the observability platform, enabling users to link their own spans to those emitted by the receiver.
+
+#### Generating IDs
+
+Below are example functions in a couple of langues for generating each ID, replicating the logic used by the receiver:
+
+##### Generating IDs in `bash`
+
+```bash
+# Generates a Trace ID
+generate_trace_id() {
+  run_id=$1
+  run_attempt=$2
+  echo -n "${run_id}${run_attempt}t" | openssl dgst -sha256 | sed 's/^.* //'
+}
+
+# Generates a Parent Span ID
+generate_parent_span_id() {
+  job_id=$1
+  run_attempt=$2
+  echo -n "${job_id}${run_attempt}s" | openssl dgst -sha256 | sed 's/^.* //'
+}
+
+# Generates a Span ID
+generate_span_id() {
+  job_id=$1
+  run_attempt=$2
+  step_name=$3
+  step_number=$4 # optional
+  input="${job_id}${run_attempt}${step_name}${step_number}"
+  echo -n "$input" | openssl dgst -sha256 | sed 's/^.* //'
+}
+
+# Example usage
+trace_id=$(generate_trace_id 12345 1)
+parent_span_id=$(generate_parent_span_id 54321 1)
+span_id=$(generate_span_id 54321 1 "step-name" 1)
+
+echo "Trace ID: $trace_id"
+echo "Parent Span ID: $parent_span_id"
+echo "Span ID: $span_id"
+```
+
+##### Generating IDs in `python`
+
+```python
+import hashlib
+
+def generate_trace_id(run_id, run_attempt):
+    input_str = f"{run_id}{run_attempt}t"
+    return hashlib.sha256(input_str.encode()).hexdigest()
+
+def generate_parent_span_id(job_id, run_attempt):
+    input_str = f"{job_id}{run_attempt}s"
+    return hashlib.sha256(input_str.encode()).hexdigest()
+
+def generate_span_id(job_id, run_attempt, step_name, step_number=None):
+    input_str = f"{job_id}{run_attempt}{step_name}{step_number}" if step_number is not None else f"{job_id}{run_attempt}{step_name}"
+    return hashlib.sha256(input_str.encode()).hexdigest()
+
+# Example usage
+trace_id = generate_trace_id(12345, 1)
+parent_span_id = generate_parent_span_id(54321, 1)
+span_id = generate_span_id(54321, 1, "step-name", 1)
+
+print("Trace ID:", trace_id)
+print("Parent Span ID:", parent_span_id)
+print("Span ID:", span_id)
+```
+
+##### Generating IDs in Other Languages
+
+You can adapt the logic shown in the bash examples to any programming language that supports SHA-256 hashing. The key is to ensure the input string format matches between your code and the receiver for consistent ID generation.
