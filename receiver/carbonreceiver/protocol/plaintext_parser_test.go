@@ -42,6 +42,16 @@ func Test_plaintextParser_Parse(t *testing.T) {
 			),
 		},
 		{
+			line: "tst.floattimestamp 3.14 1582230020.123",
+			want: buildDoubleMetric(
+				GaugeMetricType,
+				"tst.floattimestamp",
+				nil,
+				1582230020,
+				3.14,
+			),
+		},
+		{
 			line: "tst.int.3tags;k0=v_0;k1=v_1;k2=v_2 128 1582230020",
 			want: buildIntMetric(
 				GaugeMetricType,
