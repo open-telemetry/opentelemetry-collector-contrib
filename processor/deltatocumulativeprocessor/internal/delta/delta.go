@@ -13,8 +13,11 @@ import (
 )
 
 func construct[D data.Point[D]]() streams.Aggregator[D] {
-	acc := &Accumulator[D]{dps: make(map[streams.Ident]D)}
-	return &Lock[D]{next: acc}
+	acc := Accumulator[D]{
+		dps: streams.EmptyMap[D](),
+	}
+	lock := Lock[D]{next: &acc}
+	return &lock
 }
 
 func Numbers() streams.Aggregator[data.Number] {
@@ -28,7 +31,7 @@ func Histograms() streams.Aggregator[data.Histogram] {
 var _ streams.Aggregator[data.Number] = (*Accumulator[data.Number])(nil)
 
 type Accumulator[D data.Point[D]] struct {
-	dps map[streams.Ident]D
+	dps streams.Map[D]
 }
 
 // Aggregate implements delta-to-cumulative aggregation as per spec:
@@ -37,11 +40,12 @@ func (a *Accumulator[D]) Aggregate(id streams.Ident, dp D) (D, error) {
 	// make the accumulator to start with the current sample, discarding any
 	// earlier data. return after use
 	reset := func() (D, error) {
-		a.dps[id] = dp.Clone()
-		return a.dps[id], nil
+		clone := dp.Clone()
+		a.dps.Store(id, clone)
+		return clone, nil
 	}
 
-	aggr, ok := a.dps[id]
+	aggr, ok := a.dps.Load(id)
 
 	// new series: reset
 	if !ok {
@@ -60,8 +64,9 @@ func (a *Accumulator[D]) Aggregate(id streams.Ident, dp D) (D, error) {
 		return aggr, ErrOutOfOrder{Last: aggr.Timestamp(), Sample: dp.Timestamp()}
 	}
 
-	a.dps[id] = aggr.Add(dp)
-	return a.dps[id], nil
+	res := aggr.Add(dp)
+	a.dps.Store(id, res)
+	return res, nil
 }
 
 type ErrOlderStart struct {
