@@ -12,7 +12,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -43,18 +42,6 @@ func TestNewReceiver(t *testing.T) {
 		args    args
 		wantErr error
 	}{
-		{
-			name: "nil next Consumer",
-			args: args{
-				config: &Config{
-					ServerConfig: confighttp.ServerConfig{
-						Endpoint: ":0",
-					},
-				},
-				attrsPrefix: "default_attr_",
-			},
-			wantErr: component.ErrNilNextConsumer,
-		},
 		{
 			name: "happy path",
 			args: args{
