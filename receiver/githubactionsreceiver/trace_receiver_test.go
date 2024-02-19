@@ -4,6 +4,8 @@
 package githubactionsreceiver
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -11,7 +13,10 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 )
 
 func TestCreateNewTracesReceiver(t *testing.T) {
@@ -54,6 +59,111 @@ func TestCreateNewTracesReceiver(t *testing.T) {
 			} else {
 				require.ErrorIs(t, err, test.err)
 				require.Nil(t, rec)
+			}
+		})
+	}
+}
+
+func TestUnmarshalTraces(t *testing.T) {
+	tests := []struct {
+		desc            string
+		payloadFilePath string
+		expectedError   error
+		expectedSpans   int
+	}{
+		{
+			desc:            "WorkflowJobEvent processing",
+			payloadFilePath: "./testdata/completed/5_workflow_job_completed.json",
+			expectedError:   nil,
+			expectedSpans:   10, // 10 spans in the payload
+		},
+		{
+			desc:            "WorkflowRunEvent processing",
+			payloadFilePath: "./testdata/completed/8_workflow_run_completed.json",
+			expectedError:   nil,
+			expectedSpans:   1, // Root span
+		},
+		{
+			desc:            "Unknown event",
+			payloadFilePath: "./testdata/unknown/1_workflow_job_unknown.json",
+			expectedError:   fmt.Errorf("unknown event type"),
+			expectedSpans:   0,
+		},
+	}
+
+	logger := zaptest.NewLogger(t)
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			payload, err := os.ReadFile(test.payloadFilePath)
+			require.NoError(t, err)
+
+			unmarshaler := &jsonTracesUnmarshaler{logger: logger}
+			config := &Config{} // Mock config as needed
+
+			traces, err := unmarshaler.UnmarshalTraces(payload, config)
+
+			if test.expectedError != nil {
+				require.Error(t, err)
+				require.Equal(t, test.expectedError, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, test.expectedSpans, traces.SpanCount())
+			}
+		})
+	}
+}
+
+func TestProcessSteps(t *testing.T) {
+	tests := []struct {
+		desc             string
+		givenSteps       []Step
+		expectedSpans    int
+		expectedStatuses []ptrace.StatusCode
+	}{
+		{
+			desc: "Multiple steps with mixed status",
+			givenSteps: []Step{
+				{Name: "Checkout", Status: "completed", Conclusion: "success"},
+				{Name: "Build", Status: "completed", Conclusion: "failure"},
+				{Name: "Test", Status: "completed", Conclusion: "success"},
+			},
+			expectedSpans: 4, // Includes parent spant
+			expectedStatuses: []ptrace.StatusCode{
+				ptrace.StatusCodeOk,
+				ptrace.StatusCodeError,
+				ptrace.StatusCodeOk,
+			},
+		},
+		{
+			desc:             "No steps",
+			givenSteps:       []Step{},
+			expectedSpans:    1, // Only the parent span should be created
+			expectedStatuses: nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			logger := zap.NewNop()
+			traces := ptrace.NewTraces()
+			rs := traces.ResourceSpans().AppendEmpty()
+			ss := rs.ScopeSpans().AppendEmpty()
+
+			traceID, _ := generateTraceID(123, 1)
+			parentSpanID := createParentSpan(ss, tc.givenSteps, WorkflowJob{}, traceID, logger)
+
+			processSteps(ss, tc.givenSteps, WorkflowJob{}, traceID, parentSpanID, logger)
+
+			startIdx := 1 // Skip the parent span if it's the first one
+			if len(tc.expectedStatuses) == 0 {
+				startIdx = 0 // No steps, only the parent span exists
+			}
+
+			require.Equal(t, tc.expectedSpans, ss.Spans().Len(), "Unexpected number of spans")
+			for i, expectedStatusCode := range tc.expectedStatuses {
+				span := ss.Spans().At(i + startIdx)
+				statusCode := span.Status().Code()
+				require.Equal(t, expectedStatusCode, statusCode, fmt.Sprintf("Unexpected status code for span #%d", i+startIdx))
 			}
 		})
 	}
