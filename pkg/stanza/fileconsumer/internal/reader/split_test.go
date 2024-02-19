@@ -216,5 +216,5 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 
 	r.ReadToEnd(context.Background())
 
-	require.Equal(t, fingerprint.New([]byte("#header-line\naaa\n")), r.Fingerprint)
+	require.Equal(t, fingerprint.New(fileContent), r.Fingerprint)
 }
