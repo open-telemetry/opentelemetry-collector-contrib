@@ -34,7 +34,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/config/confignet v0.94.2-0.20240216233521-0ab8f4443937
-	go.opentelemetry.io/collector/config/configopaque v1.1.1-0.20240216233521-0ab8f4443937
+	go.opentelemetry.io/collector/config/configopaque v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/config/configretry v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/confmap v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/connector v0.94.2-0.20240216233521-0ab8f4443937
@@ -235,12 +235,12 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/config/internal v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/confmap/provider/envprovider v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.94.2-0.20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.0.0-20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/confmap/provider/envprovider v0.0.0-20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.0.0-20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.0.0-20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.0.0-20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.0.0-20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/extension v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/service v0.94.2-0.20240216233521-0ab8f4443937 // indirect

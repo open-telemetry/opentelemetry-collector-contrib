@@ -60,12 +60,12 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/collector v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/confmap/provider/envprovider v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.94.2-0.20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.0.0-20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/confmap/provider/envprovider v0.0.0-20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.0.0-20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.0.0-20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.0.0-20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.0.0-20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/connector v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/exporter v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/extension v0.94.2-0.20240216233521-0ab8f4443937 // indirect

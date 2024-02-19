@@ -29,7 +29,7 @@ require (
 	github.com/prometheus/common v0.46.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	go.opentelemetry.io/collector v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.1.1-0.20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/config/configopaque v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/extension v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/receiver v0.94.2-0.20240216233521-0ab8f4443937 // indirect

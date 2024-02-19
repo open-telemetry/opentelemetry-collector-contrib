@@ -18,7 +18,7 @@ require (
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
-	go.opentelemetry.io/collector/config/configopaque v1.1.1-0.20240216233521-0ab8f4443937
+	go.opentelemetry.io/collector/config/configopaque v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/config/configretry v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/otel/metric v1.23.1
 	go.opentelemetry.io/otel/trace v1.23.1
