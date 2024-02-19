@@ -713,6 +713,7 @@ func TestRestartOffsets(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -906,8 +907,8 @@ func TestEncodings(t *testing.T) {
 		{
 			"Nop",
 			[]byte{0xc5, '\n'},
-			"",
-			[][]byte{{0xc5}},
+			"nop",
+			[][]byte{{0xc5, '\n'}},
 		},
 		{
 			"InvalidUTFReplacement",
@@ -954,6 +955,7 @@ func TestEncodings(t *testing.T) {
 	}
 
 	for _, tc := range cases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
