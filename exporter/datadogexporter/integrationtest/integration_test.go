@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	apitrace "go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
@@ -121,6 +122,11 @@ func TestIntegration(t *testing.T) {
 								assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan"))
 								assert.Equal(t, uint64(1), stat.Hits)
 								assert.Equal(t, uint64(1), stat.TopLevelHits)
+								if tt.featureGateEnabled {
+									// Peer tags aggregation is supported only when the feature gate is enabled (it's enabled by default)
+									assert.Equal(t, "client", stat.SpanKind)
+									assert.Equal(t, []string{"extra_peer_tag:tag_val", "peer.service:svc"}, stat.PeerTags)
+								}
 							}
 						}
 					}
@@ -194,6 +200,10 @@ processors:
 
 connectors:
   datadog/connector:
+    traces:
+      compute_stats_by_span_kind: true
+      peer_tags_aggregation: true
+      peer_tags: ["extra_peer_tag"]
 
 exporters:
   debug:
@@ -300,7 +310,7 @@ func sendTraces(t *testing.T) {
 
 	tracer := otel.Tracer("test-tracer")
 	for i := 0; i < 10; i++ {
-		_, span := tracer.Start(ctx, fmt.Sprintf("TestSpan%d", i))
+		_, span := tracer.Start(ctx, fmt.Sprintf("TestSpan%d", i), apitrace.WithSpanKind(apitrace.SpanKindClient))
 
 		if i == 3 {
 			// Send some traces from a different resource
@@ -312,6 +322,8 @@ func sendTraces(t *testing.T) {
 		if i < 5 {
 			span.SetAttributes(attribute.Bool("sampled", true))
 		}
+		span.SetAttributes(attribute.String("peer.service", "svc"))
+		span.SetAttributes(attribute.String("extra_peer_tag", "tag_val"))
 		span.End()
 	}
 	time.Sleep(1 * time.Second)

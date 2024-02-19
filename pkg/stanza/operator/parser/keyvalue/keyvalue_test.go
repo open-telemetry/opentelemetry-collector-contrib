@@ -147,7 +147,7 @@ func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("expected '%s' to split by '%s' into two items, got", "invalid", parser.delimiter))
+	require.Contains(t, err.Error(), fmt.Sprintf("cannot split %q into 2 items, got 1 item(s)", "invalid"))
 }
 
 func TestParserInvalidType(t *testing.T) {

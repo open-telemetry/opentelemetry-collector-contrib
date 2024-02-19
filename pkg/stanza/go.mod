@@ -7,7 +7,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/expr-lang/expr v1.16.0
 	github.com/fsnotify/fsnotify v1.7.0
-	github.com/haimrubinstein/go-syslog/v3 v3.0.0
+	github.com/haimrubinstein/go-syslog/v3 v3.0.3
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
@@ -27,7 +27,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/exp v0.0.0-20230711023510-fffb14384f22
-	golang.org/x/sys v0.16.0
+	golang.org/x/sys v0.17.0
 	golang.org/x/text v0.14.0
 	gonum.org/v1/gonum v0.14.0
 	gopkg.in/yaml.v2 v2.4.0
