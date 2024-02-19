@@ -5,27 +5,35 @@ package delta // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/staleness"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 )
 
-func construct[D data.Point[D]]() streams.Aggregator[D] {
+type Options struct {
+	MaxStale time.Duration
+}
+
+func construct[D data.Point[D]](opts Options) streams.Aggregator[D] {
+	stale := staleness.NewStaleness[D](opts.MaxStale, streams.EmptyMap[D]())
 	acc := Accumulator[D]{
-		dps: streams.EmptyMap[D](),
+		dps: stale,
 	}
 	lock := Lock[D]{next: &acc}
 	return &lock
 }
 
-func Numbers() streams.Aggregator[data.Number] {
-	return construct[data.Number]()
+func Numbers(opts Options) streams.Aggregator[data.Number] {
+	return construct[data.Number](opts)
 }
 
-func Histograms() streams.Aggregator[data.Histogram] {
-	return construct[data.Histogram]()
+func Histograms(opts Options) streams.Aggregator[data.Histogram] {
+	return construct[data.Histogram](opts)
 }
 
 var _ streams.Aggregator[data.Number] = (*Accumulator[data.Number])(nil)

@@ -31,7 +31,7 @@ type Processor struct {
 	nums streams.Aggregator[data.Number]
 }
 
-func newProcessor(_ *Config, log *zap.Logger, next consumer.Metrics) *Processor {
+func newProcessor(cfg *Config, log *zap.Logger, next consumer.Metrics) *Processor {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	proc := Processor{
@@ -39,7 +39,7 @@ func newProcessor(_ *Config, log *zap.Logger, next consumer.Metrics) *Processor 
 		ctx:    ctx,
 		cancel: cancel,
 		next:   next,
-		nums:   delta.Numbers(),
+		nums:   delta.Numbers(cfg.Options),
 	}
 
 	return &proc
