@@ -236,6 +236,22 @@ The capacity of persistent volume.
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
 
+### k8s.persistentvolumeclaim.allocated
+
+The allocated capacity of persistent volume.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.persistentvolumeclaim.capacity
+
+The capacity of persistent volume claim.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
 ### k8s.pod.phase
 
 Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
@@ -466,8 +482,20 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.persistentvolume.type | The type of the Persistent Volume. | Any Str | true |
 | k8s.persistentvolume.uid | The UID of the Persistent Volume | Any Str | true |
 | k8s.persistentvolume.volume_mode | The volume mode of the Persistent Volume. | Any Str | true |
+| k8s.persistentvolumeclaim.access_modes | Access modes of the Persistent Volume Claim. | Any Str | true |
+| k8s.persistentvolumeclaim.annotations | The annotations of the Persistent Volume Claim. | Any Str | true |
+| k8s.persistentvolumeclaim.finalizers | Finalizers of the Persistent Volume Claim. | Any Str | true |
+| k8s.persistentvolumeclaim.labels | Labels of the Persistent Volume Claim. | Any Str | true |
 | k8s.persistentvolumeclaim.name | The Name of the Persistent Volume Claim. | Any Str | true |
+| k8s.persistentvolumeclaim.namespace | The namespace of the Persistent Volume Claim. | Any Str | true |
+| k8s.persistentvolumeclaim.phase | The phase of the Persistent Volume Claim. | Any Str | true |
+| k8s.persistentvolumeclaim.selector | The selector of the Persistent Volume Claim. | Any Str | true |
+| k8s.persistentvolumeclaim.start_time | The start time of the Persistent Volume Claim. | Any Str | true |
+| k8s.persistentvolumeclaim.storage_class | The storage class of the Persistent Volume Claim. | Any Str | true |
+| k8s.persistentvolumeclaim.type | The type of the Persistent Volume Claim. | Any Str | true |
 | k8s.persistentvolumeclaim.uid | The UID of the Persistent Volume Claim. | Any Str | true |
+| k8s.persistentvolumeclaim.volume_mode | The volume mode of the Persistent Volume Claim. | Any Str | true |
+| k8s.persistentvolumeclaim.volume_name | The volume name of the Persistent Volume Claim. | Any Str | true |
 | k8s.pod.name | The k8s pod name. | Any Str | true |
 | k8s.pod.qos_class | The k8s pod qos class name. One of Guaranteed, Burstable, BestEffort. | Any Str | false |
 | k8s.pod.uid | The k8s pod uid. | Any Str | true |

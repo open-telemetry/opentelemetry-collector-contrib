@@ -20,8 +20,8 @@ const (
 	persistentvolumeCreationTime     = "persistentvolume.creation_timestamp"
 )
 
-// Transform transforms the node to remove the fields that we don't use to reduce RAM utilization.
-// IMPORTANT: Make sure to update this function before using new node fields.
+// Transform transforms the persistent-volume to remove the fields that we don't use to reduce RAM utilization.
+// IMPORTANT: Make sure to update this function before using new persistent-volume fields.
 func Transform(pv *corev1.PersistentVolume) *corev1.PersistentVolume {
 	newPv := &corev1.PersistentVolume{
 		ObjectMeta: metadata.TransformObjectMeta(pv.ObjectMeta),
@@ -55,7 +55,7 @@ func RecordMetrics(mb *imetadata.MetricsBuilder, pv *corev1.PersistentVolume, ts
 	rb.SetK8sPersistentvolumeReclaimPolicy(string(pv.Spec.PersistentVolumeReclaimPolicy))
 	rb.SetK8sPersistentvolumeStartTime(pv.GetCreationTimestamp().String())
 	rb.SetK8sPersistentvolumeStorageClass(pv.Spec.StorageClassName)
-	rb.SetK8sPersistentvolumeType(pv.Kind)
+	rb.SetK8sPersistentvolumeType("PersistentVolume")
 	rb.SetK8sPersistentvolumeVolumeMode(string(*pv.Spec.VolumeMode))
 	rb.SetK8sPersistentvolumeclaimUID(string((*pv.Spec.ClaimRef).UID))
 	rb.SetK8sPersistentvolumeclaimName((pv.Spec.ClaimRef).Name)
