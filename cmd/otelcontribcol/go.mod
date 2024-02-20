@@ -68,7 +68,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver v0.94.0
@@ -600,7 +600,7 @@ require (
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/samber/lo v1.38.1 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.21 // indirect
-	github.com/scalyr/dataset-go v0.17.0 // indirect
+	github.com/scalyr/dataset-go v0.18.0 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20220502022130-f33da4d89646 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
@@ -1059,7 +1059,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apach
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver => ../../receiver/apachesparkreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder => ../../extension/httpforwarder
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension => ../../extension/httpforwarderextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter => ../../exporter/elasticsearchexporter
 

@@ -1,3 +1,4 @@
+// Deprecated: use httpforwarderextension instead
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder
 
 go 1.21

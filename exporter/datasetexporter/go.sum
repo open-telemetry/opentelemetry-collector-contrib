@@ -64,8 +64,8 @@ github.com/prometheus/procfs v0.12.0 h1:jluTpSng7V9hY0O2R9DzzJHYb2xULk9VTR1V1R/k
 github.com/prometheus/procfs v0.12.0/go.mod h1:pcuDEFsWDnvcgNzo4EEweacyhjeA9Zk3cnaOZAZEfOo=
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
 github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
-github.com/scalyr/dataset-go v0.17.0 h1:5YI/VlbLHr4Ui6SegWm0yjZYioypWB68U7nFQBKNOn8=
-github.com/scalyr/dataset-go v0.17.0/go.mod h1:ehHlPsZSgFWxOkud1eKwmKd5bLF9LcUFrU01XuCnh+8=
+github.com/scalyr/dataset-go v0.18.0 h1:CTv7kk/FGdiicTWo3h1brFusHD1yjhVGINFamP8uukw=
+github.com/scalyr/dataset-go v0.18.0/go.mod h1:4x0JK5X0UdhZ2TEO3kHu9pTELDRc3WsrBBwQfkOPZKc=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=

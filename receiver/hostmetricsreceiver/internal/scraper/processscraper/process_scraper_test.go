@@ -385,6 +385,11 @@ type processHandleMock struct {
 	mock.Mock
 }
 
+func (p *processHandleMock) CgroupWithContext(ctx context.Context) (string, error) {
+	args := p.MethodCalled("CgroupWithContext", ctx)
+	return args.String(0), args.Error(1)
+}
+
 func (p *processHandleMock) NameWithContext(ctx context.Context) (ret string, err error) {
 	args := p.MethodCalled("NameWithContext", ctx)
 	return args.String(0), args.Error(1)
@@ -526,6 +531,9 @@ func initDefaultsHandleMock(t mock.TestingT, handleMock *processHandleMock) {
 	}
 	if !handleMock.IsMethodCallable(t, "ExeWithContext", mock.Anything) {
 		handleMock.On("ExeWithContext", mock.Anything).Return("processname", nil)
+	}
+	if !handleMock.IsMethodCallable(t, "CgroupWithContext", mock.Anything) {
+		handleMock.On("CgroupWithContext", mock.Anything).Return("cgroup", nil)
 	}
 }
 
@@ -676,6 +684,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		osFilter            string
 		nameError           error
 		exeError            error
+		cgroupError         error
 		usernameError       error
 		cmdlineError        error
 		timesError          error
@@ -709,6 +718,14 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 						`error reading process name for pid 1: executable path is empty`
 				}
 				return `error reading process executable for pid 1: err1`
+			}(),
+		},
+		{
+			name:        "Cgroup Error",
+			osFilter:    "linux",
+			cgroupError: errors.New("err1"),
+			expectedError: func() string {
+				return `error reading cgroup for pid 1: err1`
 			}(),
 		},
 		{
@@ -851,6 +868,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock := &processHandleMock{}
 			handleMock.On("NameWithContext", mock.Anything).Return("test", test.nameError)
 			handleMock.On("ExeWithContext", mock.Anything).Return("test", test.exeError)
+			handleMock.On("CgroupWithContext", mock.Anything).Return("test", test.cgroupError)
 			handleMock.On("UsernameWithContext", mock.Anything).Return(username, test.usernameError)
 			handleMock.On("CmdlineWithContext", mock.Anything).Return("cmdline", test.cmdlineError)
 			handleMock.On("CmdlineSliceWithContext", mock.Anything).Return([]string{"cmdline"}, test.cmdlineError)
@@ -1159,6 +1177,7 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 		require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 		handleMock := newErroringHandleMock()
+		handleMock.On("CgroupWithContext", mock.Anything).Return("test", nil)
 		handleMock.On("NameWithContext", mock.Anything).Return("test", nil)
 		handleMock.On("ExeWithContext", mock.Anything).Return("test", nil)
 		handleMock.On("CreateTimeWithContext", mock.Anything).Return(time.Now().UnixMilli(), nil)

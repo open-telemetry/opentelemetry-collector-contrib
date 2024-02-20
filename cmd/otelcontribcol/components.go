@@ -80,7 +80,7 @@ import (
 	zipkinencodingextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension"
 	headerssetterextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	healthcheckextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
-	httpforwarder "github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
+	httpforwarderextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension"
 	jaegerremotesampling "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 	oauth2clientauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 	dockerobserver "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver"
@@ -218,7 +218,7 @@ func components() (otelcol.Factories, error) {
 		bearertokenauthextension.NewFactory(),
 		headerssetterextension.NewFactory(),
 		healthcheckextension.NewFactory(),
-		httpforwarder.NewFactory(),
+		httpforwarderextension.NewFactory(),
 		jaegerremotesampling.NewFactory(),
 		oauth2clientauthextension.NewFactory(),
 		ecsobserver.NewFactory(),
