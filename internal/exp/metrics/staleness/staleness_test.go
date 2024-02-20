@@ -48,6 +48,10 @@ func (rm *RawMap[K, V]) Items() func(yield func(K, V) bool) bool {
 	}
 }
 
+func (rm *RawMap[K, V]) Len() int {
+	return len(*rm)
+}
+
 // Tests
 
 func TestStaleness(t *testing.T) {

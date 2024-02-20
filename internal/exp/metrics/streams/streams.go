@@ -12,6 +12,7 @@ type Map[T any] interface {
 	Store(identity.Stream, T)
 	Delete(identity.Stream)
 	Items() func(yield func(identity.Stream, T) bool) bool
+	Len() int
 }
 
 func EmptyMap[T any]() HashMap[T] {
@@ -44,4 +45,8 @@ func (m HashMap[T]) Items() func(yield func(identity.Stream, T) bool) bool {
 		}
 		return false
 	}
+}
+
+func (m HashMap[T]) Len() int {
+	return len(m.items)
 }
