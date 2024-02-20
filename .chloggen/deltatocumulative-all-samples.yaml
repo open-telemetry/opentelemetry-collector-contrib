@@ -10,7 +10,7 @@ component: "deltatocumulativeprocessor"
 note: due to an oversight, only the first sample of each stream was processed. now all samples are.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [31350]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
