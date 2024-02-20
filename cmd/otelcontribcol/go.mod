@@ -656,7 +656,7 @@ require (
 	go.opentelemetry.io/collector/config/configauth v0.94.1 // indirect
 	go.opentelemetry.io/collector/config/configcompression v0.94.1 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.94.1 // indirect
-	go.opentelemetry.io/collector/config/configretry v0.94.1 // indirect
+	go.opentelemetry.io/collector/config/configretry v0.95.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.94.1 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.94.1 // indirect
 	go.opentelemetry.io/collector/config/internal v0.94.1 // indirect
