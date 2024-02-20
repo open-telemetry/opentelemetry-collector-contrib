@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.21
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.50.2
+	github.com/DataDog/datadog-agent/pkg/proto v0.51.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.94.0
 	github.com/stretchr/testify v1.8.4
 	github.com/vmihailenco/msgpack/v4 v4.3.13
