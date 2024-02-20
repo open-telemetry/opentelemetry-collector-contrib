@@ -9,9 +9,9 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/featuregate v1.1.0
 	go.opentelemetry.io/collector/pdata v1.1.0
-	go.opentelemetry.io/otel v1.23.0
-	go.opentelemetry.io/otel/metric v1.23.0
-	go.opentelemetry.io/otel/sdk/metric v1.23.0
+	go.opentelemetry.io/otel v1.23.1
+	go.opentelemetry.io/otel/metric v1.23.1
+	go.opentelemetry.io/otel/sdk/metric v1.23.1
 )
 
 require (
@@ -74,8 +74,8 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.94.1 // indirect
 	go.opentelemetry.io/collector/confmap v0.94.1 // indirect
 	go.opentelemetry.io/collector/semconv v0.94.1 // indirect
-	go.opentelemetry.io/otel/sdk v1.23.0 // indirect
-	go.opentelemetry.io/otel/trace v1.23.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.23.1 // indirect
+	go.opentelemetry.io/otel/trace v1.23.1 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
