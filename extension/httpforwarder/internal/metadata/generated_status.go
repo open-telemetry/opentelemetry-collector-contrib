@@ -13,7 +13,7 @@ var (
 )
 
 const (
-	ExtensionStability = component.StabilityLevelBeta
+	ExtensionStability = component.StabilityLevelDeprecated
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
