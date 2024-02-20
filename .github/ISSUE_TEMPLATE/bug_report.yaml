@@ -95,7 +95,6 @@ body:
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
-      - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/oauth2clientauth
       - extension/observer
@@ -119,6 +118,7 @@ body:
       - internal/core
       - internal/datadog
       - internal/docker
+      - internal/exp/metrics
       - internal/filter
       - internal/k8sconfig
       - internal/k8stest
