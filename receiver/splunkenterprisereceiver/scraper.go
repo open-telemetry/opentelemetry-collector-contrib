@@ -82,12 +82,12 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 // Each metric has its own scrape function associated with it
 func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	// Because we have to utilize network resources for each KPI we should check that each metrics
+	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkLicenseIndexUsage.Enabled || !s.splunkClient.isConfigured(typeCm) {
 		return
 	}
 	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
-	// Because we have to utilize network resources for each KPI we should check that each metrics
-	// is enabled before proceeding
 
 	sr := searchResponse{
 		search: searchDict[`SplunkLicenseIndexUsageSearch`],
@@ -156,16 +156,16 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 }
 
 func (s *splunkScraper) scrapeAvgExecLatencyByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSchedulerAvgExecutionLatency.Enabled {
 		return
 	}
 
-	sr = searchResponse{
+	sr := searchResponse{
 		search: searchDict[`SplunkSchedulerAvgExecLatencySearch`],
 	}
+	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
 
 	var (
 		req *http.Request
@@ -234,16 +234,16 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(ctx context.Context, now pcom
 }
 
 func (s *splunkScraper) scrapeIndexerAvgRate(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerAvgRate.Enabled {
 		return
 	}
 
-	sr = searchResponse{
+	sr := searchResponse{
 		search: searchDict[`SplunkIndexerAvgRate`],
 	}
+	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
 
 	var (
 		req *http.Request
@@ -315,16 +315,16 @@ func (s *splunkScraper) scrapeIndexerAvgRate(ctx context.Context, now pcommon.Ti
 }
 
 func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAggregationQueueRatio.Enabled {
 		return
 	}
 
-	sr = searchResponse{
+	sr := searchResponse{
 		search: searchDict[`SplunkPipelineQueues`],
 	}
+	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
 
 	var (
 		req *http.Request
@@ -428,16 +428,16 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pco
 }
 
 func (s *splunkScraper) scrapeBucketsSearchableStatus(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkBucketsSearchableStatus.Enabled {
 		return
 	}
 
-	sr = searchResponse{
+	sr := searchResponse{
 		search: searchDict[`SplunkBucketsSearchableStatus`],
 	}
+	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
 
 	var (
 		req *http.Request
@@ -516,16 +516,16 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(ctx context.Context, now p
 }
 
 func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexesSize.Enabled {
 		return
 	}
 
-	sr = searchResponse{
+	sr := searchResponse{
 		search: searchDict[`SplunkIndexesData`],
 	}
+	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
 
 	var (
 		req *http.Request
@@ -629,16 +629,16 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now p
 }
 
 func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSchedulerCompletionRatio.Enabled {
 		return
 	}
 
-	sr = searchResponse{
+	sr := searchResponse{
 		search: searchDict[`SplunkSchedulerCompletionRatio`],
 	}
+	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
 
 	var (
 		req *http.Request
@@ -707,16 +707,16 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(ctx context.Context
 }
 
 func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerRawWriteTime.Enabled {
 		return
 	}
 
-	sr = searchResponse{
+	sr := searchResponse{
 		search: searchDict[`SplunkIndexerRawWriteSeconds`],
 	}
+	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
 
 	var (
 		req *http.Request
@@ -785,16 +785,16 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, 
 }
 
 func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerCPUTime.Enabled {
 		return
 	}
 
-	sr = searchResponse{
+	sr := searchResponse{
 		search: searchDict[`SplunkIndexerCpuSeconds`],
 	}
+	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
 
 	var (
 		req *http.Request
@@ -863,16 +863,16 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now p
 }
 
 func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIoAvgIops.Enabled {
 		return
 	}
 
-	sr = searchResponse{
+	sr := searchResponse{
 		search: searchDict[`SplunkIoAvgIops`],
 	}
+	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
 
 	var (
 		req *http.Request
@@ -941,16 +941,16 @@ func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Tim
 }
 
 func (s *splunkScraper) scrapeSchedulerRunTimeByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSchedulerAvgRunTime.Enabled {
 		return
 	}
 
-	sr = searchResponse{
+	sr := searchResponse{
 		search: searchDict[`SplunkSchedulerAvgRunTime`],
 	}
+	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
 
 	var (
 		req *http.Request
