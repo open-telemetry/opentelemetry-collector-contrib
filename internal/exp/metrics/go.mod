@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics
 
-go 1.20
+go 1.21
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.95.0
@@ -28,5 +28,3 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../../pkg/pdatautil
-
-toolchain go1.21.1
