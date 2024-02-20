@@ -38,6 +38,32 @@ receivers:
 ```
 The full list of settings exposed for this receiver are documented [here](./config.go) with a detailed sample configuration [here](./testdata/config.yaml)
 
+### Service Name Generation
+
+The GitHub Actions Receiver dynamically generates the `service.name` attribute, which is crucial for identifying the source of telemetry data in observability platforms. This name helps in categorising and filtering traces originating from different GitHub repositories or actions workflows.
+
+#### Default Service Name
+
+By default, the service name is derived from the **GitHub repository's full name** (e.g., org/repo-name) provided in the payload. This name is then formatted to be all lowercase and to have slashes (/) and underscores (_) replaced with dashes (-), ensuring a clean, URL-friendly identifier.
+
+#### Customisation Options
+
+While the default naming convention should suffice for most use cases, there might be scenarios where a more descriptive or specific service name is required. For such cases, the receiver's configuration provides options for customization:
+
+* **Custom Service Name**: A completely custom service.name that overrides the default naming convention. This is useful when you want to assign a specific, recognisable name to the telemetry data from a particular GitHub repository or workflow.
+
+* **Service Name Prefix and Suffix**: These allow for the addition of prefixes or suffixes to the automatically generated service name, offering a balance between automatic naming and customization.
+
+Here's an example snippet from a configuration file (config.yaml) demonstrating how to set these options:
+
+```yaml
+receivers:
+  githubactionsreceiver:
+    custom_service_name: "github-com-myorg" # Completely overrides the default service name
+    service_name_prefix: "foo-" # Prepended to the default service name (ignored if custom_service_name is set)
+    service_name_suffix: "-bar" # Appended to the default service name (ignored if custom_service_name is set)
+```
+
 ## GitHub repository webhooks
 
 Webhooks provide a way for notifications to be delivered to an external web server whenever certain events occur on GitHub.

@@ -375,12 +375,6 @@ func generateServiceName(config *Config, fullName string) string {
 	return fmt.Sprintf("%s%s%s", config.ServiceNamePrefix, formattedName, config.ServiceNameSuffix)
 }
 
-// func generateSpanID() pcommon.SpanID {
-// 	var spanID pcommon.SpanID
-// 	binary.Read(rand.Reader, binary.BigEndian, &spanID)
-// 	return spanID
-// }
-
 func generateStepSpanID(runID int64, runAttempt int, jobName, stepName string, stepNumber ...int) (pcommon.SpanID, error) {
 	var input string
 	if len(stepNumber) > 0 && stepNumber[0] > 0 {
