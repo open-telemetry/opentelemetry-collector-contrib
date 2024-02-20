@@ -12,7 +12,7 @@ import (
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confignet.NetAddr                       `mapstructure:",squash"`
+	confignet.AddrConfig                    `mapstructure:",squash"`
 
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
