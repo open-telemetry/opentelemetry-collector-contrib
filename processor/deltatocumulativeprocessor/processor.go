@@ -39,16 +39,14 @@ func newProcessor(cfg *Config, log *zap.Logger, next consumer.Metrics) *Processo
 		ctx:    ctx,
 		cancel: cancel,
 		next:   next,
-		nums:   delta.Numbers(cfg.Options),
+		nums:   delta.Numbers(ctx, cfg.Options),
 	}
 
 	return &proc
 }
 
 func (p *Processor) Start(_ context.Context, _ component.Host) error {
-	return errors.Join(
-		p.nums.Start(p.ctx),
-	)
+	return nil
 }
 
 func (p *Processor) Shutdown(_ context.Context) error {

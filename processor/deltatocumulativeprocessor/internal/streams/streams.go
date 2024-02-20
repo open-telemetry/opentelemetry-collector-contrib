@@ -5,6 +5,7 @@ package streams // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/streams"
@@ -18,18 +19,16 @@ type (
 	Map[T any] streams.Map[T]
 )
 
-func EmptyMap[T any]() streams.HashMap[T] {
+func EmptyMap[T any]() streams.Map[T] {
 	return streams.EmptyMap[T]()
-}
-func SyncMap[T any](m streams.Map[T]) streams.Map[T] {
-	return streams.SyncMap(m)
 }
 
 // Aggregators keep a running aggregate on a per-series basis
 type Aggregator[D data.Point[D]] interface {
-	// Start any long-running operations.
-	// Must be called once and before any Aggregate() call
-	Start(context.Context) error
 	// Aggregate sample D of series
 	Aggregate(context.Context, Ident, D) (D, error)
+}
+
+func ExpireAfter[T any](ctx context.Context, items streams.Map[T], ttl time.Duration) streams.Map[T] {
+	return streams.ExpireAfter(ctx, items, ttl)
 }

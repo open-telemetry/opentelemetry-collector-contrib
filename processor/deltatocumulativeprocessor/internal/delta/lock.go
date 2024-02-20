@@ -24,7 +24,3 @@ func (l *Lock[D]) Aggregate(ctx context.Context, id streams.Ident, dp D) (D, err
 	l.Unlock()
 	return dp, err
 }
-
-func (l *Lock[D]) Start(ctx context.Context) error {
-	return l.next.Start(ctx)
-}

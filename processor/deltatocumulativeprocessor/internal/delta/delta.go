@@ -10,8 +10,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/staleness"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 )
@@ -20,27 +18,31 @@ type Options struct {
 	MaxStale time.Duration
 }
 
-func construct[D data.Point[D]](opts Options) streams.Aggregator[D] {
-	stale := staleness.NewStaleness[D](opts.MaxStale, streams.EmptyMap[D]())
-	acc := Accumulator[D]{
-		dps: stale,
+func construct[D data.Point[D]](ctx context.Context, opts Options) streams.Aggregator[D] {
+	dps := streams.EmptyMap[D]()
+	if opts.MaxStale > 0 {
+		dps = streams.ExpireAfter(ctx, dps, opts.MaxStale)
 	}
-	lock := Lock[D]{next: &acc}
+
+	var (
+		acc  = Accumulator[D]{dps: dps}
+		lock = Lock[D]{next: &acc}
+	)
 	return &lock
 }
 
-func Numbers(opts Options) streams.Aggregator[data.Number] {
-	return construct[data.Number](opts)
+func Numbers(ctx context.Context, opts Options) streams.Aggregator[data.Number] {
+	return construct[data.Number](ctx, opts)
 }
 
-func Histograms(opts Options) streams.Aggregator[data.Histogram] {
-	return construct[data.Histogram](opts)
+func Histograms(ctx context.Context, opts Options) streams.Aggregator[data.Histogram] {
+	return construct[data.Histogram](ctx, opts)
 }
 
 var _ streams.Aggregator[data.Number] = (*Accumulator[data.Number])(nil)
 
 type Accumulator[D data.Point[D]] struct {
-	dps Tracker[D]
+	dps streams.Map[D]
 }
 
 // Aggregate implements delta-to-cumulative aggregation as per spec:
@@ -78,10 +80,6 @@ func (a *Accumulator[D]) Aggregate(ctx context.Context, id streams.Ident, dp D) 
 	return res, nil
 }
 
-func (a *Accumulator[D]) Start(ctx context.Context) error {
-	return a.dps.Start(ctx)
-}
-
 type ErrOlderStart struct {
 	Start  pcommon.Timestamp
 	Sample pcommon.Timestamp
@@ -98,9 +96,4 @@ type ErrOutOfOrder struct {
 
 func (e ErrOutOfOrder) Error() string {
 	return fmt.Sprintf("out of order: dropped sample from time=%s, because series is already at time=%s", e.Sample, e.Last)
-}
-
-type Tracker[T any] interface {
-	streams.Map[T]
-	Start(ctx context.Context) error
 }

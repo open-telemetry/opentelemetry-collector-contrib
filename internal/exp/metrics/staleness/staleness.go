@@ -99,32 +99,29 @@ func (s *Staleness[T]) expireOldItems() {
 	}
 }
 
-func (s *Staleness[T]) Start(ctx context.Context) error {
-	go func() {
-		for {
-			s.expireOldItems()
+func (s *Staleness[T]) Start(ctx context.Context) {
+	for {
+		s.expireOldItems()
 
-			n := s.pq.Len()
-			switch {
-			case n == 0:
-				// no more items: sleep until next write
-				select {
-				case <-s.sig:
-				case <-ctx.Done():
-					return
-				}
-			case n > 0:
-				// sleep until earliest possible next expiry time
-				_, ts := s.pq.Peek()
-				at := time.Until(ts.Add(s.max))
+		n := s.pq.Len()
+		switch {
+		case n == 0:
+			// no more items: sleep until next write
+			select {
+			case <-s.sig:
+			case <-ctx.Done():
+				return
+			}
+		case n > 0:
+			// sleep until earliest possible next expiry time
+			_, ts := s.pq.Peek()
+			at := time.Until(ts.Add(s.max))
 
-				select {
-				case <-time.After(at):
-				case <-ctx.Done():
-					return
-				}
+			select {
+			case <-time.After(at):
+			case <-ctx.Done():
+				return
 			}
 		}
-	}()
-	return nil
+	}
 }
