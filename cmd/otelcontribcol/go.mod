@@ -4,8 +4,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 
 go 1.21
 
-toolchain go1.21.7
-
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.94.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.94.0
@@ -203,15 +201,15 @@ require (
 	go.opentelemetry.io/collector/confmap v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.0.0-20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/connector v0.94.2-0.20240216233521-0ab8f4443937
-	go.opentelemetry.io/collector/connector/forwardconnector v0.94.2-0.20240216233521-0ab8f4443937
+	go.opentelemetry.io/collector/connector/forwardconnector v0.94.1
 	go.opentelemetry.io/collector/consumer v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/exporter v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/exporter/debugexporter v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.94.2-0.20240216233521-0ab8f4443937
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.94.2-0.20240216233521-0ab8f4443937
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.94.1
 	go.opentelemetry.io/collector/extension v0.94.2-0.20240216233521-0ab8f4443937
-	go.opentelemetry.io/collector/extension/ballastextension v0.94.2-0.20240216233521-0ab8f4443937
-	go.opentelemetry.io/collector/extension/zpagesextension v0.94.2-0.20240216233521-0ab8f4443937
+	go.opentelemetry.io/collector/extension/ballastextension v0.94.1
+	go.opentelemetry.io/collector/extension/zpagesextension v0.94.1
 	go.opentelemetry.io/collector/otelcol v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/processor v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/processor/batchprocessor v0.94.2-0.20240216233521-0ab8f4443937
@@ -1196,3 +1194,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sola
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver => ../../receiver/namedpipereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery => ../../internal/sqlquery
+
+replace github.com/haimrubinstein/go-syslog/v3 => github.com/haimrubinstein/go-syslog/v3 v3.0.0
