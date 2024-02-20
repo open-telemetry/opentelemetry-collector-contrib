@@ -296,7 +296,7 @@ func createSpan(scopeSpans ptrace.ScopeSpans, step Step, job WorkflowJob, traceI
 
 	var spanID pcommon.SpanID
 
-	// 
+	//
 	span.Attributes().PutStr("ci.github.step.name", step.Name)
 	if len(stepNumber) > 0 && stepNumber[0] > 0 {
 		spanID, _ = generateStepSpanID(job.RunID, job.RunAttempt, job.Name, step.Name, stepNumber[0])

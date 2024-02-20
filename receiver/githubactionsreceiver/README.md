@@ -83,9 +83,9 @@ Alternatively you can use a configuration management tool such as [`terraform`](
 
 The GitHub Actions Receiver generates deterministic IDs to ensure traceability and consistency across emitted spans. Here’s how the IDs are generated:
 
-* **Trace ID**: Generated based on the run ID and run attempt, ensuring uniqueness across workflow runs.
-* **Parent Span ID**: Derived from the workflow job ID, run attempt, and an optional step number, allowing association of all steps under a job.
-* **Span ID**: Specifically generated for each step within a job, using the job ID, run attempt, step name, and step number.
+* **Trace ID**: Generated based on the run ID and run attempt, with a 't' appended to ensure uniqueness across workflow runs and to distinguish it as a trace ID.
+* **Parent Span ID**: Derived from the workflow job ID and run attempt, with an 's' appended to distinguish it as a span ID and allow association of all steps under a job.
+* **Span ID**: Specifically generated for each step within a job, using the job ID, run attempt, step name, and an optional step number, to ensure each step within a job can be uniquely identified.
 
 These IDs allow for the correlation of telemetry data within the observability platform, enabling users to link their own spans to those emitted by the receiver.
 
