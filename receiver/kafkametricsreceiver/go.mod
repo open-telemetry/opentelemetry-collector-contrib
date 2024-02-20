@@ -7,12 +7,12 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.94.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.94.1
-	go.opentelemetry.io/collector/config/configtls v0.94.1
-	go.opentelemetry.io/collector/confmap v0.94.1
-	go.opentelemetry.io/collector/consumer v0.94.1
-	go.opentelemetry.io/collector/pdata v1.1.0
-	go.opentelemetry.io/collector/receiver v0.94.1
+	go.opentelemetry.io/collector/component v0.95.0
+	go.opentelemetry.io/collector/config/configtls v0.95.0
+	go.opentelemetry.io/collector/confmap v0.95.0
+	go.opentelemetry.io/collector/consumer v0.95.0
+	go.opentelemetry.io/collector/pdata v1.2.0
+	go.opentelemetry.io/collector/receiver v0.95.0
 	go.opentelemetry.io/otel/metric v1.23.1
 	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/goleak v1.3.0
@@ -48,7 +48,7 @@ require (
 	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
-	github.com/knadh/koanf/v2 v2.0.2 // indirect
+	github.com/knadh/koanf/v2 v2.1.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -65,13 +65,13 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector v0.94.1 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.94.1 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.94.1 // indirect
+	go.opentelemetry.io/collector v0.95.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.2.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.95.0 // indirect
 	go.opentelemetry.io/otel v1.23.1 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.45.1 // indirect
-	go.opentelemetry.io/otel/sdk v1.23.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.23.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.45.2 // indirect
+	go.opentelemetry.io/otel/sdk v1.23.1 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.23.1 // indirect
 	golang.org/x/crypto v0.19.0 // indirect
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect

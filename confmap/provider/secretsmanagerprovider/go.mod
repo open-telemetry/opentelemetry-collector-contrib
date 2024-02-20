@@ -1,13 +1,15 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider
 
-go 1.20
+go 1.21
+
+toolchain go1.21.6
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.21.1
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.21.4
 	github.com/aws/smithy-go v1.15.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/confmap v0.94.1
+	go.opentelemetry.io/collector/confmap v0.95.0
 )
 
 require (
@@ -16,7 +18,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
-	github.com/knadh/koanf/v2 v2.0.2 // indirect
+	github.com/knadh/koanf/v2 v2.1.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
