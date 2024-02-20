@@ -36,6 +36,7 @@ type Detector struct {
 	tagKeyRegexes    []*regexp.Regexp
 	logger           *zap.Logger
 	rb               *metadata.ResourceBuilder
+	ec2Client        ec2iface.EC2API
 }
 
 func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
@@ -86,7 +87,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	if len(d.tagKeyRegexes) != 0 {
 		client := getHTTPClientSettings(ctx, d.logger)
-		tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.tagKeyRegexes, client)
+		tags, err := connectAndFetchEc2Tags(d.ec2Client, meta.Region, meta.InstanceID, d.tagKeyRegexes, client)
 		if err != nil {
 			d.logger.Warn("failed fetching ec2 instance tags", zap.Error(err))
 		} else {
@@ -107,7 +108,10 @@ func getHTTPClientSettings(ctx context.Context, logger *zap.Logger) *http.Client
 	return client
 }
 
-func connectAndFetchEc2Tags(region string, instanceID string, tagKeyRegexes []*regexp.Regexp, client *http.Client) (map[string]string, error) {
+func connectAndFetchEc2Tags(svc ec2iface.EC2API, region string, instanceID string, tagKeyRegexes []*regexp.Regexp, client *http.Client) (map[string]string, error) {
+	if svc != nil {
+		return fetchEC2Tags(svc, instanceID, tagKeyRegexes)
+	}
 	sess, err := session.NewSession(&aws.Config{
 		Region:     aws.String(region),
 		HTTPClient: client},
@@ -115,9 +119,8 @@ func connectAndFetchEc2Tags(region string, instanceID string, tagKeyRegexes []*r
 	if err != nil {
 		return nil, err
 	}
-	e := ec2.New(sess)
-
-	return fetchEC2Tags(e, instanceID, tagKeyRegexes)
+	svc = ec2.New(sess)
+	return fetchEC2Tags(svc, instanceID, tagKeyRegexes)
 }
 
 func fetchEC2Tags(svc ec2iface.EC2API, instanceID string, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {
