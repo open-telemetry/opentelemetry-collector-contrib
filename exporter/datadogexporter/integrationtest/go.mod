@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/connector v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/exporter v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/exporter/debugexporter v0.94.2-0.20240216233521-0ab8f4443937
-	go.opentelemetry.io/collector/featuregate v1.1.1-0.20240216233521-0ab8f4443937
+	go.opentelemetry.io/collector/featuregate v1.2.0
 	go.opentelemetry.io/collector/otelcol v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/processor v0.94.2-0.20240216233521-0ab8f4443937
 	go.opentelemetry.io/collector/processor/batchprocessor v0.94.2-0.20240216233521-0ab8f4443937
@@ -148,7 +148,7 @@ require (
 	go.opentelemetry.io/collector/config/configgrpc v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.94.2-0.20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.2.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.94.2-0.20240216233521-0ab8f4443937 // indirect
@@ -161,7 +161,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/extension v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/pdata v1.1.1-0.20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/pdata v1.2.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/collector/service v0.94.2-0.20240216233521-0ab8f4443937 // indirect
 	go.opentelemetry.io/contrib/config v0.3.0 // indirect
