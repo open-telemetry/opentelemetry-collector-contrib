@@ -54,7 +54,7 @@ func (s *splunkScraper) start(_ context.Context, h component.Host) (err error) {
 }
 
 // listens to the error channel and combines errors sent from different metric scrape functions,
-// returning the concatinated error list should context timeout or a nil error value is sent in the
+// returning the combined error list should context timeout or a nil error value is sent in the
 // channel signifying the end of a scrape cycle
 func errorListener(ctx context.Context, eQueue <-chan error, eOut chan<- *scrapererror.ScrapeErrors) {
 	errs := &scrapererror.ScrapeErrors{}
@@ -96,6 +96,16 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeIndexesBucketHotWarmCount,
 		s.scrapeIntrospectionQueues,
 		s.scrapeIntrospectionQueuesBytes,
+		s.scrapeAvgExecLatencyByHost,
+		s.scrapeIndexerPipelineQueues,
+		s.scrapeBucketsSearchableStatus,
+		s.scrapeIndexesBucketCountAdHoc,
+		s.scrapeSchedulerCompletionRatioByHost,
+		s.scrapeIndexerRawWriteSecondsByHost,
+		s.scrapeIndexerCPUSecondsByHost,
+		s.scrapeAvgIopsByHost,
+		s.scrapeSchedulerRunTimeByHost,
+		s.scrapeIndexerAvgRate,
 	}
 
 	go func() {
@@ -123,11 +133,12 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 // Each metric has its own scrape function associated with it
 func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcommon.Timestamp, errs chan error) {
+	// Because we have to utilize network resources for each KPI we should check that each metrics
+	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkLicenseIndexUsage.Enabled || !s.splunkClient.isConfigured(typeCm) {
 		return
 	}
 	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
-
 	sr := searchResponse{
 		search: searchDict[`SplunkLicenseIndexUsageSearch`],
 	}
@@ -194,13 +205,12 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 	}
 }
 
-func (s *splunkScraper) scrapeAvgExecLatencyByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeAvgExecLatencyByHost(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSchedulerAvgExecutionLatency.Enabled {
 		return
 	}
-
 	sr := searchResponse{
 		search: searchDict[`SplunkSchedulerAvgExecLatencySearch`],
 	}
@@ -217,20 +227,20 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(ctx context.Context, now pcom
 	for {
 		req, err = s.splunkClient.createRequest(ctx, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		res, err = s.splunkClient.makeRequest(req)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 		}
 		res.Body.Close()
 
@@ -249,7 +259,7 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(ctx context.Context, now pcom
 		}
 
 		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
-			errs.Add(errMaxSearchWaitTimeExceeded)
+			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
 	}
@@ -264,7 +274,7 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(ctx context.Context, now pcom
 		case "latency_avg_exec":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkSchedulerAvgExecutionLatencyDataPoint(now, v, host)
@@ -272,7 +282,7 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(ctx context.Context, now pcom
 	}
 }
 
-func (s *splunkScraper) scrapeIndexerAvgRate(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIndexerAvgRate(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerAvgRate.Enabled {
@@ -295,20 +305,20 @@ func (s *splunkScraper) scrapeIndexerAvgRate(ctx context.Context, now pcommon.Ti
 	for {
 		req, err = s.splunkClient.createRequest(ctx, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		res, err = s.splunkClient.makeRequest(req)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 		}
 		res.Body.Close()
 
@@ -331,7 +341,7 @@ func (s *splunkScraper) scrapeIndexerAvgRate(ctx context.Context, now pcommon.Ti
 		}
 
 		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
-			errs.Add(errMaxSearchWaitTimeExceeded)
+			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
 	}
@@ -345,7 +355,7 @@ func (s *splunkScraper) scrapeIndexerAvgRate(ctx context.Context, now pcommon.Ti
 		case "indexer_avg_kbps":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkIndexerAvgRateDataPoint(now, v, host)
@@ -353,7 +363,7 @@ func (s *splunkScraper) scrapeIndexerAvgRate(ctx context.Context, now pcommon.Ti
 	}
 }
 
-func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAggregationQueueRatio.Enabled {
@@ -376,20 +386,20 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pco
 	for {
 		req, err = s.splunkClient.createRequest(ctx, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		res, err = s.splunkClient.makeRequest(req)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 		}
 
 		res.Body.Close()
@@ -413,7 +423,7 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pco
 		}
 
 		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
-			errs.Add(errMaxSearchWaitTimeExceeded)
+			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
 
@@ -429,21 +439,21 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pco
 		case "agg_queue_ratio":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkAggregationQueueRatioDataPoint(now, v, host)
 		case "index_queue_ratio":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkIndexerQueueRatioDataPoint(now, v, host)
 		case "parse_queue_ratio":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkParseQueueRatioDataPoint(now, v, host)
@@ -451,14 +461,14 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pco
 			v, err := strconv.ParseInt(f.Value, 10, 64)
 			ps = v
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkPipelineSetCountDataPoint(now, ps, host)
 		case "typing_queue_ratio":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkTypingQueueRatioDataPoint(now, v, host)
@@ -466,7 +476,7 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pco
 	}
 }
 
-func (s *splunkScraper) scrapeBucketsSearchableStatus(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeBucketsSearchableStatus(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkBucketsSearchableStatus.Enabled {
@@ -489,20 +499,20 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(ctx context.Context, now p
 	for {
 		req, err = s.splunkClient.createRequest(ctx, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		res, err = s.splunkClient.makeRequest(req)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 		}
 
 		res.Body.Close()
@@ -526,7 +536,7 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(ctx context.Context, now p
 		}
 
 		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
-			errs.Add(errMaxSearchWaitTimeExceeded)
+			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
 	}
@@ -546,7 +556,7 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(ctx context.Context, now p
 			v, err := strconv.ParseInt(f.Value, 10, 64)
 			bc = v
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkBucketsSearchableStatusDataPoint(now, bc, host, searchable)
@@ -554,7 +564,7 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(ctx context.Context, now p
 	}
 }
 
-func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexesSize.Enabled {
@@ -577,20 +587,20 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now p
 	for {
 		req, err = s.splunkClient.createRequest(ctx, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		res, err = s.splunkClient.makeRequest(req)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 		}
 		res.Body.Close()
 
@@ -614,7 +624,7 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now p
 		}
 
 		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
-			errs.Add(errMaxSearchWaitTimeExceeded)
+			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
 	}
@@ -629,21 +639,21 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now p
 		case "total_size_gb":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkIndexesSizeDataPoint(now, v, indexer)
 		case "average_size_gb":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkIndexesAvgSizeDataPoint(now, v, indexer)
 		case "average_usage_perc":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkIndexesAvgUsageDataPoint(now, v, indexer)
@@ -651,7 +661,7 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now p
 			v, err := strconv.ParseInt(f.Value, 10, 64)
 			bc = v
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkIndexesMedianDataAgeDataPoint(now, bc, indexer)
@@ -659,7 +669,7 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now p
 			v, err := strconv.ParseInt(f.Value, 10, 64)
 			bc = v
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkIndexesBucketCountDataPoint(now, bc, indexer)
@@ -667,7 +677,7 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now p
 	}
 }
 
-func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSchedulerCompletionRatio.Enabled {
@@ -690,20 +700,20 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(ctx context.Context
 	for {
 		req, err = s.splunkClient.createRequest(ctx, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		res, err = s.splunkClient.makeRequest(req)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 		}
 		res.Body.Close()
 
@@ -722,7 +732,7 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(ctx context.Context
 		}
 
 		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
-			errs.Add(errMaxSearchWaitTimeExceeded)
+			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
 	}
@@ -737,7 +747,7 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(ctx context.Context
 		case "completion_ratio":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkSchedulerCompletionRatioDataPoint(now, v, host)
@@ -745,7 +755,7 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(ctx context.Context
 	}
 }
 
-func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerRawWriteTime.Enabled {
@@ -768,20 +778,20 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, 
 	for {
 		req, err = s.splunkClient.createRequest(ctx, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		res, err = s.splunkClient.makeRequest(req)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 		}
 		res.Body.Close()
 
@@ -800,7 +810,7 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, 
 		}
 
 		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
-			errs.Add(errMaxSearchWaitTimeExceeded)
+			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
 	}
@@ -815,7 +825,7 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, 
 		case "raw_data_write_seconds":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkIndexerRawWriteTimeDataPoint(now, v, host)
@@ -823,7 +833,7 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, 
 	}
 }
 
-func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerCPUTime.Enabled {
@@ -846,20 +856,20 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now p
 	for {
 		req, err = s.splunkClient.createRequest(ctx, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		res, err = s.splunkClient.makeRequest(req)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 		}
 		res.Body.Close()
 
@@ -878,7 +888,7 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now p
 		}
 
 		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
-			errs.Add(errMaxSearchWaitTimeExceeded)
+			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
 	}
@@ -893,7 +903,7 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now p
 		case "service_cpu_seconds":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkIndexerCPUTimeDataPoint(now, v, host)
@@ -901,7 +911,7 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now p
 	}
 }
 
-func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIoAvgIops.Enabled {
@@ -924,20 +934,20 @@ func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Tim
 	for {
 		req, err = s.splunkClient.createRequest(ctx, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		res, err = s.splunkClient.makeRequest(req)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 		}
 		res.Body.Close()
 
@@ -956,7 +966,7 @@ func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Tim
 		}
 
 		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
-			errs.Add(errMaxSearchWaitTimeExceeded)
+			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
 	}
@@ -971,7 +981,7 @@ func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Tim
 		case "iops":
 			v, err := strconv.ParseInt(f.Value, 10, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkIoAvgIopsDataPoint(now, v, host)
@@ -979,7 +989,7 @@ func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Tim
 	}
 }
 
-func (s *splunkScraper) scrapeSchedulerRunTimeByHost(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeSchedulerRunTimeByHost(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSchedulerAvgRunTime.Enabled {
@@ -1002,20 +1012,20 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(ctx context.Context, now pc
 	for {
 		req, err = s.splunkClient.createRequest(ctx, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		res, err = s.splunkClient.makeRequest(req)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 			return
 		}
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
-			errs.Add(err)
+			errs <- err
 		}
 		res.Body.Close()
 
@@ -1034,7 +1044,7 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(ctx context.Context, now pc
 		}
 
 		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
-			errs.Add(errMaxSearchWaitTimeExceeded)
+			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
 	}
@@ -1049,7 +1059,7 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(ctx context.Context, now pc
 		case "run_time_avg":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
-				errs.Add(err)
+				errs <- err
 				continue
 			}
 			s.mb.RecordSplunkSchedulerAvgRunTimeDataPoint(now, v, host)
