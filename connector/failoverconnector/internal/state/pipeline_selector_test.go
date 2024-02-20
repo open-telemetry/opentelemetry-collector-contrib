@@ -4,6 +4,7 @@
 package state
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -16,7 +17,7 @@ func TestSelectPipeline(t *testing.T) {
 		RetryGap:      10 * time.Millisecond,
 		MaxRetries:    1000,
 	}
-	pS := NewPipelineSelector(5, constants, make(chan struct{}))
+	pS := NewPipelineSelector(5, constants)
 
 	idx, ch := pS.SelectedPipeline()
 
@@ -25,48 +26,50 @@ func TestSelectPipeline(t *testing.T) {
 }
 
 func TestHandlePipelineError(t *testing.T) {
-
+	var wg sync.WaitGroup
 	done := make(chan struct{})
-
 	constants := PSConstants{
 		RetryInterval: 50 * time.Millisecond,
 		RetryGap:      10 * time.Millisecond,
 		MaxRetries:    1000,
 	}
-	pS := NewPipelineSelector(5, constants, done)
+	pS := NewPipelineSelector(5, constants)
 
-	go pS.ListenToChannels(done)
+	wg.Add(1)
+	go pS.ListenToChannels(done, &wg)
+	defer func() {
+		close(done)
+		wg.Wait()
+	}()
 
 	idx, ch := pS.SelectedPipeline()
-
 	require.Equal(t, idx, 0)
-
 	ch <- false
 
 	require.Eventually(t, func() bool {
 		idx, _ = pS.SelectedPipeline()
 		return idx == 1
-	}, 3*time.Minute, 10*time.Millisecond)
-
-	close(done)
-
+	}, 3*time.Minute, 5*time.Millisecond)
 }
 
 func TestCurrentPipelineWithRetry(t *testing.T) {
-
+	var wg sync.WaitGroup
 	done := make(chan struct{})
-
 	constants := PSConstants{
 		RetryInterval: 50 * time.Millisecond,
 		RetryGap:      10 * time.Millisecond,
 		MaxRetries:    1000,
 	}
-	pS := NewPipelineSelector(5, constants, done)
+	pS := NewPipelineSelector(5, constants)
 
-	go pS.ListenToChannels(done)
+	wg.Add(1)
+	go pS.ListenToChannels(done, &wg)
+	defer func() {
+		close(done)
+		wg.Wait()
+	}()
 
 	_, ch := pS.SelectedPipeline()
-
 	ch <- false
 
 	require.Eventually(t, func() bool {
@@ -78,11 +81,9 @@ func TestCurrentPipelineWithRetry(t *testing.T) {
 		idx, _ := pS.SelectedPipeline()
 		return idx == 1
 	}, 3*time.Second, 5*time.Millisecond)
-	//
+
 	require.Eventually(t, func() bool {
 		idx, _ := pS.SelectedPipeline()
 		return idx == 0
 	}, 3*time.Second, 5*time.Millisecond)
-
-	close(done)
 }

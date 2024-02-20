@@ -6,6 +6,7 @@ package state // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"context"
 	"reflect"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -21,8 +22,6 @@ type PipelineSelector struct {
 	errTryLock    *TryLock
 	stableTryLock *TryLock
 	chans         []chan bool
-
-	done chan struct{}
 }
 
 func (p *PipelineSelector) handlePipelineError(idx int) {
@@ -31,12 +30,13 @@ func (p *PipelineSelector) handlePipelineError(idx int) {
 	}
 	doRetry := p.indexIsStable(idx)
 	p.updatePipelineIndex(idx)
-	if doRetry {
-		ctx, cancel := context.WithCancel(context.Background())
-		p.RS.InvokeCancel()
-		p.RS.UpdateCancelFunc(cancel)
-		p.enableRetry(ctx)
+	if !doRetry {
+		return
 	}
+	ctx, cancel := context.WithCancel(context.Background())
+	p.RS.InvokeCancel()
+	p.RS.UpdateCancelFunc(cancel)
+	p.enableRetry(ctx)
 }
 
 func (p *PipelineSelector) enableRetry(ctx context.Context) {
@@ -172,7 +172,7 @@ func (p *PipelineSelector) reportStable(idx int) {
 	p.setNewStableIndex(idx)
 }
 
-func NewPipelineSelector(lenPriority int, consts PSConstants, done chan struct{}) *PipelineSelector {
+func NewPipelineSelector(lenPriority int, consts PSConstants) *PipelineSelector {
 	chans := make([]chan bool, lenPriority)
 
 	for i := 0; i < lenPriority; i++ {
@@ -186,16 +186,17 @@ func NewPipelineSelector(lenPriority int, consts PSConstants, done chan struct{}
 		errTryLock:      NewTryLock(),
 		stableTryLock:   NewTryLock(),
 		chans:           chans,
-		done:            done,
 	}
 	return ps
 }
 
-func (p *PipelineSelector) Start(done chan struct{}) {
-	go p.ListenToChannels(done)
+func (p *PipelineSelector) Start(done chan struct{}, wg *sync.WaitGroup) {
+	wg.Add(1)
+	go p.ListenToChannels(done, wg)
 }
 
-func (p *PipelineSelector) ListenToChannels(done chan struct{}) {
+func (p *PipelineSelector) ListenToChannels(done chan struct{}, wg *sync.WaitGroup) {
+	defer wg.Done()
 	cases := make([]reflect.SelectCase, len(p.chans)+1)
 	for i, ch := range p.chans {
 		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
