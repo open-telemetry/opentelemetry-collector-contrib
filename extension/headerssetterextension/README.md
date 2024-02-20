@@ -42,6 +42,11 @@ The following settings are required:
 
 The `value` and `from_context` properties are mutually exclusive.
 
+In order for `from_context` to work, other components in the pipeline also need to be configured appropriately:
+* If a [batch processor][batch-processor] is present in the pipeline, it must be configured to [preserve client metadata][batch-processor-preserve-metadata]. 
+  Add the value which `from_context` needs to the `metadata_keys` of the batch processor.
+* Receivers must be configured with `include_metadata: true` so that metadata keys are available to the pipeline.
+
 #### Configuration Example
 
 ```yaml
@@ -67,7 +72,10 @@ receivers:
         include_metadata: true
 
 processors:
-  nop:
+  batch:
+    # Preserve the tenant-id metadata.
+    metadata_keys:
+    - tenant_id
 
 exporters:
   loki:
@@ -84,9 +92,12 @@ service:
   pipelines:
     traces:
       receivers: [ otlp ]
-      processors: [ nop ]
+      processors: [ batch ]
       exporters: [ loki ]
 ```
+
+[batch-processor]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor/README.md
+[batch-processor-preserve-metadata]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor/README.md#batching-and-client-metadata
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

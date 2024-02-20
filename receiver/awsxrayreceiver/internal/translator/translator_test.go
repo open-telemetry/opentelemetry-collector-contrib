@@ -663,19 +663,19 @@ func TestTranslation(t *testing.T) {
 		{
 			testCase:   "TranslateInvalidNamespace",
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "invalidNamespace.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
+			expectedResourceAttrs: func(*awsxray.Segment) map[string]any {
 				return nil
 			},
 			expectedRecord: xray.TelemetryRecord{
 				SegmentsReceivedCount: aws.Int64(18),
 				SegmentsRejectedCount: aws.Int64(18),
 			},
-			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(string, *testing.T, *awsxray.Segment) []perSpanProperties {
 				return nil
 			},
 			verification: func(testCase string,
 				actualSeg *awsxray.Segment,
-				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
+				_ ptrace.ResourceSpans, _ ptrace.Traces, err error) {
 				assert.EqualError(t, err,
 					fmt.Sprintf("unexpected namespace: %s",
 						*actualSeg.Subsegments[0].Subsegments[0].Namespace),
@@ -831,19 +831,19 @@ func TestTranslation(t *testing.T) {
 		{
 			testCase:   "TranslateInvalidSqlUrl",
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "indepSubsegmentWithInvalidSqlUrl.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
+			expectedResourceAttrs: func(*awsxray.Segment) map[string]any {
 				return nil
 			},
 			expectedRecord: xray.TelemetryRecord{
 				SegmentsReceivedCount: aws.Int64(1),
 				SegmentsRejectedCount: aws.Int64(1),
 			},
-			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(string, *testing.T, *awsxray.Segment) []perSpanProperties {
 				return nil
 			},
 			verification: func(testCase string,
 				actualSeg *awsxray.Segment,
-				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
+				_ ptrace.ResourceSpans, _ ptrace.Traces, err error) {
 				assert.EqualError(t, err,
 					fmt.Sprintf(
 						"failed to parse out the database name in the \"sql.url\" field, rawUrl: %s",
@@ -856,19 +856,19 @@ func TestTranslation(t *testing.T) {
 			testCase:                  "TranslateJsonUnmarshallFailed",
 			expectedUnmarshallFailure: true,
 			samplePath:                filepath.Join("../../../../internal/aws/xray", "testdata", "minCauseIsInvalid.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
+			expectedResourceAttrs: func(*awsxray.Segment) map[string]any {
 				return nil
 			},
 			expectedRecord: xray.TelemetryRecord{
 				SegmentsReceivedCount: aws.Int64(0),
 				SegmentsRejectedCount: aws.Int64(0),
 			},
-			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(string, *testing.T, *awsxray.Segment) []perSpanProperties {
 				return nil
 			},
 			verification: func(testCase string,
-				actualSeg *awsxray.Segment,
-				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
+				_ *awsxray.Segment,
+				_ ptrace.ResourceSpans, _ ptrace.Traces, err error) {
 				assert.EqualError(t, err,
 					fmt.Sprintf(
 						"the value assigned to the `cause` field does not appear to be a string: %v",
@@ -880,19 +880,19 @@ func TestTranslation(t *testing.T) {
 		{
 			testCase:   "TranslateRootSegValidationFailed",
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "segmentValidationFailed.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]any {
+			expectedResourceAttrs: func(*awsxray.Segment) map[string]any {
 				return nil
 			},
 			expectedRecord: xray.TelemetryRecord{
 				SegmentsReceivedCount: aws.Int64(1),
 				SegmentsRejectedCount: aws.Int64(1),
 			},
-			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(string, *testing.T, *awsxray.Segment) []perSpanProperties {
 				return nil
 			},
 			verification: func(testCase string,
-				actualSeg *awsxray.Segment,
-				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
+				_ *awsxray.Segment,
+				_ ptrace.ResourceSpans, _ ptrace.Traces, err error) {
 				assert.EqualError(t, err, `segment "start_time" can not be nil`,
 					testCase+": translation should've failed")
 			},

@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 
@@ -37,5 +36,5 @@ func TestCreateExtension_ValidConfig(t *testing.T) {
 func TestNewFactory(t *testing.T) {
 	f := NewFactory()
 	assert.NotNil(t, f)
-	assert.Equal(t, f.Type(), component.Type(metadata.Type))
+	assert.Equal(t, f.Type(), metadata.Type)
 }

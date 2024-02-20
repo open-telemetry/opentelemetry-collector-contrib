@@ -6,7 +6,14 @@ package state // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"context"
 	"sync"
+	"time"
 )
+
+type PSConstants struct {
+	RetryInterval time.Duration
+	RetryGap      time.Duration
+	MaxRetries    int
+}
 
 type TryLock struct {
 	lock sync.Mutex

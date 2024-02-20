@@ -28,7 +28,7 @@ const (
 
 // Config defines configuration for OpenSearch exporter.
 type Config struct {
-	confighttp.HTTPClientSettings  `mapstructure:"http"`
+	confighttp.ClientConfig        `mapstructure:"http"`
 	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	MappingsSettings               `mapstructure:"mapping"`

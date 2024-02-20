@@ -4,6 +4,7 @@
 package supervisor
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -28,7 +29,7 @@ func newServerSettings(fs flattenedSettings) server.StartSettings {
 					return serverTypes.ConnectionResponse{
 						Accept: true,
 						ConnectionCallbacks: server.ConnectionCallbacksStruct{
-							OnMessageFunc: func(conn serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+							OnMessageFunc: func(_ context.Context, conn serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 								if fs.onMessageFunc != nil {
 									fs.onMessageFunc(conn, message)
 								}

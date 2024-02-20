@@ -76,8 +76,8 @@ Generally, when designing a test for new exporter and receiver components, devel
     	}{
     		{
     			"NewExporterOrReceiver",
-    			testbed.NewXXXDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
-    			testbed.NewXXXDataReceiver(testbed.GetAvailablePort(t)),
+    			testbed.NewXXXDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+    			testbed.NewXXXDataReceiver(testutil.GetAvailablePort(t)),
     			testbed.ResourceSpec{
     				ExpectedMaxCPU: XX,
     				ExpectedMaxRAM: XX,

@@ -7,6 +7,17 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.94.0
+
+### 🚩 Deprecations 🚩
+
+- `testbed`: Deprecate testbed.GetAvailablePort in favor of testutil.GetAvailablePort (#30811)
+  Move healthcheckextension to use testutil.GetAvailablePort
+
+### 🚀 New components 🚀
+
+- `pkg_sampling`: Package of code for parsing OpenTelemetry tracestate probability sampling fields. (#29738)
+
 ## v0.93.0
 
 ### 🛑 Breaking changes 🛑

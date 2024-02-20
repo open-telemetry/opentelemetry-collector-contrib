@@ -26,6 +26,7 @@ body:
       - cmd/oteltestbedcol
       - cmd/telemetrygen
       - confmap/provider/s3provider
+      - confmap/provider/secretsmanagerprovider
       - connector/count
       - connector/datadog
       - connector/exceptions
@@ -111,11 +112,13 @@ body:
       - extension/storage
       - extension/storage/dbstorage
       - extension/storage/filestorage
+      - extension/sumologic
       - internal/aws
       - internal/collectd
       - internal/core
       - internal/datadog
       - internal/docker
+      - internal/exp/metrics
       - internal/filter
       - internal/k8sconfig
       - internal/k8stest
@@ -124,6 +127,7 @@ body:
       - internal/metadataproviders
       - internal/sharedcomponent
       - internal/splunk
+      - internal/sqlquery
       - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal
@@ -133,6 +137,7 @@ body:
       - pkg/pdatatest
       - pkg/pdatautil
       - pkg/resourcetotelemetry
+      - pkg/sampling
       - pkg/stanza
       - pkg/translator/azure
       - pkg/translator/jaeger
@@ -146,7 +151,7 @@ body:
       - pkg/winperfcounters
       - processor/attributes
       - processor/cumulativetodelta
-      - processor/datadog
+      - processor/deltatocumulative
       - processor/deltatorate
       - processor/filter
       - processor/groupbyattrs
@@ -166,7 +171,6 @@ body:
       - processor/resourcedetection/internal/openshift
       - processor/routing
       - processor/schema
-      - processor/servicegraph
       - processor/span
       - processor/spanmetrics
       - processor/sumologic
@@ -196,7 +200,6 @@ body:
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
-      - receiver/file
       - receiver/filelog
       - receiver/filestats
       - receiver/flinkmetrics
@@ -229,6 +232,7 @@ body:
       - receiver/opencensus
       - receiver/oracledb
       - receiver/osquery
+      - receiver/otelarrow
       - receiver/otlpjsonfile
       - receiver/podman
       - receiver/postgresql

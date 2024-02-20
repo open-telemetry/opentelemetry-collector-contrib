@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: apiconstants.GetDefaultOneAgentEndpoint(),
 					Headers: map[string]configopaque.String{
 						"Content-Type": "text/plain; charset=UTF-8",
@@ -75,7 +75,7 @@ func TestLoadConfig(t *testing.T) {
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://example.com/api/v2/metrics/ingest",
 					Headers: map[string]configopaque.String{
 						"Authorization": "Api-Token token",
@@ -98,7 +98,7 @@ func TestLoadConfig(t *testing.T) {
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://example.com/api/v2/metrics/ingest",
 					Headers: map[string]configopaque.String{
 						"Authorization": "Api-Token token",
