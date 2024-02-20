@@ -95,7 +95,7 @@ func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entr
 
 // HandleEntryError will handle an entry error using the on_error strategy.
 func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry.Entry, err error) error {
-	t.Errorw("Failed to process entry", zap.Any("error", err), zap.Any("action", t.OnError), zap.Any("entry", entry))
+	t.Errorw("Failed to process entry", zap.Any("error", err), zap.Any("action", t.OnError))
 	if t.OnError == SendOnError {
 		t.Write(ctx, entry)
 	}

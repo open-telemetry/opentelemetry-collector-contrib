@@ -145,7 +145,7 @@ func TestItemCardinalityFilter_Filter(t *testing.T) {
 	// Doing this to avoid of relying on timeouts and sleeps(avoid potential flaky tests)
 	syncChannel := make(chan bool)
 
-	filterCasted.cache.SetExpirationCallback(func(key string, value any) {
+	filterCasted.cache.SetExpirationCallback(func(string, any) {
 		if filterCasted.cache.Count() > 0 {
 			// Waiting until cache is really empty - all items are expired
 			return
@@ -203,7 +203,7 @@ func TestItemCardinalityFilter_FilterItems(t *testing.T) {
 	// Doing this to avoid of relying on timeouts and sleeps(avoid potential flaky tests)
 	syncChannel := make(chan bool)
 
-	filterCasted.cache.SetExpirationCallback(func(key string, value any) {
+	filterCasted.cache.SetExpirationCallback(func(string, any) {
 		if filterCasted.cache.Count() > 0 {
 			// Waiting until cache is really empty - all items are expired
 			return

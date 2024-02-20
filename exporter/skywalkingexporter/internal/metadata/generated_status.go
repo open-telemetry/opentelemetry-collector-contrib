@@ -8,10 +8,13 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("skywalking")
+)
+
 const (
-	Type             = "skywalking"
-	MetricsStability = component.StabilityLevelBeta
-	LogsStability    = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelUnmaintained
+	LogsStability    = component.StabilityLevelUnmaintained
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {

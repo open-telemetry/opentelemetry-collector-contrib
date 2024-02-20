@@ -68,41 +68,48 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			} else if r.deleteAtEOF {
 				r.delete()
 			}
-			break
+			return
 		}
 
 		token, err := r.decoder.Decode(s.Bytes())
 		if err != nil {
 			r.logger.Errorw("decode: %w", zap.Error(err))
-		} else if err := r.processFunc(ctx, token, r.FileAttributes); err != nil {
-			if errors.Is(err, header.ErrEndOfHeader) {
-				r.finalizeHeader()
-
-				// Now that the header is consumed, use the normal split and process functions.
-				// Recreate the scanner with the normal split func.
-				// Do not use the updated offset from the old scanner, as the most recent token
-				// could be split differently with the new splitter.
-				r.splitFunc = r.lineSplitFunc
-				r.processFunc = r.emitFunc
-				if _, err = r.file.Seek(r.Offset, 0); err != nil {
-					r.logger.Errorw("Failed to seek post-header", zap.Error(err))
-					return
-				}
-				s = scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
-			} else {
-				r.logger.Errorw("process: %w", zap.Error(err))
-			}
+			r.Offset = s.Pos() // move past the bad token or we may be stuck
+			continue
 		}
-		r.Offset = s.Pos()
-	}
-}
 
-func (r *Reader) finalizeHeader() {
-	if err := r.headerReader.Stop(); err != nil {
-		r.logger.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
+		err = r.processFunc(ctx, token, r.FileAttributes)
+		if err == nil {
+			r.Offset = s.Pos() // successful emit, update offset
+			continue
+		}
+
+		if !errors.Is(err, header.ErrEndOfHeader) {
+			r.logger.Errorw("process: %w", zap.Error(err))
+			r.Offset = s.Pos() // move past the bad token or we may be stuck
+			continue
+		}
+
+		// Clean up the header machinery
+		if err = r.headerReader.Stop(); err != nil {
+			r.logger.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
+		}
+		r.headerReader = nil
+		r.HeaderFinalized = true
+
+		// Switch to the normal split and process functions.
+		r.splitFunc = r.lineSplitFunc
+		r.processFunc = r.emitFunc
+
+		// Recreate the scanner with the normal split func.
+		// Do not use the updated offset from the old scanner, as the most recent token
+		// could be split differently with the new splitter.
+		if _, err = r.file.Seek(r.Offset, 0); err != nil {
+			r.logger.Errorw("Failed to seek post-header", zap.Error(err))
+			return
+		}
+		s = scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 	}
-	r.headerReader = nil
-	r.HeaderFinalized = true
 }
 
 // Delete will close and delete the file

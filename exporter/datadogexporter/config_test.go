@@ -94,7 +94,7 @@ func TestValidate(t *testing.T) {
 			name: "TLS settings are valid",
 			cfg: &Config{
 				API: APIConfig{Key: "notnull"},
-				LimitedHTTPClientSettings: LimitedHTTPClientSettings{
+				LimitedClientConfig: LimitedClientConfig{
 					TLSSetting: LimitedTLSClientSettings{
 						InsecureSkipVerify: true,
 					},
@@ -106,6 +106,13 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				API:    APIConfig{Key: "notnull"},
 				Traces: TracesConfig{TraceBuffer: 10},
+			},
+		},
+		{
+			name: "With peer_tags",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{PeerTags: []string{"tag1", "tag2"}},
 			},
 		},
 	}

@@ -34,7 +34,7 @@ receivers:
 
 The following settings are configurable:
 
-- `endpoint` (default = 0.0.0.0:9411): host:port on which the receiver is going to receive data.
+- `endpoint` (default = 0.0.0.0:9411): host:port on which the receiver is going to receive data. The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:9411. This will become the default in a future release.
 - `parse_string_tags` (default = false): if enabled, the receiver will attempt to parse string tags/binary annotations into int/bool/float.
 
 ## Advanced Configuration

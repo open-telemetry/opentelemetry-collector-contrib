@@ -49,7 +49,7 @@ func TestScraper_Scrape(t *testing.T) {
 	}{
 		{
 			name: "valid",
-			dbclientFn: func(db *sql.DB, s string, logger *zap.Logger) dbClient {
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
 				return &fakeDbClient{
 					Responses: [][]metricRow{
 						queryResponses[s],
@@ -59,7 +59,7 @@ func TestScraper_Scrape(t *testing.T) {
 		},
 		{
 			name: "bad tablespace usage",
-			dbclientFn: func(db *sql.DB, s string, logger *zap.Logger) dbClient {
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
 				if s == tablespaceUsageSQL {
 					return &fakeDbClient{Responses: [][]metricRow{
 						{
@@ -75,7 +75,7 @@ func TestScraper_Scrape(t *testing.T) {
 		},
 		{
 			name: "no limit on tablespace",
-			dbclientFn: func(db *sql.DB, s string, logger *zap.Logger) dbClient {
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
 				if s == tablespaceMaxSpaceSQL {
 					return &fakeDbClient{Responses: [][]metricRow{
 						{
@@ -91,7 +91,7 @@ func TestScraper_Scrape(t *testing.T) {
 		},
 		{
 			name: "bad value on tablespace",
-			dbclientFn: func(db *sql.DB, s string, logger *zap.Logger) dbClient {
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
 				if s == tablespaceMaxSpaceSQL {
 					return &fakeDbClient{Responses: [][]metricRow{
 						{

@@ -109,7 +109,9 @@ func BenchmarkEndToEnd(b *testing.B) {
 	}
 }
 
-const benchType = "bench"
+const benchTypeStr = "bench"
+
+var benchType = component.MustNewType(benchTypeStr)
 
 type BenchConfig struct {
 	BaseConfig
@@ -139,18 +141,18 @@ func (f BenchReceiverType) InputConfig(cfg component.Config) operator.Config {
 }
 
 func init() {
-	operator.Register(benchType, func() operator.Builder { return NewBenchOpConfig() })
+	operator.Register(benchTypeStr, func() operator.Builder { return NewBenchOpConfig() })
 }
 
 // NewBenchOpConfig creates a new benchmarking operator config with default values
 func NewBenchOpConfig() *BenchOpConfig {
-	return NewBenchOpConfigWithID(benchType)
+	return NewBenchOpConfigWithID(benchTypeStr)
 }
 
 // NewBenchOpConfigWithID creates a new noop operator config with default values
 func NewBenchOpConfigWithID(operatorID string) *BenchOpConfig {
 	return &BenchOpConfig{
-		InputConfig: helper.NewInputConfig(operatorID, benchType),
+		InputConfig: helper.NewInputConfig(operatorID, benchTypeStr),
 	}
 }
 

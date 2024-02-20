@@ -10,20 +10,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 )
 
 func TestLogsQueryReceiver_Collect(t *testing.T) {
 	now := time.Now()
 
-	fakeClient := &fakeDBClient{
-		stringMaps: [][]stringMap{
+	fakeClient := &sqlquery.FakeDBClient{
+		StringMaps: [][]sqlquery.StringMap{
 			{{"col1": "42"}, {"col1": "63"}},
 		},
 	}
 	queryReceiver := logsQueryReceiver{
 		client: fakeClient,
-		query: Query{
-			Logs: []LogsCfg{
+		query: sqlquery.Query{
+			Logs: []sqlquery.LogsCfg{
 				{
 					BodyColumn: "col1",
 				},

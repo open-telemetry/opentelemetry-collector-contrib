@@ -209,7 +209,7 @@ func TestScraperFailedStart(t *testing.T) {
 
 	conf := createDefaultConfig().(*Config)
 
-	conf.HTTPClientSettings = confighttp.HTTPClientSettings{
+	conf.ClientConfig = confighttp.ClientConfig{
 		Endpoint: "localhost:9200",
 		TLSSetting: configtls.TLSClientSetting{
 			TLSSetting: configtls.TLSSetting{

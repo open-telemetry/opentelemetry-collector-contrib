@@ -64,9 +64,9 @@ type HecTelemetry struct {
 
 // Config defines configuration for Splunk exporter.
 type Config struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
-	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
-	configretry.BackOffConfig     `mapstructure:"retry_on_failure"`
+	confighttp.ClientConfig      `mapstructure:",squash"`
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
 	// LogDataEnabled can be used to disable sending logs by the exporter.
 	LogDataEnabled bool `mapstructure:"log_data_enabled"`
@@ -137,7 +137,7 @@ type Config struct {
 
 func (cfg *Config) getURL() (out *url.URL, err error) {
 
-	out, err = url.Parse(cfg.HTTPClientSettings.Endpoint)
+	out, err = url.Parse(cfg.ClientConfig.Endpoint)
 	if err != nil {
 		return out, err
 	}
@@ -153,7 +153,7 @@ func (cfg *Config) Validate() error {
 	if !cfg.LogDataEnabled && !cfg.ProfilingDataEnabled {
 		return errors.New(`either "log_data_enabled" or "profiling_data_enabled" has to be true`)
 	}
-	if cfg.HTTPClientSettings.Endpoint == "" {
+	if cfg.ClientConfig.Endpoint == "" {
 		return errors.New(`requires a non-empty "endpoint"`)
 	}
 	_, err := cfg.getURL()
@@ -180,8 +180,5 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf(`requires "max_event_size" <= %d`, maxMaxEventSize)
 	}
 
-	if err := cfg.QueueSettings.Validate(); err != nil {
-		return fmt.Errorf("sending_queue settings has invalid configuration: %w", err)
-	}
 	return nil
 }

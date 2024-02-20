@@ -859,7 +859,6 @@ func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 
 	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
-	operator.movingAverageMatches = 10
 
 	temps := make([]*os.File, 0, initFiles+moreFiles)
 	for i := 0; i < initFiles; i++ {
@@ -1144,7 +1143,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.NoError(t, longFile.Close())
 
 	// Verify we have no checkpointed files
-	require.Equal(t, 0, len(operator.knownFiles))
+	require.Equal(t, 0, operator.totalReaders())
 
 	// Wait until the only line in the short file and
 	// at least one line from the long file have been consumed
@@ -1286,7 +1285,7 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	operator.wg.Wait()
 	if runtime.GOOS != "windows" {
 		// On windows, we never keep files in previousPollFiles, so we don't expect to see them here
-		require.Len(t, operator.previousPollFiles, 1)
+		require.Equal(t, operator.previousPollFiles.Len(), 1)
 	}
 
 	// keep append data to file1 and file2
@@ -1318,4 +1317,96 @@ func TestWindowsFilesClosedImmediately(t *testing.T) {
 
 	// On Windows, poll should close the file after reading it. We can test this by trying to move it.
 	require.NoError(t, os.Rename(temp.Name(), temp.Name()+"_renamed"))
+}
+
+func TestDelayedDisambiguation(t *testing.T) {
+	t.Parallel()
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.FingerprintSize = 18
+	cfg.StartAt = "beginning"
+	operator, sink := testManager(t, cfg)
+	operator.persister = testutil.NewMockPersister("test")
+
+	// Two identical files, smaller than fingerprint size
+	file1 := filetest.OpenTempWithPattern(t, tempDir, "*.log1")
+	file2 := filetest.OpenTempWithPattern(t, tempDir, "*.log2")
+
+	sameContent := "aaaaaaaaaaa"
+	filetest.WriteString(t, file1, sameContent+"\n")
+	filetest.WriteString(t, file2, sameContent+"\n")
+	operator.poll(context.Background())
+
+	token, attributes := sink.NextCall(t)
+	require.Equal(t, []byte(sameContent), token)
+	sink.ExpectNoCallsUntil(t, 100*time.Millisecond)
+	operator.wg.Wait()
+
+	// Append different data
+	newContent1 := "more content in file 1 only"
+	newContent2 := "different content in file 2"
+	filetest.WriteString(t, file1, newContent1+"\n")
+	filetest.WriteString(t, file2, newContent2+"\n")
+	operator.poll(context.Background())
+
+	var sameTokenOtherFile emittest.Call
+	if attributes[attrs.LogFileName].(string) == filepath.Base(file1.Name()) {
+		sameTokenOtherFile = emittest.Call{Token: []byte(sameContent), Attrs: map[string]any{attrs.LogFileName: filepath.Base(file2.Name())}}
+	} else {
+		sameTokenOtherFile = emittest.Call{Token: []byte(sameContent), Attrs: map[string]any{attrs.LogFileName: filepath.Base(file1.Name())}}
+	}
+	newFromFile1 := emittest.Call{Token: []byte(newContent1), Attrs: map[string]any{attrs.LogFileName: filepath.Base(file1.Name())}}
+	newFromFile2 := emittest.Call{Token: []byte(newContent2), Attrs: map[string]any{attrs.LogFileName: filepath.Base(file2.Name())}}
+	sink.ExpectCalls(t, &sameTokenOtherFile, &newFromFile1, &newFromFile2)
+}
+
+func TestNoLostPartial(t *testing.T) {
+	t.Parallel()
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.FingerprintSize = 18
+	cfg.StartAt = "beginning"
+	operator, sink := testManager(t, cfg)
+	operator.persister = testutil.NewMockPersister("test")
+
+	// Two same fingerprint file , and smaller than  config size
+	file1 := filetest.OpenTempWithPattern(t, tempDir, "*.log1")
+	file2 := filetest.OpenTempWithPattern(t, tempDir, "*.log2")
+
+	sameContent := "aaaaaaaaaaa"
+	filetest.WriteString(t, file1, sameContent+"\n")
+	filetest.WriteString(t, file2, sameContent+"\n")
+	operator.poll(context.Background())
+
+	token, attributes := sink.NextCall(t)
+	require.Equal(t, []byte(sameContent), token)
+	sink.ExpectNoCallsUntil(t, 100*time.Millisecond)
+	operator.wg.Wait()
+
+	newContent1 := "additional content in file 1 only"
+	filetest.WriteString(t, file1, newContent1+"\n")
+
+	var otherFileName string
+	if attributes[attrs.LogFileName].(string) == filepath.Base(file1.Name()) {
+		otherFileName = filepath.Base(file2.Name())
+	} else {
+		otherFileName = filepath.Base(file1.Name())
+	}
+
+	var foundSameFromOtherFile, foundNewFromFileOne bool
+	require.Eventually(t, func() bool {
+		operator.poll(context.Background())
+		defer operator.wg.Wait()
+
+		token, attributes = sink.NextCall(t)
+		switch {
+		case string(token) == sameContent && attributes[attrs.LogFileName].(string) == otherFileName:
+			foundSameFromOtherFile = true
+		case string(token) == newContent1 && attributes[attrs.LogFileName].(string) == filepath.Base(file1.Name()):
+			foundNewFromFileOne = true
+		default:
+			t.Errorf("unexpected token from file %q: %s", filepath.Base(attributes[attrs.LogFileName].(string)), token)
+		}
+		return foundSameFromOtherFile && foundNewFromFileOne
+	}, time.Second, 100*time.Millisecond)
 }

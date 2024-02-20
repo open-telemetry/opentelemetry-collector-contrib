@@ -7,9 +7,10 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v58/github"
+	"github.com/google/go-github/v59/github"
 	"go.uber.org/zap"
 )
 
@@ -109,7 +110,7 @@ func genDefaultSearchQuery(ownertype string, ghorg string) string {
 // Returns the graphql and rest clients for GitHub.
 // By default, the graphql client will use the public GitHub API URL as will
 // the rest client. If the user has specified an endpoint in the config via the
-// inherited HTTPClientSettings, then the both clients will use that endpoint.
+// inherited ClientConfig, then the both clients will use that endpoint.
 // The endpoint defined needs to be the root server.
 // See the GitHub documentation for more information.
 // https://docs.github.com/en/graphql/guides/forming-calls-with-graphql#the-graphql-endpoint
@@ -119,11 +120,11 @@ func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *gith
 	rClient = github.NewClient(ghs.client)
 	gClient = graphql.NewClient(defaultGraphURL, ghs.client)
 
-	if ghs.cfg.HTTPClientSettings.Endpoint != "" {
+	if ghs.cfg.ClientConfig.Endpoint != "" {
 
 		// Given endpoint set as `https://myGHEserver.com` we need to join the path
 		// with `api/graphql`
-		gu, err := url.JoinPath(ghs.cfg.HTTPClientSettings.Endpoint, "api/graphql")
+		gu, err := url.JoinPath(ghs.cfg.ClientConfig.Endpoint, "api/graphql")
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error joining graphql endpoint: %v", err)
 			return nil, nil, err
@@ -131,7 +132,7 @@ func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *gith
 		gClient = graphql.NewClient(gu, ghs.client)
 
 		// The rest client needs the endpoint to be the root of the server
-		ru := ghs.cfg.HTTPClientSettings.Endpoint
+		ru := ghs.cfg.ClientConfig.Endpoint
 		rClient, err = github.NewClient(ghs.client).WithEnterpriseURLs(ru, ru)
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error creating enterprise client: %v", err)
@@ -172,4 +173,40 @@ func (ghs *githubScraper) getContributorCount(
 	}
 
 	return len(all), nil
+}
+
+// Get the pull request data from the GraphQL API.
+func (ghs *githubScraper) getPullRequests(
+	ctx context.Context,
+	client graphql.Client,
+	repoName string,
+) ([]PullRequestNode, error) {
+	var prCursor *string
+	var pullRequests []PullRequestNode
+
+	for hasNextPage := true; hasNextPage; {
+		prs, err := getPullRequestData(
+			ctx,
+			client,
+			repoName,
+			ghs.cfg.GitHubOrg,
+			100,
+			prCursor,
+			[]PullRequestState{"OPEN", "MERGED"},
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		pullRequests = append(pullRequests, prs.Repository.PullRequests.Nodes...)
+		prCursor = &prs.Repository.PullRequests.PageInfo.EndCursor
+		hasNextPage = prs.Repository.PullRequests.PageInfo.HasNextPage
+	}
+
+	return pullRequests, nil
+}
+
+// Get the age/duration between two times in seconds.
+func getAge(start time.Time, end time.Time) int64 {
+	return int64(end.Sub(start).Seconds())
 }

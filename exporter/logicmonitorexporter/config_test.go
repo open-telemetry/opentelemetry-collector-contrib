@@ -31,7 +31,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "empty endpoint",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "",
 				},
 			},
@@ -41,7 +41,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "missing http scheme",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "test.com/dummy",
 				},
 			},
@@ -51,7 +51,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "invalid endpoint format",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "invalid.com@#$%",
 				},
 			},
@@ -61,7 +61,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "valid config",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://validurl.com/rest",
 				},
 			},
@@ -104,7 +104,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 				},
 				APIToken: APIToken{
@@ -118,7 +118,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 					Headers: map[string]configopaque.String{
 						"Authorization": "Bearer <token>",
@@ -131,7 +131,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 					Headers: map[string]configopaque.String{
 						"Authorization": "Bearer <token>",

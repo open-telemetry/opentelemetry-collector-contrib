@@ -10,7 +10,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -49,19 +48,6 @@ type assertNoErrorHost struct {
 }
 
 var _ component.Host = (*assertNoErrorHost)(nil)
-
-// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
-func newAssertNoErrorHost(t *testing.T) component.Host {
-	return &assertNoErrorHost{
-		componenttest.NewNopHost(),
-		t,
-	}
-}
-
-func (aneh *assertNoErrorHost) ReportFatalError(err error) {
-	assert.NoError(aneh, err)
-}
-
 
 {{ if isExporter }}
 func TestComponentLifecycle(t *testing.T) {
@@ -119,10 +105,10 @@ func TestComponentLifecycle(t *testing.T) {
 			{{ end }}
 			c, err := test.createFn(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
-			host := newAssertNoErrorHost(t)
+			host := componenttest.NewNopHost()
 			err = c.Start(context.Background(), host)
 			require.NoError(t, err)
-			assert.NotPanics(t, func() {
+			require.NotPanics(t, func() {
 				switch e := c.(type) {
 				case exporter.Logs:
 					logs := testdata.GenerateLogsManyLogRecordsSameResource(2)
@@ -145,7 +131,7 @@ func TestComponentLifecycle(t *testing.T) {
 				}
 			})
 			{{ if not expectConsumerError }}
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			{{ end }}
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
@@ -210,10 +196,10 @@ func TestComponentLifecycle(t *testing.T) {
 			{{ end }}
 			c, err := test.createFn(context.Background(), processortest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
-			host := newAssertNoErrorHost(t)
+			host := componenttest.NewNopHost()
 			err = c.Start(context.Background(), host)
 			require.NoError(t, err)
-			assert.NotPanics(t, func() {
+			require.NotPanics(t, func() {
 				switch e := c.(type) {
 				case processor.Logs:
 					logs := testdata.GenerateLogsManyLogRecordsSameResource(2)
@@ -235,7 +221,7 @@ func TestComponentLifecycle(t *testing.T) {
 					err = e.ConsumeTraces(context.Background(), traces)
 				}
 			})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
@@ -299,7 +285,7 @@ func TestComponentLifecycle(t *testing.T) {
 			{{ end }}
 			firstRcvr, err := test.createFn(context.Background(), receivertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
-			host := newAssertNoErrorHost(t)
+			host := componenttest.NewNopHost()
 			require.NoError(t, err)
 			require.NoError(t, firstRcvr.Start(context.Background(), host))
 			require.NoError(t, firstRcvr.Shutdown(context.Background()))
@@ -337,12 +323,12 @@ func TestComponentLifecycle(t *testing.T) {
 		{{ end }}
 		firstExt, err := factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 		require.NoError(t, err)
-		require.NoError(t, firstExt.Start(context.Background(), newAssertNoErrorHost(t)))
+		require.NoError(t, firstExt.Start(context.Background(), componenttest.NewNopHost()))
 		require.NoError(t, firstExt.Shutdown(context.Background()))
 		
 		secondExt, err := factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 		require.NoError(t, err)
-		require.NoError(t, secondExt.Start(context.Background(), newAssertNoErrorHost(t)))
+		require.NoError(t, secondExt.Start(context.Background(), componenttest.NewNopHost()))
 		require.NoError(t, secondExt.Shutdown(context.Background()))
 	})
 }
@@ -452,7 +438,7 @@ func TestComponentLifecycle(t *testing.T) {
 			{{ end }}
 			firstConnector, err := test.createFn(context.Background(), connectortest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
-			host := newAssertNoErrorHost(t)
+			host := componenttest.NewNopHost()
 			require.NoError(t, err)
 			require.NoError(t, firstConnector.Start(context.Background(), host))
 			require.NoError(t, firstConnector.Shutdown(context.Background()))
