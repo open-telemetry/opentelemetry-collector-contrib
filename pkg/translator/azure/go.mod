@@ -7,9 +7,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.94.0
 	github.com/relvacode/iso8601 v1.4.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.94.2-0.20240216233521-0ab8f4443937
+	go.opentelemetry.io/collector/component v0.95.0
 	go.opentelemetry.io/collector/pdata v1.2.0
-	go.opentelemetry.io/collector/semconv v0.94.2-0.20240216233521-0ab8f4443937
+	go.opentelemetry.io/collector/semconv v0.95.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc
@@ -31,8 +31,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.94.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.94.2-0.20240216233521-0ab8f4443937 // indirect
-	go.opentelemetry.io/collector/confmap v0.94.2-0.20240216233521-0ab8f4443937 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.95.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.95.0 // indirect
 	go.opentelemetry.io/otel v1.23.1 // indirect
 	go.opentelemetry.io/otel/metric v1.23.1 // indirect
 	go.opentelemetry.io/otel/trace v1.23.1 // indirect
