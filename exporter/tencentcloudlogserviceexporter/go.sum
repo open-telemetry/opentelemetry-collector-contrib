@@ -75,8 +75,6 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
-github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.857 h1:6TxCHz3zSG67cLDDu8w3TkFm/FwiyiAWBhcidGXWH/0=
-github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.857/go.mod h1:r5r4xbfxSaeR04b166HGsBa/R4U3SueirEUpXGuw+Q0=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.858 h1:7ydJr2T0++cbkigt844zWpT5upDzxTTFwdc26WoZr20=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.858/go.mod h1:r5r4xbfxSaeR04b166HGsBa/R4U3SueirEUpXGuw+Q0=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
