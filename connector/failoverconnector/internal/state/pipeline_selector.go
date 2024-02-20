@@ -246,6 +246,6 @@ func (p *PipelineSelector) SetRetryCountToMax(idx int) {
 	p.pipelineRetries[idx].Store(int32(p.constants.MaxRetries))
 }
 
-func (p *PipelineSelector) ResetRetryCountToMax(idx int) {
+func (p *PipelineSelector) ResetRetryCount(idx int) {
 	p.pipelineRetries[idx].Store(0)
 }
