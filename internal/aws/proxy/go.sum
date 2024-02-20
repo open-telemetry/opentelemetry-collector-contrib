@@ -36,8 +36,6 @@ github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncj
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
-go.opentelemetry.io/collector/config/confignet v0.94.1 h1:kaV1iwZKjv7ZJZ+PtLTQYfVNLVD3EAyxfYBNZf5GXmo=
-go.opentelemetry.io/collector/config/confignet v0.94.1/go.mod h1:rraribsOoZsYZm51+3TXHavmXKJOC5a5/X20vfmNbdw=
 go.opentelemetry.io/collector/config/confignet v0.95.0 h1:GGAq0E7DFPIcwyq6h0OOPEfLyym/7LUIOB2ij6l3xtE=
 go.opentelemetry.io/collector/config/confignet v0.95.0/go.mod h1:BVw5xkQ7TH2wH75cbph+dtOoxq1baWLuhdSYIAvuVu0=
 go.opentelemetry.io/collector/config/configopaque v0.94.1 h1:Jq0pF0DPaFnBNKrBN9V2AV0Yk5T+YTm9pYhmG/ipZJs=
