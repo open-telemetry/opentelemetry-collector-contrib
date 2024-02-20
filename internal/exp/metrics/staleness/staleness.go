@@ -4,6 +4,7 @@
 package staleness
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -34,6 +35,7 @@ type Staleness[T any] struct {
 	items Map[T]
 	pq    PriorityQueue
 
+	sig chan struct{}
 	mtx sync.RWMutex
 }
 
@@ -44,6 +46,7 @@ func NewStaleness[T any](max time.Duration, newMap Map[T]) *Staleness[T] {
 		items: newMap,
 		pq:    NewPriorityQueue(),
 
+		sig: make(chan struct{}),
 		mtx: sync.RWMutex{},
 	}
 }
@@ -60,6 +63,11 @@ func (s *Staleness[T]) Store(id identity.Stream, v T) {
 	s.items.Store(id, v)
 	s.mtx.Unlock()
 
+	// "try-send" to notify possibly sleeping expiry routine of write
+	select {
+	case s.sig <- struct{}{}:
+	default:
+	}
 }
 
 func (s *Staleness[T]) Delete(id identity.Stream) {
@@ -89,4 +97,34 @@ func (s *Staleness[T]) expireOldItems() {
 		id, _ := s.pq.Pop()
 		s.items.Delete(id)
 	}
+}
+
+func (s *Staleness[T]) Start(ctx context.Context) error {
+	go func() {
+		for {
+			s.expireOldItems()
+
+			n := s.pq.Len()
+			switch {
+			case n == 0:
+				// no more items: sleep until next write
+				select {
+				case <-s.sig:
+				case <-ctx.Done():
+					return
+				}
+			case n > 0:
+				// sleep until earliest possible next expiry time
+				_, ts := s.pq.Peek()
+				at := time.Until(ts.Add(s.max))
+
+				select {
+				case <-time.After(at):
+				case <-ctx.Done():
+					return
+				}
+			}
+		}
+	}()
+	return nil
 }

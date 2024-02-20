@@ -4,6 +4,7 @@
 package delta // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
 
 import (
+	"context"
 	"sync"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
@@ -17,9 +18,13 @@ type Lock[D data.Point[D]] struct {
 	next streams.Aggregator[D]
 }
 
-func (l *Lock[D]) Aggregate(id streams.Ident, dp D) (D, error) {
+func (l *Lock[D]) Aggregate(ctx context.Context, id streams.Ident, dp D) (D, error) {
 	l.Lock()
-	dp, err := l.next.Aggregate(id, dp)
+	dp, err := l.next.Aggregate(ctx, id, dp)
 	l.Unlock()
 	return dp, err
+}
+
+func (l *Lock[D]) Start(ctx context.Context) error {
+	return l.next.Start(ctx)
 }

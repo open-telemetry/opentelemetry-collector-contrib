@@ -4,6 +4,7 @@
 package delta // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -39,13 +40,13 @@ func Histograms(opts Options) streams.Aggregator[data.Histogram] {
 var _ streams.Aggregator[data.Number] = (*Accumulator[data.Number])(nil)
 
 type Accumulator[D data.Point[D]] struct {
-	dps streams.Map[D]
+	dps Tracker[D]
 }
 
 // Aggregate implements delta-to-cumulative aggregation as per spec:
 // https://opentelemetry.io/docs/specs/otel/metrics/data-model/#sums-delta-to-cumulative
-func (a *Accumulator[D]) Aggregate(id streams.Ident, dp D) (D, error) {
-	// make the accumulator to start with the current sample, discarding any
+func (a *Accumulator[D]) Aggregate(ctx context.Context, id streams.Ident, dp D) (D, error) {
+	// make the accumulator start with the current sample, discarding any
 	// earlier data. return after use
 	reset := func() (D, error) {
 		clone := dp.Clone()
@@ -77,6 +78,10 @@ func (a *Accumulator[D]) Aggregate(id streams.Ident, dp D) (D, error) {
 	return res, nil
 }
 
+func (a *Accumulator[D]) Start(ctx context.Context) error {
+	return a.dps.Start(ctx)
+}
+
 type ErrOlderStart struct {
 	Start  pcommon.Timestamp
 	Sample pcommon.Timestamp
@@ -93,4 +98,9 @@ type ErrOutOfOrder struct {
 
 func (e ErrOutOfOrder) Error() string {
 	return fmt.Sprintf("out of order: dropped sample from time=%s, because series is already at time=%s", e.Sample, e.Last)
+}
+
+type Tracker[T any] interface {
+	streams.Map[T]
+	Start(ctx context.Context) error
 }

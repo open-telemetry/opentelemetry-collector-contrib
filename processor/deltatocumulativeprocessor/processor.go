@@ -46,7 +46,9 @@ func newProcessor(cfg *Config, log *zap.Logger, next consumer.Metrics) *Processo
 }
 
 func (p *Processor) Start(_ context.Context, _ component.Host) error {
-	return nil
+	return errors.Join(
+		p.nums.Start(p.ctx),
+	)
 }
 
 func (p *Processor) Shutdown(_ context.Context) error {
@@ -66,7 +68,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 		case pmetric.MetricTypeSum:
 			sum := m.Sum()
 			if sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
-				err := streams.Aggregate[data.Number](metrics.Sum(m), p.nums)
+				err := streams.Aggregate[data.Number](ctx, metrics.Sum(m), p.nums)
 				errs = errors.Join(errs, err)
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			}
