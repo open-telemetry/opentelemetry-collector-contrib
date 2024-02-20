@@ -21,7 +21,7 @@ import (
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	ft := factory.Type()
-	require.EqualValues(t, "expvar", ft)
+	require.EqualValues(t, metadata.Type, ft)
 }
 
 func TestValidConfig(t *testing.T) {

@@ -7,4 +7,4 @@ status:
   distributions: []
   warnings: [Statefulness]
   codeowners:
-    active: [sh0rez]
+    active: [sh0rez, RichieSams]

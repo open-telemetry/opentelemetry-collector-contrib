@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("jaegerremotesampling")
+)
+
 const (
-	Type               = "jaegerremotesampling"
 	ExtensionStability = component.StabilityLevelAlpha
 )
 

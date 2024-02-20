@@ -22,7 +22,7 @@ Tails and parses logs from files.
 | Field                               | Default                              | Description                                                                                                                                                                                                                                                     |
 |-------------------------------------|--------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `include`                           | required                             | A list of file glob patterns that match the file paths to be read.                                                                                                                                                                                              |
-| `exclude`                           | []                                   | A list of file glob patterns to exclude from reading.                                                                                                                                                                                                           |
+| `exclude`                           | []                                   | A list of file glob patterns to exclude from reading. This is applied against the paths matched by `include`.                                                                                                                                                 |
 | `start_at`                          | `end`                                | At startup, where to start reading logs from the file. Options are `beginning` or `end`.                                                                                                                                                                        |
 | `multiline`                         |                                      | A `multiline` configuration block. See [below](#multiline-configuration) for more details.                                                                                                                                                                      |
 | `force_flush_period`                | `500ms`                              | [Time](#time-parameters) since last read of data from file, after which currently buffered log should be send to pipeline. A value of `0` will disable forced flushing.                                                                                         |
@@ -151,6 +151,31 @@ The above configuration will read logs from the "simple.log" file. Some examples
 ```
 2023-06-19 05:20:50 ERROR This is a test error message
 2023-06-20 12:50:00 DEBUG This is a test debug message
+```
+
+## Example - Multiline logs parsing
+
+Receiver Configuration
+```yaml
+receivers:
+  filelog:
+    include:
+    - /var/log/example/multiline.log
+    multiline:
+      line_start_pattern: ^Exception
+```
+
+The above configuration will be able to parse multiline logs, splitting every time the `^Exception` pattern is met.
+
+```
+Exception in thread 1 "main" java.lang.NullPointerException
+        at com.example.myproject.Book.getTitle(Book.java:16)
+        at com.example.myproject.Author.getBookTitles(Author.java:25)
+        at com.example.myproject.Bootstrap.main(Bootstrap.java:14)
+Exception in thread 2 "main" java.lang.NullPointerException
+        at com.example.myproject.Book.getTitle(Book.java:16)
+        at com.example.myproject.Author.getBookTitles(Author.java:25)
+        at com.example.myproject.Bootstrap.main(Bootstrap.java:44)
 ```
 
 ## Offset tracking

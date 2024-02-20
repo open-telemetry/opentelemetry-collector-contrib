@@ -27,7 +27,7 @@ import (
 func TestTypeStr(t *testing.T) {
 	factory := NewFactory()
 
-	assert.Equal(t, "skywalking", string(factory.Type()))
+	assert.Equal(t, "skywalking", factory.Type().String())
 }
 
 func TestCreateDefaultConfig(t *testing.T) {

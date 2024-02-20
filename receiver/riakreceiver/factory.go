@@ -48,7 +48,7 @@ func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rC
 	}
 
 	riakScraper := newScraper(params.Logger, cfg, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, riakScraper.scrape, scraperhelper.WithStart(riakScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), riakScraper.scrape, scraperhelper.WithStart(riakScraper.start))
 	if err != nil {
 		return nil, err
 	}

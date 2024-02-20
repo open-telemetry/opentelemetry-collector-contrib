@@ -29,7 +29,7 @@ func newProcessorTelemetry(set component.TelemetrySettings) (*internalTelemetry,
 	it := internalTelemetry{}
 
 	counter, err := metadata.Meter(set).Int64Counter(
-		processorhelper.BuildCustomMetricName(metadata.Type, "num_grouped_spans"),
+		processorhelper.BuildCustomMetricName(metadata.Type.String(), "num_grouped_spans"),
 		metric.WithDescription("Number of spans that had attributes grouped"),
 		metric.WithUnit("1"),
 	)
@@ -39,7 +39,7 @@ func newProcessorTelemetry(set component.TelemetrySettings) (*internalTelemetry,
 	it.mNumGroupedSpans = counter
 
 	counter, err = metadata.Meter(set).Int64Counter(
-		processorhelper.BuildCustomMetricName(metadata.Type, "num_non_grouped_spans"),
+		processorhelper.BuildCustomMetricName(metadata.Type.String(), "num_non_grouped_spans"),
 		metric.WithDescription("Number of spans that did not have attributes grouped"),
 		metric.WithUnit("1"),
 	)
@@ -50,7 +50,7 @@ func newProcessorTelemetry(set component.TelemetrySettings) (*internalTelemetry,
 	it.mNumNonGroupedSpans = counter
 
 	histo, err := metadata.Meter(set).Int64Histogram(
-		processorhelper.BuildCustomMetricName(metadata.Type, "span_groups"),
+		processorhelper.BuildCustomMetricName(metadata.Type.String(), "span_groups"),
 		metric.WithDescription("Distribution of groups extracted for spans"),
 		metric.WithUnit("1"),
 	)
@@ -61,7 +61,7 @@ func newProcessorTelemetry(set component.TelemetrySettings) (*internalTelemetry,
 	it.mDistSpanGroups = histo
 
 	counter, err = metadata.Meter(set).Int64Counter(
-		processorhelper.BuildCustomMetricName(metadata.Type, "num_grouped_logs"),
+		processorhelper.BuildCustomMetricName(metadata.Type.String(), "num_grouped_logs"),
 		metric.WithDescription("Number of logs that had attributes grouped"),
 		metric.WithUnit("1"),
 	)
@@ -71,7 +71,7 @@ func newProcessorTelemetry(set component.TelemetrySettings) (*internalTelemetry,
 	it.mNumGroupedLogs = counter
 
 	counter, err = metadata.Meter(set).Int64Counter(
-		processorhelper.BuildCustomMetricName(metadata.Type, "num_non_grouped_logs"),
+		processorhelper.BuildCustomMetricName(metadata.Type.String(), "num_non_grouped_logs"),
 		metric.WithDescription("Number of logs that did not have attributes grouped"),
 		metric.WithUnit("1"),
 	)
@@ -82,7 +82,7 @@ func newProcessorTelemetry(set component.TelemetrySettings) (*internalTelemetry,
 	it.mNumNonGroupedLogs = counter
 
 	histo, err = metadata.Meter(set).Int64Histogram(
-		processorhelper.BuildCustomMetricName(metadata.Type, "log_groups"),
+		processorhelper.BuildCustomMetricName(metadata.Type.String(), "log_groups"),
 		metric.WithDescription("Distribution of groups extracted for logs"),
 		metric.WithUnit("1"),
 	)
@@ -93,7 +93,7 @@ func newProcessorTelemetry(set component.TelemetrySettings) (*internalTelemetry,
 	it.mDistLogGroups = histo
 
 	counter, err = metadata.Meter(set).Int64Counter(
-		processorhelper.BuildCustomMetricName(metadata.Type, "num_grouped_metrics"),
+		processorhelper.BuildCustomMetricName(metadata.Type.String(), "num_grouped_metrics"),
 		metric.WithDescription("Number of metrics that had attributes grouped"),
 		metric.WithUnit("1"),
 	)
@@ -103,7 +103,7 @@ func newProcessorTelemetry(set component.TelemetrySettings) (*internalTelemetry,
 	it.mNumGroupedMetrics = counter
 
 	counter, err = metadata.Meter(set).Int64Counter(
-		processorhelper.BuildCustomMetricName(metadata.Type, "num_non_grouped_metrics"),
+		processorhelper.BuildCustomMetricName(metadata.Type.String(), "num_non_grouped_metrics"),
 		metric.WithDescription("Number of metrics that did not have attributes grouped"),
 		metric.WithUnit("1"),
 	)
@@ -113,7 +113,7 @@ func newProcessorTelemetry(set component.TelemetrySettings) (*internalTelemetry,
 	it.mNumNonGroupedMetrics = counter
 
 	histo, err = metadata.Meter(set).Int64Histogram(
-		processorhelper.BuildCustomMetricName(metadata.Type, "metric_groups"),
+		processorhelper.BuildCustomMetricName(metadata.Type.String(), "metric_groups"),
 		metric.WithDescription("Distribution of groups extracted for metrics"),
 		metric.WithUnit("1"),
 	)

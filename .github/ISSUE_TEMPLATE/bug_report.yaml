@@ -26,6 +26,7 @@ body:
       - cmd/oteltestbedcol
       - cmd/telemetrygen
       - confmap/provider/s3provider
+      - confmap/provider/secretsmanagerprovider
       - connector/count
       - connector/datadog
       - connector/exceptions
@@ -117,6 +118,7 @@ body:
       - internal/core
       - internal/datadog
       - internal/docker
+      - internal/exp/metrics
       - internal/filter
       - internal/k8sconfig
       - internal/k8stest
@@ -198,7 +200,6 @@ body:
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
-      - receiver/file
       - receiver/filelog
       - receiver/filestats
       - receiver/flinkmetrics
@@ -231,6 +232,7 @@ body:
       - receiver/opencensus
       - receiver/oracledb
       - receiver/osquery
+      - receiver/otelarrow
       - receiver/otlpjsonfile
       - receiver/podman
       - receiver/postgresql

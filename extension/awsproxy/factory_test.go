@@ -61,12 +61,15 @@ func TestFactory_CreateExtension(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
 
 	ctx := context.Background()
-	ext, err := createExtension(ctx, extensiontest.NewNopCreateSettings(), cfg)
+	cs := extensiontest.NewNopCreateSettings()
+	cs.ReportStatus = func(event *component.StatusEvent) {
+		assert.NoError(t, event.Err())
+	}
+	ext, err := createExtension(ctx, cs, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
 
-	mh := newAssertNoErrorHost(t)
-	err = ext.Start(ctx, mh)
+	err = ext.Start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	var resp *http.Response
@@ -85,22 +88,4 @@ func TestFactory_CreateExtension(t *testing.T) {
 
 	err = ext.Shutdown(ctx)
 	assert.NoError(t, err)
-}
-
-// assertNoErrorHost implements a component.Host that asserts that there were no errors.
-type assertNoErrorHost struct {
-	component.Host
-	*testing.T
-}
-
-// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
-func newAssertNoErrorHost(t *testing.T) component.Host {
-	return &assertNoErrorHost{
-		Host: componenttest.NewNopHost(),
-		T:    t,
-	}
-}
-
-func (aneh *assertNoErrorHost) ReportFatalError(err error) {
-	assert.NoError(aneh, err)
 }

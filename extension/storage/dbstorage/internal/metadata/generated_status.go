@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("db_storage")
+)
+
 const (
-	Type               = "db_storage"
 	ExtensionStability = component.StabilityLevelAlpha
 )
 

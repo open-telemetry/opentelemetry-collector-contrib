@@ -8,11 +8,14 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("f5cloud")
+)
+
 const (
-	Type             = "f5cloud"
-	TracesStability  = component.StabilityLevelBeta
-	MetricsStability = component.StabilityLevelBeta
-	LogsStability    = component.StabilityLevelBeta
+	TracesStability  = component.StabilityLevelDeprecated
+	MetricsStability = component.StabilityLevelDeprecated
+	LogsStability    = component.StabilityLevelDeprecated
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {

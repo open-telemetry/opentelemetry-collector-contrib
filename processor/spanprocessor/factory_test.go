@@ -20,7 +20,7 @@ import (
 
 func TestFactory_Type(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, factory.Type(), component.Type(metadata.Type))
+	assert.Equal(t, factory.Type(), metadata.Type)
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {

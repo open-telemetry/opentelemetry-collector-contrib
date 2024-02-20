@@ -126,7 +126,7 @@ func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error
 		defer fmr.shutdownWG.Done()
 
 		if errHTTP := fmr.server.Serve(listener); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			host.ReportFatalError(errHTTP)
+			fmr.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 

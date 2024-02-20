@@ -246,7 +246,7 @@ func TestPushTraceData(tester *testing.T) {
 		Region: "",
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint:    server.URL,
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 		},
 	}
 	defer server.Close()
@@ -279,7 +279,7 @@ func TestPushLogsData(tester *testing.T) {
 		Region: "",
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint:    server.URL,
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 		},
 	}
 	defer server.Close()
