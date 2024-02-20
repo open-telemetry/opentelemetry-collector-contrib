@@ -10,6 +10,7 @@ var (
 	Pod                         = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Pod"}
 	Node                        = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Node"}
 	PersistentVolume            = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "PersistentVolume"}
+	PersistentVolumeClaim       = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "PersistentVolumeClaim"}
 	Namespace                   = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Namespace"}
 	ReplicationController       = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "ReplicationController"}
 	ResourceQuota               = schema.GroupVersionKind{Group: "", Version: "v1", Kind: "ResourceQuota"}

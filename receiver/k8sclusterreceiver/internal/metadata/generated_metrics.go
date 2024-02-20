@@ -1384,6 +1384,104 @@ func newMetricK8sPersistentvolumeCapacity(cfg MetricConfig) metricK8sPersistentv
 	return m
 }
 
+type metricK8sPersistentvolumeclaimAllocated struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.persistentvolumeclaim.allocated metric with initial data.
+func (m *metricK8sPersistentvolumeclaimAllocated) init() {
+	m.data.SetName("k8s.persistentvolumeclaim.allocated")
+	m.data.SetDescription("The allocated capacity of persistent volume.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sPersistentvolumeclaimAllocated) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPersistentvolumeclaimAllocated) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPersistentvolumeclaimAllocated) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPersistentvolumeclaimAllocated(cfg MetricConfig) metricK8sPersistentvolumeclaimAllocated {
+	m := metricK8sPersistentvolumeclaimAllocated{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sPersistentvolumeclaimCapacity struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.persistentvolumeclaim.capacity metric with initial data.
+func (m *metricK8sPersistentvolumeclaimCapacity) init() {
+	m.data.SetName("k8s.persistentvolumeclaim.capacity")
+	m.data.SetDescription("The capacity of persistent volume claim.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sPersistentvolumeclaimCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPersistentvolumeclaimCapacity) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPersistentvolumeclaimCapacity) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPersistentvolumeclaimCapacity(cfg MetricConfig) metricK8sPersistentvolumeclaimCapacity {
+	m := metricK8sPersistentvolumeclaimCapacity{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sPodPhase struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2267,6 +2365,8 @@ type MetricsBuilder struct {
 	metricK8sJobSuccessfulPods                metricK8sJobSuccessfulPods
 	metricK8sNamespacePhase                   metricK8sNamespacePhase
 	metricK8sPersistentvolumeCapacity         metricK8sPersistentvolumeCapacity
+	metricK8sPersistentvolumeclaimAllocated   metricK8sPersistentvolumeclaimAllocated
+	metricK8sPersistentvolumeclaimCapacity    metricK8sPersistentvolumeclaimCapacity
 	metricK8sPodPhase                         metricK8sPodPhase
 	metricK8sPodStatusReason                  metricK8sPodStatusReason
 	metricK8sReplicasetAvailable              metricK8sReplicasetAvailable
@@ -2330,6 +2430,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sJobSuccessfulPods:                newMetricK8sJobSuccessfulPods(mbc.Metrics.K8sJobSuccessfulPods),
 		metricK8sNamespacePhase:                   newMetricK8sNamespacePhase(mbc.Metrics.K8sNamespacePhase),
 		metricK8sPersistentvolumeCapacity:         newMetricK8sPersistentvolumeCapacity(mbc.Metrics.K8sPersistentvolumeCapacity),
+		metricK8sPersistentvolumeclaimAllocated:   newMetricK8sPersistentvolumeclaimAllocated(mbc.Metrics.K8sPersistentvolumeclaimAllocated),
+		metricK8sPersistentvolumeclaimCapacity:    newMetricK8sPersistentvolumeclaimCapacity(mbc.Metrics.K8sPersistentvolumeclaimCapacity),
 		metricK8sPodPhase:                         newMetricK8sPodPhase(mbc.Metrics.K8sPodPhase),
 		metricK8sPodStatusReason:                  newMetricK8sPodStatusReason(mbc.Metrics.K8sPodStatusReason),
 		metricK8sReplicasetAvailable:              newMetricK8sReplicasetAvailable(mbc.Metrics.K8sReplicasetAvailable),
@@ -2437,6 +2539,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sJobSuccessfulPods.emit(ils.Metrics())
 	mb.metricK8sNamespacePhase.emit(ils.Metrics())
 	mb.metricK8sPersistentvolumeCapacity.emit(ils.Metrics())
+	mb.metricK8sPersistentvolumeclaimAllocated.emit(ils.Metrics())
+	mb.metricK8sPersistentvolumeclaimCapacity.emit(ils.Metrics())
 	mb.metricK8sPodPhase.emit(ils.Metrics())
 	mb.metricK8sPodStatusReason.emit(ils.Metrics())
 	mb.metricK8sReplicasetAvailable.emit(ils.Metrics())
@@ -2612,6 +2716,16 @@ func (mb *MetricsBuilder) RecordK8sNamespacePhaseDataPoint(ts pcommon.Timestamp,
 // RecordK8sPersistentvolumeCapacityDataPoint adds a data point to k8s.persistentvolume.capacity metric.
 func (mb *MetricsBuilder) RecordK8sPersistentvolumeCapacityDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sPersistentvolumeCapacity.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sPersistentvolumeclaimAllocatedDataPoint adds a data point to k8s.persistentvolumeclaim.allocated metric.
+func (mb *MetricsBuilder) RecordK8sPersistentvolumeclaimAllocatedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sPersistentvolumeclaimAllocated.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sPersistentvolumeclaimCapacityDataPoint adds a data point to k8s.persistentvolumeclaim.capacity metric.
+func (mb *MetricsBuilder) RecordK8sPersistentvolumeclaimCapacityDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sPersistentvolumeclaimCapacity.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sPodPhaseDataPoint adds a data point to k8s.pod.phase metric.

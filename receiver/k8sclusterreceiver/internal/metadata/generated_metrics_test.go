@@ -49,7 +49,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -169,6 +168,14 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordK8sPersistentvolumeclaimAllocatedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sPersistentvolumeclaimCapacityDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordK8sPodPhaseDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -273,8 +280,20 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sPersistentvolumeType("k8s.persistentvolume.type-val")
 			rb.SetK8sPersistentvolumeUID("k8s.persistentvolume.uid-val")
 			rb.SetK8sPersistentvolumeVolumeMode("k8s.persistentvolume.volume_mode-val")
+			rb.SetK8sPersistentvolumeclaimAccessModes("k8s.persistentvolumeclaim.access_modes-val")
+			rb.SetK8sPersistentvolumeclaimAnnotations("k8s.persistentvolumeclaim.annotations-val")
+			rb.SetK8sPersistentvolumeclaimFinalizers("k8s.persistentvolumeclaim.finalizers-val")
+			rb.SetK8sPersistentvolumeclaimLabels("k8s.persistentvolumeclaim.labels-val")
 			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
+			rb.SetK8sPersistentvolumeclaimNamespace("k8s.persistentvolumeclaim.namespace-val")
+			rb.SetK8sPersistentvolumeclaimPhase("k8s.persistentvolumeclaim.phase-val")
+			rb.SetK8sPersistentvolumeclaimSelector("k8s.persistentvolumeclaim.selector-val")
+			rb.SetK8sPersistentvolumeclaimStartTime("k8s.persistentvolumeclaim.start_time-val")
+			rb.SetK8sPersistentvolumeclaimStorageClass("k8s.persistentvolumeclaim.storage_class-val")
+			rb.SetK8sPersistentvolumeclaimType("k8s.persistentvolumeclaim.type-val")
 			rb.SetK8sPersistentvolumeclaimUID("k8s.persistentvolumeclaim.uid-val")
+			rb.SetK8sPersistentvolumeclaimVolumeMode("k8s.persistentvolumeclaim.volume_mode-val")
+			rb.SetK8sPersistentvolumeclaimVolumeName("k8s.persistentvolumeclaim.volume_name-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
 			rb.SetK8sPodStartTime("k8s.pod.start_time-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
@@ -649,6 +668,30 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The capacity of persistent volume.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.persistentvolumeclaim.allocated":
+					assert.False(t, validatedMetrics["k8s.persistentvolumeclaim.allocated"], "Found a duplicate in the metrics slice: k8s.persistentvolumeclaim.allocated")
+					validatedMetrics["k8s.persistentvolumeclaim.allocated"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The allocated capacity of persistent volume.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.persistentvolumeclaim.capacity":
+					assert.False(t, validatedMetrics["k8s.persistentvolumeclaim.capacity"], "Found a duplicate in the metrics slice: k8s.persistentvolumeclaim.capacity")
+					validatedMetrics["k8s.persistentvolumeclaim.capacity"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The capacity of persistent volume claim.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

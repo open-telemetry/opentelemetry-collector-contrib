@@ -148,6 +148,66 @@ resource_attributes:
     type: string
     enabled: true
 
+  k8s.persistentvolumeclaim.namespace:
+    description: The namespace of the Persistent Volume Claim.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.labels:
+    description: Labels of the Persistent Volume Claim.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.phase:
+    description: The phase of the Persistent Volume Claim.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.selector:
+    description: The selector of the Persistent Volume Claim.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.storage_class:
+    description: The storage class of the Persistent Volume Claim.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.volume_mode:
+    description: The volume mode of the Persistent Volume Claim.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.access_modes:
+    description: Access modes of the Persistent Volume Claim.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.finalizers:
+    description: Finalizers of the Persistent Volume Claim.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.start_time:
+    description: The start time of the Persistent Volume Claim.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.annotations:
+    description: The annotations of the Persistent Volume Claim.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.volume_name:
+    description: The volume name of the Persistent Volume Claim.
+    type: string
+    enabled: true
+
+  k8s.persistentvolumeclaim.type:
+    description: The type of the Persistent Volume Claim.
+    type: string
+    enabled: true
+
   container.id:
     description: The container id.
     type: string
@@ -177,11 +237,6 @@ resource_attributes:
     description: The k8s pod uid.
     type: string
     enabled: true
-
-  k8s.pod.start_time:
-    description: "The start time of the Pod."
-    enabled: true
-    type: string
 
   k8s.replicaset.name:
     description: The k8s replicaset name
@@ -416,6 +471,20 @@ metrics:
   k8s.persistentvolume.capacity:
     enabled: true
     description: The capacity of persistent volume.
+    unit: "By"
+    gauge:
+      value_type: int
+
+  k8s.persistentvolumeclaim.capacity:
+    enabled: true
+    description: The capacity of persistent volume claim.
+    unit: "By"
+    gauge:
+      value_type: int
+
+  k8s.persistentvolumeclaim.allocated:
+    enabled: true
+    description: The allocated capacity of persistent volume.
     unit: "By"
     gauge:
       value_type: int

@@ -51,8 +51,20 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sPersistentvolumeType("k8s.persistentvolume.type-val")
 			rb.SetK8sPersistentvolumeUID("k8s.persistentvolume.uid-val")
 			rb.SetK8sPersistentvolumeVolumeMode("k8s.persistentvolume.volume_mode-val")
+			rb.SetK8sPersistentvolumeclaimAccessModes("k8s.persistentvolumeclaim.access_modes-val")
+			rb.SetK8sPersistentvolumeclaimAnnotations("k8s.persistentvolumeclaim.annotations-val")
+			rb.SetK8sPersistentvolumeclaimFinalizers("k8s.persistentvolumeclaim.finalizers-val")
+			rb.SetK8sPersistentvolumeclaimLabels("k8s.persistentvolumeclaim.labels-val")
 			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
+			rb.SetK8sPersistentvolumeclaimNamespace("k8s.persistentvolumeclaim.namespace-val")
+			rb.SetK8sPersistentvolumeclaimPhase("k8s.persistentvolumeclaim.phase-val")
+			rb.SetK8sPersistentvolumeclaimSelector("k8s.persistentvolumeclaim.selector-val")
+			rb.SetK8sPersistentvolumeclaimStartTime("k8s.persistentvolumeclaim.start_time-val")
+			rb.SetK8sPersistentvolumeclaimStorageClass("k8s.persistentvolumeclaim.storage_class-val")
+			rb.SetK8sPersistentvolumeclaimType("k8s.persistentvolumeclaim.type-val")
 			rb.SetK8sPersistentvolumeclaimUID("k8s.persistentvolumeclaim.uid-val")
+			rb.SetK8sPersistentvolumeclaimVolumeMode("k8s.persistentvolumeclaim.volume_mode-val")
+			rb.SetK8sPersistentvolumeclaimVolumeName("k8s.persistentvolumeclaim.volume_name-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
 			rb.SetK8sPodStartTime("k8s.pod.start_time-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
@@ -81,9 +93,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 47, res.Attributes().Len())
+				assert.Equal(t, 74, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 47, res.Attributes().Len())
+				assert.Equal(t, 74, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -281,15 +293,75 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "k8s.persistentvolume.volume_mode-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.access_modes")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.access_modes-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.annotations")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.annotations-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.finalizers")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.finalizers-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.labels")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.labels-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.name")
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.persistentvolumeclaim.name-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.namespace")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.namespace-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.phase")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.phase-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.selector")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.selector-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.start_time-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.storage_class")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.storage_class-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.type")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.type-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.uid")
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.persistentvolumeclaim.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.volume_mode")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.volume_mode-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.volume_name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.volume_name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.pod.name")
 			assert.True(t, ok)
