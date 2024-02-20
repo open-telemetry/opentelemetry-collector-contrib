@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.94.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.94.1
-	go.opentelemetry.io/collector/config/confignet v0.94.1
+	go.opentelemetry.io/collector/config/confignet v0.95.0
 	go.opentelemetry.io/collector/confmap v0.94.1
 	go.opentelemetry.io/collector/consumer v0.94.1
 	go.opentelemetry.io/collector/pdata v1.1.0

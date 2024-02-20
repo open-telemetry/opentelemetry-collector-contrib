@@ -27,7 +27,7 @@ require (
 require (
 	go.opentelemetry.io/collector/config/configgrpc v0.94.1
 	go.opentelemetry.io/collector/config/confighttp v0.94.1
-	go.opentelemetry.io/collector/config/confignet v0.94.1
+	go.opentelemetry.io/collector/config/confignet v0.95.0
 	go.opentelemetry.io/collector/pdata v1.1.0
 	go.opentelemetry.io/otel/metric v1.23.1
 	go.opentelemetry.io/otel/trace v1.23.1
