@@ -475,16 +475,23 @@ func waitForSupervisorConnection(connection chan bool, connected bool) {
 }
 
 func TestSupervisorRestartCommand(t *testing.T) {
-
-	var connectedCount atomic.Int32
+	var healthReport atomic.Value
+	var agentConfig atomic.Value
 	server := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
-			OnConnectedFunc: func(_ types.Connection) {
-				connectedCount.Add(1)
-			},
-			OnMessageFunc: func(_ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.Health != nil {
+					healthReport.Store(message.Health)
+				}
+
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						agentConfig.Store(string(config.Body))
+					}
+				}
 				return &protobufs.ServerToAgent{}
 			},
 		})
@@ -494,11 +501,40 @@ func TestSupervisorRestartCommand(t *testing.T) {
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
+	// Send the initial config
+	cfg, hash, _, _ := createSimplePipelineCollectorConf(t)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: cfg.Bytes()},
+				},
+			},
+			ConfigHash: hash,
+		},
+	})
+
 	require.Eventually(t, func() bool {
+		cfg, ok := agentConfig.Load().(string)
+		if ok {
+			return strings.Contains(cfg, "health_check")
+		}
+		return false
+	}, 5*time.Second, 500*time.Millisecond, "Collector was not started with healthcheck")
 
-		return connectedCount.Load() == 1
+	require.Eventually(t, func() bool {
+		health := healthReport.Load().(*protobufs.ComponentHealth)
 
-	}, 5*time.Second, 500*time.Millisecond, "Collector never connected")
+		if health != nil {
+			return health.Healthy && health.LastError == ""
+		}
+
+		return false
+	}, 5*time.Second, 500*time.Millisecond, "Collector never became healthy")
+
+	// The health report should be received after the restart
+	healthReport.Store(&protobufs.ComponentHealth{})
 
 	server.sendToSupervisor(&protobufs.ServerToAgent{
 		Command: &protobufs.ServerToAgentCommand{
@@ -507,6 +543,13 @@ func TestSupervisorRestartCommand(t *testing.T) {
 	})
 
 	require.Eventually(t, func() bool {
-		return s.LastRestartError() == nil
-	}, 10*time.Second, 250*time.Millisecond, "Collector didn't connect after restart")
+
+		health := healthReport.Load().(*protobufs.ComponentHealth)
+
+		if health != nil {
+			return health.Healthy && health.LastError == ""
+		}
+
+		return false
+	}, 10*time.Second, 250*time.Millisecond, "Collector never reported healthy after restart")
 }

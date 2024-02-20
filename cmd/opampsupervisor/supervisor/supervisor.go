@@ -62,7 +62,6 @@ type Supervisor struct {
 	healthCheckTicker  *backoff.Ticker
 	healthChecker      *healthchecker.HTTPHealthChecker
 	lastHealthCheckErr error
-	lastRestartErr     error
 
 	// Supervisor's own config.
 	config config.Supervisor
@@ -616,17 +615,12 @@ func (s *Supervisor) recalcEffectiveConfig() (configChanged bool, err error) {
 }
 
 func (s *Supervisor) handleRestartCommand() error {
+	s.logger.Debug("Received restart command")
 	err := s.commander.Restart(context.Background())
-	s.lastRestartErr = err
 	if err != nil {
 		s.logger.Error("Could not restart agent process", zap.Error(err))
 	}
 	return err
-}
-
-// Used in tests.
-func (s *Supervisor) LastRestartError() error {
-	return s.lastRestartErr
 }
 
 func (s *Supervisor) startAgent() {
