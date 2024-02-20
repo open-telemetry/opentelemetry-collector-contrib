@@ -6,6 +6,7 @@ package githubactionsreceiver
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -98,7 +100,7 @@ func TestUnmarshalTraces(t *testing.T) {
 			require.NoError(t, err)
 
 			unmarshaler := &jsonTracesUnmarshaler{logger: logger}
-			config := &Config{} // Mock config as needed
+			config := &Config{}
 
 			traces, err := unmarshaler.UnmarshalTraces(payload, config)
 
@@ -166,5 +168,92 @@ func TestProcessSteps(t *testing.T) {
 				require.Equal(t, expectedStatusCode, statusCode, fmt.Sprintf("Unexpected status code for span #%d", i+startIdx))
 			}
 		})
+	}
+}
+
+func TestResourceAndSpanAttributesCreation(t *testing.T) {
+	tests := []struct {
+		desc            string
+		payloadFilePath string
+		expectedSteps   []map[string]string
+	}{
+		{
+			desc:            "WorkflowJobEvent Step Attributes",
+			payloadFilePath: "./testdata/completed/5_workflow_job_completed.json",
+			expectedSteps: []map[string]string{
+				{"ci.github.step.name": "Set up job", "ci.github.step.number": "1"},
+				{"ci.github.step.name": "Run actions/checkout@v3", "ci.github.step.number": "2"},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.desc, func(t *testing.T) {
+			logger := zaptest.NewLogger(t)
+			config := &Config{}
+
+			payload, err := os.ReadFile(tc.payloadFilePath)
+			require.NoError(t, err)
+
+			unmarshaler := &jsonTracesUnmarshaler{logger: logger}
+			traces, err := unmarshaler.UnmarshalTraces(payload, config)
+			require.NoError(t, err)
+
+			rs := traces.ResourceSpans().At(0)
+			ss := rs.ScopeSpans().At(0)
+
+			for _, expectedStep := range tc.expectedSteps {
+				stepFound := false
+
+				for i := 0; i < ss.Spans().Len() && !stepFound; i++ {
+					span := ss.Spans().At(i)
+					attrs := span.Attributes()
+
+					stepValue, found := attrs.Get("ci.github.step.name")
+					if !found {
+						continue // Skip if the attribute is not found
+					}
+
+					stepName := stepValue.Str()
+					expectedStepName := expectedStep["ci.github.step.name"]
+
+					if stepName == expectedStepName {
+						stepFound = true
+						for attrKey, expectedValue := range expectedStep {
+							attrValue, found := attrs.Get(attrKey)
+							if !found {
+								require.Fail(t, fmt.Sprintf("Attribute '%s' not found in span for step '%s'", attrKey, stepName))
+								continue
+							}
+							actualValue := attributeValueToString(attrValue)
+							require.Equal(t, expectedValue, actualValue, "Attribute '%s' does not match expected value for step '%s'", attrKey, stepName)
+						}
+					}
+				}
+
+				require.True(t, stepFound, "Step '%s' not found in any span", expectedStep["ci.github.step.name"])
+			}
+
+		})
+	}
+}
+
+// attributeValueToString converts an attribute value to a string regardless of its actual type
+func attributeValueToString(attr pcommon.Value) string {
+	switch attr.Type() {
+	case pcommon.ValueTypeStr:
+		return attr.Str()
+	case pcommon.ValueTypeInt:
+		return strconv.FormatInt(attr.Int(), 10)
+	case pcommon.ValueTypeDouble:
+		return strconv.FormatFloat(attr.Double(), 'f', -1, 64)
+	case pcommon.ValueTypeBool:
+		return strconv.FormatBool(attr.Bool())
+	case pcommon.ValueTypeMap:
+		return "<Map Value>"
+	case pcommon.ValueTypeSlice:
+		return "<Slice Value>"
+	default:
+		return "<Unknown Value Type>"
 	}
 }
