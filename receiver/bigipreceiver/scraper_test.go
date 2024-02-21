@@ -36,7 +36,7 @@ func TestScraperStart(t *testing.T) {
 			desc: "Bad Config",
 			scraper: &bigipScraper{
 				cfg: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: defaultEndpoint,
 						TLSSetting: configtls.TLSClientSetting{
 							TLSSetting: configtls.TLSSetting{
@@ -53,7 +53,7 @@ func TestScraperStart(t *testing.T) {
 			desc: "Valid Config",
 			scraper: &bigipScraper{
 				cfg: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						TLSSetting: configtls.TLSClientSetting{},
 						Endpoint:   defaultEndpoint,
 					},
@@ -85,29 +85,29 @@ func TestScaperScrape(t *testing.T) {
 	}{
 		{
 			desc: "Nil client",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				return nil
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
 			expectedErr: errClientNotInit,
 		},
 		{
 			desc: "Login API Call Failure",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("GetNewToken", mock.Anything).Return(errors.New("some api error"))
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
 			expectedErr: errors.New("some api error"),
 		},
 		{
 			desc: "Get API Calls All Failure",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("GetNewToken", mock.Anything).Return(nil)
 				mockClient.On("GetVirtualServers", mock.Anything).Return(nil, errors.New("some virtual api error"))
@@ -116,14 +116,14 @@ func TestScaperScrape(t *testing.T) {
 				mockClient.On("GetNodes", mock.Anything).Return(nil, errors.New("some node api error"))
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
 			expectedErr: errors.New("failed to scrape any metrics"),
 		},
 		{
 			desc: "Successful Full Empty Collection",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("GetNewToken", mock.Anything).Return(nil)
 				mockClient.On("GetVirtualServers", mock.Anything).Return(&models.VirtualServers{}, nil)

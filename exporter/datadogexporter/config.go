@@ -292,6 +292,11 @@ type TracesConfig struct {
 	// The default list of peer tags can be found in https://github.com/DataDog/datadog-agent/blob/main/pkg/trace/stats/concentrator.go.
 	PeerTagsAggregation bool `mapstructure:"peer_tags_aggregation"`
 
+	// [BETA] Optional list of supplementary peer tags that go beyond the defaults. The Datadog backend validates all tags
+	// and will drop ones that are unapproved. The default set of peer tags can be found at
+	// https://github.com/DataDog/datadog-agent/blob/505170c4ac8c3cbff1a61cf5f84b28d835c91058/pkg/trace/stats/concentrator.go#L55.
+	PeerTags []string `mapstructure:"peer_tags"`
+
 	// TraceBuffer specifies the number of Datadog Agent TracerPayloads to buffer before dropping.
 	// The default value is 0, meaning the Datadog Agent TracerPayloads are unbuffered.
 	TraceBuffer int `mapstructure:"trace_buffer"`
@@ -377,14 +382,14 @@ type HostMetadataConfig struct {
 	Tags []string `mapstructure:"tags"`
 }
 
-// LimitedTLSClientSetting is a subset of TLSClientSetting, see LimitedHTTPClientSettings for more details
+// LimitedTLSClientSetting is a subset of TLSClientSetting, see LimitedClientConfig for more details
 type LimitedTLSClientSettings struct {
 	// InsecureSkipVerify controls whether a client verifies the server's
 	// certificate chain and host name.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 }
 
-type LimitedHTTPClientSettings struct {
+type LimitedClientConfig struct {
 	TLSSetting LimitedTLSClientSettings `mapstructure:"tls,omitempty"`
 }
 
@@ -394,7 +399,7 @@ type Config struct {
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 
-	LimitedHTTPClientSettings `mapstructure:",squash"`
+	LimitedClientConfig `mapstructure:",squash"`
 
 	TagsConfig `mapstructure:",squash"`
 

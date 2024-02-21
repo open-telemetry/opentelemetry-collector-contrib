@@ -29,10 +29,10 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	httpClientSettings := confighttp.NewDefaultHTTPClientSettings()
+	httpClientSettings := confighttp.NewDefaultClientConfig()
 	httpClientSettings.Timeout = 10 * time.Second
 	return &Config{
-		Ingress: confighttp.HTTPServerSettings{
+		Ingress: confighttp.ServerConfig{
 			Endpoint: defaultEndpoint,
 		},
 		Egress: httpClientSettings,

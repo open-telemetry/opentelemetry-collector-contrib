@@ -49,7 +49,7 @@ type defaultElasticsearchClient struct {
 var _ elasticsearchClient = (*defaultElasticsearchClient)(nil)
 
 func newElasticsearchClient(settings component.TelemetrySettings, c Config, h component.Host) (*defaultElasticsearchClient, error) {
-	client, err := c.HTTPClientSettings.ToClient(h, settings)
+	client, err := c.ClientConfig.ToClient(h, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -106,10 +106,10 @@ const (
 	indexStatsMetrics = "_all"
 )
 
-func (c defaultElasticsearchClient) Nodes(ctx context.Context, nodeIds []string) (*model.Nodes, error) {
+func (c defaultElasticsearchClient) Nodes(ctx context.Context, nodeIDs []string) (*model.Nodes, error) {
 	var nodeSpec string
-	if len(nodeIds) > 0 {
-		nodeSpec = strings.Join(nodeIds, ",")
+	if len(nodeIDs) > 0 {
+		nodeSpec = strings.Join(nodeIDs, ",")
 	} else {
 		nodeSpec = "_all"
 	}

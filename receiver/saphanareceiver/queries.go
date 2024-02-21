@@ -63,14 +63,14 @@ var queries = []monitoringQuery{
 			{
 				key: "active_services",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaServiceCountDataPoint(now, val, metadata.AttributeServiceStatusActive)
 				},
 			},
 			{
 				key: "inactive_services",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaServiceCountDataPoint(now, val, metadata.AttributeServiceStatusInactive)
 				},
 			},
@@ -86,14 +86,14 @@ var queries = []monitoringQuery{
 			{
 				key: "active_threads",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaServiceThreadCountDataPoint(now, val, metadata.AttributeThreadStatusActive)
 				},
 			},
 			{
 				key: "inactive_threads",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaServiceThreadCountDataPoint(now, val, metadata.AttributeThreadStatusInactive)
 				},
 			},
@@ -109,56 +109,56 @@ var queries = []monitoringQuery{
 			{
 				key: "main_data",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryTypeMain, metadata.AttributeColumnMemorySubtypeData)
 				},
 			},
 			{
 				key: "main_dict",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryTypeMain, metadata.AttributeColumnMemorySubtypeDict)
 				},
 			},
 			{
 				key: "main_index",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryTypeMain, metadata.AttributeColumnMemorySubtypeIndex)
 				},
 			},
 			{
 				key: "main_misc",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryTypeMain, metadata.AttributeColumnMemorySubtypeMisc)
 				},
 			},
 			{
 				key: "delta_data",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryTypeDelta, metadata.AttributeColumnMemorySubtypeData)
 				},
 			},
 			{
 				key: "delta_dict",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryTypeDelta, metadata.AttributeColumnMemorySubtypeDict)
 				},
 			},
 			{
 				key: "delta_index",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryTypeDelta, metadata.AttributeColumnMemorySubtypeIndex)
 				},
 			},
 			{
 				key: "delta_misc",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaColumnMemoryUsedDataPoint(now, val, metadata.AttributeColumnMemoryTypeDelta, metadata.AttributeColumnMemorySubtypeMisc)
 				},
 			},
@@ -174,14 +174,14 @@ var queries = []monitoringQuery{
 			{
 				key: "fixed",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaRowStoreMemoryUsedDataPoint(now, val, metadata.AttributeRowMemoryTypeFixed)
 				},
 			},
 			{
 				key: "variable",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaRowStoreMemoryUsedDataPoint(now, val, metadata.AttributeRowMemoryTypeVariable)
 				},
 			},
@@ -232,7 +232,7 @@ var queries = []monitoringQuery{
 			{
 				key: "age",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaBackupLatestDataPoint(now, val)
 				},
 			},
@@ -281,21 +281,21 @@ var queries = []monitoringQuery{
 			{
 				key: "updates",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaTransactionCountDataPoint(now, val, metadata.AttributeTransactionTypeUpdate)
 				},
 			},
 			{
 				key: "commits",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaTransactionCountDataPoint(now, val, metadata.AttributeTransactionTypeCommit)
 				},
 			},
 			{
 				key: "rollbacks",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaTransactionCountDataPoint(now, val, metadata.AttributeTransactionTypeRollback)
 				},
 			},
@@ -311,7 +311,7 @@ var queries = []monitoringQuery{
 			{
 				key: "blocks",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaTransactionBlockedDataPoint(now, val)
 				},
 			},
@@ -415,35 +415,35 @@ var queries = []monitoringQuery{
 			{
 				key: "external",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(now, val, metadata.AttributeInternalExternalRequestTypeExternal)
 				},
 			},
 			{
 				key: "internal",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(now, val, metadata.AttributeInternalExternalRequestTypeInternal)
 				},
 			},
 			{
 				key: "active",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaNetworkRequestCountDataPoint(now, val, metadata.AttributeActivePendingRequestStateActive)
 				},
 			},
 			{
 				key: "pending",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaNetworkRequestCountDataPoint(now, val, metadata.AttributeActivePendingRequestStatePending)
 				},
 			},
 			{
 				key: "avg_time",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaNetworkRequestAverageTimeDataPoint(now, val)
 				},
 			},
@@ -722,91 +722,91 @@ var queries = []monitoringQuery{
 			{
 				key: "free_physical_memory",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaHostMemoryCurrentDataPoint(now, val, metadata.AttributeMemoryStateUsedFreeFree)
 				},
 			},
 			{
 				key: "used_physical_memory",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaHostMemoryCurrentDataPoint(now, val, metadata.AttributeMemoryStateUsedFreeUsed)
 				},
 			},
 			{
 				key: "free_swap_space",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaHostSwapCurrentDataPoint(now, val, metadata.AttributeHostSwapStateFree)
 				},
 			},
 			{
 				key: "used_swap_space",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaHostSwapCurrentDataPoint(now, val, metadata.AttributeHostSwapStateUsed)
 				},
 			},
 			{
 				key: "instance_total_used",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaInstanceMemoryCurrentDataPoint(now, val, metadata.AttributeMemoryStateUsedFreeUsed)
 				},
 			},
 			{
 				key: "instance_total_used_peak",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaInstanceMemoryUsedPeakDataPoint(now, val)
 				},
 			},
 			{
 				key: "instance_total_free",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaInstanceMemoryCurrentDataPoint(now, val, metadata.AttributeMemoryStateUsedFreeFree)
 				},
 			},
 			{
 				key: "instance_code_size",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaInstanceCodeSizeDataPoint(now, val)
 				},
 			},
 			{
 				key: "instance_shared_memory_allocated",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaInstanceMemorySharedAllocatedDataPoint(now, val)
 				},
 			},
 			{
 				key: "cpu_user",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaCPUUsedDataPoint(now, val, metadata.AttributeCPUTypeUser)
 				},
 			},
 			{
 				key: "cpu_system",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaCPUUsedDataPoint(now, val, metadata.AttributeCPUTypeSystem)
 				},
 			},
 			{
 				key: "cpu_io_wait",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaCPUUsedDataPoint(now, val, metadata.AttributeCPUTypeIoWait)
 				},
 			},
 			{
 				key: "cpu_idle",
 				addMetricFunction: func(mb *metadata.MetricsBuilder, now pcommon.Timestamp, val string,
-					row map[string]string) error {
+					_ map[string]string) error {
 					return mb.RecordSaphanaCPUUsedDataPoint(now, val, metadata.AttributeCPUTypeIdle)
 				},
 			},

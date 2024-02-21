@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("osquery")
+)
+
 const (
-	Type          = "osquery"
 	LogsStability = component.StabilityLevelDevelopment
 )
 

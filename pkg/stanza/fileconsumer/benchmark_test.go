@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -185,13 +186,17 @@ func BenchmarkFileInput(b *testing.B) {
 			require.NoError(b, err)
 
 			// write the remainder of lines while running
+			var wg sync.WaitGroup
+			wg.Add(1)
 			go func() {
 				for i := mid; i < b.N; i++ {
 					for _, file := range files {
 						file.log(i)
 					}
 				}
+				wg.Done()
 			}()
+			wg.Wait()
 
 			for i := 0; i < b.N*len(files); i++ {
 				<-received

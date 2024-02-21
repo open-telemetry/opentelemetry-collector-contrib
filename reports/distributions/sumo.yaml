@@ -39,6 +39,7 @@ components:
         - oidc
         - pprof
         - sigv4auth
+        - sumologic
     processor:
         - attributes
         - cumulativetodelta
@@ -56,7 +57,6 @@ components:
         - resourcedetection
         - routing
         - schema
-        - servicegraph
         - span
         - spanmetrics
         - sumologic

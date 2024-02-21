@@ -7,11 +7,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/parseutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -51,27 +50,23 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	if c.Delimiter == c.PairDelimiter {
-		return nil, errors.New("delimiter and pair_delimiter cannot be the same value")
-	}
-
 	if c.Delimiter == "" {
 		return nil, errors.New("delimiter is a required parameter")
 	}
 
-	// split on whitespace by default, if pair delimiter is set, use
-	// strings.Split()
-	pairSplitFunc := splitStringByWhitespace
+	pairDelimiter := " "
 	if c.PairDelimiter != "" {
-		pairSplitFunc = func(input string) []string {
-			return strings.Split(input, c.PairDelimiter)
-		}
+		pairDelimiter = c.PairDelimiter
+	}
+
+	if c.Delimiter == pairDelimiter {
+		return nil, errors.New("delimiter and pair_delimiter cannot be the same value")
 	}
 
 	return &Parser{
 		ParserOperator: parserOperator,
 		delimiter:      c.Delimiter,
-		pairSplitFunc:  pairSplitFunc,
+		pairDelimiter:  pairDelimiter,
 	}, nil
 }
 
@@ -79,7 +74,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 type Parser struct {
 	helper.ParserOperator
 	delimiter     string
-	pairSplitFunc func(input string) []string
+	pairDelimiter string
 }
 
 // Process will parse an entry for key value pairs.
@@ -91,45 +86,21 @@ func (kv *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 func (kv *Parser) parse(value any) (any, error) {
 	switch m := value.(type) {
 	case string:
-		return kv.parser(m, kv.delimiter)
+		return kv.parser(m, kv.delimiter, kv.pairDelimiter)
 	default:
 		return nil, fmt.Errorf("type %T cannot be parsed as key value pairs", value)
 	}
 }
 
-func (kv *Parser) parser(input string, delimiter string) (map[string]any, error) {
+func (kv *Parser) parser(input string, delimiter string, pairDelimiter string) (map[string]any, error) {
 	if input == "" {
 		return nil, fmt.Errorf("parse from field %s is empty", kv.ParseFrom.String())
 	}
 
-	parsed := make(map[string]any)
-
-	var err error
-	for _, raw := range kv.pairSplitFunc(input) {
-		m := strings.SplitN(raw, delimiter, 2)
-		if len(m) != 2 {
-			e := fmt.Errorf("expected '%s' to split by '%s' into two items, got %d", raw, delimiter, len(m))
-			err = multierr.Append(err, e)
-			continue
-		}
-
-		key := strings.TrimSpace(strings.Trim(m[0], "\"'"))
-		value := strings.TrimSpace(strings.Trim(m[1], "\"'"))
-
-		parsed[key] = value
+	pairs, err := parseutils.SplitString(input, pairDelimiter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse pairs from input: %w", err)
 	}
 
-	return parsed, err
-}
-
-// split on whitespace and preserve quoted text
-func splitStringByWhitespace(input string) []string {
-	quoted := false
-	raw := strings.FieldsFunc(input, func(r rune) bool {
-		if r == '"' || r == '\'' {
-			quoted = !quoted
-		}
-		return !quoted && r == ' '
-	})
-	return raw
+	return parseutils.ParseKeyValuePairs(pairs, delimiter)
 }

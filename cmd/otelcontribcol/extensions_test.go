@@ -25,7 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
@@ -149,7 +149,7 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension: "http_forwarder",
 			getConfigFn: func() component.Config {
-				cfg := extFactories["http_forwarder"].CreateDefaultConfig().(*httpforwarder.Config)
+				cfg := extFactories["http_forwarder"].CreateDefaultConfig().(*httpforwarderextension.Config)
 				cfg.Egress.Endpoint = "http://" + endpoint
 				cfg.Ingress.Endpoint = testutil.GetAvailableLocalAddress(t)
 				return cfg
@@ -292,8 +292,11 @@ type getExtensionConfigFn func() component.Config
 // the test can't be done with the default configuration for the component.
 func verifyExtensionLifecycle(t *testing.T, factory extension.Factory, getConfigFn getExtensionConfigFn) {
 	ctx := context.Background()
-	host := newAssertNoErrorHost(t)
+	host := componenttest.NewNopHost()
 	extCreateSet := extensiontest.NewNopCreateSettings()
+	extCreateSet.ReportStatus = func(event *component.StatusEvent) {
+		require.NoError(t, event.Err())
+	}
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
@@ -330,24 +333,4 @@ func verifyExtensionShutdown(tb testing.TB, factory extension.Factory, getConfig
 	assert.NotPanics(tb, func() {
 		assert.NoError(tb, e.Shutdown(ctx))
 	})
-}
-
-// assertNoErrorHost implements a component.Host that asserts that there were no errors.
-type assertNoErrorHost struct {
-	component.Host
-	*testing.T
-}
-
-var _ component.Host = (*assertNoErrorHost)(nil)
-
-// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
-func newAssertNoErrorHost(t *testing.T) component.Host {
-	return &assertNoErrorHost{
-		componenttest.NewNopHost(),
-		t,
-	}
-}
-
-func (aneh *assertNoErrorHost) ReportFatalError(err error) {
-	assert.NoError(aneh, err)
 }

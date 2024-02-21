@@ -19,7 +19,7 @@ func TestValidStream(t *testing.T) {
 
 	uaa, err := newUAATokenProvider(
 		zap.NewNop(),
-		cfg.UAA.LimitedHTTPClientSettings,
+		cfg.UAA.LimitedClientConfig,
 		cfg.UAA.Username,
 		string(cfg.UAA.Password))
 
@@ -29,7 +29,7 @@ func TestValidStream(t *testing.T) {
 	streamFactory, streamErr := newEnvelopeStreamFactory(
 		componenttest.NewNopTelemetrySettings(),
 		uaa,
-		cfg.RLPGateway.HTTPClientSettings,
+		cfg.RLPGateway.ClientConfig,
 		componenttest.NewNopHost())
 
 	require.NoError(t, streamErr)
@@ -55,7 +55,7 @@ func TestInvalidStream(t *testing.T) {
 
 	uaa, err := newUAATokenProvider(
 		zap.NewNop(),
-		cfg.UAA.LimitedHTTPClientSettings,
+		cfg.UAA.LimitedClientConfig,
 		cfg.UAA.Username,
 		string(cfg.UAA.Password))
 
@@ -66,7 +66,7 @@ func TestInvalidStream(t *testing.T) {
 	streamFactory, streamErr := newEnvelopeStreamFactory(
 		componenttest.NewNopTelemetrySettings(),
 		uaa,
-		cfg.RLPGateway.HTTPClientSettings,
+		cfg.RLPGateway.ClientConfig,
 		componenttest.NewNopHost())
 
 	require.NoError(t, streamErr)

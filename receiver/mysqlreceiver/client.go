@@ -137,7 +137,7 @@ type ReplicaStatusStats struct {
 	lastIOError               string
 	lastSQLErrno              int64
 	lastSQLError              string
-	replicateIgnoreServerIds  string
+	replicateIgnoreServerIDs  string
 	sourceServerID            int64
 	sourceUUID                string
 	sourceInfoFile            string
@@ -462,7 +462,7 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 			case "last_sql_error":
 				dest = append(dest, &s.lastSQLError)
 			case "replicate_ignore_server_ids":
-				dest = append(dest, &s.replicateIgnoreServerIds)
+				dest = append(dest, &s.replicateIgnoreServerIDs)
 			case "source_server_id":
 				dest = append(dest, &s.sourceServerID)
 			case "source_uuid":

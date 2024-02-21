@@ -84,6 +84,7 @@ func newSignalFxExporter(
 		config.IncludeMetrics,
 		config.NonAlphanumericDimensionChars,
 		config.DropHistogramBuckets,
+		!config.SendOTLPHistograms, // if SendOTLPHistograms is true, do not process histograms when converting to SFx
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metric converter: %w", err)
@@ -121,6 +122,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 		logger:                 se.logger,
 		accessTokenPassthrough: se.config.AccessTokenPassthrough,
 		converter:              se.converter,
+		sendOTLPHistograms:     se.config.SendOTLPHistograms,
 	}
 
 	apiTLSCfg, err := se.config.APITLSSettings.LoadTLSConfig()
@@ -214,7 +216,7 @@ func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) er
 }
 
 func (se *signalfxExporter) createClient(host component.Host) (*http.Client, error) {
-	se.config.HTTPClientSettings.TLSSetting = se.config.IngestTLSSettings
+	se.config.ClientConfig.TLSSetting = se.config.IngestTLSSettings
 
 	return se.config.ToClient(host, se.telemetrySettings)
 }
@@ -260,11 +262,11 @@ func buildHeaders(config *Config, version string) map[string]string {
 	// Add any custom headers from the config. They will override the pre-defined
 	// ones above in case of conflict, but, not the content encoding one since
 	// the latter one is defined according to the payload.
-	for k, v := range config.HTTPClientSettings.Headers {
+	for k, v := range config.ClientConfig.Headers {
 		headers[k] = string(v)
 	}
 	// we want to control how headers are set, overriding user headers with our passthrough.
-	config.HTTPClientSettings.Headers = nil
+	config.ClientConfig.Headers = nil
 
 	return headers
 }

@@ -19,7 +19,7 @@ to be enabled for the receiver to be able to collect metrics.
 
 ## Configuration
 
-- `endpoint`: (default = `:2181`) Endpoint to connect to collect metrics. Takes the form `host:port`.
+- `endpoint`: (default = `0.0.0.0:2181`) Endpoint to connect to collect metrics. Takes the form `host:port`. The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:2181. This will become the default in a future release.
 - `timeout`: (default = `10s`) Timeout within which requests should be completed.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 

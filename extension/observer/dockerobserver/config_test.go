@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 				Timeout:           5 * time.Second,
 				DockerAPIVersion:  "1.4",
 			},
-			expectedError: `"api_version" 1.4 must be at least 1.22`,
+			expectedError: `"api_version" 1.4 must be at least 1.24`,
 		},
 	}
 	for _, tt := range tests {
@@ -71,8 +71,8 @@ func TestValidateConfig(t *testing.T) {
 	cfg := &Config{}
 	assert.Equal(t, "endpoint must be specified", component.ValidateConfig(cfg).Error())
 
-	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: "1.21"}
-	assert.Equal(t, `"api_version" 1.21 must be at least 1.22`, component.ValidateConfig(cfg).Error())
+	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: "1.23"}
+	assert.Equal(t, `"api_version" 1.23 must be at least 1.24`, component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: version}
 	assert.Equal(t, "timeout must be specified", component.ValidateConfig(cfg).Error())

@@ -50,7 +50,7 @@ func newSwExporter(_ context.Context, cfg *Config, settings component.TelemetryS
 		metadata: metadata.New(nil),
 		settings: settings,
 	}
-	for k, v := range cfg.GRPCClientSettings.Headers {
+	for k, v := range cfg.ClientConfig.Headers {
 		oce.metadata.Set(k, string(v))
 	}
 	return oce
@@ -58,7 +58,7 @@ func newSwExporter(_ context.Context, cfg *Config, settings component.TelemetryS
 
 // start creates the gRPC client Connection
 func (oce *swExporter) start(ctx context.Context, host component.Host) error {
-	clientConn, err := oce.cfg.GRPCClientSettings.ToClientConn(ctx, host, oce.settings)
+	clientConn, err := oce.cfg.ClientConfig.ToClientConn(ctx, host, oce.settings)
 	if err != nil {
 		return err
 	}
