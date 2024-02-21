@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -43,6 +44,10 @@ func parseXML[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 		err = decoder.Decode(&parsedXML)
 		if err != nil {
 			return nil, fmt.Errorf("unmarshal xml: %w", err)
+		}
+
+		if decoder.InputOffset() != int64(len(targetVal)) {
+			return nil, errors.New("leftover bytes after parsing xml")
 		}
 
 		parsedMap := pcommon.NewMap()

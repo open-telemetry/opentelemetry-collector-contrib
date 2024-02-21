@@ -180,6 +180,17 @@ func Test_ParseXML(t *testing.T) {
 			parseError: "unmarshal xml: decode next token: XML syntax error on line 1: element <Text> closed by </Log>",
 		},
 		{
+			name: "Multiple XML elements in payload (trailing bytes)",
+			oArgs: &ParseXMLArguments[any]{
+				Target: ottl.StandardStringGetter[any]{
+					Getter: func(_ context.Context, _ any) (any, error) {
+						return `<Log></Log><Log></Log>`, nil
+					},
+				},
+			},
+			parseError: "leftover bytes after parsing xml",
+		},
+		{
 			name: "Error getting target",
 			oArgs: &ParseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
