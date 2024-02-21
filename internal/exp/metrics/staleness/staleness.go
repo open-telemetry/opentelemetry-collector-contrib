@@ -10,7 +10,7 @@ import (
 )
 
 // We override how Now() is returned, so we can have deterministic tests
-var nowFunc = time.Now
+var NowFunc = time.Now
 
 // Staleness a a wrapper over a map that adds an additional "staleness" value to each entry. Users can
 // call ExpireOldEntries() to automatically remove all entries from the map whole staleness value is
@@ -40,7 +40,7 @@ func (s *Staleness[T]) Load(key identity.Stream) (T, bool) {
 
 // Store the given key value pair in the map, and update the pair's staleness value to "now"
 func (s *Staleness[T]) Store(id identity.Stream, value T) {
-	s.pq.Update(id, nowFunc())
+	s.pq.Update(id, NowFunc())
 	s.items.Store(id, value)
 }
 
@@ -54,7 +54,7 @@ func (s *Staleness[T]) Items() func(yield func(identity.Stream, T) bool) bool {
 // For example, if an entry has a staleness value of two hours ago, and max == 1 hour, then the entry would
 // be removed. But if an entry had a stalness value of 30 minutes, then it *wouldn't* be removed.
 func (s *Staleness[T]) ExpireOldEntries() {
-	now := nowFunc()
+	now := NowFunc()
 
 	for {
 		_, ts := s.pq.Peek()
