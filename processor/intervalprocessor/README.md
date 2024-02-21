@@ -32,4 +32,4 @@ The following metric types will *not* be aggregated, and will instead be passed,
 The following settings can be optionally configured:
 
 * `interval`: The interval in which the processor should re-export the aggregated metrics. Default: 15s
-* `max_staleness`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 0
+* `max_staleness`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. NOTE: Staleness is only evaluated every 30 minutes. So `max_staleness` values less than 30 minutes will not be effective. Default: 0

@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/staleness"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor/internal/metrics"
 )
 
@@ -28,14 +29,17 @@ type Processor struct {
 	cancel context.CancelFunc
 	logger *zap.Logger
 
-	stateLock     sync.Mutex
-	numbers       map[identity.Stream]metrics.StreamDataPoint[pmetric.NumberDataPoint]
-	histograms    map[identity.Stream]metrics.StreamDataPoint[pmetric.HistogramDataPoint]
-	expHistograms map[identity.Stream]metrics.StreamDataPoint[pmetric.ExponentialHistogramDataPoint]
+	stateLock sync.Mutex
 
-	interval       time.Duration
-	maxStaleness   time.Duration
-	intervalTicker *time.Ticker
+	numbers       *staleness.Staleness[metrics.StreamDataPoint[pmetric.NumberDataPoint]]
+	histograms    *staleness.Staleness[metrics.StreamDataPoint[pmetric.HistogramDataPoint]]
+	expHistograms *staleness.Staleness[metrics.StreamDataPoint[pmetric.ExponentialHistogramDataPoint]]
+
+	exportInterval time.Duration
+	exportTicker   *time.Ticker
+
+	expiryEnabled bool
+	expiryTicker  *time.Ticker
 
 	nextConsumer consumer.Metrics
 }
@@ -49,26 +53,33 @@ func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics
 		logger: log,
 
 		stateLock:     sync.Mutex{},
-		numbers:       map[identity.Stream]metrics.StreamDataPoint[pmetric.NumberDataPoint]{},
-		histograms:    map[identity.Stream]metrics.StreamDataPoint[pmetric.HistogramDataPoint]{},
-		expHistograms: map[identity.Stream]metrics.StreamDataPoint[pmetric.ExponentialHistogramDataPoint]{},
+		numbers:       staleness.NewStaleness(config.MaxStaleness, &staleness.RawMap[identity.Stream, metrics.StreamDataPoint[pmetric.NumberDataPoint]]{}),
+		histograms:    staleness.NewStaleness(config.MaxStaleness, &staleness.RawMap[identity.Stream, metrics.StreamDataPoint[pmetric.HistogramDataPoint]]{}),
+		expHistograms: staleness.NewStaleness(config.MaxStaleness, &staleness.RawMap[identity.Stream, metrics.StreamDataPoint[pmetric.ExponentialHistogramDataPoint]]{}),
 
-		interval:     config.Interval,
-		maxStaleness: config.MaxStaleness,
+		exportInterval: config.Interval,
+
+		expiryEnabled: config.MaxStaleness > 0,
 
 		nextConsumer: nextConsumer,
 	}
 }
 
 func (p *Processor) Start(_ context.Context, _ component.Host) error {
-	p.intervalTicker = time.NewTicker(p.interval)
+	p.exportTicker = time.NewTicker(p.exportInterval)
 	go p.exportMetricsLoop()
+
+	if p.expiryEnabled {
+		p.expiryTicker = time.NewTicker(30 * time.Minute)
+		go p.expireMetricsLoop()
+	}
+
 	return nil
 }
 
 func (p *Processor) Shutdown(_ context.Context) error {
-	if p.intervalTicker != nil {
-		p.intervalTicker.Stop()
+	if p.exportTicker != nil {
+		p.exportTicker.Stop()
 	}
 	p.cancel()
 	return nil
@@ -138,7 +149,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 	return errs
 }
 
-func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP]](dataPoints DPS, state map[identity.Stream]metrics.StreamDataPoint[DP], res pcommon.Resource, resSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, m pmetric.Metric) {
+func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP]](dataPoints DPS, state *staleness.Staleness[metrics.StreamDataPoint[DP]], res pcommon.Resource, resSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, m pmetric.Metric) {
 	metric := metrics.From(res, resSchemaURL, scope, scopeSchemaURL, m)
 	metricID := metric.Identity()
 
@@ -149,23 +160,23 @@ func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP
 
 		streamDataPointID := metrics.StreamDataPointIdentity(metricID, dp)
 
-		existing, ok := state[streamDataPointID]
+		existing, ok := state.Load(streamDataPointID)
 		if !ok {
-			state[streamDataPointID] = metrics.StreamDataPoint[DP]{
+			state.Store(streamDataPointID, metrics.StreamDataPoint[DP]{
 				Metric:      metric,
 				DataPoint:   dp,
 				LastUpdated: now,
-			}
+			})
 			continue
 		}
 
 		// Check if the datapoint is newer
 		if dp.Timestamp().AsTime().After(existing.DataPoint.Timestamp().AsTime()) {
-			state[streamDataPointID] = metrics.StreamDataPoint[DP]{
+			state.Store(streamDataPointID, metrics.StreamDataPoint[DP]{
 				Metric:      metric,
 				DataPoint:   dp,
 				LastUpdated: now,
-			}
+			})
 			continue
 		}
 
@@ -178,8 +189,7 @@ func (p *Processor) exportMetricsLoop() {
 		select {
 		case <-p.ctx.Done():
 			return
-		case <-p.intervalTicker.C:
-			p.expireOldMetrics()
+		case <-p.exportTicker.C:
 			p.exportMetrics()
 		}
 	}
@@ -198,29 +208,38 @@ func (p *Processor) exportMetrics() {
 	smLookup := map[identity.Scope]pmetric.ScopeMetrics{}
 	mLookup := map[identity.Metric]pmetric.Metric{}
 
-	for dataID, dp := range p.numbers {
+	// TODO: Once the upcoming RangeFunc Experiment is fully available, we can switch these to
+	// use `range` syntax. See: ttps://go.dev/wiki/RangefuncExperiment
+
+	p.numbers.Items()(func(dataID identity.Stream, dp metrics.StreamDataPoint[pmetric.NumberDataPoint]) bool {
 		m := getOrCreateMetric(dataID, dp.Metric, md, rmLookup, smLookup, mLookup)
 
 		sum := m.Sum()
 		numDP := sum.DataPoints().AppendEmpty()
 		dp.DataPoint.CopyTo(numDP)
-	}
 
-	for dataID, dp := range p.histograms {
+		return true
+	})
+
+	p.histograms.Items()(func(dataID identity.Stream, dp metrics.StreamDataPoint[pmetric.HistogramDataPoint]) bool {
 		m := getOrCreateMetric(dataID, dp.Metric, md, rmLookup, smLookup, mLookup)
 
 		histogram := m.Histogram()
 		histogramDP := histogram.DataPoints().AppendEmpty()
 		dp.DataPoint.CopyTo(histogramDP)
-	}
 
-	for dataID, dp := range p.expHistograms {
+		return true
+	})
+
+	p.expHistograms.Items()(func(dataID identity.Stream, dp metrics.StreamDataPoint[pmetric.ExponentialHistogramDataPoint]) bool {
 		m := getOrCreateMetric(dataID, dp.Metric, md, rmLookup, smLookup, mLookup)
 
 		expHistogram := m.ExponentialHistogram()
 		expHistogramDP := expHistogram.DataPoints().AppendEmpty()
 		dp.DataPoint.CopyTo(expHistogramDP)
-	}
+
+		return true
+	})
 
 	if err := p.nextConsumer.ConsumeMetrics(p.ctx, md); err != nil {
 		p.logger.Error("Metrics export failed", zap.Error(err))
@@ -258,30 +277,22 @@ func getOrCreateMetric(
 	return m
 }
 
-func (p *Processor) expireOldMetrics() {
-	// Fast-out
-	if p.maxStaleness == 0 {
-		return
+func (p *Processor) expireMetricsLoop() {
+	for {
+		select {
+		case <-p.ctx.Done():
+			return
+		case <-p.expiryTicker.C:
+			p.expireOldMetrics()
+		}
 	}
+}
 
+func (p *Processor) expireOldMetrics() {
 	p.stateLock.Lock()
 	defer p.stateLock.Unlock()
 
-	now := time.Now()
-
-	for key, dp := range p.numbers {
-		if dp.LastUpdated.Add(p.maxStaleness).Before(now) {
-			delete(p.numbers, key)
-		}
-	}
-	for key, dp := range p.histograms {
-		if dp.LastUpdated.Add(p.maxStaleness).Before(now) {
-			delete(p.numbers, key)
-		}
-	}
-	for key, dp := range p.expHistograms {
-		if dp.LastUpdated.Add(p.maxStaleness).Before(now) {
-			delete(p.numbers, key)
-		}
-	}
+	p.numbers.ExpireOldEntries()
+	p.histograms.ExpireOldEntries()
+	p.expHistograms.ExpireOldEntries()
 }
