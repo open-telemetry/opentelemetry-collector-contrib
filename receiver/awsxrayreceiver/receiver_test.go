@@ -45,12 +45,12 @@ func TestProxyCreationFailed(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	_, err = newReceiver(
 		&Config{
-			NetAddr: confignet.NetAddr{
+			AddrConfig: confignet.AddrConfig{
 				Endpoint:  addr,
 				Transport: udppoller.Transport,
 			},
 			ProxyServer: &proxy.Config{
-				TCPAddr: confignet.TCPAddr{
+				TCPAddrConfig: confignet.TCPAddrConfig{
 					Endpoint: "invalidEndpoint",
 				},
 			},
@@ -65,7 +65,7 @@ func TestPollerCreationFailed(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	_, err := newReceiver(
 		&Config{
-			NetAddr: confignet.NetAddr{
+			AddrConfig: confignet.AddrConfig{
 				Endpoint:  "dontCare",
 				Transport: "tcp",
 			},
@@ -279,12 +279,12 @@ func createAndOptionallyStartReceiver(
 	set.Logger = logger
 	rcvr, err := newReceiver(
 		&Config{
-			NetAddr: confignet.NetAddr{
+			AddrConfig: confignet.AddrConfig{
 				Endpoint:  addr,
 				Transport: udppoller.Transport,
 			},
 			ProxyServer: &proxy.Config{
-				TCPAddr: confignet.TCPAddr{
+				TCPAddrConfig: confignet.TCPAddrConfig{
 					Endpoint: tcpAddr,
 				},
 			},
