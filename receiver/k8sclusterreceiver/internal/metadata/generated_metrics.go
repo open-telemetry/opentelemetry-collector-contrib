@@ -12,6 +12,104 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
 
+type metricK8sClusterroleRuleCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.clusterrole.rule_count metric with initial data.
+func (m *metricK8sClusterroleRuleCount) init() {
+	m.data.SetName("k8s.clusterrole.rule_count")
+	m.data.SetDescription("The count of cluster roles.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sClusterroleRuleCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sClusterroleRuleCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sClusterroleRuleCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sClusterroleRuleCount(cfg MetricConfig) metricK8sClusterroleRuleCount {
+	m := metricK8sClusterroleRuleCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sClusterrolebindingSubjectCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.clusterrolebinding.subject_count metric with initial data.
+func (m *metricK8sClusterrolebindingSubjectCount) init() {
+	m.data.SetName("k8s.clusterrolebinding.subject_count")
+	m.data.SetDescription("The subject count of cluster role bindings.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sClusterrolebindingSubjectCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sClusterrolebindingSubjectCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sClusterrolebindingSubjectCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sClusterrolebindingSubjectCount(cfg MetricConfig) metricK8sClusterrolebindingSubjectCount {
+	m := metricK8sClusterrolebindingSubjectCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sContainerCPULimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1878,6 +1976,104 @@ func newMetricK8sResourceQuotaUsed(cfg MetricConfig) metricK8sResourceQuotaUsed 
 	return m
 }
 
+type metricK8sRoleRuleCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.role.rule_count metric with initial data.
+func (m *metricK8sRoleRuleCount) init() {
+	m.data.SetName("k8s.role.rule_count")
+	m.data.SetDescription("The count of roles.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sRoleRuleCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sRoleRuleCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sRoleRuleCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sRoleRuleCount(cfg MetricConfig) metricK8sRoleRuleCount {
+	m := metricK8sRoleRuleCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sRolebindingSubjectCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.rolebinding.subject_count metric with initial data.
+func (m *metricK8sRolebindingSubjectCount) init() {
+	m.data.SetName("k8s.rolebinding.subject_count")
+	m.data.SetDescription("The subject count of role bindings.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sRolebindingSubjectCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sRolebindingSubjectCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sRolebindingSubjectCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sRolebindingSubjectCount(cfg MetricConfig) metricK8sRolebindingSubjectCount {
+	m := metricK8sRolebindingSubjectCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sServicePortCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1920,6 +2116,55 @@ func (m *metricK8sServicePortCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sServicePortCount(cfg MetricConfig) metricK8sServicePortCount {
 	m := metricK8sServicePortCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sServiceaccountSecretCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.serviceaccount.secret_count metric with initial data.
+func (m *metricK8sServiceaccountSecretCount) init() {
+	m.data.SetName("k8s.serviceaccount.secret_count")
+	m.data.SetDescription("The count of secrets in Service Account.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sServiceaccountSecretCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sServiceaccountSecretCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sServiceaccountSecretCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sServiceaccountSecretCount(cfg MetricConfig) metricK8sServiceaccountSecretCount {
+	m := metricK8sServiceaccountSecretCount{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2337,6 +2582,8 @@ type MetricsBuilder struct {
 	metricsCapacity                           int                  // maximum observed number of metrics per resource.
 	metricsBuffer                             pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                 component.BuildInfo  // contains version information.
+	metricK8sClusterroleRuleCount             metricK8sClusterroleRuleCount
+	metricK8sClusterrolebindingSubjectCount   metricK8sClusterrolebindingSubjectCount
 	metricK8sContainerCPULimit                metricK8sContainerCPULimit
 	metricK8sContainerCPURequest              metricK8sContainerCPURequest
 	metricK8sContainerEphemeralstorageLimit   metricK8sContainerEphemeralstorageLimit
@@ -2375,7 +2622,10 @@ type MetricsBuilder struct {
 	metricK8sReplicationControllerDesired     metricK8sReplicationControllerDesired
 	metricK8sResourceQuotaHardLimit           metricK8sResourceQuotaHardLimit
 	metricK8sResourceQuotaUsed                metricK8sResourceQuotaUsed
+	metricK8sRoleRuleCount                    metricK8sRoleRuleCount
+	metricK8sRolebindingSubjectCount          metricK8sRolebindingSubjectCount
 	metricK8sServicePortCount                 metricK8sServicePortCount
+	metricK8sServiceaccountSecretCount        metricK8sServiceaccountSecretCount
 	metricK8sStatefulsetCurrentPods           metricK8sStatefulsetCurrentPods
 	metricK8sStatefulsetDesiredPods           metricK8sStatefulsetDesiredPods
 	metricK8sStatefulsetReadyPods             metricK8sStatefulsetReadyPods
@@ -2398,13 +2648,15 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                  mbc,
-		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                           pmetric.NewMetrics(),
-		buildInfo:                               settings.BuildInfo,
-		metricK8sContainerCPULimit:              newMetricK8sContainerCPULimit(mbc.Metrics.K8sContainerCPULimit),
-		metricK8sContainerCPURequest:            newMetricK8sContainerCPURequest(mbc.Metrics.K8sContainerCPURequest),
-		metricK8sContainerEphemeralstorageLimit: newMetricK8sContainerEphemeralstorageLimit(mbc.Metrics.K8sContainerEphemeralstorageLimit),
+		config:                                    mbc,
+		startTime:                                 pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                             pmetric.NewMetrics(),
+		buildInfo:                                 settings.BuildInfo,
+		metricK8sClusterroleRuleCount:             newMetricK8sClusterroleRuleCount(mbc.Metrics.K8sClusterroleRuleCount),
+		metricK8sClusterrolebindingSubjectCount:   newMetricK8sClusterrolebindingSubjectCount(mbc.Metrics.K8sClusterrolebindingSubjectCount),
+		metricK8sContainerCPULimit:                newMetricK8sContainerCPULimit(mbc.Metrics.K8sContainerCPULimit),
+		metricK8sContainerCPURequest:              newMetricK8sContainerCPURequest(mbc.Metrics.K8sContainerCPURequest),
+		metricK8sContainerEphemeralstorageLimit:   newMetricK8sContainerEphemeralstorageLimit(mbc.Metrics.K8sContainerEphemeralstorageLimit),
 		metricK8sContainerEphemeralstorageRequest: newMetricK8sContainerEphemeralstorageRequest(mbc.Metrics.K8sContainerEphemeralstorageRequest),
 		metricK8sContainerMemoryLimit:             newMetricK8sContainerMemoryLimit(mbc.Metrics.K8sContainerMemoryLimit),
 		metricK8sContainerMemoryRequest:           newMetricK8sContainerMemoryRequest(mbc.Metrics.K8sContainerMemoryRequest),
@@ -2440,7 +2692,10 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sReplicationControllerDesired:     newMetricK8sReplicationControllerDesired(mbc.Metrics.K8sReplicationControllerDesired),
 		metricK8sResourceQuotaHardLimit:           newMetricK8sResourceQuotaHardLimit(mbc.Metrics.K8sResourceQuotaHardLimit),
 		metricK8sResourceQuotaUsed:                newMetricK8sResourceQuotaUsed(mbc.Metrics.K8sResourceQuotaUsed),
+		metricK8sRoleRuleCount:                    newMetricK8sRoleRuleCount(mbc.Metrics.K8sRoleRuleCount),
+		metricK8sRolebindingSubjectCount:          newMetricK8sRolebindingSubjectCount(mbc.Metrics.K8sRolebindingSubjectCount),
 		metricK8sServicePortCount:                 newMetricK8sServicePortCount(mbc.Metrics.K8sServicePortCount),
+		metricK8sServiceaccountSecretCount:        newMetricK8sServiceaccountSecretCount(mbc.Metrics.K8sServiceaccountSecretCount),
 		metricK8sStatefulsetCurrentPods:           newMetricK8sStatefulsetCurrentPods(mbc.Metrics.K8sStatefulsetCurrentPods),
 		metricK8sStatefulsetDesiredPods:           newMetricK8sStatefulsetDesiredPods(mbc.Metrics.K8sStatefulsetDesiredPods),
 		metricK8sStatefulsetReadyPods:             newMetricK8sStatefulsetReadyPods(mbc.Metrics.K8sStatefulsetReadyPods),
@@ -2511,6 +2766,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/k8sclusterreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricK8sClusterroleRuleCount.emit(ils.Metrics())
+	mb.metricK8sClusterrolebindingSubjectCount.emit(ils.Metrics())
 	mb.metricK8sContainerCPULimit.emit(ils.Metrics())
 	mb.metricK8sContainerCPURequest.emit(ils.Metrics())
 	mb.metricK8sContainerEphemeralstorageLimit.emit(ils.Metrics())
@@ -2549,7 +2806,10 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sReplicationControllerDesired.emit(ils.Metrics())
 	mb.metricK8sResourceQuotaHardLimit.emit(ils.Metrics())
 	mb.metricK8sResourceQuotaUsed.emit(ils.Metrics())
+	mb.metricK8sRoleRuleCount.emit(ils.Metrics())
+	mb.metricK8sRolebindingSubjectCount.emit(ils.Metrics())
 	mb.metricK8sServicePortCount.emit(ils.Metrics())
+	mb.metricK8sServiceaccountSecretCount.emit(ils.Metrics())
 	mb.metricK8sStatefulsetCurrentPods.emit(ils.Metrics())
 	mb.metricK8sStatefulsetDesiredPods.emit(ils.Metrics())
 	mb.metricK8sStatefulsetReadyPods.emit(ils.Metrics())
@@ -2576,6 +2836,16 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordK8sClusterroleRuleCountDataPoint adds a data point to k8s.clusterrole.rule_count metric.
+func (mb *MetricsBuilder) RecordK8sClusterroleRuleCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sClusterroleRuleCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sClusterrolebindingSubjectCountDataPoint adds a data point to k8s.clusterrolebinding.subject_count metric.
+func (mb *MetricsBuilder) RecordK8sClusterrolebindingSubjectCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sClusterrolebindingSubjectCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sContainerCPULimitDataPoint adds a data point to k8s.container.cpu_limit metric.
@@ -2768,9 +3038,24 @@ func (mb *MetricsBuilder) RecordK8sResourceQuotaUsedDataPoint(ts pcommon.Timesta
 	mb.metricK8sResourceQuotaUsed.recordDataPoint(mb.startTime, ts, val, resourceAttributeValue)
 }
 
+// RecordK8sRoleRuleCountDataPoint adds a data point to k8s.role.rule_count metric.
+func (mb *MetricsBuilder) RecordK8sRoleRuleCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sRoleRuleCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sRolebindingSubjectCountDataPoint adds a data point to k8s.rolebinding.subject_count metric.
+func (mb *MetricsBuilder) RecordK8sRolebindingSubjectCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sRolebindingSubjectCount.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordK8sServicePortCountDataPoint adds a data point to k8s.service.port_count metric.
 func (mb *MetricsBuilder) RecordK8sServicePortCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sServicePortCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sServiceaccountSecretCountDataPoint adds a data point to k8s.serviceaccount.secret_count metric.
+func (mb *MetricsBuilder) RecordK8sServiceaccountSecretCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sServiceaccountSecretCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sStatefulsetCurrentPodsDataPoint adds a data point to k8s.statefulset.current_pods metric.

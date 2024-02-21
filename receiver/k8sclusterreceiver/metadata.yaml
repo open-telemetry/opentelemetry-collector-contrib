@@ -208,6 +208,216 @@ resource_attributes:
     type: string
     enabled: true
 
+  k8s.serviceaccount.uid:
+    description: The UID of the Service Account.
+    type: string
+    enabled: true
+
+  k8s.serviceaccount.name:
+    description: The name of the Service Account.
+    type: string
+    enabled: true
+
+  k8s.serviceaccount.namespace:
+    description: The namespace of the Service Account.
+    type: string
+    enabled: true
+
+  k8s.serviceaccount.labels:
+    description: Labels of the Service Account.
+    type: string
+    enabled: true
+
+  k8s.serviceaccount.annotations:
+    description: Annotations of the Service Account.
+    type: string
+    enabled: true
+
+  k8s.serviceaccount.start_time:
+    description: The start time of the Service Account.
+    type: string
+    enabled: true
+
+  k8s.serviceaccount.secrets:
+    description: Secrets of the Service Account.
+    type: string
+    enabled: true
+
+  k8s.serviceaccount.image_pull_secrets:
+    description: Image pull secrets of the Service Account.
+    type: string
+    enabled: true
+
+  k8s.serviceaccount.automount_serviceaccount_token:
+    description: Automount service account token of the Service Account.
+    type: string
+    enabled: true
+
+  k8s.serviceaccount.type:
+    description: The type of the Service Account.
+    type: string
+    enabled: true
+
+  k8s.role.uid:
+    description: The UID of the Role.
+    type: string
+    enabled: true
+
+  k8s.role.name:
+    description: The name of the Role.
+    type: string
+    enabled: true
+
+  k8s.role.namespace:
+    description: The namespace of the Role.
+    type: string
+    enabled: true
+
+  k8s.role.labels:
+    description: Labels of the Role.
+    type: string
+    enabled: true
+
+  k8s.role.annotations:
+    description: Annotations of the Role.
+    type: string
+    enabled: true
+
+  k8s.role.start_time:
+    description: The start time of the Role.
+    type: string
+    enabled: true
+
+  k8s.role.rules:
+    description: Rules of the Role.
+    type: string
+    enabled: true
+
+  k8s.role.type:
+    description: The type of the Role.
+    type: string
+    enabled: true
+
+  k8s.rolebinding.uid:
+    description: The UID of the Role Binding.
+    type: string
+    enabled: true
+
+  k8s.rolebinding.name:
+    description: The name of the Role Binding.
+    type: string
+    enabled: true
+
+  k8s.rolebinding.namespace:
+    description: The namespace of the Role Binding.
+    type: string
+    enabled: true
+
+  k8s.rolebinding.labels:
+    description: Labels of the Role Binding.
+    type: string
+    enabled: true
+
+  k8s.rolebinding.annotations:
+    description: Annotations of the Role Binding.
+    type: string
+    enabled: true
+
+  k8s.rolebinding.start_time:
+    description: The start time of the Role Binding.
+    type: string
+    enabled: true
+
+  k8s.rolebinding.type:
+    description: The type of the Role Binding.
+    type: string
+    enabled: true
+
+  k8s.rolebinding.subjects:
+    description: Subjects holds references to the objects, the role applies to.
+    type: string
+    enabled: true
+
+  k8s.rolebinding.role_ref:
+    description: RoleRef can reference a Role in the current namespace.
+    type: string
+    enabled: true
+
+  k8s.clusterrole.uid:
+    description: The UID of the Role.
+    type: string
+    enabled: true
+
+  k8s.clusterrole.name:
+    description: The name of the Cluster Role.
+    type: string
+    enabled: true
+
+  k8s.clusterrole.labels:
+    description: Labels of the Cluster Role.
+    type: string
+    enabled: true
+
+  k8s.clusterrole.annotations:
+    description: Annotations of the Cluster Role.
+    type: string
+    enabled: true
+
+  k8s.clusterrole.start_time:
+    description: The start time of the Cluster Role.
+    type: string
+    enabled: true
+
+  k8s.clusterrole.rules:
+    description: Rules of the Cluster Role.
+    type: string
+    enabled: true
+
+  k8s.clusterrole.type:
+    description: The type of the Cluster Role.
+    type: string
+    enabled: true
+
+  k8s.clusterrolebinding.uid:
+    description: The UID of the Cluster Role Binding.
+    type: string
+    enabled: true
+
+  k8s.clusterrolebinding.name:
+    description: The name of the Cluster Role Binding.
+    type: string
+    enabled: true
+
+  k8s.clusterrolebinding.labels:
+    description: Labels of the Cluster Role Binding.
+    type: string
+    enabled: true
+
+  k8s.clusterrolebinding.annotations:
+    description: Annotations of the Cluster Role Binding.
+    type: string
+    enabled: true
+
+  k8s.clusterrolebinding.start_time:
+    description: The start time of the Cluster Role Binding.
+    type: string
+    enabled: true
+
+  k8s.clusterrolebinding.type:
+    description: The type of the Cluster Role Binding.
+    type: string
+    enabled: true
+
+  k8s.clusterrolebinding.subjects:
+    description: Subjects holds references to the objects, the cluster role applies to.
+    type: string
+    enabled: true
+
+  k8s.clusterrolebinding.role_ref:
+    description: RoleRef can reference a Cluster Role.
+    type: string
+    enabled: true
+
   container.id:
     description: The container id.
     type: string
@@ -486,6 +696,41 @@ metrics:
     enabled: true
     description: The allocated capacity of persistent volume.
     unit: "By"
+    gauge:
+      value_type: int
+
+  k8s.serviceaccount.secret_count:
+    enabled: true
+    description: The count of secrets in Service Account.
+    unit: "1"
+    gauge:
+      value_type: int
+
+  k8s.role.rule_count:
+    enabled: true
+    description: The count of roles.
+    unit: "1"
+    gauge:
+      value_type: int
+
+  k8s.rolebinding.subject_count:
+    enabled: true
+    description: The subject count of role bindings.
+    unit: "1"
+    gauge:
+      value_type: int
+
+  k8s.clusterrole.rule_count:
+    enabled: true
+    description: The count of cluster roles.
+    unit: "1"
+    gauge:
+      value_type: int
+
+  k8s.clusterrolebinding.subject_count:
+    enabled: true
+    description: The subject count of cluster role bindings.
+    unit: "1"
     gauge:
       value_type: int
 

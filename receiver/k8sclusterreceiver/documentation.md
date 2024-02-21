@@ -12,6 +12,22 @@ metrics:
     enabled: false
 ```
 
+### k8s.clusterrole.rule_count
+
+The count of cluster roles.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### k8s.clusterrolebinding.subject_count
+
+The subject count of cluster role bindings.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ### k8s.container.cpu_limit
 
 Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
@@ -320,9 +336,33 @@ The usage for a particular resource in a specific namespace. Will only be sent i
 | ---- | ----------- | ------ |
 | resource | the name of the resource on which the quota is applied | Any Str |
 
+### k8s.role.rule_count
+
+The count of roles.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### k8s.rolebinding.subject_count
+
+The subject count of role bindings.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ### k8s.service.port_count
 
 The number of ports in the service
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### k8s.serviceaccount.secret_count
+
+The count of secrets in Service Account.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -444,6 +484,21 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | container.image.name | The container image name | Any Str | true |
 | container.image.tag | The container image tag | Any Str | true |
 | k8s.cluster.name | The k8s cluster name. | Any Str | true |
+| k8s.clusterrole.annotations | Annotations of the Cluster Role. | Any Str | true |
+| k8s.clusterrole.labels | Labels of the Cluster Role. | Any Str | true |
+| k8s.clusterrole.name | The name of the Cluster Role. | Any Str | true |
+| k8s.clusterrole.rules | Rules of the Cluster Role. | Any Str | true |
+| k8s.clusterrole.start_time | The start time of the Cluster Role. | Any Str | true |
+| k8s.clusterrole.type | The type of the Cluster Role. | Any Str | true |
+| k8s.clusterrole.uid | The UID of the Role. | Any Str | true |
+| k8s.clusterrolebinding.annotations | Annotations of the Cluster Role Binding. | Any Str | true |
+| k8s.clusterrolebinding.labels | Labels of the Cluster Role Binding. | Any Str | true |
+| k8s.clusterrolebinding.name | The name of the Cluster Role Binding. | Any Str | true |
+| k8s.clusterrolebinding.role_ref | RoleRef can reference a Cluster Role. | Any Str | true |
+| k8s.clusterrolebinding.start_time | The start time of the Cluster Role Binding. | Any Str | true |
+| k8s.clusterrolebinding.subjects | Subjects holds references to the objects, the cluster role applies to. | Any Str | true |
+| k8s.clusterrolebinding.type | The type of the Cluster Role Binding. | Any Str | true |
+| k8s.clusterrolebinding.uid | The UID of the Cluster Role Binding. | Any Str | true |
 | k8s.container.name | The k8s container name | Any Str | true |
 | k8s.cronjob.name | The k8s CronJob name | Any Str | true |
 | k8s.cronjob.start_time | The start time of the Cronjob. | Any Str | true |
@@ -502,12 +557,39 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.replicationcontroller.uid | The k8s replicationcontroller uid. | Any Str | true |
 | k8s.resourcequota.name | The k8s resourcequota name. | Any Str | true |
 | k8s.resourcequota.uid | The k8s resourcequota uid. | Any Str | true |
+| k8s.role.annotations | Annotations of the Role. | Any Str | true |
+| k8s.role.labels | Labels of the Role. | Any Str | true |
+| k8s.role.name | The name of the Role. | Any Str | true |
+| k8s.role.namespace | The namespace of the Role. | Any Str | true |
+| k8s.role.rules | Rules of the Role. | Any Str | true |
+| k8s.role.start_time | The start time of the Role. | Any Str | true |
+| k8s.role.type | The type of the Role. | Any Str | true |
+| k8s.role.uid | The UID of the Role. | Any Str | true |
+| k8s.rolebinding.annotations | Annotations of the Role Binding. | Any Str | true |
+| k8s.rolebinding.labels | Labels of the Role Binding. | Any Str | true |
+| k8s.rolebinding.name | The name of the Role Binding. | Any Str | true |
+| k8s.rolebinding.namespace | The namespace of the Role Binding. | Any Str | true |
+| k8s.rolebinding.role_ref | RoleRef can reference a Role in the current namespace. | Any Str | true |
+| k8s.rolebinding.start_time | The start time of the Role Binding. | Any Str | true |
+| k8s.rolebinding.subjects | Subjects holds references to the objects, the role applies to. | Any Str | true |
+| k8s.rolebinding.type | The type of the Role Binding. | Any Str | true |
+| k8s.rolebinding.uid | The UID of the Role Binding. | Any Str | true |
 | k8s.service.cluster_ip | The cluster IP of the service | Any Str | true |
 | k8s.service.name | The name of the service | Any Str | true |
 | k8s.service.namespace | The namespace of the service | Any Str | true |
 | k8s.service.type | The type of the service | Any Str | true |
 | k8s.service.uid | The UID of the service | Any Str | true |
 | k8s.service_account.name | The name of the Service-account | Any Str | true |
+| k8s.serviceaccount.annotations | Annotations of the Service Account. | Any Str | true |
+| k8s.serviceaccount.automount_serviceaccount_token | Automount service account token of the Service Account. | Any Str | true |
+| k8s.serviceaccount.image_pull_secrets | Image pull secrets of the Service Account. | Any Str | true |
+| k8s.serviceaccount.labels | Labels of the Service Account. | Any Str | true |
+| k8s.serviceaccount.name | The name of the Service Account. | Any Str | true |
+| k8s.serviceaccount.namespace | The namespace of the Service Account. | Any Str | true |
+| k8s.serviceaccount.secrets | Secrets of the Service Account. | Any Str | true |
+| k8s.serviceaccount.start_time | The start time of the Service Account. | Any Str | true |
+| k8s.serviceaccount.type | The type of the Service Account. | Any Str | true |
+| k8s.serviceaccount.uid | The UID of the Service Account. | Any Str | true |
 | k8s.statefulset.name | The k8s statefulset name. | Any Str | true |
 | k8s.statefulset.start_time | The start time of the Statefulset. | Any Str | true |
 | k8s.statefulset.uid | The k8s statefulset uid. | Any Str | true |

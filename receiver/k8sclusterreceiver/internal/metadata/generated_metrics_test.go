@@ -56,6 +56,14 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordK8sClusterroleRuleCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sClusterrolebindingSubjectCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordK8sContainerCPULimitDataPoint(ts, 1)
 
 			defaultMetricsCount++
@@ -207,7 +215,19 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordK8sRoleRuleCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sRolebindingSubjectCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordK8sServicePortCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sServiceaccountSecretCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -246,6 +266,21 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetContainerImageName("container.image.name-val")
 			rb.SetContainerImageTag("container.image.tag-val")
 			rb.SetK8sClusterName("k8s.cluster.name-val")
+			rb.SetK8sClusterroleAnnotations("k8s.clusterrole.annotations-val")
+			rb.SetK8sClusterroleLabels("k8s.clusterrole.labels-val")
+			rb.SetK8sClusterroleName("k8s.clusterrole.name-val")
+			rb.SetK8sClusterroleRules("k8s.clusterrole.rules-val")
+			rb.SetK8sClusterroleStartTime("k8s.clusterrole.start_time-val")
+			rb.SetK8sClusterroleType("k8s.clusterrole.type-val")
+			rb.SetK8sClusterroleUID("k8s.clusterrole.uid-val")
+			rb.SetK8sClusterrolebindingAnnotations("k8s.clusterrolebinding.annotations-val")
+			rb.SetK8sClusterrolebindingLabels("k8s.clusterrolebinding.labels-val")
+			rb.SetK8sClusterrolebindingName("k8s.clusterrolebinding.name-val")
+			rb.SetK8sClusterrolebindingRoleRef("k8s.clusterrolebinding.role_ref-val")
+			rb.SetK8sClusterrolebindingStartTime("k8s.clusterrolebinding.start_time-val")
+			rb.SetK8sClusterrolebindingSubjects("k8s.clusterrolebinding.subjects-val")
+			rb.SetK8sClusterrolebindingType("k8s.clusterrolebinding.type-val")
+			rb.SetK8sClusterrolebindingUID("k8s.clusterrolebinding.uid-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sCronjobName("k8s.cronjob.name-val")
 			rb.SetK8sCronjobStartTime("k8s.cronjob.start_time-val")
@@ -304,12 +339,39 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sReplicationcontrollerUID("k8s.replicationcontroller.uid-val")
 			rb.SetK8sResourcequotaName("k8s.resourcequota.name-val")
 			rb.SetK8sResourcequotaUID("k8s.resourcequota.uid-val")
+			rb.SetK8sRoleAnnotations("k8s.role.annotations-val")
+			rb.SetK8sRoleLabels("k8s.role.labels-val")
+			rb.SetK8sRoleName("k8s.role.name-val")
+			rb.SetK8sRoleNamespace("k8s.role.namespace-val")
+			rb.SetK8sRoleRules("k8s.role.rules-val")
+			rb.SetK8sRoleStartTime("k8s.role.start_time-val")
+			rb.SetK8sRoleType("k8s.role.type-val")
+			rb.SetK8sRoleUID("k8s.role.uid-val")
+			rb.SetK8sRolebindingAnnotations("k8s.rolebinding.annotations-val")
+			rb.SetK8sRolebindingLabels("k8s.rolebinding.labels-val")
+			rb.SetK8sRolebindingName("k8s.rolebinding.name-val")
+			rb.SetK8sRolebindingNamespace("k8s.rolebinding.namespace-val")
+			rb.SetK8sRolebindingRoleRef("k8s.rolebinding.role_ref-val")
+			rb.SetK8sRolebindingStartTime("k8s.rolebinding.start_time-val")
+			rb.SetK8sRolebindingSubjects("k8s.rolebinding.subjects-val")
+			rb.SetK8sRolebindingType("k8s.rolebinding.type-val")
+			rb.SetK8sRolebindingUID("k8s.rolebinding.uid-val")
 			rb.SetK8sServiceClusterIP("k8s.service.cluster_ip-val")
 			rb.SetK8sServiceName("k8s.service.name-val")
 			rb.SetK8sServiceNamespace("k8s.service.namespace-val")
 			rb.SetK8sServiceType("k8s.service.type-val")
 			rb.SetK8sServiceUID("k8s.service.uid-val")
 			rb.SetK8sServiceAccountName("k8s.service_account.name-val")
+			rb.SetK8sServiceaccountAnnotations("k8s.serviceaccount.annotations-val")
+			rb.SetK8sServiceaccountAutomountServiceaccountToken("k8s.serviceaccount.automount_serviceaccount_token-val")
+			rb.SetK8sServiceaccountImagePullSecrets("k8s.serviceaccount.image_pull_secrets-val")
+			rb.SetK8sServiceaccountLabels("k8s.serviceaccount.labels-val")
+			rb.SetK8sServiceaccountName("k8s.serviceaccount.name-val")
+			rb.SetK8sServiceaccountNamespace("k8s.serviceaccount.namespace-val")
+			rb.SetK8sServiceaccountSecrets("k8s.serviceaccount.secrets-val")
+			rb.SetK8sServiceaccountStartTime("k8s.serviceaccount.start_time-val")
+			rb.SetK8sServiceaccountType("k8s.serviceaccount.type-val")
+			rb.SetK8sServiceaccountUID("k8s.serviceaccount.uid-val")
 			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
 			rb.SetK8sStatefulsetStartTime("k8s.statefulset.start_time-val")
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
@@ -338,6 +400,30 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "k8s.clusterrole.rule_count":
+					assert.False(t, validatedMetrics["k8s.clusterrole.rule_count"], "Found a duplicate in the metrics slice: k8s.clusterrole.rule_count")
+					validatedMetrics["k8s.clusterrole.rule_count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The count of cluster roles.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.clusterrolebinding.subject_count":
+					assert.False(t, validatedMetrics["k8s.clusterrolebinding.subject_count"], "Found a duplicate in the metrics slice: k8s.clusterrolebinding.subject_count")
+					validatedMetrics["k8s.clusterrolebinding.subject_count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The subject count of cluster role bindings.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.container.cpu_limit":
 					assert.False(t, validatedMetrics["k8s.container.cpu_limit"], "Found a duplicate in the metrics slice: k8s.container.cpu_limit")
 					validatedMetrics["k8s.container.cpu_limit"] = true
@@ -800,12 +886,48 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("resource")
 					assert.True(t, ok)
 					assert.EqualValues(t, "resource-val", attrVal.Str())
+				case "k8s.role.rule_count":
+					assert.False(t, validatedMetrics["k8s.role.rule_count"], "Found a duplicate in the metrics slice: k8s.role.rule_count")
+					validatedMetrics["k8s.role.rule_count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The count of roles.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.rolebinding.subject_count":
+					assert.False(t, validatedMetrics["k8s.rolebinding.subject_count"], "Found a duplicate in the metrics slice: k8s.rolebinding.subject_count")
+					validatedMetrics["k8s.rolebinding.subject_count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The subject count of role bindings.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.service.port_count":
 					assert.False(t, validatedMetrics["k8s.service.port_count"], "Found a duplicate in the metrics slice: k8s.service.port_count")
 					validatedMetrics["k8s.service.port_count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The number of ports in the service", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.serviceaccount.secret_count":
+					assert.False(t, validatedMetrics["k8s.serviceaccount.secret_count"], "Found a duplicate in the metrics slice: k8s.serviceaccount.secret_count")
+					validatedMetrics["k8s.serviceaccount.secret_count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The count of secrets in Service Account.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

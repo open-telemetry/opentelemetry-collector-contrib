@@ -6,8 +6,6 @@ package collection // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/service"
-
 	quotav1 "github.com/openshift/api/quota/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -18,8 +16,11 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterresourcequota"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterrole"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterrolebinding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/deployment"
@@ -35,6 +36,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicaset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicationcontroller"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/resourcequota"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/role"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/rolebinding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/service"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/serviceaccount"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/statefulset"
 )
 
@@ -85,6 +90,18 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 	dc.metadataStore.ForEach(gvk.PersistentVolumeClaim, func(o any) {
 		persistentvolumeclaim.RecordMetrics(dc.metricsBuilder, o.(*corev1.PersistentVolumeClaim), ts)
 	})
+	dc.metadataStore.ForEach(gvk.Role, func(o any) {
+		role.RecordMetrics(dc.metricsBuilder, o.(*rbacv1.Role), ts)
+	})
+	dc.metadataStore.ForEach(gvk.RoleBinding, func(o any) {
+		rolebinding.RecordMetrics(dc.metricsBuilder, o.(*rbacv1.RoleBinding), ts)
+	})
+	dc.metadataStore.ForEach(gvk.ClusterRole, func(o any) {
+		clusterrole.RecordMetrics(dc.metricsBuilder, o.(*rbacv1.ClusterRole), ts)
+	})
+	dc.metadataStore.ForEach(gvk.ClusterRoleBinding, func(o any) {
+		clusterrolebinding.RecordMetrics(dc.metricsBuilder, o.(*rbacv1.ClusterRoleBinding), ts)
+	})
 	dc.metadataStore.ForEach(gvk.Namespace, func(o any) {
 		namespace.RecordMetrics(dc.metricsBuilder, o.(*corev1.Namespace), ts)
 	})
@@ -96,6 +113,9 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 	})
 	dc.metadataStore.ForEach(gvk.Service, func(o any) {
 		service.RecordMetrics(dc.metricsBuilder, o.(*corev1.Service), ts)
+	})
+	dc.metadataStore.ForEach(gvk.ServiceAccount, func(o any) {
+		serviceaccount.RecordMetrics(dc.metricsBuilder, o.(*corev1.ServiceAccount), ts)
 	})
 	dc.metadataStore.ForEach(gvk.Deployment, func(o any) {
 		deployment.RecordMetrics(dc.metricsBuilder, o.(*appsv1.Deployment), ts)
