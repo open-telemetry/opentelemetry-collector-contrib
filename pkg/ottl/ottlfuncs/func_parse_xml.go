@@ -75,7 +75,7 @@ func (a *anyXML) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 			child := anyXML{}
 			err := d.DecodeElement(&child, &t)
 			if err != nil {
-				return fmt.Errorf("decode start element: %w", err)
+				return err
 			}
 
 			a.children = append(a.children, child)
