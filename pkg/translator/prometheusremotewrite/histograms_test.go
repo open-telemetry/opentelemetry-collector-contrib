@@ -634,7 +634,7 @@ func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {
 					{Name: "attr", Value: "test_attr"},
 				}
 				return map[string]*prompb.TimeSeries{
-					timeSeriesSignature(pmetric.MetricTypeExponentialHistogram.String(), &labels): {
+					timeSeriesSignature(pmetric.MetricTypeExponentialHistogram.String(), labels): {
 						Labels: labels,
 						Histograms: []prompb.Histogram{
 							{
@@ -698,7 +698,7 @@ func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {
 				}
 
 				return map[string]*prompb.TimeSeries{
-					timeSeriesSignature(pmetric.MetricTypeExponentialHistogram.String(), &labels): {
+					timeSeriesSignature(pmetric.MetricTypeExponentialHistogram.String(), labels): {
 						Labels: labels,
 						Histograms: []prompb.Histogram{
 							{
@@ -714,7 +714,7 @@ func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {
 							{Value: 1},
 						},
 					},
-					timeSeriesSignature(pmetric.MetricTypeExponentialHistogram.String(), &labelsAnother): {
+					timeSeriesSignature(pmetric.MetricTypeExponentialHistogram.String(), labelsAnother): {
 						Labels: labelsAnother,
 						Histograms: []prompb.Histogram{
 							{

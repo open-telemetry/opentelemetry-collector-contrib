@@ -11,12 +11,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/metadata"
 )
 
 func TestTypeStr(t *testing.T) {
 	factory := NewFactory()
-
-	assert.Equal(t, "purefa", factory.Type().String())
+	assert.Equal(t, metadata.Type, factory.Type())
 }
 
 func TestCreateDefaultConfig(t *testing.T) {

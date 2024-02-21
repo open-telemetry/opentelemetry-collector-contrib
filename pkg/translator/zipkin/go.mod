@@ -1,14 +1,14 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin
 
-go 1.20
+go 1.21
 
 require (
-	github.com/jaegertracing/jaeger v1.53.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.93.0
+	github.com/jaegertracing/jaeger v1.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.95.0
 	github.com/openzipkin/zipkin-go v0.4.2
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/pdata v1.1.0
-	go.opentelemetry.io/collector/semconv v0.94.0
+	go.opentelemetry.io/collector/pdata v1.2.0
+	go.opentelemetry.io/collector/semconv v0.95.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -21,8 +21,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	go.opentelemetry.io/otel v1.23.0 // indirect
-	go.opentelemetry.io/otel/trace v1.23.0 // indirect
+	go.opentelemetry.io/otel v1.23.1 // indirect
+	go.opentelemetry.io/otel/trace v1.23.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/net v0.20.0 // indirect

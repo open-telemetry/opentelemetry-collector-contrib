@@ -85,7 +85,7 @@ func TestFindCorrectStorageExtension(t *testing.T) {
 }
 
 func TestFailOnMissingStorageExtension(t *testing.T) {
-	id := component.NewIDWithName("test", "missing")
+	id := component.MustNewIDWithName("test", "missing")
 	r := createReceiver(t, id)
 	err := r.Start(context.Background(), storagetest.NewStorageHost())
 	require.Error(t, err)

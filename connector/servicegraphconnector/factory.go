@@ -18,8 +18,6 @@ import (
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "servicegraph"
 	// The stability level of the processor.
 	connectorStability                    = component.StabilityLevelDevelopment
 	virtualNodeFeatureGateID              = "connector.servicegraph.virtualNode"
@@ -54,7 +52,7 @@ func init() {
 // NewFactory returns a ConnectorFactory.
 func NewFactory() connector.Factory {
 	return connector.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		connector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability),
 	)

@@ -3,7 +3,8 @@ type: f5cloud
 status:
   class: exporter
   stability:
-    beta: [traces, metrics, logs]
+    deprecated: [traces, metrics, logs]
   distributions: [contrib, observiq]
   codeowners:
-    active: [gramidt]
+    active: []
+    emeritus: [gramidt]
