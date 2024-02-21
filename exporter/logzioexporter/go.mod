@@ -5,8 +5,8 @@ go 1.21
 require (
 	github.com/hashicorp/go-hclog v1.6.2
 	github.com/jaegertracing/jaeger v1.54.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.95.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.95.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.95.0
 	go.opentelemetry.io/collector/config/configcompression v0.95.0
