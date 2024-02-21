@@ -860,7 +860,7 @@ func (s *Supervisor) Shutdown() {
 			s.logger.Error("Could not report health to OpAMP server", zap.Error(err))
 		}
 
-		err = s.opampClient.Stop(context.Background())
+		err = s.stopOpAMP()
 
 		if err != nil {
 			s.logger.Error("Could not stop the OpAMP client", zap.Error(err))
