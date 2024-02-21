@@ -3,11 +3,8 @@ package ottlfuncs
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"math"
-	"os"
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -29,17 +26,11 @@ func createParseXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 		return nil, fmt.Errorf("ParseXMLFactory args must be of type *ParseXMLArguments[K]")
 	}
 
-	return parseXML(args.Target, true), nil
+	return parseXML(args.Target), nil
 }
 
 // parseXML returns a `pcommon.Map` struct that is a result of parsing the target string as XML
-// parseXML unmarshals an XML node to a map by:
-//   - Placing the tag name in the #tag field
-//   - Place any attributes in a field `@${attributeName}`, where attributeName is the name of the attribute
-//   - Placing any trimmed text in the node into the #text field (only if there was any text)
-//   - Placing any children into a key `${tag}#${position}`, where tag is the tag of the child,
-//     and position is the 0-based index of the element.
-func parseXML[K any](target ottl.StringGetter[K], strict bool) ottl.ExprFunc[K] {
+func parseXML[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		targetVal, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -49,36 +40,17 @@ func parseXML[K any](target ottl.StringGetter[K], strict bool) ottl.ExprFunc[K] 
 		parsedXML := anyXML{}
 
 		decoder := xml.NewDecoder(strings.NewReader(targetVal))
-		decoder.Strict = strict
 		err = decoder.Decode(&parsedXML)
 		if err != nil {
 			return nil, fmt.Errorf("unmarshal xml: %w", err)
 		}
 
-		parsedMap := parsedXML.toMap()
+		parsedMap := pcommon.NewMap()
+		parsedXML.intoMap(parsedMap)
 
-		e := json.NewEncoder(os.Stdout)
-		e.SetIndent("", "\t")
-		_ = e.Encode(parsedMap)
-
-		m := pcommon.NewMap()
-		err = m.FromRaw(parsedMap)
-		if err != nil {
-			return nil, fmt.Errorf("create pcommon.Map: %w", err)
-		}
-
-		return m, nil
+		return parsedMap, nil
 	}
 }
-
-const (
-	// attributePrefix is deliberitely chosen to be a character that cannot start a name or token in XML
-	// See: https://www.w3.org/TR/REC-xml/#d0e804
-	attributePrefix = "@"
-	// These fields are also chosen to start with a character that cannot start a name or token in XML (#)
-	textField = "#chardata"
-	tagField  = "#tag"
-)
 
 type anyXML struct {
 	tag        string
@@ -87,6 +59,7 @@ type anyXML struct {
 	children   []anyXML
 }
 
+// UnmarshalXML implements xml.Unmarshaler for anyXML
 func (a *anyXML) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	a.tag = start.Name.Local
 	a.attributes = start.Attr
@@ -119,56 +92,34 @@ func (a *anyXML) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 		default:
 			return fmt.Errorf("unexpected token type %T", t)
 		}
-
 	}
 }
 
-func (a anyXML) toMap() map[string]any {
-	// 1 tag filed + 1 text field + 1 per attribute + 1 per child
-	mapSize := 2 + len(a.attributes) + len(a.children)
-	m := make(map[string]any, mapSize)
+// intoMap converts and adds the anyXML into the provided pcommon.Map.
+func (a anyXML) intoMap(m pcommon.Map) {
+	m.EnsureCapacity(4)
 
-	m[tagField] = a.tag
+	m.PutStr("tag", a.tag)
 
 	if a.text != "" {
-		m[textField] = a.text
+		m.PutStr("content", a.text)
 	}
 
-	for _, attr := range a.attributes {
-		m[attributePrefix+attr.Name.Local] = attr.Value
-	}
+	if len(a.attributes) > 0 {
+		attrs := m.PutEmptyMap("attributes")
+		attrs.EnsureCapacity(len(a.attributes))
 
-	hasCollisions := xmlChildrenHaveNameCollisions(a.children)
-	xmlAddChildrenToMap(m, a.children, hasCollisions)
-
-	return m
-}
-
-func xmlAddChildrenToMap(m map[string]any, children []anyXML, includeSequenceNumber bool) {
-	// Pad the number out so that the keys will sort properly for the same elements
-	seqNumberDigits := int(math.Log10(float64(len(children)))) + 1
-
-	for i, child := range children {
-		mapKey := child.tag
-		if includeSequenceNumber {
-			mapKey = fmt.Sprintf("%s#%0*d", mapKey, seqNumberDigits, i)
+		for _, attr := range a.attributes {
+			attrs.PutStr(attr.Name.Local, attr.Value)
 		}
-		m[mapKey] = child.toMap()
 	}
-}
 
-// xmlChildrenHaveNameCollisions determines if children has any name collisions.
-// if it does, we must add a sequence number to the name to avoid the collisions.
-func xmlChildrenHaveNameCollisions(children []anyXML) bool {
-	tagSet := make(map[string]struct{}, len(children))
+	if len(a.children) > 0 {
+		children := m.PutEmptySlice("children")
+		children.EnsureCapacity(len(a.children))
 
-	for _, child := range children {
-		if _, ok := tagSet[child.tag]; ok {
-			return true
+		for _, child := range a.children {
+			child.intoMap(children.AppendEmpty().SetEmptyMap())
 		}
-
-		tagSet[child.tag] = struct{}{}
 	}
-
-	return false
 }
