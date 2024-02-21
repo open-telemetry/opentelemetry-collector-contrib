@@ -39,6 +39,7 @@ func NewCommander(logger *zap.Logger, cfg *config.Agent, args ...string) (*Comma
 		logger:  logger,
 		cfg:     cfg,
 		args:    args,
+		doneCh:  make(chan struct{}, 1),
 		running: &atomic.Int64{},
 	}, nil
 }
@@ -53,8 +54,8 @@ func (c *Commander) Start(ctx context.Context) error {
 		return nil
 	}
 
-	if c.doneCh != nil {
-		close(c.doneCh)
+	if len(c.doneCh) > 0 {
+		<-c.doneCh
 	}
 	if c.exitCh != nil {
 		close(c.exitCh)
