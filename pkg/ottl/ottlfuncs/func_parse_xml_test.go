@@ -56,6 +56,50 @@ func Test_ParseXML(t *testing.T) {
 			},
 		},
 		{
+			name: "Formatted example",
+			oArgs: &ParseXMLArguments[any]{
+				Target: ottl.StandardStringGetter[any]{
+					Getter: func(_ context.Context, _ any) (any, error) {
+						return `
+						<Log>
+						  <User>
+						    <ID>00001</ID>
+							<Name>Joe</Name>
+							<Email>joe.smith@example.com</Email>
+						  </User>
+						  <Text>User did a thing</Text>
+						</Log>`, nil
+					},
+				},
+			},
+			want: map[string]any{
+				"tag": "Log",
+				"children": []any{
+					map[string]any{
+						"tag": "User",
+						"children": []any{
+							map[string]any{
+								"tag":     "ID",
+								"content": "00001",
+							},
+							map[string]any{
+								"tag":     "Name",
+								"content": "Joe",
+							},
+							map[string]any{
+								"tag":     "Email",
+								"content": "joe.smith@example.com",
+							},
+						},
+					},
+					map[string]any{
+						"tag":     "Text",
+						"content": "User did a thing",
+					},
+				},
+			},
+		},
+		{
 			name: "Multiple tags with the same name",
 			oArgs: &ParseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
