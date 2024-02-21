@@ -131,6 +131,14 @@ func (c Config) Validate() error {
 		return errors.New("use either `explicit` or `exponential` buckets histogram")
 	}
 
+	if c.MetricsFlushInterval < 0 {
+		return fmt.Errorf("invalid metrics_flush_interval: %v, the duration should be positive", c.MetricsFlushInterval)
+	}
+
+	if c.MetricsExpiration < 0 {
+		return fmt.Errorf("invalid metrics_expiration: %v, the duration should be positive", c.MetricsExpiration)
+	}
+
 	return nil
 }
 
