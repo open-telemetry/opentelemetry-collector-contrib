@@ -188,7 +188,7 @@ func Test_ParseXML(t *testing.T) {
 					},
 				},
 			},
-			parseError: "leftover bytes after parsing xml",
+			parseError: "trailing bytes after parsing xml",
 		},
 		{
 			name: "Error getting target",

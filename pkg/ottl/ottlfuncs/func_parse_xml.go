@@ -47,7 +47,7 @@ func parseXML[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 		}
 
 		if decoder.InputOffset() != int64(len(targetVal)) {
-			return nil, errors.New("leftover bytes after parsing xml")
+			return nil, errors.New("trailing bytes after parsing xml")
 		}
 
 		parsedMap := pcommon.NewMap()
