@@ -21,6 +21,7 @@ import (
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
@@ -29,6 +30,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterrole"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterrolebinding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/deployment"
@@ -42,6 +45,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicaset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicationcontroller"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/role"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/rolebinding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/serviceaccount"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/statefulset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
@@ -119,10 +125,15 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 		"Node":                    {gvk.Node},
 		"PersistentVolume":        {gvk.PersistentVolume},
 		"PersistentVolumeClaim":   {gvk.PersistentVolumeClaim},
+		"role":                    {gvk.Role},
+		"rolebinding":             {gvk.RoleBinding},
+		"clusterrole":             {gvk.ClusterRole},
+		"clusterrolebinding":      {gvk.ClusterRoleBinding},
 		"Namespace":               {gvk.Namespace},
 		"ReplicationController":   {gvk.ReplicationController},
 		"ResourceQuota":           {gvk.ResourceQuota},
 		"Service":                 {gvk.Service},
+		"ServiceAccount":          {gvk.ServiceAccount},
 		"DaemonSet":               {gvk.DaemonSet},
 		"Deployment":              {gvk.Deployment},
 		"ReplicaSet":              {gvk.ReplicaSet},
@@ -188,6 +199,14 @@ func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, fa
 		rw.setupInformer(kind, factory.Core().V1().PersistentVolumes().Informer())
 	case gvk.PersistentVolumeClaim:
 		rw.setupInformer(kind, factory.Core().V1().PersistentVolumeClaims().Informer())
+	case gvk.Role:
+		rw.setupInformer(kind, factory.Rbac().V1().Roles().Informer())
+	case gvk.RoleBinding:
+		rw.setupInformer(kind, factory.Rbac().V1().RoleBindings().Informer())
+	case gvk.ClusterRole:
+		rw.setupInformer(kind, factory.Rbac().V1().ClusterRoles().Informer())
+	case gvk.ClusterRoleBinding:
+		rw.setupInformer(kind, factory.Rbac().V1().ClusterRoleBindings().Informer())
 	case gvk.Namespace:
 		rw.setupInformer(kind, factory.Core().V1().Namespaces().Informer())
 	case gvk.ReplicationController:
@@ -196,6 +215,8 @@ func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, fa
 		rw.setupInformer(kind, factory.Core().V1().ResourceQuotas().Informer())
 	case gvk.Service:
 		rw.setupInformer(kind, factory.Core().V1().Services().Informer())
+	case gvk.ServiceAccount:
+		rw.setupInformer(kind, factory.Core().V1().ServiceAccounts().Informer())
 	case gvk.DaemonSet:
 		rw.setupInformer(kind, factory.Apps().V1().DaemonSets().Informer())
 	case gvk.Deployment:
@@ -288,6 +309,16 @@ func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.R
 		return persistentvolume.GetMetadata(o)
 	case *corev1.PersistentVolumeClaim:
 		return persistentvolumeclaim.GetMetadata(o)
+	case *corev1.ServiceAccount:
+		return serviceaccount.GetMetadata(o)
+	case *rbacv1.Role:
+		return role.GetMetadata(o)
+	case *rbacv1.RoleBinding:
+		return rolebinding.GetMetadata(o)
+	case *rbacv1.ClusterRole:
+		return clusterrole.GetMetadata(o)
+	case *rbacv1.ClusterRoleBinding:
+		return clusterrolebinding.GetMetadata(o)
 	case *corev1.ReplicationController:
 		return replicationcontroller.GetMetadata(o)
 	case *appsv1.Deployment:

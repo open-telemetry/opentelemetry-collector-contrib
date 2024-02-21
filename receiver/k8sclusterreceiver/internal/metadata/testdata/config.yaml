@@ -1,6 +1,10 @@
 default:
 all_set:
   metrics:
+    k8s.clusterrole.rule_count:
+      enabled: true
+    k8s.clusterrolebinding.subject_count:
+      enabled: true
     k8s.container.cpu_limit:
       enabled: true
     k8s.container.cpu_request:
@@ -79,7 +83,13 @@ all_set:
       enabled: true
     k8s.resource_quota.used:
       enabled: true
+    k8s.role.rule_count:
+      enabled: true
+    k8s.rolebinding.subject_count:
+      enabled: true
     k8s.service.port_count:
+      enabled: true
+    k8s.serviceaccount.secret_count:
       enabled: true
     k8s.statefulset.current_pods:
       enabled: true
@@ -109,6 +119,36 @@ all_set:
     container.runtime:
       enabled: true
     container.runtime.version:
+      enabled: true
+    k8s.clusterrole.annotations:
+      enabled: true
+    k8s.clusterrole.labels:
+      enabled: true
+    k8s.clusterrole.name:
+      enabled: true
+    k8s.clusterrole.rules:
+      enabled: true
+    k8s.clusterrole.start_time:
+      enabled: true
+    k8s.clusterrole.type:
+      enabled: true
+    k8s.clusterrole.uid:
+      enabled: true
+    k8s.clusterrolebinding.annotations:
+      enabled: true
+    k8s.clusterrolebinding.labels:
+      enabled: true
+    k8s.clusterrolebinding.name:
+      enabled: true
+    k8s.clusterrolebinding.role_ref:
+      enabled: true
+    k8s.clusterrolebinding.start_time:
+      enabled: true
+    k8s.clusterrolebinding.subjects:
+      enabled: true
+    k8s.clusterrolebinding.type:
+      enabled: true
+    k8s.clusterrolebinding.uid:
       enabled: true
     k8s.container.name:
       enabled: true
@@ -232,6 +272,40 @@ all_set:
       enabled: true
     k8s.resourcequota.uid:
       enabled: true
+    k8s.role.annotations:
+      enabled: true
+    k8s.role.labels:
+      enabled: true
+    k8s.role.name:
+      enabled: true
+    k8s.role.namespace:
+      enabled: true
+    k8s.role.rules:
+      enabled: true
+    k8s.role.start_time:
+      enabled: true
+    k8s.role.type:
+      enabled: true
+    k8s.role.uid:
+      enabled: true
+    k8s.rolebinding.annotations:
+      enabled: true
+    k8s.rolebinding.labels:
+      enabled: true
+    k8s.rolebinding.name:
+      enabled: true
+    k8s.rolebinding.namespace:
+      enabled: true
+    k8s.rolebinding.role_ref:
+      enabled: true
+    k8s.rolebinding.start_time:
+      enabled: true
+    k8s.rolebinding.subjects:
+      enabled: true
+    k8s.rolebinding.type:
+      enabled: true
+    k8s.rolebinding.uid:
+      enabled: true
     k8s.service.cluster_ip:
       enabled: true
     k8s.service.name:
@@ -243,6 +317,26 @@ all_set:
     k8s.service.uid:
       enabled: true
     k8s.service_account.name:
+      enabled: true
+    k8s.serviceaccount.annotations:
+      enabled: true
+    k8s.serviceaccount.automount_serviceaccount_token:
+      enabled: true
+    k8s.serviceaccount.image_pull_secrets:
+      enabled: true
+    k8s.serviceaccount.labels:
+      enabled: true
+    k8s.serviceaccount.name:
+      enabled: true
+    k8s.serviceaccount.namespace:
+      enabled: true
+    k8s.serviceaccount.secrets:
+      enabled: true
+    k8s.serviceaccount.start_time:
+      enabled: true
+    k8s.serviceaccount.type:
+      enabled: true
+    k8s.serviceaccount.uid:
       enabled: true
     k8s.statefulset.name:
       enabled: true
@@ -260,6 +354,10 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    k8s.clusterrole.rule_count:
+      enabled: false
+    k8s.clusterrolebinding.subject_count:
+      enabled: false
     k8s.container.cpu_limit:
       enabled: false
     k8s.container.cpu_request:
@@ -338,7 +436,13 @@ none_set:
       enabled: false
     k8s.resource_quota.used:
       enabled: false
+    k8s.role.rule_count:
+      enabled: false
+    k8s.rolebinding.subject_count:
+      enabled: false
     k8s.service.port_count:
+      enabled: false
+    k8s.serviceaccount.secret_count:
       enabled: false
     k8s.statefulset.current_pods:
       enabled: false
@@ -368,6 +472,36 @@ none_set:
     container.runtime:
       enabled: false
     container.runtime.version:
+      enabled: false
+    k8s.clusterrole.annotations:
+      enabled: false
+    k8s.clusterrole.labels:
+      enabled: false
+    k8s.clusterrole.name:
+      enabled: false
+    k8s.clusterrole.rules:
+      enabled: false
+    k8s.clusterrole.start_time:
+      enabled: false
+    k8s.clusterrole.type:
+      enabled: false
+    k8s.clusterrole.uid:
+      enabled: false
+    k8s.clusterrolebinding.annotations:
+      enabled: false
+    k8s.clusterrolebinding.labels:
+      enabled: false
+    k8s.clusterrolebinding.name:
+      enabled: false
+    k8s.clusterrolebinding.role_ref:
+      enabled: false
+    k8s.clusterrolebinding.start_time:
+      enabled: false
+    k8s.clusterrolebinding.subjects:
+      enabled: false
+    k8s.clusterrolebinding.type:
+      enabled: false
+    k8s.clusterrolebinding.uid:
       enabled: false
     k8s.container.name:
       enabled: false
@@ -491,6 +625,40 @@ none_set:
       enabled: false
     k8s.resourcequota.uid:
       enabled: false
+    k8s.role.annotations:
+      enabled: false
+    k8s.role.labels:
+      enabled: false
+    k8s.role.name:
+      enabled: false
+    k8s.role.namespace:
+      enabled: false
+    k8s.role.rules:
+      enabled: false
+    k8s.role.start_time:
+      enabled: false
+    k8s.role.type:
+      enabled: false
+    k8s.role.uid:
+      enabled: false
+    k8s.rolebinding.annotations:
+      enabled: false
+    k8s.rolebinding.labels:
+      enabled: false
+    k8s.rolebinding.name:
+      enabled: false
+    k8s.rolebinding.namespace:
+      enabled: false
+    k8s.rolebinding.role_ref:
+      enabled: false
+    k8s.rolebinding.start_time:
+      enabled: false
+    k8s.rolebinding.subjects:
+      enabled: false
+    k8s.rolebinding.type:
+      enabled: false
+    k8s.rolebinding.uid:
+      enabled: false
     k8s.service.cluster_ip:
       enabled: false
     k8s.service.name:
@@ -502,6 +670,26 @@ none_set:
     k8s.service.uid:
       enabled: false
     k8s.service_account.name:
+      enabled: false
+    k8s.serviceaccount.annotations:
+      enabled: false
+    k8s.serviceaccount.automount_serviceaccount_token:
+      enabled: false
+    k8s.serviceaccount.image_pull_secrets:
+      enabled: false
+    k8s.serviceaccount.labels:
+      enabled: false
+    k8s.serviceaccount.name:
+      enabled: false
+    k8s.serviceaccount.namespace:
+      enabled: false
+    k8s.serviceaccount.secrets:
+      enabled: false
+    k8s.serviceaccount.start_time:
+      enabled: false
+    k8s.serviceaccount.type:
+      enabled: false
+    k8s.serviceaccount.uid:
       enabled: false
     k8s.statefulset.name:
       enabled: false
