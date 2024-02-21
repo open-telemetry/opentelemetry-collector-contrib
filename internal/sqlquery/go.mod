@@ -3,16 +3,16 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlque
 go 1.21
 
 require (
-	github.com/SAP/go-hdb v1.7.12
+	github.com/SAP/go-hdb v1.8.5
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/lib/pq v1.10.9
 	github.com/microsoft/go-mssqldb v1.6.0
-	github.com/sijms/go-ora/v2 v2.8.6
+	github.com/sijms/go-ora/v2 v2.8.8
 	github.com/snowflakedb/gosnowflake v1.7.2
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.94.1
-	go.opentelemetry.io/collector/pdata v1.1.0
-	go.opentelemetry.io/collector/receiver v0.94.1
+	go.opentelemetry.io/collector/component v0.95.0
+	go.opentelemetry.io/collector/pdata v1.2.0
+	go.opentelemetry.io/collector/receiver v0.95.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
 )
@@ -69,7 +69,7 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
-	github.com/knadh/koanf/v2 v2.0.2 // indirect
+	github.com/knadh/koanf/v2 v2.1.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -85,23 +85,23 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.opentelemetry.io/collector v0.94.1 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.94.1 // indirect
-	go.opentelemetry.io/collector/confmap v0.94.1 // indirect
-	go.opentelemetry.io/collector/consumer v0.94.1 // indirect
-	go.opentelemetry.io/otel v1.23.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.45.1 // indirect
-	go.opentelemetry.io/otel/metric v1.23.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.23.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.23.0 // indirect
-	go.opentelemetry.io/otel/trace v1.23.0 // indirect
-	golang.org/x/crypto v0.18.0 // indirect
+	go.opentelemetry.io/collector v0.95.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.95.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.95.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.95.0 // indirect
+	go.opentelemetry.io/otel v1.23.1 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.45.2 // indirect
+	go.opentelemetry.io/otel/metric v1.23.1 // indirect
+	go.opentelemetry.io/otel/sdk v1.23.1 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.23.1 // indirect
+	go.opentelemetry.io/otel/trace v1.23.1 // indirect
+	golang.org/x/crypto v0.19.0 // indirect
 	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
-	golang.org/x/term v0.16.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/term v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect

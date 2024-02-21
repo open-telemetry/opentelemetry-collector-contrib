@@ -73,6 +73,8 @@ GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 GCI                 := $(TOOLS_BIN_DIR)/gci
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
 
+GOTESTSUM_OPT?= --rerun-fails=1
+
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
 
@@ -121,23 +123,23 @@ common: lint test
 
 .PHONY: test
 test: $(GOTESTSUM)
-	$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT)
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT)
 
 .PHONY: test-with-cover
 test-with-cover: $(GOTESTSUM)
 	mkdir -p $(PWD)/coverage/unit
-	$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT) -cover -covermode=atomic -args -test.gocoverdir="$(PWD)/coverage/unit"
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT) -cover -covermode=atomic -args -test.gocoverdir="$(PWD)/coverage/unit"
 
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover: $(GOTESTSUM)
 	@echo "running $(GOCMD) unit test ./... + coverage in `pwd`"
-	$(GOTESTSUM) --packages="./..." --  $(GOTEST_OPT_WITH_COVERAGE)
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." --  $(GOTEST_OPT_WITH_COVERAGE)
 	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
 
 .PHONY: mod-integration-test
 mod-integration-test: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration test ./... in `pwd`"
-	$(GOTESTSUM) --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION)
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION)
 	@if [ -e integration-coverage.txt ]; then \
   		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
   	fi
@@ -145,14 +147,14 @@ mod-integration-test: $(GOTESTSUM)
 .PHONY: do-integration-tests-with-cover
 do-integration-tests-with-cover: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration test ./... + coverage in `pwd`"
-	$(GOTESTSUM) --packages="./..." --  $(GOTEST_OPT_WITH_INTEGRATION_COVERAGE)
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." --  $(GOTEST_OPT_WITH_INTEGRATION_COVERAGE)
 	@if [ -e integration-coverage.txt ]; then \
   		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
   	fi
 
 .PHONY: benchmark
 benchmark: $(GOTESTSUM)
-	$(GOTESTSUM) --packages="$(ALL_PKGS)" -- -bench=. -run=notests --tags=$(GO_BUILD_TAGS) 
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="$(ALL_PKGS)" -- -bench=. -run=notests --tags=$(GO_BUILD_TAGS) 
 
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)

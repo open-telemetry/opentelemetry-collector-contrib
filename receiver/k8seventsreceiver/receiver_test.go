@@ -24,7 +24,7 @@ import (
 
 func TestNewReceiver(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
-	rCfg.makeClient = func(apiConf k8sconfig.APIConfig) (k8s.Interface, error) {
+	rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
 		return fake.NewSimpleClientset(), nil
 	}
 	r, err := newReceiver(

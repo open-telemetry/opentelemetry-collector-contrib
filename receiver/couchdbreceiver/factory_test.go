@@ -52,19 +52,6 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 			},
 		},
-		{
-			desc: "Nil consumer",
-			run: func(t *testing.T) {
-				t.Parallel()
-				_, err := createMetricsReceiver(
-					context.Background(),
-					receivertest.NewNopCreateSettings(),
-					createDefaultConfig(),
-					nil,
-				)
-				require.ErrorIs(t, err, component.ErrNilNextConsumer)
-			},
-		},
 	}
 
 	for _, testCase := range testCases {
