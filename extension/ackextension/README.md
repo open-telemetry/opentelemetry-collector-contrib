@@ -19,7 +19,7 @@ if ack fails.
 ```yaml
 extensions:
   ack:
-      storagetype: "in-memory"
+    storageID: 
 
 receivers:
   splunk_hec:
