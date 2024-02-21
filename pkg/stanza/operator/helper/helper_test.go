@@ -3,6 +3,7 @@
 package helper
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -35,6 +36,6 @@ func newHelpersConfig() *helpersConfig {
 
 // This function is impelmented for compatibility with operatortest
 // but is not meant to be used directly
-func (h *helpersConfig) Build(*zap.SugaredLogger) (operator.Operator, error) {
+func (h *helpersConfig) Build(*zap.SugaredLogger, component.TelemetrySettings) (operator.Operator, error) {
 	panic("not impelemented")
 }

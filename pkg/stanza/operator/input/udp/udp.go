@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -80,8 +81,8 @@ type BaseConfig struct {
 }
 
 // Build will build a udp input operator.
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(logger)
+func (c Config) Build(logger *zap.SugaredLogger, set component.TelemetrySettings) (operator.Operator, error) {
+	inputOperator, err := c.InputConfig.Build(logger, set)
 	if err != nil {
 		return nil, err
 	}

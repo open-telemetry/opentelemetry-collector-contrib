@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
@@ -627,7 +629,7 @@ func TestBuild(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			input, err := cfg.Build(testutil.Logger(t), emittest.Nop)
+			input, err := cfg.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings(), emittest.Nop)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -706,7 +708,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 				return len(data), data, nil
 			}
 
-			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), emittest.Nop, splitNone)
+			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), componenttest.NewNopTelemetrySettings(), emittest.Nop, splitNone)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -793,7 +795,7 @@ func TestBuildWithHeader(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			input, err := cfg.Build(testutil.Logger(t), emittest.Nop)
+			input, err := cfg.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings(), emittest.Nop)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -846,6 +848,6 @@ func newMockOperatorConfig(cfg *Config) *mockOperatorConfig {
 
 // This function is impelmented for compatibility with operatortest
 // but is not meant to be used directly
-func (h *mockOperatorConfig) Build(*zap.SugaredLogger) (operator.Operator, error) {
+func (h *mockOperatorConfig) Build(*zap.SugaredLogger, component.TelemetrySettings) (operator.Operator, error) {
 	panic("not impelemented")
 }

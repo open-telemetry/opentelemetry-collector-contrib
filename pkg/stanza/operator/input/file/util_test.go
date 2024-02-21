@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -34,7 +35,7 @@ func newTestFileOperator(t *testing.T, cfgMod func(*Config)) (*Input, chan *entr
 	if cfgMod != nil {
 		cfgMod(cfg)
 	}
-	op, err := cfg.Build(testutil.Logger(t))
+	op, err := cfg.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	err = op.SetOutputs([]operator.Operator{fakeOutput})

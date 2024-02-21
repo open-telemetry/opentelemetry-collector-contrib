@@ -6,6 +6,7 @@ package drop // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -30,7 +31,7 @@ type Config struct {
 }
 
 // Build will build a drop output operator.
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger, _ component.TelemetrySettings) (operator.Operator, error) {
 	outputOperator, err := c.OutputConfig.Build(logger)
 	if err != nil {
 		return nil, err

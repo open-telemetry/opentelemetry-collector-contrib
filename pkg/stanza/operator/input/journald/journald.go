@@ -20,6 +20,7 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -34,8 +35,8 @@ func init() {
 }
 
 // Build will build a journald input operator from the supplied configuration
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(logger)
+func (c Config) Build(logger *zap.SugaredLogger, set component.TelemetrySettings) (operator.Operator, error) {
+	inputOperator, err := c.InputConfig.Build(logger, set)
 	if err != nil {
 		return nil, err
 	}

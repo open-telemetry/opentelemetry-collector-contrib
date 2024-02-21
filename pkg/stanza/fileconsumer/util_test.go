@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -18,7 +19,7 @@ func testManager(t *testing.T, cfg *Config) (*Manager, *emittest.Sink) {
 }
 
 func testManagerWithSink(t *testing.T, cfg *Config, sink *emittest.Sink) *Manager {
-	input, err := cfg.Build(testutil.Logger(t), sink.Callback)
+	input, err := cfg.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings(), sink.Callback)
 	require.NoError(t, err)
 	t.Cleanup(func() { input.closePreviousFiles() })
 	return input

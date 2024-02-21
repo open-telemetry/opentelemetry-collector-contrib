@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -159,7 +160,7 @@ func TestTransformer(t *testing.T) {
 			cfg := NewConfigWithID("test")
 			cfg.Expression = tc.expression
 
-			op, err := cfg.Build(testutil.Logger(t))
+			op, err := cfg.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 
 			filtered := true
@@ -184,7 +185,7 @@ func TestFilterDropRatio(t *testing.T) {
 	cfg := NewConfigWithID("test")
 	cfg.Expression = `body.message == "test_message"`
 	cfg.DropRatio = 0.5
-	op, err := cfg.Build(testutil.Logger(t))
+	op, err := cfg.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	processedEntries := 0

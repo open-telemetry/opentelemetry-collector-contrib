@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/expr-lang/expr/vm"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -48,7 +49,7 @@ type RouteConfig struct {
 }
 
 // Build will build a router operator from the supplied configuration
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger, _ component.TelemetrySettings) (operator.Operator, error) {
 	basicOperator, err := c.BasicConfig.Build(logger)
 	if err != nil {
 		return nil, err

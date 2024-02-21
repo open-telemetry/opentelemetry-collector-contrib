@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -126,7 +127,7 @@ func TestUnmarshal(t *testing.T) {
 }
 
 func TestParserMissingProtocol(t *testing.T) {
-	_, err := NewConfig().Build(testutil.Logger(t))
+	_, err := NewConfig().Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing field 'protocol'")
 }
@@ -213,7 +214,7 @@ func TestRFC6587ConfigOptions(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			_, err := tc.cfg.Build(testutil.Logger(t))
+			_, err := tc.cfg.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings())
 			if tc.errContents != "" {
 				require.ErrorContains(t, err, tc.errContents)
 			} else {
@@ -228,7 +229,7 @@ func TestParserInvalidLocation(t *testing.T) {
 	config.Location = "not_a_location"
 	config.Protocol = RFC3164
 
-	_, err := config.Build(testutil.Logger(t))
+	_, err := config.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to load location "+config.Location)
 }

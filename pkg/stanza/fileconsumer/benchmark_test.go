@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -167,7 +168,7 @@ func BenchmarkFileInput(b *testing.B) {
 				received <- token
 				return nil
 			}
-			op, err := cfg.Build(testutil.Logger(b), callback)
+			op, err := cfg.Build(testutil.Logger(b), componenttest.NewNopTelemetrySettings(), callback)
 			require.NoError(b, err)
 
 			// write half the lines before starting

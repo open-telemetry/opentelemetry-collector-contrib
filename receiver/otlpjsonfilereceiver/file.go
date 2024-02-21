@@ -73,7 +73,7 @@ func createLogsReceiver(_ context.Context, settings receiver.CreateSettings, con
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, token []byte, _ map[string]any) error {
+	input, err := cfg.Config.Build(settings.Logger.Sugar(), settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartLogsOp(ctx)
 		var l plog.Logs
 		l, err = logsUnmarshaler.UnmarshalLogs(token)
@@ -106,7 +106,7 @@ func createMetricsReceiver(_ context.Context, settings receiver.CreateSettings, 
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, token []byte, _ map[string]any) error {
+	input, err := cfg.Config.Build(settings.Logger.Sugar(), settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartMetricsOp(ctx)
 		var m pmetric.Metrics
 		m, err = metricsUnmarshaler.UnmarshalMetrics(token)
@@ -138,7 +138,7 @@ func createTracesReceiver(_ context.Context, settings receiver.CreateSettings, c
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, token []byte, _ map[string]any) error {
+	input, err := cfg.Config.Build(settings.Logger.Sugar(), settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartTracesOp(ctx)
 		var t ptrace.Traces
 		t, err = tracesUnmarshaler.UnmarshalTraces(token)
