@@ -24,7 +24,7 @@ import (
 type Server struct {
 	telemetry      component.TelemetrySettings
 	settings       *Settings
-	strategy       healthStrategy
+	responder      healthResponder
 	mux            *http.ServeMux
 	serverHTTP     *http.Server
 	colconf        atomic.Value
@@ -46,16 +46,13 @@ func NewServer(
 	srv := &Server{
 		telemetry:  telemetry,
 		settings:   settings,
-		strategy:   &defaultHealthStrategy{startTimestamp: &now},
+		responder:  defaultHealthResponder(&now),
 		aggregator: aggregator,
 		doneCh:     make(chan struct{}),
 	}
 
 	if componentHealthSettings != nil {
-		srv.strategy = &componentHealthStrategy{
-			settings:       componentHealthSettings,
-			startTimestamp: &now,
-		}
+		srv.responder = componentHealthResponder(&now, componentHealthSettings)
 	}
 
 	srv.mux = http.NewServeMux()

@@ -21,7 +21,7 @@ func (s *Server) statusHandler() http.Handler {
 			return
 		}
 
-		code, sst := s.strategy.toResponse(st)
+		code, sst := s.responder.response(st)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(code)
