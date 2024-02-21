@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/me
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../../pkg/pdatautil
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector/pdata v1.1.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.95.0
+	go.opentelemetry.io/collector/pdata v1.2.0
 )
 
 require (
