@@ -6,6 +6,7 @@ package protocol // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -104,14 +105,17 @@ func (pph *PathParserHelper) Parse(line string) (pmetric.Metric, error) {
 		return pmetric.Metric{}, fmt.Errorf("invalid carbon metric [%s]: %w", line, err)
 	}
 
-	unixTime, errIsFloat := strconv.ParseInt(timestampStr, 10, 64)
+	var unixTimeNs int64 = 0
 	var dblVal float64
+	unixTime, errIsFloat := strconv.ParseInt(timestampStr, 10, 64)
 	if errIsFloat != nil {
 		dblVal, err = strconv.ParseFloat(timestampStr, 64)
 		if err != nil {
 			return pmetric.Metric{}, fmt.Errorf("invalid carbon metric time [%s]: %w", line, err)
 		}
-		unixTime = int64(dblVal)
+		sec, frac := math.Modf(dblVal)
+		unixTime = int64(sec)
+		unixTimeNs = int64(frac * (1e9))
 	}
 
 	intVal, errIsFloat := strconv.ParseInt(valueStr, 10, 64)
@@ -132,7 +136,7 @@ func (pph *PathParserHelper) Parse(line string) (pmetric.Metric, error) {
 	} else {
 		dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
 	}
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(unixTime, 0)))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(unixTime, unixTimeNs)))
 	if errIsFloat != nil {
 		dp.SetDoubleValue(dblVal)
 	} else {
