@@ -13,8 +13,6 @@ import (
 )
 
 func TestStaleness(t *testing.T) {
-	t.Parallel()
-
 	max := 1 * time.Second
 	stalenessMap := NewStaleness[int](
 		max,
@@ -46,20 +44,20 @@ func TestStaleness(t *testing.T) {
 	valueD := 0
 
 	// Add the values to the map
-	nowFunc = func() time.Time { return timeA }
+	NowFunc = func() time.Time { return timeA }
 	stalenessMap.Store(idA, valueA)
-	nowFunc = func() time.Time { return timeB }
+	NowFunc = func() time.Time { return timeB }
 	stalenessMap.Store(idB, valueB)
-	nowFunc = func() time.Time { return timeC }
+	NowFunc = func() time.Time { return timeC }
 	stalenessMap.Store(idC, valueC)
-	nowFunc = func() time.Time { return timeD }
+	NowFunc = func() time.Time { return timeD }
 	stalenessMap.Store(idD, valueD)
 
 	// Set the time to 2.5s and run expire
 	// This should remove B, but the others should remain
 	// (now == 2.5s, B == 1s, max == 1s)
 	// now > B + max
-	nowFunc = func() time.Time { return initialTime.Add(2500 * time.Millisecond) }
+	NowFunc = func() time.Time { return initialTime.Add(2500 * time.Millisecond) }
 	stalenessMap.ExpireOldEntries()
 	validateStalenessMapEntries(t,
 		map[identity.Stream]int{
@@ -74,7 +72,7 @@ func TestStaleness(t *testing.T) {
 	// This should remove A and C, but D should remain
 	// (now == 2.5s, A == 2s, C == 3s, max == 1s)
 	// now > A + max AND now > C + max
-	nowFunc = func() time.Time { return initialTime.Add(4500 * time.Millisecond) }
+	NowFunc = func() time.Time { return initialTime.Add(4500 * time.Millisecond) }
 	stalenessMap.ExpireOldEntries()
 	validateStalenessMapEntries(t,
 		map[identity.Stream]int{
