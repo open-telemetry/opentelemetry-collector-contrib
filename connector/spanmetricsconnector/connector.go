@@ -292,6 +292,7 @@ func (p *connectorImp) resetState() {
 		p.metricKeyToDimensions.RemoveEvictedItems()
 
 		// If no histogram and no metrics expiration is configured, we can skip the remaining operations.
+		// Enabling either of these features requires to go over resource metrics and do operation on each.
 		if p.config.Histogram.Disable && p.config.MetricsExpiration == 0 {
 			return
 		}
@@ -303,6 +304,7 @@ func (p *connectorImp) resetState() {
 				m.histograms.Reset(true)
 			}
 
+			// If metrics expiration is configured, remove metrics that haven't been seen for longer than the expiration period.
 			if p.config.MetricsExpiration > 0 {
 				if now.Sub(m.lastSeen) >= p.config.MetricsExpiration {
 					p.resourceMetrics.Remove(k)
