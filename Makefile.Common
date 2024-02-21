@@ -32,7 +32,6 @@ GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=a
 GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS) -run=Integration
 GOTEST_OPT_WITH_INTEGRATION_COVERAGE=$(GOTEST_OPT_WITH_INTEGRATION) -coverprofile=integration-coverage.txt -covermode=atomic
 GOCMD?= go
-GOTEST=$(GOCMD) test
 GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
 
@@ -72,6 +71,9 @@ GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report
 BUILDER             := $(TOOLS_BIN_DIR)/builder
 GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 GCI                 := $(TOOLS_BIN_DIR)/gci
+GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
+
+GOTESTSUM_OPT?= --rerun-fails=1
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
@@ -120,39 +122,39 @@ all-pkg-dirs:
 common: lint test
 
 .PHONY: test
-test:
-	$(GOTEST) $(GOTEST_OPT) ./...
+test: $(GOTESTSUM)
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT)
 
 .PHONY: test-with-cover
-test-with-cover:
+test-with-cover: $(GOTESTSUM)
 	mkdir -p $(PWD)/coverage/unit
-	$(GOTEST) $(GOTEST_OPT) -cover ./... -covermode=atomic -args -test.gocoverdir="$(PWD)/coverage/unit"
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT) -cover -covermode=atomic -args -test.gocoverdir="$(PWD)/coverage/unit"
 
 .PHONY: do-unit-tests-with-cover
-do-unit-tests-with-cover:
+do-unit-tests-with-cover: $(GOTESTSUM)
 	@echo "running $(GOCMD) unit test ./... + coverage in `pwd`"
-	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./...
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." --  $(GOTEST_OPT_WITH_COVERAGE)
 	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
 
 .PHONY: mod-integration-test
-mod-integration-test:
+mod-integration-test: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration test ./... in `pwd`"
-	$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) ./...
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION)
 	@if [ -e integration-coverage.txt ]; then \
   		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
   	fi
 
 .PHONY: do-integration-tests-with-cover
-do-integration-tests-with-cover:
+do-integration-tests-with-cover: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration test ./... + coverage in `pwd`"
-	$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION_COVERAGE) ./...
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." --  $(GOTEST_OPT_WITH_INTEGRATION_COVERAGE)
 	@if [ -e integration-coverage.txt ]; then \
   		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
   	fi
 
 .PHONY: benchmark
-benchmark:
-	$(GOTEST) -bench=. -run=notests --tags=$(GO_BUILD_TAGS) $(ALL_PKGS)
+benchmark: $(GOTESTSUM)
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="$(ALL_PKGS)" -- -bench=. -run=notests --tags=$(GO_BUILD_TAGS) 
 
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)
@@ -203,7 +205,7 @@ govulncheck: $(GOVULNCHECK)
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.20
+	$(GOCMD) mod tidy -compat=1.21
 
 .PHONY: misspell
 misspell: $(TOOLS_BIN_DIR)/misspell

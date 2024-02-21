@@ -35,7 +35,7 @@ func NewSplunkHECDataReceiver(port int) *SplunkHECDataReceiver {
 // Start the receiver.
 func (sr *SplunkHECDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc consumer.Logs) error {
 	config := splunkhecreceiver.Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: fmt.Sprintf("127.0.0.1:%d", sr.Port),
 		},
 	}

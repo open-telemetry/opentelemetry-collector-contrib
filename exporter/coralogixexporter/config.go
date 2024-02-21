@@ -27,21 +27,21 @@ type Config struct {
 	// Coralogix domain
 	Domain string `mapstructure:"domain"`
 	// GRPC Settings used with Domain
-	DomainSettings configgrpc.GRPCClientSettings `mapstructure:"domain_settings"`
+	DomainSettings configgrpc.ClientConfig `mapstructure:"domain_settings"`
 
 	// Deprecated: [v0.60.0] Coralogix jaeger based trace endpoint
 	// will be removed in the next version
 	// Please use OTLP endpoint using traces.endpoint
-	configgrpc.GRPCClientSettings `mapstructure:",squash"`
+	configgrpc.ClientConfig `mapstructure:",squash"`
 
 	// Coralogix traces ingress endpoint
-	Traces configgrpc.GRPCClientSettings `mapstructure:"traces"`
+	Traces configgrpc.ClientConfig `mapstructure:"traces"`
 
 	// The Coralogix metrics ingress endpoint
-	Metrics configgrpc.GRPCClientSettings `mapstructure:"metrics"`
+	Metrics configgrpc.ClientConfig `mapstructure:"metrics"`
 
 	// The Coralogix logs ingress endpoint
-	Logs configgrpc.GRPCClientSettings `mapstructure:"logs"`
+	Logs configgrpc.ClientConfig `mapstructure:"logs"`
 
 	// Your Coralogix private key (sensitive) for authentication
 	PrivateKey configopaque.String `mapstructure:"private_key"`
@@ -79,11 +79,11 @@ func (c *Config) Validate() error {
 	}
 
 	// check if headers exists
-	if len(c.GRPCClientSettings.Headers) == 0 {
-		c.GRPCClientSettings.Headers = make(map[string]configopaque.String)
+	if len(c.ClientConfig.Headers) == 0 {
+		c.ClientConfig.Headers = make(map[string]configopaque.String)
 	}
-	c.GRPCClientSettings.Headers["ACCESS_TOKEN"] = c.PrivateKey
-	c.GRPCClientSettings.Headers["appName"] = configopaque.String(c.AppName)
+	c.ClientConfig.Headers["ACCESS_TOKEN"] = c.PrivateKey
+	c.ClientConfig.Headers["appName"] = configopaque.String(c.AppName)
 	return nil
 }
 
@@ -116,7 +116,7 @@ func (c *Config) getMetadataFromResource(res pcommon.Resource) (appName, subsyst
 	return appName, subsystem
 }
 
-func (c *Config) getDomainGrpcSettings() *configgrpc.GRPCClientSettings {
+func (c *Config) getDomainGrpcSettings() *configgrpc.ClientConfig {
 	settings := c.DomainSettings
 	settings.Endpoint = fmt.Sprintf("ingress.%s:443", c.Domain)
 	return &settings

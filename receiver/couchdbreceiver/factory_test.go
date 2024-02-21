@@ -11,12 +11,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	ft := factory.Type()
-	require.EqualValues(t, "couchdb", ft)
+	require.EqualValues(t, metadata.Type, ft)
 }
 
 func TestValidConfig(t *testing.T) {
@@ -48,19 +50,6 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 				require.NoError(t, err)
 
-			},
-		},
-		{
-			desc: "Nil consumer",
-			run: func(t *testing.T) {
-				t.Parallel()
-				_, err := createMetricsReceiver(
-					context.Background(),
-					receivertest.NewNopCreateSettings(),
-					createDefaultConfig(),
-					nil,
-				)
-				require.ErrorIs(t, err, component.ErrNilNextConsumer)
 			},
 		},
 	}

@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("journald")
+)
+
 const (
-	Type          = "journald"
 	LogsStability = component.StabilityLevelAlpha
 )
 

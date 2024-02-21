@@ -25,7 +25,7 @@ var _ component.Component = (*SamplingHTTPServer)(nil)
 
 type SamplingHTTPServer struct {
 	telemetry     component.TelemetrySettings
-	settings      confighttp.HTTPServerSettings
+	settings      confighttp.ServerConfig
 	strategyStore strategystore.StrategyStore
 
 	mux        *http.ServeMux
@@ -33,7 +33,7 @@ type SamplingHTTPServer struct {
 	shutdownWG *sync.WaitGroup
 }
 
-func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.HTTPServerSettings, strategyStore strategystore.StrategyStore) (*SamplingHTTPServer, error) {
+func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.ServerConfig, strategyStore strategystore.StrategyStore) (*SamplingHTTPServer, error) {
 	if strategyStore == nil {
 		return nil, errMissingStrategyStore
 	}

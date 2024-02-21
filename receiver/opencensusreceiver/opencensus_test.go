@@ -297,7 +297,7 @@ func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
 `
 	c := http.Client{
 		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, err error) {
+			DialContext: func(context.Context, string, string) (conn net.Conn, err error) {
 				return net.Dial("unix", socketName)
 			},
 		},
@@ -601,7 +601,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 
 func TestInvalidTLSCredentials(t *testing.T) {
 	cfg := Config{
-		GRPCServerSettings: configgrpc.GRPCServerSettings{
+		ServerConfig: configgrpc.ServerConfig{
 			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
 					CertFile: "willfail",

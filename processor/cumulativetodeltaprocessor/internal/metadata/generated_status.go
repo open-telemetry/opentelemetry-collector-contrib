@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("cumulativetodelta")
+)
+
 const (
-	Type             = "cumulativetodelta"
 	MetricsStability = component.StabilityLevelBeta
 )
 

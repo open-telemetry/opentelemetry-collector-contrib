@@ -79,7 +79,7 @@ type jaegerConfig struct {
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 
-	configgrpc.GRPCClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }
 
 var _ component.Config = (*jaegerConfig)(nil)
@@ -109,7 +109,7 @@ func (je *jaegerGRPCDataSender) newTracesExporter(set exporter.CreateSettings) (
 		waitForReady:              cfg.WaitForReady,
 		connStateReporterInterval: time.Second,
 		stopCh:                    make(chan struct{}),
-		clientSettings:            &cfg.GRPCClientSettings,
+		clientSettings:            &cfg.ClientConfig,
 	}
 
 	return exporterhelper.NewTracesExporter(
@@ -135,7 +135,7 @@ type protoGRPCSender struct {
 	stopCh         chan struct{}
 	stopped        bool
 	stopLock       sync.Mutex
-	clientSettings *configgrpc.GRPCClientSettings
+	clientSettings *configgrpc.ClientConfig
 }
 
 type stateReporter interface {

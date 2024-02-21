@@ -190,7 +190,7 @@ func TestExportErrors(tester *testing.T) {
 		cfg := &Config{
 			Region: "",
 			Token:  "token",
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: server.URL,
 			},
 		}
@@ -244,9 +244,9 @@ func TestPushTraceData(tester *testing.T) {
 	cfg := Config{
 		Token:  "token",
 		Region: "",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint:    server.URL,
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 		},
 	}
 	defer server.Close()
@@ -277,9 +277,9 @@ func TestPushLogsData(tester *testing.T) {
 	cfg := Config{
 		Token:  "token",
 		Region: "",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint:    server.URL,
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 		},
 	}
 	defer server.Close()

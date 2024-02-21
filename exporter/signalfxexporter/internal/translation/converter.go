@@ -36,6 +36,7 @@ type MetricsConverter struct {
 	datapointValidator   *datapointValidator
 	translator           *signalfx.FromTranslator
 	dropHistogramBuckets bool
+	processHistograms    bool
 }
 
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
@@ -47,7 +48,8 @@ func NewMetricsConverter(
 	excludes []dpfilters.MetricFilter,
 	includes []dpfilters.MetricFilter,
 	nonAlphanumericDimChars string,
-	dropHistogramBuckets bool) (*MetricsConverter, error) {
+	dropHistogramBuckets bool,
+	processHistograms bool) (*MetricsConverter, error) {
 	fs, err := dpfilters.NewFilterSet(excludes, includes)
 	if err != nil {
 		return nil, err
@@ -59,11 +61,13 @@ func NewMetricsConverter(
 		datapointValidator:   newDatapointValidator(logger, nonAlphanumericDimChars),
 		translator:           &signalfx.FromTranslator{},
 		dropHistogramBuckets: dropHistogramBuckets,
+		processHistograms:    processHistograms,
 	}, nil
 }
 
-// MetricsToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
-// returning those datapoints and the number of time series that had to be
+// MetricsToSignalFxV2 converts the passed in MetricsData to SFx datapoints
+// and if processHistograms is set, histogram metrics are not converted to SFx format.
+// It returns those datapoints and the number of time series that had to be
 // dropped because of errors or warnings.
 func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.DataPoint {
 	var sfxDataPoints []*sfxpb.DataPoint
@@ -77,7 +81,7 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.Data
 			var initialDps []*sfxpb.DataPoint
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				currentMetric := ilm.Metrics().At(k)
-				dps := c.translator.FromMetric(currentMetric, extraDimensions, c.dropHistogramBuckets)
+				dps := c.translator.FromMetric(currentMetric, extraDimensions, c.dropHistogramBuckets, c.processHistograms)
 				initialDps = append(initialDps, dps...)
 			}
 

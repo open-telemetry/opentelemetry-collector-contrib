@@ -1,0 +1,24 @@
+receivers:
+  filelog:
+    include: [/var/log/busybox/simple.log]
+    storage: file_storage/filelogreceiver
+
+extensions:
+  file_storage/filelogreceiver:
+    directory: /var/lib/otelcol/file_storage/receiver
+  file_storage/otlpoutput:
+    directory: /var/lib/otelcol/file_storage/output
+
+service:
+  extensions: [file_storage/filelogreceiver, file_storage/otlpoutput]
+  pipelines:
+    logs:
+      receivers: [filelog]
+      exporters: [otlp/custom]
+      processors: []
+
+exporters:
+  otlp/custom:
+    endpoint: http://0.0.0.0:4242
+    sending_queue:
+      storage: file_storage/otlpoutput
