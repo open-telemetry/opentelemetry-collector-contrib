@@ -21,7 +21,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-require github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.94.0
+require github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.95.0
 
 require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
