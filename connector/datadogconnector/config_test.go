@@ -64,6 +64,12 @@ func TestValidate(t *testing.T) {
 			}},
 			err: "Trace buffer must be non-negative",
 		},
+		{
+			name: "With peer_tags",
+			cfg: &Config{
+				Traces: TracesConfig{PeerTags: []string{"tag1", "tag2"}},
+			},
+		},
 	}
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {

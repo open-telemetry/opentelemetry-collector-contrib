@@ -106,6 +106,7 @@ func newDefaultLogsSettings() LogsSettings {
 }
 
 const bufferMaxLifetime = 5 * time.Second
+const bufferPurgeOlderThan = 30 * time.Second
 const bufferRetryInitialInterval = 5 * time.Second
 const bufferRetryMaxInterval = 30 * time.Second
 const bufferRetryMaxElapsedTime = 300 * time.Second
@@ -113,6 +114,7 @@ const bufferRetryShutdownTimeout = 30 * time.Second
 
 type BufferSettings struct {
 	MaxLifetime          time.Duration `mapstructure:"max_lifetime"`
+	PurgeOlderThan       time.Duration `mapstructure:"purge_older_than"`
 	GroupBy              []string      `mapstructure:"group_by"`
 	RetryInitialInterval time.Duration `mapstructure:"retry_initial_interval"`
 	RetryMaxInterval     time.Duration `mapstructure:"retry_max_interval"`
@@ -124,6 +126,7 @@ type BufferSettings struct {
 func newDefaultBufferSettings() BufferSettings {
 	return BufferSettings{
 		MaxLifetime:          bufferMaxLifetime,
+		PurgeOlderThan:       bufferPurgeOlderThan,
 		GroupBy:              []string{},
 		RetryInitialInterval: bufferRetryInitialInterval,
 		RetryMaxInterval:     bufferRetryMaxInterval,
@@ -211,6 +214,7 @@ func (c *Config) convert() (*ExporterConfig, error) {
 				Tokens:   datasetConfig.DataSetTokens{WriteLog: string(c.APIKey)},
 				BufferSettings: buffer_config.DataSetBufferSettings{
 					MaxLifetime:              c.BufferSettings.MaxLifetime,
+					PurgeOlderThan:           c.BufferSettings.PurgeOlderThan,
 					MaxSize:                  buffer.LimitBufferSize,
 					GroupBy:                  c.BufferSettings.GroupBy,
 					RetryInitialInterval:     c.BufferSettings.RetryInitialInterval,

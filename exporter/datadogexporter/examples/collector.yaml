@@ -301,7 +301,7 @@ exporters:
       ## The host of the Datadog intake server to send traces to.
       ## If unset, the value is obtained through the `site` parameter in the `api` section.
       #
-      # endpoint: https://api.datadoghq.com
+      # endpoint: https://trace.agent.datadoghq.com
 
       ## @param ignore_resources - list of strings - optional
       ## A blocklist of regular expressions can be provided to disable certain traces based on their resource name
@@ -355,6 +355,12 @@ exporters:
       ## The default list of peer tags can be found in https://github.com/DataDog/datadog-agent/blob/main/pkg/trace/stats/concentrator.go.
       #
       # peer_tags_aggregation: false
+
+      ## @param peer_tags - [BETA] Optional list of supplementary peer tags that go beyond the defaults. The Datadog backend validates all tags
+      ## and will drop ones that are unapproved. The default set of peer tags can be found at
+      ## https://github.com/DataDog/datadog-agent/blob/505170c4ac8c3cbff1a61cf5f84b28d835c91058/pkg/trace/stats/concentrator.go#L55.
+      #
+      # peer_tags: ["tag"]
 
       ## @param trace_buffer - specifies the number of outgoing trace payloads to buffer before dropping - optional
       ## If unset, the default value is 0, meaning the outgoing trace payloads are unbuffered.

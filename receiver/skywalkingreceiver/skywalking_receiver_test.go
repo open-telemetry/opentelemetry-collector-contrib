@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	skywalkingReceiver = component.NewIDWithName("skywalking", "receiver_test")
+	skywalkingReceiver = component.MustNewIDWithName("skywalking", "receiver_test")
 )
 
 var traceJSON = []byte(`
@@ -65,15 +65,6 @@ var traceJSON = []byte(`
 	"service": "User_Service_Name",
 	"traceSegmentId": "a12ff60b-5807-463b-a1f8-fb1c8608219e"
 }]`)
-
-func TestTraceSource(t *testing.T) {
-	set := receivertest.NewNopCreateSettings()
-	set.ID = skywalkingReceiver
-	mockSwReceiver := newSkywalkingReceiver(&configuration{}, set)
-	err := mockSwReceiver.registerTraceConsumer(nil)
-	assert.Equal(t, err, component.ErrNilNextConsumer)
-	require.NotNil(t, mockSwReceiver)
-}
 
 func TestStartAndShutdown(t *testing.T) {
 	port := 12800

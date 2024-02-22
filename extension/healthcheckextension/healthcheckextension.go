@@ -90,7 +90,7 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 			}()
 
 			if errHTTP := hc.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-				host.ReportFatalError(errHTTP)
+				hc.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 			}
 
 		}()
