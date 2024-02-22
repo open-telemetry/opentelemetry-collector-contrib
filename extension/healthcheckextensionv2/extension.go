@@ -55,8 +55,8 @@ func newExtension(
 	if config.GRPCSettings != nil {
 		srvGRPC := grpc.NewServer(
 			config.GRPCSettings,
+			config.ComponentHealthSettings,
 			set.TelemetrySettings,
-			config.RecoveryDuration,
 			aggregator,
 		)
 		comps = append(comps, srvGRPC)
