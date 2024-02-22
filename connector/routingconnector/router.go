@@ -126,7 +126,7 @@ func (r *router[C]) registerRouteConsumers() error {
 				pipelineNames = append(pipelineNames, pipeline.String())
 			}
 			exporters := strings.Join(pipelineNames, ", ")
-			r.logger.Warn(fmt.Sprintf(`Statement "%s" already exists in the routing table, the route with target pipeline(s) %s will be ignored.`, item.Statement, exporters))
+			r.logger.Warn(fmt.Sprintf(`Statement %q already exists in the routing table, the route with target pipeline(s) %q will be ignored.`, item.Statement, exporters))
 		}
 
 		consumer, err := r.consumerProvider(item.Pipelines...)
