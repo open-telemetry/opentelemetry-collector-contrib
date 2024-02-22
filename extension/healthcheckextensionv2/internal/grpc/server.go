@@ -6,41 +6,45 @@ package grpc // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"errors"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"google.golang.org/grpc"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/status"
 )
 
 type Server struct {
 	healthpb.UnimplementedHealthServer
-	serverGRPC       *grpc.Server
-	aggregator       *status.Aggregator
-	settings         *Settings
-	telemetry        component.TelemetrySettings
-	recoveryDuration time.Duration
-	doneCh           chan struct{}
+	serverGRPC              *grpc.Server
+	aggregator              *status.Aggregator
+	settings                *Settings
+	componentHealthSettings *common.ComponentHealthSettings
+	telemetry               component.TelemetrySettings
+	doneCh                  chan struct{}
 }
 
 var _ component.Component = (*Server)(nil)
 
 func NewServer(
 	settings *Settings,
+	componentHealthSettings *common.ComponentHealthSettings,
 	telemetry component.TelemetrySettings,
-	failureDuration time.Duration,
 	aggregator *status.Aggregator,
 ) *Server {
-	return &Server{
-		settings:         settings,
-		telemetry:        telemetry,
-		aggregator:       aggregator,
-		recoveryDuration: failureDuration,
-		doneCh:           make(chan struct{}),
+	srv := &Server{
+		settings:                settings,
+		componentHealthSettings: componentHealthSettings,
+		telemetry:               telemetry,
+		aggregator:              aggregator,
+		doneCh:                  make(chan struct{}),
 	}
+	if srv.componentHealthSettings == nil {
+		srv.componentHealthSettings = &common.ComponentHealthSettings{}
+	}
+	return srv
 }
 
 // Start implements the component.Component interface.

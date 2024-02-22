@@ -5,6 +5,7 @@ package grpc
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	grpcstatus "google.golang.org/grpc/status"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/status"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/testhelpers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -35,215 +37,714 @@ func TestCheck(t *testing.T) {
 			},
 		},
 	}
-	server := NewServer(
-		settings,
-		componenttest.NewNopTelemetrySettings(),
-		10*time.Millisecond,
-		status.NewAggregator(status.PriorityPermanent),
-	)
+	var server *Server
 	traces := testhelpers.NewPipelineMetadata("traces")
 	metrics := testhelpers.NewPipelineMetadata("metrics")
 
-	require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, server.Shutdown(context.Background())) })
-
-	cc, err := grpc.Dial(
-		addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
-	)
-	require.NoError(t, err)
-	defer func() {
-		assert.NoError(t, cc.Close())
-	}()
-
-	client := healthpb.NewHealthClient(cc)
-
-	// ts is a sequence of test steps
-	for _, ts := range []struct {
+	type teststep struct {
 		step           func()
 		eventually     bool
 		service        string
 		expectedStatus healthpb.HealthCheckResponse_ServingStatus
 		expectedErr    error
+	}
+
+	tests := []struct {
+		name                    string
+		settings                *Settings
+		componentHealthSettings *common.ComponentHealthSettings
+		teststeps               []teststep
 	}{
 		{
-			service:        "",
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-		{
-			service:     traces.PipelineID.String(),
-			expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
-		},
-		{
-			service:     metrics.PipelineID.String(),
-			expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
-		},
-		{
-			step: func() {
-				testhelpers.SeedAggregator(
-					server.aggregator,
-					traces.InstanceIDs(),
-					component.StatusStarting,
-				)
-				testhelpers.SeedAggregator(
-					server.aggregator,
-					metrics.InstanceIDs(),
-					component.StatusStarting,
-				)
+			name:     "exclude recoverable and permanent errors",
+			settings: settings,
+			teststeps: []teststep{
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:     traces.PipelineID.String(),
+					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+				},
+				{
+					service:     metrics.PipelineID.String(),
+					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStarting,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusOK,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// errors will be ignored
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewStatusEvent(component.StatusOK),
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStopping,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStopped,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStopped,
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
 			},
-			service:        "",
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
 		},
 		{
-			service:        traces.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-		{
-			service:        metrics.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-		{
-			step: func() {
-				testhelpers.SeedAggregator(
-					server.aggregator,
-					traces.InstanceIDs(),
-					component.StatusOK,
-				)
-				testhelpers.SeedAggregator(
-					server.aggregator,
-					metrics.InstanceIDs(),
-					component.StatusOK,
-				)
+			name:     "include recoverable and exclude permanent errors",
+			settings: settings,
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanent:   false,
+				IncludeRecoverable: true,
+				RecoveryDuration:   2 * time.Millisecond,
 			},
-			service:        "",
-			expectedStatus: healthpb.HealthCheckResponse_SERVING,
-		},
-		{
-			service:        traces.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_SERVING,
-		},
-		{
-			service:        metrics.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_SERVING,
-		},
-		{
-			step: func() {
-				// metrics and overall status will be NOT_SERVING
-				server.aggregator.RecordStatus(
-					metrics.ExporterID,
-					component.NewRecoverableErrorEvent(assert.AnError),
-				)
+			teststeps: []teststep{
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:     traces.PipelineID.String(),
+					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+				},
+				{
+					service:     metrics.PipelineID.String(),
+					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStarting,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusOK,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// metrics and overall status will be NOT_SERVING
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					service:        "",
+					eventually:     true,
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						// metrics and overall status will recover and resume SERVING
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewStatusEvent(component.StatusOK),
+						)
+					},
+					service:        "",
+					eventually:     true,
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// permament error will be ignored
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewPermanentErrorEvent(assert.AnError),
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStopping,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					service:        "",
+					eventually:     true,
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStopped,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStopped,
+						)
+					},
+					service:        "",
+					eventually:     true,
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
 			},
-			service:        "",
-			eventually:     true,
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
 		},
 		{
-			service:        traces.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_SERVING,
-		},
-		{
-			service:        metrics.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-		{
-			step: func() {
-				// metrics and overall status will recover and resume SERVING
-				server.aggregator.RecordStatus(
-					metrics.ExporterID,
-					component.NewStatusEvent(component.StatusOK),
-				)
+			name:     "include permanent and exclude recoverable errors",
+			settings: settings,
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanent: true,
 			},
-			service:        "",
-			eventually:     true,
-			expectedStatus: healthpb.HealthCheckResponse_SERVING,
-		},
-		{
-			service:        metrics.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_SERVING,
-		},
-		{
-			step: func() {
-				testhelpers.SeedAggregator(
-					server.aggregator,
-					traces.InstanceIDs(),
-					component.StatusStopping,
-				)
-				testhelpers.SeedAggregator(
-					server.aggregator,
-					metrics.InstanceIDs(),
-					component.StatusStopping,
-				)
+			teststeps: []teststep{
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:     traces.PipelineID.String(),
+					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+				},
+				{
+					service:     metrics.PipelineID.String(),
+					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStarting,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusOK,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// recoverable will be ignored
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// permament error included
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewPermanentErrorEvent(assert.AnError),
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStopping,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStopped,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStopped,
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
 			},
-			service:        "",
-			eventually:     true,
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
 		},
 		{
-			service:        traces.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-		{
-			service:        metrics.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-		{
-			step: func() {
-				testhelpers.SeedAggregator(
-					server.aggregator,
-					traces.InstanceIDs(),
-					component.StatusStopped,
-				)
-				testhelpers.SeedAggregator(
-					server.aggregator,
-					metrics.InstanceIDs(),
-					component.StatusStopped,
-				)
+			name:     "include permanent and recoverable errors",
+			settings: settings,
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanent:   true,
+				IncludeRecoverable: true,
+				RecoveryDuration:   2 * time.Millisecond,
 			},
-			service:        "",
-			eventually:     true,
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+			teststeps: []teststep{
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:     traces.PipelineID.String(),
+					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+				},
+				{
+					service:     metrics.PipelineID.String(),
+					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStarting,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusOK,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// metrics and overall status will be NOT_SERVING
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					service:        "",
+					eventually:     true,
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						// metrics and overall status will recover and resume SERVING
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewStatusEvent(component.StatusOK),
+						)
+					},
+					service:        "",
+					eventually:     true,
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStopping,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStopped,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStopped,
+						)
+					},
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+			},
 		},
-		{
-			service:        traces.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-		{
-			service:        metrics.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-	} {
-		if ts.step != nil {
-			ts.step()
-		}
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			server = NewServer(
+				settings,
+				tc.componentHealthSettings,
+				componenttest.NewNopTelemetrySettings(),
+				status.NewAggregator(testhelpers.ErrPriority(tc.componentHealthSettings)),
+			)
+			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
+			t.Cleanup(func() { require.NoError(t, server.Shutdown(context.Background())) })
 
-		if ts.eventually {
-			assert.Eventually(t, func() bool {
+			cc, err := grpc.Dial(
+				addr,
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
+				grpc.WithBlock(),
+			)
+			require.NoError(t, err)
+			defer func() {
+				assert.NoError(t, cc.Close())
+			}()
+
+			client := healthpb.NewHealthClient(cc)
+
+			for _, ts := range tc.teststeps {
+				if ts.step != nil {
+					ts.step()
+				}
+
+				if ts.eventually {
+					assert.Eventually(t, func() bool {
+						resp, err := client.Check(
+							context.Background(),
+							&healthpb.HealthCheckRequest{Service: ts.service},
+						)
+						require.NoError(t, err)
+						return ts.expectedStatus == resp.Status
+					}, time.Second, 10*time.Millisecond)
+					continue
+				}
+
 				resp, err := client.Check(
 					context.Background(),
 					&healthpb.HealthCheckRequest{Service: ts.service},
 				)
-				require.NoError(t, err)
-				return ts.expectedStatus == resp.Status
-			}, time.Second, 10*time.Millisecond)
-			continue
-		}
-
-		resp, err := client.Check(
-			context.Background(),
-			&healthpb.HealthCheckRequest{Service: ts.service},
-		)
-		require.Equal(t, ts.expectedErr, err)
-		if ts.expectedErr != nil {
-			continue
-		}
-		assert.Equal(t, ts.expectedStatus, resp.Status)
+				require.Equal(t, ts.expectedErr, err)
+				if ts.expectedErr != nil {
+					continue
+				}
+				assert.Equal(t, ts.expectedStatus, resp.Status)
+			}
+		})
 	}
+
 }
 
 func TestWatch(t *testing.T) {
-	var err error
 	addr := testutil.GetAvailableLocalAddress(t)
 	settings := &Settings{
 		GRPCServerSettings: configgrpc.GRPCServerSettings{
@@ -253,186 +754,848 @@ func TestWatch(t *testing.T) {
 			},
 		},
 	}
-	server := NewServer(
-		settings,
-		componenttest.NewNopTelemetrySettings(),
-		10*time.Millisecond,
-		status.NewAggregator(status.PriorityPermanent),
-	)
+	var server *Server
 	traces := testhelpers.NewPipelineMetadata("traces")
 	metrics := testhelpers.NewPipelineMetadata("metrics")
 
-	require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() { require.NoError(t, server.Shutdown(context.Background())) })
+	// statusUnchanged is a sentinel value to signal that a step does not result
+	// in a status change. This is important, because checking for a status
+	// change is blocking.
+	var statusUnchanged healthpb.HealthCheckResponse_ServingStatus = -1
 
-	cc, err := grpc.Dial(
-		addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
-	)
-	require.NoError(t, err)
-	defer func() {
-		assert.NoError(t, cc.Close())
-	}()
-
-	client := healthpb.NewHealthClient(cc)
-	watchers := make(map[string]healthpb.Health_WatchClient)
-
-	// ts is a sequence of test steps
-	for _, ts := range []struct {
+	type teststep struct {
 		step           func()
 		service        string
 		expectedStatus healthpb.HealthCheckResponse_ServingStatus
-	}{
-		{
-			service:        "",
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-		{
-			service:        traces.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
-		},
-		{
-			service:        metrics.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
-		},
-		{
-			step: func() {
-				testhelpers.SeedAggregator(
-					server.aggregator,
-					traces.InstanceIDs(),
-					component.StatusStarting,
-				)
-			},
-			service:        traces.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-		{
-			step: func() {
-				testhelpers.SeedAggregator(
-					server.aggregator,
-					metrics.InstanceIDs(),
-					component.StatusStarting,
-				)
-			},
-			service:        metrics.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-		{
-			step: func() {
-				testhelpers.SeedAggregator(
-					server.aggregator,
-					traces.InstanceIDs(),
-					component.StatusOK,
-				)
-			},
-			service:        traces.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_SERVING,
-		},
-		{
-			step: func() {
-				testhelpers.SeedAggregator(
-					server.aggregator,
-					metrics.InstanceIDs(),
-					component.StatusOK,
-				)
-			},
-			service:        metrics.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_SERVING,
-		},
-		{
-			service:        "",
-			expectedStatus: healthpb.HealthCheckResponse_SERVING,
-		},
-		{
-			step: func() {
-				// metrics and overall status will be NOT_SERVING
-				server.aggregator.RecordStatus(
-					metrics.ExporterID,
-					component.NewRecoverableErrorEvent(assert.AnError),
-				)
-			},
-			service:        metrics.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-		{
-			service:        "",
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-		{
-			step: func() {
-				// metrics and overall status will recover and resume SERVING
-				server.aggregator.RecordStatus(
-					metrics.ExporterID,
-					component.NewStatusEvent(component.StatusOK),
-				)
-			},
-			service:        metrics.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_SERVING,
-		},
-		{
-			service:        "",
-			expectedStatus: healthpb.HealthCheckResponse_SERVING,
-		},
-		{
-			step: func() {
-				// This will be the last status change for traces (stopping changes to NOT_SERVING)
-				// Stopped results in the same serving status, and repeat statuses are not streamed.
-				testhelpers.SeedAggregator(
-					server.aggregator,
-					traces.InstanceIDs(),
-					component.StatusStopping,
-				)
-			},
-			service:        traces.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-		{
-			service:        "",
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-		{
-			step: func() {
-				// This will be the last status change for metrics (stopping changes to NOT_SERVING)
-				// Stopped results in the same serving status, and repeat statuses are not streamed.
-				testhelpers.SeedAggregator(
-					server.aggregator,
-					metrics.InstanceIDs(),
-					component.StatusStopping,
-				)
-			},
-			service:        metrics.PipelineID.String(),
-			expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
-		},
-	} {
-
-		if ts.step != nil {
-			ts.step()
-		}
-
-		watcher, ok := watchers[ts.service]
-		if !ok {
-			watcher, err = client.Watch(
-				context.Background(),
-				&healthpb.HealthCheckRequest{Service: ts.service},
-			)
-			require.NoError(t, err)
-			watchers[ts.service] = watcher
-		}
-
-		var resp *healthpb.HealthCheckResponse
-		// Note Recv blocks until there is a new item in the stream
-		resp, err = watcher.Recv()
-		require.NoError(t, err)
-		assert.Equal(t, ts.expectedStatus, resp.Status)
 	}
 
-	// closing the aggregator will gracefully terminate streams of status events
-	server.aggregator.Close()
+	tests := []struct {
+		name                    string
+		settings                *Settings
+		componentHealthSettings *common.ComponentHealthSettings
+		teststeps               []teststep
+	}{
+		{
+			name:     "exclude recoverable and permanent errors",
+			settings: settings,
+			teststeps: []teststep{
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// errors will be ignored
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: statusUnchanged,
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewPermanentErrorEvent(assert.AnError),
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: statusUnchanged,
+				},
+				{
+					step: func() {
+						// This will be the last status change for traces (stopping changes to NOT_SERVING)
+						// Stopped results in the same serving status, and repeat statuses are not streamed.
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						// This will be the last status change for metrics (stopping changes to NOT_SERVING)
+						// Stopped results in the same serving status, and repeat statuses are not streamed.
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+			},
+		},
+		{
+			name:     "include recoverable and exclude permanent errors",
+			settings: settings,
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanent:   false,
+				IncludeRecoverable: true,
+				RecoveryDuration:   2 * time.Millisecond,
+			},
+			teststeps: []teststep{
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// metrics and overall status will be NOT_SERVING
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						// metrics and overall status will recover and resume SERVING
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewStatusEvent(component.StatusOK),
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// permanent error will be ignored
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewPermanentErrorEvent(assert.AnError),
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: statusUnchanged,
+				},
+			},
+		},
+		{
+			name:     "exclude permanent errors",
+			settings: settings,
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanent:   false,
+				IncludeRecoverable: true,
+				RecoveryDuration:   2 * time.Millisecond,
+			},
+			teststeps: []teststep{
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// permanent error will be ignored
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewPermanentErrorEvent(assert.AnError),
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: statusUnchanged,
+				},
+			},
+		},
+		{
+			name:     "include recoverable 0s recovery duration",
+			settings: settings,
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanent:   false,
+				IncludeRecoverable: true,
+				RecoveryDuration:   2 * time.Millisecond,
+			},
+			teststeps: []teststep{
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// metrics and overall status will be NOT_SERVING
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						// metrics and overall status will recover and resume SERVING
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewStatusEvent(component.StatusOK),
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// This will be the last status change for traces (stopping changes to NOT_SERVING)
+						// Stopped results in the same serving status, and repeat statuses are not streamed.
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						// This will be the last status change for metrics (stopping changes to NOT_SERVING)
+						// Stopped results in the same serving status, and repeat statuses are not streamed.
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+			},
+		},
+		{
+			name:     "include permanent and exclude recoverable errors",
+			settings: settings,
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanent:   true,
+				IncludeRecoverable: false,
+				RecoveryDuration:   2 * time.Millisecond,
+			},
+			teststeps: []teststep{
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// recoverable will be ignored
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: statusUnchanged,
+				},
+				{
+					step: func() {
+						// metrics and overall status will recover and resume SERVING
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewPermanentErrorEvent(assert.AnError),
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						// This will be the last status change for traces (stopping changes to NOT_SERVING)
+						// Stopped results in the same serving status, and repeat statuses are not streamed.
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+			},
+		},
+		{
+			name:     "exclude recoverable errors",
+			settings: settings,
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanent:   true,
+				IncludeRecoverable: false,
+				RecoveryDuration:   2 * time.Millisecond,
+			},
+			teststeps: []teststep{
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// recoverable will be ignored
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: statusUnchanged,
+				},
+			},
+		},
+		{
+			name:     "include recoverable and permanent errors",
+			settings: settings,
+			componentHealthSettings: &common.ComponentHealthSettings{
+				IncludePermanent:   true,
+				IncludeRecoverable: true,
+				RecoveryDuration:   2 * time.Millisecond,
+			},
+			teststeps: []teststep{
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
+				},
+				{
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVICE_UNKNOWN,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        traces.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// metrics and overall status will be NOT_SERVING
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					step: func() {
+						// metrics and overall status will recover and resume SERVING
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewStatusEvent(component.StatusOK),
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_SERVING,
+				},
+				{
+					step: func() {
+						// metrics and overall status will be NOT_SERVING
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewPermanentErrorEvent(assert.AnError),
+						)
+					},
+					service:        metrics.PipelineID.String(),
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+				{
+					service:        "",
+					expectedStatus: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+			},
+		},
+	}
 
-	// Ensure watchers receive the cancelation when streams are closed by the server
-	for _, watcher := range watchers {
-		_, err = watcher.Recv()
-		assert.Equal(t, grpcstatus.Error(codes.Canceled, "Server shutting down."), err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			server = NewServer(
+				settings,
+				tc.componentHealthSettings,
+				componenttest.NewNopTelemetrySettings(),
+				status.NewAggregator(testhelpers.ErrPriority(tc.componentHealthSettings)),
+			)
+			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
+			t.Cleanup(func() { require.NoError(t, server.Shutdown(context.Background())) })
+
+			cc, err := grpc.Dial(
+				addr,
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
+				grpc.WithBlock(),
+			)
+			require.NoError(t, err)
+			defer func() {
+				assert.NoError(t, cc.Close())
+			}()
+
+			client := healthpb.NewHealthClient(cc)
+			watchers := make(map[string]healthpb.Health_WatchClient)
+
+			for _, ts := range tc.teststeps {
+				if ts.step != nil {
+					ts.step()
+				}
+
+				if statusUnchanged == ts.expectedStatus {
+					continue
+				}
+
+				watcher, ok := watchers[ts.service]
+				if !ok {
+					watcher, err = client.Watch(
+						context.Background(),
+						&healthpb.HealthCheckRequest{Service: ts.service},
+					)
+					require.NoError(t, err)
+					watchers[ts.service] = watcher
+				}
+
+				var resp *healthpb.HealthCheckResponse
+				// Note Recv blocks until there is a new item in the stream
+				resp, err = watcher.Recv()
+				require.NoError(t, err)
+				assert.Equal(t, ts.expectedStatus, resp.Status)
+			}
+
+			wg := sync.WaitGroup{}
+			wg.Add(len(watchers))
+
+			for svc, watcher := range watchers {
+				svc := svc
+				watcher := watcher
+				go func() {
+					resp, err := watcher.Recv()
+					// Ensure there are not any unread messages
+					assert.Nil(t, resp, "%s: had unread messages", svc)
+					// Ensure watchers receive the cancelation when streams are closed by the server
+					assert.Equal(t, grpcstatus.Error(codes.Canceled, "Server shutting down."), err)
+					wg.Done()
+				}()
+			}
+
+			// closing the aggregator will gracefully terminate streams of status events
+			server.aggregator.Close()
+			wg.Wait()
+		})
 	}
 }

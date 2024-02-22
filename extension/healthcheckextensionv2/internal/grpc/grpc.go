@@ -15,6 +15,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/status"
 )
 
+var statusToServingStatusMap = map[component.Status]healthpb.HealthCheckResponse_ServingStatus{
+	component.StatusNone:             healthpb.HealthCheckResponse_NOT_SERVING,
+	component.StatusStarting:         healthpb.HealthCheckResponse_NOT_SERVING,
+	component.StatusOK:               healthpb.HealthCheckResponse_SERVING,
+	component.StatusRecoverableError: healthpb.HealthCheckResponse_SERVING,
+	component.StatusPermanentError:   healthpb.HealthCheckResponse_SERVING,
+	component.StatusFatalError:       healthpb.HealthCheckResponse_NOT_SERVING,
+	component.StatusStopping:         healthpb.HealthCheckResponse_NOT_SERVING,
+	component.StatusStopped:          healthpb.HealthCheckResponse_NOT_SERVING,
+}
+
 func (s *Server) Check(
 	_ context.Context,
 	req *healthpb.HealthCheckRequest,
@@ -34,9 +45,8 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 	defer s.aggregator.Unsubscribe(sub)
 
 	var lastServingStatus healthpb.HealthCheckResponse_ServingStatus = -1
-
-	failureTicker := time.NewTicker(s.recoveryDuration)
-	failureTicker.Stop()
+	var failureTimer *time.Timer
+	failureCh := make(chan struct{})
 
 	for {
 		select {
@@ -49,15 +59,27 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 			switch {
 			case st == nil:
 				sst = healthpb.HealthCheckResponse_SERVICE_UNKNOWN
-			case st.Status() == component.StatusRecoverableError:
-				failureTicker.Reset(s.recoveryDuration)
+			case s.componentHealthSettings.IncludeRecoverable &&
+				s.componentHealthSettings.RecoveryDuration > 0 &&
+				st.Status() == component.StatusRecoverableError:
+				if failureTimer == nil {
+					failureTimer = time.AfterFunc(
+						s.componentHealthSettings.RecoveryDuration,
+						func() { failureCh <- struct{}{} },
+					)
+				}
 				sst = lastServingStatus
 				if lastServingStatus == -1 {
 					sst = healthpb.HealthCheckResponse_SERVING
 				}
 			default:
-				failureTicker.Stop()
-				sst = statusToServingStatusMap[st.Status()]
+				if failureTimer != nil {
+					if !failureTimer.Stop() {
+						<-failureTimer.C
+					}
+					failureTimer = nil
+				}
+				sst = s.toServingStatus(st.Event)
 			}
 
 			if lastServingStatus == sst {
@@ -70,8 +92,9 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 			if err != nil {
 				return grpcstatus.Error(codes.Canceled, "Stream has ended.")
 			}
-		case <-failureTicker.C:
-			failureTicker.Stop()
+		case <-failureCh:
+			failureTimer.Stop()
+			failureTimer = nil
 			if lastServingStatus == healthpb.HealthCheckResponse_NOT_SERVING {
 				continue
 			}
@@ -90,23 +113,18 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 	}
 }
 
-var statusToServingStatusMap = map[component.Status]healthpb.HealthCheckResponse_ServingStatus{
-	component.StatusNone:             healthpb.HealthCheckResponse_NOT_SERVING,
-	component.StatusStarting:         healthpb.HealthCheckResponse_NOT_SERVING,
-	component.StatusOK:               healthpb.HealthCheckResponse_SERVING,
-	component.StatusRecoverableError: healthpb.HealthCheckResponse_SERVING,
-	component.StatusPermanentError:   healthpb.HealthCheckResponse_NOT_SERVING,
-	component.StatusFatalError:       healthpb.HealthCheckResponse_NOT_SERVING,
-	component.StatusStopping:         healthpb.HealthCheckResponse_NOT_SERVING,
-	component.StatusStopped:          healthpb.HealthCheckResponse_NOT_SERVING,
-}
-
 func (s *Server) toServingStatus(
 	ev status.Event,
 ) healthpb.HealthCheckResponse_ServingStatus {
-	if ev.Status() == component.StatusRecoverableError &&
-		time.Now().After(ev.Timestamp().Add(s.recoveryDuration)) {
+	if s.componentHealthSettings.IncludeRecoverable &&
+		ev.Status() == component.StatusRecoverableError &&
+		time.Now().After(ev.Timestamp().Add(s.componentHealthSettings.RecoveryDuration)) {
 		return healthpb.HealthCheckResponse_NOT_SERVING
 	}
+
+	if s.componentHealthSettings.IncludePermanent && ev.Status() == component.StatusPermanentError {
+		return healthpb.HealthCheckResponse_NOT_SERVING
+	}
+
 	return statusToServingStatusMap[ev.Status()]
 }
