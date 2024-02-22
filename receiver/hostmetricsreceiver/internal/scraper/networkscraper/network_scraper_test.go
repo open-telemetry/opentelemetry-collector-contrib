@@ -193,7 +193,7 @@ func TestScrape(t *testing.T) {
 				expectedMetricCount += 4
 			}
 			if test.expectConnectionsMetric {
-				expectedMetricCount++
+				expectedMetricCount += 2
 			}
 			assert.Equal(t, expectedMetricCount, md.MetricCount())
 
