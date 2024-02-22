@@ -179,14 +179,15 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 	case <-prwe.closeChan:
 		return errors.New("shutdown has been called")
 	default:
-
-		tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
+		converter := prometheusremotewrite.NewPrometheusConverter()
+		err := converter.FromMetrics(md, prwe.exporterSettings)
+		timeSeries := converter.TimeSeries()
 		if err != nil {
 			prwe.telemetry.recordTranslationFailure(ctx)
-			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
+			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(timeSeries)))
 		}
 
-		prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
+		prwe.telemetry.recordTranslatedTimeSeries(ctx, len(timeSeries))
 
 		var m []*prompb.MetricMetadata
 		if prwe.exporterSettings.SendMetadata {
@@ -194,7 +195,7 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 		}
 
 		// Call export even if a conversion error, since there may be points that were successfully converted.
-		return prwe.handleExport(ctx, tsMap, m)
+		return prwe.handleExport(ctx, timeSeries, m)
 	}
 }
 
@@ -210,14 +211,14 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	return sanitizedLabels, nil
 }
 
-func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries, m []*prompb.MetricMetadata) error {
+func (prwe *prwExporter) handleExport(ctx context.Context, timeSeries []prompb.TimeSeries, m []*prompb.MetricMetadata) error {
 	// There are no metrics to export, so return.
-	if len(tsMap) == 0 {
+	if len(timeSeries) == 0 {
 		return nil
 	}
 
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m)
+	requests, err := batchTimeSeries(timeSeries, prwe.maxBatchSizeBytes, m)
 	if err != nil {
 		return err
 	}

@@ -1,3 +1,5 @@
+// Automatically generated file - do not edit!!
+
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 

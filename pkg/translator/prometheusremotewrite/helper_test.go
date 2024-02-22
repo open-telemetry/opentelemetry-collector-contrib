@@ -106,7 +106,7 @@ func Test_isValidAggregationTemporality(t *testing.T) {
 	}
 }
 
-// TestPrometheusConverter_addSample verifies that prometheusConverter.addSample adds the sample to the correct time series.
+// TestPrometheusConverter_addSample verifies that PrometheusConverter.addSample adds the sample to the correct time series.
 func TestPrometheusConverter_addSample(t *testing.T) {
 	type testCase struct {
 		metric pmetric.Metric
@@ -115,7 +115,7 @@ func TestPrometheusConverter_addSample(t *testing.T) {
 	}
 
 	t.Run("empty_case", func(t *testing.T) {
-		converter := newPrometheusConverter()
+		converter := NewPrometheusConverter()
 		converter.addSample(nil, nil)
 		assert.Empty(t, converter.unique)
 		assert.Empty(t, converter.conflicts)
@@ -159,7 +159,7 @@ func TestPrometheusConverter_addSample(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			converter := newPrometheusConverter()
+			converter := NewPrometheusConverter()
 			converter.addSample(&tt.testCase[0].sample, tt.testCase[0].labels)
 			converter.addSample(&tt.testCase[1].sample, tt.testCase[1].labels)
 			assert.Exactly(t, tt.want, converter.unique)
@@ -382,7 +382,7 @@ func BenchmarkCreateAttributes(b *testing.B) {
 	}
 }
 
-// TestPrometheusConverter_addExemplars verifies that prometheusConverter.addExemplars adds exemplars correctly given bucket bounds data.
+// TestPrometheusConverter_addExemplars verifies that PrometheusConverter.addExemplars adds exemplars correctly given bucket bounds data.
 func TestPrometheusConverter_addExemplars(t *testing.T) {
 	ts1 := getTimeSeries(
 		getPromLabels(label11, value11, label12, value12),
@@ -439,7 +439,7 @@ func TestPrometheusConverter_addExemplars(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			converter := &prometheusConverter{
+			converter := &PrometheusConverter{
 				unique: tt.orig,
 			}
 			converter.addExemplars(tt.dataPoint, tt.bucketBounds)
@@ -619,12 +619,12 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			converter := newPrometheusConverter()
+			converter := NewPrometheusConverter()
 
 			addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, converter)
 
 			if len(tc.wantLabels) == 0 || tc.settings.DisableTargetInfo {
-				assert.Empty(t, converter.timeSeries())
+				assert.Empty(t, converter.TimeSeries())
 				return
 			}
 
@@ -764,7 +764,7 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
-			converter := newPrometheusConverter()
+			converter := NewPrometheusConverter()
 
 			converter.addSummaryDataPoints(
 				metric.Summary().DataPoints(),
@@ -874,7 +874,7 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
-			converter := newPrometheusConverter()
+			converter := NewPrometheusConverter()
 
 			converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
@@ -892,7 +892,7 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 }
 
 func TestPrometheusConverter_getOrCreateTimeSeries(t *testing.T) {
-	converter := newPrometheusConverter()
+	converter := NewPrometheusConverter()
 	lbls := []prompb.Label{
 		{
 			Name:  "key1",

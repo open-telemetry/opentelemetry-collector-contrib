@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
+package {{.Package}} // import "{{.PackagePath}}"
 
 import (
 	"fmt"
@@ -9,14 +9,14 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/value"
-	"github.com/prometheus/prometheus/prompb"
+	"{{.PbPackagePath}}"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 const defaultZeroThreshold = 1e-128
 
-func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
+func (c *{{.Name}}Converter) addExponentialHistogramDataPoints(dataPoints pmetric.ExponentialHistogramDataPointSlice,
 	resource pcommon.Resource, settings Settings, baseName string) error {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
@@ -46,10 +46,10 @@ func (c *prometheusConverter) addExponentialHistogramDataPoints(dataPoints pmetr
 
 // exponentialToNativeHistogram  translates OTel Exponential Histogram data point
 // to Prometheus Native Histogram.
-func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prompb.Histogram, error) {
+func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) ({{.PbPackage}}.Histogram, error) {
 	scale := p.Scale()
 	if scale < -4 {
-		return prompb.Histogram{},
+		return {{.PbPackage}}.Histogram{},
 			fmt.Errorf("cannot convert exponential to native histogram."+
 				" Scale must be >= -4, was %d", scale)
 	}
@@ -63,7 +63,7 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 	pSpans, pDeltas := convertBucketsLayout(p.Positive(), scaleDown)
 	nSpans, nDeltas := convertBucketsLayout(p.Negative(), scaleDown)
 
-	h := prompb.Histogram{
+	h := {{.PbPackage}}.Histogram{
 		// The counter reset detection must be compatible with Prometheus to
 		// safely set ResetHint to NO. This is not ensured currently.
 		// Sending a sample that triggers counter reset but with ResetHint==NO
@@ -73,10 +73,10 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		// need to know here if it was used for the detection.
 		// Ref: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/28663#issuecomment-1810577303
 		// Counter reset detection in Prometheus: https://github.com/prometheus/prometheus/blob/f997c72f294c0f18ca13fa06d51889af04135195/tsdb/chunkenc/histogram.go#L232
-		ResetHint: prompb.Histogram_UNKNOWN,
+		ResetHint: {{.PbPackage}}.Histogram_UNKNOWN,
 		Schema:    scale,
 
-		ZeroCount: &prompb.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
+		ZeroCount: &{{.PbPackage}}.Histogram_ZeroCountInt{ZeroCountInt: p.ZeroCount()},
 		// TODO use zero_threshold, if set, see
 		// https://github.com/open-telemetry/opentelemetry-proto/pull/441
 		ZeroThreshold: defaultZeroThreshold,
@@ -86,17 +86,17 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 		NegativeSpans:  nSpans,
 		NegativeDeltas: nDeltas,
 
-		Timestamp: convertTimeStamp(p.Timestamp()),
+		{{.HistogramTimestampField}}: convertTimeStamp(p.Timestamp()),
 	}
 
 	if p.Flags().NoRecordedValue() {
 		h.Sum = math.Float64frombits(value.StaleNaN)
-		h.Count = &prompb.Histogram_CountInt{CountInt: value.StaleNaN}
+		h.Count = &{{.PbPackage}}.Histogram_CountInt{CountInt: value.StaleNaN}
 	} else {
 		if p.HasSum() {
 			h.Sum = p.Sum()
 		}
-		h.Count = &prompb.Histogram_CountInt{CountInt: p.Count()}
+		h.Count = &{{.PbPackage}}.Histogram_CountInt{CountInt: p.Count()}
 	}
 	return h, nil
 }
@@ -111,14 +111,14 @@ func exponentialToNativeHistogram(p pmetric.ExponentialHistogramDataPoint) (prom
 // to the range (base 1].
 //
 // scaleDown is the factor by which the buckets are scaled down. In other words 2^scaleDown buckets will be merged into one.
-func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, scaleDown int32) ([]prompb.BucketSpan, []int64) {
+func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, scaleDown int32) ([]{{.PbPackage}}.BucketSpan, []int64) {
 	bucketCounts := buckets.BucketCounts()
 	if bucketCounts.Len() == 0 {
 		return nil, nil
 	}
 
 	var (
-		spans     []prompb.BucketSpan
+		spans     []{{.PbPackage}}.BucketSpan
 		deltas    []int64
 		count     int64
 		prevCount int64
@@ -136,7 +136,7 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 
 	// The offset is scaled and adjusted by 1 as described above.
 	bucketIdx := buckets.Offset()>>scaleDown + 1
-	spans = append(spans, prompb.BucketSpan{
+	spans = append(spans, {{.PbPackage}}.BucketSpan{
 		Offset: bucketIdx,
 		Length: 0,
 	})
@@ -158,7 +158,7 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 			// We have to create a new span, because we have found a gap
 			// of more than two buckets. The constant 2 is copied from the logic in
 			// https://github.com/prometheus/client_golang/blob/27f0506d6ebbb117b6b697d0552ee5be2502c5f2/prometheus/histogram.go#L1296
-			spans = append(spans, prompb.BucketSpan{
+			spans = append(spans, {{.PbPackage}}.BucketSpan{
 				Offset: gap,
 				Length: 0,
 			})
@@ -179,7 +179,7 @@ func convertBucketsLayout(buckets pmetric.ExponentialHistogramDataPointBuckets, 
 		// We have to create a new span, because we have found a gap
 		// of more than two buckets. The constant 2 is copied from the logic in
 		// https://github.com/prometheus/client_golang/blob/27f0506d6ebbb117b6b697d0552ee5be2502c5f2/prometheus/histogram.go#L1296
-		spans = append(spans, prompb.BucketSpan{
+		spans = append(spans, {{.PbPackage}}.BucketSpan{
 			Offset: gap,
 			Length: 0,
 		})

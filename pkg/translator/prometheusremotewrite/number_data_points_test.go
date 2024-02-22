@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func TestPrometheusConverter_addGaugeNumberDataPoints(t *testing.T) {
+func TestPrometheusConverter_AddGaugeNumberDataPoints(t *testing.T) {
 	ts := uint64(time.Now().UnixNano())
 	tests := []struct {
 		name   string
@@ -50,7 +50,7 @@ func TestPrometheusConverter_addGaugeNumberDataPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
-			converter := newPrometheusConverter()
+			converter := NewPrometheusConverter()
 
 			converter.addGaugeNumberDataPoints(
 				metric.Gauge().DataPoints(),
@@ -65,7 +65,7 @@ func TestPrometheusConverter_addGaugeNumberDataPoints(t *testing.T) {
 	}
 }
 
-func TestPrometheusConverter_addSumNumberDataPoints(t *testing.T) {
+func TestPrometheusConverter_AddSumNumberDataPoints(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	tests := []struct {
 		name   string
@@ -224,7 +224,7 @@ func TestPrometheusConverter_addSumNumberDataPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
-			converter := newPrometheusConverter()
+			converter := NewPrometheusConverter()
 
 			converter.addSumNumberDataPoints(
 				metric.Sum().DataPoints(),
