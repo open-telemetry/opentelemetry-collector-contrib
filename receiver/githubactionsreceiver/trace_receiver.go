@@ -98,26 +98,32 @@ func eventToTraces(event interface{}, config *Config, logger *zap.Logger) (ptrac
 		jobResource := resourceSpans.Resource()
 		createResourceAttributes(jobResource, e, config, logger)
 		traceID, err := generateTraceID(e.WorkflowJob.RunID, e.WorkflowJob.RunAttempt)
+
 		if err != nil {
 			logger.Error("Failed to generate trace ID", zap.Error(err))
 			return traces, fmt.Errorf("failed to generate trace ID")
 		}
+
 		if e.WorkflowJob.Status == "completed" {
 			parentSpanID := createParentSpan(scopeSpans, e.WorkflowJob.Steps, e.WorkflowJob, traceID, logger)
 			processSteps(scopeSpans, e.WorkflowJob.Steps, e.WorkflowJob, traceID, parentSpanID, logger)
 		}
+
 	case *WorkflowRunEvent:
 		logger.Info("Processing WorkflowRunEvent")
 		runResource := resourceSpans.Resource()
 		traceID, err := generateTraceID(e.WorkflowRun.ID, e.WorkflowRun.RunAttempt)
+
 		if err != nil {
 			logger.Error("Failed to generate trace ID", zap.Error(err))
 			return traces, fmt.Errorf("failed to generate trace ID")
 		}
+
 		if e.WorkflowRun.Status == "completed" {
 			createResourceAttributes(runResource, e, config, logger)
 			createRootSpan(resourceSpans, e, traceID, logger)
 		}
+
 	default:
 		logger.Error("unknown event type, dropping payload")
 		return ptrace.Traces{}, fmt.Errorf("unknown event type")
@@ -145,6 +151,10 @@ func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJo
 		logger.Warn("No steps found, defaulting to job times")
 		setSpanTimes(span, job.CreatedAt, job.CompletedAt)
 	}
+
+	span.Attributes().PutStr("ci.github.workflow_job.created_at", job.CreatedAt.Format(time.RFC3339))
+	span.Attributes().PutStr("ci.github.workflow_job.started_at", job.StartedAt.Format(time.RFC3339))
+	span.Attributes().PutStr("ci.github.workflow_job.completed_at", job.CompletedAt.Format(time.RFC3339))
 
 	allSuccessful := true
 	anyFailure := false
@@ -177,56 +187,72 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 	switch e := event.(type) {
 	case *WorkflowJobEvent:
 		serviceName := generateServiceName(config, e.Repository.FullName)
-
 		attrs.PutStr("service.name", serviceName)
+
+		attrs.PutStr("ci.github.workflow.name", e.WorkflowJob.WorkflowName)
+
+		attrs.PutStr("ci.github.workflow.job.created_at", e.WorkflowJob.CreatedAt.Format(time.RFC3339))
+		attrs.PutStr("ci.github.workflow.job.completed_at", e.WorkflowJob.CompletedAt.Format(time.RFC3339))
+		attrs.PutStr("ci.github.workflow.job.conclusion", e.WorkflowJob.Conclusion)
+		attrs.PutStr("ci.github.workflow.job.head_branch", e.WorkflowJob.HeadBranch)
+		attrs.PutStr("ci.github.workflow.job.head_sha", e.WorkflowJob.HeadSha)
+		attrs.PutStr("ci.github.workflow.job.html_url", e.WorkflowJob.HTMLURL)
+		attrs.PutInt("ci.github.workflow.job.id", e.WorkflowJob.ID)
+		attrs.PutStr("ci.github.workflow.job.labels", e.WorkflowJob.Labels[0])
+		attrs.PutStr("ci.github.workflow.job.name", e.WorkflowJob.Name)
+		attrs.PutInt("ci.github.workflow.job.run_attempt", int64(e.WorkflowJob.RunAttempt))
+		attrs.PutInt("ci.github.workflow.job.run_id", e.WorkflowJob.RunID)
+		attrs.PutStr("ci.github.workflow.job.runner.group_name", e.WorkflowJob.RunnerGroupName)
+		attrs.PutStr("ci.github.workflow.job.runner.name", e.WorkflowJob.RunnerName)
+		attrs.PutStr("ci.github.workflow.job.sender.login", e.Sender.Login)
+		attrs.PutStr("ci.github.workflow.job.started_at", e.WorkflowJob.StartedAt.Format(time.RFC3339))
+		attrs.PutStr("ci.github.workflow.job.status", e.WorkflowJob.Status)
 
 		attrs.PutStr("ci.system", "github")
 
-		attrs.PutStr("ci.actor.login", e.Repository.Owner.Login)
-		attrs.PutStr("ci.actor.sender", e.Sender.Login)
-
-		attrs.PutStr("ci.github.html_url", e.WorkflowJob.HTMLURL)
-		attrs.PutStr("ci.github.job", e.WorkflowJob.Name)
-		attrs.PutInt("ci.github.run_id", e.WorkflowJob.RunID)
-		attrs.PutInt("ci.github.run_attempt", int64(e.WorkflowJob.RunAttempt))
-
-		attrs.PutStr("ci.github.runner.group_name", e.WorkflowJob.RunnerGroupName)
-		attrs.PutStr("ci.github.runner.name", e.WorkflowJob.RunnerName)
-
-		attrs.PutStr("ci.github.workflow", e.WorkflowJob.WorkflowName)
-
-		attrs.PutStr("scm.system", "git")
-		attrs.PutStr("scm.git.branch", e.WorkflowJob.HeadBranch)
-		attrs.PutStr("scm.git.sha", e.WorkflowJob.HeadSha)
+		attrs.PutStr("scm.git.repo.owner.login", e.Repository.Owner.Login)
 		attrs.PutStr("scm.git.repo", e.Repository.FullName)
 
 	case *WorkflowRunEvent:
 		serviceName := generateServiceName(config, e.Repository.FullName)
-
 		attrs.PutStr("service.name", serviceName)
+
+		attrs.PutStr("ci.github.workflow.run.actor.login", e.WorkflowRun.Actor.Login)
+
+		attrs.PutStr("ci.github.workflow.run.conclusion", e.WorkflowRun.Conclusion)
+		attrs.PutStr("ci.github.workflow.run.created_at", e.WorkflowRun.CreatedAt.Format(time.RFC3339))
+		attrs.PutStr("ci.github.workflow.run.display_title", e.WorkflowRun.DisplayTitle)
+		attrs.PutStr("ci.github.workflow.run.event", e.WorkflowRun.Event)
+		attrs.PutStr("ci.github.workflow.run.head_branch", e.WorkflowRun.HeadBranch)
+		attrs.PutStr("ci.github.workflow.run.head_sha", e.WorkflowRun.HeadSha)
+		attrs.PutStr("ci.github.workflow.run.html_url", e.WorkflowRun.HTMLURL)
+		attrs.PutInt("ci.github.workflow.run.id", e.WorkflowRun.ID)
+		attrs.PutStr("ci.github.workflow.run.name", e.WorkflowRun.Name)
+		attrs.PutStr("ci.github.workflow.run.path", e.WorkflowRun.Path)
+		if e.WorkflowRun.PreviousAttemptURL != "" {
+			attrs.PutStr("ci.github.workflow.run.previous_attempt_url", e.WorkflowRun.PreviousAttemptURL)
+		}
+		attrs.PutInt("ci.github.workflow.run.run_attempt", int64(e.WorkflowRun.RunAttempt))
+		attrs.PutStr("ci.github.workflow.run.run_started_at", e.WorkflowRun.RunStartedAt.Format(time.RFC3339))
+		attrs.PutStr("ci.github.workflow.run.status", e.WorkflowRun.Status)
+		attrs.PutStr("ci.github.workflow.run.updated_at", e.WorkflowRun.UpdatedAt.Format(time.RFC3339))
+
+		attrs.PutStr("ci.github.workflow.run.sender.login", e.Sender.Login)
+		attrs.PutStr("ci.github.workflow.run.triggering_actor.login", e.WorkflowRun.TriggeringActor.Login)
+		attrs.PutStr("ci.github.workflow.run.updated_at", e.WorkflowRun.UpdatedAt.Format(time.RFC3339))
 
 		attrs.PutStr("ci.system", "github")
 
-		attrs.PutStr("ci.github.actor.login", e.WorkflowRun.Actor.Login)
-		attrs.PutStr("ci.github.actor.sender", e.Sender.Login)
-		attrs.PutStr("ci.github.actor.triggering", e.WorkflowRun.TriggeringActor.Login)
-
-		attrs.PutStr("ci.github.display_title", e.WorkflowRun.DisplayTitle)
-		attrs.PutStr("ci.github.html_url", e.WorkflowRun.HTMLURL)
-
-		if e.WorkflowRun.PreviousAttemptURL != "" {
-			attrs.PutStr("ci.github.previous_attempt_url", e.WorkflowRun.PreviousAttemptURL)
-		}
-
-		attrs.PutInt("ci.github.run_id", e.WorkflowRun.ID)
-		attrs.PutInt("ci.github.run_attempt", int64(e.WorkflowRun.RunAttempt))
-
-		attrs.PutStr("ci.github.workflow", e.WorkflowRun.Name)
-		attrs.PutStr("ci.github.workflow_path", e.WorkflowRun.Path)
-
 		attrs.PutStr("scm.system", "git")
-		attrs.PutStr("scm.git.branch", e.WorkflowRun.HeadBranch)
-		attrs.PutStr("scm.git.sha", e.WorkflowRun.HeadSha)
+
+		attrs.PutStr("scm.git.head_branch", e.WorkflowRun.HeadBranch)
+		attrs.PutStr("scm.git.head_commit.author.email", e.WorkflowRun.HeadCommit.Author.Email)
+		attrs.PutStr("scm.git.head_commit.author.name", e.WorkflowRun.HeadCommit.Author.Name)
+		attrs.PutStr("scm.git.head_commit.committer.email", e.WorkflowRun.HeadCommit.Committer.Email)
+		attrs.PutStr("scm.git.head_commit.committer.name", e.WorkflowRun.HeadCommit.Committer.Name)
+		attrs.PutStr("scm.git.head_commit.message", e.WorkflowRun.HeadCommit.Message)
+		attrs.PutStr("scm.git.head_commit.timestamp", e.WorkflowRun.HeadCommit.Timestamp.Format(time.RFC3339))
+		attrs.PutStr("scm.git.head_sha", e.WorkflowRun.HeadSha)
 
 		if len(e.WorkflowRun.PullRequests) > 0 {
 			var prUrls []string
@@ -285,6 +311,20 @@ func createRootSpan(resourceSpans ptrace.ResourceSpans, event *WorkflowRunEvent,
 
 	span.Status().SetMessage(event.WorkflowRun.Conclusion)
 
+	// Attempt to link to previous trace ID if applicable
+	if event.WorkflowRun.PreviousAttemptURL != "" && event.WorkflowRun.RunAttempt > 1 {
+		logger.Debug("Linking to previous trace ID for WorkflowRunEvent")
+		previousRunAttempt := event.WorkflowRun.RunAttempt - 1
+		previousTraceID, err := generateTraceID(event.WorkflowRun.ID, previousRunAttempt)
+		if err != nil {
+			logger.Error("Failed to generate previous trace ID", zap.Error(err))
+		} else {
+			link := span.Links().AppendEmpty()
+			link.SetTraceID(previousTraceID)
+			logger.Debug("Successfully linked to previous trace ID", zap.String("previousTraceID", previousTraceID.String()))
+		}
+	}
+
 	return rootSpanID, nil
 }
 
@@ -297,13 +337,13 @@ func createSpan(scopeSpans ptrace.ScopeSpans, step Step, job WorkflowJob, traceI
 	var spanID pcommon.SpanID
 
 	//
-	span.Attributes().PutStr("ci.github.step.name", step.Name)
+	span.Attributes().PutStr("ci.github.workflow.job.step.name", step.Name)
 	if len(stepNumber) > 0 && stepNumber[0] > 0 {
 		spanID, _ = generateStepSpanID(job.RunID, job.RunAttempt, job.Name, step.Name, stepNumber[0])
-		span.Attributes().PutInt("ci.github.step.number", int64(stepNumber[0]))
+		span.Attributes().PutInt("ci.github.workflow.job.step.number", int64(stepNumber[0]))
 	} else {
 		spanID, _ = generateStepSpanID(job.RunID, job.RunAttempt, job.Name, step.Name)
-		span.Attributes().PutInt("ci.github.step.number", int64(step.Number))
+		span.Attributes().PutInt("ci.github.workflow.job.step.number", int64(step.Number))
 	}
 	span.SetSpanID(spanID)
 
