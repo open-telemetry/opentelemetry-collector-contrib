@@ -50,13 +50,6 @@ func TestCreateTracesReceiverWrongConfig(t *testing.T) {
 	assert.Equal(t, component.ErrDataTypeIsNotSupported, err)
 }
 
-func TestCreateTracesReceiverNilConsumer(t *testing.T) {
-	cfg := createDefaultConfig()
-	factory := NewFactory()
-	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
-	assert.Equal(t, component.ErrNilNextConsumer, err)
-}
-
 func TestCreateTracesReceiverBadConfigNoAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "some-queue"

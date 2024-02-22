@@ -70,7 +70,7 @@ type postgreSQLConfig struct {
 	username string
 	password string
 	database string
-	address  confignet.NetAddr
+	address  confignet.AddrConfig
 	tls      configtls.TLSClientSetting
 }
 

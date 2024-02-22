@@ -203,8 +203,15 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			}
 			continue
 		}
+		cgroup, err := getProcessCgroup(ctx, handle)
+		if err != nil {
+			if !s.config.MuteProcessCgroupError {
+				errs.AddPartial(1, fmt.Errorf("error reading process cgroup for pid %v: %w", pid, err))
+			}
+			continue
+		}
 
-		executable := &executableMetadata{name: name, path: exe}
+		executable := &executableMetadata{name: name, path: exe, cgroup: cgroup}
 
 		// filter processes by name
 		if (s.includeFS != nil && !s.includeFS.Matches(executable.name)) ||

@@ -36,8 +36,8 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Protocols: Protocols{
-			GRPC: configgrpc.GRPCServerSettings{
-				NetAddr: confignet.NetAddr{
+			GRPC: configgrpc.ServerConfig{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  defaultGRPCEndpoint,
 					Transport: "tcp",
 				},

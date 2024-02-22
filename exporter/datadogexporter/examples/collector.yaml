@@ -301,7 +301,7 @@ exporters:
       ## The host of the Datadog intake server to send traces to.
       ## If unset, the value is obtained through the `site` parameter in the `api` section.
       #
-      # endpoint: https://api.datadoghq.com
+      # endpoint: https://trace.agent.datadoghq.com
 
       ## @param ignore_resources - list of strings - optional
       ## A blocklist of regular expressions can be provided to disable certain traces based on their resource name
