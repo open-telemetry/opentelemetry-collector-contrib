@@ -27,9 +27,9 @@ type CPUUtilizationCalculator struct {
 // CalculateAndRecord calculates the cpu utilization for the different cpu states comparing previously
 // stored []cpu.TimesStat and time.Time and current []cpu.TimesStat and current time.Time
 // If no previous data is stored it will return empty slice of CPUUtilization and no error
-func (c *CPUUtilizationCalculator) CalculateAndRecord(now pcommon.Timestamp, currentCPUStats *cpu.TimesStat, recorder func(pcommon.Timestamp, CPUUtilization)) error {
+func (c *CPUUtilizationCalculator) CalculateAndRecord(now pcommon.Timestamp, logicalCores int, currentCPUStats *cpu.TimesStat, recorder func(pcommon.Timestamp, CPUUtilization)) error {
 	if c.previousCPUStats != nil {
-		recorder(now, cpuUtilization(c.previousCPUStats, c.previousReadTime, currentCPUStats, now))
+		recorder(now, cpuUtilization(logicalCores, c.previousCPUStats, c.previousReadTime, currentCPUStats, now))
 	}
 	c.previousCPUStats = currentCPUStats
 	c.previousReadTime = now
@@ -38,14 +38,14 @@ func (c *CPUUtilizationCalculator) CalculateAndRecord(now pcommon.Timestamp, cur
 }
 
 // cpuUtilization calculates the difference between 2 cpu.TimesStat using spent time between them
-func cpuUtilization(startStats *cpu.TimesStat, startTime pcommon.Timestamp, endStats *cpu.TimesStat, endTime pcommon.Timestamp) CPUUtilization {
+func cpuUtilization(logicalCores int, startStats *cpu.TimesStat, startTime pcommon.Timestamp, endStats *cpu.TimesStat, endTime pcommon.Timestamp) CPUUtilization {
 	elapsedTime := time.Duration(endTime - startTime).Seconds()
 	if elapsedTime <= 0 {
 		return CPUUtilization{}
 	}
 	return CPUUtilization{
-		User:   (endStats.User - startStats.User) / elapsedTime,
-		System: (endStats.System - startStats.System) / elapsedTime,
-		Iowait: (endStats.Iowait - startStats.Iowait) / elapsedTime,
+		User:   (endStats.User - startStats.User) / elapsedTime / float64(logicalCores),
+		System: (endStats.System - startStats.System) / elapsedTime / float64(logicalCores),
+		Iowait: (endStats.Iowait - startStats.Iowait) / elapsedTime / float64(logicalCores),
 	}
 }
