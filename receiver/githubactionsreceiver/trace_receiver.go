@@ -332,8 +332,9 @@ func createSpan(scopeSpans ptrace.ScopeSpans, step Step, job WorkflowJob, traceI
 
 	var spanID pcommon.SpanID
 
-	//
 	span.Attributes().PutStr("ci.github.workflow.job.step.name", step.Name)
+	span.Attributes().PutStr("ci.github.workflow.job.step.status", step.Status)
+	span.Attributes().PutStr("ci.github.workflow.job.step.conclusion", step.Conclusion)
 	if len(stepNumber) > 0 && stepNumber[0] > 0 {
 		spanID, _ = generateStepSpanID(job.RunID, job.RunAttempt, job.Name, step.Name, stepNumber[0])
 		span.Attributes().PutInt("ci.github.workflow.job.step.number", int64(stepNumber[0]))
@@ -341,6 +342,9 @@ func createSpan(scopeSpans ptrace.ScopeSpans, step Step, job WorkflowJob, traceI
 		spanID, _ = generateStepSpanID(job.RunID, job.RunAttempt, job.Name, step.Name)
 		span.Attributes().PutInt("ci.github.workflow.job.step.number", int64(step.Number))
 	}
+	span.Attributes().PutStr("ci.github.workflow.job.step.started_at", step.StartedAt.Format(time.RFC3339))
+	span.Attributes().PutStr("ci.github.workflow.job.step.completed_at", step.CompletedAt.Format(time.RFC3339))
+
 	span.SetSpanID(spanID)
 
 	setSpanTimes(span, step.StartedAt, step.CompletedAt)
