@@ -1,0 +1,12 @@
+type: ack
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: [contrib, splunk]
+  codeowners:
+    active: [zpzhuSplunk, splunkericl]
+
+tests:
+  config:
