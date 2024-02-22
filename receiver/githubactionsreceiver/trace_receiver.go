@@ -59,7 +59,7 @@ func (j *jsonTracesUnmarshaler) UnmarshalTraces(blob []byte, config *Config) (pt
 			j.logger.Error("Failed to unmarshal job event", zap.Error(err))
 			return ptrace.Traces{}, err
 		}
-		j.logger.Info("Unmarshalling WorkflowJobEvent")
+		j.logger.Debug("Unmarshalling WorkflowJobEvent")
 		traces, err = eventToTraces(&jobEvent, config, j.logger)
 		if err != nil {
 			j.logger.Error("Failed to convert event to traces", zap.Error(err))
@@ -72,7 +72,7 @@ func (j *jsonTracesUnmarshaler) UnmarshalTraces(blob []byte, config *Config) (pt
 			j.logger.Error("Failed to unmarshal run event", zap.Error(err))
 			return ptrace.Traces{}, err
 		}
-		j.logger.Info("Unmarshalling WorkflowRunEvent")
+		j.logger.Debug("Unmarshalling WorkflowRunEvent")
 		traces, err = eventToTraces(&runEvent, config, j.logger)
 		if err != nil {
 			j.logger.Error("Failed to convert event to traces", zap.Error(err))
@@ -87,14 +87,14 @@ func (j *jsonTracesUnmarshaler) UnmarshalTraces(blob []byte, config *Config) (pt
 }
 
 func eventToTraces(event interface{}, config *Config, logger *zap.Logger) (ptrace.Traces, error) {
-	logger.Info("Determining event")
+	logger.Debug("Determining event")
 	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 
 	switch e := event.(type) {
 	case *WorkflowJobEvent:
-		logger.Info("Processing WorkflowJobEvent")
+		logger.Info("Processing WorkflowJobEvent", zap.String("job_name", e.WorkflowJob.Name), zap.String("repo", e.Repository.FullName))
 		jobResource := resourceSpans.Resource()
 		createResourceAttributes(jobResource, e, config, logger)
 		traceID, err := generateTraceID(e.WorkflowJob.RunID, e.WorkflowJob.RunAttempt)
@@ -110,7 +110,7 @@ func eventToTraces(event interface{}, config *Config, logger *zap.Logger) (ptrac
 		}
 
 	case *WorkflowRunEvent:
-		logger.Info("Processing WorkflowRunEvent")
+		logger.Info("Processing WorkflowRunEvent", zap.String("workflow_name", e.WorkflowRun.Name), zap.String("repo", e.Repository.FullName))
 		runResource := resourceSpans.Resource()
 		traceID, err := generateTraceID(e.WorkflowRun.ID, e.WorkflowRun.RunAttempt)
 
@@ -133,7 +133,7 @@ func eventToTraces(event interface{}, config *Config, logger *zap.Logger) (ptrac
 }
 
 func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJob, traceID pcommon.TraceID, logger *zap.Logger) pcommon.SpanID {
-	logger.Info("Creating parent span", zap.String("name", job.Name))
+	logger.Debug("Creating parent span", zap.String("name", job.Name))
 	span := scopeSpans.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 
@@ -280,7 +280,7 @@ func convertPRURL(apiURL string) string {
 }
 
 func createRootSpan(resourceSpans ptrace.ResourceSpans, event *WorkflowRunEvent, traceID pcommon.TraceID, logger *zap.Logger) (pcommon.SpanID, error) {
-	logger.Info("Creating root parent span", zap.String("name", event.WorkflowRun.Name))
+	logger.Debug("Creating root parent span", zap.String("name", event.WorkflowRun.Name))
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
 
@@ -325,7 +325,7 @@ func createRootSpan(resourceSpans ptrace.ResourceSpans, event *WorkflowRunEvent,
 }
 
 func createSpan(scopeSpans ptrace.ScopeSpans, step Step, job WorkflowJob, traceID pcommon.TraceID, parentSpanID pcommon.SpanID, logger *zap.Logger, stepNumber ...int) pcommon.SpanID {
-	logger.Info("Processing span", zap.String("step_name", step.Name))
+	logger.Debug("Processing span", zap.String("step_name", step.Name))
 	span := scopeSpans.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetParentSpanID(parentSpanID)
@@ -460,7 +460,7 @@ func validateSignatureSHA256(secret string, signatureHeader string, body []byte,
 	computedHash.Write(body)
 	expectedSig := hex.EncodeToString(computedHash.Sum(nil))
 
-	logger.Info("Debugging Signatures", zap.String("Received", receivedSig), zap.String("Computed", expectedSig))
+	logger.Debug("Debugging Signatures", zap.String("Received", receivedSig), zap.String("Computed", expectedSig))
 
 	return hmac.Equal([]byte(expectedSig), []byte(receivedSig))
 }
@@ -475,7 +475,7 @@ func validateSignatureSHA1(secret string, signatureHeader string, body []byte, l
 	computedHash.Write(body)
 	expectedSig := hex.EncodeToString(computedHash.Sum(nil))
 
-	logger.Info("Debugging Signatures", zap.String("Received", receivedSig), zap.String("Computed", expectedSig))
+	logger.Debug("Debugging Signatures", zap.String("Received", receivedSig), zap.String("Computed", expectedSig))
 
 	return hmac.Equal([]byte(expectedSig), []byte(receivedSig))
 }
@@ -597,7 +597,7 @@ func (gar *githubActionsReceiver) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	gar.logger.Info("Unmarshaled spans", zap.Int("#spans", td.SpanCount()))
+	gar.logger.Debug("Unmarshaled spans", zap.Int("#spans", td.SpanCount()))
 
 	// Pass the traces to the nextConsumer
 	consumerErr := gar.nextConsumer.ConsumeTraces(ctx, td)
