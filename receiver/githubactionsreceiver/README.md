@@ -40,6 +40,13 @@ receivers:
 ```
 The full list of settings exposed for this receiver are documented [here](./config.go) with a detailed sample configuration [here](./testdata/config.yaml)
 
+## Advanced Configuration
+
+Several helper files are leveraged to provide additional capabilities automatically:
+
+- [HTTP server settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md#server-configuration) including CORS
+- [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
+
 ### Service Name Generation
 
 The GitHub Actions Receiver dynamically generates the `service.name` attribute, which is crucial for identifying the source of telemetry data in observability platforms. This name helps in categorising and filtering traces originating from different GitHub repositories or actions workflows.
