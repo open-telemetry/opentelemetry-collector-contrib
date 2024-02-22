@@ -1,0 +1,8 @@
+ack:
+
+ack/withmemorystorage:
+  storage:
+
+ack/withpersistentstorage:
+  storage: file_storage/otc
+
