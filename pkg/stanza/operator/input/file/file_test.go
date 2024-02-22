@@ -31,7 +31,8 @@ func TestAddFileResolvedFields(t *testing.T) {
 		cfg.IncludeFilePath = true
 		cfg.IncludeFileNameResolved = true
 		cfg.IncludeFilePathResolved = true
-		cfg.IncludeFileInfos = true
+		cfg.IncludeFileOwner = true
+		cfg.IncludeFileGroup = true
 	})
 
 	// Create temp dir with log file

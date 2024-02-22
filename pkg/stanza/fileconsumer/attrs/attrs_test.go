@@ -16,10 +16,10 @@ import (
 func TestResolver(t *testing.T) {
 	t.Parallel()
 
-	for i := 0; i < 32; i++ {
+	for i := 0; i < 64; i++ {
 
 		// Create a 4 bit string where each bit represents the value of a config option
-		bitString := fmt.Sprintf("%05b", i)
+		bitString := fmt.Sprintf("%06b", i)
 
 		// Create a resolver with a config that matches the bit pattern of i
 		r := Resolver{
@@ -27,7 +27,8 @@ func TestResolver(t *testing.T) {
 			IncludeFilePath:         bitString[1] == '1',
 			IncludeFileNameResolved: bitString[2] == '1',
 			IncludeFilePathResolved: bitString[3] == '1',
-			IncludeFileInfos:        bitString[4] == '1',
+			IncludeFileOwner:        bitString[4] == '1',
+			IncludeFileGroup:        bitString[5] == '1',
 		}
 
 		t.Run(bitString, func(t *testing.T) {
@@ -68,16 +69,21 @@ func TestResolver(t *testing.T) {
 			} else {
 				assert.Empty(t, attributes[LogFilePathResolved])
 			}
-			if r.IncludeFileInfos {
+			if r.IncludeFileOwner {
 				expectLen++
 				assert.NotNil(t, attributes[LogFileOwner])
 				assert.IsType(t, "", attributes[LogFileOwner])
+			} else {
+				assert.Empty(t, attributes[LogFileOwner])
+				assert.Empty(t, attributes[LogFileOwner])
+			}
+			if r.IncludeFileGroup {
 				expectLen++
 				assert.NotNil(t, attributes[LogFileGroup])
 				assert.IsType(t, "", attributes[LogFileGroup])
 			} else {
-				assert.Empty(t, attributes[LogFileOwner])
-				assert.Empty(t, attributes[LogFileOwner])
+				assert.Empty(t, attributes[LogFileGroup])
+				assert.Empty(t, attributes[LogFileGroup])
 			}
 			assert.Equal(t, expectLen, len(attributes))
 		})

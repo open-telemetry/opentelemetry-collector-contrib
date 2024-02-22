@@ -26,7 +26,8 @@ type Resolver struct {
 	IncludeFilePath         bool `mapstructure:"include_file_path,omitempty"`
 	IncludeFileNameResolved bool `mapstructure:"include_file_name_resolved,omitempty"`
 	IncludeFilePathResolved bool `mapstructure:"include_file_path_resolved,omitempty"`
-	IncludeFileInfos        bool `mapstructure:"include_file_infos,omitempty"`
+	IncludeFileOwner        bool `mapstructure:"include_file_owner,omitempty"`
+	IncludeFileGroup        bool `mapstructure:"include_file_group,omitempty"`
 }
 
 func (r *Resolver) Resolve(path string) (attributes map[string]any, err error) {
@@ -38,19 +39,23 @@ func (r *Resolver) Resolve(path string) (attributes map[string]any, err error) {
 	if r.IncludeFilePath {
 		attributes[LogFilePath] = path
 	}
-	if r.IncludeFileInfos {
+	if r.IncludeFileOwner || r.IncludeFileGroup {
 		var file, fileErr = os.OpenFile(fmt.Sprint(path), os.O_RDONLY, 0000)
 		if fileErr == nil {
 			var fileInfo, errStat = file.Stat()
 			if errStat == nil {
 				var fileStat = fileInfo.Sys().(*syscall.Stat_t)
-				var fileOwner, errFileUser = user.LookupId(fmt.Sprint(fileStat.Uid))
-				if errFileUser == nil {
-					attributes[LogFileOwner] = fileOwner.Username
+				if r.IncludeFileOwner {
+					var fileOwner, errFileUser = user.LookupId(fmt.Sprint(fileStat.Uid))
+					if errFileUser == nil {
+						attributes[LogFileOwner] = fileOwner.Username
+					}
 				}
-				var fileGroup, errFileGroup = user.LookupGroupId(fmt.Sprint(fileStat.Gid))
-				if errFileGroup == nil {
-					attributes[LogFileGroup] = fileGroup.Name
+				if r.IncludeFileGroup {
+					var fileGroup, errFileGroup = user.LookupGroupId(fmt.Sprint(fileStat.Gid))
+					if errFileGroup == nil {
+						attributes[LogFileGroup] = fileGroup.Name
+					}
 				}
 			}
 			defer file.Close()
