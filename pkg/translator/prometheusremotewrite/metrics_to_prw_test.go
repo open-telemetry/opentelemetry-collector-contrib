@@ -72,9 +72,9 @@ func BenchmarkPrometheusConverter_FromMetrics(b *testing.B) {
 											payload := createExportRequest(resourceAttributeCount, histogramCount, nonHistogramCount, labelsPerMetric, exemplarsPerSeries)
 
 											for i := 0; i < b.N; i++ {
-												converter := newPrometheusConverter()
-												require.NoError(b, converter.fromMetrics(payload.Metrics(), Settings{}))
-												require.NotNil(b, converter.timeSeries())
+												converter := NewPrometheusConverter()
+												require.NoError(b, converter.FromMetrics(payload.Metrics(), Settings{}))
+												require.NotNil(b, converter.TimeSeries())
 											}
 										})
 									}

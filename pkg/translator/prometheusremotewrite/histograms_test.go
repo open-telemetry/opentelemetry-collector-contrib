@@ -597,7 +597,7 @@ func validateNativeHistogramCount(t *testing.T, h prompb.Histogram) {
 	assert.Equal(t, want, actualCount, "native histogram count mismatch")
 }
 
-func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
+func TestPrometheusConverter_AddExponentialHistogramDataPoints(t *testing.T) {
 	tests := []struct {
 		name       string
 		metric     func() pmetric.Metric
@@ -738,8 +738,8 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
 
-			converter := newPrometheusConverter()
-			require.NoError(t, converter.addExponentialHistogramDataPoints(
+			converter := NewPrometheusConverter()
+			require.NoError(t, converter.AddExponentialHistogramDataPoints(
 				metric.ExponentialHistogram().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
