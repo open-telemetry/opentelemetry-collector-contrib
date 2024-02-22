@@ -123,9 +123,7 @@ func Test_plaintextParser_Parse(t *testing.T) {
 	for _, tt := range fp_tests {
 		t.Run(tt.line, func(t *testing.T) {
 			got, err := p.Parse(tt.line)
-			if err != nil {
-				t.Fatal("failed to parse metric")
-			}
+			require.NoError(t, err)
 
 			// allow for rounding difference in float conversion.
 			assert.WithinDuration(
