@@ -95,9 +95,8 @@ func Test_plaintextParser_Parse(t *testing.T) {
 
 	// tests for floating point timestamps
 	fp_tests := []struct {
-		line    string
-		want    pmetric.Metric
-		wantErr bool
+		line string
+		want pmetric.Metric
 	}{
 		{
 			line: "tst.floattimestamp 3.14 1582230020.1234",
@@ -142,7 +141,6 @@ func Test_plaintextParser_Parse(t *testing.T) {
 				tt.want.Gauge().DataPoints().At(0).Timestamp(),
 			)
 			assert.Equal(t, tt.want, got)
-
 		})
 	}
 }
