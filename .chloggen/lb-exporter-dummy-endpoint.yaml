@@ -7,7 +7,7 @@ change_type: bug_fix
 component: loadbalancingexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: A change to the OTLP exporter causes the load-balancing exporter to fail during startup as no endpoints are defined at that stage.
+note: Fixes a bug where the endpoint become required, despite not being used by the load balancing exporter.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [31371]
