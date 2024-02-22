@@ -985,16 +985,14 @@ func TestDeleteAfterRead(t *testing.T) {
 	linesPerFile := 10
 	totalLines := files * linesPerFile
 
-	expectedTokens := make([][]byte, 0, totalLines)
-	actualTokens := make([][]byte, 0, totalLines)
-
 	tempDir := t.TempDir()
 	temps := make([]*os.File, 0, files)
 	for i := 0; i < files; i++ {
 		temps = append(temps, filetest.OpenTemp(t, tempDir))
 	}
 
-	// Write logs to each file
+	expectedTokens := make([][]byte, 0, totalLines)
+	actualTokens := make([][]byte, 0, totalLines)
 	for i, temp := range temps {
 		for j := 0; j < linesPerFile; j++ {
 			line := filetest.TokenWithLength(100)
@@ -1014,6 +1012,35 @@ func TestDeleteAfterRead(t *testing.T) {
 	sink := emittest.NewSink(emittest.WithCallBuffer(totalLines))
 	operator := testManagerWithSink(t, cfg, sink)
 	operator.persister = testutil.NewUnscopedMockPersister()
+	operator.poll(context.Background())
+	actualTokens = append(actualTokens, sink.NextTokens(t, totalLines)...)
+
+	require.ElementsMatch(t, expectedTokens, actualTokens)
+
+	for _, temp := range temps {
+		_, err := os.Stat(temp.Name())
+		require.True(t, os.IsNotExist(err))
+	}
+
+	// Make more files to ensure deleted files do not cause problems on next poll
+	temps = make([]*os.File, 0, files)
+	for i := 0; i < files; i++ {
+		temps = append(temps, filetest.OpenTemp(t, tempDir))
+	}
+
+	expectedTokens = make([][]byte, 0, totalLines)
+	actualTokens = make([][]byte, 0, totalLines)
+	for i, temp := range temps {
+		for j := 0; j < linesPerFile; j++ {
+			line := filetest.TokenWithLength(200)
+			message := fmt.Sprintf("%s %d %d", line, i, j)
+			_, err := temp.WriteString(message + "\n")
+			require.NoError(t, err)
+			expectedTokens = append(expectedTokens, []byte(message))
+		}
+		require.NoError(t, temp.Close())
+	}
+
 	operator.poll(context.Background())
 	actualTokens = append(actualTokens, sink.NextTokens(t, totalLines)...)
 
