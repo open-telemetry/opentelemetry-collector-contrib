@@ -152,10 +152,6 @@ func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJo
 		setSpanTimes(span, job.CreatedAt, job.CompletedAt)
 	}
 
-	span.Attributes().PutStr("ci.github.workflow_job.created_at", job.CreatedAt.Format(time.RFC3339))
-	span.Attributes().PutStr("ci.github.workflow_job.started_at", job.StartedAt.Format(time.RFC3339))
-	span.Attributes().PutStr("ci.github.workflow_job.completed_at", job.CompletedAt.Format(time.RFC3339))
-
 	allSuccessful := true
 	anyFailure := false
 	for _, step := range steps {
