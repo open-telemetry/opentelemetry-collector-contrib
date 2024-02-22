@@ -46,3 +46,15 @@ func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 }
+
+func TestOTLPConfigIsValid(t *testing.T) {
+	// prepare
+	factory := NewFactory()
+	defaultCfg := factory.CreateDefaultConfig().(*Config)
+
+	// test
+	otlpCfg := defaultCfg.Protocol.OTLP
+
+	// verify
+	assert.NoError(t, otlpCfg.Validate())
+}
