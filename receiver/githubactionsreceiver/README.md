@@ -131,21 +131,18 @@ Below are example functions in a couple of langues for generating each ID, repli
 ##### Generating IDs in `bash`
 
 ```bash
-# Generates a Trace ID
 generate_trace_id() {
   run_id=$1
   run_attempt=$2
   echo -n "${run_id}${run_attempt}t" | openssl dgst -sha256 | sed 's/^.* //'
 }
 
-# Generates a Parent Span ID
 generate_parent_span_id() {
   job_id=$1
   run_attempt=$2
   echo -n "${job_id}${run_attempt}s" | openssl dgst -sha256 | sed 's/^.* //'
 }
 
-# Generates a Span ID
 generate_span_id() {
   job_id=$1
   run_attempt=$2
@@ -155,14 +152,13 @@ generate_span_id() {
   echo -n "$input" | openssl dgst -sha256 | sed 's/^.* //'
 }
 
-# Example usage
 trace_id=$(generate_trace_id 12345 1)
-parent_span_id=$(generate_parent_span_id 54321 1)
-span_id=$(generate_span_id 54321 1 "step-name" 1)
+parent_span_id=$(generate_parent_span_id 12345 1)
+span_id=$(generate_span_id 12345 1 "step-name" 1)
 
-echo "Trace ID: $trace_id"
-echo "Parent Span ID: $parent_span_id"
-echo "Span ID: $span_id"
+echo "Trace ID: ${trace_id:0:32}"
+echo "Parent Span ID: ${parent_span_id:0:16}"
+echo "Span ID: ${span_id:0:16}"
 ```
 
 ##### Generating IDs in `python`
@@ -187,10 +183,9 @@ def generate_span_id(job_id, run_attempt, step_name, step_number=None):
     hashed = hashlib.sha256(input_str.encode()).digest()
     return binascii.hexlify(hashed).decode()[:16]
 
-# Example usage
 trace_id = generate_trace_id(12345, 1)
-parent_span_id = generate_parent_span_id(54321, 1)
-span_id = generate_span_id(54321, 1, "step-name", 1)
+parent_span_id = generate_parent_span_id(12345, 1)
+span_id = generate_span_id(12345, 1, "step-name", 1)
 
 print("Trace ID:", trace_id)
 print("Parent Span ID:", parent_span_id)
