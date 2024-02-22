@@ -70,6 +70,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
