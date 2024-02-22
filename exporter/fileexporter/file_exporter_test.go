@@ -126,7 +126,7 @@ func TestFileTracesExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := tt.args.conf
-			feI, err := newFileExporter(conf)
+			feI, err := newFileExporter(conf, nil)
 			assert.NoError(t, err)
 			require.IsType(t, &fileExporter{}, feI)
 			fe := feI.(*fileExporter)
@@ -648,7 +648,7 @@ func TestFlushing(t *testing.T) {
 	// Wrap the buffer with the buffered writer closer that implements flush() method.
 	bwc := newBufferedWriteCloser(buf)
 	// Create a file exporter with flushing enabled.
-	feI, err := newFileExporter(cfg)
+	feI, err := newFileExporter(cfg, nil)
 	assert.NoError(t, err)
 	assert.IsType(t, &fileExporter{}, feI)
 	fe := feI.(*fileExporter)

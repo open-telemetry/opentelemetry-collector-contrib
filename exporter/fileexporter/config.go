@@ -5,6 +5,7 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -22,7 +23,8 @@ type Config struct {
 	// Path of the file to write to. Path is relative to current directory.
 	Path string `mapstructure:"path"`
 
-	// Rotation defines an option about rotation of telemetry files
+	// Rotation defines an option about rotation of telemetry files. Ignored
+	// when GroupByAttribute is used.
 	Rotation *Rotation `mapstructure:"rotation"`
 
 	// FormatType define the data format of encoded telemetry data
@@ -38,6 +40,9 @@ type Config struct {
 	// FlushInterval is the duration between flushes.
 	// See time.ParseDuration for valid values.
 	FlushInterval time.Duration `mapstructure:"flush_interval"`
+
+	// GroupBy enables writing to separate files based on a resource attribute.
+	GroupBy *GroupBy `mapstructure:"group_by"`
 }
 
 // Rotation an option to rolling log files
@@ -63,6 +68,21 @@ type Rotation struct {
 	LocalTime bool `mapstructure:"localtime"`
 }
 
+type GroupBy struct {
+	// Enables group_by. When group_by is enabled, rotation setting is ignored.  Default is false.
+	Enabled bool `mapstructure:"enabled"`
+
+	// ResourceAttribute specifies the name of the resource attribute that
+	// contains the path segment of the file to write to. The final path will be
+	// the Path config value, with the * replaced with the value of this resource
+	// attribute. Default is "fileexporter.path_segment".
+	ResourceAttribute string `mapstructure:"resource_attribute"`
+
+	// MaxOpenFiles specifies the maximum number of open file descriptors for the output files.
+	// The fefaults is 100.
+	MaxOpenFiles int `mapstructure:"max_open_files"`
+}
+
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
@@ -79,6 +99,22 @@ func (cfg *Config) Validate() error {
 	if cfg.FlushInterval < 0 {
 		return errors.New("flush_interval must be larger than zero")
 	}
+
+	if cfg.GroupBy != nil && cfg.GroupBy.Enabled {
+		pathParts := strings.Split(cfg.Path, "*")
+		if len(pathParts) != 2 {
+			return errors.New("path must contain exatcly one * when group_by is enabled")
+		}
+
+		if len(pathParts[0]) == 0 {
+			return errors.New("path must not start with * when group_by is enabled")
+		}
+
+		if cfg.GroupBy.ResourceAttribute == "" {
+			return errors.New("resource_attribute must not be empty when group_by is enabled")
+		}
+	}
+
 	return nil
 }
 

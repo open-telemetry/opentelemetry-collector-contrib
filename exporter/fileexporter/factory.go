@@ -7,8 +7,10 @@ import (
 	"context"
 	"io"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -16,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
@@ -32,6 +35,10 @@ const (
 
 	// the type of compression codec
 	compressionZSTD = "zstd"
+
+	defaultMaxOpenFiles = 100
+
+	defaultResourceAttribute = "fileexporter.path_segment"
 )
 
 type FileExporter interface {
@@ -55,6 +62,10 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		FormatType: formatTypeJSON,
 		Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
+		GroupBy: &GroupBy{
+			ResourceAttribute: defaultResourceAttribute,
+			MaxOpenFiles:      defaultMaxOpenFiles,
+		},
 	}
 }
 
@@ -63,7 +74,7 @@ func createTracesExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	fe, err := getOrCreateFileExporter(cfg)
+	fe, err := getOrCreateFileExporter(cfg, set.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +94,7 @@ func createMetricsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	fe, err := getOrCreateFileExporter(cfg)
+	fe, err := getOrCreateFileExporter(cfg, set.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +114,7 @@ func createLogsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	fe, err := getOrCreateFileExporter(cfg)
+	fe, err := getOrCreateFileExporter(cfg, set.Logger)
 	if err != nil {
 		return nil, err
 	}
@@ -122,10 +133,10 @@ func createLogsExporter(
 // or returns the already cached one. Caching is required because the factory is asked trace and
 // metric receivers separately when it gets CreateTracesReceiver() and CreateMetricsReceiver()
 // but they must not create separate objects, they must use one Exporter object per configuration.
-func getOrCreateFileExporter(cfg component.Config) (FileExporter, error) {
+func getOrCreateFileExporter(cfg component.Config, logger *zap.Logger) (FileExporter, error) {
 	conf := cfg.(*Config)
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		e, err := newFileExporter(conf)
+		e, err := newFileExporter(conf, logger)
 		if err != nil {
 			return &errorComponent{err: err}
 		}
@@ -141,7 +152,7 @@ func getOrCreateFileExporter(cfg component.Config) (FileExporter, error) {
 	return component.(FileExporter), nil
 }
 
-func newFileExporter(conf *Config) (FileExporter, error) {
+func newFileExporter(conf *Config, logger *zap.Logger) (FileExporter, error) {
 	marshaller := &marshaller{
 		formatType:       conf.FormatType,
 		tracesMarshaler:  tracesMarshalers[conf.FormatType],
@@ -152,15 +163,39 @@ func newFileExporter(conf *Config) (FileExporter, error) {
 	}
 	export := buildExportFunc(conf)
 
-	writer, err := newFileWriter(conf.Path, conf.Rotation, conf.FlushInterval, export)
+	if conf.GroupBy == nil || !conf.GroupBy.Enabled {
+		writer, err := newFileWriter(conf.Path, conf.Rotation, conf.FlushInterval, export)
+		if err != nil {
+			return nil, err
+		}
+
+		return &fileExporter{
+			marshaller: marshaller,
+			writer:     writer,
+		}, nil
+	}
+
+	pathParts := strings.Split(conf.Path, "*")
+	e := &groupingFileExporter{
+		logger:       logger,
+		marshaller:   marshaller,
+		pathPrefix:   cleanPathPrefix(pathParts[0]),
+		pathSuffix:   pathParts[1],
+		attribute:    conf.GroupBy.ResourceAttribute,
+		maxOpenFiles: conf.GroupBy.MaxOpenFiles,
+		newFileWriter: func(path string) (*fileWriter, error) {
+			return newFileWriter(path, nil, conf.FlushInterval, export)
+		},
+	}
+
+	writers, err := simplelru.NewLRU[string, *fileWriter](conf.GroupBy.MaxOpenFiles, e.onEnvict)
 	if err != nil {
 		return nil, err
 	}
 
-	return &fileExporter{
-		marshaller: marshaller,
-		writer:     writer,
-	}, nil
+	e.writers = writers
+
+	return e, nil
 }
 
 func newFileWriter(path string, rotation *Rotation, flushInterval time.Duration, export exportFunc) (*fileWriter, error) {
