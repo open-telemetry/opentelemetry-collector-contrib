@@ -128,6 +128,32 @@ func Test_ParseXML(t *testing.T) {
 			},
 		},
 		{
+			name: "Multiple lines of contend",
+			oArgs: &ParseXMLArguments[any]{
+				Target: ottl.StandardStringGetter[any]{
+					Getter: func(_ context.Context, _ any) (any, error) {
+						return `<Log>
+						This record has multiple lines of
+						<User id="0001"/>
+						text content
+						</Log>`, nil
+					},
+				},
+			},
+			want: map[string]any{
+				"tag":     "Log",
+				"content": "This record has multiple lines oftext content",
+				"children": []any{
+					map[string]any{
+						"tag": "User",
+						"attributes": map[string]any{
+							"id": "0001",
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "Attribute only element",
 			oArgs: &ParseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
