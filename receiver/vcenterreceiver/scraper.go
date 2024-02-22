@@ -377,6 +377,7 @@ func (v *vcenterMetricScraper) collectVMs(
 		rb.SetVcenterHostName(hostname)
 		if rp != nil && rp.Name() != "" {
 			rb.SetVcenterResourcePoolName(rp.Name())
+			rb.SetVcenterResourcePoolInventoryPath(rp.InventoryPath)
 		}
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
