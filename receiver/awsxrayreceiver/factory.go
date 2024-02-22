@@ -32,7 +32,7 @@ func createDefaultConfig() component.Config {
 	// in the X-Ray daemon:
 	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L99
 	return &Config{
-		NetAddr: confignet.NetAddr{
+		AddrConfig: confignet.AddrConfig{
 			Endpoint:  localhostgate.EndpointForPort(defaultPort),
 			Transport: udppoller.Transport,
 		},

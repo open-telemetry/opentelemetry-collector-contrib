@@ -5,7 +5,7 @@ go 1.21
 
 require (
 	github.com/hashicorp/golang-lru v1.0.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.95.0
 	github.com/stretchr/testify v1.8.4
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector/component v0.95.0
