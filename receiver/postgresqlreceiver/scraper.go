@@ -80,7 +80,7 @@ func (d *defaultClientFactory) getClient(c *Config, database string) (client, er
 		password: string(c.Password),
 		database: database,
 		tls:      c.TLSClientSetting,
-		address:  c.NetAddr,
+		address:  c.AddrConfig,
 	})
 }
 
