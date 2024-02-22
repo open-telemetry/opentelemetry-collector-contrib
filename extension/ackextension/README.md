@@ -19,11 +19,11 @@ if ack fails.
 ```yaml
 extensions:
   ack:
-    storageID: 
+    storage: 
 
 receivers:
   splunk_hec:
-    ack_extensions: ack
+    ack_extension: ack
 
 
 service:

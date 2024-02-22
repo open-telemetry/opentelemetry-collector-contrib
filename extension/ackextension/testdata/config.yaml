@@ -1,8 +1,8 @@
 ack:
 
 ack/withmemorystorage:
-  storageID:
+  storage:
 
 ack/withpersistentstorage:
-  storageID: file_storage/otc
+  storage: file_storage/otc
 
