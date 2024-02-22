@@ -17,6 +17,8 @@ Each GitHub Action workflow or job, along with its steps, are converted into tra
 
 If a secret is configured (recommended), it [validates the payload](https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries) ensuring data integrity before processing.
 
+The receiver supports linking spans to previous runs for `workflow_run` events, enhancing traceability across workflow attempts. This feature utilises deterministic Trace IDs generated based on the run ID and run attempt. When a `workflow_run` event contains a `PreviousAttemptURL`, and the run attempt is greater than `1`, the receiver automatically links the current run's root span to the previous run's Trace ID, providing a direct connection between sequential workflow attempts.
+
 ## Configuration
 
 The following settings are required:
