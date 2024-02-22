@@ -5,12 +5,12 @@ go 1.21
 require (
 	github.com/aws/aws-sdk-go v1.50.17
 	github.com/google/cadvisor v0.48.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.94.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.94.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.95.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.95.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.95.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.95.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.95.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.95.0
 	github.com/shirou/gopsutil/v3 v3.24.1
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.95.0
@@ -23,9 +23,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.26.0
-	k8s.io/api v0.29.1
-	k8s.io/apimachinery v0.29.1
-	k8s.io/client-go v0.29.1
+	k8s.io/api v0.29.2
+	k8s.io/apimachinery v0.29.2
+	k8s.io/client-go v0.29.2
 	k8s.io/klog v1.0.0
 )
 
@@ -89,7 +89,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mrunalp/fileutils v0.5.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.94.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.95.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.12 // indirect
