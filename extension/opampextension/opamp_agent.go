@@ -43,15 +43,12 @@ type opampAgent struct {
 }
 
 func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
-	// TODO: Add OpAMP HTTP transport support.
-	o.opampClient = client.NewWebSocket(newLoggerFromZap(o.logger))
-
 	header := http.Header{}
-	for k, v := range o.cfg.Server.WS.Headers {
+	for k, v := range o.cfg.Server.GetHeaders() {
 		header.Set(k, string(v))
 	}
 
-	tls, err := o.cfg.Server.WS.TLSSetting.LoadTLSConfig()
+	tls, err := o.cfg.Server.GetTLSSetting().LoadTLSConfig()
 	if err != nil {
 		return err
 	}
@@ -59,7 +56,7 @@ func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
 	settings := types.StartSettings{
 		Header:         header,
 		TLSConfig:      tls,
-		OpAMPServerURL: o.cfg.Server.WS.Endpoint,
+		OpAMPServerURL: o.cfg.Server.GetEndpoint(),
 		InstanceUid:    o.instanceID.String(),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func(_ context.Context) {
@@ -148,11 +145,11 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 	} else {
 		sid, ok := res.Attributes().Get(semconv.AttributeServiceInstanceID)
 		if ok {
-			uuid, err := uuid.Parse(sid.AsString())
+			parsedUuid, err := uuid.Parse(sid.AsString())
 			if err != nil {
 				return nil, err
 			}
-			uid = ulid.ULID(uuid)
+			uid = ulid.ULID(parsedUuid)
 		}
 	}
 
@@ -163,6 +160,7 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 		agentVersion: agentVersion,
 		instanceID:   uid,
 		capabilities: cfg.Capabilities,
+		opampClient:  cfg.Server.GetClient(logger),
 	}
 
 	return agent, nil
