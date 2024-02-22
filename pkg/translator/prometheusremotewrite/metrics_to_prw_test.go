@@ -35,11 +35,9 @@ func BenchmarkFromMetrics(b *testing.B) {
 											payload := createExportRequest(resourceAttributeCount, histogramCount, nonHistogramCount, labelsPerMetric, exemplarsPerSeries)
 
 											for i := 0; i < b.N; i++ {
-												_, err := FromMetrics(payload.Metrics(), Settings{})
-
-												if err != nil {
-													require.NoError(b, err)
-												}
+												converter := NewPrometheusConverter()
+												err := converter.FromMetrics(payload.Metrics(), Settings{})
+												require.NoError(b, err)
 											}
 										})
 									}
