@@ -14,7 +14,7 @@ type Config struct {
 	// The `NetAddr` represents the UDP address
 	// and port on which this receiver listens for X-Ray segment documents
 	// emitted by the X-Ray SDK.
-	confignet.NetAddr `mapstructure:",squash"`
+	confignet.AddrConfig `mapstructure:",squash"`
 
 	// ProxyServer defines configurations related to the local TCP proxy server.
 	ProxyServer *proxy.Config `mapstructure:"proxy_server"`
