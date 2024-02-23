@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("googlecloudpubsub")
+)
+
 const (
-	Type             = "googlecloudpubsub"
 	TracesStability  = component.StabilityLevelBeta
 	LogsStability    = component.StabilityLevelBeta
 	MetricsStability = component.StabilityLevelBeta

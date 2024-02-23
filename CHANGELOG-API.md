@@ -7,6 +7,52 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.95.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza`: Remove deprecated pkg/stanza/attrs (#30449)
+- `httpforwarderextension`: Rename the extension httpforwarder to httpforwarderextension (#24171)
+- `extension/storage`: The `filestorage` and `dbstorage` extensions are now standalone modules. (#31040)
+  If using the OpenTelemetry Collector Builder, you will need to update your import paths to use the new module(s).
+  - `github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage`
+  - `github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage`
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/golden`: Added an option to skip the metric timestamp normalization for WriteMetrics. (#30919)
+- `healthcheckextension`: Remove usage of deprecated `host.ReportFatalError` (#30582)
+
+## v0.94.0
+
+### 🚩 Deprecations 🚩
+
+- `testbed`: Deprecate testbed.GetAvailablePort in favor of testutil.GetAvailablePort (#30811)
+  Move healthcheckextension to use testutil.GetAvailablePort
+
+### 🚀 New components 🚀
+
+- `pkg_sampling`: Package of code for parsing OpenTelemetry tracestate probability sampling fields. (#29738)
+
+## v0.93.0
+
+### 🛑 Breaking changes 🛑
+
+- `testbed`: Remove unused AWS XRay mock receiver (#30381)
+- `docker`: Adopt api_version as strings to correct invalid float truncation (#24025)
+- `prometheusreceiver`: Consolidate Config members and remove the need of placeholders. (#29901)
+- `all`: Remove obsolete "// +build" directive (#30651)
+- `testbed`: Expand TestCase capabilities with broken out LoadGenerator interface (#30303)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate pkg/stanza/attrs package in favor of pkg/stanza/fileconsumer/attrs (#30449)
+
+### 💡 Enhancements 💡
+
+- `testbed`: Adds and adopts new WithEnvVar child process option, moving GOMAXPROCS=2 to initializations (#30491)
+
 ## v0.92.0
 
 ### 🛑 Breaking changes 🛑

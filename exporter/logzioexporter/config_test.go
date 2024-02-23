@@ -40,12 +40,12 @@ func TestLoadConfig(t *testing.T) {
 	expected.BackOffConfig.MaxInterval = 5 * time.Second
 	expected.QueueSettings = exporterhelper.NewDefaultQueueSettings()
 	expected.QueueSettings.Enabled = false
-	expected.HTTPClientSettings = confighttp.HTTPClientSettings{
+	expected.ClientConfig = confighttp.ClientConfig{
 		Endpoint: "",
 		Timeout:  30 * time.Second,
 		Headers:  map[string]configopaque.String{},
 		// Default to gzip compression
-		Compression: configcompression.Gzip,
+		Compression: configcompression.TypeGzip,
 		// We almost read 0 bytes, so no need to tune ReadBufferSize.
 		WriteBufferSize: 512 * 1024,
 	}
@@ -67,12 +67,12 @@ func TestDefaultLoadConfig(t *testing.T) {
 	}
 	expected.BackOffConfig = configretry.NewDefaultBackOffConfig()
 	expected.QueueSettings = exporterhelper.NewDefaultQueueSettings()
-	expected.HTTPClientSettings = confighttp.HTTPClientSettings{
+	expected.ClientConfig = confighttp.ClientConfig{
 		Endpoint: "",
 		Timeout:  30 * time.Second,
 		Headers:  map[string]configopaque.String{},
 		// Default to gzip compression
-		Compression: configcompression.Gzip,
+		Compression: configcompression.TypeGzip,
 		// We almost read 0 bytes, so no need to tune ReadBufferSize.
 		WriteBufferSize: 512 * 1024,
 	}
@@ -88,12 +88,12 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 		CustomEndpoint: "https://api.example.com",
 		QueueMaxLength: 10,
 		DrainInterval:  10,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
 			Timeout:  10 * time.Second,
 			Headers:  map[string]configopaque.String{},
 			// Default to gzip compression
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},
@@ -112,12 +112,12 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 		DrainInterval:  10,
 		BackOffConfig:  configretry.NewDefaultBackOffConfig(),
 		QueueSettings:  exporterhelper.NewDefaultQueueSettings(),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "https://api.example.com",
 			Timeout:  10 * time.Second,
 			Headers:  map[string]configopaque.String{},
 			// Default to gzip compression
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},

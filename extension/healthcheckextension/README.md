@@ -40,7 +40,7 @@ processors in the future.
 
 The following settings are required:
 
-- `endpoint` (default = 0.0.0.0:13133): Address to publish the health check status. For full list of `HTTPServerSettings` refer [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp).
+- `endpoint` (default = 0.0.0.0:13133): Address to publish the health check status. For full list of `ServerConfig` refer [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:13133. This will become the default in a future release.
 - `path` (default = "/"): Specifies the path to be configured for the health check server.
 - `response_body` (default = ""): Specifies a static body that overrides the default response returned by the health check service. 
 - `check_collector_pipeline:` (optional): Settings of collector pipeline health check

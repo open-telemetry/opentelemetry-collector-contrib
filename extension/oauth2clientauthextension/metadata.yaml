@@ -11,3 +11,6 @@ status:
   - sumo
   codeowners:
     active: [pavankrish123, jpkrohling]
+
+tests:
+  config:

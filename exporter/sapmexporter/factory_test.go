@@ -21,7 +21,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateExporter(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, "sapm", string(factory.Type()))
+	assert.Equal(t, "sapm", factory.Type().String())
 
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)

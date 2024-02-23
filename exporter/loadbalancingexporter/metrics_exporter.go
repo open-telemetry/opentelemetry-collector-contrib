@@ -28,6 +28,9 @@ import (
 
 var _ exporter.Metrics = (*metricExporterImp)(nil)
 
+type exporterMetrics map[component.Component]map[string]pmetric.Metrics
+type endpointMetrics map[string]pmetric.Metrics
+
 type metricExporterImp struct {
 	loadBalancer loadBalancer
 	routingKey   routingKey
@@ -80,46 +83,71 @@ func (e *metricExporterImp) Shutdown(context.Context) error {
 
 func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	var errs error
-	batches := batchpersignal.SplitMetrics(md)
-	for _, batch := range batches {
-		errs = multierr.Append(errs, e.consumeMetric(ctx, batch))
-	}
-
-	return errs
-}
-
-func (e *metricExporterImp) consumeMetric(ctx context.Context, md pmetric.Metrics) error {
 	var exp component.Component
-	routingIds, err := routingIdentifiersFromMetrics(md, e.routingKey)
-	if err != nil {
-		return err
-	}
-	for rid := range routingIds {
-		endpoint := e.loadBalancer.Endpoint([]byte(rid))
-		exp, err = e.loadBalancer.Exporter(endpoint)
+
+	batches := batchpersignal.SplitMetrics(md)
+
+	exporterSegregatedMetrics := make(exporterMetrics)
+	endpointSegregatedMetrics := make(endpointMetrics)
+
+	for _, batch := range batches {
+		routingIds, err := routingIdentifiersFromMetrics(batch, e.routingKey)
 		if err != nil {
 			return err
 		}
 
-		te, ok := exp.(exporter.Metrics)
-		if !ok {
-			return fmt.Errorf("unable to export metrics, unexpected exporter type: expected exporter.Metrics but got %T", exp)
+		for rid := range routingIds {
+			endpoint := e.loadBalancer.Endpoint([]byte(rid))
+			exp, err = e.loadBalancer.Exporter(endpoint)
+			if err != nil {
+				return err
+			}
+			_, ok := exp.(exporter.Metrics)
+			if !ok {
+				return fmt.Errorf("unable to export metrics, unexpected exporter type: expected exporter.Metrics but got %T", exp)
+			}
+
+			_, ok = endpointSegregatedMetrics[endpoint]
+			if !ok {
+				endpointSegregatedMetrics[endpoint] = pmetric.NewMetrics()
+			}
+			endpointSegregatedMetrics[endpoint] = mergeMetrics(endpointSegregatedMetrics[endpoint], batch)
+
+			_, ok = exporterSegregatedMetrics[exp]
+			if !ok {
+				exporterSegregatedMetrics[exp] = endpointMetrics{}
+			}
+			exporterSegregatedMetrics[exp][endpoint] = endpointSegregatedMetrics[endpoint]
 		}
+	}
 
-		start := time.Now()
-		err = te.ConsumeMetrics(ctx, md)
-		duration := time.Since(start)
+	errs = multierr.Append(errs, e.consumeMetric(ctx, exporterSegregatedMetrics))
 
-		if err == nil {
-			_ = stats.RecordWithTags(
-				ctx,
-				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
-				mBackendLatency.M(duration.Milliseconds()))
-		} else {
-			_ = stats.RecordWithTags(
-				ctx,
-				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
-				mBackendLatency.M(duration.Milliseconds()))
+	return errs
+}
+
+func (e *metricExporterImp) consumeMetric(ctx context.Context, exporterSegregatedMetrics exporterMetrics) error {
+	var err error
+
+	for exp, endpointMetrics := range exporterSegregatedMetrics {
+		for endpoint, md := range endpointMetrics {
+			te, _ := exp.(exporter.Metrics)
+
+			start := time.Now()
+			err = te.ConsumeMetrics(ctx, md)
+			duration := time.Since(start)
+
+			if err == nil {
+				_ = stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
+					mBackendLatency.M(duration.Milliseconds()))
+			} else {
+				_ = stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
+					mBackendLatency.M(duration.Milliseconds()))
+			}
 		}
 	}
 

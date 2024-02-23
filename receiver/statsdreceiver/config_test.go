@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "receiver_settings"),
 			expected: &Config{
-				NetAddr: confignet.NetAddr{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  "localhost:12345",
 					Transport: "custom_transport",
 				},

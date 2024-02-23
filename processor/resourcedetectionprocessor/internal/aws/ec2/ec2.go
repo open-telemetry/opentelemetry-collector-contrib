@@ -86,8 +86,8 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	res := d.rb.Emit()
 
 	if len(d.tagKeyRegexes) != 0 {
-		client := getHTTPClientSettings(ctx, d.logger)
-		tags, err := connectAndFetchEc2Tags(d.ec2Client, meta.Region, meta.InstanceID, d.tagKeyRegexes, client)
+		client := getClientConfig(ctx, d.logger)
+		tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.tagKeyRegexes, client)
 		if err != nil {
 			d.logger.Warn("failed fetching ec2 instance tags", zap.Error(err))
 		} else {
@@ -99,7 +99,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	return res, conventions.SchemaURL, nil
 }
 
-func getHTTPClientSettings(ctx context.Context, logger *zap.Logger) *http.Client {
+func getClientConfig(ctx context.Context, logger *zap.Logger) *http.Client {
 	client, err := internal.ClientFromContext(ctx)
 	if err != nil {
 		client = http.DefaultClient

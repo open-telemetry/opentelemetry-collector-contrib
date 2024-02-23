@@ -18,7 +18,7 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, "podman_stats", string(factory.Type()))
+	assert.Equal(t, "podman_stats", factory.Type().String())
 
 	config := factory.CreateDefaultConfig()
 	assert.NotNil(t, config, "failed to create default config")

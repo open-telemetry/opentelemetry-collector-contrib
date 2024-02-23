@@ -7,3 +7,7 @@ status:
   distributions: []
   codeowners:
     active: [am-kinetica, TylerHelmuth]
+
+tests:
+  config:
+  skip_lifecycle: true

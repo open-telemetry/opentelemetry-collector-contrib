@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("sqlquery")
+)
+
 const (
-	Type             = "sqlquery"
 	MetricsStability = component.StabilityLevelAlpha
 	LogsStability    = component.StabilityLevelDevelopment
 )

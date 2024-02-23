@@ -765,7 +765,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 
 func TestFilterLogProcessorTelemetry(t *testing.T) {
 	telemetryTest(t, "FilterLogProcessorTelemetry", func(t *testing.T, tel testTelemetry) {
-		processor, err := newFilterLogsProcessor(processortest.NewNopCreateSettings(), &Config{
+		processor, err := newFilterLogsProcessor(tel.NewProcessorCreateSettings(), &Config{
 			Logs: LogFilters{LogConditions: []string{`IsMatch(body, "operationA")`}},
 		})
 		assert.NoError(t, err)

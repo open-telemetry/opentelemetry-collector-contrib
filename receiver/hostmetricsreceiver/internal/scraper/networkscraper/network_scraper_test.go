@@ -121,7 +121,7 @@ func TestScrape(t *testing.T) {
 			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(), // conntrack metrics are disabled by default
 			},
-			conntrackFunc:           func(ctx context.Context) ([]net.FilterStat, error) { return nil, errors.New("conntrack failed") },
+			conntrackFunc:           func(context.Context) ([]net.FilterStat, error) { return nil, errors.New("conntrack failed") },
 			expectConntrakMetrics:   true,
 			expectConnectionsMetric: true,
 		},
@@ -132,7 +132,7 @@ func TestScrape(t *testing.T) {
 				cfg.MetricsBuilderConfig.Metrics.SystemNetworkConnections.Enabled = false
 				return &cfg
 			}(),
-			connectionsFunc: func(ctx context.Context, s string) ([]net.ConnectionStat, error) {
+			connectionsFunc: func(context.Context, string) ([]net.ConnectionStat, error) {
 				panic("should not be called")
 			},
 			expectConntrakMetrics: true,
