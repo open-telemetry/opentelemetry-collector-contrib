@@ -47,6 +47,8 @@ all_set:
       enabled: true
     k8s.hpa.min_replicas:
       enabled: true
+    k8s.ingress.rule_count:
+      enabled: true
     k8s.job.active_pods:
       enabled: true
     k8s.job.desired_successful_pods:
@@ -175,6 +177,22 @@ all_set:
     k8s.hpa.name:
       enabled: true
     k8s.hpa.uid:
+      enabled: true
+    k8s.ingress.annotations:
+      enabled: true
+    k8s.ingress.labels:
+      enabled: true
+    k8s.ingress.name:
+      enabled: true
+    k8s.ingress.namespace:
+      enabled: true
+    k8s.ingress.rules:
+      enabled: true
+    k8s.ingress.start_time:
+      enabled: true
+    k8s.ingress.type:
+      enabled: true
+    k8s.ingress.uid:
       enabled: true
     k8s.job.name:
       enabled: true
@@ -400,6 +418,8 @@ none_set:
       enabled: false
     k8s.hpa.min_replicas:
       enabled: false
+    k8s.ingress.rule_count:
+      enabled: false
     k8s.job.active_pods:
       enabled: false
     k8s.job.desired_successful_pods:
@@ -528,6 +548,22 @@ none_set:
     k8s.hpa.name:
       enabled: false
     k8s.hpa.uid:
+      enabled: false
+    k8s.ingress.annotations:
+      enabled: false
+    k8s.ingress.labels:
+      enabled: false
+    k8s.ingress.name:
+      enabled: false
+    k8s.ingress.namespace:
+      enabled: false
+    k8s.ingress.rules:
+      enabled: false
+    k8s.ingress.start_time:
+      enabled: false
+    k8s.ingress.type:
+      enabled: false
+    k8s.ingress.uid:
       enabled: false
     k8s.job.name:
       enabled: false

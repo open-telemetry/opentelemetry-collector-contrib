@@ -259,6 +259,46 @@ resource_attributes:
     type: string
     enabled: true
 
+  k8s.ingress.uid:
+    description: The UID of the Ingress.
+    type: string
+    enabled: true
+
+  k8s.ingress.name:
+    description: The name of the Ingress.
+    type: string
+    enabled: true
+
+  k8s.ingress.namespace:
+    description: The namespace of the Ingress.
+    type: string
+    enabled: true
+
+  k8s.ingress.labels:
+    description: Labels of the Ingress.
+    type: string
+    enabled: true
+
+  k8s.ingress.annotations:
+    description: Annotations of the Ingress.
+    type: string
+    enabled: true
+
+  k8s.ingress.start_time:
+    description: The start time of the Ingress.
+    type: string
+    enabled: true
+
+  k8s.ingress.rules:
+    description: Rules of the Ingress.
+    type: string
+    enabled: true
+
+  k8s.ingress.type:
+    description: The type of the Ingress.
+    type: string
+    enabled: true
+
   k8s.role.uid:
     description: The UID of the Role.
     type: string
@@ -742,6 +782,13 @@ metrics:
   k8s.serviceaccount.secret_count:
     enabled: true
     description: The count of secrets in Service Account.
+    unit: "1"
+    gauge:
+      value_type: int
+
+  k8s.ingress.rule_count:
+    enabled: true
+    description: The rule count of ingress.
     unit: "1"
     gauge:
       value_type: int

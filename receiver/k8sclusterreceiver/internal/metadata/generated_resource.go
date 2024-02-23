@@ -126,6 +126,62 @@ func (rb *ResourceBuilder) SetK8sHpaUID(val string) {
 	}
 }
 
+// SetK8sIngressAnnotations sets provided value as "k8s.ingress.annotations" attribute.
+func (rb *ResourceBuilder) SetK8sIngressAnnotations(val string) {
+	if rb.config.K8sIngressAnnotations.Enabled {
+		rb.res.Attributes().PutStr("k8s.ingress.annotations", val)
+	}
+}
+
+// SetK8sIngressLabels sets provided value as "k8s.ingress.labels" attribute.
+func (rb *ResourceBuilder) SetK8sIngressLabels(val string) {
+	if rb.config.K8sIngressLabels.Enabled {
+		rb.res.Attributes().PutStr("k8s.ingress.labels", val)
+	}
+}
+
+// SetK8sIngressName sets provided value as "k8s.ingress.name" attribute.
+func (rb *ResourceBuilder) SetK8sIngressName(val string) {
+	if rb.config.K8sIngressName.Enabled {
+		rb.res.Attributes().PutStr("k8s.ingress.name", val)
+	}
+}
+
+// SetK8sIngressNamespace sets provided value as "k8s.ingress.namespace" attribute.
+func (rb *ResourceBuilder) SetK8sIngressNamespace(val string) {
+	if rb.config.K8sIngressNamespace.Enabled {
+		rb.res.Attributes().PutStr("k8s.ingress.namespace", val)
+	}
+}
+
+// SetK8sIngressRules sets provided value as "k8s.ingress.rules" attribute.
+func (rb *ResourceBuilder) SetK8sIngressRules(val string) {
+	if rb.config.K8sIngressRules.Enabled {
+		rb.res.Attributes().PutStr("k8s.ingress.rules", val)
+	}
+}
+
+// SetK8sIngressStartTime sets provided value as "k8s.ingress.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sIngressStartTime(val string) {
+	if rb.config.K8sIngressStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.ingress.start_time", val)
+	}
+}
+
+// SetK8sIngressType sets provided value as "k8s.ingress.type" attribute.
+func (rb *ResourceBuilder) SetK8sIngressType(val string) {
+	if rb.config.K8sIngressType.Enabled {
+		rb.res.Attributes().PutStr("k8s.ingress.type", val)
+	}
+}
+
+// SetK8sIngressUID sets provided value as "k8s.ingress.uid" attribute.
+func (rb *ResourceBuilder) SetK8sIngressUID(val string) {
+	if rb.config.K8sIngressUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.ingress.uid", val)
+	}
+}
+
 // SetK8sJobName sets provided value as "k8s.job.name" attribute.
 func (rb *ResourceBuilder) SetK8sJobName(val string) {
 	if rb.config.K8sJobName.Enabled {

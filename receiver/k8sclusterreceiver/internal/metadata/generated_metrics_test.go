@@ -154,6 +154,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordK8sIngressRuleCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordK8sJobActivePodsDataPoint(ts, 1)
 
 			defaultMetricsCount++
@@ -258,6 +262,14 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sDeploymentUID("k8s.deployment.uid-val")
 			rb.SetK8sHpaName("k8s.hpa.name-val")
 			rb.SetK8sHpaUID("k8s.hpa.uid-val")
+			rb.SetK8sIngressAnnotations("k8s.ingress.annotations-val")
+			rb.SetK8sIngressLabels("k8s.ingress.labels-val")
+			rb.SetK8sIngressName("k8s.ingress.name-val")
+			rb.SetK8sIngressNamespace("k8s.ingress.namespace-val")
+			rb.SetK8sIngressRules("k8s.ingress.rules-val")
+			rb.SetK8sIngressStartTime("k8s.ingress.start_time-val")
+			rb.SetK8sIngressType("k8s.ingress.type-val")
+			rb.SetK8sIngressUID("k8s.ingress.uid-val")
 			rb.SetK8sJobName("k8s.job.name-val")
 			rb.SetK8sJobUID("k8s.job.uid-val")
 			rb.SetK8sKubeletVersion("k8s.kubelet.version-val")
@@ -550,6 +562,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Minimum number of replicas to which the autoscaler can scale up.", ms.At(i).Description())
 					assert.Equal(t, "{pod}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.ingress.rule_count":
+					assert.False(t, validatedMetrics["k8s.ingress.rule_count"], "Found a duplicate in the metrics slice: k8s.ingress.rule_count")
+					validatedMetrics["k8s.ingress.rule_count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The rule count of ingress.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

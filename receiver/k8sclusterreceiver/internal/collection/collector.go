@@ -14,6 +14,7 @@ import (
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	netv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterresourcequota"
@@ -24,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/deployment"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/hpa"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/ingress"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/jobs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/namespace"
@@ -100,6 +102,9 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 	})
 	dc.metadataStore.ForEach(gvk.ClusterRoleBinding, func(o any) {
 		clusterrolebinding.RecordMetrics(dc.metricsBuilder, o.(*rbacv1.ClusterRoleBinding), ts)
+	})
+	dc.metadataStore.ForEach(gvk.Ingress, func(o any) {
+		ingress.RecordMetrics(dc.metricsBuilder, o.(*netv1.Ingress), ts)
 	})
 	dc.metadataStore.ForEach(gvk.Namespace, func(o any) {
 		namespace.RecordMetrics(dc.metricsBuilder, o.(*corev1.Namespace), ts)
