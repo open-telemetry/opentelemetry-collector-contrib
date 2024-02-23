@@ -48,6 +48,7 @@ type MetricsConfig struct {
 	K8sHpaDesiredReplicas               MetricConfig `mapstructure:"k8s.hpa.desired_replicas"`
 	K8sHpaMaxReplicas                   MetricConfig `mapstructure:"k8s.hpa.max_replicas"`
 	K8sHpaMinReplicas                   MetricConfig `mapstructure:"k8s.hpa.min_replicas"`
+	K8sIngressRuleCount                 MetricConfig `mapstructure:"k8s.ingress.rule_count"`
 	K8sJobActivePods                    MetricConfig `mapstructure:"k8s.job.active_pods"`
 	K8sJobDesiredSuccessfulPods         MetricConfig `mapstructure:"k8s.job.desired_successful_pods"`
 	K8sJobFailedPods                    MetricConfig `mapstructure:"k8s.job.failed_pods"`
@@ -148,6 +149,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sHpaMinReplicas: MetricConfig{
+			Enabled: true,
+		},
+		K8sIngressRuleCount: MetricConfig{
 			Enabled: true,
 		},
 		K8sJobActivePods: MetricConfig{
@@ -278,6 +282,14 @@ type ResourceAttributesConfig struct {
 	K8sDeploymentUID                              ResourceAttributeConfig `mapstructure:"k8s.deployment.uid"`
 	K8sHpaName                                    ResourceAttributeConfig `mapstructure:"k8s.hpa.name"`
 	K8sHpaUID                                     ResourceAttributeConfig `mapstructure:"k8s.hpa.uid"`
+	K8sIngressAnnotations                         ResourceAttributeConfig `mapstructure:"k8s.ingress.annotations"`
+	K8sIngressLabels                              ResourceAttributeConfig `mapstructure:"k8s.ingress.labels"`
+	K8sIngressName                                ResourceAttributeConfig `mapstructure:"k8s.ingress.name"`
+	K8sIngressNamespace                           ResourceAttributeConfig `mapstructure:"k8s.ingress.namespace"`
+	K8sIngressRules                               ResourceAttributeConfig `mapstructure:"k8s.ingress.rules"`
+	K8sIngressStartTime                           ResourceAttributeConfig `mapstructure:"k8s.ingress.start_time"`
+	K8sIngressType                                ResourceAttributeConfig `mapstructure:"k8s.ingress.type"`
+	K8sIngressUID                                 ResourceAttributeConfig `mapstructure:"k8s.ingress.uid"`
 	K8sJobName                                    ResourceAttributeConfig `mapstructure:"k8s.job.name"`
 	K8sJobStartTime                               ResourceAttributeConfig `mapstructure:"k8s.job.start_time"`
 	K8sJobUID                                     ResourceAttributeConfig `mapstructure:"k8s.job.uid"`
@@ -458,6 +470,30 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sHpaUID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sIngressAnnotations: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sIngressLabels: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sIngressName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sIngressNamespace: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sIngressRules: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sIngressStartTime: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sIngressType: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sIngressUID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		K8sJobName: ResourceAttributeConfig{

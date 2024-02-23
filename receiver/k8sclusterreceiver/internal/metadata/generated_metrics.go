@@ -1139,6 +1139,55 @@ func newMetricK8sHpaMinReplicas(cfg MetricConfig) metricK8sHpaMinReplicas {
 	return m
 }
 
+type metricK8sIngressRuleCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.ingress.rule_count metric with initial data.
+func (m *metricK8sIngressRuleCount) init() {
+	m.data.SetName("k8s.ingress.rule_count")
+	m.data.SetDescription("The rule count of ingress.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sIngressRuleCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sIngressRuleCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sIngressRuleCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sIngressRuleCount(cfg MetricConfig) metricK8sIngressRuleCount {
+	m := metricK8sIngressRuleCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sJobActivePods struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2605,6 +2654,7 @@ type MetricsBuilder struct {
 	metricK8sHpaDesiredReplicas               metricK8sHpaDesiredReplicas
 	metricK8sHpaMaxReplicas                   metricK8sHpaMaxReplicas
 	metricK8sHpaMinReplicas                   metricK8sHpaMinReplicas
+	metricK8sIngressRuleCount                 metricK8sIngressRuleCount
 	metricK8sJobActivePods                    metricK8sJobActivePods
 	metricK8sJobDesiredSuccessfulPods         metricK8sJobDesiredSuccessfulPods
 	metricK8sJobFailedPods                    metricK8sJobFailedPods
@@ -2675,6 +2725,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sHpaDesiredReplicas:               newMetricK8sHpaDesiredReplicas(mbc.Metrics.K8sHpaDesiredReplicas),
 		metricK8sHpaMaxReplicas:                   newMetricK8sHpaMaxReplicas(mbc.Metrics.K8sHpaMaxReplicas),
 		metricK8sHpaMinReplicas:                   newMetricK8sHpaMinReplicas(mbc.Metrics.K8sHpaMinReplicas),
+		metricK8sIngressRuleCount:                 newMetricK8sIngressRuleCount(mbc.Metrics.K8sIngressRuleCount),
 		metricK8sJobActivePods:                    newMetricK8sJobActivePods(mbc.Metrics.K8sJobActivePods),
 		metricK8sJobDesiredSuccessfulPods:         newMetricK8sJobDesiredSuccessfulPods(mbc.Metrics.K8sJobDesiredSuccessfulPods),
 		metricK8sJobFailedPods:                    newMetricK8sJobFailedPods(mbc.Metrics.K8sJobFailedPods),
@@ -2789,6 +2840,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sHpaDesiredReplicas.emit(ils.Metrics())
 	mb.metricK8sHpaMaxReplicas.emit(ils.Metrics())
 	mb.metricK8sHpaMinReplicas.emit(ils.Metrics())
+	mb.metricK8sIngressRuleCount.emit(ils.Metrics())
 	mb.metricK8sJobActivePods.emit(ils.Metrics())
 	mb.metricK8sJobDesiredSuccessfulPods.emit(ils.Metrics())
 	mb.metricK8sJobFailedPods.emit(ils.Metrics())
@@ -2951,6 +3003,11 @@ func (mb *MetricsBuilder) RecordK8sHpaMaxReplicasDataPoint(ts pcommon.Timestamp,
 // RecordK8sHpaMinReplicasDataPoint adds a data point to k8s.hpa.min_replicas metric.
 func (mb *MetricsBuilder) RecordK8sHpaMinReplicasDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sHpaMinReplicas.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sIngressRuleCountDataPoint adds a data point to k8s.ingress.rule_count metric.
+func (mb *MetricsBuilder) RecordK8sIngressRuleCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sIngressRuleCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sJobActivePodsDataPoint adds a data point to k8s.job.active_pods metric.

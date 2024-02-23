@@ -44,6 +44,14 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sDeploymentUID("k8s.deployment.uid-val")
 			rb.SetK8sHpaName("k8s.hpa.name-val")
 			rb.SetK8sHpaUID("k8s.hpa.uid-val")
+			rb.SetK8sIngressAnnotations("k8s.ingress.annotations-val")
+			rb.SetK8sIngressLabels("k8s.ingress.labels-val")
+			rb.SetK8sIngressName("k8s.ingress.name-val")
+			rb.SetK8sIngressNamespace("k8s.ingress.namespace-val")
+			rb.SetK8sIngressRules("k8s.ingress.rules-val")
+			rb.SetK8sIngressStartTime("k8s.ingress.start_time-val")
+			rb.SetK8sIngressType("k8s.ingress.type-val")
+			rb.SetK8sIngressUID("k8s.ingress.uid-val")
 			rb.SetK8sJobName("k8s.job.name-val")
 			rb.SetK8sJobStartTime("k8s.job.start_time-val")
 			rb.SetK8sJobUID("k8s.job.uid-val")
@@ -135,9 +143,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 116, res.Attributes().Len())
+				assert.Equal(t, 124, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 116, res.Attributes().Len())
+				assert.Equal(t, 124, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -299,6 +307,46 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.hpa.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.ingress.annotations")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.annotations-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.ingress.labels")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.labels-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.ingress.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.ingress.namespace")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.namespace-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.ingress.rules")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.rules-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.ingress.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.start_time-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.ingress.type")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.type-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.ingress.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.job.name")
 			assert.True(t, ok)
