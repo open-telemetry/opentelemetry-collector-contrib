@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/trace/timing"
 	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,15 +17,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
-func setupMetricClient() (*metric.ManualReader, statsd.ClientInterface, *metric.MeterProvider) {
+func setupMetricClient() (*metric.ManualReader, statsd.ClientInterface, *metric.MeterProvider, timing.Reporter) {
 	reader := metric.NewManualReader()
 	meterProvider := metric.NewMeterProvider(metric.WithReader(reader))
 	metricClient := InitializeMetricClient(meterProvider)
-	return reader, metricClient, meterProvider
+	timingReporter := timing.New(metricClient)
+	return reader, metricClient, meterProvider, timingReporter
 }
 
 func TestGauge(t *testing.T) {
-	reader, metricClient, _ := setupMetricClient()
+	reader, metricClient, _, _ := setupMetricClient()
 
 	err := metricClient.Gauge("test_gauge", 1, []string{"otlp:true", "service:otelcol"}, 1)
 	assert.NoError(t, err)
@@ -46,7 +48,7 @@ func TestGauge(t *testing.T) {
 }
 
 func TestGaugeMultiple(t *testing.T) {
-	reader, metricClient, _ := setupMetricClient()
+	reader, metricClient, _, _ := setupMetricClient()
 
 	err := metricClient.Gauge("test_gauge", 1, []string{"otlp:true"}, 1)
 	assert.NoError(t, err)
@@ -71,7 +73,7 @@ func TestGaugeMultiple(t *testing.T) {
 }
 
 func TestCount(t *testing.T) {
-	reader, metricClient, _ := setupMetricClient()
+	reader, metricClient, _, _ := setupMetricClient()
 
 	err := metricClient.Count("test_count", 1, []string{"otlp:true", "service:otelcol"}, 1)
 	assert.NoError(t, err)
@@ -131,7 +133,7 @@ func TestCount(t *testing.T) {
 }
 
 func TestHistogram(t *testing.T) {
-	reader, metricClient, _ := setupMetricClient()
+	reader, metricClient, _, _ := setupMetricClient()
 
 	err := metricClient.Histogram("test_histogram", 1, []string{"otlp:true", "service:otelcol"}, 1)
 	assert.NoError(t, err)
@@ -160,7 +162,7 @@ func TestHistogram(t *testing.T) {
 }
 
 func TestTiming(t *testing.T) {
-	reader, metricClient, _ := setupMetricClient()
+	reader, metricClient, _, _ := setupMetricClient()
 
 	err := metricClient.Timing("test_timing", time.Duration(1000000000), []string{"otlp:true", "service:otelcol"}, 1)
 	assert.NoError(t, err)
