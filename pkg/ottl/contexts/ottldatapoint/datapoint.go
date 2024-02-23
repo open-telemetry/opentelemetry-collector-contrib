@@ -201,7 +201,7 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 			case "bucket_counts":
 				return accessPositiveBucketCounts(), nil
 			default:
-				return nil, internal.FormatDefaultErrorMessage(path.String(), contextName, internal.DataPointRef)
+				return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), path.String(), contextName, internal.DataPointRef)
 			}
 		}
 		return accessPositive(), nil
@@ -214,14 +214,14 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 			case "bucket_counts":
 				return accessNegativeBucketCounts(), nil
 			default:
-				return nil, internal.FormatDefaultErrorMessage(path.String(), contextName, internal.DataPointRef)
+				return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), path.String(), contextName, internal.DataPointRef)
 			}
 		}
 		return accessNegative(), nil
 	case "quantile_values":
 		return accessQuantileValues(), nil
 	default:
-		return nil, internal.FormatDefaultErrorMessage(path.String(), contextName, internal.DataPointRef)
+		return nil, internal.FormatDefaultErrorMessage(path.Name(), path.String(), contextName, internal.DataPointRef)
 	}
 }
 

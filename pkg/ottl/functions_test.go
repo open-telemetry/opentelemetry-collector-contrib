@@ -2350,7 +2350,7 @@ func Test_newPath(t *testing.T) {
 	assert.Equal(t, "body.string[key]", p.String())
 	p = p.Next()
 	assert.Equal(t, "string", p.Name())
-	assert.Equal(t, "string[key]", p.String())
+	assert.Equal(t, "body.string[key]", p.String())
 	assert.Nil(t, p.Next())
 	assert.Equal(t, 1, len(p.Keys()))
 	v, err := p.Keys()[0].String(context.Background(), struct{}{})

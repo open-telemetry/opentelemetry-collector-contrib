@@ -153,7 +153,7 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 	case "dropped_attributes_count":
 		return accessSpanEventDroppedAttributeCount(), nil
 	default:
-		return nil, internal.FormatDefaultErrorMessage(path.String(), "Span Event", internal.SpanEventRef)
+		return nil, internal.FormatDefaultErrorMessage(path.Name(), path.String(), "Span Event", internal.SpanEventRef)
 	}
 
 }

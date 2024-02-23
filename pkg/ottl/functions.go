@@ -49,17 +49,18 @@ func newPath[K any](fields []field) (*basePath[K], error) {
 	if len(fields) == 0 {
 		return nil, fmt.Errorf("cannot make a path from zero fields")
 	}
+	originalText := buildOriginalText(fields)
 	var current *basePath[K]
 	for i := len(fields) - 1; i >= 0; i-- {
 		current = &basePath[K]{
 			name:         fields[i].Name,
 			keys:         newKeys[K](fields[i].Keys),
 			nextPath:     current,
-			originalText: buildOriginalText(fields[i:]),
+			originalText: originalText,
 		}
 	}
 	current.fetched = true
-	current.originalText = buildOriginalText(fields)
+	current.originalText = originalText
 	return current, nil
 }
 

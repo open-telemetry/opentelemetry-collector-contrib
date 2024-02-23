@@ -48,7 +48,7 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			if nextPath.Name() == "string" {
 				return accessStringTraceID[K](), nil
 			}
-			return nil, FormatDefaultErrorMessage(path.String(), SpanContextName, SpanRef)
+			return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextName, SpanRef)
 		}
 		return accessTraceID[K](), nil
 	case "span_id":
@@ -57,7 +57,7 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			if nextPath.Name() == "string" {
 				return accessStringSpanID[K](), nil
 			}
-			return nil, FormatDefaultErrorMessage(path.String(), SpanContextName, SpanRef)
+			return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextName, SpanRef)
 		}
 		return accessSpanID[K](), nil
 	case "trace_state":
@@ -72,7 +72,7 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			if nextPath.Name() == "string" {
 				return accessStringParentSpanID[K](), nil
 			}
-			return nil, FormatDefaultErrorMessage(path.String(), SpanContextName, SpanRef)
+			return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextName, SpanRef)
 		}
 		return accessParentSpanID[K](), nil
 	case "name":
@@ -86,7 +86,7 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			case "deprecated_string":
 				return accessDeprecatedStringKind[K](), nil
 			default:
-				return nil, FormatDefaultErrorMessage(path.String(), SpanContextName, SpanRef)
+				return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextName, SpanRef)
 			}
 		}
 		return accessKind[K](), nil
@@ -123,12 +123,12 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			case "message":
 				return accessStatusMessage[K](), nil
 			default:
-				return nil, FormatDefaultErrorMessage(path.String(), SpanContextName, SpanRef)
+				return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextName, SpanRef)
 			}
 		}
 		return accessStatus[K](), nil
 	default:
-		return nil, FormatDefaultErrorMessage(path.String(), SpanContextName, SpanRef)
+		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), SpanContextName, SpanRef)
 	}
 }
 
