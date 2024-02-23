@@ -22,7 +22,7 @@ func TestTraceAgentConfig(t *testing.T) {
 	require.NotZero(t, cfg.ReceiverPort)
 
 	out := make(chan *pb.StatsPayload)
-	_, metricClient, _, timingReporter := setupMetricClient()
+	_, metricClient, timingReporter := setupMetricClient()
 	agnt := NewAgentWithConfig(context.Background(), cfg, out, metricClient, timingReporter)
 	require.Zero(t, cfg.ReceiverPort)
 	require.NotEmpty(t, cfg.Endpoints[0].APIKey)
@@ -38,7 +38,7 @@ func TestTraceAgent(t *testing.T) {
 	cfg.BucketInterval = 50 * time.Millisecond
 	out := make(chan *pb.StatsPayload, 10)
 	ctx := context.Background()
-	_, metricClient, _, timingReporter := setupMetricClient()
+	_, metricClient, timingReporter := setupMetricClient()
 	a := NewAgentWithConfig(ctx, cfg, out, metricClient, timingReporter)
 	a.Start()
 	defer a.Stop()
