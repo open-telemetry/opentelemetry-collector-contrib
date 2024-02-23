@@ -236,7 +236,8 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 		attrs.PutStr("ci.github.workflow.run.name", e.WorkflowRun.Name)
 		attrs.PutStr("ci.github.workflow.run.path", e.WorkflowRun.Path)
 		if e.WorkflowRun.PreviousAttemptURL != "" {
-			attrs.PutStr("ci.github.workflow.run.previous_attempt_url", e.WorkflowRun.PreviousAttemptURL)
+			htmlURL := transformGitHubAPIURL(e.WorkflowRun.PreviousAttemptURL)
+			attrs.PutStr("ci.github.workflow.run.previous_attempt_url", htmlURL)
 		}
 		attrs.PutInt("ci.github.workflow.run.run_attempt", int64(e.WorkflowRun.RunAttempt))
 		attrs.PutStr("ci.github.workflow.run.run_started_at", e.WorkflowRun.RunStartedAt.Format(time.RFC3339))
@@ -458,6 +459,11 @@ func processSteps(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJob, t
 func setSpanTimes(span ptrace.Span, start, end time.Time) {
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(start))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(end))
+}
+
+func transformGitHubAPIURL(apiURL string) string {
+	htmlURL := strings.Replace(apiURL, "api.github.com/repos", "github.com", 1)
+	return htmlURL
 }
 
 func validateSignatureSHA256(secret string, signatureHeader string, body []byte, logger *zap.Logger) bool {
