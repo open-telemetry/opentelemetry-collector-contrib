@@ -47,7 +47,7 @@ func TestFactory(t *testing.T) {
 		{
 			name: "Invalid timeout",
 			config: &Config{
-				TCPAddr: confignet.TCPAddr{
+				TCPAddrConfig: confignet.TCPAddrConfig{
 					Endpoint: ":2181",
 				},
 			},
