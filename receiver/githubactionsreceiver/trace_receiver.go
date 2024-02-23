@@ -194,7 +194,11 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 		attrs.PutStr("ci.github.workflow.job.head_sha", e.WorkflowJob.HeadSha)
 		attrs.PutStr("ci.github.workflow.job.html_url", e.WorkflowJob.HTMLURL)
 		attrs.PutInt("ci.github.workflow.job.id", e.WorkflowJob.ID)
-		attrs.PutStr("ci.github.workflow.job.labels", e.WorkflowJob.Labels[0])
+		if len(e.WorkflowJob.Labels) > 0 {
+			attrs.PutStr("ci.github.workflow.job.labels", e.WorkflowJob.Labels[0])
+		} else {
+			attrs.PutStr("ci.github.workflow.job.labels", "unknown")
+		}
 		attrs.PutStr("ci.github.workflow.job.name", e.WorkflowJob.Name)
 		attrs.PutInt("ci.github.workflow.job.run_attempt", int64(e.WorkflowJob.RunAttempt))
 		attrs.PutInt("ci.github.workflow.job.run_id", e.WorkflowJob.RunID)
