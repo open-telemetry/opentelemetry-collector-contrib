@@ -67,10 +67,9 @@ config:
         http:
           endpoint: 0.0.0.0:4318
   exporters:
-    # Disable debug exporter until we pull change that adds it from upstream
-    debug: null
-    logging:
+    debug:
       verbosity: detailed
+    logging: null
     datadog:
       host_metadata:
         tags: ['env:${env:OTEL_K8S_NAMESPACE}']
