@@ -7,7 +7,7 @@ change_type: enhancement
 component: filelogreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: When reading a file on filelogreceiver, if include_file_owner is true, it will add the file owner as the attribute `log.file.owner` and if include_file_group is true, it will add the file group as the attribute `log.file.group`.
+note: When reading a file on filelogreceiver, if include_file_owner_name is true, it will add the file owner name as the attribute `log.file.owner.name` and if include_file_group_name is true, it will add the file group name as the attribute `log.file.group.name`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [30775]

@@ -17,8 +17,8 @@ const (
 	LogFilePath         = "log.file.path"
 	LogFileNameResolved = "log.file.name_resolved"
 	LogFilePathResolved = "log.file.path_resolved"
-	LogFileOwner        = "log.file.owner"
-	LogFileGroup        = "log.file.group"
+	LogFileOwnerName    = "log.file.owner.name"
+	LogFileGroupName    = "log.file.group.name"
 )
 
 type Resolver struct {
@@ -26,11 +26,36 @@ type Resolver struct {
 	IncludeFilePath         bool `mapstructure:"include_file_path,omitempty"`
 	IncludeFileNameResolved bool `mapstructure:"include_file_name_resolved,omitempty"`
 	IncludeFilePathResolved bool `mapstructure:"include_file_path_resolved,omitempty"`
-	IncludeFileOwner        bool `mapstructure:"include_file_owner,omitempty"`
-	IncludeFileGroup        bool `mapstructure:"include_file_group,omitempty"`
+	IncludeFileOwnerName    bool `mapstructure:"include_file_owner_name,omitempty"`
+	IncludeFileGroupName    bool `mapstructure:"include_file_group_name,omitempty"`
 }
 
-func (r *Resolver) Resolve(path string) (attributes map[string]any, err error) {
+func (r *Resolver) AddFileInfos(file *os.File, attributes map[string]any) (err error) {
+	var fileInfo, errStat = file.Stat()
+	if errStat != nil {
+		return fmt.Errorf("resolve file stat: %w", err)
+	}
+	var fileStat = fileInfo.Sys().(*syscall.Stat_t)
+
+	if r.IncludeFileOwnerName {
+		var fileOwner, errFileUser = user.LookupId(fmt.Sprint(fileStat.Uid))
+		if errFileUser != nil {
+			return fmt.Errorf("resolve file owner name: %w", errFileUser)
+		}
+		attributes[LogFileOwnerName] = fileOwner.Username
+	}
+	if r.IncludeFileGroupName {
+		var fileGroup, errFileGroup = user.LookupGroupId(fmt.Sprint(fileStat.Gid))
+		if errFileGroup != nil {
+			return fmt.Errorf("resolve file group name: %w", errFileGroup)
+		}
+		attributes[LogFileGroupName] = fileGroup.Name
+	}
+	return nil
+}
+
+func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error) {
+	var path = file.Name()
 	// size 2 is sufficient if not resolving symlinks. This optimizes for the most performant cases.
 	attributes = make(map[string]any, 2)
 	if r.IncludeFileName {
@@ -39,26 +64,10 @@ func (r *Resolver) Resolve(path string) (attributes map[string]any, err error) {
 	if r.IncludeFilePath {
 		attributes[LogFilePath] = path
 	}
-	if r.IncludeFileOwner || r.IncludeFileGroup {
-		var file, fileErr = os.OpenFile(fmt.Sprint(path), os.O_RDONLY, 0000)
-		if fileErr == nil {
-			var fileInfo, errStat = file.Stat()
-			if errStat == nil {
-				var fileStat = fileInfo.Sys().(*syscall.Stat_t)
-				if r.IncludeFileOwner {
-					var fileOwner, errFileUser = user.LookupId(fmt.Sprint(fileStat.Uid))
-					if errFileUser == nil {
-						attributes[LogFileOwner] = fileOwner.Username
-					}
-				}
-				if r.IncludeFileGroup {
-					var fileGroup, errFileGroup = user.LookupGroupId(fmt.Sprint(fileStat.Gid))
-					if errFileGroup == nil {
-						attributes[LogFileGroup] = fileGroup.Name
-					}
-				}
-			}
-			defer file.Close()
+	if r.IncludeFileOwnerName || r.IncludeFileGroupName {
+		err = r.AddFileInfos(file, attributes)
+		if err != nil {
+			return nil, err
 		}
 	}
 	if !r.IncludeFileNameResolved && !r.IncludeFilePathResolved {

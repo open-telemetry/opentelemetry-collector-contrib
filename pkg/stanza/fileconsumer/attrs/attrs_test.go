@@ -27,8 +27,8 @@ func TestResolver(t *testing.T) {
 			IncludeFilePath:         bitString[1] == '1',
 			IncludeFileNameResolved: bitString[2] == '1',
 			IncludeFilePathResolved: bitString[3] == '1',
-			IncludeFileOwner:        bitString[4] == '1',
-			IncludeFileGroup:        bitString[5] == '1',
+			IncludeFileOwnerName:    bitString[4] == '1',
+			IncludeFileGroupName:    bitString[5] == '1',
 		}
 
 		t.Run(bitString, func(t *testing.T) {
@@ -36,7 +36,7 @@ func TestResolver(t *testing.T) {
 			tempDir := t.TempDir()
 			temp := filetest.OpenTemp(t, tempDir)
 
-			attributes, err := r.Resolve(temp.Name())
+			attributes, err := r.Resolve(temp)
 			assert.NoError(t, err)
 
 			var expectLen int
@@ -69,21 +69,21 @@ func TestResolver(t *testing.T) {
 			} else {
 				assert.Empty(t, attributes[LogFilePathResolved])
 			}
-			if r.IncludeFileOwner {
+			if r.IncludeFileOwnerName {
 				expectLen++
-				assert.NotNil(t, attributes[LogFileOwner])
-				assert.IsType(t, "", attributes[LogFileOwner])
+				assert.NotNil(t, attributes[LogFileOwnerName])
+				assert.IsType(t, "", attributes[LogFileOwnerName])
 			} else {
-				assert.Empty(t, attributes[LogFileOwner])
-				assert.Empty(t, attributes[LogFileOwner])
+				assert.Empty(t, attributes[LogFileOwnerName])
+				assert.Empty(t, attributes[LogFileOwnerName])
 			}
-			if r.IncludeFileGroup {
+			if r.IncludeFileGroupName {
 				expectLen++
-				assert.NotNil(t, attributes[LogFileGroup])
-				assert.IsType(t, "", attributes[LogFileGroup])
+				assert.NotNil(t, attributes[LogFileGroupName])
+				assert.IsType(t, "", attributes[LogFileGroupName])
 			} else {
-				assert.Empty(t, attributes[LogFileGroup])
-				assert.Empty(t, attributes[LogFileGroup])
+				assert.Empty(t, attributes[LogFileGroupName])
+				assert.Empty(t, attributes[LogFileGroupName])
 			}
 			assert.Equal(t, expectLen, len(attributes))
 		})
