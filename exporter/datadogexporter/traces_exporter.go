@@ -15,6 +15,7 @@ import (
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/consumer"
@@ -181,12 +182,12 @@ func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[stri
 	}
 }
 
-func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
+func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider, metricsClient statsd.ClientInterface) (*agent.Agent, error) {
 	acfg, err := newTraceAgentConfig(ctx, params, cfg, sourceProvider)
 	if err != nil {
 		return nil, err
 	}
-	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector()), nil
+	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector(), metricsClient), nil
 }
 
 func newTraceAgentConfig(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*traceconfig.AgentConfig, error) {

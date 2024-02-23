@@ -7,6 +7,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/trace v0.52.0-rc.2
 	github.com/DataDog/datadog-api-client-go/v2 v2.22.0
+	github.com/DataDog/datadog-go/v5 v5.1.1
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.3
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.3
@@ -75,7 +76,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/log v0.52.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.52.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.52.0-rc.2 // indirect
-	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-sqllexer v0.0.9 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
