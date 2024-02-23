@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -195,6 +196,7 @@ func createResourceAttributes(resource pcommon.Resource, event interface{}, conf
 		attrs.PutStr("ci.github.workflow.job.html_url", e.WorkflowJob.HTMLURL)
 		attrs.PutInt("ci.github.workflow.job.id", e.WorkflowJob.ID)
 		if len(e.WorkflowJob.Labels) > 0 {
+			sort.Strings(e.WorkflowJob.Labels)
 			joinedLabels := strings.Join(e.WorkflowJob.Labels, ",")
 			attrs.PutStr("ci.github.workflow.job.labels", joinedLabels)
 		} else {
