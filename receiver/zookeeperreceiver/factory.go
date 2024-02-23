@@ -38,7 +38,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ScraperControllerSettings: cfg,
-		TCPAddr: confignet.TCPAddr{
+		TCPAddrConfig: confignet.TCPAddrConfig{
 			Endpoint: localhostgate.EndpointForPort(defaultPort),
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),

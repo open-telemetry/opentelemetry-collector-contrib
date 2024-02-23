@@ -19,7 +19,7 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	// TODO: Use one of the configs from core.
 	// The target endpoint.
-	confignet.NetAddr `mapstructure:",squash"`
+	confignet.AddrConfig `mapstructure:",squash"`
 
 	// TODO allow users to add additional resource key value pairs?
 
