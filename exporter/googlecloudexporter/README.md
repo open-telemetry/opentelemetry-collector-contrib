@@ -57,7 +57,7 @@ When running the Collector in a Docker container, a credentials file can be pass
 ```
 docker run \
   --volume ~/service-account-key.json:/etc/otel/key.json \
-  --volume $(pwd)/config.yaml:/etc/otel/config.yaml \
+  --volume $(pwd)/config.yaml:/etc/otelcol-contrib/config.yaml \
   --env GOOGLE_APPLICATION_CREDENTIALS=/etc/otel/key.json \
   --expose 4317 \
   --expose 55681 \
