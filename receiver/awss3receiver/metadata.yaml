@@ -1,0 +1,10 @@
+type: awss3
+
+status:
+  class: receiver
+  stability:
+    development: [traces]
+  distributions: [contrib]
+  codeowners:
+    active: [adcharre]
+
