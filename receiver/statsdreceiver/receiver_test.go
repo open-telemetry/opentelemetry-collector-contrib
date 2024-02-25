@@ -37,7 +37,7 @@ func Test_statsdreceiver_Start(t *testing.T) {
 			name: "unsupported transport",
 			args: args{
 				config: Config{
-					NetAddr: confignet.NetAddr{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "localhost:8125",
 						Transport: "unknown",
 					},
@@ -94,7 +94,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			addr: testutil.GetAvailableLocalNetworkAddress(t, "udp"),
 			configFn: func() *Config {
 				return &Config{
-					NetAddr: confignet.NetAddr{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  defaultBindEndpoint,
 						Transport: defaultTransport,
 					},
