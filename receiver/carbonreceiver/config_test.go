@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "receiver_settings"),
 			expected: &Config{
-				NetAddr: confignet.NetAddr{
+				AddrConfig: confignet.AddrConfig{
 					Endpoint:  "localhost:8080",
 					Transport: "udp",
 				},
@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "regex"),
 			expected: &Config{
-				NetAddr: confignet.NetAddr{
+				AddrConfig: confignet.AddrConfig{
 					Endpoint:  "localhost:2003",
 					Transport: "tcp",
 				},
@@ -95,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestConfigValidate(t *testing.T) {
 	cfg := &Config{
-		NetAddr: confignet.NetAddr{
+		AddrConfig: confignet.AddrConfig{
 			Endpoint:  "localhost:2003",
 			Transport: "tcp",
 		},

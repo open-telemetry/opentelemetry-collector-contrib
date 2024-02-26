@@ -82,6 +82,7 @@ exporter/syslogexporter/                                 @open-telemetry/collect
 exporter/tencentcloudlogserviceexporter/                 @open-telemetry/collector-contrib-approvers @wgliang @yiyang5055
 exporter/zipkinexporter/                                 @open-telemetry/collector-contrib-approvers @MovieStoreGuy @astencel-sumo @crobert-1
 
+extension/ackextension/                                  @open-telemetry/collector-contrib-approvers @zpzhuSplunk @splunkericl @atoulme
 extension/asapauthextension/                             @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 extension/awsproxy/                                      @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 extension/basicauthextension/                            @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
