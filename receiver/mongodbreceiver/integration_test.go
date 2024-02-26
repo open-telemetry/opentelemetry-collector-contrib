@@ -11,12 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -25,10 +23,6 @@ import (
 const mongoPort = "27017"
 
 func TestIntegration(t *testing.T) {
-	// Simulate enable removeDatabaseAttrFeatureGate
-	err := featuregate.GlobalRegistry().Set(removeDatabaseAttrID, true)
-	require.NoError(t, err)
-
 	t.Run("4.0", integrationTest("4_0", []string{"/setup.sh"}, func(*Config) {}))
 	t.Run("5.0", integrationTest("5_0", []string{"/setup.sh"}, func(*Config) {}))
 	t.Run("4.4lpu", integrationTest("4_4lpu", []string{"/lpu.sh"}, func(cfg *Config) {
@@ -62,7 +56,7 @@ func integrationTest(name string, script []string, cfgMod func(*Config)) func(*t
 				cfgMod(rCfg)
 				rCfg.CollectionInterval = 2 * time.Second
 				rCfg.MetricsBuilderConfig.Metrics.MongodbLockAcquireTime.Enabled = false
-				rCfg.Hosts = []confignet.NetAddr{
+				rCfg.Hosts = []confignet.AddrConfig{
 					{
 						Endpoint: fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, mongoPort)),
 					},

@@ -16,6 +16,7 @@ import (
 
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
@@ -48,7 +49,7 @@ func TestNewExporter(t *testing.T) {
 			Key: "ddog_32_characters_long_api_key1",
 		},
 		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: server.URL,
 			},
 			DeltaTTL: 3600,
@@ -297,23 +298,24 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			defer server.Close()
 
 			var (
-				once          sync.Once
-				statsRecorder testutil.MockStatsProcessor
+				once sync.Once
 			)
-
+			statsToAgent := make(chan *pb.StatsPayload, 1000) // Buffer the channel to allow test to pass without go-routines
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
 			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
+			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
 				exportertest.NewNopCreateSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
+				acfg,
 				&once,
 				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
-				&statsRecorder,
+				statsToAgent,
 				reporter,
 				nil,
 			)
@@ -357,10 +359,18 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, expected, sketchRecorder.ByteBody)
 			}
-			if tt.expectedStats == nil {
-				assert.Len(t, statsRecorder.In, 0)
-			} else {
-				assert.ElementsMatch(t, statsRecorder.In, tt.expectedStats)
+			if tt.expectedStats != nil {
+				var actualStats []*pb.ClientStatsPayload
+			pullStats:
+				for len(actualStats) < len(tt.expectedStats) {
+					select {
+					case <-time.After(10 * time.Second):
+						break pullStats
+					case sp := <-statsToAgent:
+						actualStats = append(actualStats, sp.Stats...)
+					}
+				}
+				assert.ElementsMatch(t, actualStats, tt.expectedStats)
 			}
 		})
 	}
@@ -379,7 +389,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 			Key: "ddog_32_characters_long_api_key1",
 		},
 		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: server.URL,
 			},
 			DeltaTTL: 3600,
@@ -690,22 +700,24 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			defer server.Close()
 
 			var (
-				once          sync.Once
-				statsRecorder testutil.MockStatsProcessor
+				once sync.Once
 			)
+			statsToAgent := make(chan *pb.StatsPayload, 1000)
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
 			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
+			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
 				exportertest.NewNopCreateSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
+				acfg,
 				&once,
 				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
-				&statsRecorder,
+				statsToAgent,
 				reporter,
 				nil,
 			)
@@ -744,10 +756,18 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, expected, sketchRecorder.ByteBody)
 			}
-			if tt.expectedStats == nil {
-				assert.Len(t, statsRecorder.In, 0)
-			} else {
-				assert.ElementsMatch(t, statsRecorder.In, tt.expectedStats)
+			if tt.expectedStats != nil {
+				var actualStats []*pb.ClientStatsPayload
+			pullStats:
+				for len(actualStats) < len(tt.expectedStats) {
+					select {
+					case <-time.After(10 * time.Second):
+						break pullStats
+					case sp := <-statsToAgent:
+						actualStats = append(actualStats, sp.Stats...)
+					}
+				}
+				assert.ElementsMatch(t, actualStats, tt.expectedStats)
 			}
 		})
 	}
@@ -839,7 +859,7 @@ func newTestConfig(t *testing.T, endpoint string, hostTags []string, histogramMo
 			Tags: hostTags,
 		},
 		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: endpoint,
 			},
 			HistConfig: HistogramConfig{

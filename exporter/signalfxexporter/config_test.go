@@ -104,6 +104,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				NonAlphanumericDimensionChars: "_-.",
+				SendOTLPHistograms:            false,
 			},
 		},
 		{
@@ -263,6 +264,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				NonAlphanumericDimensionChars: "_-.",
+				SendOTLPHistograms:            true,
 			},
 		},
 	}
