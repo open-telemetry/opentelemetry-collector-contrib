@@ -24,6 +24,7 @@ components:
         - signalfx
         - splunk_hec
     extension:
+        - ack
         - basicauth
         - docker_observer
         - ecs_observer
