@@ -33,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
 				ServerConfig: configgrpc.ServerConfig{
-					NetAddr: confignet.NetAddr{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:9090",
 						Transport: "tcp",
 					},
@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "keepalive"),
 			expected: &Config{
 				ServerConfig: configgrpc.ServerConfig{
-					NetAddr: confignet.NetAddr{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
 						Transport: "tcp",
 					},
@@ -70,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "msg-size-conc-connect-max-idle"),
 			expected: &Config{
 				ServerConfig: configgrpc.ServerConfig{
-					NetAddr: confignet.NetAddr{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
 						Transport: "tcp",
 					},
@@ -90,7 +90,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "tlscredentials"),
 			expected: &Config{
 				ServerConfig: configgrpc.ServerConfig{
-					NetAddr: confignet.NetAddr{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
 						Transport: "tcp",
 					},
@@ -108,7 +108,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "cors"),
 			expected: &Config{
 				ServerConfig: configgrpc.ServerConfig{
-					NetAddr: confignet.NetAddr{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
 						Transport: "tcp",
 					},
@@ -121,7 +121,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "uds"),
 			expected: &Config{
 				ServerConfig: configgrpc.ServerConfig{
-					NetAddr: confignet.NetAddr{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "/tmp/opencensus.sock",
 						Transport: "unix",
 					},

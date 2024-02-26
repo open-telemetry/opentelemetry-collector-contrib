@@ -34,7 +34,7 @@ func createDefaultConfig() component.Config {
 	scs := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
 	scs.CollectionInterval = 10 * time.Second
 	return &Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddrConfig: confignet.TCPAddrConfig{
 			Endpoint: defaultEndpoint,
 		},
 		TLSClientSetting: configtls.TLSClientSetting{
