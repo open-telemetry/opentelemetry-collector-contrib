@@ -29,7 +29,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Timeout:                   time.Minute,
-		Hosts: []confignet.NetAddr{
+		Hosts: []confignet.AddrConfig{
 			{
 				Endpoint: "localhost:27017",
 			},
@@ -48,7 +48,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 	ms := newMongodbScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type, ms.scrape,
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ms.scrape,
 		scraperhelper.WithStart(ms.start),
 		scraperhelper.WithShutdown(ms.shutdown))
 	if err != nil {

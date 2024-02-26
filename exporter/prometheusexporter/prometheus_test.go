@@ -39,7 +39,7 @@ func TestPrometheusExporter(t *testing.T) {
 					"foo0":  "bar0",
 					"code0": "one0",
 				},
-				HTTPServerConfig: confighttp.HTTPServerConfig{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:8999",
 				},
 				SendTimestamps:   false,
@@ -48,7 +48,7 @@ func TestPrometheusExporter(t *testing.T) {
 		},
 		{
 			config: &Config{
-				HTTPServerConfig: confighttp.HTTPServerConfig{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:88999",
 				},
 			},
@@ -96,7 +96,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 			"foo2":  "bar2",
 			"code2": "one2",
 		},
-		HTTPServerConfig: confighttp.HTTPServerConfig{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:7777",
 			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
@@ -184,7 +184,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 			"foo1":  "bar1",
 			"code1": "one1",
 		},
-		HTTPServerConfig: confighttp.HTTPServerConfig{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:7777",
 		},
 		MetricExpiration: 120 * time.Minute,
@@ -268,7 +268,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 			"foo1":  "bar1",
 			"code1": "one1",
 		},
-		HTTPServerConfig: confighttp.HTTPServerConfig{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:7777",
 		},
 		MetricExpiration: 120 * time.Minute,
@@ -346,7 +346,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 			"foo2":  "bar2",
 			"code2": "one2",
 		},
-		HTTPServerConfig: confighttp.HTTPServerConfig{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:7777",
 		},
 		SendTimestamps:   true,
@@ -425,7 +425,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 			"foo2":  "bar2",
 			"code2": "one2",
 		},
-		HTTPServerConfig: confighttp.HTTPServerConfig{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:7777",
 		},
 		SendTimestamps:   true,

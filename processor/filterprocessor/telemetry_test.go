@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
@@ -20,8 +20,8 @@ import (
 )
 
 type testTelemetry struct {
-	reader        *sdkmetric.ManualReader
-	meterProvider *sdkmetric.MeterProvider
+	reader        *metric.ManualReader
+	meterProvider *metric.MeterProvider
 }
 
 type expectedMetrics struct {
@@ -40,10 +40,10 @@ func telemetryTest(t *testing.T, name string, testFunc func(t *testing.T, tel te
 }
 
 func setupTelemetry() testTelemetry {
-	reader := sdkmetric.NewManualReader()
+	reader := metric.NewManualReader()
 	return testTelemetry{
 		reader:        reader,
-		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
+		meterProvider: metric.NewMeterProvider(metric.WithReader(reader)),
 	}
 }
 

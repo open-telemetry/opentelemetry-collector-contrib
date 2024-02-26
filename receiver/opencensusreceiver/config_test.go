@@ -32,8 +32,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:9090",
 						Transport: "tcp",
 					},
@@ -44,8 +44,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "keepalive"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
 						Transport: "tcp",
 					},
@@ -69,8 +69,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "msg-size-conc-connect-max-idle"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
 						Transport: "tcp",
 					},
@@ -89,8 +89,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "tlscredentials"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
 						Transport: "tcp",
 					},
@@ -107,8 +107,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "cors"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
 						Transport: "tcp",
 					},
@@ -120,8 +120,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "uds"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "/tmp/opencensus.sock",
 						Transport: "unix",
 					},

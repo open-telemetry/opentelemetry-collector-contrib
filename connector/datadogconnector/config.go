@@ -55,6 +55,11 @@ type TracesConfig struct {
 	// The default list of peer tags can be found in https://github.com/DataDog/datadog-agent/blob/main/pkg/trace/stats/concentrator.go.
 	PeerTagsAggregation bool `mapstructure:"peer_tags_aggregation"`
 
+	// [BETA] Optional list of supplementary peer tags that go beyond the defaults. The Datadog backend validates all tags
+	// and will drop ones that are unapproved. The default set of peer tags can be found at
+	// https://github.com/DataDog/datadog-agent/blob/505170c4ac8c3cbff1a61cf5f84b28d835c91058/pkg/trace/stats/concentrator.go#L55.
+	PeerTags []string `mapstructure:"peer_tags"`
+
 	// TraceBuffer specifies the number of Datadog Agent TracerPayloads to buffer before dropping.
 	// The default value is 1000.
 	TraceBuffer int `mapstructure:"trace_buffer"`

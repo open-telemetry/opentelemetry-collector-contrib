@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "override-config"),
 			expected: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost:8080",
 					Timeout:  500 * time.Millisecond,
 					Headers:  map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Influx"},

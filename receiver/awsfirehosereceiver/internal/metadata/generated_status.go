@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("awsfirehose")
+)
+
 const (
-	Type             = "awsfirehose"
 	MetricsStability = component.StabilityLevelAlpha
 )
 

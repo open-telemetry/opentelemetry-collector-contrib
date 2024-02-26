@@ -17,10 +17,18 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/utils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+)
+
+const (
+	contentEncodingHeader   = "Content-Encoding"
+	contentTypeHeader       = "Content-Type"
+	otlpProtobufContentType = "application/x-protobuf;format=otlp"
 )
 
 type sfxClientBase struct {
@@ -58,6 +66,7 @@ type sfxDPClient struct {
 	logger                 *zap.Logger
 	accessTokenPassthrough bool
 	converter              *translation.MetricsConverter
+	sendOTLPHistograms     bool
 }
 
 func (s *sfxDPClient) pushMetricsData(
@@ -81,48 +90,55 @@ func (s *sfxDPClient) pushMetricsData(
 	// All metrics in the pmetric.Metrics will have the same access token because of the BatchPerResourceMetrics.
 	metricToken := s.retrieveAccessToken(rms.At(0))
 
+	// export SFx format
 	sfxDataPoints := s.converter.MetricsToSignalFxV2(md)
-	if s.logDataPoints {
-		for _, dp := range sfxDataPoints {
-			s.logger.Debug("Dispatching SFx datapoint", zap.Stringer("dp", dp))
+	if len(sfxDataPoints) > 0 {
+		droppedCount, err := s.pushMetricsDataForToken(ctx, sfxDataPoints, metricToken)
+		if err != nil {
+			return droppedCount, err
 		}
 	}
-	return s.pushMetricsDataForToken(ctx, sfxDataPoints, metricToken)
-}
 
-func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context, sfxDataPoints []*sfxpb.DataPoint, accessToken string) (int, error) {
-	body, compressed, err := s.encodeBody(sfxDataPoints)
-	if err != nil {
-		return len(sfxDataPoints), consumererror.NewPermanent(err)
+	// export any histograms in otlp if sendOTLPHistograms is true
+	if s.sendOTLPHistograms {
+		histogramData, metricCount := utils.GetHistograms(md)
+		if metricCount > 0 {
+			droppedCount, err := s.pushOTLPMetricsDataForToken(ctx, histogramData, metricToken)
+			if err != nil {
+				return droppedCount, err
+			}
+		}
 	}
 
+	return 0, nil
+
+}
+
+func (s *sfxDPClient) postData(ctx context.Context, body io.Reader, headers map[string]string) error {
 	datapointURL := *s.ingestURL
 	if !strings.HasSuffix(datapointURL.Path, "v2/datapoint") {
 		datapointURL.Path = path.Join(datapointURL.Path, "v2/datapoint")
 	}
 	req, err := http.NewRequestWithContext(ctx, "POST", datapointURL.String(), body)
 	if err != nil {
-		return len(sfxDataPoints), consumererror.NewPermanent(err)
+		return consumererror.NewPermanent(err)
 	}
 
+	// Set the headers configured in sfxDPClient
 	for k, v := range s.headers {
 		req.Header.Set(k, v)
 	}
 
-	// Override access token in headers map if it's non empty.
-	if accessToken != "" {
-		req.Header.Set(splunk.SFxAccessTokenHeader, accessToken)
-	}
-
-	if compressed {
-		req.Header.Set("Content-Encoding", "gzip")
+	// Set any extra headers passed by the caller
+	for k, v := range headers {
+		req.Header.Set(k, v)
 	}
 
 	// TODO: Mark errors as partial errors wherever applicable when, partial
 	// error for metrics is available.
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return len(sfxDataPoints), err
+		return err
 	}
 
 	defer func() {
@@ -132,7 +148,39 @@ func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context, sfxDataPoints
 
 	err = splunk.HandleHTTPCode(resp)
 	if err != nil {
-		return len(sfxDataPoints), err
+		return err
+	}
+	return nil
+}
+
+func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context, sfxDataPoints []*sfxpb.DataPoint, accessToken string) (int, error) {
+
+	if s.logDataPoints {
+		for _, dp := range sfxDataPoints {
+			s.logger.Debug("Dispatching SFx datapoint", zap.Stringer("dp", dp))
+		}
+	}
+
+	body, compressed, err := s.encodeBody(sfxDataPoints)
+	dataPointCount := len(sfxDataPoints)
+	if err != nil {
+		return dataPointCount, consumererror.NewPermanent(err)
+	}
+
+	headers := make(map[string]string)
+
+	// Override access token in headers map if it's non empty.
+	if accessToken != "" {
+		headers[splunk.SFxAccessTokenHeader] = accessToken
+	}
+
+	if compressed {
+		headers[contentEncodingHeader] = "gzip"
+	}
+
+	err = s.postData(ctx, body, headers)
+	if err != nil {
+		return dataPointCount, err
 	}
 	return 0, nil
 }
@@ -159,4 +207,62 @@ func (s *sfxDPClient) retrieveAccessToken(md pmetric.ResourceMetrics) string {
 		return accessToken.Str()
 	}
 	return ""
+}
+
+func (s *sfxDPClient) pushOTLPMetricsDataForToken(ctx context.Context, mh pmetric.Metrics, accessToken string) (int, error) {
+
+	dataPointCount := mh.DataPointCount()
+	if s.logDataPoints {
+		s.logger.Debug("Count of metrics to send in OTLP format",
+			zap.Int("resource metrics", mh.ResourceMetrics().Len()),
+			zap.Int("metrics", mh.MetricCount()),
+			zap.Int("data points", dataPointCount))
+		buf, err := metricsMarshaler.MarshalMetrics(mh)
+		if err != nil {
+			s.logger.Error("Failed to marshal metrics for logging otlp histograms", zap.Error(err))
+		} else {
+			s.logger.Debug("Dispatching OTLP metrics", zap.String("pmetrics", string(buf)))
+		}
+	}
+
+	body, compressed, err := s.encodeOTLPBody(mh)
+	if err != nil {
+		return dataPointCount, consumererror.NewPermanent(err)
+	}
+
+	headers := make(map[string]string)
+
+	// Set otlp content-type header
+	headers[contentTypeHeader] = otlpProtobufContentType
+
+	// Override access token in headers map if it's non-empty.
+	if accessToken != "" {
+		headers[splunk.SFxAccessTokenHeader] = accessToken
+	}
+
+	if compressed {
+		headers[contentEncodingHeader] = "gzip"
+	}
+
+	s.logger.Debug("Sending metrics in OTLP format")
+
+	err = s.postData(ctx, body, headers)
+
+	if err != nil {
+		return dataPointCount, consumererror.NewMetrics(err, mh)
+	}
+
+	return 0, nil
+}
+
+func (s *sfxDPClient) encodeOTLPBody(md pmetric.Metrics) (bodyReader io.Reader, compressed bool, err error) {
+
+	tr := pmetricotlp.NewExportRequestFromMetrics(md)
+
+	body, err := tr.MarshalProto()
+
+	if err != nil {
+		return nil, false, err
+	}
+	return s.getReader(body)
 }

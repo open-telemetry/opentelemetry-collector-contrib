@@ -39,7 +39,7 @@ func newMetricsReceiver(
 		return nil, err
 	}
 	scraper, err := scraperhelper.NewScraper(
-		metadata.Type,
+		metadata.Type.String(),
 		newScraper(ctx, chronyc, cfg, set).scrape,
 	)
 	if err != nil {

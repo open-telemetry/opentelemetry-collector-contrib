@@ -28,7 +28,7 @@ func TestScrape(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Username = "otel"
 		cfg.Password = "otel"
-		cfg.NetAddr = confignet.NetAddr{Endpoint: "localhost:3306"}
+		cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 		cfg.MetricsBuilderConfig.Metrics.MysqlStatementEventCount.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlStatementEventWaitTime.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlConnectionErrors.Enabled = true
@@ -81,7 +81,7 @@ func TestScrape(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Username = "otel"
 		cfg.Password = "otel"
-		cfg.NetAddr = confignet.NetAddr{Endpoint: "localhost:3306"}
+		cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaSQLDelay.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlReplicaTimeBehindSource.Enabled = true
 
@@ -349,7 +349,7 @@ func (c *mockClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 		s.lastIOError = text[35]
 		s.lastSQLErrno, _ = parseInt(text[36])
 		s.lastSQLError = text[37]
-		s.replicateIgnoreServerIds = text[38]
+		s.replicateIgnoreServerIDs = text[38]
 		s.sourceServerID, _ = parseInt(text[39])
 		s.sourceUUID = text[40]
 		s.sourceInfoFile = text[41]

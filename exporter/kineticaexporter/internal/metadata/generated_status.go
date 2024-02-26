@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("kinetica")
+)
+
 const (
-	Type             = "kinetica"
 	MetricsStability = component.StabilityLevelDevelopment
 	TracesStability  = component.StabilityLevelDevelopment
 	LogsStability    = component.StabilityLevelDevelopment

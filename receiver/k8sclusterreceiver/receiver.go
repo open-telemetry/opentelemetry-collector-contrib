@@ -110,7 +110,7 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 
 	numPoints := mds.DataPointCount()
 	err := kr.metricsConsumer.ConsumeMetrics(c, mds)
-	kr.obsrecv.EndMetricsOp(c, metadata.Type, numPoints, err)
+	kr.obsrecv.EndMetricsOp(c, metadata.Type.String(), numPoints, err)
 }
 
 // newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.

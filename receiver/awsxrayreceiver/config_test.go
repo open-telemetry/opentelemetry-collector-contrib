@@ -35,12 +35,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "udp_endpoint"),
 			expected: &Config{
-				NetAddr: confignet.NetAddr{
+				AddrConfig: confignet.AddrConfig{
 					Endpoint:  "0.0.0.0:5678",
 					Transport: "udp",
 				},
 				ProxyServer: &proxy.Config{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "0.0.0.0:2000",
 					},
 					ProxyAddress: "",
@@ -57,12 +57,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "proxy_server"),
 			expected: &Config{
-				NetAddr: confignet.NetAddr{
+				AddrConfig: confignet.AddrConfig{
 					Endpoint:  "0.0.0.0:2000",
 					Transport: "udp",
 				},
 				ProxyServer: &proxy.Config{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "0.0.0.0:1234",
 					},
 					ProxyAddress: "https://proxy.proxy.com",
