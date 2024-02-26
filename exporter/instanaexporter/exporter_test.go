@@ -27,9 +27,9 @@ func TestPushConvertedTraces(t *testing.T) {
 	defer traceServer.Close()
 
 	cfg := Config{
-		AgentKey:         "key11",
-		HTTPClientConfig: confighttp.HTTPClientConfig{Endpoint: traceServer.URL},
-		Endpoint:         traceServer.URL,
+		AgentKey:     "key11",
+		ClientConfig: confighttp.ClientConfig{Endpoint: traceServer.URL},
+		Endpoint:     traceServer.URL,
 	}
 
 	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopCreateSettings())
@@ -82,7 +82,7 @@ func TestSelfSignedBackend(t *testing.T) {
 
 	cfg := Config{
 		AgentKey: "key11",
-		HTTPClientConfig: confighttp.HTTPClientConfig{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: server.URL,
 			TLSSetting: configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{
@@ -108,7 +108,7 @@ func TestSelfSignedBackend(t *testing.T) {
 func TestSelfSignedBackendCAFileNotFound(t *testing.T) {
 	cfg := Config{
 		AgentKey: "key11",
-		HTTPClientConfig: confighttp.HTTPClientConfig{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
 			TLSSetting: configtls.TLSClientSetting{
 				TLSSetting: configtls.TLSSetting{

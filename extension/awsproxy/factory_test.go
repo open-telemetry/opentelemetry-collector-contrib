@@ -27,8 +27,8 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
 		ProxyConfig: proxy.Config{
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: defaultEndpoint,
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: "0.0.0.0:2000",
 			},
 		},
 	}, cfg)
@@ -53,7 +53,7 @@ func TestFactory_CreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	address := testutil.GetAvailableLocalAddress(t)
 	cfg.ProxyConfig.AWSEndpoint = backend.URL
-	cfg.ProxyConfig.TCPAddr.Endpoint = address
+	cfg.ProxyConfig.TCPAddrConfig.Endpoint = address
 	cfg.ProxyConfig.Region = "us-east-2"
 
 	// Simplest way to get SDK to use fake credentials
@@ -61,12 +61,15 @@ func TestFactory_CreateExtension(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
 
 	ctx := context.Background()
-	ext, err := createExtension(ctx, extensiontest.NewNopCreateSettings(), cfg)
+	cs := extensiontest.NewNopCreateSettings()
+	cs.ReportStatus = func(event *component.StatusEvent) {
+		assert.NoError(t, event.Err())
+	}
+	ext, err := createExtension(ctx, cs, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
 
-	mh := newAssertNoErrorHost(t)
-	err = ext.Start(ctx, mh)
+	err = ext.Start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	var resp *http.Response
@@ -85,22 +88,4 @@ func TestFactory_CreateExtension(t *testing.T) {
 
 	err = ext.Shutdown(ctx)
 	assert.NoError(t, err)
-}
-
-// assertNoErrorHost implements a component.Host that asserts that there were no errors.
-type assertNoErrorHost struct {
-	component.Host
-	*testing.T
-}
-
-// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
-func newAssertNoErrorHost(t *testing.T) component.Host {
-	return &assertNoErrorHost{
-		Host: componenttest.NewNopHost(),
-		T:    t,
-	}
-}
-
-func (aneh *assertNoErrorHost) ReportFatalError(err error) {
-	assert.NoError(aneh, err)
 }

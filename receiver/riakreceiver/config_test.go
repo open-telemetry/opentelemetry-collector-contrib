@@ -24,7 +24,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing username, password, and invalid endpoint",
 			cfg: &Config{
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "invalid://endpoint:  12efg",
 				},
 				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
@@ -39,7 +39,7 @@ func TestValidate(t *testing.T) {
 			desc: "missing password and invalid endpoint",
 			cfg: &Config{
 				Username: "otelu",
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "invalid://endpoint:  12efg",
 				},
 				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
@@ -53,7 +53,7 @@ func TestValidate(t *testing.T) {
 			desc: "missing username and invalid endpoint",
 			cfg: &Config{
 				Password: "otelp",
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "invalid://endpoint:  12efg",
 				},
 				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
@@ -68,7 +68,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Username: "otelu",
 				Password: "otelp",
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "invalid://endpoint:  12efg",
 				},
 				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
@@ -82,7 +82,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Username: "otelu",
 				Password: "otelp",
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
 				},
 				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),

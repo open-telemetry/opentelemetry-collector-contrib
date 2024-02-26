@@ -19,7 +19,7 @@ import (
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
-		TCPAddr: confignet.TCPAddr{Endpoint: defaultEndpoint},
+		TCPAddr: confignet.TCPAddrConfig{Endpoint: defaultEndpoint},
 	},
 		cfg)
 

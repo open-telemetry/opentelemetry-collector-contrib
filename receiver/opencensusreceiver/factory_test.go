@@ -40,11 +40,11 @@ func TestCreateReceiver(t *testing.T) {
 }
 
 func TestCreateTracesReceiver(t *testing.T) {
-	defaultNetAddr := confignet.NetAddr{
+	defaultNetAddr := confignet.AddrConfig{
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
 		Transport: "tcp",
 	}
-	defaultGRPCSettings := configgrpc.GRPCServerSettings{
+	defaultGRPCSettings := configgrpc.ServerConfig{
 		NetAddr: defaultNetAddr,
 	}
 	tests := []struct {
@@ -55,14 +55,14 @@ func TestCreateTracesReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				GRPCServerSettings: defaultGRPCSettings,
+				ServerConfig: defaultGRPCSettings,
 			},
 		},
 		{
 			name: "invalid_port",
 			cfg: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "localhost:112233",
 						Transport: "tcp",
 					},
@@ -73,7 +73,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		{
 			name: "max-msg-size-and-concurrent-connections",
 			cfg: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
+				ServerConfig: configgrpc.ServerConfig{
 					NetAddr:              defaultNetAddr,
 					MaxRecvMsgSizeMiB:    32,
 					MaxConcurrentStreams: 16,
@@ -99,11 +99,11 @@ func TestCreateTracesReceiver(t *testing.T) {
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
-	defaultNetAddr := confignet.NetAddr{
+	defaultNetAddr := confignet.AddrConfig{
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
 		Transport: "tcp",
 	}
-	defaultGRPCSettings := configgrpc.GRPCServerSettings{
+	defaultGRPCSettings := configgrpc.ServerConfig{
 		NetAddr: defaultNetAddr,
 	}
 
@@ -115,14 +115,14 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				GRPCServerSettings: defaultGRPCSettings,
+				ServerConfig: defaultGRPCSettings,
 			},
 		},
 		{
 			name: "invalid_address",
 			cfg: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "327.0.0.1:1122",
 						Transport: "tcp",
 					},
@@ -133,7 +133,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		{
 			name: "keepalive",
 			cfg: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
+				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: defaultNetAddr,
 					Keepalive: &configgrpc.KeepaliveServerConfig{
 						ServerParameters: &configgrpc.KeepaliveServerParameters{

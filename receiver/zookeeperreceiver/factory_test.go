@@ -14,11 +14,13 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
 
 func TestFactory(t *testing.T) {
 	f := NewFactory()
-	require.Equal(t, component.Type("zookeeper"), f.Type())
+	require.Equal(t, metadata.Type, f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
@@ -45,7 +47,7 @@ func TestFactory(t *testing.T) {
 		{
 			name: "Invalid timeout",
 			config: &Config{
-				TCPAddr: confignet.TCPAddr{
+				TCPAddrConfig: confignet.TCPAddrConfig{
 					Endpoint: ":2181",
 				},
 			},

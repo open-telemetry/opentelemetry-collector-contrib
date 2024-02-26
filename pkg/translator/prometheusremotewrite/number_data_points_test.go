@@ -35,7 +35,7 @@ func TestAddSingleGaugeNumberDataPoint(t *testing.T) {
 					{Name: model.MetricNameLabel, Value: "test"},
 				}
 				return map[string]*prompb.TimeSeries{
-					timeSeriesSignature(pmetric.MetricTypeGauge.String(), &labels): {
+					timeSeriesSignature(pmetric.MetricTypeGauge.String(), labels): {
 						Labels: labels,
 						Samples: []prompb.Sample{
 							{
@@ -90,7 +90,7 @@ func TestAddSingleSumNumberDataPoint(t *testing.T) {
 					{Name: model.MetricNameLabel, Value: "test"},
 				}
 				return map[string]*prompb.TimeSeries{
-					timeSeriesSignature(pmetric.MetricTypeSum.String(), &labels): {
+					timeSeriesSignature(pmetric.MetricTypeSum.String(), labels): {
 						Labels: labels,
 						Samples: []prompb.Sample{
 							{
@@ -118,7 +118,7 @@ func TestAddSingleSumNumberDataPoint(t *testing.T) {
 					{Name: model.MetricNameLabel, Value: "test"},
 				}
 				return map[string]*prompb.TimeSeries{
-					timeSeriesSignature(pmetric.MetricTypeSum.String(), &labels): {
+					timeSeriesSignature(pmetric.MetricTypeSum.String(), labels): {
 						Labels: labels,
 						Samples: []prompb.Sample{{
 							Value:     1,
@@ -154,13 +154,13 @@ func TestAddSingleSumNumberDataPoint(t *testing.T) {
 					{Name: model.MetricNameLabel, Value: "test_sum" + createdSuffix},
 				}
 				return map[string]*prompb.TimeSeries{
-					timeSeriesSignature(pmetric.MetricTypeSum.String(), &labels): {
+					timeSeriesSignature(pmetric.MetricTypeSum.String(), labels): {
 						Labels: labels,
 						Samples: []prompb.Sample{
 							{Value: 1, Timestamp: convertTimeStamp(ts)},
 						},
 					},
-					timeSeriesSignature(pmetric.MetricTypeSum.String(), &createdLabels): {
+					timeSeriesSignature(pmetric.MetricTypeSum.String(), createdLabels): {
 						Labels: createdLabels,
 						Samples: []prompb.Sample{
 							{Value: float64(convertTimeStamp(ts)), Timestamp: convertTimeStamp(ts)},
@@ -187,7 +187,7 @@ func TestAddSingleSumNumberDataPoint(t *testing.T) {
 					{Name: model.MetricNameLabel, Value: "test_sum"},
 				}
 				return map[string]*prompb.TimeSeries{
-					timeSeriesSignature(pmetric.MetricTypeSum.String(), &labels): {
+					timeSeriesSignature(pmetric.MetricTypeSum.String(), labels): {
 						Labels: labels,
 						Samples: []prompb.Sample{
 							{Value: 0, Timestamp: convertTimeStamp(ts)},
@@ -214,7 +214,7 @@ func TestAddSingleSumNumberDataPoint(t *testing.T) {
 					{Name: model.MetricNameLabel, Value: "test_sum"},
 				}
 				return map[string]*prompb.TimeSeries{
-					timeSeriesSignature(pmetric.MetricTypeSum.String(), &labels): {
+					timeSeriesSignature(pmetric.MetricTypeSum.String(), labels): {
 						Labels: labels,
 						Samples: []prompb.Sample{
 							{Value: 0, Timestamp: convertTimeStamp(ts)},

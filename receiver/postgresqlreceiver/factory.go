@@ -30,7 +30,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ScraperControllerSettings: cfg,
-		NetAddr: confignet.NetAddr{
+		AddrConfig: confignet.AddrConfig{
 			Endpoint:  "localhost:5432",
 			Transport: "tcp",
 		},
@@ -51,7 +51,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	ns := newPostgreSQLScraper(params, cfg, &defaultClientFactory{})
-	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape)
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ns.scrape)
 	if err != nil {
 		return nil, err
 	}

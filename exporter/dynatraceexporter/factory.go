@@ -35,8 +35,8 @@ func createDefaultConfig() component.Config {
 			Enabled: false,
 		},
 
-		APIToken:         "",
-		HTTPClientConfig: confighttp.HTTPClientConfig{Endpoint: ""},
+		APIToken:     "",
+		ClientConfig: confighttp.ClientConfig{Endpoint: ""},
 
 		Tags:              []string{},
 		DefaultDimensions: make(map[string]string),

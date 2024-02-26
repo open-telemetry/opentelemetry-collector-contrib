@@ -113,7 +113,7 @@ func TestCloseStopsPoller(t *testing.T) {
 }
 
 func TestSuccessfullyPollPacket(t *testing.T) {
-	receiverID := component.NewID("TestSuccessfullyPollPacket")
+	receiverID := component.MustNewID("TestSuccessfullyPollPacket")
 	tt, err := componenttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
@@ -138,7 +138,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 			})
 			require.NoError(t, err)
 			ctx := obsrecv.StartMetricsOp(seg.Ctx)
-			obsrecv.EndTracesOp(ctx, metadata.Type, 1, nil)
+			obsrecv.EndTracesOp(ctx, metadata.Type.String(), 1, nil)
 			return open && randString.String() == string(seg.Payload)
 		default:
 			return false
@@ -149,7 +149,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 }
 
 func TestIncompletePacketNoSeparator(t *testing.T) {
-	receiverID := component.NewID("TestIncompletePacketNoSeparator")
+	receiverID := component.MustNewID("TestIncompletePacketNoSeparator")
 	tt, err := componenttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
@@ -179,7 +179,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 }
 
 func TestIncompletePacketNoBody(t *testing.T) {
-	receiverID := component.NewID("TestIncompletePacketNoBody")
+	receiverID := component.MustNewID("TestIncompletePacketNoBody")
 	tt, err := componenttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
@@ -204,7 +204,7 @@ func TestIncompletePacketNoBody(t *testing.T) {
 }
 
 func TestNonJsonHeader(t *testing.T) {
-	receiverID := component.NewID("TestNonJsonHeader")
+	receiverID := component.MustNewID("TestNonJsonHeader")
 	tt, err := componenttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
@@ -234,7 +234,7 @@ func TestNonJsonHeader(t *testing.T) {
 }
 
 func TestJsonInvalidHeader(t *testing.T) {
-	receiverID := component.NewID("TestJsonInvalidHeader")
+	receiverID := component.MustNewID("TestJsonInvalidHeader")
 	tt, err := componenttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
@@ -270,7 +270,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 }
 
 func TestSocketReadIrrecoverableNetError(t *testing.T) {
-	receiverID := component.NewID("TestSocketReadIrrecoverableNetError")
+	receiverID := component.MustNewID("TestSocketReadIrrecoverableNetError")
 	tt, err := componenttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
@@ -306,7 +306,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 }
 
 func TestSocketReadTimeOutNetError(t *testing.T) {
-	receiverID := component.NewID("TestSocketReadTimeOutNetError")
+	receiverID := component.MustNewID("TestSocketReadTimeOutNetError")
 	tt, err := componenttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
@@ -343,7 +343,7 @@ func TestSocketReadTimeOutNetError(t *testing.T) {
 }
 
 func TestSocketGenericReadError(t *testing.T) {
-	receiverID := component.NewID("TestSocketGenericReadError")
+	receiverID := component.MustNewID("TestSocketGenericReadError")
 	tt, err := componenttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {

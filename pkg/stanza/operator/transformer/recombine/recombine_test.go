@@ -158,7 +158,7 @@ func TestTransformer(t *testing.T) {
 				cfg.IsFirstEntry = "$body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.OverwriteWith = "newest"
-				cfg.ForceFlushTimeout = 100 * time.Millisecond
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -178,7 +178,7 @@ func TestTransformer(t *testing.T) {
 				cfg.IsFirstEntry = "body == 'start'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.OverwriteWith = "oldest"
-				cfg.ForceFlushTimeout = 100 * time.Millisecond
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -219,8 +219,8 @@ func TestTransformer(t *testing.T) {
 				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = `body matches "^[^\\s]"`
-				cfg.ForceFlushTimeout = 100 * time.Millisecond
 				cfg.OutputIDs = []string{"fake"}
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -252,8 +252,8 @@ func TestTransformer(t *testing.T) {
 				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField("message")
 				cfg.IsFirstEntry = `body.message matches "^[^\\s]"`
-				cfg.ForceFlushTimeout = 100 * time.Millisecond
 				cfg.OutputIDs = []string{"fake"}
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -287,7 +287,6 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineWith = ""
 				cfg.IsLastEntry = "body.logtag == 'F'"
 				cfg.OverwriteWith = "oldest"
-				cfg.ForceFlushTimeout = 100 * time.Millisecond
 				cfg.OutputIDs = []string{"fake"}
 				return cfg
 			}(),
@@ -381,15 +380,22 @@ func TestTransformer(t *testing.T) {
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.MaxSources = 1
+				cfg.OverwriteWith = "oldest"
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "end", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "start1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1.Add(10*time.Millisecond), "middle1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t2, "start2", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t2.Add(10*time.Millisecond), "middle2", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t2.Add(20*time.Millisecond), "end2", map[string]string{"file.path": "file2"}),
 			},
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "end", map[string]string{"file.path": "file1"}),
+				// First entry is booted before end comes in, but partial recombination should occur
+				entryWithBodyAttr(t1.Add(10*time.Millisecond), "start1\nmiddle1", map[string]string{"file.path": "file1"}),
+				// Second entry is flushed automatically when end comes in
+				entryWithBodyAttr(t2.Add(20*time.Millisecond), "start2\nmiddle2\nend2", map[string]string{"file.path": "file2"}),
 			},
 		},
 		{
@@ -494,17 +500,19 @@ func TestTransformer(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
 			op, err := tc.config.Build(testutil.Logger(t))
 			require.NoError(t, err)
 			require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
-			recombine := op.(*Transformer)
+			defer func() { require.NoError(t, op.Stop()) }()
+			r := op.(*Transformer)
 
 			fake := testutil.NewFakeOutput(t)
-			err = recombine.SetOutputs([]operator.Operator{fake})
+			err = r.SetOutputs([]operator.Operator{fake})
 			require.NoError(t, err)
 
 			for _, e := range tc.input {
-				require.NoError(t, recombine.Process(context.Background(), e))
+				require.NoError(t, r.Process(ctx, e))
 			}
 
 			fake.ExpectEntries(t, tc.expectedOutput)
@@ -591,7 +599,7 @@ func BenchmarkRecombine(b *testing.B) {
 		for _, e := range entries {
 			require.NoError(b, recombine.Process(ctx, e))
 		}
-		recombine.flushUncombined(ctx)
+		recombine.flushAllSources(ctx)
 	}
 }
 
@@ -630,7 +638,7 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 		require.NoError(b, recombine.Process(ctx, next))
 		require.NoError(b, recombine.Process(ctx, start))
 		require.NoError(b, recombine.Process(ctx, next))
-		recombine.flushUncombined(ctx)
+		recombine.flushAllSources(ctx)
 	}
 
 }
@@ -702,13 +710,21 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 	require.NoError(t, recombine.Start(nil))
 	require.NoError(t, recombine.Process(ctx, e))
 
+	done := make(chan struct{})
+	ticker := time.NewTicker(cfg.ForceFlushTimeout / 2)
 	go func() {
 		next := entry.New()
 		next.Timestamp = time.Now()
 		next.Body = "next"
 		for {
-			time.Sleep(cfg.ForceFlushTimeout / 2)
-			require.NoError(t, recombine.Process(ctx, next))
+			select {
+			case <-done:
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				require.NoError(t, recombine.Process(ctx, next))
+
+			}
 		}
 	}()
 
@@ -719,6 +735,7 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 		t.FailNow()
 	}
 	require.NoError(t, recombine.Stop())
+	close(done)
 }
 
 func TestSourceBatchDelete(t *testing.T) {
@@ -756,9 +773,8 @@ func TestSourceBatchDelete(t *testing.T) {
 	ctx := context.Background()
 
 	require.NoError(t, recombine.Process(ctx, start))
-	require.NoError(t, recombine.Process(ctx, next))
 	require.Equal(t, 1, len(recombine.batchMap))
-	require.NoError(t, recombine.flushSource(ctx, "file1", true))
+	require.NoError(t, recombine.Process(ctx, next))
 	require.Equal(t, 0, len(recombine.batchMap))
 	fake.ExpectEntry(t, expect)
 	require.NoError(t, recombine.Stop())

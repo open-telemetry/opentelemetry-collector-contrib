@@ -57,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
-				HTTPClientConfig: confighttp.HTTPClientConfig{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint:        "https://somedest:1234/api/v2/spans",
 					WriteBufferSize: 524288,
 					Timeout:         5 * time.Second,

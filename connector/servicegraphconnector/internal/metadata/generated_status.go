@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("servicegraph")
+)
+
 const (
-	Type                     = "servicegraph"
 	TracesToMetricsStability = component.StabilityLevelAlpha
 )
 
