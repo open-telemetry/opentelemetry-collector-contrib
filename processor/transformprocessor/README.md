@@ -114,7 +114,7 @@ transform:
   log_statements:
     - context: resource
       statements:
-        - keep_keys(resource.attributes, ["service.name", "service.namespace", "cloud.region"])
+        - keep_keys(attributes, ["service.name", "service.namespace", "cloud.region"])
     - context: log
       statements:
         - set(severity_text, "FAIL") where body == "request failed"
