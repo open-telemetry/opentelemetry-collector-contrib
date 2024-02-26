@@ -40,7 +40,7 @@ type prwExporter struct {
 	concurrency       int
 	userAgentHeader   string
 	maxBatchSizeBytes int
-	clientSettings    *confighttp.HTTPClientConfig
+	clientSettings    *confighttp.ClientConfig
 	settings          component.TelemetrySettings
 	retrySettings     configretry.BackOffConfig
 	wal               *prweWAL
@@ -54,7 +54,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		return nil, err
 	}
 
-	endpointURL, err := url.ParseRequestURI(cfg.HTTPClientConfig.Endpoint)
+	endpointURL, err := url.ParseRequestURI(cfg.ClientConfig.Endpoint)
 	if err != nil {
 		return nil, errors.New("invalid endpoint")
 	}
@@ -68,7 +68,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		userAgentHeader:   userAgentHeader,
 		maxBatchSizeBytes: cfg.MaxBatchSizeBytes,
 		concurrency:       cfg.RemoteWriteQueue.NumConsumers,
-		clientSettings:    &cfg.HTTPClientConfig,
+		clientSettings:    &cfg.ClientConfig,
 		settings:          set.TelemetrySettings,
 		retrySettings:     cfg.BackOffConfig,
 		exporterSettings: prometheusremotewrite.Settings{

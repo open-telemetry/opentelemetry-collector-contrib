@@ -16,6 +16,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 )
 
+const (
+	contextName = "DataPoint"
+)
+
 var _ internal.ResourceContext = TransformContext{}
 var _ internal.InstrumentationScopeContext = TransformContext{}
 
@@ -197,11 +201,10 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 			case "bucket_counts":
 				return accessPositiveBucketCounts(), nil
 			default:
-				return nil, fmt.Errorf("invalid span path expression %v", nextPath.Name())
+				return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), path.String(), contextName, internal.DataPointRef)
 			}
-		} else {
-			return accessPositive(), nil
 		}
+		return accessPositive(), nil
 	case "negative":
 		nextPath := path.Next()
 		if nextPath != nil {
@@ -211,15 +214,15 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 			case "bucket_counts":
 				return accessNegativeBucketCounts(), nil
 			default:
-				return nil, fmt.Errorf("invalid span path expression %v", nextPath.Name())
+				return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), path.String(), contextName, internal.DataPointRef)
 			}
-		} else {
-			return accessNegative(), nil
 		}
+		return accessNegative(), nil
 	case "quantile_values":
 		return accessQuantileValues(), nil
+	default:
+		return nil, internal.FormatDefaultErrorMessage(path.Name(), path.String(), contextName, internal.DataPointRef)
 	}
-	return nil, fmt.Errorf("invalid path expression %v", path)
 }
 
 func accessCache() ottl.StandardGetSetter[TransformContext] {

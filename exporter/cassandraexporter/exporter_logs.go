@@ -24,22 +24,9 @@ type logsExporter struct {
 	cfg    *Config
 }
 
-func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
-	cluster, err := newCluster(cfg)
-	if err != nil {
-		return nil, err
-	}
-	cluster.Keyspace = cfg.Keyspace
-	cluster.Consistency = gocql.Quorum
-	cluster.Port = cfg.Port
-	cluster.Timeout = cfg.Timeout
+func newLogsExporter(logger *zap.Logger, cfg *Config) *logsExporter {
 
-	session, err := cluster.CreateSession()
-	if err != nil {
-		return nil, err
-	}
-
-	return &logsExporter{logger: logger, client: session, cfg: cfg}, nil
+	return &logsExporter{logger: logger, cfg: cfg}
 }
 
 func initializeLogKernel(cfg *Config) error {
@@ -91,6 +78,20 @@ func newCluster(cfg *Config) (*gocql.ClusterConfig, error) {
 }
 
 func (e *logsExporter) Start(_ context.Context, _ component.Host) error {
+	cluster, err := newCluster(e.cfg)
+	if err != nil {
+		return err
+	}
+	cluster.Keyspace = e.cfg.Keyspace
+	cluster.Consistency = gocql.Quorum
+	cluster.Port = e.cfg.Port
+	cluster.Timeout = e.cfg.Timeout
+
+	session, err := cluster.CreateSession()
+	if err != nil {
+		return err
+	}
+	e.client = session
 	initializeErr := initializeLogKernel(e.cfg)
 	return initializeErr
 }

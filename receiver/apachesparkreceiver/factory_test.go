@@ -40,7 +40,7 @@ func TestNewFactory(t *testing.T) {
 						CollectionInterval: defaultCollectionInterval,
 						InitialDelay:       time.Second,
 					},
-					HTTPClientConfig: confighttp.HTTPClientConfig{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: defaultEndpoint,
 					},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),

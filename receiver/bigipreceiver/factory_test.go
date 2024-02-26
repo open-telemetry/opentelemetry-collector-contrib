@@ -39,7 +39,7 @@ func TestNewFactory(t *testing.T) {
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 						CollectionInterval: 10 * time.Second,
 					},
-					HTTPClientConfig: confighttp.HTTPClientConfig{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: defaultEndpoint,
 						Timeout:  10 * time.Second,
 					},

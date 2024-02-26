@@ -26,7 +26,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						HTTPClientConfig: confighttp.HTTPClientConfig{},
+						ClientConfig: confighttp.ClientConfig{},
 					},
 				},
 				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
@@ -40,7 +40,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						HTTPClientConfig: confighttp.HTTPClientConfig{
+						ClientConfig: confighttp.ClientConfig{
 							Endpoint: "invalid://endpoint:  12efg",
 						},
 					},
@@ -56,12 +56,12 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						HTTPClientConfig: confighttp.HTTPClientConfig{
+						ClientConfig: confighttp.ClientConfig{
 							Endpoint: "https://localhost:80",
 						},
 					},
 					{
-						HTTPClientConfig: confighttp.HTTPClientConfig{
+						ClientConfig: confighttp.ClientConfig{
 							Endpoint: "invalid://endpoint:  12efg",
 						},
 					},
@@ -77,7 +77,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						HTTPClientConfig: confighttp.HTTPClientConfig{
+						ClientConfig: confighttp.ClientConfig{
 							Endpoint: "www.opentelemetry.io/docs",
 						},
 					},
@@ -93,12 +93,12 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						HTTPClientConfig: confighttp.HTTPClientConfig{
+						ClientConfig: confighttp.ClientConfig{
 							Endpoint: "https://opentelemetry.io",
 						},
 					},
 					{
-						HTTPClientConfig: confighttp.HTTPClientConfig{
+						ClientConfig: confighttp.ClientConfig{
 							Endpoint: "https://opentelemetry.io:80/docs",
 						},
 					},

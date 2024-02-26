@@ -37,7 +37,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ScraperControllerSettings: cfg,
-		NetAddr: confignet.NetAddr{
+		AddrConfig: confignet.AddrConfig{
 			Endpoint: defaultEndpoint,
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -54,7 +54,7 @@ func createMetricsReceiver(
 
 	ms := newMemcachedScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type, ms.scrape)
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ms.scrape)
 	if err != nil {
 		return nil, err
 	}

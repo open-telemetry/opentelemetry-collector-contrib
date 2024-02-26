@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -20,13 +22,13 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters["awss3"] = factory
+	factories.Exporters[metadata.Type] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "default.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID("awss3")].(*Config)
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 	assert.Equal(t, e,
 		&Config{
 			S3Uploader: S3UploaderConfig{
@@ -51,7 +53,7 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID("awss3")].(*Config)
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
 	assert.Equal(t, e,
 		&Config{
@@ -79,7 +81,7 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID("awss3")].(*Config)
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
 	assert.Equal(t, e,
 		&Config{
@@ -167,7 +169,7 @@ func TestMarshallerName(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID("awss3")].(*Config)
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
 	assert.Equal(t, e,
 		&Config{
@@ -180,7 +182,7 @@ func TestMarshallerName(t *testing.T) {
 		},
 	)
 
-	e = cfg.Exporters[component.NewIDWithName("awss3", "proto")].(*Config)
+	e = cfg.Exporters[component.MustNewIDWithName("awss3", "proto")].(*Config)
 
 	assert.Equal(t, e,
 		&Config{

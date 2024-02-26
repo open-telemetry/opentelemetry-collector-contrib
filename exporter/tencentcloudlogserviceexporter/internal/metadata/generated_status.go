@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("tencentcloud_logservice")
+)
+
 const (
-	Type          = "tencentcloud_logservice"
 	LogsStability = component.StabilityLevelBeta
 )
 

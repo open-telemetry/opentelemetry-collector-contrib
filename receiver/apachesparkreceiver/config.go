@@ -27,7 +27,7 @@ var (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	confighttp.HTTPClientConfig             `mapstructure:",squash"`
+	confighttp.ClientConfig                 `mapstructure:",squash"`
 	ApplicationNames                        []string `mapstructure:"application_names"`
 }
 

@@ -162,9 +162,9 @@ func TestResourceProcessor(t *testing.T) {
 			}
 
 			cfg := &Config{
-				Override:         tt.override,
-				Detectors:        tt.detectorKeys,
-				HTTPClientConfig: confighttp.HTTPClientConfig{Timeout: time.Second},
+				Override:     tt.override,
+				Detectors:    tt.detectorKeys,
+				ClientConfig: confighttp.ClientConfig{Timeout: time.Second},
 			}
 
 			// Test trace consumer

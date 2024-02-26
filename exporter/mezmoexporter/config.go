@@ -33,7 +33,7 @@ const (
 
 // Config defines configuration for Mezmo exporter.
 type Config struct {
-	confighttp.HTTPClientConfig  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	confighttp.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
@@ -45,8 +45,8 @@ type Config struct {
 }
 
 // returns default http client settings
-func createDefaultHTTPClientConfig() confighttp.HTTPClientConfig {
-	return confighttp.HTTPClientConfig{
+func createDefaultClientConfig() confighttp.ClientConfig {
+	return confighttp.ClientConfig{
 		Timeout: defaultTimeout,
 	}
 }

@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("purefa")
+)
+
 const (
-	Type             = "purefa"
 	MetricsStability = component.StabilityLevelDevelopment
 )
 

@@ -36,7 +36,7 @@ func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*sysloge
 		config:    cfg,
 		logger:    createSettings.Logger,
 		tlsConfig: tlsConfig,
-		formatter: createFormatter(cfg.Protocol),
+		formatter: createFormatter(cfg.Protocol, cfg.EnableOctetCounting),
 	}
 
 	s.logger.Info("Syslog Exporter configured",

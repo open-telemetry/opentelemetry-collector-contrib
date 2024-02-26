@@ -54,6 +54,7 @@ components:
         - tencentcloud_logservice
         - zipkin
     extension:
+        - ack
         - asapclient
         - awsproxy
         - basicauth
@@ -76,7 +77,6 @@ components:
     processor:
         - attributes
         - cumulativetodelta
-        - datadog
         - deltatorate
         - experimental_metricsgeneration
         - filter
@@ -90,7 +90,6 @@ components:
         - resource
         - resourcedetection
         - routing
-        - servicegraph
         - span
         - spanmetrics
         - sumologic
@@ -120,7 +119,6 @@ components:
         - docker_stats
         - elasticsearch
         - expvar
-        - file
         - filelog
         - filestats
         - flinkmetrics
@@ -150,6 +148,7 @@ components:
         - nsxt
         - opencensus
         - oracledb
+        - otelarrow
         - otlpjsonfile
         - podman_stats
         - postgresql
@@ -178,6 +177,8 @@ components:
         - udplog
         - vcenter
         - wavefront
+        - webhookevent
+        - windowseventlog
         - windowsperfcounters
         - zipkin
         - zookeeper

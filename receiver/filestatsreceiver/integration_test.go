@@ -22,7 +22,7 @@ func Test_Integration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithCustomConfig(
-			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
 				rCfg.Include = "filestats_*"

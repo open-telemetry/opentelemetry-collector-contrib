@@ -1606,7 +1606,7 @@ func TestGCInterval(t *testing.T) {
 
 func TestUserAgent(t *testing.T) {
 	uaCh := make(chan string, 1)
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		select {
 		case uaCh <- r.UserAgent():
 		default:

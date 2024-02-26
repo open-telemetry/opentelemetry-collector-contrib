@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("routing")
+)
+
 const (
-	Type                      = "routing"
 	TracesToTracesStability   = component.StabilityLevelAlpha
 	MetricsToMetricsStability = component.StabilityLevelAlpha
 	LogsToLogsStability       = component.StabilityLevelAlpha
