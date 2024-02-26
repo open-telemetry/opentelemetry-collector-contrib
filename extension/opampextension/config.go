@@ -53,7 +53,7 @@ type commonFields struct {
 // OpAMPServer contains the OpAMP transport configuration.
 type OpAMPServer struct {
 	WS   *commonFields `mapstructure:"ws,omitempty"`
-	Http *commonFields `mapstructure:"http,omitempty"`
+	HTTP *commonFields `mapstructure:"http,omitempty"`
 }
 
 func (c *commonFields) Scheme() string {
@@ -74,47 +74,44 @@ func (c *commonFields) Validate() error {
 func (s OpAMPServer) GetClient(logger *zap.Logger) client.OpAMPClient {
 	if s.WS != nil {
 		return client.NewWebSocket(newLoggerFromZap(logger.With(zap.String("client", "ws"))))
-	} else {
-		return client.NewHTTP(newLoggerFromZap(logger.With(zap.String("client", "http"))))
 	}
+	return client.NewHTTP(newLoggerFromZap(logger.With(zap.String("client", "http"))))
 }
 
 func (s OpAMPServer) GetHeaders() map[string]configopaque.String {
 	if s.WS != nil {
 		return s.WS.Headers
-	} else {
-		return s.Http.Headers
 	}
+	return s.HTTP.Headers
 }
 
 func (s OpAMPServer) GetTLSSetting() configtls.TLSClientSetting {
 	if s.WS != nil {
 		return s.WS.TLSSetting
-	} else {
-		return s.Http.TLSSetting
 	}
+	return s.HTTP.TLSSetting
 }
 
 func (s OpAMPServer) GetEndpoint() string {
 	if s.WS != nil {
 		return s.WS.Endpoint
-	} else {
-		return s.Http.Endpoint
 	}
+	return s.HTTP.Endpoint
 }
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.Server.WS == nil && cfg.Server.Http == nil {
+	switch {
+	case cfg.Server.WS == nil && cfg.Server.HTTP == nil:
 		return errors.New("opamp server must have at least ws or http set")
-	} else if cfg.Server.WS != nil && cfg.Server.Http != nil {
+	case cfg.Server.WS != nil && cfg.Server.HTTP != nil:
 		return errors.New("opamp server must have only ws or http set")
-	} else if cfg.Server.WS != nil {
+	case cfg.Server.WS != nil:
 		if err := cfg.Server.WS.Validate(); err != nil {
 			return err
 		}
-	} else if cfg.Server.Http != nil {
-		if err := cfg.Server.Http.Validate(); err != nil {
+	case cfg.Server.HTTP != nil:
+		if err := cfg.Server.HTTP.Validate(); err != nil {
 			return err
 		}
 	}

@@ -4,7 +4,6 @@
 package opampextension
 
 import (
-	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -51,7 +50,7 @@ func TestUnmarshalHttpConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			Server: &OpAMPServer{
-				Http: &commonFields{
+				HTTP: &commonFields{
 					Endpoint: "https://127.0.0.1:4320/v1/opamp",
 				},
 			},
@@ -80,7 +79,7 @@ func TestConfig_Validate(t *testing.T) {
 					WS: &commonFields{},
 				},
 			},
-			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			wantErr: func(t assert.TestingT, err error, i ...any) bool {
 				return assert.Equal(t, "opamp server endpoint must be provided", err.Error())
 			},
 		},
@@ -94,7 +93,7 @@ func TestConfig_Validate(t *testing.T) {
 				},
 				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZFAIL",
 			},
-			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			wantErr: func(t assert.TestingT, err error, i ...any) bool {
 				return assert.Equal(t, "opamp instance_uid is invalid", err.Error())
 			},
 		},
@@ -114,10 +113,10 @@ func TestConfig_Validate(t *testing.T) {
 			name: "HTTP must have endpoint",
 			fields: fields{
 				Server: &OpAMPServer{
-					Http: &commonFields{},
+					HTTP: &commonFields{},
 				},
 			},
-			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			wantErr: func(t assert.TestingT, err error, i ...any) bool {
 				return assert.Equal(t, "opamp server endpoint must be provided", err.Error())
 			},
 		},
@@ -125,13 +124,13 @@ func TestConfig_Validate(t *testing.T) {
 			name: "HTTP valid endpoint and invalid instance id",
 			fields: fields{
 				Server: &OpAMPServer{
-					Http: &commonFields{
+					HTTP: &commonFields{
 						Endpoint: "https://127.0.0.1:4320/v1/opamp",
 					},
 				},
 				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZFAIL",
 			},
-			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			wantErr: func(t assert.TestingT, err error, i ...any) bool {
 				return assert.Equal(t, "opamp instance_uid is invalid", err.Error())
 			},
 		},
@@ -139,7 +138,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "HTTP valid endpoint and valid instance id",
 			fields: fields{
 				Server: &OpAMPServer{
-					Http: &commonFields{
+					HTTP: &commonFields{
 						Endpoint: "https://127.0.0.1:4320/v1/opamp",
 					},
 				},
@@ -152,7 +151,7 @@ func TestConfig_Validate(t *testing.T) {
 			fields: fields{
 				Server: &OpAMPServer{},
 			},
-			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			wantErr: func(t assert.TestingT, err error, i ...any) bool {
 				return assert.Equal(t, "opamp server must have at least ws or http set", err.Error())
 			},
 		},
@@ -161,10 +160,10 @@ func TestConfig_Validate(t *testing.T) {
 			fields: fields{
 				Server: &OpAMPServer{
 					WS:   &commonFields{},
-					Http: &commonFields{},
+					HTTP: &commonFields{},
 				},
 			},
-			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+			wantErr: func(t assert.TestingT, err error, i ...any) bool {
 				return assert.Equal(t, "opamp server must have only ws or http set", err.Error())
 			},
 		},
@@ -176,7 +175,7 @@ func TestConfig_Validate(t *testing.T) {
 				InstanceUID:  tt.fields.InstanceUID,
 				Capabilities: tt.fields.Capabilities,
 			}
-			tt.wantErr(t, cfg.Validate(), fmt.Sprintf("Validate()"))
+			tt.wantErr(t, cfg.Validate(), "Validate()")
 		})
 	}
 }

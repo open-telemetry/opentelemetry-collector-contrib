@@ -145,11 +145,11 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 	} else {
 		sid, ok := res.Attributes().Get(semconv.AttributeServiceInstanceID)
 		if ok {
-			parsedUuid, err := uuid.Parse(sid.AsString())
+			parsedUUID, err := uuid.Parse(sid.AsString())
 			if err != nil {
 				return nil, err
 			}
-			uid = ulid.ULID(parsedUuid)
+			uid = ulid.ULID(parsedUUID)
 		}
 	}
 
