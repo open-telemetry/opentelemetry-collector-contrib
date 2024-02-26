@@ -105,7 +105,7 @@ func (pph *PathParserHelper) Parse(line string) (pmetric.Metric, error) {
 		return pmetric.Metric{}, fmt.Errorf("invalid carbon metric [%s]: %w", line, err)
 	}
 
-	var unixTimeNs int64 = 0
+	var unixTimeNs int64
 	var dblVal float64
 	unixTime, errIsFloat := strconv.ParseInt(timestampStr, 10, 64)
 	if errIsFloat != nil {

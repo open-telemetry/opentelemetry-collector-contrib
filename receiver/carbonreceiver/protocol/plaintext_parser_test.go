@@ -34,7 +34,6 @@ func Test_plaintextParser_Parse(t *testing.T) {
 		{
 			line: "tst.dbl 3.14 1582230020",
 			want: buildDoubleMetric(
-				GaugeMetricType,
 				"tst.dbl",
 				nil,
 				time.Unix(1582230020, 0),
@@ -60,7 +59,6 @@ func Test_plaintextParser_Parse(t *testing.T) {
 		{
 			line: "tst.int.1tag;k0=v_0 1.23 1582230020",
 			want: buildDoubleMetric(
-				GaugeMetricType,
 				"tst.int.1tag",
 				map[string]any{"k0": "v_0"},
 				time.Unix(1582230020, 0),
@@ -94,14 +92,13 @@ func Test_plaintextParser_Parse(t *testing.T) {
 	}
 
 	// tests for floating point timestamps
-	fp_tests := []struct {
+	fpTests := []struct {
 		line string
 		want pmetric.Metric
 	}{
 		{
 			line: "tst.floattimestamp 3.14 1582230020.1234",
 			want: buildDoubleMetric(
-				GaugeMetricType,
 				"tst.floattimestamp",
 				nil,
 				time.Unix(1582230020, 123400000),
@@ -111,7 +108,6 @@ func Test_plaintextParser_Parse(t *testing.T) {
 		{
 			line: "tst.floattimestampnofractionalpart 3.14 1582230020.",
 			want: buildDoubleMetric(
-				GaugeMetricType,
 				"tst.floattimestampnofractionalpart",
 				nil,
 				time.Unix(1582230020, 0),
@@ -120,7 +116,7 @@ func Test_plaintextParser_Parse(t *testing.T) {
 		},
 	}
 
-	for _, tt := range fp_tests {
+	for _, tt := range fpTests {
 		t.Run(tt.line, func(t *testing.T) {
 			got, err := p.Parse(tt.line)
 			require.NoError(t, err)
@@ -244,7 +240,6 @@ func buildIntMetric(
 }
 
 func buildDoubleMetric(
-	typ TargetMetricType,
 	name string,
 	attributes map[string]any,
 	timestamp time.Time,
@@ -252,14 +247,7 @@ func buildDoubleMetric(
 ) pmetric.Metric {
 	m := pmetric.NewMetric()
 	m.SetName(name)
-	var dp pmetric.NumberDataPoint
-	if typ == CumulativeMetricType {
-		sum := m.SetEmptySum()
-		sum.SetIsMonotonic(true)
-		dp = sum.DataPoints().AppendEmpty()
-	} else {
-		dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	}
+	var dp pmetric.NumberDataPoint = m.SetEmptyGauge().DataPoints().AppendEmpty()
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 	_ = dp.Attributes().FromRaw(attributes)
 	dp.SetDoubleValue(value)
