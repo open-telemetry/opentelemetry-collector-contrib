@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("asapclient")
+)
+
 const (
-	Type               = "asapclient"
 	ExtensionStability = component.StabilityLevelBeta
 )
 

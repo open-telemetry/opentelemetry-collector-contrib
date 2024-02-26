@@ -76,6 +76,7 @@ func getTraceAgentCfg(cfg TracesConfig) *traceconfig.AgentConfig {
 	acfg.Ignore["resource"] = cfg.IgnoreResources
 	acfg.ComputeStatsBySpanKind = cfg.ComputeStatsBySpanKind
 	acfg.PeerTagsAggregation = cfg.PeerTagsAggregation
+	acfg.PeerTags = cfg.PeerTags
 	if v := cfg.TraceBuffer; v > 0 {
 		acfg.TraceBuffer = v
 	}

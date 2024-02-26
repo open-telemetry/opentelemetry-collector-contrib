@@ -20,7 +20,7 @@ import (
 
 func TestFactoryCreate(t *testing.T) {
 	factory := NewFactory()
-	require.EqualValues(t, "splunkenterprise", factory.Type())
+	require.EqualValues(t, metadata.Type, factory.Type())
 }
 
 func TestDefaultConfig(t *testing.T) {
@@ -64,23 +64,6 @@ func TestCreateMetricsReceiver(t *testing.T) {
 				)
 
 				require.NoError(t, err, "failed to create metrics receiver with valid inputs")
-			},
-		},
-		{
-			desc: "Missing consumer",
-			run: func(t *testing.T) {
-				t.Parallel()
-
-				cfg := createDefaultConfig().(*Config)
-
-				_, err := createMetricsReceiver(
-					context.Background(),
-					receivertest.NewNopCreateSettings(),
-					cfg,
-					nil,
-				)
-
-				require.Error(t, err, "created metrics receiver without consumer")
 			},
 		},
 	}

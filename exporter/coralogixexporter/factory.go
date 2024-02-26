@@ -36,7 +36,7 @@ func createDefaultConfig() component.Config {
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		DomainSettings: configgrpc.ClientConfig{
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 		},
 		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: "https://",
@@ -44,17 +44,17 @@ func createDefaultConfig() component.Config {
 		// Traces GRPC client
 		Traces: configgrpc.ClientConfig{
 			Endpoint:    "https://",
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 		},
 		Metrics: configgrpc.ClientConfig{
 			Endpoint: "https://",
 			// Default to gzip compression
-			Compression:     configcompression.Gzip,
+			Compression:     configcompression.TypeGzip,
 			WriteBufferSize: 512 * 1024,
 		},
 		Logs: configgrpc.ClientConfig{
 			Endpoint:    "https://",
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 		},
 		PrivateKey: "",
 		AppName:    "",

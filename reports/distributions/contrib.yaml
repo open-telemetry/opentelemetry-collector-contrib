@@ -54,6 +54,7 @@ components:
         - tencentcloud_logservice
         - zipkin
     extension:
+        - ack
         - asapclient
         - awsproxy
         - basicauth
@@ -118,7 +119,6 @@ components:
         - docker_stats
         - elasticsearch
         - expvar
-        - file
         - filelog
         - filestats
         - flinkmetrics
@@ -148,6 +148,7 @@ components:
         - nsxt
         - opencensus
         - oracledb
+        - otelarrow
         - otlpjsonfile
         - podman_stats
         - postgresql

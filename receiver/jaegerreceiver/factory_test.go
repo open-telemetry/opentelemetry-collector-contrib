@@ -25,7 +25,7 @@ import (
 func TestTypeStr(t *testing.T) {
 	factory := NewFactory()
 
-	assert.Equal(t, "jaeger", string(factory.Type()))
+	assert.Equal(t, "jaeger", factory.Type().String())
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -40,7 +40,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the jaeger receiver to be created
 	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: "tcp",
 		},
@@ -81,7 +81,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: "tcp",
 		},
@@ -98,7 +98,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: "tcp",
 		},

@@ -84,7 +84,7 @@ type serviceGraphConnector struct {
 }
 
 func customMetricName(name string) string {
-	return "connector/" + metadata.Type + "/" + name
+	return "connector/" + metadata.Type.String() + "/" + name
 }
 
 func newConnector(set component.TelemetrySettings, config component.Config) *serviceGraphConnector {

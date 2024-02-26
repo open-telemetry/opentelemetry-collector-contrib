@@ -37,7 +37,9 @@ endpoint will be used if `auth_type` set to any of the following values:
 - `tls` tells the receiver to use TLS for auth and requires that the fields
 `ca_file`, `key_file`, and `cert_file` also be set.
 - `serviceAccount` tells this receiver to use the default service account token
-to authenticate to the kubelet API.
+to authenticate to the kubelet API along with the default certificate which is signed by the cluster's root CA cert:
+  - `/var/run/secrets/kubernetes.io/serviceaccount/token`
+  - `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt`
 - `kubeConfig` tells this receiver to use the kubeconfig file (KUBECONFIG env variable or ~/.kube/config)
 to authenticate and use API server proxy to access the kubelet API.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.

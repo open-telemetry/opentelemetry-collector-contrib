@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("otlp_encoding")
+)
+
 const (
-	Type               = "otlp_encoding"
 	ExtensionStability = component.StabilityLevelDevelopment
 )
 

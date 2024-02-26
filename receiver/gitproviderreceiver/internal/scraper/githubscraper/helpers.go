@@ -7,9 +7,10 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v58/github"
+	"github.com/google/go-github/v59/github"
 	"go.uber.org/zap"
 )
 
@@ -172,4 +173,40 @@ func (ghs *githubScraper) getContributorCount(
 	}
 
 	return len(all), nil
+}
+
+// Get the pull request data from the GraphQL API.
+func (ghs *githubScraper) getPullRequests(
+	ctx context.Context,
+	client graphql.Client,
+	repoName string,
+) ([]PullRequestNode, error) {
+	var prCursor *string
+	var pullRequests []PullRequestNode
+
+	for hasNextPage := true; hasNextPage; {
+		prs, err := getPullRequestData(
+			ctx,
+			client,
+			repoName,
+			ghs.cfg.GitHubOrg,
+			100,
+			prCursor,
+			[]PullRequestState{"OPEN", "MERGED"},
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		pullRequests = append(pullRequests, prs.Repository.PullRequests.Nodes...)
+		prCursor = &prs.Repository.PullRequests.PageInfo.EndCursor
+		hasNextPage = prs.Repository.PullRequests.PageInfo.HasNextPage
+	}
+
+	return pullRequests, nil
+}
+
+// Get the age/duration between two times in seconds.
+func getAge(start time.Time, end time.Time) int64 {
+	return int64(end.Sub(start).Seconds())
 }
