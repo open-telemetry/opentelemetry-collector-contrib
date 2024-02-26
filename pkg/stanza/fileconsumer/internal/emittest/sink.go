@@ -22,13 +22,13 @@ type sinkCfg struct {
 
 type SinkOpt func(*sinkCfg)
 
-type call struct {
-	token []byte
-	attrs map[string]any
+type Call struct {
+	Token []byte
+	Attrs map[string]any
 }
 
 type Sink struct {
-	emitChan chan *call
+	emitChan chan *Call
 	timeout  time.Duration
 	emit.Callback
 }
@@ -53,14 +53,14 @@ func NewSink(opts ...SinkOpt) *Sink {
 	for _, opt := range opts {
 		opt(cfg)
 	}
-	emitChan := make(chan *call, cfg.emitChanLen)
+	emitChan := make(chan *Call, cfg.emitChanLen)
 	return &Sink{
 		emitChan: emitChan,
 		timeout:  cfg.timeout,
 		Callback: func(_ context.Context, token []byte, attrs map[string]any) error {
 			copied := make([]byte, len(token))
 			copy(copied, token)
-			emitChan <- &call{copied, attrs}
+			emitChan <- &Call{copied, attrs}
 			return nil
 		},
 	}
@@ -76,7 +76,7 @@ func (s *Sink) NextTokens(t *testing.T, n int) [][]byte {
 	for i := 0; i < n; i++ {
 		select {
 		case call := <-s.emitChan:
-			emitChan = append(emitChan, call.token)
+			emitChan = append(emitChan, call.Token)
 		case <-time.After(s.timeout):
 			assert.Fail(t, "Timed out waiting for message")
 			return nil
@@ -88,7 +88,7 @@ func (s *Sink) NextTokens(t *testing.T, n int) [][]byte {
 func (s *Sink) NextCall(t *testing.T) ([]byte, map[string]any) {
 	select {
 	case c := <-s.emitChan:
-		return c.token, c.attrs
+		return c.Token, c.Attrs
 	case <-time.After(s.timeout):
 		assert.Fail(t, "Timed out waiting for message")
 		return nil, nil
@@ -98,7 +98,7 @@ func (s *Sink) NextCall(t *testing.T) ([]byte, map[string]any) {
 func (s *Sink) ExpectToken(t *testing.T, expected []byte) {
 	select {
 	case call := <-s.emitChan:
-		assert.Equal(t, expected, call.token)
+		assert.Equal(t, expected, call.Token)
 	case <-time.After(s.timeout):
 		assert.Fail(t, fmt.Sprintf("Timed out waiting for token: %s", expected))
 	}
@@ -109,9 +109,9 @@ func (s *Sink) ExpectTokens(t *testing.T, expected ...[]byte) {
 	for i := 0; i < len(expected); i++ {
 		select {
 		case call := <-s.emitChan:
-			actual = append(actual, call.token)
+			actual = append(actual, call.Token)
 		case <-time.After(s.timeout):
-			assert.Fail(t, "Timed out waiting for message")
+			assert.Fail(t, fmt.Sprintf("timeout: expected: %d, actual: %d", len(expected), i))
 			return
 		}
 	}
@@ -121,11 +121,25 @@ func (s *Sink) ExpectTokens(t *testing.T, expected ...[]byte) {
 func (s *Sink) ExpectCall(t *testing.T, expected []byte, attrs map[string]any) {
 	select {
 	case c := <-s.emitChan:
-		assert.Equal(t, expected, c.token)
-		assert.Equal(t, attrs, c.attrs)
+		assert.Equal(t, expected, c.Token)
+		assert.Equal(t, attrs, c.Attrs)
 	case <-time.After(s.timeout):
 		assert.Fail(t, fmt.Sprintf("Timed out waiting for token: %s", expected))
 	}
+}
+
+func (s *Sink) ExpectCalls(t *testing.T, expected ...*Call) {
+	actual := make([]*Call, 0, len(expected))
+	for i := 0; i < len(expected); i++ {
+		select {
+		case call := <-s.emitChan:
+			actual = append(actual, call)
+		case <-time.After(s.timeout):
+			assert.Fail(t, fmt.Sprintf("timeout: expected: %d, actual: %d", len(expected), i))
+			return
+		}
+	}
+	require.ElementsMatch(t, expected, actual)
 }
 
 func (s *Sink) ExpectNoCalls(t *testing.T) {
@@ -135,7 +149,7 @@ func (s *Sink) ExpectNoCalls(t *testing.T) {
 func (s *Sink) ExpectNoCallsUntil(t *testing.T, d time.Duration) {
 	select {
 	case c := <-s.emitChan:
-		assert.Fail(t, "Received unexpected message", "Message: %s", c.token)
+		assert.Fail(t, "Received unexpected message", "Message: %s", c.Token)
 	case <-time.After(d):
 	}
 }

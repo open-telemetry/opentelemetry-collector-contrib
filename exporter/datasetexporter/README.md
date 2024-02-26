@@ -47,7 +47,8 @@ Make sure to provide the appropriate server host value in the `serverHost` attri
 
 - `debug` (default = false): Adds `session_key` to the server fields. It's useful for debugging throughput issues.
 - `buffer`:
-  - `max_lifetime` (default = 5s): The maximum delay between sending batches from the same source.
+  - `max_lifetime` (default = 5s): The maximum delay between sending batches from the same session.
+  - `purge_older_than` (default = 30s): The maximum delay between receiving data for the same session after which resources associated with it are purged.
   - `group_by` (default = []): The list of attributes based on which events should be grouped. They are moved from the event attributes to the session info and shown as server fields in the UI.
   - `retry_initial_interval` (default = 5s): Time to wait after the first failure before retrying.
   - `retry_max_interval` (default = 30s): Is the upper bound on backoff.
@@ -307,7 +308,7 @@ To enable metrics you have to:
 ### Available Metrics
 
 Available metrics contain `dataset` in their name. There are counters related to the
-number of processed events (`events`), buffers (`buffer`), and transferred bytes (`bytes`).
+number of processed events (`events`), buffers (`buffer`), sessions (`sessions`), and transferred bytes (`bytes`).
 There are also histograms related to response times (`responseTime`) and payload size (`payloadSize`).
 
 There are several counters related to events/buffers:

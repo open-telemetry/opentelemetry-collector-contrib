@@ -48,7 +48,7 @@ func TestAerospike_Info(t *testing.T) {
 		logger: logger.Sugar(),
 	}
 
-	nodeGetterFactoryFunc := func(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error) {
+	nodeGetterFactoryFunc := func(*clientConfig, *as.ClientPolicy, bool) (nodeGetter, error) {
 		return testCluster, nil
 	}
 
@@ -111,7 +111,7 @@ func TestAerospike_NamespaceInfo(t *testing.T) {
 		logger: logger.Sugar(),
 	}
 
-	nodeGetterFactoryFunc := func(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error) {
+	nodeGetterFactoryFunc := func(*clientConfig, *as.ClientPolicy, bool) (nodeGetter, error) {
 		return testCluster, nil
 	}
 
@@ -170,7 +170,7 @@ func TestAerospike_NamespaceInfo_Negative(t *testing.T) {
 	testClusterNeg.On("GetNodes").Return(testNodesNeg)
 	testClusterNeg.On("Close").Return()
 
-	nodeGetterFactoryFuncNeg := func(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error) {
+	nodeGetterFactoryFuncNeg := func(*clientConfig, *as.ClientPolicy, bool) (nodeGetter, error) {
 		return testClusterNeg, nil
 	}
 
@@ -202,7 +202,7 @@ func TestAerospike_NamespaceInfo_Negative(t *testing.T) {
 	testClusterNeg.On("GetNodes").Return(testNodesNeg)
 	testClusterNeg.On("Close").Return()
 
-	nodeGetterFactoryFuncNeg = func(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error) {
+	nodeGetterFactoryFuncNeg = func(*clientConfig, *as.ClientPolicy, bool) (nodeGetter, error) {
 		return testClusterNeg, nil
 	}
 
