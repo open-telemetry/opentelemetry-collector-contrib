@@ -391,6 +391,7 @@ Available Converters:
 - [IsInt](#isint)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
+- [IsNaN](#isnan)
 - [IsString](#isstring)
 - [Len](#len)
 - [Log](#log)
@@ -688,6 +689,22 @@ Examples:
 
 
 - `IsMatch("string", ".*ring")`
+
+### IsNaN
+
+`isNaN(value)`
+
+The `isNaN` Converter returns true if the given value is a double and equals NaN (Not a Number).
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+If `value` is a `float64` or a `pcommon.ValueTypeDouble` with value equals NaN then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `isNaN(body)`
+
+- `isNaN(attributes["maybe a NaN"])`
 
 ### IsString
 
