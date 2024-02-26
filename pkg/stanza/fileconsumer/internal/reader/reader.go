@@ -114,7 +114,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 // Delete will close and delete the file
 func (r *Reader) delete() {
-	r.Close()
+	r.close()
 	if err := os.Remove(r.fileName); err != nil {
 		r.logger.Errorf("could not delete %s", r.fileName)
 	}
@@ -122,6 +122,13 @@ func (r *Reader) delete() {
 
 // Close will close the file and return the metadata
 func (r *Reader) Close() *Metadata {
+	r.close()
+	m := r.Metadata
+	r.Metadata = nil
+	return m
+}
+
+func (r *Reader) close() {
 	if r.file != nil {
 		if err := r.file.Close(); err != nil {
 			r.logger.Debugw("Problem closing reader", zap.Error(err))
@@ -134,9 +141,6 @@ func (r *Reader) Close() *Metadata {
 			r.logger.Errorw("Failed to stop header pipeline", zap.Error(err))
 		}
 	}
-	m := r.Metadata
-	r.Metadata = nil
-	return m
 }
 
 // Read from the file and update the fingerprint if necessary
