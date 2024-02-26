@@ -52,11 +52,11 @@ type commonFields struct {
 
 // OpAMPServer contains the OpAMP transport configuration.
 type OpAMPServer struct {
-	WS   commonFields `mapstructure:"ws,omitempty"`
-	Http commonFields `mapstructure:"http,omitempty"`
+	WS   *commonFields `mapstructure:"ws,omitempty"`
+	Http *commonFields `mapstructure:"http,omitempty"`
 }
 
-func (c commonFields) Scheme() string {
+func (c *commonFields) Scheme() string {
 	uri, err := url.ParseRequestURI(c.Endpoint)
 	if err != nil {
 		return ""
@@ -64,7 +64,7 @@ func (c commonFields) Scheme() string {
 	return uri.Scheme
 }
 
-func (c commonFields) Validate() error {
+func (c *commonFields) Validate() error {
 	if c.Endpoint == "" {
 		return errors.New("opamp server endpoint must be provided")
 	}
@@ -72,8 +72,7 @@ func (c commonFields) Validate() error {
 }
 
 func (s OpAMPServer) GetClient(logger *zap.Logger) client.OpAMPClient {
-	scheme := s.WS.Scheme()
-	if len(scheme) > 0 {
+	if s.WS != nil {
 		return client.NewWebSocket(newLoggerFromZap(logger.With(zap.String("client", "ws"))))
 	} else {
 		return client.NewHTTP(newLoggerFromZap(logger.With(zap.String("client", "http"))))
@@ -81,7 +80,7 @@ func (s OpAMPServer) GetClient(logger *zap.Logger) client.OpAMPClient {
 }
 
 func (s OpAMPServer) GetHeaders() map[string]configopaque.String {
-	if len(s.WS.Endpoint) > 0 {
+	if s.WS != nil {
 		return s.WS.Headers
 	} else {
 		return s.Http.Headers
@@ -89,7 +88,7 @@ func (s OpAMPServer) GetHeaders() map[string]configopaque.String {
 }
 
 func (s OpAMPServer) GetTLSSetting() configtls.TLSClientSetting {
-	if len(s.WS.Endpoint) > 0 {
+	if s.WS != nil {
 		return s.WS.TLSSetting
 	} else {
 		return s.Http.TLSSetting
@@ -97,7 +96,7 @@ func (s OpAMPServer) GetTLSSetting() configtls.TLSClientSetting {
 }
 
 func (s OpAMPServer) GetEndpoint() string {
-	if len(s.WS.Endpoint) > 0 {
+	if s.WS != nil {
 		return s.WS.Endpoint
 	} else {
 		return s.Http.Endpoint
@@ -106,15 +105,15 @@ func (s OpAMPServer) GetEndpoint() string {
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if len(cfg.Server.WS.Endpoint) == 0 && len(cfg.Server.Http.Endpoint) == 0 {
+	if cfg.Server.WS == nil && cfg.Server.Http == nil {
 		return errors.New("opamp server must have at least ws or http set")
-	} else if len(cfg.Server.WS.Endpoint) > 0 && len(cfg.Server.Http.Endpoint) > 0 {
+	} else if cfg.Server.WS != nil && cfg.Server.Http != nil {
 		return errors.New("opamp server must have only ws or http set")
-	} else if len(cfg.Server.WS.Endpoint) != 0 {
+	} else if cfg.Server.WS != nil {
 		if err := cfg.Server.WS.Validate(); err != nil {
 			return err
 		}
-	} else if len(cfg.Server.Http.Endpoint) != 0 {
+	} else if cfg.Server.Http != nil {
 		if err := cfg.Server.Http.Validate(); err != nil {
 			return err
 		}
