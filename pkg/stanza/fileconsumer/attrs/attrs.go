@@ -30,7 +30,7 @@ type Resolver struct {
 	IncludeFileGroupName    bool `mapstructure:"include_file_group_name,omitempty"`
 }
 
-func (r *Resolver) AddFileInfos(file *os.File, attributes map[string]any) (err error) {
+func (r *Resolver) addOwnerInfo(file *os.File, attributes map[string]any) (err error) {
 	var fileInfo, errStat = file.Stat()
 	if errStat != nil {
 		return fmt.Errorf("resolve file stat: %w", err)
@@ -65,7 +65,7 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 		attributes[LogFilePath] = path
 	}
 	if r.IncludeFileOwnerName || r.IncludeFileGroupName {
-		err = r.AddFileInfos(file, attributes)
+		err = r.addOwnerInfo(file, attributes)
 		if err != nil {
 			return nil, err
 		}
