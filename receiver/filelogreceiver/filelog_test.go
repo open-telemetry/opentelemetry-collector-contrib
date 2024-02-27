@@ -123,7 +123,6 @@ func TestReadStaticFile(t *testing.T) {
 }
 
 func TestReadRotatingFiles(t *testing.T) {
-
 	tests := []rotationTest{
 		{
 			name:         "CopyTruncate",
@@ -181,13 +180,19 @@ func (rt *rotationTest) Run(t *testing.T) {
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
 	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0600)
+	defer func() {
+		require.NoError(t, file.Close())
+	}()
 	require.NoError(t, err)
 
 	for i := 0; i < numLogs; i++ {
 		if (i+1)%maxLinesPerFile == 0 {
 			if rt.copyTruncate {
 				// Recreate the backup file
-				require.NoError(t, os.Remove(backupFileName))
+				// if backupFileName exists
+				if _, err = os.Stat(backupFileName); err == nil {
+					require.NoError(t, os.Remove(backupFileName))
+				}
 				backupFile, openErr := os.OpenFile(backupFileName, os.O_CREATE|os.O_RDWR, 0600)
 				require.NoError(t, openErr)
 
