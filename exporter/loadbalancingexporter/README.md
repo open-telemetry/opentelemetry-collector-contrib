@@ -38,7 +38,7 @@ Note that either the Trace ID or Service name is used for the decision on which 
 
 This load balancer is especially useful for backends configured with tail-based samplers or red-metrics-collectors, which make a decision based on the view of the full trace.
 
-When a list of backends is updated, some of the signals will be rerouted to different backends. 
+When a list of backends is updated, some of the signals will be rerouted to different backends.
 Around R/N of the "routes" will be rerouted differently, where:
 
 * A "route" is either a trace ID or a service name mapped to a certain backend.
@@ -71,12 +71,11 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `service` Kubernetes service to resolve, e.g. `lb-svc.lb-ns`. If no namespace is specified, an attempt will be made to infer the namespace for this collector, and if this fails it will fall back to the `default` namespace.
   * `ports` port to be used for exporting the traces to the addresses resolved from `service`. If `ports` is not specified, the default port 4317 is used. When multiple ports are specified, two backends are added to the load balancer as if they were at different pods.
 * The `routing_key` property is used to route spans to exporters based on different parameters. This functionality is currently enabled only for `trace` pipeline types. It supports one of the following values:
-  * `service`: exports spans based on their service name. This is useful when using processors like the span metrics, so all spans for each service are sent to consistent collector instances for metric collection. Otherwise, metrics for the same services are sent to different collectors, making aggregations inaccurate. 
+  * `service`: exports spans based on their service name. This is useful when using processors like the span metrics, so all spans for each service are sent to consistent collector instances for metric collection. Otherwise, metrics for the same services are sent to different collectors, making aggregations inaccurate.
   * `traceID` (default): exports spans based on their `traceID`.
   * If not configured, defaults to `traceID` based routing.
-* The `srv` node accepts the following optional properties:
+* The `dnssrvnoa` node accepts the following optional properties:
   * `hostname` DNS SRV hostname to resolve.
-  * `port` port to be used for exporting the traces to the IP addresses resolved from `hostname`. If `port` is not specified, the default port 4317 is used.
   * `interval` resolver interval in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `5s` will be used.
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `1s` will be used.
 
@@ -105,9 +104,9 @@ exporters:
         - backend-2:4317
         - backend-3:4317
         - backend-4:4317
-      # Notice to config a headless service DNS in Kubernetes  
+      # Notice to config a headless service DNS in Kubernetes
       # dns:
-      #  hostname: otelcol-headless.observability.svc.cluster.local        
+      #  hostname: otelcol-headless.observability.svc.cluster.local
 
 service:
   pipelines:
@@ -167,8 +166,21 @@ service:
         - loadbalancing
 ```
 
-The SRV Resolver is useful in situations when you want to return hostnames instead of IPs for endpoints. An example would be a `StatefulSet`-backed headless kubernetes `Service` with istio. Example:
+The DNSSRVNOA Resolver is useful in situations when you want to return hostnames instead of IPs for endpoints. An example would be a `StatefulSet`-backed headless kubernetes `Service` with istio.
 
+The format for the name of an SRV record is `_service._proto.name` such as `_ldap._tcp.example.com`. The full record contains:
+
+| _service._proto.name | TTL | Class | SRV(type) | Priority | Weight | Port | Target |
+|----------------------|-----|-------|-----------|----------|--------|------|--------|
+| _otlp._tcp.otel-collector.example.com | 900 | IN | SRV | 10 | 5 | 4317 | otel-collector.example.com |
+
+Note that we do not define a port in the config since the port is provided by the record. The target must be either an A or AAAA record. For more information see https://www.ietf.org/rfc/rfc2782.txt
+
+> [!IMPORTANT]
+> Currently priority and weight are not supported features. Additionally, all targets should map to a single IP address.
+
+
+Example Config:
 ```yaml
 receivers:
   otlp:
@@ -183,9 +195,8 @@ exporters:
     protocol:
       otlp: {}
     resolver:
-      srv:
+      dnssrvnoa:
         hostname: _<svc-port-name>._<svc-port-protocol>.<svc-name>.<svc-namespace>.svc.cluster.local
-    routing_key: traceID
 
 service:
   pipelines:

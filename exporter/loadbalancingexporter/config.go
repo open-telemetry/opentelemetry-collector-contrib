@@ -32,10 +32,10 @@ type Protocol struct {
 
 // ResolverSettings defines the configurations for the backend resolver
 type ResolverSettings struct {
-	Static *StaticResolver `mapstructure:"static"`
-	DNS    *DNSResolver    `mapstructure:"dns"`
-	K8sSvc *K8sSvcResolver `mapstructure:"k8s"`
-	SRV    *SRVResolver    `mapstructure:"srv"`
+	Static    *StaticResolver    `mapstructure:"static"`
+	DNS       *DNSResolver       `mapstructure:"dns"`
+	K8sSvc    *K8sSvcResolver    `mapstructure:"k8s"`
+	DNSSRVNOA *DNSSRVNOAResolver `mapstructure:"srv"`
 }
 
 // StaticResolver defines the configuration for the resolver providing a fixed list of backends
@@ -57,11 +57,10 @@ type K8sSvcResolver struct {
 	Ports   []int32 `mapstructure:"ports"`
 }
 
-// TODO: Should a common struct be used for dns-based resolvers?
-// SRVResolver defines the configuration for the DNS resolver of SRV records for headless Services
-type SRVResolver struct {
+// TODO: Make a common struct to be used for dns-based resolvers
+// DNSSRVResolver defines the configuration for the DNS resolver of SRV records for headless Services
+type DNSSRVNOAResolver struct {
 	Hostname string        `mapstructure:"hostname"`
-	Port     string        `mapstructure:"port"`
 	Interval time.Duration `mapstructure:"interval"`
 	Timeout  time.Duration `mapstructure:"timeout"`
 }

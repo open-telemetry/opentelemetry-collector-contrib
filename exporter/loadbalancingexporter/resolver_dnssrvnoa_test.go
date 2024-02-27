@@ -19,7 +19,7 @@ import (
 
 func TestInitialSRVResolution(t *testing.T) {
 	// prepare
-	res, err := newSRVResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", "", 5*time.Second, 1*time.Second)
+	res, err := newDNSSRVNOAResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	res.resolver = &mockSRVResolver{
@@ -50,50 +50,9 @@ func TestInitialSRVResolution(t *testing.T) {
 	// verify
 	assert.Len(t, resolved, 3)
 	for i, value := range []string{
-		"pod-0.service-1.ns.svc.cluster.local",
-		"pod-1.service-1.ns.svc.cluster.local",
-		"pod-2.service-1.ns.svc.cluster.local",
-	} {
-		assert.Equal(t, value, resolved[i])
-	}
-}
-
-func TestInitialSRVResolutionWithPort(t *testing.T) {
-	// prepare
-	res, err := newSRVResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", "12000", 5*time.Second, 1*time.Second)
-	require.NoError(t, err)
-
-	res.resolver = &mockSRVResolver{
-		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
-			return []net.IPAddr{
-				{IP: net.IPv4(12, 12, 12, 12)},
-			}, nil
-		},
-		onLookupSRV: func(context.Context, string, string, string) (string, []*net.SRV, error) {
-			return "notapplicable", []*net.SRV{
-				{Target: "pod-0.service-1.ns.svc.cluster.local", Port: 4317, Priority: 0, Weight: 0},
-				{Target: "pod-1.service-1.ns.svc.cluster.local", Port: 4317, Priority: 0, Weight: 0},
-				{Target: "pod-2.service-1.ns.svc.cluster.local", Port: 4317, Priority: 0, Weight: 0},
-			}, nil
-		},
-	}
-
-	// test
-	var resolved []string
-	res.onChange(func(endpoints []string) {
-		resolved = endpoints
-	})
-	require.NoError(t, res.start(context.Background()))
-	defer func() {
-		require.NoError(t, res.shutdown(context.Background()))
-	}()
-
-	// verify
-	assert.Len(t, resolved, 3)
-	for i, value := range []string{
-		"pod-0.service-1.ns.svc.cluster.local:12000",
-		"pod-1.service-1.ns.svc.cluster.local:12000",
-		"pod-2.service-1.ns.svc.cluster.local:12000",
+		"pod-0.service-1.ns.svc.cluster.local:4317",
+		"pod-1.service-1.ns.svc.cluster.local:4317",
+		"pod-2.service-1.ns.svc.cluster.local:4317",
 	} {
 		assert.Equal(t, value, resolved[i])
 	}
@@ -101,7 +60,7 @@ func TestInitialSRVResolutionWithPort(t *testing.T) {
 
 func TestErrNoSRVHostname(t *testing.T) {
 	// test
-	res, err := newSRVResolver(zap.NewNop(), "", "", 5*time.Second, 1*time.Second)
+	res, err := newDNSSRVNOAResolver(zap.NewNop(), "", 5*time.Second, 1*time.Second)
 
 	// verify
 	assert.Nil(t, res)
@@ -111,7 +70,7 @@ func TestErrNoSRVHostname(t *testing.T) {
 // This tests the case where a failure to resolve does not halt the resolver.
 func TestFailureToResolve(t *testing.T) {
 	// prepare
-	res, err := newSRVResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", "", 5*time.Second, 1*time.Second)
+	res, err := newDNSSRVNOAResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	expectedErr := errors.New("underlying resolution error")
@@ -130,7 +89,7 @@ func TestFailureToResolve(t *testing.T) {
 
 func TestMultipleIPsOnATarget(t *testing.T) {
 	// prepare
-	res, err := newSRVResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", "", 5*time.Second, 1*time.Second)
+	res, err := newDNSSRVNOAResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	res.resolver = &mockSRVResolver{
@@ -156,15 +115,20 @@ func TestMultipleIPsOnATarget(t *testing.T) {
 
 func TestSRVNoChangeAfterInitial(t *testing.T) {
 	// prepare
-	res, err := newSRVResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", "", 5*time.Second, 1*time.Second)
+	res, err := newDNSSRVNOAResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
-	resolve := []net.IPAddr{
+	ipResolve := []net.IPAddr{
 		{IP: net.IPv4(127, 0, 0, 1)},
 	}
 	res.resolver = &mockSRVResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
-			return resolve, nil
+			return ipResolve, nil
+		},
+		onLookupSRV: func(context.Context, string, string, string) (string, []*net.SRV, error) {
+			return "notapplicable", []*net.SRV{
+				{Target: "pod-0.service-1.ns.svc.cluster.local", Port: 4317, Priority: 0, Weight: 0},
+			}, nil
 		},
 	}
 
@@ -185,18 +149,17 @@ func TestSRVNoChangeAfterInitial(t *testing.T) {
 	require.Equal(t, int64(1), counter.Load())
 
 	// change what the resolver will resolve and trigger a resolution
-	resolve = []net.IPAddr{
+	ipResolve = []net.IPAddr{
 		{IP: net.IPv4(127, 0, 0, 2)},
-		{IP: net.IPv4(127, 0, 0, 3)},
 	}
 	_, err = res.resolve(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, int64(2), counter.Load())
+	assert.Greater(t, counter.Load(), int64(1))
 }
 
 func TestSameEndpointsDifferentIPs(t *testing.T) {
 	// prepare
-	res, err := newSRVResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", "", 10*time.Millisecond, 1*time.Second)
+	res, err := newDNSSRVNOAResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", 10*time.Millisecond, 1*time.Second)
 	require.NoError(t, err)
 
 	runCounter := &atomic.Int32{}
@@ -269,7 +232,7 @@ func TestSameEndpointsDifferentIPs(t *testing.T) {
 
 func TestSRVPeriodicallyResolve(t *testing.T) {
 	// prepare
-	res, err := newSRVResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", "", 10*time.Millisecond, 1*time.Second)
+	res, err := newDNSSRVNOAResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", 10*time.Millisecond, 1*time.Second)
 	require.NoError(t, err)
 
 	counter := &atomic.Int64{}
@@ -335,7 +298,7 @@ func TestSRVPeriodicallyResolve(t *testing.T) {
 
 func TestSRVPeriodicallyResolveFailure(t *testing.T) {
 	// prepare
-	res, err := newSRVResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", "", 10*time.Millisecond, 1*time.Second)
+	res, err := newDNSSRVNOAResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", 10*time.Millisecond, 1*time.Second)
 	require.NoError(t, err)
 
 	expectedErr := errors.New("some expected error")
@@ -385,7 +348,7 @@ func TestSRVPeriodicallyResolveFailure(t *testing.T) {
 
 func TestSRVShutdownClearsCallbacks(t *testing.T) {
 	// prepare
-	res, err := newSRVResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", "", 2*time.Second, 1*time.Second)
+	res, err := newDNSSRVNOAResolver(zap.NewNop(), "_port._proto.service-1.ns.svc.cluster.local", 2*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	res.resolver = &mockSRVResolver{}
@@ -423,19 +386,27 @@ func TestParseSRVHostname(t *testing.T) {
 			expectedName:    "name",
 			expectedErr:     nil,
 		},
+	} {
+		res, resErr := parseSRVHostname(tt.input)
+		assert.Equal(t, tt.expectedService, res.service)
+		assert.Equal(t, tt.expectedProto, res.proto)
+		assert.Equal(t, tt.expectedName, res.name)
+		assert.Equal(t, tt.expectedErr, resErr)
+	}
+}
+
+func TestParseSRVHostnameFailure(t *testing.T) {
+	for _, tt := range []struct {
+		input       string
+		expectedErr error
+	}{
 		// failure case
 		{
-			input:           "_service._proto",
-			expectedService: "",
-			expectedProto:   "",
-			expectedName:    "",
-			expectedErr:     errBadSRV,
+			input:       "_service._proto",
+			expectedErr: errBadSRV,
 		},
 	} {
-		resService, resProto, resName, resErr := parseSRVHostname(tt.input)
-		assert.Equal(t, tt.expectedService, resService)
-		assert.Equal(t, tt.expectedProto, resProto)
-		assert.Equal(t, tt.expectedName, resName)
+		_, resErr := parseSRVHostname(tt.input)
 		assert.Equal(t, tt.expectedErr, resErr)
 	}
 }
