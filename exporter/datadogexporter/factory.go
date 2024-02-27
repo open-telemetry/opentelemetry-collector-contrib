@@ -141,8 +141,8 @@ func (f *factory) StopReporter() {
 	})
 }
 
-func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
-	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, datadog.InitializeMetricClient(params.MeterProvider))
+func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
+	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, datadog.InitializeMetricClient(params.MeterProvider), attrsTranslator)
 	if err != nil {
 		return nil, err
 	}
@@ -283,8 +283,15 @@ func (f *factory) createMetricsExporter(
 
 	ctx, cancel := context.WithCancel(ctx)
 	// cancel() runs on shutdown
+
+	attrsTranslator, err := f.AttributesTranslator(set.TelemetrySettings)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
+	}
+
 	var pushMetricsFn consumer.ConsumeMetricsFunc
-	acfg, err := newTraceAgentConfig(ctx, set, cfg, hostProvider)
+	acfg, err := newTraceAgentConfig(ctx, set, cfg, hostProvider, attrsTranslator)
 	if err != nil {
 		cancel()
 		return nil, err
@@ -308,12 +315,6 @@ func (f *factory) createMetricsExporter(
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
-	}
-
-	attrsTranslator, err := f.AttributesTranslator(set.TelemetrySettings)
-	if err != nil {
-		cancel()
-		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
 	}
 
 	if cfg.OnlyMetadata {
@@ -395,7 +396,14 @@ func (f *factory) createTracesExporter(
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	// cancel() runs on shutdown
-	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider)
+
+	attrsTranslator, err := f.AttributesTranslator(set.TelemetrySettings)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
+	}
+
+	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider, attrsTranslator)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to start trace-agent: %w", err)

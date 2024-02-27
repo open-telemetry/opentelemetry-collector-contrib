@@ -63,7 +63,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 	ctx := context.Background()
 	return &traceToMetricConnector{
 		logger:          set.Logger,
-		agent:           datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(cfg.(*Config).Traces), in, metricsClient, timingReporter),
+		agent:           datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(cfg.(*Config).Traces, attributesTranslator), in, metricsClient, timingReporter),
 		translator:      trans,
 		in:              in,
 		metricsConsumer: metricsConsumer,
@@ -71,8 +71,9 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 	}, nil
 }
 
-func getTraceAgentCfg(cfg TracesConfig) *traceconfig.AgentConfig {
+func getTraceAgentCfg(cfg TracesConfig, attributesTranslator *attributes.Translator) *traceconfig.AgentConfig {
 	acfg := traceconfig.New()
+	acfg.OTLPReceiver.AttributesTranslator = attributesTranslator
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.SpanNameRemappings
 	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.SpanNameAsResourceName
 	acfg.Ignore["resource"] = cfg.IgnoreResources
