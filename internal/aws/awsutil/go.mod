@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.50.17
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.21.0
 )
 
