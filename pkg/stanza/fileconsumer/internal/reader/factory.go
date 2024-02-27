@@ -28,17 +28,18 @@ const (
 
 type Factory struct {
 	*zap.SugaredLogger
-	HeaderConfig    *header.Config
-	FromBeginning   bool
-	FingerprintSize int
-	MaxLogSize      int
-	Encoding        encoding.Encoding
-	SplitFunc       bufio.SplitFunc
-	TrimFunc        trim.Func
-	FlushTimeout    time.Duration
-	EmitFunc        emit.Callback
-	Attributes      attrs.Resolver
-	DeleteAtEOF     bool
+	HeaderConfig      *header.Config
+	FromBeginning     bool
+	FingerprintSize   int
+	InitialBufferSize int
+	MaxLogSize        int
+	Encoding          encoding.Encoding
+	SplitFunc         bufio.SplitFunc
+	TrimFunc          trim.Func
+	FlushTimeout      time.Duration
+	EmitFunc          emit.Callback
+	Attributes        attrs.Resolver
+	DeleteAtEOF       bool
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
@@ -58,16 +59,21 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 }
 
 func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
+	// Trim the fingerprint if user has reconfigured fingerprint_size
+	if len(m.Fingerprint.FirstBytes) > f.FingerprintSize {
+		m.Fingerprint.FirstBytes = m.Fingerprint.FirstBytes[:f.FingerprintSize]
+	}
 	r = &Reader{
-		Metadata:        m,
-		logger:          f.SugaredLogger.With("path", file.Name()),
-		file:            file,
-		fileName:        file.Name(),
-		fingerprintSize: f.FingerprintSize,
-		maxLogSize:      f.MaxLogSize,
-		decoder:         decode.New(f.Encoding),
-		lineSplitFunc:   f.SplitFunc,
-		deleteAtEOF:     f.DeleteAtEOF,
+		Metadata:          m,
+		logger:            f.SugaredLogger.With("path", file.Name()),
+		file:              file,
+		fileName:          file.Name(),
+		fingerprintSize:   f.FingerprintSize,
+		initialBufferSize: f.InitialBufferSize,
+		maxLogSize:        f.MaxLogSize,
+		decoder:           decode.New(f.Encoding),
+		lineSplitFunc:     f.SplitFunc,
+		deleteAtEOF:       f.DeleteAtEOF,
 	}
 
 	if !f.FromBeginning {
