@@ -6,7 +6,7 @@ toolchain go1.21.6
 
 require (
 	github.com/stretchr/testify v1.8.4
-	go.etcd.io/bbolt v1.3.8
+	go.etcd.io/bbolt v1.3.9
 	go.opentelemetry.io/collector/component v0.95.0
 	go.opentelemetry.io/collector/confmap v0.95.0
 	go.opentelemetry.io/collector/extension v0.95.0
