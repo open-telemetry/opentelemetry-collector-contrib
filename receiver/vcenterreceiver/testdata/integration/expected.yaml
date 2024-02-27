@@ -154,6 +154,12 @@ resourceMetrics:
         - key: vcenter.vm.id
           value:
             stringValue: b4689bed-97f0-5bcd-8a4c-07477cc8f06f
+        - key: vcenter.resource_pool.name
+          value:
+            stringValue: Resources
+        - key: vcenter.resource_pool.inventory_path
+          value:
+            stringValue: /DC0/host/DC0_H0/Resources
         - key: vcenter.host.name
           value:
             stringValue: DC0_H0
@@ -234,6 +240,12 @@ resourceMetrics:
         - key: vcenter.vm.id
           value:
             stringValue: 12f8928d-f144-5c57-89db-dd2d0902c9fa
+        - key: vcenter.resource_pool.name
+          value:
+            stringValue: Resources
+        - key: vcenter.resource_pool.inventory_path
+          value:
+            stringValue: /DC0/host/DC0_H0/Resources
         - key: vcenter.host.name
           value:
             stringValue: DC0_H0
@@ -499,6 +511,12 @@ resourceMetrics:
         - key: vcenter.cluster.name
           value:
             stringValue: DC0_C0
+        - key: vcenter.resource_pool.name
+          value:
+            stringValue: Resources
+        - key: vcenter.resource_pool.inventory_path
+          value:
+            stringValue: /DC0/host/DC0_C0/Resources
         - key: vcenter.host.name
           value:
             stringValue: DC0_C0_H0
@@ -582,6 +600,12 @@ resourceMetrics:
         - key: vcenter.cluster.name
           value:
             stringValue: DC0_C0
+        - key: vcenter.resource_pool.name
+          value:
+            stringValue: Resources
+        - key: vcenter.resource_pool.inventory_path
+          value:
+            stringValue: /DC0/host/DC0_C0/Resources
         - key: vcenter.host.name
           value:
             stringValue: DC0_C0_H2

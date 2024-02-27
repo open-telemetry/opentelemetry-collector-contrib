@@ -40,6 +40,7 @@ type vcenterMetricScraper struct {
 	logger *zap.Logger
 	// map of vm name => compute name
 	vmToComputeMap     map[string]string
+	vmToResourcePool   map[string]*object.ResourcePool
 	emitPerfWithObject bool
 }
 
@@ -55,6 +56,7 @@ func newVmwareVcenterScraper(
 		logger:             logger,
 		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 		vmToComputeMap:     make(map[string]string),
+		vmToResourcePool:   make(map[string]*object.ResourcePool),
 		emitPerfWithObject: emitPerfMetricsWithObjects.IsEnabled(),
 	}
 }
@@ -86,6 +88,7 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 
 	// cleanup so any inventory moves are accounted for
 	v.vmToComputeMap = make(map[string]string)
+	v.vmToResourcePool = make(map[string]*object.ResourcePool)
 
 	return v.mb.Emit(), err
 }
@@ -272,6 +275,7 @@ func (v *vcenterMetricScraper) collectResourcePools(
 		}
 		for _, vmRef := range moRP.Vm {
 			v.vmToComputeMap[vmRef.Value] = computeRef.Reference().Value
+			v.vmToResourcePool[vmRef.Value] = rp
 		}
 
 		v.recordResourcePool(ts, moRP)
@@ -339,6 +343,10 @@ func (v *vcenterMetricScraper) collectVMs(
 			// not part of this cluster
 			if rpCompute.Reference().Value != compute.Reference().Value {
 				continue
+			}
+			stored, ok := v.vmToResourcePool[vm.Reference().Value]
+			if ok {
+				rp = stored
 			}
 		}
 
