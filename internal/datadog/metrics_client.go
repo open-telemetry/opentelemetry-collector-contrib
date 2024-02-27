@@ -87,26 +87,26 @@ func (m *metricsClient) Distribution(name string, value float64, tags []string, 
 }
 
 func (m *metricsClient) Timing(name string, value time.Duration, tags []string, rate float64) error {
-	return m.Histogram(name, float64(value.Milliseconds()), tags, rate)
+	return m.TimeInMilliseconds(name, value.Seconds()*1000, tags, rate)
+}
+
+func (m *metricsClient) TimeInMilliseconds(name string, value float64, tags []string, rate float64) error {
+	return m.Histogram(name, value, tags, rate)
+}
+
+func (m *metricsClient) Decr(name string, tags []string, rate float64) error {
+	return m.Count(name, -1, tags, rate)
+}
+
+func (m *metricsClient) Incr(name string, tags []string, rate float64) error {
+	return m.Count(name, 1, tags, rate)
 }
 
 func (m *metricsClient) Flush() error {
 	return nil
 }
 
-func (m *metricsClient) Decr(string, []string, float64) error {
-	return nil
-}
-
-func (m *metricsClient) Incr(string, []string, float64) error {
-	return nil
-}
-
 func (m *metricsClient) Set(string, string, []string, float64) error {
-	return nil
-}
-
-func (m *metricsClient) TimeInMilliseconds(string, float64, []string, float64) error {
 	return nil
 }
 
