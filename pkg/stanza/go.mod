@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/bmatcuk/doublestar/v4 v4.6.1
 	github.com/cespare/xxhash/v2 v2.2.0
-	github.com/expr-lang/expr v1.16.0
+	github.com/expr-lang/expr v1.16.1
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/haimrubinstein/go-syslog/v3 v3.0.0
 	github.com/jpillora/backoff v1.0.0

@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
 go 1.21
 
 require (
-	github.com/expr-lang/expr v1.16.0
+	github.com/expr-lang/expr v1.16.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.95.0
