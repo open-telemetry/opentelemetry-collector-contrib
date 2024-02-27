@@ -23,9 +23,7 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Server: &OpAMPServer{
-			WS: &commonFields{},
-		},
+		Server: &OpAMPServer{},
 		Capabilities: Capabilities{
 			ReportsEffectiveConfig: true,
 		},

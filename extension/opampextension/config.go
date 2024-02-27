@@ -81,22 +81,28 @@ func (s OpAMPServer) GetClient(logger *zap.Logger) client.OpAMPClient {
 func (s OpAMPServer) GetHeaders() map[string]configopaque.String {
 	if s.WS != nil {
 		return s.WS.Headers
+	} else if s.HTTP != nil {
+		return s.HTTP.Headers
 	}
-	return s.HTTP.Headers
+	return map[string]configopaque.String{}
 }
 
 func (s OpAMPServer) GetTLSSetting() configtls.TLSClientSetting {
 	if s.WS != nil {
 		return s.WS.TLSSetting
+	} else if s.HTTP != nil {
+		return s.HTTP.TLSSetting
 	}
-	return s.HTTP.TLSSetting
+	return configtls.TLSClientSetting{}
 }
 
 func (s OpAMPServer) GetEndpoint() string {
 	if s.WS != nil {
 		return s.WS.Endpoint
+	} else if s.HTTP != nil {
+		return s.HTTP.Endpoint
 	}
-	return s.HTTP.Endpoint
+	return ""
 }
 
 // Validate checks if the extension configuration is valid

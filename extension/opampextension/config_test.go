@@ -78,6 +78,17 @@ func TestConfig_Getters(t *testing.T) {
 		expected expected
 	}{
 		{
+			name: "nothing set",
+			fields: fields{
+				Server: &OpAMPServer{},
+			},
+			expected: expected{
+				headers:  assert.Empty,
+				tls:      assert.Empty,
+				endpoint: assert.Empty,
+			},
+		},
+		{
 			name: "WS valid endpoint, headers, tls",
 			fields: fields{
 				Server: &OpAMPServer{
