@@ -7,7 +7,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/expr-lang/expr v1.16.1
 	github.com/fsnotify/fsnotify v1.7.0
-	github.com/haimrubinstein/go-syslog/v3 v3.0.0
+	github.com/haimrubinstein/go-syslog/v3 v3.0.3
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.95.0

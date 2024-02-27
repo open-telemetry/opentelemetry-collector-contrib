@@ -867,6 +867,8 @@ github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed h1:5upAirOpQc
 github.com/hailocab/go-hostpool v0.0.0-20160125115350-e80d13ce29ed/go.mod h1:tMWxXQ9wFIaZeTI9F+hmhFiGpFmhOHzyShyFUhRm0H4=
 github.com/haimrubinstein/go-syslog/v3 v3.0.0 h1:wuTrxJE60wx2pfwdERdbLNlcXEk3hk1MPagAaD2fq2g=
 github.com/haimrubinstein/go-syslog/v3 v3.0.0/go.mod h1:/IKKpe5PS9pB5vJY1APQQM0ZPBrm95HWE1SQwsXWmVI=
+github.com/haimrubinstein/go-syslog/v3 v3.0.3 h1:6vHBlaBT7QYW3Lg3SRH6ktd4RXDtysxtJ2sbbmnR984=
+github.com/haimrubinstein/go-syslog/v3 v3.0.3/go.mod h1:eoxN4jiSgfvW5ZozHBsvBMVVOa8kUBnCghxP5PRL2Hs=
 github.com/hashicorp/consul/api v1.1.0/go.mod h1:VmuI/Lkw1nC05EYQWNKwWGbkg+FbDBtguAZLlVdkD9Q=
 github.com/hashicorp/consul/api v1.3.0/go.mod h1:MmDNSzIMUjNpY/mQ398R4bk2FnqQLoPndWW5VkKPlCE=
 github.com/hashicorp/consul/api v1.27.0 h1:gmJ6DPKQog1426xsdmgk5iqDyoRiNc+ipBdJOqKQFjc=
