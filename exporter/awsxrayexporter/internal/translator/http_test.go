@@ -4,11 +4,11 @@
 package translator
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
