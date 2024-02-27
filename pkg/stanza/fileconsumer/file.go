@@ -67,7 +67,6 @@ func (m *Manager) Start(persister operator.Persister) error {
 
 func (m *Manager) closePreviousFiles() {
 	// m.previousPollFiles -> m.knownFiles[0]
-
 	for r, _ := m.previousPollFiles.Pop(); r != nil; r, _ = m.previousPollFiles.Pop() {
 		m.knownFiles[0].Add(r.Close())
 	}
@@ -171,7 +170,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.Debug("Consuming files", zap.Strings("paths", paths))
 	m.makeReaders(paths)
 
-	m.preConsume(ctx)
+	m.readLostFiles(ctx)
 
 	// read new readers to end
 	var wg sync.WaitGroup
