@@ -85,6 +85,15 @@ func newLoadBalancer(params exporter.CreateSettings, cfg component.Config, facto
 			return nil, err
 		}
 	}
+	if oCfg.Resolver.DNSSRVNOA != nil {
+		dnssrvnoaLogger := params.Logger.With(zap.String("resolver", "dnssrvnoa"))
+
+		var err error
+		res, err = newDNSSRVNOAResolver(dnssrvnoaLogger, oCfg.Resolver.DNSSRVNOA.Hostname, oCfg.Resolver.DNSSRVNOA.Interval, oCfg.Resolver.DNSSRVNOA.Timeout)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	if res == nil {
 		return nil, errNoResolver
