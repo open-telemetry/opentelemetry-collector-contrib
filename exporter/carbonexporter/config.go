@@ -18,7 +18,7 @@ import (
 // Config defines configuration for Carbon exporter.
 type Config struct {
 	// Specifies the connection endpoint config. The default value is "localhost:2003".
-	confignet.TCPAddr `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	confignet.TCPAddrConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	// MaxIdleConns is used to set a limit to the maximum idle TCP connections the client can keep open. Default value is 100.
 	// If `sending_queue` is enabled, it is recommended to use same value as `sending_queue::num_consumers`.
 	MaxIdleConns int `mapstructure:"max_idle_conns"`

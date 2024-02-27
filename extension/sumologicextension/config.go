@@ -13,7 +13,7 @@ import (
 // Config has the configuration for the sumologic extension.
 type Config struct {
 	// squash ensures fields are correctly decoded in embedded struct.
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	confighttp.ClientConfig `mapstructure:",squash"`
 
 	// Credentials contains Installation Token for Sumo Logic service.
 	// Please refer to https://help.sumologic.com/docs/manage/security/installation-tokens

@@ -40,7 +40,7 @@ func TestCreateReceiver(t *testing.T) {
 }
 
 func TestCreateTracesReceiver(t *testing.T) {
-	defaultNetAddr := confignet.NetAddr{
+	defaultNetAddr := confignet.AddrConfig{
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
 		Transport: "tcp",
 	}
@@ -62,7 +62,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 			name: "invalid_port",
 			cfg: &Config{
 				ServerConfig: configgrpc.ServerConfig{
-					NetAddr: confignet.NetAddr{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "localhost:112233",
 						Transport: "tcp",
 					},
@@ -99,7 +99,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
-	defaultNetAddr := confignet.NetAddr{
+	defaultNetAddr := confignet.AddrConfig{
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
 		Transport: "tcp",
 	}
@@ -122,7 +122,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			name: "invalid_address",
 			cfg: &Config{
 				ServerConfig: configgrpc.ServerConfig{
-					NetAddr: confignet.NetAddr{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "327.0.0.1:1122",
 						Transport: "tcp",
 					},
