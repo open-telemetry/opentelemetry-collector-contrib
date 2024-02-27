@@ -176,7 +176,7 @@ func (c *count) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			for k := 0; k < scopeLogs.LogRecords().Len(); k++ {
 				logRecord := scopeLogs.LogRecords().At(k)
 
-				lCtx := ottllog.NewTransformContext(logRecord, scopeLogs.Scope(), resourceLog.Resource())
+				lCtx := ottllog.NewTransformContext(logRecord, scopeLogs.Scope(), resourceLog.Resource(), scopeLogs, resourceLog)
 				multiError = errors.Join(multiError, counter.update(ctx, logRecord.Attributes(), lCtx))
 			}
 		}
