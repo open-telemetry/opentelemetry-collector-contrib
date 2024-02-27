@@ -2335,6 +2335,11 @@ func Test_newPath(t *testing.T) {
 		},
 		{
 			Name: "string",
+			Keys: []key{
+				{
+					String: ottltest.Strp("key"),
+				},
+			},
 		},
 	}
 	np, err := newPath[any](fields)
@@ -2342,10 +2347,18 @@ func Test_newPath(t *testing.T) {
 	p := Path[any](np)
 	assert.Equal(t, "body", p.Name())
 	assert.Nil(t, p.Keys())
+	assert.Equal(t, "body.string[key]", p.String())
 	p = p.Next()
 	assert.Equal(t, "string", p.Name())
-	assert.Nil(t, p.Keys())
+	assert.Equal(t, "body.string[key]", p.String())
 	assert.Nil(t, p.Next())
+	assert.Equal(t, 1, len(p.Keys()))
+	v, err := p.Keys()[0].String(context.Background(), struct{}{})
+	assert.NoError(t, err)
+	assert.Equal(t, "key", *v)
+	i, err := p.Keys()[0].Int(context.Background(), struct{}{})
+	assert.NoError(t, err)
+	assert.Nil(t, i)
 }
 
 func Test_baseKey_String(t *testing.T) {

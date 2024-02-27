@@ -21,8 +21,6 @@ type logsFailover struct {
 	config   *Config
 	failover *failoverRouter[consumer.Logs]
 	logger   *zap.Logger
-
-	done chan struct{}
 }
 
 func (f *logsFailover) Capabilities() consumer.Capabilities {
@@ -62,19 +60,17 @@ func (f *logsFailover) Shutdown(_ context.Context) error {
 	if f.failover != nil {
 		f.failover.Shutdown()
 	}
-	close(f.done)
 	return nil
 }
 
 func newLogsToLogs(set connector.CreateSettings, cfg component.Config, logs consumer.Logs) (connector.Logs, error) {
 	config := cfg.(*Config)
 	lr, ok := logs.(connector.LogsRouterAndConsumer)
-	done := make(chan struct{})
 	if !ok {
 		return nil, errors.New("consumer is not of type LogsRouter")
 	}
 
-	failover := newFailoverRouter[consumer.Logs](lr.Consumer, config, done)
+	failover := newFailoverRouter[consumer.Logs](lr.Consumer, config)
 	err := failover.registerConsumers()
 	if err != nil {
 		return nil, err
@@ -83,6 +79,5 @@ func newLogsToLogs(set connector.CreateSettings, cfg component.Config, logs cons
 		config:   config,
 		failover: failover,
 		logger:   set.TelemetrySettings.Logger,
-		done:     done,
 	}, nil
 }
