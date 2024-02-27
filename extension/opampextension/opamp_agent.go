@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -101,7 +102,13 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 		return nil
 	}
 	o.logger.Debug("Stopping OpAMP client...")
-	return o.opampClient.Stop(ctx)
+	err := o.opampClient.Stop(ctx)
+	// Opamp-go considers this an error, but the collector does not.
+	// https://github.com/open-telemetry/opamp-go/issues/255
+	if err != nil && strings.EqualFold(err.Error(), "cannot stop because not started") {
+		return nil
+	}
+	return err
 }
 
 func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {

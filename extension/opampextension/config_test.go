@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -59,6 +61,72 @@ func TestUnmarshalHttpConfig(t *testing.T) {
 				ReportsEffectiveConfig: true,
 			},
 		}, cfg)
+}
+
+func TestConfig_Getters(t *testing.T) {
+	type fields struct {
+		Server *OpAMPServer
+	}
+	type expected struct {
+		headers  assert.ValueAssertionFunc
+		tls      assert.ValueAssertionFunc
+		endpoint assert.ValueAssertionFunc
+	}
+	tests := []struct {
+		name     string
+		fields   fields
+		expected expected
+	}{
+		{
+			name: "WS valid endpoint, headers, tls",
+			fields: fields{
+				Server: &OpAMPServer{
+					WS: &commonFields{
+						Endpoint: "wss://127.0.0.1:4320/v1/opamp",
+						Headers: map[string]configopaque.String{
+							"test": configopaque.String("test"),
+						},
+						TLSSetting: configtls.TLSClientSetting{
+							Insecure: true,
+						},
+					},
+				},
+			},
+			expected: expected{
+				headers:  assert.NotEmpty,
+				tls:      assert.NotEmpty,
+				endpoint: assert.NotEmpty,
+			},
+		},
+		{
+			name: "HTTP valid endpoint and valid instance id",
+			fields: fields{
+				Server: &OpAMPServer{
+					HTTP: &commonFields{
+						Endpoint: "https://127.0.0.1:4320/v1/opamp",
+						Headers: map[string]configopaque.String{
+							"test": configopaque.String("test"),
+						},
+						TLSSetting: configtls.TLSClientSetting{
+							Insecure: true,
+						},
+					},
+				},
+			},
+			expected: expected{
+				headers:  assert.NotEmpty,
+				tls:      assert.NotEmpty,
+				endpoint: assert.NotEmpty,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.expected.headers(t, tt.fields.Server.GetHeaders())
+			tt.expected.tls(t, tt.fields.Server.GetTLSSetting())
+			tt.expected.endpoint(t, tt.fields.Server.GetEndpoint())
+		})
+	}
 }
 
 func TestConfig_Validate(t *testing.T) {
