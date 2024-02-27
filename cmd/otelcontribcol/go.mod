@@ -1195,4 +1195,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/named
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery => ../../internal/sqlquery
 
-replace github.com/haimrubinstein/go-syslog/v3 => github.com/haimrubinstein/go-syslog/v3 v3.0.3
+replace github.com/haimrubinstein/go-syslog/v3 => github.com/haimrubinstein/go-syslog/v3 v3.0.0
