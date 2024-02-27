@@ -79,7 +79,7 @@ func TestConfig_Validate(t *testing.T) {
 					WS: &commonFields{},
 				},
 			},
-			wantErr: func(t assert.TestingT, err error, i ...any) bool {
+			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
 				return assert.Equal(t, "opamp server endpoint must be provided", err.Error())
 			},
 		},
@@ -93,7 +93,7 @@ func TestConfig_Validate(t *testing.T) {
 				},
 				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZFAIL",
 			},
-			wantErr: func(t assert.TestingT, err error, i ...any) bool {
+			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
 				return assert.Equal(t, "opamp instance_uid is invalid", err.Error())
 			},
 		},
@@ -116,7 +116,7 @@ func TestConfig_Validate(t *testing.T) {
 					HTTP: &commonFields{},
 				},
 			},
-			wantErr: func(t assert.TestingT, err error, i ...any) bool {
+			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
 				return assert.Equal(t, "opamp server endpoint must be provided", err.Error())
 			},
 		},
@@ -130,7 +130,7 @@ func TestConfig_Validate(t *testing.T) {
 				},
 				InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZFAIL",
 			},
-			wantErr: func(t assert.TestingT, err error, i ...any) bool {
+			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
 				return assert.Equal(t, "opamp instance_uid is invalid", err.Error())
 			},
 		},
@@ -151,7 +151,7 @@ func TestConfig_Validate(t *testing.T) {
 			fields: fields{
 				Server: &OpAMPServer{},
 			},
-			wantErr: func(t assert.TestingT, err error, i ...any) bool {
+			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
 				return assert.Equal(t, "opamp server must have at least ws or http set", err.Error())
 			},
 		},
@@ -163,7 +163,7 @@ func TestConfig_Validate(t *testing.T) {
 					HTTP: &commonFields{},
 				},
 			},
-			wantErr: func(t assert.TestingT, err error, i ...any) bool {
+			wantErr: func(t assert.TestingT, err error, _ ...any) bool {
 				return assert.Equal(t, "opamp server must have only ws or http set", err.Error())
 			},
 		},
@@ -175,7 +175,7 @@ func TestConfig_Validate(t *testing.T) {
 				InstanceUID:  tt.fields.InstanceUID,
 				Capabilities: tt.fields.Capabilities,
 			}
-			tt.wantErr(t, cfg.Validate(), "Validate()")
+			tt.wantErr(t, cfg.Validate())
 		})
 	}
 }
