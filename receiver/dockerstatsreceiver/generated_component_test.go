@@ -17,13 +17,9 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
-// assertNoErrorHost implements a component.Host that asserts that there were no errors.
-type assertNoErrorHost struct {
-	component.Host
-	*testing.T
+func TestCheckConfigStruct(t *testing.T) {
+	componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig())
 }
-
-var _ component.Host = (*assertNoErrorHost)(nil)
 
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()

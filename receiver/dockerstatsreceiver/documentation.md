@@ -62,6 +62,14 @@ Percent of CPU used by the container.
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
 
+### container.memory.fails
+
+Number of times the memory limit was hit.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {fails} | Sum | Int | Cumulative | true |
+
 ### container.memory.file
 
 Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2).
@@ -305,6 +313,14 @@ This metric is only reported if the container has limits set with -cpus, -cpuset
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {cpus} | Gauge | Double |
+
+### container.cpu.online
+
+Number of online CPUs.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {CPUs} | Gauge | Int |
 
 ### container.cpu.shares
 

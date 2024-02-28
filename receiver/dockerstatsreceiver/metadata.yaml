@@ -150,6 +150,12 @@ metrics:
     unit: "1"
     gauge:
       value_type: int
+  container.cpu.online:
+    enabled: false
+    description: "Number of online CPUs."
+    unit: "{CPUs}"
+    gauge:
+      value_type: int
 
 
   # Memory
@@ -463,6 +469,14 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+  container.memory.fails:
+    enabled: true
+    description: "Number of times the memory limit was hit."
+    unit: "{fails}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
 
 
   # BlockIO (cgroup v1) and IO (cgroup v2) controllers

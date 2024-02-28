@@ -84,6 +84,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerCPULimitDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordContainerCPUOnlineDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordContainerCPUSharesDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -131,6 +134,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordContainerMemoryDirtyDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerMemoryFailsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -502,6 +509,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "container.cpu.online":
+					assert.False(t, validatedMetrics["container.cpu.online"], "Found a duplicate in the metrics slice: container.cpu.online")
+					validatedMetrics["container.cpu.online"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of online CPUs.", ms.At(i).Description())
+					assert.Equal(t, "{CPUs}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "container.cpu.shares":
 					assert.False(t, validatedMetrics["container.cpu.shares"], "Found a duplicate in the metrics slice: container.cpu.shares")
 					validatedMetrics["container.cpu.shares"] = true
@@ -705,6 +724,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "Bytes that are waiting to get written back to the disk, from this cgroup (Only available with cgroups v1).", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.fails":
+					assert.False(t, validatedMetrics["container.memory.fails"], "Found a duplicate in the metrics slice: container.memory.fails")
+					validatedMetrics["container.memory.fails"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of times the memory limit was hit.", ms.At(i).Description())
+					assert.Equal(t, "{fails}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
