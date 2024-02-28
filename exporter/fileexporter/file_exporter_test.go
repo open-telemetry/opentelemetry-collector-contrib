@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -126,7 +127,7 @@ func TestFileTracesExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := tt.args.conf
-			feI, err := newFileExporter(conf, nil)
+			feI, err := newFileExporter(conf, zap.NewNop())
 			assert.NoError(t, err)
 			require.IsType(t, &fileExporter{}, feI)
 			fe := feI.(*fileExporter)
@@ -648,7 +649,7 @@ func TestFlushing(t *testing.T) {
 	// Wrap the buffer with the buffered writer closer that implements flush() method.
 	bwc := newBufferedWriteCloser(buf)
 	// Create a file exporter with flushing enabled.
-	feI, err := newFileExporter(cfg, nil)
+	feI, err := newFileExporter(cfg, zap.NewNop())
 	assert.NoError(t, err)
 	assert.IsType(t, &fileExporter{}, feI)
 	fe := feI.(*fileExporter)
