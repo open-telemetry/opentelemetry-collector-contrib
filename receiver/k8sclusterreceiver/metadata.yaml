@@ -510,3 +510,7 @@ metrics:
 
   # k8s.node.allocatable_* metrics (k8s.node.allocatable_cpu, k8s.node.allocatable_memory, etc) are controlled
   # by allocatable_types_to_report config option. By default, none of them are reported.
+
+tests:
+  config:
+  skip_lifecycle: true
