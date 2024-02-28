@@ -240,7 +240,7 @@ func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
 	return cfg
 }
 
-func (f *factory) consumeStatsPayload(ctx context.Context, statsIn <-chan []byte, statsToAgent chan<- *pb.StatsPayload, tracerVersion string, logger *zap.Logger) {
+func (f *factory) consumeStatsPayload(ctx context.Context, statsIn <-chan []byte, statsToAgent chan<- *pb.StatsPayload, tracerVersion string, agentVersion string, logger *zap.Logger) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		f.wg.Add(1)
 		go func() {
@@ -262,6 +262,8 @@ func (f *factory) consumeStatsPayload(ctx context.Context, statsIn <-chan []byte
 							csp.TracerVersion = tracerVersion
 						}
 					}
+					// The DD Connector doesn't set the agent version, so we'll set it here
+					sp.AgentVersion = agentVersion
 					statsToAgent <- sp
 				}
 			}
@@ -299,7 +301,7 @@ func (f *factory) createMetricsExporter(
 	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
 		statsIn = make(chan []byte, 1000)
 		statsv := set.BuildInfo.Command + set.BuildInfo.Version
-		f.consumeStatsPayload(ctx, statsIn, statsToAgent, statsv, set.Logger)
+		f.consumeStatsPayload(ctx, statsIn, statsToAgent, statsv, acfg.AgentVersion, set.Logger)
 	}
 	pcfg := newMetadataConfigfromConfig(cfg)
 	metadataReporter, err := f.Reporter(set, pcfg)

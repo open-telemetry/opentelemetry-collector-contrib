@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.2.0
 	go.opentelemetry.io/otel/metric v1.23.1
 	go.opentelemetry.io/otel/trace v1.23.1
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 	google.golang.org/api v0.165.0
 	google.golang.org/grpc v1.61.0
 )

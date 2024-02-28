@@ -7,7 +7,7 @@ exporters:
   loadbalancing:
     protocol:
       otlp:
-        endpoint: should-be-replaced
+        endpoint: should-be-replaced:4317
 
     resolver:
       static:

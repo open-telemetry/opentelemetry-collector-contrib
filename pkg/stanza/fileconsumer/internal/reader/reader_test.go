@@ -60,7 +60,7 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 			temp := filetest.OpenTemp(t, tempDir)
 			tempCopy := filetest.OpenFile(t, temp.Name())
 
-			f, _ := testFactory(t, withSinkBufferSize(3*fpSize/lineLen), withFingerprintSize(fpSize))
+			f, _ := testFactory(t, withSinkChanSize(3*fpSize/lineLen), withFingerprintSize(fpSize))
 			fp, err := f.NewFingerprint(temp)
 			require.NoError(t, err)
 			require.Equal(t, []byte(""), fp.FirstBytes)
@@ -110,14 +110,14 @@ func TestFingerprintChangeSize(t *testing.T) {
 
 	// Use prime numbers to ensure variation in
 	// whether or not they are factors of fpSize
-	lineLens := []int{3, 5, 7, 11, 13, 17, 19, 23, 27}
+	lineLens := []int{3, 4, 5, 6, 7, 8, 11, 12, 13, 17, 19, 23, 27, 36}
 
 	for _, lineLen := range lineLens {
 		lineLen := lineLen
 		t.Run(fmt.Sprintf("%d", lineLen), func(t *testing.T) {
 			t.Parallel()
 
-			f, _ := testFactory(t, withSinkBufferSize(3*fpSize/lineLen), withFingerprintSize(fpSize))
+			f, _ := testFactory(t, withSinkChanSize(3*fpSize/lineLen), withFingerprintSize(fpSize))
 
 			tempDir := t.TempDir()
 			temp := filetest.OpenTemp(t, tempDir)
@@ -151,7 +151,8 @@ func TestFingerprintChangeSize(t *testing.T) {
 			}
 
 			// Recreate the factory with a larger fingerprint size
-			f, _ = testFactory(t, withSinkBufferSize(3*fpSize/lineLen), withFingerprintSize(fpSize*lineLen/3))
+			fpSizeUp := fpSize * 2
+			f, _ = testFactory(t, withSinkChanSize(3*fpSize/lineLen), withFingerprintSize(fpSizeUp))
 
 			// Recreate the reader with the new factory
 			reader, err = f.NewReaderFromMetadata(filetest.OpenFile(t, temp.Name()), reader.Close())
@@ -162,10 +163,11 @@ func TestFingerprintChangeSize(t *testing.T) {
 
 			filetest.WriteString(t, temp, line)
 			reader.ReadToEnd(context.Background())
-			require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
+			require.Equal(t, fileContent[:fpSizeUp], reader.Fingerprint.FirstBytes)
 
 			// Recreate the factory with a smaller fingerprint size
-			f, _ = testFactory(t, withSinkBufferSize(3*fpSize/lineLen), withFingerprintSize(fpSize/2))
+			fpSizeDown := fpSize / 2
+			f, _ = testFactory(t, withSinkChanSize(3*fpSize/lineLen), withFingerprintSize(fpSizeDown))
 
 			// Recreate the reader with the new factory
 			reader, err = f.NewReaderFromMetadata(filetest.OpenFile(t, temp.Name()), reader.Close())
@@ -176,7 +178,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 
 			filetest.WriteString(t, temp, line)
 			reader.ReadToEnd(context.Background())
-			require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
+			require.Equal(t, fileContent[:fpSizeDown], reader.Fingerprint.FirstBytes)
 		})
 	}
 }
