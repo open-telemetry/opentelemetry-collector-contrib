@@ -474,7 +474,7 @@ func waitForSupervisorConnection(connection chan bool, connected bool) {
 	}
 }
 
-func TestSupervisorTestConfigPersistance(t *testing.T) {
+func TestSupervisorTestConfigPersistence(t *testing.T) {
 	// Create a temporary directory to store the test config file.
 	tempDir := t.TempDir()
 
@@ -494,7 +494,7 @@ func TestSupervisorTestConfigPersistance(t *testing.T) {
 			},
 		})
 
-	s := newSupervisor(t, "persistance", map[string]string{"url": server.addr, "storage_dir": tempDir})
+	s := newSupervisor(t, "persistence", map[string]string{"url": server.addr, "storage_dir": tempDir})
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
