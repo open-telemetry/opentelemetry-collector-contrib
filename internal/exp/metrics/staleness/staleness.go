@@ -42,7 +42,7 @@ func (s *Staleness[T]) Load(id identity.Stream) (T, bool) {
 
 // Store the given key value pair in the map, and update the pair's staleness value to "now"
 func (s *Staleness[T]) Store(id identity.Stream, v T) {
-	s.pq.Update(id, time.Now())
+	s.pq.Update(id, NowFunc())
 	s.items.Store(id, v)
 }
 
