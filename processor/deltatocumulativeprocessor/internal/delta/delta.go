@@ -15,7 +15,7 @@ import (
 )
 
 type Options struct {
-	MaxStale time.Duration
+	MaxStale time.Duration `json:"max_stale"`
 }
 
 func construct[D data.Point[D]](ctx context.Context, opts Options) streams.Aggregator[D] {
