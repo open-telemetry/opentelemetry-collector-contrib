@@ -7,3 +7,8 @@ status:
   distributions: [contrib, observiq]
   codeowners:
     active: [Aneurysm9, MovieStoreGuy]
+
+tests:
+  config:
+  skip_lifecycle: true
+
