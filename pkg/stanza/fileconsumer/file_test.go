@@ -70,22 +70,6 @@ func TestDefaultBehaviors(t *testing.T) {
 	assert.Equal(t, tempName, attributes[attrs.LogFileName])
 }
 
-func TestCleanStop(t *testing.T) {
-	t.Parallel()
-	t.Skip(`Skipping due to goroutine leak in opencensus.
-See this issue for details: https://github.com/census-instrumentation/opencensus-go/issues/1191#issuecomment-610440163`)
-	// defer goleak.VerifyNone(t)
-
-	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	operator, _ := testManager(t, cfg)
-
-	_ = filetest.OpenTemp(t, tempDir)
-	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
-	require.NoError(t, operator.Stop())
-}
-
 // ReadExistingLogs tests that, when starting from beginning, we
 // read all the lines that are already there
 func TestReadExistingLogs(t *testing.T) {
