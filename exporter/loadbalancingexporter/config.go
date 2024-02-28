@@ -35,7 +35,7 @@ type ResolverSettings struct {
 	Static    *StaticResolver    `mapstructure:"static"`
 	DNS       *DNSResolver       `mapstructure:"dns"`
 	K8sSvc    *K8sSvcResolver    `mapstructure:"k8s"`
-	DNSSRVNOA *DNSSRVNOAResolver `mapstructure:"srv"`
+	DNSSRVNOA *DNSSRVNOAResolver `mapstructure:"dnssrvnoa"`
 }
 
 // StaticResolver defines the configuration for the resolver providing a fixed list of backends
