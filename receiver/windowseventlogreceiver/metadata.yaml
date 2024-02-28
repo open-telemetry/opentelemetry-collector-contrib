@@ -7,3 +7,7 @@ status:
   distributions: [contrib, splunk, observiq, sumo]
   codeowners:
     active: [djaglowski, armstrmi, pjanotti]
+  unsupported_platforms: [darwin, linux]
+
+tests:
+  config:
