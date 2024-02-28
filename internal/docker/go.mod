@@ -6,7 +6,7 @@ require (
 	github.com/docker/docker v24.0.9+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.8.4
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 )
 
 require (

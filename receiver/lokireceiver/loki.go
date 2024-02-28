@@ -141,7 +141,7 @@ func (r *lokiReceiver) startHTTPServer() error {
 
 func (r *lokiReceiver) startGRPCServer(ctx context.Context) error {
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.conf.GRPC.NetAddr.Endpoint))
-	listener, err := r.conf.GRPC.ToListenerContext(ctx)
+	listener, err := r.conf.GRPC.NetAddr.Listen(ctx)
 	if err != nil {
 		return err
 	}

@@ -191,16 +191,6 @@ func TestCreateLogReceiver(t *testing.T) {
 			wantStartErr: true,
 			sink:         new(consumertest.LogsSink),
 		},
-		{
-			name: "no_next_consumer",
-			cfg: &Config{
-				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-				},
-			},
-			wantErr: true,
-			sink:    nil,
-		},
 	}
 	ctx := context.Background()
 	creationSet := receivertest.NewNopCreateSettings()

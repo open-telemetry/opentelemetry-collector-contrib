@@ -6,8 +6,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-rc.4
 	github.com/DataDog/datadog-agent/pkg/trace v0.52.0-rc.4
 	github.com/DataDog/datadog-go/v5 v5.1.1
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.3
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.3
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.4
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.4
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.95.0
 	go.opentelemetry.io/collector/featuregate v1.2.0
@@ -26,7 +26,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.52.0-rc.4 // indirect
 	github.com/DataDog/go-sqllexer v0.0.9 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.3 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.4 // indirect
 	github.com/DataDog/sketches-go v1.4.4 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
