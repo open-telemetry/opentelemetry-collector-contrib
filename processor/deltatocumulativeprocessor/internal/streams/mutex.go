@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package streams
 
 import (
@@ -14,18 +17,18 @@ type mtx[T any, M Map[T]] struct {
 func (m *mtx[T, M]) Load(id identity.Stream) (T, bool) {
 	m.RLock()
 	defer m.RUnlock()
-	return m.Load(id)
+	return m.Map.Load(id)
 }
 
 func (m *mtx[T, M]) Store(id identity.Stream, v T) {
 	m.Lock()
-	m.Store(id, v)
+	m.Map.Store(id, v)
 	m.Unlock()
 }
 
 func (m *mtx[T, M]) Delete(id identity.Stream) {
 	m.Lock()
-	m.Delete(id)
+	m.Map.Delete(id)
 	m.Unlock()
 }
 

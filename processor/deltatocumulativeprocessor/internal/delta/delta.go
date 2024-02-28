@@ -47,7 +47,7 @@ type Accumulator[D data.Point[D]] struct {
 
 // Aggregate implements delta-to-cumulative aggregation as per spec:
 // https://opentelemetry.io/docs/specs/otel/metrics/data-model/#sums-delta-to-cumulative
-func (a *Accumulator[D]) Aggregate(ctx context.Context, id streams.Ident, dp D) (D, error) {
+func (a *Accumulator[D]) Aggregate(_ context.Context, id streams.Ident, dp D) (D, error) {
 	aggr, ok := a.dps.Load(id)
 
 	// new series: initialize with current sample

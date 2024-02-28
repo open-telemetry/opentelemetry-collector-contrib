@@ -6,8 +6,9 @@ package deltatocumulativeprocessor // import "github.com/open-telemetry/opentele
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
 	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
 )
 
 var _ component.ConfigValidator = (*Config)(nil)

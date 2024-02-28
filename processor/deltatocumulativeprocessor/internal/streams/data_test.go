@@ -4,10 +4,12 @@
 package streams_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
@@ -36,7 +38,7 @@ func BenchmarkSamples(b *testing.B) {
 
 		for i := 0; i < dps.Len(); i++ {
 			dp := dps.At(i)
-			rid = streams.Identify(mid, dp.Attributes())
+			rid = identity.OfStream(mid, dp)
 			rdp = dp
 		}
 	})
@@ -48,7 +50,7 @@ func BenchmarkSamples(b *testing.B) {
 
 		for i := range dps.dps {
 			dp := dps.dps[i]
-			rid = streams.Identify(mid, dp.Attributes())
+			rid = identity.OfStream(mid, dp)
 			rdp = dp
 		}
 	})
@@ -75,13 +77,13 @@ func TestAggregate(t *testing.T) {
 	dps := generate(total)
 
 	// inv aggregator inverts each sample
-	inv := aggr(func(id streams.Ident, n data.Number) (data.Number, error) {
+	inv := aggr(func(ctx context.Context, id streams.Ident, n data.Number) (data.Number, error) {
 		dp := n.Clone()
 		dp.SetIntValue(-dp.IntValue())
 		return dp, nil
 	})
 
-	err := streams.Aggregate(dps, inv)
+	err := streams.Aggregate(context.TODO(), dps, inv)
 	require.NoError(t, err)
 
 	// check that all samples are inverted
@@ -118,8 +120,8 @@ func (l Data) Ident() metrics.Ident {
 	return l.id.Metric()
 }
 
-type aggr func(streams.Ident, data.Number) (data.Number, error)
+type aggr func(context.Context, streams.Ident, data.Number) (data.Number, error)
 
-func (a aggr) Aggregate(id streams.Ident, dp data.Number) (data.Number, error) {
-	return a(id, dp)
+func (a aggr) Aggregate(ctx context.Context, id streams.Ident, dp data.Number) (data.Number, error) {
+	return a(ctx, id, dp)
 }

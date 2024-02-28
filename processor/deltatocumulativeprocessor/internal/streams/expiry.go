@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package streams
 
 import (
@@ -54,7 +57,7 @@ func (e *Expiry[T]) Start(ctx context.Context) {
 
 func (e *Expiry[T]) Store(id identity.Stream, v T) {
 	e.mtx.Lock()
-	e.Store(id, v)
+	e.mtx.Store(id, v)
 	e.mtx.Unlock()
 
 	// "try-send" to notify possibly sleeping expiry routine
