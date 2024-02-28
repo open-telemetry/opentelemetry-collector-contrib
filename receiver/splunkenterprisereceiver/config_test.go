@@ -49,13 +49,13 @@ func TestEndpointCorrectness(t *testing.T) {
 			desc:     "missing any endpoint setting",
 			expected: errBad,
 			config: &Config{
-				IdxEndpoint: confighttp.HTTPClientSettings{
+				IdxEndpoint: confighttp.ClientConfig{
 					Auth: &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
 				},
-				SHEndpoint: confighttp.HTTPClientSettings{
+				SHEndpoint: confighttp.ClientConfig{
 					Auth: &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
 				},
-				CMEndpoint: confighttp.HTTPClientSettings{
+				CMEndpoint: confighttp.ClientConfig{
 					Auth: &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
 				},
 			},
@@ -64,7 +64,7 @@ func TestEndpointCorrectness(t *testing.T) {
 			desc:     "properly configured invalid endpoint",
 			expected: errBad,
 			config: &Config{
-				IdxEndpoint: confighttp.HTTPClientSettings{
+				IdxEndpoint: confighttp.ClientConfig{
 					Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
 					Endpoint: "123.321.12.1:1",
 				},
@@ -74,7 +74,7 @@ func TestEndpointCorrectness(t *testing.T) {
 			desc:     "properly configured endpoint has bad scheme",
 			expected: errScheme,
 			config: &Config{
-				IdxEndpoint: confighttp.HTTPClientSettings{
+				IdxEndpoint: confighttp.ClientConfig{
 					Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
 					Endpoint: "gss://123.124.32.12:90",
 				},
@@ -84,7 +84,7 @@ func TestEndpointCorrectness(t *testing.T) {
 			desc:     "properly configured endpoint missing auth",
 			expected: errMissingAuthExtension,
 			config: &Config{
-				IdxEndpoint: confighttp.HTTPClientSettings{
+				IdxEndpoint: confighttp.ClientConfig{
 					Endpoint: "https://123.123.32.2:2093",
 				},
 			},

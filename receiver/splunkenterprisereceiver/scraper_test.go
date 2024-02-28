@@ -83,17 +83,17 @@ func TestScraper(t *testing.T) {
 	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
 
 	cfg := &Config{
-		IdxEndpoint: confighttp.HTTPClientSettings{
+		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: ts.URL,
-			Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("basicauth/client")},
+			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
-		SHEndpoint: confighttp.HTTPClientSettings{
+		SHEndpoint: confighttp.ClientConfig{
 			Endpoint: ts.URL,
-			Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("basicauth/client")},
+			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
-		CMEndpoint: confighttp.HTTPClientSettings{
+		CMEndpoint: confighttp.ClientConfig{
 			Endpoint: ts.URL,
-			Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("basicauth/client")},
+			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
@@ -105,7 +105,7 @@ func TestScraper(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.NewID("basicauth/client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
 		},
 	}
 
