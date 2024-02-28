@@ -8,9 +8,8 @@ import (
 	"os"
 	"os/signal"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
+	"go.uber.org/zap"
 )
 
 func main() {

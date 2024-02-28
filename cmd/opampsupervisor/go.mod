@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.95.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
+	google.golang.org/protobuf v1.32.0
 )
 
 require (
@@ -31,6 +32,5 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
-	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
