@@ -43,7 +43,7 @@ func (e *exporter) ReturnAfter(after int) chan []*metricdata.Metric {
 }
 
 // Write received metrics to data channel
-func (e *exporter) ExportMetrics(ctx context.Context, data []*metricdata.Metric) error {
+func (e *exporter) ExportMetrics(_ context.Context, data []*metricdata.Metric) error {
 	for _, m := range data {
 		e.pipe <- m
 	}
