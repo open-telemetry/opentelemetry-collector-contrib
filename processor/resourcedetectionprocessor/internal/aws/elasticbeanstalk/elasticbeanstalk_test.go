@@ -46,7 +46,7 @@ func Test_windowsPath(t *testing.T) {
 
 	r, _, err := d.Detect(context.TODO())
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, r)
 	assert.Equal(t, windowsPath, mfs.path)
 }
@@ -57,7 +57,7 @@ func Test_fileNotExists(t *testing.T) {
 
 	r, _, err := d.Detect(context.TODO())
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, r)
 	assert.Equal(t, 0, r.Attributes().Len())
 }
@@ -68,7 +68,7 @@ func Test_fileMalformed(t *testing.T) {
 
 	r, _, err := d.Detect(context.TODO())
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.NotNil(t, r)
 	assert.Equal(t, 0, r.Attributes().Len())
 }
@@ -88,7 +88,7 @@ func Test_AttributesDetectedSuccessfully(t *testing.T) {
 
 	r, _, err := d.Detect(context.TODO())
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, r)
 	assert.Equal(t, want.Attributes().AsRaw(), r.Attributes().AsRaw())
 }

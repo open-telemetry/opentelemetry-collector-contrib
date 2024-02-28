@@ -232,6 +232,8 @@ type ResourceAttributesConfig struct {
 	ContainerID                  ResourceAttributeConfig `mapstructure:"container.id"`
 	ContainerImageName           ResourceAttributeConfig `mapstructure:"container.image.name"`
 	ContainerImageTag            ResourceAttributeConfig `mapstructure:"container.image.tag"`
+	ContainerRuntime             ResourceAttributeConfig `mapstructure:"container.runtime"`
+	ContainerRuntimeVersion      ResourceAttributeConfig `mapstructure:"container.runtime.version"`
 	K8sContainerName             ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sCronjobName               ResourceAttributeConfig `mapstructure:"k8s.cronjob.name"`
 	K8sCronjobUID                ResourceAttributeConfig `mapstructure:"k8s.cronjob.uid"`
@@ -244,7 +246,6 @@ type ResourceAttributesConfig struct {
 	K8sJobName                   ResourceAttributeConfig `mapstructure:"k8s.job.name"`
 	K8sJobUID                    ResourceAttributeConfig `mapstructure:"k8s.job.uid"`
 	K8sKubeletVersion            ResourceAttributeConfig `mapstructure:"k8s.kubelet.version"`
-	K8sKubeproxyVersion          ResourceAttributeConfig `mapstructure:"k8s.kubeproxy.version"`
 	K8sNamespaceName             ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
 	K8sNamespaceUID              ResourceAttributeConfig `mapstructure:"k8s.namespace.uid"`
 	K8sNodeName                  ResourceAttributeConfig `mapstructure:"k8s.node.name"`
@@ -262,6 +263,8 @@ type ResourceAttributesConfig struct {
 	K8sStatefulsetUID            ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
 	OpenshiftClusterquotaName    ResourceAttributeConfig `mapstructure:"openshift.clusterquota.name"`
 	OpenshiftClusterquotaUID     ResourceAttributeConfig `mapstructure:"openshift.clusterquota.uid"`
+	OsDescription                ResourceAttributeConfig `mapstructure:"os.description"`
+	OsType                       ResourceAttributeConfig `mapstructure:"os.type"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -274,6 +277,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		ContainerImageTag: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		ContainerRuntime: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ContainerRuntimeVersion: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		K8sContainerName: ResourceAttributeConfig{
 			Enabled: true,
@@ -309,9 +318,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sKubeletVersion: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		K8sKubeproxyVersion: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		K8sNamespaceName: ResourceAttributeConfig{
@@ -364,6 +370,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		OpenshiftClusterquotaUID: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		OsDescription: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		OsType: ResourceAttributeConfig{
+			Enabled: false,
 		},
 	}
 }

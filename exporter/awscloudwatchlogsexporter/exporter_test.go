@@ -380,7 +380,7 @@ func TestConsumeLogs(t *testing.T) {
 		t.Run(testcase.id, func(t *testing.T) {
 			logPusher := new(mockPusher)
 			exp.pusherFactory = &mockFactory{logPusher}
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.NotNil(t, exp)
 			ld := plog.NewLogs()
 			r := ld.ResourceLogs().AppendEmpty()
@@ -419,5 +419,5 @@ func TestNewExporterWithoutRegionErr(t *testing.T) {
 	expCfg.MaxRetries = 0
 	exp, err := newCwLogsExporter(expCfg, exportertest.NewNopCreateSettings())
 	assert.Nil(t, exp)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

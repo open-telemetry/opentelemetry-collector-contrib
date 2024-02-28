@@ -1566,17 +1566,17 @@ func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.
 func TestGCInterval(t *testing.T) {
 	for _, tc := range []struct {
 		desc  string
-		input *promConfig.Config
+		input *PromConfig
 		want  time.Duration
 	}{
 		{
 			desc:  "default",
-			input: &promConfig.Config{},
+			input: &PromConfig{},
 			want:  defaultGCInterval,
 		},
 		{
 			desc: "global override",
-			input: &promConfig.Config{
+			input: &PromConfig{
 				GlobalConfig: promConfig.GlobalConfig{
 					ScrapeInterval: model.Duration(10 * time.Minute),
 				},
@@ -1585,7 +1585,7 @@ func TestGCInterval(t *testing.T) {
 		},
 		{
 			desc: "scrape config override",
-			input: &promConfig.Config{
+			input: &PromConfig{
 				ScrapeConfigs: []*promConfig.ScrapeConfig{
 					{
 						ScrapeInterval: model.Duration(10 * time.Minute),
@@ -1606,7 +1606,7 @@ func TestGCInterval(t *testing.T) {
 
 func TestUserAgent(t *testing.T) {
 	uaCh := make(chan string, 1)
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	svr := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		select {
 		case uaCh <- r.UserAgent():
 		default:
@@ -1625,7 +1625,7 @@ scrape_configs:
 	require.NoError(t, err)
 	set := receivertest.NewNopCreateSettings()
 	receiver := newPrometheusReceiver(set, &Config{
-		PrometheusConfig: cfg,
+		PrometheusConfig: (*PromConfig)(cfg),
 	}, new(consumertest.MetricsSink))
 
 	ctx := context.Background()

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build integration && !windows
-// +build integration,!windows
 
 package subprocess
 
@@ -233,7 +232,7 @@ func (suite *SubprocessIntegrationSuite) TestSendingStdinFails() {
 	subprocess := NewSubprocess(&Config{ExecutablePath: "echo", Args: []string{"finished"}}, logger)
 
 	intentionalError := fmt.Errorf("intentional failure")
-	subprocess.sendToStdIn = func(contents string, writer io.Writer) error {
+	subprocess.sendToStdIn = func(string, io.Writer) error {
 		return intentionalError
 	}
 

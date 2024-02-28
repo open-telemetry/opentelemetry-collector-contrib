@@ -12,3 +12,6 @@ status:
   - liatrio
   codeowners:
     active: [Aneurysm9, erichsueh3]
+
+tests:
+  config:

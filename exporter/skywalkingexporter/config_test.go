@@ -58,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 10 * time.Second,
 				},
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+				ClientConfig: configgrpc.ClientConfig{
 					Headers: map[string]configopaque.String{
 						"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
 						"header1":                "234",
@@ -102,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	c1 := &Config{
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: "",
 		},
 		NumStreams: 3,
@@ -110,7 +110,7 @@ func TestValidate(t *testing.T) {
 	err := c1.Validate()
 	assert.Error(t, err)
 	c2 := &Config{
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: "",
 		},
 		NumStreams: 0,

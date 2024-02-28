@@ -58,13 +58,6 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "nil_nextConsumer",
-			args: args{
-				config: *defaultConfig,
-			},
-			wantErr: errNilNextLogsConsumer,
-		},
-		{
 			name: "empty_endpoint",
 			args: args{
 				config:       *emptyEndpointConfig,
@@ -83,7 +76,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+					ServerConfig: confighttp.ServerConfig{
 						Endpoint: "localhost:1234",
 					},
 				},
@@ -118,13 +111,6 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "nil_nextConsumer",
-			args: args{
-				config: *defaultConfig,
-			},
-			wantErr: errNilNextMetricsConsumer,
-		},
-		{
 			name: "empty_endpoint",
 			args: args{
 				config:          *emptyEndpointConfig,
@@ -143,7 +129,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+					ServerConfig: confighttp.ServerConfig{
 						Endpoint: "localhost:1234",
 					},
 				},
@@ -463,17 +449,20 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 		},
 	}
 	sink := new(consumertest.LogsSink)
-	r, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *cfg, sink)
+	set := receivertest.NewNopCreateSettings()
+	set.ReportStatus = func(event *component.StatusEvent) {
+		assert.NoError(t, event.Err())
+	}
+	r, err := newLogsReceiver(set, *cfg, sink)
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, r.Shutdown(context.Background()))
 	}()
 
-	mh := newAssertNoErrHost(t)
-	require.NoError(t, r.Start(context.Background(), mh), "should not have failed to start log reception")
-	require.NoError(t, r.Start(context.Background(), mh), "should not fail to start log on second Start call")
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "should not have failed to start log reception")
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "should not fail to start log on second Start call")
 
-	// If there are errors reported through host.ReportFatalError() this will retrieve it.
+	// If there are errors reported through ReportStatus this will retrieve it.
 	<-time.After(500 * time.Millisecond)
 	t.Log("Event Reception Started")
 
@@ -909,24 +898,6 @@ func (b badReqBody) Read(_ []byte) (n int, err error) {
 
 func (b badReqBody) Close() error {
 	return nil
-}
-
-// assertNoErrHost implements a component.Host that asserts that there were no errors.
-type assertNoErrHost struct {
-	component.Host
-	*testing.T
-}
-
-// newAssertNoErrHost returns a new instance of assertNoErrHost.
-func newAssertNoErrHost(t *testing.T) component.Host {
-	return &assertNoErrHost{
-		Host: componenttest.NewNopHost(),
-		T:    t,
-	}
-}
-
-func (aneh *assertNoErrHost) ReportFatalError(err error) {
-	assert.NoError(aneh, err)
 }
 
 func Test_splunkhecReceiver_handleRawReq(t *testing.T) {

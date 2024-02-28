@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/kineticadb/kinetica-api-go/kinetica"
-	orderedmap "github.com/wk8/go-ordered-map"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -24,24 +24,6 @@ type AttributeValue struct {
 	DoubleValue float64 `avro:"double_value"`
 	BytesValue  []byte  `avro:"bytes_value"`
 }
-
-// newAttributeValue Constructor for AttributeValue
-//
-//	@param intValue
-//	@param stringValue
-//	@param boolValue
-//	@param doubleValue
-//	@param bytesValue
-//	@return *AttributeValue
-// func newAttributeValue(intValue int, stringValue string, boolValue int8, doubleValue float64, bytesValue []byte) *AttributeValue {
-// 	o := new(AttributeValue)
-// 	o.IntValue = intValue
-// 	o.StringValue = stringValue
-// 	o.BoolValue = boolValue
-// 	o.DoubleValue = doubleValue
-// 	o.BytesValue = bytesValue
-// 	return o
-// }
 
 // KiWriter - struct modeling the Kinetica connection, contains the
 // Kinetica connection [kinetica.Kinetica], the Kinetica Options [kinetica.KineticaOptions],
@@ -100,20 +82,6 @@ func newKiWriter(ctx context.Context, cfg Config, logger *zap.Logger) *KiWriter 
 	gpudbInst := kinetica.NewWithOptions(ctx, cfg.Host, &options)
 	return &KiWriter{*gpudbInst, options, cfg, logger}
 }
-
-// getGpuDbInst - Creates and returns a new [kinetica.Kinetica] struct
-//
-//	@param cfg
-//	@return *gpudb.Gpudb
-// func getGpuDbInst(cfg *Config) *kinetica.Kinetica {
-// 	ctx := context.TODO()
-// 	options := kinetica.KineticaOptions{Username: cfg.Username, Password: string(cfg.Password), ByPassSslCertCheck: cfg.BypassSslCertCheck}
-// 	// fmt.Println("Options", options)
-// 	gpudbInst := kinetica.NewWithOptions(ctx, cfg.Host, &options)
-
-// 	return gpudbInst
-
-// }
 
 // Metrics Handling
 
@@ -490,7 +458,7 @@ type SummaryScopeAttribute struct {
 //	@param metricType - a [pmetric.MetricTypeGauge] or something else converted to string
 //	@param tableDataMap - a map from table name to the relevant data
 //	@return error
-func (kiwriter *KiWriter) writeMetric(metricType string, tableDataMap *orderedmap.OrderedMap) error {
+func (kiwriter *KiWriter) writeMetric(metricType string, tableDataMap *orderedmap.OrderedMap[string, []any]) error {
 
 	kiwriter.logger.Debug("Writing metric", zap.String("Type", metricType))
 
@@ -499,8 +467,8 @@ func (kiwriter *KiWriter) writeMetric(metricType string, tableDataMap *orderedma
 
 	wg := &sync.WaitGroup{}
 	for pair := tableDataMap.Oldest(); pair != nil; pair = pair.Next() {
-		tableName := pair.Key.(string)
-		data := pair.Value.([]any)
+		tableName := pair.Key
+		data := pair.Value
 
 		wg.Add(1)
 
@@ -567,7 +535,7 @@ func (kiwriter *KiWriter) persistGaugeRecord(gaugeRecords []kineticaGaugeRecord)
 
 	}
 
-	tableDataMap := orderedmap.New()
+	tableDataMap := orderedmap.New[string, []any]()
 
 	tableDataMap.Set(GaugeTable, gauges)
 	tableDataMap.Set(GaugeDatapointTable, datapoints)
@@ -625,7 +593,7 @@ func (kiwriter *KiWriter) persistSumRecord(sumRecords []kineticaSumRecord) error
 
 	}
 
-	tableDataMap := orderedmap.New()
+	tableDataMap := orderedmap.New[string, []any]()
 
 	tableDataMap.Set(SumTable, sums)
 	tableDataMap.Set(SumDatapointTable, datapoints)
@@ -692,7 +660,7 @@ func (kiwriter *KiWriter) persistHistogramRecord(histogramRecords []kineticaHist
 		}
 	}
 
-	tableDataMap := orderedmap.New()
+	tableDataMap := orderedmap.New[string, []any]()
 
 	tableDataMap.Set(HistogramTable, histograms)
 	tableDataMap.Set(HistogramDatapointTable, datapoints)
@@ -761,7 +729,7 @@ func (kiwriter *KiWriter) persistExponentialHistogramRecord(exponentialHistogram
 		}
 	}
 
-	tableDataMap := orderedmap.New()
+	tableDataMap := orderedmap.New[string, []any]()
 
 	tableDataMap.Set(ExpHistogramTable, histograms)
 	tableDataMap.Set(ExpHistogramDatapointTable, datapoints)
@@ -815,7 +783,7 @@ func (kiwriter *KiWriter) persistSummaryRecord(summaryRecords []kineticaSummaryR
 		}
 	}
 
-	tableDataMap := orderedmap.New()
+	tableDataMap := orderedmap.New[string, []any]()
 
 	tableDataMap.Set(SummaryTable, summaries)
 	tableDataMap.Set(SummaryDatapointTable, datapoints)

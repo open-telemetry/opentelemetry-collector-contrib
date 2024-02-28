@@ -59,7 +59,7 @@ func Test_tracerPublisher_marshaler_err(t *testing.T) {
 	producer := PulsarTracesProducer{client: nil, producer: mProducer, marshaler: &customTraceMarshaler{encoding: "unknown"}}
 	err := producer.tracesPusher(context.Background(), testdata.GenerateTracesManySpansSameResource(10))
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err))
 }
 

@@ -26,7 +26,7 @@ import (
 
 type metricsReceiver struct {
 	nextConsumer       consumer.Metrics
-	httpServerSettings *confighttp.HTTPServerSettings
+	httpServerSettings *confighttp.ServerConfig
 	converter          *influx2otel.LineProtocolToOtelMetrics
 
 	server *http.Server
@@ -56,7 +56,7 @@ func newMetricsReceiver(config *Config, settings receiver.CreateSettings, nextCo
 
 	return &metricsReceiver{
 		nextConsumer:       nextConsumer,
-		httpServerSettings: &config.HTTPServerSettings,
+		httpServerSettings: &config.ServerConfig,
 		converter:          converter,
 		logger:             influxLogger,
 		obsrecv:            obsrecv,
@@ -83,7 +83,7 @@ func (r *metricsReceiver) Start(_ context.Context, host component.Host) error {
 	go func() {
 		defer r.wg.Done()
 		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			host.ReportFatalError(errHTTP)
+			r.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 

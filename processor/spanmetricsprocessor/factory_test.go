@@ -57,7 +57,7 @@ func TestNewProcessor(t *testing.T) {
 			smp := traceProcessor.(*processorImp)
 
 			// Verify
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.NotNil(t, smp)
 
 			assert.Equal(t, tc.wantLatencyHistogramBuckets, smp.latencyBounds)

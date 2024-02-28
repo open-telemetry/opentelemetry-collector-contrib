@@ -44,14 +44,7 @@ var (
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
 )
 
-func newExtension(cfg *Config, logger *zap.Logger) (auth.Server, error) {
-	if cfg.Audience == "" {
-		return nil, errNoAudienceProvided
-	}
-	if cfg.IssuerURL == "" {
-		return nil, errNoIssuerURL
-	}
-
+func newExtension(cfg *Config, logger *zap.Logger) auth.Server {
 	if cfg.Attribute == "" {
 		cfg.Attribute = defaultAttribute
 	}
@@ -60,7 +53,7 @@ func newExtension(cfg *Config, logger *zap.Logger) (auth.Server, error) {
 		cfg:    cfg,
 		logger: logger,
 	}
-	return auth.NewServer(auth.WithServerStart(oe.start), auth.WithServerAuthenticate(oe.authenticate)), nil
+	return auth.NewServer(auth.WithServerStart(oe.start), auth.WithServerAuthenticate(oe.authenticate))
 }
 
 func (e *oidcExtension) start(context.Context, component.Host) error {

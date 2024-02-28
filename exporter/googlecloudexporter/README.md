@@ -199,7 +199,6 @@ The following configuration options are supported:
       errors (`UNAVAILABLE` or `DEADLINE_EXCEEDED`).
 - `trace` (optional): Configuration for sending traces to Cloud Trace.
   - `endpoint` (default = cloudtrace.googleapis.com): Endpoint where trace data is going to be sent to.
-  - `compression` (optional): Compression format for Metrics gRPC requests. Supported values: [`gzip`].  Defaults to no compression.
   - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
   - `use_insecure` (default = false): If true, disables gRPC client transport security. Only has effect if Endpoint is not "".
   - `attribute_mappings` (optional): AttributeMappings determines how to map from OpenTelemetry attribute keys to Google Cloud Trace keys.  By default, it changes http and service keys so that they appear more prominently in the UI.
@@ -235,6 +234,34 @@ following proxy environment variables:
 
 If set at Collector start time then exporters, regardless of protocol,
 will or will not proxy traffic as defined by these environment variables.
+
+### Monitored Resources
+
+For metrics and logs, this exporter maps the OpenTelemetry Resource to a Google
+Cloud [Logging](https://cloud.google.com/logging/docs/api/v2/resource-list) or
+[Monitoring](https://cloud.google.com/monitoring/api/resources) Monitored Resource.
+
+The complete mapping logic can be found [here](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/internal/resourcemapping/resourcemapping.go).
+That may be the most helpful reference if you want to map to a specific monitored
+resource.
+
+#### On GCP
+
+If running on GCP, using the GCP resource detector, as shown above, will populate
+the resource attributes required to map to the appropriate monitored resource.
+
+#### Off GCP
+
+If you are not running on GCP, you still need to choose a [GCP zone or
+region](https://cloud.google.com/compute/docs/regions-zones) to send telemetry to
+by setting `cloud.availability_zone` or `cloud.region`. In addition, you should use the detector associated with other cloud providers, if applicable.
+
+If running on Kubernetes, it is recommended to additionally set `k8s.pod.name`,
+`k8s.namespace.name`, and `k8s.container.name` using the `k8sattributes` processor.
+
+If you are getting "duplicate timeseries encountered" errors, it is likely because
+you are missing a required resource attribute, causing a metric from two different
+instances of an application to end up with the same monitored resource.
 
 ### Preventing metric label collisions
 
@@ -274,6 +301,9 @@ processors:
       - set(attributes["exported_instrumentation_version"], attributes["instrumentation_version"])
       - delete_key(attributes, "instrumentation_version")
 ```
+
+**Note** It is not recommended to use these transformations with the googlecloud
+exporter in a logging or trace pipeline.
 
 The same method can be used for any resource attributes being filtered to metric
 labels, or metric labels which might collide with the GCP monitored resource

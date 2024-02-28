@@ -30,7 +30,7 @@ func createDefaultConfig() component.Config {
 		ScraperControllerSettings: cfg,
 		AllowNativePasswords:      true,
 		Username:                  "root",
-		NetAddr: confignet.NetAddr{
+		AddrConfig: confignet.AddrConfig{
 			Endpoint:  "localhost:3306",
 			Transport: "tcp",
 		},
@@ -52,7 +52,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	ns := newMySQLScraper(params, cfg)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start),
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ns.scrape, scraperhelper.WithStart(ns.start),
 		scraperhelper.WithShutdown(ns.shutdown))
 
 	if err != nil {

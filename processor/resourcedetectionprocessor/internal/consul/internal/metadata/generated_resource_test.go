@@ -13,13 +13,6 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(test, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, test)
 			rb := NewResourceBuilder(cfg)
-			rb.SetAzureResourcegroupName("azure.resourcegroup.name-val")
-			rb.SetAzureVMName("azure.vm.name-val")
-			rb.SetAzureVMScalesetName("azure.vm.scaleset.name-val")
-			rb.SetAzureVMSize("azure.vm.size-val")
-			rb.SetCloudAccountID("cloud.account.id-val")
-			rb.SetCloudPlatform("cloud.platform-val")
-			rb.SetCloudProvider("cloud.provider-val")
 			rb.SetCloudRegion("cloud.region-val")
 			rb.SetHostID("host.id-val")
 			rb.SetHostName("host.name-val")
@@ -29,9 +22,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 10, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 10, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -39,42 +32,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", test)
 			}
 
-			val, ok := res.Attributes().Get("azure.resourcegroup.name")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "azure.resourcegroup.name-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("azure.vm.name")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "azure.vm.name-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("azure.vm.scaleset.name")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "azure.vm.scaleset.name-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("azure.vm.size")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "azure.vm.size-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("cloud.account.id")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "cloud.account.id-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("cloud.platform")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "cloud.platform-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("cloud.provider")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "cloud.provider-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("cloud.region")
+			val, ok := res.Attributes().Get("cloud.region")
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "cloud.region-val", val.Str())

@@ -21,7 +21,7 @@ import (
 func Test_NewTracesExporter(t *testing.T) {
 	t.Run("should create Traces exporter", func(t *testing.T) {
 		config := &Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: "http://example.logicmonitor.com/rest",
 			},
 			APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
@@ -45,7 +45,7 @@ func TestPushTraceData(t *testing.T) {
 	params := exportertest.NewNopCreateSettings()
 	f := NewFactory()
 	config := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: ts.URL,
 		},
 		APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
@@ -54,6 +54,7 @@ func TestPushTraceData(t *testing.T) {
 	exp, err := f.CreateTracesExporter(ctx, params, config)
 	assert.NoError(t, err)
 	assert.NoError(t, exp.Start(ctx, componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, exp.Shutdown(ctx)) }()
 
 	testTraces := ptrace.NewTraces()
 	generateTraces().CopyTo(testTraces)

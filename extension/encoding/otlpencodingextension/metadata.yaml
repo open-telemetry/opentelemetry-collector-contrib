@@ -7,3 +7,6 @@ status:
   distributions: [ ]
   codeowners:
     active: [ dao-jun, VihasMakwana ]
+
+tests:
+  config:

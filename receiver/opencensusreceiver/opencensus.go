@@ -36,7 +36,8 @@ type ocReceiver struct {
 	serverHTTP         *http.Server
 	gatewayMux         *gatewayruntime.ServeMux
 	corsOrigins        []string
-	grpcServerSettings configgrpc.GRPCServerSettings
+	grpcServerSettings configgrpc.ServerConfig
+	cancel             context.CancelFunc
 
 	traceReceiver   *octrace.Receiver
 	metricsReceiver *ocmetrics.Receiver
@@ -105,7 +106,7 @@ func (ocr *ocReceiver) Start(_ context.Context, host component.Host) error {
 		return errors.New("cannot start receiver: no consumers were specified")
 	}
 
-	if err := ocr.startServer(host); err != nil {
+	if err := ocr.startServer(); err != nil {
 		return err
 	}
 
@@ -192,6 +193,10 @@ func (ocr *ocReceiver) Shutdown(context.Context) error {
 	// tests and code should be reactive in less than even 1second.
 	// ocr.serverGRPC.Stop()
 
+	if ocr.cancel != nil {
+		ocr.cancel()
+	}
+
 	return err
 }
 
@@ -211,9 +216,10 @@ func (ocr *ocReceiver) httpServer() *http.Server {
 	return ocr.serverHTTP
 }
 
-func (ocr *ocReceiver) startServer(host component.Host) error {
+func (ocr *ocReceiver) startServer() error {
 	// Register the grpc-gateway on the HTTP server mux
-	c := context.Background()
+	var c context.Context
+	c, ocr.cancel = context.WithCancel(context.Background())
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	endpoint := ocr.ln.Addr().String()
 
@@ -241,17 +247,17 @@ func (ocr *ocReceiver) startServer(host component.Host) error {
 		// Check for cmux.ErrServerClosed, because during the shutdown this is not properly close before closing the cmux,
 		// see TODO in Shutdown.
 		if err := ocr.serverGRPC.Serve(grpcL); !errors.Is(err, grpc.ErrServerStopped) && !errors.Is(err, cmux.ErrServerClosed) && err != nil {
-			host.ReportFatalError(err)
+			ocr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	go func() {
 		if err := ocr.httpServer().Serve(httpL); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			host.ReportFatalError(err)
+			ocr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	go func() {
 		if err := m.Serve(); !errors.Is(err, cmux.ErrServerClosed) && err != nil {
-			host.ReportFatalError(err)
+			ocr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil

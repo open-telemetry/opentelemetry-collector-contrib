@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func Test_loadMetadata(t *testing.T) {
+func TestLoadMetadata(t *testing.T) {
 	tests := []struct {
 		name    string
 		want    metadata

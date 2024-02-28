@@ -46,6 +46,7 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, cfg co
 		exporterhelper.WithStart(lmLogExp.start),
 		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithRetry(c.BackOffConfig),
+		exporterhelper.WithShutdown(lmLogExp.shutdown),
 	)
 }
 
@@ -61,5 +62,7 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, cfg 
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(lmTraceExp.start),
 		exporterhelper.WithRetry(c.BackOffConfig),
-		exporterhelper.WithQueue(c.QueueSettings))
+		exporterhelper.WithQueue(c.QueueSettings),
+		exporterhelper.WithShutdown(lmTraceExp.shutdown),
+	)
 }

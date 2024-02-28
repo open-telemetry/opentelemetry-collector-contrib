@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -34,10 +34,9 @@ type TestCase struct {
 	// Agent process.
 	agentProc OtelcolRunner
 
-	Sender   DataSender
 	receiver DataReceiver
 
-	LoadGenerator *LoadGenerator
+	LoadGenerator LoadGenerator
 	MockBackend   *MockBackend
 	validator     TestCaseValidator
 
@@ -46,7 +45,8 @@ type TestCase struct {
 	// errorSignal indicates an error in the test case execution, e.g. process execution
 	// failure or exceeding resource consumption, etc. The actual error message is already
 	// logged, this is only an indicator on which you can wait to be informed.
-	errorSignal chan struct{}
+	errorSignal       chan struct{}
+	errorSignalCloser *sync.Once
 	// Duration is the requested duration of the tests. Configured via TESTBED_DURATION
 	// env variable and defaults to 15 seconds if env variable is unspecified.
 	Duration       time.Duration
@@ -72,17 +72,24 @@ func NewTestCase(
 	resultsSummary TestResultsSummary,
 	opts ...TestCaseOption,
 ) *TestCase {
+	loadGenerator, err := NewLoadGenerator(dataProvider, sender)
+	require.NoError(t, err, "Cannot create generator")
+	return NewLoadGeneratorTestCase(t, loadGenerator, receiver, agentProc, validator, resultsSummary, opts...)
+}
+
+func NewLoadGeneratorTestCase(t *testing.T, loadGenerator LoadGenerator, receiver DataReceiver, agentProc OtelcolRunner, validator TestCaseValidator, resultsSummary TestResultsSummary, opts ...TestCaseOption) *TestCase {
 	tc := TestCase{
-		t:              t,
-		errorSignal:    make(chan struct{}),
-		doneSignal:     make(chan struct{}),
-		startTime:      time.Now(),
-		Sender:         sender,
-		receiver:       receiver,
-		agentProc:      agentProc,
-		validator:      validator,
-		resultsSummary: resultsSummary,
-		decision:       func() error { return nil },
+		t:                 t,
+		errorSignal:       make(chan struct{}),
+		errorSignalCloser: &sync.Once{},
+		doneSignal:        make(chan struct{}),
+		startTime:         time.Now(),
+		LoadGenerator:     loadGenerator,
+		receiver:          receiver,
+		agentProc:         agentProc,
+		validator:         validator,
+		resultsSummary:    resultsSummary,
+		decision:          func() error { return nil },
 	}
 
 	// Get requested test case duration from env variable.
@@ -112,9 +119,6 @@ func NewTestCase(
 		// Resource check period should not be longer than entire test duration.
 		tc.resourceSpec.ResourceCheckPeriod = tc.Duration
 	}
-
-	tc.LoadGenerator, err = NewLoadGenerator(dataProvider, sender)
-	require.NoError(t, err, "Cannot create generator")
 
 	tc.MockBackend = NewMockBackend(tc.ComposeTestResultFileName("backend.log"), receiver)
 	tc.MockBackend.WithDecisionFunc(tc.decision)
@@ -153,21 +157,7 @@ func (tc *TestCase) StartAgent(args ...string) {
 		}
 	}()
 
-	endpoint := tc.LoadGenerator.sender.GetEndpoint()
-	if endpoint != nil {
-		// Wait for agent to start. We consider the agent started when we can
-		// connect to the port to which we intend to send load. We only do this
-		// if the endpoint is not-empty, i.e. the sender does use network (some senders
-		// like text log writers don't).
-		tc.WaitFor(func() bool {
-			conn, err := net.Dial(tc.LoadGenerator.sender.GetEndpoint().Network(), tc.LoadGenerator.sender.GetEndpoint().String())
-			if err == nil && conn != nil {
-				conn.Close()
-				return true
-			}
-			return false
-		}, fmt.Sprintf("connection to %s:%s", tc.LoadGenerator.sender.GetEndpoint().Network(), tc.LoadGenerator.sender.GetEndpoint().String()))
-	}
+	tc.WaitFor(tc.LoadGenerator.IsReady, "LoadGenerator isn't ready")
 }
 
 // StopAgent stops agent process.
@@ -232,7 +222,7 @@ func (tc *TestCase) Stop() {
 }
 
 // ValidateData validates data received by mock backend against what was generated and sent to the collector
-// instance(s) under test by the LoadGenerator.
+// instance(s) under test by the ProviderSender.
 func (tc *TestCase) ValidateData() {
 	select {
 	case <-tc.errorSignal:
@@ -280,7 +270,7 @@ func (tc *TestCase) WaitForN(cond func() bool, duration time.Duration, errMsg an
 
 		if time.Since(startTime) > duration {
 			// Waited too long
-			tc.t.Error("Time out waiting for", errMsg)
+			tc.indicateError(fmt.Errorf("Time out waiting for %v", errMsg))
 			return false
 		}
 	}
@@ -292,16 +282,17 @@ func (tc *TestCase) WaitFor(cond func() bool, errMsg any) bool {
 }
 
 func (tc *TestCase) indicateError(err error) {
-	// Print to log for visibility
+	// Print for visibility but only set test error on first pass
 	log.Print(err.Error())
 
-	// Indicate error for the test
-	tc.t.Error(err.Error())
+	tc.errorSignalCloser.Do(func() {
+		tc.t.Error(err.Error())
 
-	tc.errorCause = err.Error()
+		tc.errorCause = err.Error()
 
-	// Signal the error via channel
-	close(tc.errorSignal)
+		// Signal the error via channel
+		close(tc.errorSignal)
+	})
 }
 
 func (tc *TestCase) logStats() {

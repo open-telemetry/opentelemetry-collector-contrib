@@ -220,8 +220,8 @@ configuration.
 To overcome this problem the Supervisor starts the Collector with an
 "noop" configuration that collects nothing but allows the opamp
 extension to be started. The "noop" configuration is a single pipeline
-with a filelog receiver that points to a non-existing file and a logging
-exporter and the opamp extension. The purpose of the "noop"
+with an OTLP receiver that listens on a random port and a debug
+exporter, and the opamp extension. The purpose of the "noop"
 configuration is to make sure the Collector starts and the opamp
 extension communicates with the Supervisor.
 
@@ -411,7 +411,7 @@ extensions:
   opamp:
     # OpAMP server URL. Supports WS or plain http transport,
     # based on the scheme of the URL (ws,wss,http,https).
-    # Any other settings defined in HTTPClientSettings, squashed. This
+    # Any other settings defined in ClientConfig, squashed. This
     # includes ability to specify an "auth" setting that refers
     # to an extension that implements the Authentication interface.
     endpoint:

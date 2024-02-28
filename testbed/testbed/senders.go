@@ -19,7 +19,7 @@ import (
 )
 
 // DataSender defines the interface that allows sending data. This is an interface
-// that must be implemented by all protocols that want to be used in LoadGenerator.
+// that must be implemented by all protocols that want to be used in ProviderSender.
 // Note the terminology: DataSender is something that sends data to Collector
 // and the corresponding entity that receives the data in the Collector is a receiver.
 type DataSender interface {
@@ -78,7 +78,7 @@ func (dsb *DataSenderBase) Flush() {
 
 type otlpHTTPDataSender struct {
 	DataSenderBase
-	compression configcompression.CompressionType
+	compression configcompression.Type
 }
 
 func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphttpexporter.Config {
@@ -114,7 +114,7 @@ type otlpHTTPTraceDataSender struct {
 }
 
 // NewOTLPHTTPTraceDataSender creates a new TraceDataSender for OTLP/HTTP traces exporter.
-func NewOTLPHTTPTraceDataSender(host string, port int, compression configcompression.CompressionType) TraceDataSender {
+func NewOTLPHTTPTraceDataSender(host string, port int, compression configcompression.Type) TraceDataSender {
 	return &otlpHTTPTraceDataSender{
 		otlpHTTPDataSender: otlpHTTPDataSender{
 			DataSenderBase: DataSenderBase{
