@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package staleness
+package staleness // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/staleness"
 
 import (
 	"time"
@@ -10,25 +10,14 @@ import (
 )
 
 // We override how Now() is returned, so we can have deterministic tests
-var nowFunc = time.Now
+var NowFunc = time.Now
 
-type Map[T any] interface {
-	// Load the value at key. If it does not exist, the boolean will be false and the value returned will be the zero value
-	Load(key identity.Stream) (T, bool)
-	// Store the given key value pair in the map
-	Store(key identity.Stream, value T)
-	// LoadOrStore will either load the value from the map and return it and the boolean `true`
-	// or if it doesn't exist in the Map yet, the value passed in will be stored and then returned with the boolean `false`
-	// LoadOrStore(key identity.Stream, value T) (T, bool)
-	// Remove the value at key from the map
-	Delete(key identity.Stream)
-	// Items returns an iterator function that in future go version can be used with range
-	// See: https://go.dev/wiki/RangefuncExperiment
-	Items() func(yield func(identity.Stream, T) bool) bool
-	// Number of items
-	Len() int
-}
-
+// Staleness a a wrapper over a map that adds an additional "staleness" value to each entry. Users can
+// call ExpireOldEntries() to automatically remove all entries from the map whole staleness value is
+// older than the `max`
+//
+// NOTE: Staleness methods are *not* thread-safe. If the user needs to use Staleness in a multi-threaded
+// environment, then it is the user's responsibility to properly serialize calls to Staleness methods
 type Staleness[T any] struct {
 	Max time.Duration
 
@@ -45,10 +34,12 @@ func NewStaleness[T any](max time.Duration, items Map[T]) *Staleness[T] {
 	}
 }
 
+// Load the value at key. If it does not exist, the boolean will be false and the value returned will be the zero value
 func (s *Staleness[T]) Load(id identity.Stream) (T, bool) {
 	return s.items.Load(id)
 }
 
+// Store the given key value pair in the map, and update the pair's staleness value to "now"
 func (s *Staleness[T]) Store(id identity.Stream, v T) {
 	s.pq.Update(id, time.Now())
 	s.items.Store(id, v)
@@ -58,12 +49,17 @@ func (s *Staleness[T]) Delete(id identity.Stream) {
 	s.items.Delete(id)
 }
 
+// Items returns an iterator function that in future go version can be used with range
+// See: https://go.dev/wiki/RangefuncExperiment
 func (s *Staleness[T]) Items() func(yield func(identity.Stream, T) bool) bool {
 	return s.items.Items()
 }
 
-func (s *Staleness[T]) ExpireOldItems() {
-	now := nowFunc()
+// ExpireOldEntries will remove all entries whose staleness value is older than `now() - max`
+// For example, if an entry has a staleness value of two hours ago, and max == 1 hour, then the entry would
+// be removed. But if an entry had a stalness value of 30 minutes, then it *wouldn't* be removed.
+func (s *Staleness[T]) ExpireOldEntries() {
+	now := NowFunc()
 	for {
 		_, ts := s.pq.Peek()
 		if now.Sub(ts) < s.Max {

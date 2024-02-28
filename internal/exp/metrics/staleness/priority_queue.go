@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package staleness
+package staleness // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/staleness"
 
 import (
 	"container/heap"
@@ -10,6 +10,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 )
 
+// PriorityQueue represents a way to store entries sorted by their priority.
+// Pop() will return the oldest entry of the set.
+type PriorityQueue interface {
+	// Update will add or update an entry, and reshuffle the queue internally as needed to keep it sorted
+	Update(id identity.Stream, newPrio time.Time)
+	// Peek will return the entry at the HEAD of the queue *without* removing it from the queue
+	Peek() (identity.Stream, time.Time)
+	// Pop will remove the entry at the HEAD of the queue and return it
+	Pop() (identity.Stream, time.Time)
+	// Len will return the number of entries in the queue
+	Len() int
+}
+
+// heapQueue implements heap.Interface.
+// We use it as the inner implementation of a heap-based sorted queue
 type heapQueue []*queueItem
 
 type queueItem struct {
@@ -48,18 +63,6 @@ func (pq *heapQueue) Pop() any {
 	return item
 }
 
-func (pq *heapQueue) Update(item *queueItem, newPrio time.Time) {
-	item.prio = newPrio
-	heap.Fix(pq, item.index)
-}
-
-type PriorityQueue interface {
-	Update(id identity.Stream, newPrio time.Time)
-	Peek() (identity.Stream, time.Time)
-	Pop() (identity.Stream, time.Time)
-	Len() int
-}
-
 type heapPriorityQueue struct {
 	inner      heapQueue
 	itemLookup map[identity.Stream]*queueItem
@@ -76,16 +79,19 @@ func NewPriorityQueue() PriorityQueue {
 }
 
 func (pq *heapPriorityQueue) Update(id identity.Stream, newPrio time.Time) {
+	// Check if the entry already exists in the queue
 	item, ok := pq.itemLookup[id]
-	if !ok {
+	if ok {
+		// If so, we can update it in place
+		item.prio = newPrio
+		heap.Fix(&pq.inner, item.index)
+	} else {
 		item = &queueItem{
 			key:  id,
 			prio: newPrio,
 		}
 		heap.Push(&pq.inner, item)
 		pq.itemLookup[id] = item
-	} else {
-		pq.inner.Update(item, newPrio)
 	}
 }
 

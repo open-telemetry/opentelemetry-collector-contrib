@@ -50,6 +50,11 @@ git add .
 git commit -m "make multimod-sync changes ${CANDIDATE_BETA}" || (echo "no multimod changes to commit")
 
 make gotidy
+
+pushd cmd/otelcontribcol
+go mod tidy
+popd
+
 git add .
 git commit -m "make gotidy changes ${CANDIDATE_BETA}" || (echo "no gotidy changes to commit")
 make otelcontribcol

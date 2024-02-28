@@ -40,7 +40,7 @@ func Aggregate[D data.Point[D]](ctx context.Context, m metrics.Data[D], aggr Agg
 			return true
 		}
 		next.CopyTo(dp)
-		return false
+		return true
 	})
 
 	return errs
