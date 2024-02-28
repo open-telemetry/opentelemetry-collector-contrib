@@ -47,7 +47,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "zero_value_parser",
 			args: args{
 				config: Config{
-					NetAddr: confignet.NetAddr{
+					AddrConfig: confignet.AddrConfig{
 						Endpoint:  defaultConfig.Endpoint,
 						Transport: defaultConfig.Transport,
 					},
@@ -68,7 +68,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "regex_parser",
 			args: args{
 				config: Config{
-					NetAddr: confignet.NetAddr{
+					AddrConfig: confignet.AddrConfig{
 						Endpoint:  "localhost:2003",
 						Transport: "tcp",
 					},
@@ -115,7 +115,7 @@ func Test_carbonreceiver_Start(t *testing.T) {
 			name: "invalid_transport",
 			args: args{
 				config: Config{
-					NetAddr: confignet.NetAddr{
+					AddrConfig: confignet.AddrConfig{
 						Endpoint:  "localhost:2003",
 						Transport: "unknown_transp",
 					},

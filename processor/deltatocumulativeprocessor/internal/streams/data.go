@@ -43,7 +43,7 @@ func Aggregate[D data.Point[D]](m metrics.Data[D], aggr Aggregator[D]) error {
 			return true
 		}
 		next.CopyTo(dp)
-		return false
+		return true
 	})
 
 	return errs
