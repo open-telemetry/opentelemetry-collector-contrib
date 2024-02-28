@@ -79,7 +79,7 @@ type GroupBy struct {
 	ResourceAttribute string `mapstructure:"resource_attribute"`
 
 	// MaxOpenFiles specifies the maximum number of open file descriptors for the output files.
-	// The fefaults is 100.
+	// The default is 100.
 	MaxOpenFiles int `mapstructure:"max_open_files"`
 }
 

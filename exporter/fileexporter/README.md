@@ -25,7 +25,7 @@ Exporter supports the following features：
 
 + Support for compressing the telemetry data before exporting.
 
-+ Supports for writing into multiple files, where the file path is determined by a resource attribute.
++ Support for writing into multiple files, where the file path is determined by a resource attribute.
 
 Please note that there is no guarantee that exact field names will remain stable.
 
@@ -85,9 +85,9 @@ Otherwise, when using `proto` format or any kind of encoding, each encoded objec
 
 ## Group by attribute
 
-By specifying `group_by.resource_attribute` in the config, the exporter will determine a filepath for each telemetry record, by concatenating the value of the resource attribute to the `path` configuration value.
+By specifying `group_by.resource_attribute` in the config, the exporter will determine a filepath for each telemetry record, by substituting the value of the resource attribute into the `path` configuration value.
 
-The exporter will NOT write files outside of the `path` config value, eg: if `path` is "/data", and the resource attribute value is "../etc/my_config.yaml", then the final path will be sanitized to "/data/etc/my_config.yaml".
+The final path is guaranteed to start with the prefix part of the `path` config value (the part before the `*` character). For example if `path` is "/data/*.json", and the resource attribute value is "../etc/my_config", then the final path will be sanitized to "/data/etc/my_config.json".
 
 The final path can contain path separators (`/`). The exporter will create missing directories recursively (similarly to `mkdir -p`).
 

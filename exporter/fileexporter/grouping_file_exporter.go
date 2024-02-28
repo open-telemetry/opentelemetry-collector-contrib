@@ -206,7 +206,7 @@ func (e *groupingFileExporter) fullPath(pathSegment string) string {
 	return path.Join(e.pathPrefix, path.Join("/", pathSegment+e.pathSuffix))
 }
 
-func (e *groupingFileExporter) onEnvict(_ string, writer *fileWriter) {
+func (e *groupingFileExporter) onEvict(_ string, writer *fileWriter) {
 	err := writer.shutdown()
 	if err != nil {
 		e.logger.Warn("Failed to close file", zap.Error(err), zap.String("path", writer.path))

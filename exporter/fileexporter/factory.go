@@ -188,7 +188,7 @@ func newFileExporter(conf *Config, logger *zap.Logger) (FileExporter, error) {
 		},
 	}
 
-	writers, err := simplelru.NewLRU[string, *fileWriter](conf.GroupBy.MaxOpenFiles, e.onEnvict)
+	writers, err := simplelru.NewLRU[string, *fileWriter](conf.GroupBy.MaxOpenFiles, e.onEvict)
 	if err != nil {
 		return nil, err
 	}
