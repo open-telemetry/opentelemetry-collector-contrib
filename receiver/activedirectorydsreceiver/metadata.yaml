@@ -210,6 +210,3 @@ metrics:
       aggregation_temporality: cumulative
       value_type: double
     enabled: true
-
-tests:
-  config:
