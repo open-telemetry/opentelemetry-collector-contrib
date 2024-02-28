@@ -5,6 +5,7 @@ package reader // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -43,7 +44,7 @@ type Factory struct {
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
-	return fingerprint.New(file, f.FingerprintSize)
+	return fingerprint.NewFromFile(file, f.FingerprintSize)
 }
 
 func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
@@ -59,10 +60,6 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 }
 
 func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
-	// Trim the fingerprint if user has reconfigured fingerprint_size
-	if len(m.Fingerprint.FirstBytes) > f.FingerprintSize {
-		m.Fingerprint.FirstBytes = m.Fingerprint.FirstBytes[:f.FingerprintSize]
-	}
 	r = &Reader{
 		Metadata:          m,
 		logger:            f.SugaredLogger.With("path", file.Name()),
@@ -74,6 +71,18 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		decoder:           decode.New(f.Encoding),
 		lineSplitFunc:     f.SplitFunc,
 		deleteAtEOF:       f.DeleteAtEOF,
+	}
+
+	if r.Fingerprint.Len() > r.fingerprintSize {
+		// User has reconfigured fingerprint_size
+		shorter, rereadErr := fingerprint.NewFromFile(file, r.fingerprintSize)
+		if rereadErr != nil {
+			return nil, fmt.Errorf("reread fingerprint: %w", err)
+		}
+		if !r.Fingerprint.StartsWith(shorter) {
+			return nil, errors.New("file truncated")
+		}
+		m.Fingerprint = shorter
 	}
 
 	if !f.FromBeginning {
