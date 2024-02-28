@@ -67,7 +67,7 @@ func ProbabilityToThresholdWithPrecision(prob float64, prec uint8) (Threshold, e
 
 	// Check if leading zeros plus precision is above the maximum.
 	// This is called underflow because the requested precision
-	// leads to complete no significant figures.
+	// leads to no significant figures.
 	if prec > NumHexDigits {
 		return AlwaysSampleThreshold, ErrPrecisionUnderflow
 	}

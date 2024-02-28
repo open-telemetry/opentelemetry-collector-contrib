@@ -20,7 +20,7 @@ import (
 
 var onceMetrics sync.Once
 
-const defaultPrecision = 3
+const defaultPrecision = 5
 
 // NewFactory returns a new factory for the Probabilistic sampler processor.
 func NewFactory() processor.Factory {

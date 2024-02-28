@@ -67,6 +67,12 @@ type Config struct {
 	//   probability of each span by `SamplingProbability`.
 	SamplerMode SamplerMode `mapstructure:"mode"`
 
+	// StrictRandomness indicates whether input is expected to
+	// check the W3C Trace Context Level 2 Random flag before
+	// consistent probability sampling.  It is unlikely this will
+	// be useful until support for the flag is widely deployed,
+	StrictRandomness bool `mapstructure:"strict_randomness"`
+
 	///////
 	// Logs only fields below.
 
@@ -82,7 +88,7 @@ type Config struct {
 	SamplingPriority string `mapstructure:"sampling_priority"`
 
 	// How many hex digits of th: value to use, max, from 1 up to
-	// 14.  Default is 3.
+	// 14.  Default is 5.
 	SamplingPrecision uint8 `mapstructure:"sampling_precision"`
 }
 
