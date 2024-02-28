@@ -24,9 +24,9 @@ var (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	IdxEndpoint                             confighttp.HTTPClientSettings `mapstructure:"indexer"`
-	SHEndpoint                              confighttp.HTTPClientSettings `mapstructure:"search_head"`
-	CMEndpoint                              confighttp.HTTPClientSettings `mapstructure:"cluster_master"`
+	IdxEndpoint                             confighttp.ClientConfig `mapstructure:"indexer"`
+	SHEndpoint                              confighttp.ClientConfig `mapstructure:"search_head"`
+	CMEndpoint                              confighttp.ClientConfig `mapstructure:"cluster_master"`
 }
 
 func (cfg *Config) Validate() (errors error) {
