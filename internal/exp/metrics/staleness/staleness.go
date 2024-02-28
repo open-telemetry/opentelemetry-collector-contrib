@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/streams"
 )
 
 // We override how Now() is returned, so we can have deterministic tests
@@ -21,11 +22,11 @@ var NowFunc = time.Now
 type Staleness[T any] struct {
 	Max time.Duration
 
-	items Map[T]
+	items streams.Map[T]
 	pq    PriorityQueue
 }
 
-func NewStaleness[T any](max time.Duration, items Map[T]) *Staleness[T] {
+func NewStaleness[T any](max time.Duration, items streams.Map[T]) *Staleness[T] {
 	return &Staleness[T]{
 		Max: max,
 

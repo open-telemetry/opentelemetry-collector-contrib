@@ -26,7 +26,7 @@ type Expiry[T any] struct {
 func (e *Expiry[T]) Start(ctx context.Context) {
 	for {
 		e.mtx.Lock()
-		e.Map.ExpireOldItems()
+		e.Map.ExpireOldEntries()
 		e.mtx.Unlock()
 
 		n := e.Map.Len()
