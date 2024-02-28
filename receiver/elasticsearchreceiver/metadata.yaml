@@ -994,3 +994,6 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: false
+
+tests:
+  config:
