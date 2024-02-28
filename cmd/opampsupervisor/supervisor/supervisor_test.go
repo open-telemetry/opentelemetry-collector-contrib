@@ -10,13 +10,16 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
 func Test_composeEffectiveConfig(t *testing.T) {
+	acceptsRemoteConfig := true
 	s := Supervisor{
 		logger:                       zap.NewNop(),
+		config:                       config.Supervisor{Capabilities: &config.Capabilities{AcceptsRemoteConfig: &acceptsRemoteConfig}},
 		hasNewConfig:                 make(chan struct{}, 1),
 		effectiveConfigFilePath:      "effective.yaml",
 		agentConfigOwnMetricsSection: &atomic.Value{},
@@ -55,6 +58,6 @@ func Test_composeEffectiveConfig(t *testing.T) {
 	require.NoError(t, err)
 	expectedConfig = bytes.ReplaceAll(expectedConfig, []byte("\r\n"), []byte("\n"))
 
-	require.True(t, configChanged)
+	require.False(t, configChanged)
 	require.Equal(t, string(expectedConfig), s.effectiveConfig.Load().(string))
 }

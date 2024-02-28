@@ -460,9 +460,10 @@ func (s *Supervisor) composeExtraLocalConfig() []byte {
 }
 
 func (s *Supervisor) loadAgentEffectiveConfig() {
-	var effectiveConfigBytes []byte
+	var effectiveConfigBytes, effFromFile, lastRecvRemoteConfig, lastRecvOwnMetricsConfig []byte
+	var err error
 
-	effFromFile, err := os.ReadFile(s.effectiveConfigFilePath)
+	effFromFile, err = os.ReadFile(s.effectiveConfigFilePath)
 	if err == nil {
 		// We have an effective config file.
 		effectiveConfigBytes = effFromFile
@@ -473,11 +474,11 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 
 	s.effectiveConfig.Store(string(effectiveConfigBytes))
 
-	if s.config.Capabilities.AcceptsRemoteConfig != nil &&
+	if s.config.Capabilities != nil && s.config.Capabilities.AcceptsRemoteConfig != nil &&
 		*s.config.Capabilities.AcceptsRemoteConfig &&
 		s.config.Storage != nil {
 		// Try to load the last received remote config if it exists.
-		lastRecvRemoteConfig, err := os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
+		lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
 		if err == nil {
 			config := &protobufs.AgentRemoteConfig{}
 			err = proto.Unmarshal(lastRecvRemoteConfig, config)
@@ -491,11 +492,11 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 		s.logger.Debug("Remote config is not supported")
 	}
 
-	if s.config.Capabilities.ReportsOwnMetrics != nil &&
+	if s.config.Capabilities != nil && s.config.Capabilities.ReportsOwnMetrics != nil &&
 		*s.config.Capabilities.ReportsOwnMetrics &&
 		s.config.Storage != nil {
 		// Try to load the last received own metrics config if it exists.
-		lastRecvOwnMetricsConfig, err := os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvOwnMetricsConfigFile))
+		lastRecvOwnMetricsConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvOwnMetricsConfigFile))
 		if err == nil {
 			set := &protobufs.TelemetryConnectionSettings{}
 			err = proto.Unmarshal(lastRecvOwnMetricsConfig, set)
@@ -860,7 +861,7 @@ func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig)
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile), cfg, 0644)
+	return os.WriteFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile), cfg, 0600)
 }
 
 func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.TelemetryConnectionSettings, filePath string) error {
@@ -873,7 +874,7 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Telemet
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(s.config.Storage.Directory, filePath), cfg, 0644)
+	return os.WriteFile(filepath.Join(s.config.Storage.Directory, filePath), cfg, 0600)
 }
 
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
