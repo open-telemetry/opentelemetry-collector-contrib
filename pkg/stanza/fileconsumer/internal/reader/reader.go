@@ -30,18 +30,20 @@ type Metadata struct {
 // Reader manages a single file
 type Reader struct {
 	*Metadata
-	logger          *zap.SugaredLogger
-	fileName        string
-	file            *os.File
-	fingerprintSize int
-	maxLogSize      int
-	lineSplitFunc   bufio.SplitFunc
-	splitFunc       bufio.SplitFunc
-	decoder         *decode.Decoder
-	headerReader    *header.Reader
-	processFunc     emit.Callback
-	emitFunc        emit.Callback
-	deleteAtEOF     bool
+	logger                 *zap.SugaredLogger
+	fileName               string
+	file                   *os.File
+	fingerprintSize        int
+	initialBufferSize      int
+	maxLogSize             int
+	lineSplitFunc          bufio.SplitFunc
+	splitFunc              bufio.SplitFunc
+	decoder                *decode.Decoder
+	headerReader           *header.Reader
+	processFunc            emit.Callback
+	emitFunc               emit.Callback
+	deleteAtEOF            bool
+	needsUpdateFingerprint bool
 }
 
 // ReadToEnd will read until the end of the file
@@ -51,7 +53,13 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
-	s := scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
+	defer func() {
+		if r.needsUpdateFingerprint {
+			r.updateFingerprint()
+		}
+	}()
+
+	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -144,32 +152,16 @@ func (r *Reader) close() {
 }
 
 // Read from the file and update the fingerprint if necessary
-func (r *Reader) Read(dst []byte) (int, error) {
-	// Skip if fingerprint is already built
-	// or if fingerprint is behind Offset
-	if len(r.Fingerprint.FirstBytes) == r.fingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
-		return r.file.Read(dst)
-	}
-	n, err := r.file.Read(dst)
-	appendCount := min0(n, r.fingerprintSize-int(r.Offset))
-	// return for n == 0 or r.Offset >= r.fingerprintSize
-	if appendCount == 0 {
-		return n, err
+func (r *Reader) Read(dst []byte) (n int, err error) {
+	n, err = r.file.Read(dst)
+	if n == 0 || err != nil {
+		return
 	}
 
-	// for appendCount==0, the following code would add `0` to fingerprint
-	r.Fingerprint.FirstBytes = append(r.Fingerprint.FirstBytes[:r.Offset], dst[:appendCount]...)
-	return n, err
-}
-
-func min0(a, b int) int {
-	if a < 0 || b < 0 {
-		return 0
+	if !r.needsUpdateFingerprint && len(r.Fingerprint.FirstBytes) < r.fingerprintSize {
+		r.needsUpdateFingerprint = true
 	}
-	if a < b {
-		return a
-	}
-	return b
+	return
 }
 
 func (r *Reader) NameEquals(other *Reader) bool {
@@ -193,4 +185,19 @@ func (r *Reader) Validate() bool {
 
 func (m Metadata) GetFingerprint() *fingerprint.Fingerprint {
 	return m.Fingerprint
+}
+
+func (r *Reader) updateFingerprint() {
+	r.needsUpdateFingerprint = false
+	if r.file == nil {
+		return
+	}
+	refreshedFingerprint, err := fingerprint.New(r.file, r.fingerprintSize)
+	if err != nil {
+		return
+	}
+	if len(r.Fingerprint.FirstBytes) > 0 && !refreshedFingerprint.StartsWith(r.Fingerprint) {
+		return // fingerprint tampered, likely due to truncation
+	}
+	r.Fingerprint.FirstBytes = refreshedFingerprint.FirstBytes
 }

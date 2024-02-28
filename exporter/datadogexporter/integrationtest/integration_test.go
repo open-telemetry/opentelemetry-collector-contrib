@@ -116,6 +116,7 @@ func TestIntegration(t *testing.T) {
 					var spl pb.StatsPayload
 					require.NoError(t, msgp.Decode(gz, &spl))
 					for _, csps := range spl.Stats {
+						assert.Equal(t, "datadogexporter-otelcol-tests", spl.AgentVersion)
 						for _, csbs := range csps.Stats {
 							stats = append(stats, csbs.Stats...)
 							for _, stat := range csbs.Stats {
