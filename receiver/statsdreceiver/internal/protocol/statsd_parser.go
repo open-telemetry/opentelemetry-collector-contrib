@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -128,6 +129,7 @@ type statsDMetric struct {
 	addition    bool
 	unit        string
 	sampleRate  float64
+	timestamp   uint64
 }
 
 type statsDMetricDescription struct {
@@ -430,6 +432,28 @@ func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags b
 
 				kvs = append(kvs, attribute.String(k, v))
 			}
+		case strings.HasPrefix(part, "c:"):
+			// As per DogStatD protocol v1.2:
+			// https://docs.datadoghq.com/developers/dogstatsd/datagram_shell/?tab=metrics#dogstatsd-protocol-v12
+			containerID := strings.TrimPrefix(part, "c:")
+
+			if containerID != "" {
+				kvs = append(kvs, attribute.String(semconv.AttributeContainerID, containerID))
+			}
+		case strings.HasPrefix(part, "T"):
+			// As per DogStatD protocol v1.3:
+			// https://docs.datadoghq.com/developers/dogstatsd/datagram_shell/?tab=metrics#dogstatsd-protocol-v13
+			if inType != CounterType && inType != GaugeType {
+				return result, fmt.Errorf("only GAUGE and COUNT metrics support a timestamp")
+			}
+
+			timestampStr := strings.TrimPrefix(part, "T")
+			timestampSeconds, err := strconv.ParseUint(timestampStr, 10, 64)
+			if err != nil {
+				return result, fmt.Errorf("invalid timestamp: %s", timestampStr)
+			}
+
+			result.timestamp = timestampSeconds * 1e9 // Convert seconds to nanoseconds
 		default:
 			return result, fmt.Errorf("unrecognized message part: %s", part)
 		}

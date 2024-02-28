@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/component v0.95.0
 	go.opentelemetry.io/collector/config/confighttp v0.95.0
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 )
 
 require (
