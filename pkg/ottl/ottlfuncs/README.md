@@ -908,10 +908,10 @@ The `ParseXML` Converter returns a `pcommon.Map` struct that is the result of pa
 If `target` is not a string, nil, or cannot be parsed as XML, `ParseXML` will return an error.
 
 Unmarshalling XML is done using the following rules:
-1. All character data for an XML element is trimmed, joined, and placed in the `content` field
-2. The tag for an XML element is trimmed, and placed in a `tag` field
-3. The attributes for an XML element is placed as a `pcommon.Map` in the `attribute` field
-4. Processing instructions, directives, and comments are ignored and not represented in to resultant map
+1. All character data for an XML element is trimmed, joined, and placed into the `content` field.
+2. The tag for an XML element is trimmed, and placed into a `tag` field.
+3. The attributes for an XML element is placed as a `pcommon.Map` into the `attribute` field.
+4. Processing instructions, directives, and comments are ignored and not represented in the resultant map.
 5. All child elements are parsed as above, and placed in a `pcommon.Slice`, which is then placed in the `children` field.
 
 For example, the following XML document:
