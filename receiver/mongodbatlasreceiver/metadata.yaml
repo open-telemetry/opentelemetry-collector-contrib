@@ -728,3 +728,8 @@ metrics:
     attributes: [cpu_state]
     gauge:
       value_type: double
+
+tests:
+  config:
+    alerts:
+      enabled: true

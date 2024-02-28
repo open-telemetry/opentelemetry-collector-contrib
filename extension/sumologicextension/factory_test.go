@@ -1,10 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package sumologicextension
+package sumologicextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension"
 
 import (
 	"context"
+	"os"
+	"path"
 	"testing"
 
 	"github.com/cenkalti/backoff/v4"
@@ -13,11 +15,15 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
 )
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
-	defaultCredsPath := ""
+	homePath, err := os.UserHomeDir()
+	require.NoError(t, err)
+	defaultCredsPath := path.Join(homePath, credentials.DefaultCollectorDataDirectory)
 	assert.Equal(t, &Config{
 		HeartBeatInterval:             DefaultHeartbeatInterval,
 		APIBaseURL:                    DefaultAPIBaseURL,
