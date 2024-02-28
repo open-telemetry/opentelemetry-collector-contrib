@@ -9,8 +9,7 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("docker_stats")
-	scopeName = "go.opentelemetry.io/collector/receiver/dockerstatsreceiver"
+	Type = component.MustNewType("docker_stats")
 )
 
 const (
@@ -18,9 +17,9 @@ const (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter(scopeName)
+	return settings.MeterProvider.Meter("otelcol/dockerstatsreceiver")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer(scopeName)
+	return settings.TracerProvider.Tracer("otelcol/dockerstatsreceiver")
 }
