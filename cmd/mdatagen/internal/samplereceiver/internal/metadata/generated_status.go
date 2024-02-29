@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	Type = component.MustNewType("file")
+	Type = component.MustNewType("sample")
 )
 
 const (
@@ -19,9 +19,9 @@ const (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol")
+	return settings.MeterProvider.Meter("otelcol/samplereceiver")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol")
+	return settings.TracerProvider.Tracer("otelcol/samplereceiver")
 }
