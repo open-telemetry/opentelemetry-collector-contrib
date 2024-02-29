@@ -24,6 +24,7 @@ type Config struct {
 	Projects                          []Project `mapstructure:"projects"`
 	HideTopnLockstatsRowrangestartkey bool      `mapstructure:"hide_topn_lockstats_rowrangestartkey"`
 	TruncateText                      bool      `mapstructure:"truncate_text"`
+	FGACRole                          bool      `mapstructure:"fgac_sys_reader_role"`
 }
 
 type Project struct {

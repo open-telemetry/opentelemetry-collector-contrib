@@ -55,3 +55,13 @@ func TestNewDatabaseWithNoCredentialsFilePath(t *testing.T) {
 	assert.NotNil(t, database.Client())
 	assert.Equal(t, databaseID, database.DatabaseID())
 }
+
+func TestNewDatabaseFromClientWithRole(t *testing.T) {
+	ctx := context.Background()
+	databaseID := databaseID()
+
+	database, err := NewDatabase(ctx, databaseID, "", true)
+
+	assert.NotNil(t, database.Client())
+	assert.Equal(t, databaseID, database.DatabaseID())
+}
