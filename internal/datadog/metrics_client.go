@@ -138,10 +138,10 @@ func (m *metricsClient) GetTelemetry() statsd.Telemetry {
 	return statsd.Telemetry{}
 }
 
-func (m *metricsClient) GaugeWithTimestamp(name string, value float64, tags []string, rate float64, timestamp time.Time) error {
+func (m *metricsClient) GaugeWithTimestamp(string, float64, []string, float64, time.Time) error {
 	return nil
 }
 
-func (m *metricsClient) CountWithTimestamp(name string, value int64, tags []string, rate float64, timestamp time.Time) error {
+func (m *metricsClient) CountWithTimestamp(string, int64, []string, float64, time.Time) error {
 	return nil
 }
