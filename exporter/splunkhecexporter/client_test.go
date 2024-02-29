@@ -1399,7 +1399,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 		exporter.Start(context.Background(), componenttest.NewNopHost()),
 		fmt.Sprintf("%s: heartbeat on startup failed: HTTP 403 \"Forbidden\"", params.ID.Type()),
 	)
-  assert.NoError(t, exporter.Shutdown(context.Background()))
+	assert.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 func TestHeartbeatStartupPass_Disabled(t *testing.T) {
