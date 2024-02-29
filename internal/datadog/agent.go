@@ -36,11 +36,11 @@ type TraceAgent struct {
 	exit chan struct{}
 }
 
-// ConnectorPerformanceFeatureGate uses optimized code paths for the Datadog Connector.
-var ConnectorPerformanceFeatureGate = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"connector.datadogconnector.performance",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Datadog Connector will use optimized code"),
+	featuregate.WithRegisterToVersion("0.97.0"),
 )
 
 // newAgent creates a new unstarted traceagent using the given context. Call Start to start the traceagent.

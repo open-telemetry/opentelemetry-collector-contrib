@@ -176,7 +176,6 @@ processor/resourcedetectionprocessor/internal/openshift/ @open-telemetry/collect
 processor/resourceprocessor/                             @open-telemetry/collector-contrib-approvers @dmitryax
 processor/routingprocessor/                              @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/schemaprocessor/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy
-processor/spanmetricsprocessor/                          @open-telemetry/collector-contrib-approvers
 processor/spanprocessor/                                 @open-telemetry/collector-contrib-approvers @boostchicken
 processor/sumologicprocessor/                            @open-telemetry/collector-contrib-approvers @aboguszewski-sumo @astencel-sumo @sumo-drosiek
 processor/tailsamplingprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling
