@@ -4,7 +4,6 @@
 package http // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/http"
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/status"
@@ -21,13 +20,7 @@ func (s *Server) statusHandler() http.Handler {
 			return
 		}
 
-		code, sst := s.responder.response(st)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(code)
-
-		body, _ := json.Marshal(sst)
-		_, _ = w.Write(body)
+		s.responder.respond(st, w)
 	})
 }
 
