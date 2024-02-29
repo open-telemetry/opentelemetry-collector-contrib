@@ -3,7 +3,7 @@
 
 //go:generate mdatagen metadata.yaml
 
-package googleclientauthextension
+package googleclientauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension"
 
 import (
 	"go.opentelemetry.io/collector/extension"
