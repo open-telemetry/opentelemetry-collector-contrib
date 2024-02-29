@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
@@ -23,10 +24,10 @@ import (
 
 type Server struct {
 	telemetry      component.TelemetrySettings
-	settings       *Settings
-	responder      healthResponder
+	httpSettings   confighttp.HTTPServerSettings
+	httpServer     *http.Server
 	mux            *http.ServeMux
-	serverHTTP     *http.Server
+	responder      responder
 	colconf        atomic.Value
 	aggregator     *status.Aggregator
 	startTimestamp time.Time
@@ -38,6 +39,7 @@ var _ extension.ConfigWatcher = (*Server)(nil)
 
 func NewServer(
 	settings *Settings,
+	legacySettings LegacySettings,
 	componentHealthSettings *common.ComponentHealthSettings,
 	telemetry component.TelemetrySettings,
 	aggregator *status.Aggregator,
@@ -45,22 +47,32 @@ func NewServer(
 	now := time.Now()
 	srv := &Server{
 		telemetry:  telemetry,
-		settings:   settings,
-		responder:  defaultHealthResponder(&now),
+		mux:        http.NewServeMux(),
 		aggregator: aggregator,
 		doneCh:     make(chan struct{}),
 	}
 
-	if componentHealthSettings != nil {
-		srv.responder = componentHealthResponder(&now, componentHealthSettings)
-	}
-
-	srv.mux = http.NewServeMux()
-	if settings.Status.Enabled {
-		srv.mux.Handle(settings.Status.Path, srv.statusHandler())
-	}
-	if settings.Config.Enabled {
-		srv.mux.Handle(settings.Config.Path, srv.configHandler())
+	if legacySettings.UseV2Settings {
+		srv.httpSettings = settings.HTTPServerSettings
+		if componentHealthSettings != nil {
+			srv.responder = componentHealthResponder(&now, componentHealthSettings)
+		} else {
+			srv.responder = defaultResponder(&now)
+		}
+		if settings.Status.Enabled {
+			srv.mux.Handle(settings.Status.Path, srv.statusHandler())
+		}
+		if settings.Config.Enabled {
+			srv.mux.Handle(settings.Config.Path, srv.configHandler())
+		}
+	} else {
+		srv.httpSettings = legacySettings.HTTPServerSettings
+		if legacySettings.ResponseBody != nil {
+			srv.responder = legacyCustomResponder(legacySettings.ResponseBody)
+		} else {
+			srv.responder = legacyDefaultResponder(&now)
+		}
+		srv.mux.Handle(legacySettings.Path, srv.statusHandler())
 	}
 
 	return srv
@@ -71,19 +83,19 @@ func (s *Server) Start(_ context.Context, host component.Host) error {
 	var err error
 	s.startTimestamp = time.Now()
 
-	s.serverHTTP, err = s.settings.ToServer(host, s.telemetry, s.mux)
+	s.httpServer, err = s.httpSettings.ToServer(host, s.telemetry, s.mux)
 	if err != nil {
 		return err
 	}
 
-	ln, err := s.settings.ToListener()
+	ln, err := s.httpSettings.ToListener()
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", s.settings.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", s.httpSettings.Endpoint, err)
 	}
 
 	go func() {
 		defer close(s.doneCh)
-		if err = s.serverHTTP.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
+		if err = s.httpServer.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			s.telemetry.ReportStatus(component.NewPermanentErrorEvent(err))
 		}
 	}()
@@ -93,10 +105,10 @@ func (s *Server) Start(_ context.Context, host component.Host) error {
 
 // Shutdown implements the component.Component interface.
 func (s *Server) Shutdown(context.Context) error {
-	if s.serverHTTP == nil {
+	if s.httpServer == nil {
 		return nil
 	}
-	s.serverHTTP.Close()
+	s.httpServer.Close()
 	<-s.doneCh
 	return nil
 }
