@@ -579,10 +579,10 @@ func TestResourceAttributesCanBeIndexed(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, 4, len(segment.Annotations))
-	assert.Equal(t, "string", segment.Annotations["otel_resource_string_key"])
-	assert.Equal(t, int64(10), segment.Annotations["otel_resource_int_key"])
-	assert.Equal(t, 5.0, segment.Annotations["otel_resource_double_key"])
-	assert.Equal(t, true, segment.Annotations["otel_resource_bool_key"])
+	assert.Equal(t, "string", segment.Annotations["otel.resource.string.key"])
+	assert.Equal(t, int64(10), segment.Annotations["otel.resource.int.key"])
+	assert.Equal(t, 5.0, segment.Annotations["otel.resource.double.key"])
+	assert.Equal(t, true, segment.Annotations["otel.resource.bool.key"])
 
 	expectedMap := make(map[string]any)
 	expectedMap["key1"] = int64(1)
@@ -627,8 +627,8 @@ func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, 2, len(segment.Annotations))
-	assert.Equal(t, "aws_operation_val", segment.Annotations["aws_operation"])
-	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc_method"])
+	assert.Equal(t, "aws_operation_val", segment.Annotations["aws.operation"])
+	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc.method"])
 }
 
 func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
@@ -643,8 +643,8 @@ func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, conventions.AttributeRPCMethod}, true, nil, false)
 
 	assert.NotNil(t, segment)
-	assert.Equal(t, "aws_operation_val", segment.Annotations["aws_operation"])
-	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc_method"])
+	assert.Equal(t, "aws_operation_val", segment.Annotations["aws.operation"])
+	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc.method"])
 }
 
 func TestSpanWithSpecialAttributesNotListedAndIndexAll(t *testing.T) {
@@ -1107,7 +1107,7 @@ func validateLocalRootDependencySubsegment(t *testing.T, segment *awsxray.Segmen
 	assert.NotNil(t, segment.HTTP)
 	assert.Equal(t, "POST", *segment.HTTP.Request.Method)
 	assert.Equal(t, 2, len(segment.Annotations))
-	assert.Nil(t, segment.Annotations[awsRemoteService])
+	assert.Equal(t, "myRemoteService", segment.Annotations[awsRemoteService])
 	assert.Nil(t, segment.Annotations[remoteTarget])
 	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
 
@@ -1406,7 +1406,7 @@ func validateLocalRootWithoutDependency(t *testing.T, segment *awsxray.Segment, 
 	assert.Equal(t, expectedTraceID, *segment.TraceID)
 	assert.Equal(t, "POST", *segment.HTTP.Request.Method)
 	assert.Equal(t, 2, len(segment.Annotations))
-	assert.Equal(t, "myRemoteService", segment.Annotations["aws_remote_service"])
+	assert.Equal(t, "myRemoteService", segment.Annotations["aws.remote.service"])
 	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
 
 	var numberOfMetadataKeys = 8
