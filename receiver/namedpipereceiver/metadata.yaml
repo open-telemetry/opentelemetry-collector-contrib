@@ -7,3 +7,9 @@ status:
   distributions: [contrib]
   codeowners:
     active: [djaglowski]
+  unsupported_platforms: [windows, darwin]
+
+tests:
+  config:
+    path: /tmp/pipe
+    mode: 0600

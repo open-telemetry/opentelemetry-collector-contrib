@@ -65,7 +65,6 @@ func TestNodeOptionalMetrics(t *testing.T) {
 	n := testutils.NewNode("2")
 	rac := metadata.DefaultResourceAttributesConfig()
 	rac.K8sKubeletVersion.Enabled = true
-	rac.K8sKubeproxyVersion.Enabled = true
 	rac.ContainerRuntime.Enabled = true
 	rac.ContainerRuntimeVersion.Enabled = true
 	rac.OsType.Enabled = true
@@ -255,7 +254,6 @@ func TestTransform(t *testing.T) {
 			},
 			NodeInfo: corev1.NodeSystemInfo{
 				KubeletVersion:          "v1.25.3",
-				KubeProxyVersion:        "v1.25.3",
 				OSImage:                 "Ubuntu 22.04.1 LTS",
 				ContainerRuntimeVersion: "containerd://1.6.9",
 				OperatingSystem:         "linux",
