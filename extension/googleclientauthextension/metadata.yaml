@@ -1,0 +1,8 @@
+type: googleclientauth
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  codeowners:
+    active: [dashpole, damemi]
