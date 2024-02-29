@@ -5,11 +5,16 @@ package host // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	awsec2metadata "github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type metadataClient interface {
@@ -61,19 +66,76 @@ func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterv
 	return emd
 }
 
-func (emd *ec2Metadata) refresh(ctx context.Context) {
-	emd.logger.Info("Fetch instance id and type from ec2 metadata")
-
+func (emd *ec2Metadata) refreshFromIMDS(ctx context.Context) error {
 	doc, err := emd.client.GetInstanceIdentityDocumentWithContext(ctx)
 	if err != nil {
 		emd.logger.Error("Failed to get ec2 metadata", zap.Error(err))
-		return
+		return err
 	}
 
 	emd.instanceID = doc.InstanceID
 	emd.instanceType = doc.InstanceType
 	emd.region = doc.Region
 	emd.instanceIP = doc.PrivateIP
+	return nil
+}
+
+const (
+	NODE_NAME_ENV       = "K8S_NODE_NAME"
+	INSTANCE_TYPE_LABEL = "node.kubernetes.io/instance-type"
+)
+
+func (emd *ec2Metadata) refreshFromKubernetes(ctx context.Context) error {
+	nodeName := os.Getenv(NODE_NAME_ENV)
+	if nodeName == "" {
+		return fmt.Errorf("%s environment variable not set", NODE_NAME_ENV)
+	}
+
+	k8sClient := k8sclient.Get(emd.logger)
+	node, err := k8sClient.GetClientSet().CoreV1().Nodes().Get(ctx, nodeName, metav1.GetOptions{})
+	if err != nil || node == nil {
+		return fmt.Errorf("failed to get node %s: %v", nodeName, err)
+	}
+
+	splits := strings.Split(node.Spec.ProviderID, "/")
+	if len(splits) < 5 {
+		return fmt.Errorf("invalid providerID format %s", node.Spec.ProviderID)
+	}
+	instanceID := splits[4]
+	zone := splits[3]
+	region := zone[:len(zone)-1]
+	emd.instanceID = instanceID
+	emd.region = region
+
+	instanceType, ok := node.ObjectMeta.Labels[INSTANCE_TYPE_LABEL]
+	if ok {
+		emd.instanceType = instanceType
+	}
+
+	privateIP := ""
+	for _, addr := range node.Status.Addresses {
+		if addr.Type == "InternalIP" {
+			privateIP = addr.Address
+			break
+		}
+	}
+	emd.instanceIP = privateIP
+
+	return nil
+}
+
+func (emd *ec2Metadata) refresh(ctx context.Context) {
+	emd.logger.Info("Fetch instance id and type from ec2 metadata")
+
+	err := emd.refreshFromIMDS(ctx)
+	if err != nil {
+		emd.logger.Error("Failed to get ec2 metadata, falling back to Kubernetes API", zap.Error(err))
+		err = emd.refreshFromKubernetes(ctx)
+		if err != nil {
+			emd.logger.Error("Failed to get ec2 metadata from Kubernetes API", zap.Error(err))
+			return
+		}
+	}
 
 	// notify ec2tags and ebsvolume that the instance id is ready
 	if emd.instanceID != "" {
