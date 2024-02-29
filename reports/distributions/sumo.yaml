@@ -58,7 +58,6 @@ components:
         - routing
         - schema
         - span
-        - spanmetrics
         - sumologic
         - tail_sampling
         - transform
