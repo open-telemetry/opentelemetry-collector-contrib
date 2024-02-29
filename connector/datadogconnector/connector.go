@@ -125,15 +125,11 @@ func (c *traceToMetricConnector) run() {
 			}
 			var mx pmetric.Metrics
 			var err error
-			if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
-				c.logger.Debug("Received stats payload", zap.Any("stats", stats))
-				mx, err = c.translator.StatsToMetrics(stats)
-				if err != nil {
-					c.logger.Error("Failed to convert stats to metrics", zap.Error(err))
-					continue
-				}
-			} else {
-				mx = c.translator.StatsPayloadToMetrics(stats)
+			c.logger.Debug("Received stats payload", zap.Any("stats", stats))
+			mx, err = c.translator.StatsToMetrics(stats)
+			if err != nil {
+				c.logger.Error("Failed to convert stats to metrics", zap.Error(err))
+				continue
 			}
 			// APM stats as metrics
 			ctx := context.TODO()
