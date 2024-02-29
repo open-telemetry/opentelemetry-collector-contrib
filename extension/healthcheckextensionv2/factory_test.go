@@ -6,14 +6,16 @@ package healthcheckextensionv2
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/grpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/http"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
@@ -21,16 +23,32 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
-		RecoveryDuration: time.Minute,
+		LegacySettings: http.LegacySettings{
+			HTTPServerSettings: confighttp.HTTPServerSettings{
+				Endpoint: defaultHTTPEndpoint,
+			},
+			Path: "/",
+		},
 		HTTPSettings: &http.Settings{
 			HTTPServerSettings: confighttp.HTTPServerSettings{
-				Endpoint: defaultEndpoint,
+				Endpoint: defaultHTTPEndpoint,
 			},
 			Status: http.PathSettings{
 				Enabled: true,
-				Path:    "/",
+				Path:    "/status",
 			},
-			Config: http.PathSettings{},
+			Config: http.PathSettings{
+				Enabled: false,
+				Path:    "/config",
+			},
+		},
+		GRPCSettings: &grpc.Settings{
+			GRPCServerSettings: configgrpc.GRPCServerSettings{
+				NetAddr: confignet.NetAddr{
+					Endpoint:  defaultGRPCEndpoint,
+					Transport: "tcp",
+				},
+			},
 		},
 	}, cfg)
 
@@ -42,7 +60,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)

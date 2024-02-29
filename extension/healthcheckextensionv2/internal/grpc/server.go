@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"google.golang.org/grpc"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
-	"google.golang.org/grpc/reflection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/status"
@@ -18,7 +17,7 @@ import (
 
 type Server struct {
 	healthpb.UnimplementedHealthServer
-	serverGRPC              *grpc.Server
+	grpcServer              *grpc.Server
 	aggregator              *status.Aggregator
 	settings                *Settings
 	componentHealthSettings *common.ComponentHealthSettings
@@ -50,22 +49,18 @@ func NewServer(
 // Start implements the component.Component interface.
 func (s *Server) Start(_ context.Context, host component.Host) error {
 	var err error
-	s.serverGRPC, err = s.settings.ToServer(host, s.telemetry)
+	s.grpcServer, err = s.settings.ToServer(host, s.telemetry)
 	if err != nil {
 		return err
 	}
 
-	healthpb.RegisterHealthServer(s.serverGRPC, s)
-	if s.settings.Debug {
-		reflection.Register(s.serverGRPC)
-	}
-
+	healthpb.RegisterHealthServer(s.grpcServer, s)
 	ln, err := s.settings.ToListener()
 
 	go func() {
 		defer close(s.doneCh)
 
-		if err = s.serverGRPC.Serve(ln); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
+		if err = s.grpcServer.Serve(ln); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
 			s.telemetry.ReportStatus(component.NewPermanentErrorEvent(err))
 		}
 	}()
@@ -75,10 +70,10 @@ func (s *Server) Start(_ context.Context, host component.Host) error {
 
 // Shutdown implements the component.Component interface.
 func (s *Server) Shutdown(context.Context) error {
-	if s.serverGRPC == nil {
+	if s.grpcServer == nil {
 		return nil
 	}
-	s.serverGRPC.GracefulStop()
+	s.grpcServer.GracefulStop()
 	<-s.doneCh
 	return nil
 }

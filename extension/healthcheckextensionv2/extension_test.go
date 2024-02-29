@@ -28,7 +28,7 @@ import (
 func TestComponentStatus(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.HTTPSettings.Endpoint = testutil.GetAvailableLocalAddress(t)
-
+	cfg.UseV2Settings = true
 	ext := newExtension(context.Background(), *cfg, extensiontest.NewNopCreateSettings())
 
 	// Status before Start will be StatusNone
@@ -103,6 +103,7 @@ func TestNotifyConfig(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 
 	cfg := createDefaultConfig().(*Config)
+	cfg.UseV2Settings = true
 	cfg.HTTPSettings.Endpoint = endpoint
 	cfg.HTTPSettings.Config.Enabled = true
 	cfg.HTTPSettings.Config.Path = "/config"

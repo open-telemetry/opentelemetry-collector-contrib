@@ -52,24 +52,25 @@ func newExtension(
 
 	aggregator := status.NewAggregator(errPriority)
 
-	if config.GRPCSettings != nil {
-		srvGRPC := grpc.NewServer(
+	if config.UseV2Settings && config.GRPCSettings != nil {
+		grpcServer := grpc.NewServer(
 			config.GRPCSettings,
 			config.ComponentHealthSettings,
 			set.TelemetrySettings,
 			aggregator,
 		)
-		comps = append(comps, srvGRPC)
+		comps = append(comps, grpcServer)
 	}
 
-	if config.HTTPSettings != nil {
-		srvHTTP := http.NewServer(
+	if !config.UseV2Settings || config.UseV2Settings && config.HTTPSettings != nil {
+		httpServer := http.NewServer(
 			config.HTTPSettings,
+			config.LegacySettings,
 			config.ComponentHealthSettings,
 			set.TelemetrySettings,
 			aggregator,
 		)
-		comps = append(comps, srvHTTP)
+		comps = append(comps, httpServer)
 	}
 
 	hc := &healthCheckExtension{

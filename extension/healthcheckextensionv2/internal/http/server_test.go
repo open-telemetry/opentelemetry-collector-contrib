@@ -28,6 +28,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
+// These are used for the legacy test assertions
+const (
+	expectedBodyNotReady = "{\"status\":\"Server not available\",\"upSince\":"
+	expectedBodyReady    = "{\"status\":\"Server available\",\"upSince\":"
+)
+
 type componentStatusExpectation struct {
 	healthy      bool
 	status       component.Status
@@ -40,6 +46,7 @@ type teststep struct {
 	queryParams             string
 	eventually              bool
 	expectedStatusCode      int
+	expectedBody            string
 	expectedComponentStatus *componentStatusExpectation
 }
 
@@ -51,12 +58,14 @@ func TestStatus(t *testing.T) {
 	tests := []struct {
 		name                    string
 		settings                *Settings
+		legacySettings          LegacySettings
 		componentHealthSettings *common.ComponentHealthSettings
 		pipelines               map[string]*testhelpers.PipelineMetadata
 		teststeps               []teststep
 	}{
 		{
-			name: "exclude recoverable and permanent errors",
+			name:           "exclude recoverable and permanent errors",
+			legacySettings: LegacySettings{UseV2Settings: true},
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -293,7 +302,8 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "exclude recoverable and permanent errors	- verbose",
+			name:           "exclude recoverable and permanent errors - verbose",
+			legacySettings: LegacySettings{UseV2Settings: true},
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -1013,7 +1023,8 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "include recoverable and exclude permanent errors",
+			name:           "include recoverable and exclude permanent errors",
+			legacySettings: LegacySettings{UseV2Settings: true},
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -1257,7 +1268,8 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "include recoverable and exclude permanent errors	- verbose",
+			name:           "include recoverable and exclude permanent errors - verbose",
+			legacySettings: LegacySettings{UseV2Settings: true},
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -1869,7 +1881,8 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "include permanent and exclude recoverable errors",
+			name:           "include permanent and exclude recoverable errors",
+			legacySettings: LegacySettings{UseV2Settings: true},
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -2110,7 +2123,8 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "include permanent and exclude recoverable errors	- verbose",
+			name:           "include permanent and exclude recoverable errors - verbose",
+			legacySettings: LegacySettings{UseV2Settings: true},
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -2720,7 +2734,8 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "include permanent and recoverable errors",
+			name:           "include permanent and recoverable errors",
+			legacySettings: LegacySettings{UseV2Settings: true},
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -2964,7 +2979,8 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "include permanent and recoverable errors	- verbose",
+			name:           "include permanent and recoverable errors - verbose",
+			legacySettings: LegacySettings{UseV2Settings: true},
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -3576,7 +3592,8 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "pipeline non-existent",
+			name:           "pipeline non-existent",
+			legacySettings: LegacySettings{UseV2Settings: true},
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -3603,7 +3620,8 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "status disabled",
+			name:           "status disabled",
+			legacySettings: LegacySettings{UseV2Settings: true},
 			settings: &Settings{
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
@@ -3619,12 +3637,252 @@ func TestStatus(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "legacy - default response",
+			legacySettings: LegacySettings{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: testutil.GetAvailableLocalAddress(t),
+				},
+				Path: "/status",
+			},
+			teststeps: []teststep{
+				{
+					step: func() {
+						testhelpers.SeedAggregator(server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStarting,
+						)
+						testhelpers.SeedAggregator(server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+					expectedBody:       expectedBodyNotReady,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+					expectedBody:       expectedBodyNotReady,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					expectedStatusCode: http.StatusOK,
+					expectedBody:       expectedBodyReady,
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					expectedStatusCode: http.StatusOK,
+					expectedBody:       expectedBodyReady,
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewStatusEvent(component.StatusOK),
+						)
+					},
+					expectedStatusCode: http.StatusOK,
+					expectedBody:       expectedBodyReady,
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewPermanentErrorEvent(assert.AnError),
+						)
+					},
+					expectedStatusCode: http.StatusOK,
+					expectedBody:       expectedBodyReady,
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewFatalErrorEvent(assert.AnError),
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+					expectedBody:       expectedBodyNotReady,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStopping,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+					expectedBody:       expectedBodyNotReady,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStopped,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStopped,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+					expectedBody:       expectedBodyNotReady,
+				},
+			},
+		},
+		{
+			name: "legacy - custom response",
+			legacySettings: LegacySettings{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: testutil.GetAvailableLocalAddress(t),
+				},
+				Path:         "/status",
+				ResponseBody: &ResponseBodySettings{Healthy: "ALL OK", Unhealthy: "NOT OK"},
+			},
+			teststeps: []teststep{
+				{
+					step: func() {
+						testhelpers.SeedAggregator(server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStarting,
+						)
+						testhelpers.SeedAggregator(server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStarting,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+					expectedBody:       "NOT OK",
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+					expectedBody:       "NOT OK",
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					expectedStatusCode: http.StatusOK,
+					expectedBody:       "ALL OK",
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewRecoverableErrorEvent(assert.AnError),
+						)
+					},
+					expectedStatusCode: http.StatusOK,
+					expectedBody:       "ALL OK",
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewStatusEvent(component.StatusOK),
+						)
+					},
+					expectedStatusCode: http.StatusOK,
+					expectedBody:       "ALL OK",
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewPermanentErrorEvent(assert.AnError),
+						)
+					},
+					expectedStatusCode: http.StatusOK,
+					expectedBody:       "ALL OK",
+				},
+				{
+					step: func() {
+						server.aggregator.RecordStatus(
+							metrics.ExporterID,
+							component.NewFatalErrorEvent(assert.AnError),
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+					expectedBody:       "NOT OK",
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStopping,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStopping,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+					expectedBody:       "NOT OK",
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusStopped,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusStopped,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+					expectedBody:       "NOT OK",
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			server = NewServer(
 				tc.settings,
+				tc.legacySettings,
 				tc.componentHealthSettings,
 				componenttest.NewNopTelemetrySettings(),
 				status.NewAggregator(testhelpers.ErrPriority(tc.componentHealthSettings)),
@@ -3633,8 +3891,14 @@ func TestStatus(t *testing.T) {
 			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() { require.NoError(t, server.Shutdown(context.Background())) }()
 
+			var url string
+			if tc.legacySettings.UseV2Settings {
+				url = fmt.Sprintf("http://%s%s", tc.settings.Endpoint, tc.settings.Status.Path)
+			} else {
+				url = fmt.Sprintf("http://%s%s", tc.legacySettings.Endpoint, tc.legacySettings.Path)
+			}
+
 			client := &http.Client{}
-			url := fmt.Sprintf("http://%s%s", tc.settings.Endpoint, tc.settings.Status.Path)
 
 			for _, ts := range tc.teststeps {
 				if ts.step != nil {
@@ -3661,10 +3925,12 @@ func TestStatus(t *testing.T) {
 					assert.Equal(t, ts.expectedStatusCode, resp.StatusCode)
 				}
 
-				if ts.expectedComponentStatus != nil {
-					body, err := io.ReadAll(resp.Body)
-					require.NoError(t, err)
+				body, err := io.ReadAll(resp.Body)
+				require.NoError(t, err)
 
+				assert.True(t, strings.Contains(string(body), ts.expectedBody))
+
+				if ts.expectedComponentStatus != nil {
 					st := &serializableStatus{}
 					require.NoError(t, json.Unmarshal(body, st))
 					fmt.Println(string(body))
@@ -3672,7 +3938,6 @@ func TestStatus(t *testing.T) {
 						assertStatusDetailed(t, ts.expectedComponentStatus, st)
 						continue
 					}
-
 					assertStatusSimple(t, ts.expectedComponentStatus, st)
 				}
 			}
@@ -3796,6 +4061,7 @@ func TestConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			server = NewServer(
 				tc.settings,
+				LegacySettings{UseV2Settings: true},
 				&common.ComponentHealthSettings{},
 				componenttest.NewNopTelemetrySettings(),
 				status.NewAggregator(status.PriorityPermanent),
