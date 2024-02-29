@@ -265,14 +265,14 @@ require (
 	github.com/ClickHouse/ch-go v0.58.2 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.17.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.104 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.52.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.52.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.52.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.52.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.52.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.52.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.52.0-rc.4 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.51.1-0.20240229090032-046b0fb5e377 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.51.1-0.20240229090032-046b0fb5e377 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.51.1-0.20240229090032-046b0fb5e377 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.51.1-0.20240229090032-046b0fb5e377 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.51.1-0.20240229090032-046b0fb5e377 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.51.1-0.20240229090032-046b0fb5e377 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.51.1-0.20240229090032-046b0fb5e377 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.22.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.5.0 // indirect
 	github.com/DataDog/go-sqllexer v0.0.9 // indirect

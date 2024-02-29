@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.21
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-rc.4
+	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.95.0
@@ -33,13 +33,13 @@ require (
 	cloud.google.com/go/compute v1.23.3 // indirect
 	cloud.google.com/go/compute/metadata v0.2.4-0.20230617002413-005d2dfb6b68 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.104 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.52.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.52.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.52.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.52.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.52.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.52.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.52.0-rc.4 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.51.1-0.20240229090032-046b0fb5e377 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.51.1-0.20240229090032-046b0fb5e377 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.51.1-0.20240229090032-046b0fb5e377 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.51.1-0.20240229090032-046b0fb5e377 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.51.1-0.20240229090032-046b0fb5e377 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.51.1-0.20240229090032-046b0fb5e377 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.51.1-0.20240229090032-046b0fb5e377 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.22.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.5.0 // indirect
 	github.com/DataDog/go-sqllexer v0.0.9 // indirect
