@@ -96,19 +96,23 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
-	ratio := float64(cfg.SamplingPercentage) / 100.0
+	pct := float64(cfg.SamplingPercentage)
+
+	if math.IsInf(pct, 0) || math.IsNaN(pct) {
+		return fmt.Errorf("sampling rate is invalid: %f%%", cfg.SamplingPercentage)
+	}
+	ratio := pct / 100.0
 
 	switch {
 	case ratio < 0:
-		return fmt.Errorf("negative sampling rate: %.2f%%", cfg.SamplingPercentage)
+		return fmt.Errorf("sampling rate is negative: %f%%", cfg.SamplingPercentage)
 	case ratio == 0:
 		// Special case
-	case ratio < (1 / sampling.MaxAdjustedCount):
-		return fmt.Errorf("sampling rate is too small: %.2f%%", cfg.SamplingPercentage)
-	case ratio > 1:
-		return fmt.Errorf("sampling rate is too small: %.2f%%", cfg.SamplingPercentage)
-	case math.IsInf(ratio, 0) || math.IsNaN(ratio):
-		return fmt.Errorf("sampling rate is invalid: %.2f%%", cfg.SamplingPercentage)
+	case ratio < sampling.MinSamplingProbability:
+		// Too-small case
+		return fmt.Errorf("sampling rate is too small: %g%%", cfg.SamplingPercentage)
+	default:
+		// Note that ratio > 1 is specifically allowed by the README, taken to mean 100%
 	}
 
 	if cfg.AttributeSource != "" && !validAttributeSource[cfg.AttributeSource] {

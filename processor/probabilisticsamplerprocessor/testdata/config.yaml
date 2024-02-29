@@ -7,17 +7,19 @@ processors:
   # The "sampling.priority" semantics have priority over trace id hashing and
   # can be used to control if given spans are sampled, ie.: forwarded, or not.
   probabilistic_sampler:
-    # mode may be "proportional", "equalizing", or "hash_seed"
+    # Mode may be "proportional", "equalizing", or "hash_seed".  The
+    # proportional and equalizing modes use OpenTelemetry consistent
+    # probability sampling, no hash_seed is used in this case.
     mode: proportional
     # the percentage rate at which traces are going to be sampled. Defaults to
     # zero, i.e.: no sample. Values greater or equal 100 are treated as
     # "sample all traces".
     sampling_percentage: 15.3
+    # sampling precision controls the number of hexadecimal digits used to
+    # encode the sampling probability.
     sampling_precision: 4
 
   probabilistic_sampler/logs:
-    # mode may be "proportional", "equalizing", or "hash_seed"
-    mode: hash_seed
     # the percentage rate at which logs are going to be sampled. Defaults to
     # zero, i.e.: no sample. Values greater or equal 100 are treated as
     # "sample all logs".
@@ -30,6 +32,8 @@ processors:
     # the next one, independent of the configured sampling rate. Having different
     # seeds at different layers ensures that sampling rate in each layer work as
     # intended.
+    #
+    # setting the hash_seed != 0 causes hash_seed to be selected by default 
     hash_seed: 22
     # attribute_source defines where to look for the attribute in from_attribute. The allowed values are `traceID` or `record`.
     attribute_source: "record"

@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 				SamplingPercentage: 15.3,
 				SamplingPrecision:  defaultPrecision,
 				HashSeed:           22,
-				SamplerMode:        "hash_seed",
+				SamplerMode:        "",
 				AttributeSource:    "record",
 				FromAttribute:      "foo",
 				SamplingPriority:   "bar",
@@ -66,12 +66,25 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadInvalidConfig(t *testing.T) {
-	factories, err := otelcoltest.NopFactories()
-	require.NoError(t, err)
+	for _, test := range []struct {
+		file     string
+		contains string
+	}{
+		{"invalid_negative.yaml", "sampling rate is negative"},
+		{"invalid_small.yaml", "sampling rate is too small"},
+		{"invalid_inf.yaml", "sampling rate is invalid: +Inf%"},
+		{"invalid_prec.yaml", "sampling precision is too great"},
+		{"invalid_zero.yaml", "invalid sampling precision"},
+	} {
+		t.Run(test.file, func(t *testing.T) {
+			factories, err := otelcoltest.NopFactories()
+			require.NoError(t, err)
 
-	factory := NewFactory()
-	factories.Processors[metadata.Type] = factory
+			factory := NewFactory()
+			factories.Processors[metadata.Type] = factory
 
-	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid.yaml"), factories)
-	require.ErrorContains(t, err, "negative sampling rate: -15.30")
+			_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", test.file), factories)
+			require.ErrorContains(t, err, test.contains)
+		})
+	}
 }

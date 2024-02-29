@@ -677,6 +677,16 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				return false, 0, ""
 			},
 		},
+		{
+			name: "200 percent",
+			cfg: &Config{
+				SamplingPercentage: 200,
+			},
+			ts: "",
+			sf: func(SamplerMode) (bool, float64, string) {
+				return true, 1, "ot=th:0"
+			},
+		},
 	}
 	for _, tt := range tests {
 		for _, mode := range []SamplerMode{Equalizing, Proportional} {
