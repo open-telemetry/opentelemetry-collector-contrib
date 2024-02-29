@@ -5,10 +5,13 @@ package fileconsumer
 
 import (
 	"context"
+	"crypto/rand"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -25,18 +28,41 @@ type fileInputBenchmark struct {
 
 type benchFile struct {
 	*os.File
-	log func(int)
+	content []byte
 }
 
-func simpleTextFile(b *testing.B, file *os.File) *benchFile {
-	line := string(filetest.TokenWithLength(49)) + "\n"
-	return &benchFile{
-		File: file,
-		log: func(_ int) {
-			_, err := file.WriteString(line)
-			require.NoError(b, err)
-		},
+func simpleTextFile(file *os.File, numLines int, lineLen int) *benchFile {
+	distinctFirstLine := fmt.Sprintf("%s\n", file.Name())
+	numBytes := len(distinctFirstLine) + numLines*lineLen + 1 // +1 for the newline signaling EOF
+	content := make([]byte, numBytes)
+	rand.Read(content) // fill with random bytes
+
+	// In order to efficiently detect EOF, we want it to end with an empty newline.
+	// We'll just remove all newlines and then add new ones in a controlled manner.
+	nonNewline := content[0]
+	for i := 1; nonNewline == '\n'; i++ {
+		nonNewline = content[i]
 	}
+
+	// Copy in the distinct first line
+	copy(content[:len(distinctFirstLine)], []byte(distinctFirstLine))
+
+	// Remove all newlines after the first line
+	for i := len(distinctFirstLine); i < len(content); i++ {
+		if content[i] == '\n' {
+			content[i] = nonNewline
+		}
+	}
+
+	// Add newlines to the end of each line
+	for i := len(distinctFirstLine) + lineLen - 1; i < len(content)-1; i += lineLen {
+		content[i] = '\n'
+	}
+
+	// Overwrite the last rune with a newline to signal EOF
+	content[len(content)-1] = '\n'
+
+	return &benchFile{File: file, content: content}
 }
 
 func BenchmarkFileInput(b *testing.B) {
@@ -153,7 +179,7 @@ func BenchmarkFileInput(b *testing.B) {
 			var files []*benchFile
 			for _, path := range bench.paths {
 				file := filetest.OpenFile(b, filepath.Join(rootDir, path))
-				files = append(files, simpleTextFile(b, file))
+				files = append(files, simpleTextFile(file, b.N, 100))
 			}
 
 			cfg := bench.config()
@@ -161,46 +187,47 @@ func BenchmarkFileInput(b *testing.B) {
 				cfg.Include[i] = filepath.Join(rootDir, inc)
 			}
 			cfg.StartAt = "beginning"
+			// Use aggresive poll interval so we're not measuring sleep time
+			cfg.PollInterval = time.Nanosecond
 
-			received := make(chan []byte)
+			doneChan := make(chan bool, len(files))
 			callback := func(_ context.Context, token []byte, _ map[string]any) error {
-				received <- token
+				if len(token) == 0 {
+					doneChan <- true
+				}
 				return nil
 			}
 			op, err := cfg.Build(testutil.Logger(b), callback)
 			require.NoError(b, err)
 
-			// write half the lines before starting
-			mid := b.N / 2
-			for i := 0; i < mid; i++ {
-				for _, file := range files {
-					file.log(i)
-				}
+			// Write some of the content before starting
+			for _, file := range files {
+				_, err := file.File.Write(file.content[:len(file.content)/2])
+				require.NoError(b, err)
 			}
 
 			b.ResetTimer()
-			err = op.Start(testutil.NewUnscopedMockPersister())
+			require.NoError(b, op.Start(testutil.NewUnscopedMockPersister()))
 			defer func() {
 				require.NoError(b, op.Stop())
 			}()
-			require.NoError(b, err)
 
-			// write the remainder of lines while running
+			// Write the remainder of content while running
 			var wg sync.WaitGroup
-			wg.Add(1)
-			go func() {
-				for i := mid; i < b.N; i++ {
-					for _, file := range files {
-						file.log(i)
-					}
-				}
-				wg.Done()
-			}()
-			wg.Wait()
-
-			for i := 0; i < b.N*len(files); i++ {
-				<-received
+			for _, file := range files {
+				wg.Add(1)
+				go func(f *benchFile) {
+					defer wg.Done()
+					_, err := f.File.Write(f.content[len(f.content)/2:])
+					require.NoError(b, err)
+				}(file)
 			}
+
+			// Timer continues to run until all files have been read
+			for dones := 0; dones < len(files); dones++ {
+				<-doneChan
+			}
+			wg.Wait()
 		})
 	}
 }
