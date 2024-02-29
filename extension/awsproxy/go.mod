@@ -13,11 +13,11 @@ require (
 	go.opentelemetry.io/collector/extension v0.95.0
 	go.opentelemetry.io/otel/metric v1.23.1
 	go.opentelemetry.io/otel/trace v1.23.1
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.50.17 // indirect
+	github.com/aws/aws-sdk-go v1.50.27 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

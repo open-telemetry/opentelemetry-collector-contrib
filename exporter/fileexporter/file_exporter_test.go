@@ -126,8 +126,7 @@ func TestFileTracesExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := tt.args.conf
-			feI, err := newFileExporter(conf)
-			assert.NoError(t, err)
+			feI := newFileExporter(conf)
 			require.IsType(t, &fileExporter{}, feI)
 			fe := feI.(*fileExporter)
 
@@ -135,7 +134,9 @@ func TestFileTracesExporter(t *testing.T) {
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
 			assert.NoError(t, fe.consumeTraces(context.Background(), td))
 			assert.NoError(t, fe.consumeTraces(context.Background(), td))
-			assert.NoError(t, fe.Shutdown(context.Background()))
+			defer func() {
+				assert.NoError(t, fe.Shutdown(context.Background()))
+			}()
 
 			fi, err := os.Open(fe.writer.path)
 			assert.NoError(t, err)
@@ -256,16 +257,8 @@ func TestFileMetricsExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := tt.args.conf
-			writer, err := buildFileWriter(conf)
-			assert.NoError(t, err)
 			fe := &fileExporter{
-				marshaller: &marshaller{
-					formatType:       conf.FormatType,
-					metricsMarshaler: metricsMarshalers[conf.FormatType],
-					compression:      conf.Compression,
-					compressor:       buildCompressor(conf.Compression),
-				},
-				writer: writer,
+				conf: conf,
 			}
 			require.NotNil(t, fe)
 
@@ -273,7 +266,9 @@ func TestFileMetricsExporter(t *testing.T) {
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
 			assert.NoError(t, fe.consumeMetrics(context.Background(), md))
 			assert.NoError(t, fe.consumeMetrics(context.Background(), md))
-			assert.NoError(t, fe.Shutdown(context.Background()))
+			defer func() {
+				assert.NoError(t, fe.Shutdown(context.Background()))
+			}()
 
 			fi, err := os.Open(fe.writer.path)
 			assert.NoError(t, err)
@@ -396,16 +391,8 @@ func TestFileLogsExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conf := tt.args.conf
-			writer, err := buildFileWriter(conf)
-			assert.NoError(t, err)
 			fe := &fileExporter{
-				marshaller: &marshaller{
-					formatType:    conf.FormatType,
-					logsMarshaler: logsMarshalers[conf.FormatType],
-					compression:   conf.Compression,
-					compressor:    buildCompressor(conf.Compression),
-				},
-				writer: writer,
+				conf: conf,
 			}
 			require.NotNil(t, fe)
 
@@ -413,7 +400,9 @@ func TestFileLogsExporter(t *testing.T) {
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
 			assert.NoError(t, fe.consumeLogs(context.Background(), ld))
 			assert.NoError(t, fe.consumeLogs(context.Background(), ld))
-			assert.NoError(t, fe.Shutdown(context.Background()))
+			defer func() {
+				assert.NoError(t, fe.Shutdown(context.Background()))
+			}()
 
 			fi, err := os.Open(fe.writer.path)
 			assert.NoError(t, err)
@@ -631,11 +620,6 @@ func safeFileExporterWrite(e *fileExporter, d []byte) (int, error) {
 	return e.writer.file.Write(d)
 }
 
-func buildFileWriter(conf *Config) (*fileWriter, error) {
-	export := buildExportFunc(conf)
-	return newFileWriter(conf.Path, conf.Rotation, conf.FlushInterval, export)
-}
-
 func TestFlushing(t *testing.T) {
 	cfg := &Config{
 		Path:          tempFileName(t),
@@ -648,16 +632,28 @@ func TestFlushing(t *testing.T) {
 	// Wrap the buffer with the buffered writer closer that implements flush() method.
 	bwc := newBufferedWriteCloser(buf)
 	// Create a file exporter with flushing enabled.
-	feI, err := newFileExporter(cfg)
-	assert.NoError(t, err)
+	feI := newFileExporter(cfg)
 	assert.IsType(t, &fileExporter{}, feI)
 	fe := feI.(*fileExporter)
-	fe.writer.file.Close()
-	fe.writer.file = bwc
 
 	// Start the flusher.
 	ctx := context.Background()
-	assert.NoError(t, fe.Start(ctx, nil))
+	fe.marshaller = &marshaller{
+		formatType:       fe.conf.FormatType,
+		tracesMarshaler:  tracesMarshalers[fe.conf.FormatType],
+		metricsMarshaler: metricsMarshalers[fe.conf.FormatType],
+		logsMarshaler:    logsMarshalers[fe.conf.FormatType],
+		compression:      fe.conf.Compression,
+		compressor:       buildCompressor(fe.conf.Compression),
+	}
+	export := buildExportFunc(fe.conf)
+	var err error
+	fe.writer, err = newFileWriter(fe.conf.Path, fe.conf.Rotation, fe.conf.FlushInterval, export)
+	assert.NoError(t, err)
+	err = fe.writer.file.Close()
+	assert.NoError(t, err)
+	fe.writer.file = bwc
+	fe.writer.start()
 
 	// Write 10 bytes.
 	b := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
