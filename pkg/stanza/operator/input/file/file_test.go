@@ -31,8 +31,8 @@ func TestAddFileResolvedFields(t *testing.T) {
 		cfg.IncludeFilePath = true
 		cfg.IncludeFileNameResolved = true
 		cfg.IncludeFilePathResolved = true
-		cfg.IncludeFileOwnerName = true
-		cfg.IncludeFileGroupName = true
+		cfg.IncludeFileOwnerName = (runtime.GOOS == "linux" || runtime.GOOS == "solaris")
+		cfg.IncludeFileGroupName = (runtime.GOOS == "linux" || runtime.GOOS == "solaris")
 	})
 
 	// Create temp dir with log file

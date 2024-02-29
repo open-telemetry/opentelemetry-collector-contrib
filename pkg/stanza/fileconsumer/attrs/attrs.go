@@ -6,10 +6,8 @@ package attrs // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"fmt"
 	"os"
-	"os/user"
 	"path/filepath"
 	"runtime"
-	"syscall"
 )
 
 const (
@@ -28,30 +26,6 @@ type Resolver struct {
 	IncludeFilePathResolved bool `mapstructure:"include_file_path_resolved,omitempty"`
 	IncludeFileOwnerName    bool `mapstructure:"include_file_owner_name,omitempty"`
 	IncludeFileGroupName    bool `mapstructure:"include_file_group_name,omitempty"`
-}
-
-func (r *Resolver) addOwnerInfo(file *os.File, attributes map[string]any) (err error) {
-	var fileInfo, errStat = file.Stat()
-	if errStat != nil {
-		return fmt.Errorf("resolve file stat: %w", err)
-	}
-	var fileStat = fileInfo.Sys().(*syscall.Stat_t)
-
-	if r.IncludeFileOwnerName {
-		var fileOwner, errFileUser = user.LookupId(fmt.Sprint(fileStat.Uid))
-		if errFileUser != nil {
-			return fmt.Errorf("resolve file owner name: %w", errFileUser)
-		}
-		attributes[LogFileOwnerName] = fileOwner.Username
-	}
-	if r.IncludeFileGroupName {
-		var fileGroup, errFileGroup = user.LookupGroupId(fmt.Sprint(fileStat.Gid))
-		if errFileGroup != nil {
-			return fmt.Errorf("resolve file group name: %w", errFileGroup)
-		}
-		attributes[LogFileGroupName] = fileGroup.Name
-	}
-	return nil
 }
 
 func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error) {

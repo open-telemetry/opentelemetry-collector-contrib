@@ -6,6 +6,7 @@ package attrs
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -69,7 +70,7 @@ func TestResolver(t *testing.T) {
 			} else {
 				assert.Empty(t, attributes[LogFilePathResolved])
 			}
-			if r.IncludeFileOwnerName {
+			if (runtime.GOOS == "linux" || runtime.GOOS == "solaris") && r.IncludeFileOwnerName {
 				expectLen++
 				assert.NotNil(t, attributes[LogFileOwnerName])
 				assert.IsType(t, "", attributes[LogFileOwnerName])
@@ -77,7 +78,7 @@ func TestResolver(t *testing.T) {
 				assert.Empty(t, attributes[LogFileOwnerName])
 				assert.Empty(t, attributes[LogFileOwnerName])
 			}
-			if r.IncludeFileGroupName {
+			if (runtime.GOOS == "linux" || runtime.GOOS == "solaris") && r.IncludeFileGroupName {
 				expectLen++
 				assert.NotNil(t, attributes[LogFileGroupName])
 				assert.IsType(t, "", attributes[LogFileGroupName])

@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"runtime"
 	"time"
 
 	"go.opentelemetry.io/collector/featuregate"
@@ -144,6 +145,9 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 	fileMatcher, err := matcher.New(c.Criteria)
 	if err != nil {
 		return nil, err
+	}
+	if (runtime.GOOS != "linux" && runtime.GOOS != "solaris") && (c.Resolver.IncludeFileOwnerName || c.Resolver.IncludeFileGroupName) {
+		return nil, fmt.Errorf("include_file_owner_name or include_file_group_name it's only supported for linux or solaris: %w", err)
 	}
 
 	readerFactory := reader.Factory{
