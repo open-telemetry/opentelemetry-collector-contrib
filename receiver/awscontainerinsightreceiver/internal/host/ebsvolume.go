@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -19,6 +20,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"go.uber.org/zap"
+
+	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
 var ebsMountPointRegex = regexp.MustCompile(`kubernetes\.io/aws-ebs/mounts/aws/(.+)/(vol-\w+)$`)
@@ -141,6 +144,12 @@ func (e *ebsVolume) addEBSVolumeMapping(zone *string, attachement *ec2.VolumeAtt
 func (e *ebsVolume) findNvmeBlockNameIfPresent(devName string) string {
 	// for nvme(ssd), there is a symlink from devName to nvme block name, i.e. /dev/xvda -> /dev/nvme0n1
 	// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/nvme-ebs-volumes.html
+
+	// Windows does not support file system eg: /rootfs to get Nvme Block name.
+	// todo: Implement logic to identify Nvme devices on Windows. Refer https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/nvme-ebs-volumes.html#identify-nvme-ebs-device
+	if runtime.GOOS == ci.OperatingSystemWindows {
+		return ""
+	}
 	hasRootFs := true
 	if _, err := e.osLstat(hostProc); os.IsNotExist(err) {
 		hasRootFs = false

@@ -66,8 +66,8 @@ func TestNodeCapacity(t *testing.T) {
 	cpuInfoOption = func(nc *nodeCapacity) {
 		nc.cpuInfo = func(ctx context.Context) ([]cpu.InfoStat, error) {
 			return []cpu.InfoStat{
-				{},
-				{},
+				{Cores: 1},
+				{Cores: 1},
 			}, nil
 		}
 	}

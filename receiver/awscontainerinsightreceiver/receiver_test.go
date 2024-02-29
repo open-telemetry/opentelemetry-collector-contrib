@@ -90,12 +90,12 @@ func TestCollectData(t *testing.T) {
 	_ = r.Start(context.Background(), nil)
 	ctx := context.Background()
 	r.k8sapiserver = &mockK8sAPIServer{}
-	r.cadvisor = &mockCadvisor{}
+	r.containerMetricsProvider = &mockCadvisor{}
 	err = r.collectData(ctx)
 	require.Nil(t, err)
 
 	// test the case when cadvisor and k8sapiserver failed to initialize
-	r.cadvisor = nil
+	r.containerMetricsProvider = nil
 	r.k8sapiserver = nil
 	err = r.collectData(ctx)
 	require.NotNil(t, err)
@@ -114,7 +114,7 @@ func TestCollectDataWithErrConsumer(t *testing.T) {
 
 	r := metricsReceiver.(*awsContainerInsightReceiver)
 	_ = r.Start(context.Background(), nil)
-	r.cadvisor = &mockCadvisor{}
+	r.containerMetricsProvider = &mockCadvisor{}
 	r.k8sapiserver = &mockK8sAPIServer{}
 	ctx := context.Background()
 
@@ -138,12 +138,12 @@ func TestCollectDataWithECS(t *testing.T) {
 	_ = r.Start(context.Background(), nil)
 	ctx := context.Background()
 
-	r.cadvisor = &mockCadvisor{}
+	r.containerMetricsProvider = &mockCadvisor{}
 	err = r.collectData(ctx)
 	require.Nil(t, err)
 
 	// test the case when cadvisor and k8sapiserver failed to initialize
-	r.cadvisor = nil
+	r.containerMetricsProvider = nil
 	err = r.collectData(ctx)
 	require.NotNil(t, err)
 }

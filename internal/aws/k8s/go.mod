@@ -9,6 +9,7 @@ require (
 	k8s.io/api v0.28.3
 	k8s.io/apimachinery v0.28.3
 	k8s.io/client-go v0.28.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.89.0
 )
 
 require (
@@ -55,6 +56,8 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight => ../../aws/containerinsight
 
 retract (
 	v0.76.2

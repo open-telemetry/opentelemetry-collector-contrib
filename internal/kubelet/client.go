@@ -11,22 +11,38 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/transport"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-const (
+var (
 	svcAcctCACertPath   = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 	svcAcctTokenPath    = "/var/run/secrets/kubernetes.io/serviceaccount/token" // #nosec
 	defaultSecurePort   = "10250"
 	defaultReadOnlyPort = "10255"
 )
+
+func init() {
+	updateSVCPath()
+}
+
+func updateSVCPath() {
+	// This is known that k8s token and cert file as available with CONTAINER_SANDBOX_MOUNT_POINT in path.
+	// https://kubernetes.io/docs/tasks/configure-pod-container/create-hostprocess-pod/#containerd-v1-6
+	// todo: Remove this workaround func when Windows AMIs has containerd 1.7 which solves upstream bug
+	if containerinsight.IsWindowsHostProcessContainer() {
+		svcAcctCACertPath = filepath.Join(os.Getenv("CONTAINER_SANDBOX_MOUNT_POINT"), svcAcctCACertPath)
+		svcAcctTokenPath = filepath.Join(os.Getenv("CONTAINER_SANDBOX_MOUNT_POINT"), svcAcctTokenPath)
+	}
+}
 
 type Client interface {
 	Get(path string) ([]byte, error)

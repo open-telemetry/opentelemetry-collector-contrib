@@ -12,6 +12,11 @@ const (
 	// We assume 50 micro-seconds is the minimal gap between two collected data sample to be valid to calculate delta
 	MinTimeDiff = 50 * time.Microsecond
 
+	// Environment variables
+	RunInContainer            = "RUN_IN_CONTAINER"
+	RunAsHostProcessContainer = "RUN_AS_HOST_PROCESS_CONTAINER"
+	TrueValue                 = "True"
+
 	// Attribute names
 	InstanceID              = "InstanceId"
 	InstanceType            = "InstanceType"
@@ -26,6 +31,8 @@ const (
 	MetricType              = "Type"
 	SourcesKey              = "Sources"
 	Timestamp               = "Timestamp"
+	OperatingSystem         = "OperatingSystem"
+	OperatingSystemWindows  = "windows"
 
 	// The following constants are used for metric name construction
 	CPUTotal                         = "cpu_usage_total"

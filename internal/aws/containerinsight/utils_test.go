@@ -5,6 +5,7 @@ package containerinsight
 import (
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -865,4 +866,15 @@ func TestConvertToOTLPMetricsForPodContainerStatusMetrics(t *testing.T) {
 	}
 	md = ConvertToOTLPMetrics(fields, tags, zap.NewNop())
 	checkMetricsAreExpected(t, md, fields, tags, expectedUnits)
+}
+
+func TestHostProcessContainer(t *testing.T) {
+	os.Setenv(RunInContainer, "True")
+	assert.Equal(t, IsWindowsHostProcessContainer(), false)
+
+	os.Setenv(RunAsHostProcessContainer, "True")
+	assert.Equal(t, IsWindowsHostProcessContainer(), true)
+
+	os.Unsetenv(RunInContainer)
+	os.Unsetenv(RunAsHostProcessContainer)
 }

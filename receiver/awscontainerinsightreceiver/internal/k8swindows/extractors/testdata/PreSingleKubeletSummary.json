@@ -1,0 +1,213 @@
+{
+  "node": {
+    "nodeName": "ip-192-168-44-84.us-west-2.compute.internal",
+    "systemContainers": [
+      {
+        "name": "pods",
+        "startTime": "2023-12-21T15:19:59Z",
+        "cpu": {
+          "time": "2023-12-21T15:19:59Z",
+          "usageCoreNanoSeconds": 312859375000
+        },
+        "memory": {
+          "time": "2023-12-21T15:19:59Z",
+          "workingSetBytes": 316026880
+        }
+      }
+    ],
+    "startTime": "2023-12-11T23:48:04Z",
+    "cpu": {
+      "time": "2023-12-21T15:19:58Z",
+      "usageNanoCores": 20000000,
+      "usageCoreNanoSeconds": 38907680000000
+    },
+    "memory": {
+      "time": "2023-12-21T15:19:58Z",
+      "availableBytes": 7234662400,
+      "usageBytes": 3583389696,
+      "workingSetBytes": 1040203776,
+      "rssBytes": 0,
+      "pageFaults": 0,
+      "majorPageFaults": 0
+    },
+    "network": {
+      "time": "2023-12-21T15:19:58Z",
+      "name": "",
+      "interfaces": [
+        {
+          "name": "Hyper-V Virtual Switch Extension Adapter",
+          "rxBytes": 0,
+          "rxErrors": 0,
+          "txBytes": 0,
+          "txErrors": 0
+        },
+        {
+          "name": "Microsoft Kernel Debug Network Adapter",
+          "rxBytes": 0,
+          "rxErrors": 0,
+          "txBytes": 0,
+          "txErrors": 0
+        },
+        {
+          "name": "6to4 Adapter",
+          "rxBytes": 0,
+          "rxErrors": 0,
+          "txBytes": 0,
+          "txErrors": 0
+        },
+        {
+          "name": "Intel[R]82599VirtualFunction",
+          "rxBytes": 0,
+          "rxErrors": 0,
+          "txBytes": 0,
+          "txErrors": 0
+        },
+        {
+          "name": "Microsoft IP-HTTPS Platform Interface",
+          "rxBytes": 0,
+          "rxErrors": 0,
+          "txBytes": 0,
+          "txErrors": 0
+        },
+        {
+          "name": "Hyper-V Virtual Ethernet Adapter",
+          "rxBytes": 5574166022,
+          "rxErrors": 0,
+          "txBytes": 772914904,
+          "txErrors": 0
+        },
+        {
+          "name": "Teredo Tunneling Pseudo-Interface",
+          "rxBytes": 0,
+          "rxErrors": 0,
+          "txBytes": 0,
+          "txErrors": 0
+        },
+        {
+          "name": "AWS PV Network Device",
+          "rxBytes": 0,
+          "rxErrors": 0,
+          "txBytes": 0,
+          "txErrors": 0
+        },
+        {
+          "name": "Amazon Elastic Network Adapter",
+          "rxBytes": 5620324400,
+          "rxErrors": 0,
+          "txBytes": 781060052,
+          "txErrors": 0
+        }
+      ]
+    },
+    "fs": {
+      "time": "2023-12-21T15:19:58Z",
+      "availableBytes": 51230154752,
+      "capacityBytes": 85897244672,
+      "usedBytes": 34667089920
+    },
+    "runtime": {
+      "imageFs": {
+        "time": "2023-12-21T15:19:56Z",
+        "availableBytes": 51230154752,
+        "capacityBytes": 85897244672,
+        "usedBytes": 16901889814,
+        "inodesUsed": 0
+      }
+    }
+  },
+  "pods": [
+    {
+      "podRef": {
+        "name": "windows-server-iis-ltsc2019-58d94b5844-6v2pg",
+        "namespace": "amazon-cloudwatch",
+        "uid": "01bfbe59-2925-4ad5-a8d3-a1b23e3ddd74"
+      },
+      "startTime": "2023-12-20T16:52:55Z",
+      "containers": [
+        {
+          "name": "windows-server-iis-ltsc2019",
+          "startTime": "2023-12-20T16:52:58Z",
+          "cpu": {
+            "time": "2023-12-21T15:19:59Z",
+            "usageNanoCores": 0,
+            "usageCoreNanoSeconds": 289625000000
+          },
+          "memory": {
+            "time": "2023-12-21T15:19:59Z",
+            "workingSetBytes": 208949248
+          },
+          "rootfs": {
+            "time": "2023-12-21T15:19:56Z",
+            "availableBytes": 51230154752,
+            "capacityBytes": 85897244672,
+            "usedBytes": 339738624,
+            "inodesUsed": 0
+          },
+          "logs": {
+            "time": "2023-12-21T15:19:59Z",
+            "availableBytes": 51230154752,
+            "capacityBytes": 85897244672,
+            "usedBytes": 919463,
+            "inodesUsed": 0
+          }
+        }
+      ],
+      "cpu": {
+        "time": "2023-12-21T15:19:59Z",
+        "usageNanoCores": 0,
+        "usageCoreNanoSeconds": 289625000000
+      },
+      "memory": {
+        "time": "2023-12-21T15:19:59Z",
+        "availableBytes": 0,
+        "usageBytes": 0,
+        "workingSetBytes": 208949248,
+        "rssBytes": 0,
+        "pageFaults": 0,
+        "majorPageFaults": 0
+      },
+      "network": {
+        "time": "2023-12-21T15:19:59Z",
+        "name": "cid-ccecfbf3-5ecf-4d93-9229-3f2f0df1b6b5",
+        "rxBytes": 8787186,
+        "txBytes": 3423484,
+        "interfaces": [
+          {
+            "name": "cid-ccecfbf3-5ecf-4d93-9229-3f2f0df1b6b5",
+            "rxBytes": 8787186,
+            "txBytes": 3423484
+          }
+        ]
+      },
+      "volume": [
+        {
+          "time": "2023-12-21T15:19:04Z",
+          "availableBytes": 51230248960,
+          "capacityBytes": 85897244672,
+          "usedBytes": 4431,
+          "inodesFree": 0,
+          "inodes": 0,
+          "inodesUsed": 0,
+          "name": "cwagentconfig"
+        },
+        {
+          "time": "2023-12-21T15:19:04Z",
+          "availableBytes": 51230248960,
+          "capacityBytes": 85897244672,
+          "usedBytes": 7448,
+          "inodesFree": 0,
+          "inodes": 0,
+          "inodesUsed": 0,
+          "name": "kube-api-access-8gtnx"
+        }
+      ],
+      "ephemeral-storage": {
+        "time": "2023-12-21T15:19:59Z",
+        "availableBytes": 51230154752,
+        "capacityBytes": 85897244672,
+        "usedBytes": 340662760,
+        "inodesUsed": 0
+      }
+    }
+  ]
+}

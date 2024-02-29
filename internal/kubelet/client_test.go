@@ -15,6 +15,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -26,6 +27,7 @@ import (
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
@@ -69,6 +71,32 @@ func TestNewTLSClientProvider(t *testing.T) {
 	tcc := c.httpClient.Transport.(*http.Transport).TLSClientConfig
 	require.Equal(t, 1, len(tcc.Certificates))
 	require.NotNil(t, tcc.RootCAs)
+}
+
+func TestSAPathInHostProcessContainer(t *testing.T) {
+	// todo: Remove this workaround func when Windows AMIs has containerd 1.7 which solves upstream bug.
+
+	// Test default SA cert and token.
+	assert.Equal(t, svcAcctCACertPath, "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
+	assert.Equal(t, svcAcctTokenPath, "/var/run/secrets/kubernetes.io/serviceaccount/token")
+
+	// Test SA cert and token when run inside container.
+	os.Setenv(containerinsight.RunInContainer, "True")
+	updateSVCPath()
+	assert.Equal(t, svcAcctCACertPath, "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
+	assert.Equal(t, svcAcctTokenPath, "/var/run/secrets/kubernetes.io/serviceaccount/token")
+
+	// Test SA cert and token when run inside host process container.
+	os.Setenv(containerinsight.RunAsHostProcessContainer, "True")
+	os.Setenv("CONTAINER_SANDBOX_MOUNT_POINT", "test123456")
+	updateSVCPath()
+	assert.Equal(t, svcAcctCACertPath, "test123456/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
+	assert.Equal(t, svcAcctTokenPath, "test123456/var/run/secrets/kubernetes.io/serviceaccount/token")
+
+	os.Unsetenv("CONTAINER_SANDBOX_MOUNT_POINT")
+	os.Unsetenv(containerinsight.RunInContainer)
+	os.Unsetenv(containerinsight.RunAsHostProcessContainer)
+	updateSVCPath()
 }
 
 func TestNewSAClientProvider(t *testing.T) {

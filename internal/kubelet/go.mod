@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubele
 go 1.20
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.92.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.89.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.89.0
 	github.com/stretchr/testify v1.8.4
@@ -37,6 +38,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opentelemetry.io/collector/config/configopaque v0.89.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0018 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/oauth2 v0.14.0 // indirect
@@ -45,6 +47,8 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
+	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -62,6 +66,8 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight => ../../internal/aws/containerinsight
 
 // openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
 replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37

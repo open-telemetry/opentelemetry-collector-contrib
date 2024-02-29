@@ -5,6 +5,8 @@ package k8sclient // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -20,6 +22,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	certutil "k8s.io/client-go/util/cert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
 const (
@@ -251,7 +256,7 @@ func (c *K8sClient) init(logger *zap.Logger, options ...Option) error {
 		opt.set(c)
 	}
 
-	config, err := rest.InClusterConfig()
+	config, err := c.inClusterConfig()
 	if err != nil {
 		c.logger.Warn("cannot find in cluster config", zap.Error(err))
 		config, err = clientcmd.BuildConfigFromFlags("", c.kubeConfigPath)
@@ -458,4 +463,43 @@ func (c *K8sClient) Shutdown() {
 			delete(optionsToK8sClient, key)
 		}
 	}
+}
+
+// inClusterConfig is copy of rest.InClusterConfig.
+// There is known bug in rest.InClusterConfig on Windows when running it as host process container.
+// https://github.com/kubernetes/kubernetes/issues/104562
+// This copy fixes that bug by appending `CONTAINER_SANDBOX_MOUNT_POINT` in k8s token and cert file paths.
+// todo: Remove this workaround func when Windows AMIs has containerd 1.7 which solves upstream bug.
+func (c *K8sClient) inClusterConfig() (*rest.Config, error) {
+	if !containerinsight.IsWindowsHostProcessContainer() {
+		return rest.InClusterConfig()
+	}
+	var (
+		tokenFile  = filepath.Join(os.Getenv("CONTAINER_SANDBOX_MOUNT_POINT"), "/var/run/secrets/kubernetes.io/serviceaccount/token")
+		rootCAFile = filepath.Join(os.Getenv("CONTAINER_SANDBOX_MOUNT_POINT"), "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
+	)
+	host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
+	if len(host) == 0 || len(port) == 0 {
+		return nil, rest.ErrNotInCluster
+	}
+
+	token, err := os.ReadFile(tokenFile)
+	if err != nil {
+		return nil, err
+	}
+
+	tlsClientConfig := rest.TLSClientConfig{}
+
+	if _, err := certutil.NewPool(rootCAFile); err != nil {
+		c.logger.Error(fmt.Sprintf("Expected to load root CA config from %s, but got err: %v", rootCAFile, err))
+	} else {
+		tlsClientConfig.CAFile = rootCAFile
+	}
+
+	return &rest.Config{
+		Host:            "https://" + net.JoinHostPort(host, port),
+		TLSClientConfig: tlsClientConfig,
+		BearerToken:     string(token),
+		BearerTokenFile: tokenFile,
+	}, nil
 }
