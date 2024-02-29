@@ -6,7 +6,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.95.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.95.0
 	github.com/stretchr/testify v1.8.4
 	github.com/tinylib/msgp v1.1.9
@@ -16,7 +15,6 @@ require (
 	go.opentelemetry.io/collector/connector v0.95.0
 	go.opentelemetry.io/collector/exporter v0.95.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.95.0
-	go.opentelemetry.io/collector/featuregate v1.2.0
 	go.opentelemetry.io/collector/otelcol v0.95.0
 	go.opentelemetry.io/collector/processor v0.95.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.95.0
@@ -88,6 +86,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.0 // indirect
+	github.com/haimrubinstein/go-syslog/v3 v3.0.3 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
@@ -113,6 +112,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.95.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.95.0 // indirect
@@ -161,6 +161,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.95.0 // indirect
 	go.opentelemetry.io/collector/extension v0.95.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.95.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.2.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.2.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.95.0 // indirect
 	go.opentelemetry.io/collector/service v0.95.0 // indirect

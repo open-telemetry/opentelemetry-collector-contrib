@@ -14,6 +14,7 @@ import (
 
 // fileExporter is the implementation of file exporter that writes telemetry data to a file
 type fileExporter struct {
+	conf       *Config
 	marshaller *marshaller
 	writer     *fileWriter
 }
@@ -43,12 +44,33 @@ func (e *fileExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 }
 
 // Start starts the flush timer if set.
-func (e *fileExporter) Start(ctx context.Context, _ component.Host) error {
-	return e.writer.start(ctx)
+func (e *fileExporter) Start(_ context.Context, _ component.Host) error {
+	e.marshaller = &marshaller{
+		formatType:       e.conf.FormatType,
+		tracesMarshaler:  tracesMarshalers[e.conf.FormatType],
+		metricsMarshaler: metricsMarshalers[e.conf.FormatType],
+		logsMarshaler:    logsMarshalers[e.conf.FormatType],
+		compression:      e.conf.Compression,
+		compressor:       buildCompressor(e.conf.Compression),
+	}
+	export := buildExportFunc(e.conf)
+
+	var err error
+	e.writer, err = newFileWriter(e.conf.Path, e.conf.Rotation, e.conf.FlushInterval, export)
+	if err != nil {
+		return err
+	}
+	e.writer.start()
+	return nil
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
 // It stops the flush ticker if set.
 func (e *fileExporter) Shutdown(context.Context) error {
-	return e.writer.shutdown()
+	if e.writer == nil {
+		return nil
+	}
+	w := e.writer
+	e.writer = nil
+	return w.shutdown()
 }
