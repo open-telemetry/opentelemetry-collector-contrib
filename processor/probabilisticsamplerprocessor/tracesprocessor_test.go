@@ -5,6 +5,7 @@ package probabilisticsamplerprocessor
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"math"
 	"math/rand"
@@ -394,21 +395,28 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 }
 
 // Test_tracesamplerprocessor_TraceState checks if handling of the context
-// tracestate is correct.
+// tracestate is correct with a number o cases that exercise the two
+// consistent sampling modes.
 func Test_tracesamplerprocessor_TraceState(t *testing.T) {
+	mustParseTID := func(in string) pcommon.TraceID {
+		b, err := hex.DecodeString(in)
+		if err != nil {
+			panic(err)
+		}
+		if len(b) != len(pcommon.TraceID{}) {
+			panic("incorrect size input")
+		}
+		return pcommon.TraceID(b)
+	}
+	// This hard-coded TraceID will sample at 50% and not at 49%.
+	// The equivalent randomness is 0x80000000000000.
+	defaultTID := mustParseTID("fefefefefefefefefe80000000000000")
 	sid := idutils.UInt64ToSpanID(0xfefefefe)
-	singleSpanWithAttrib := func(ts, key string, attribValue pcommon.Value) ptrace.Traces {
+	singleSpanWithAttrib := func(tid pcommon.TraceID, ts, key string, attribValue pcommon.Value) ptrace.Traces {
 		traces := ptrace.NewTraces()
 		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.TraceState().FromRaw(ts)
-		// This hard-coded TraceID will sample at 50% and not at 49%.
-		// The equivalent randomness is 0x80000000000000.
-		span.SetTraceID(pcommon.TraceID{
-			// Don't care (9 bytes)
-			0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe,
-			// Trace randomness (7 bytes)
-			0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		})
+		span.SetTraceID(tid)
 		if key != "" {
 			attribValue.CopyTo(span.Attributes().PutEmpty(key))
 		}
@@ -417,6 +425,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 	}
 	tests := []struct {
 		name  string
+		tid   pcommon.TraceID
 		cfg   *Config
 		ts    string
 		key   string
@@ -442,9 +451,28 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			sf: func(SamplerMode) (bool, float64, string) { return true, 2, "ot=th:8" },
 		},
 		{
+			name: "25 percent sampled",
+			tid:  mustParseTID("ddddddddddddddddddc0000000000000"),
+			cfg: &Config{
+				SamplingPercentage: 25,
+			},
+			ts: "",
+			sf: func(SamplerMode) (bool, float64, string) { return true, 4, "ot=th:c" },
+		},
+		{
+			name: "25 percent unsampled",
+			tid:  mustParseTID("ddddddddddddddddddb0000000000000"),
+			cfg: &Config{
+				SamplingPercentage: 25,
+			},
+			ts: "",
+			sf: func(SamplerMode) (bool, float64, string) { return false, 0, "" },
+		},
+		{
 			name: "1 percent sampled",
 			cfg: &Config{
 				SamplingPercentage: 1,
+				SamplingPrecision:  0,
 			},
 			//    99/100 = .fd70a3d70a3d70a3d
 			ts: "ot=rv:FD70A3D70A3D71", // note upper case passes through, is not generated
@@ -468,11 +496,13 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 1,
 			},
-			//    99/100 = .FD70A3D70A3D70A3D
+			// this r-value is slightly below the t-value threshold,
+			// off-by-one compared with the case above in the least-
+			// significant digit.
 			ts: "ot=rv:FD70A3D70A3D70",
 		},
 		{
-			name: "49 percent not sampled",
+			name: "49 percent not sampled with default tid",
 			cfg: &Config{
 				SamplingPercentage: 49,
 			},
@@ -486,6 +516,19 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			ts: "ot=rv:fd70B000000000",
 			sf: func(SamplerMode) (bool, float64, string) {
 				return true, 1 / 0.01, "ot=rv:fd70B000000000;th:fd70a3d70a3d71"
+			},
+		},
+		{
+			name: "1 percent sampled with tid",
+			tid:  mustParseTID("a0a0a0a0a0a0a0a0a0fe000000000000"),
+			cfg: &Config{
+				SamplingPercentage: 1,
+				SamplingPrecision:  4,
+			},
+			// 99/100 = .FD70A3D70A3D70A3D
+			ts: "",
+			sf: func(SamplerMode) (bool, float64, string) {
+				return true, 1 / 0.01, "ot=th:fd71"
 			},
 		},
 		{
@@ -508,29 +551,41 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			value: pcommon.NewValueInt(0),
 		},
 		{
-			name: "incoming 50 percent",
+			name: "incoming 50 percent with rvalue",
 			cfg: &Config{
 				SamplingPercentage: 50,
 			},
-			ts: "ot=rv:90000000000000;th:80000000000000", // note extra zeros!
+			ts: "ot=rv:90000000000000;th:80000000000000", // note extra zeros in th are erased
 			sf: func(mode SamplerMode) (bool, float64, string) {
 				if mode == Equalizing {
 					return true, 2, "ot=rv:90000000000000;th:8"
 				}
+				// Proportionally, 50% less is 25% absolute sampling
 				return false, 0, ""
 			},
 		},
 		{
-			name: "incoming 50 percent with no rvalue",
+			name: "incoming 50 percent at 25 percent not sampled",
 			cfg: &Config{
-				SamplingPercentage: 50,
+				SamplingPercentage: 25,
 			},
-			ts: "ot=th:8",
+			ts: "ot=th:8", // 50%
+			sf: func(mode SamplerMode) (bool, float64, string) {
+				return false, 0, ""
+			},
+		},
+		{
+			name: "incoming 50 percent at 25 percent sampled",
+			cfg: &Config{
+				SamplingPercentage: 25,
+			},
+			tid: mustParseTID("ffffffffffffffffffffffffffffffff"), // always sampled
+			ts:  "ot=th:8",                                        // 50%
 			sf: func(mode SamplerMode) (bool, float64, string) {
 				if mode == Equalizing {
-					return true, 2, "ot=th:8"
+					return true, 4, "ot=th:c"
 				}
-				return false, 0, ""
+				return true, 8, "ot=th:e"
 			},
 		},
 		{
@@ -557,7 +612,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "inconsistent threshold not samp,led",
+			name: "inconsistent threshold not sampled",
 			cfg: &Config{
 				SamplingPercentage: 1,
 			},
@@ -567,7 +622,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "40 percent precision 3",
+			name: "40 percent precision 3 with rvalue",
 			cfg: &Config{
 				SamplingPercentage: 40,
 				SamplingPrecision:  3,
@@ -578,16 +633,48 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "60 percent inconsistent resampled",
+			name: "arriving 50 percent sampled at 40 percent precision 6 with tid",
 			cfg: &Config{
-				SamplingPercentage: 60,
-				SamplingPrecision:  4,
+				SamplingPercentage: 40,
+				SamplingPrecision:  6,
 			},
-			// This th:8 is inconsistent with rv, is erased.  But, the
-			// rv qualifies for the 60% sampling (th:666666 repeating)
-			ts: "ot=rv:70000000000000;th:8",
-			sf: func(SamplerMode) (bool, float64, string) {
-				return true, 1 / 0.6, "ot=rv:70000000000000;th:6666"
+			tid: mustParseTID("a0a0a0a0a0a0a0a0a0d0000000000000"),
+			ts:  "ot=th:8", // 50%
+			sf: func(mode SamplerMode) (bool, float64, string) {
+				if mode == Proportional {
+					// 5 == 1 / (0.4 * 0.5)
+					return true, 5, "ot=th:cccccd"
+				}
+				// 2.5 == 1 / 0.4
+				return true, 2.5, "ot=th:99999a"
+			},
+		},
+		{
+			name: "arriving 50 percent sampled at 40 percent partly sampled",
+			cfg: &Config{
+				SamplingPercentage: 40,
+				SamplingPrecision:  3,
+			},
+			tid: mustParseTID("a0a0a0a0a0a0a0a0a0b0000000000000"),
+			ts:  "ot=th:8", // 50%
+			sf: func(mode SamplerMode) (bool, float64, string) {
+				if mode == Proportional {
+					return false, 0, ""
+				}
+				// 2.5 == 1 / 0.4
+				return true, 2.5, "ot=th:99a"
+			},
+		},
+		{
+			name: "arriving 50 percent sampled at 40 percent not sampled",
+			cfg: &Config{
+				SamplingPercentage: 40,
+				SamplingPrecision:  3,
+			},
+			tid: mustParseTID("a0a0a0a0a0a0a0a0a080000000000000"),
+			ts:  "ot=th:8", // 50%
+			sf: func(mode SamplerMode) (bool, float64, string) {
+				return false, 0, ""
 			},
 		},
 	}
@@ -600,9 +687,17 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					*cfg = *tt.cfg
 				}
 				cfg.SamplerMode = mode
+
 				tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
 				require.NoError(t, err)
-				td := singleSpanWithAttrib(tt.ts, tt.key, tt.value)
+
+				tid := defaultTID
+
+				if !tt.tid.IsEmpty() {
+					tid = tt.tid
+				}
+
+				td := singleSpanWithAttrib(tid, tt.ts, tt.key, tt.value)
 
 				err = tsp.ConsumeTraces(context.Background(), td)
 				require.NoError(t, err)
@@ -624,9 +719,11 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					if expectCount == 0 {
 						assert.Equal(t, 0.0, gotTs.OTelValue().AdjustedCount())
 					} else if cfg.SamplingPrecision == 0 {
-						assert.InEpsilon(t, expectCount, gotTs.OTelValue().AdjustedCount(), 1e-9)
+						assert.InEpsilon(t, expectCount, gotTs.OTelValue().AdjustedCount(), 1e-9,
+							"compare %v %v", expectCount, gotTs.OTelValue().AdjustedCount())
 					} else {
-						assert.InEpsilon(t, expectCount, gotTs.OTelValue().AdjustedCount(), 1e-3)
+						assert.InEpsilon(t, expectCount, gotTs.OTelValue().AdjustedCount(), 1e-3,
+							"compare %v %v", expectCount, gotTs.OTelValue().AdjustedCount())
 					}
 					require.Equal(t, expectTS, got.TraceState().AsRaw())
 				} else {

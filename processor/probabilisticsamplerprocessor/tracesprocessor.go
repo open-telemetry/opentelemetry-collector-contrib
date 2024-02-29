@@ -118,6 +118,9 @@ type traceProportionalizer struct {
 	consistentCommon
 }
 
+func (*inconsistentCommon) updateTracestate(_ pcommon.TraceID, _ bool, _ *sampling.W3CTraceState) {
+}
+
 func (*consistentCommon) updateTracestate(tid pcommon.TraceID, should bool, wts *sampling.W3CTraceState) {
 	// When this sampler decided not to sample, the t-value becomes zero.
 	if !should {
@@ -241,9 +244,6 @@ func (ts *traceHasher) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, err
 	tid := s.TraceID()
 	decision := computeHash(tid[:], ts.hashSeed)&bitMaskHashBuckets < ts.hashScaledSamplerate
 	return decision, nil, nil
-}
-
-func (*inconsistentCommon) updateTracestate(_ pcommon.TraceID, _ bool, _ *sampling.W3CTraceState) {
 }
 
 func (ts *traceEqualizer) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, error) {
