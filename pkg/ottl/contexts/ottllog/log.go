@@ -220,8 +220,16 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 		} else {
 			return accessSpanID(), nil
 		}
-	case "schemaURL":
-		return accessSchemaURL(), nil
+	case "schema_url":
+		if path.Name() == "resource" && path.Next() != nil {
+			if path.Next().Name() == "schema_url" {
+				return accessResourceSchemaURL(), nil
+			}
+		} else if path.Name() == "scope" && path.Next() != nil {
+			if path.Next().Name() == "schema_url" {
+				return accessScopeSchemaURL(), nil
+			}
+		}
 	}
 
 	return nil, fmt.Errorf("invalid path expression %v", path)
@@ -507,7 +515,21 @@ func accessStringSpanID() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessSchemaURL() ottl.StandardGetSetter[TransformContext] {
+func accessResourceSchemaURL() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
+			return tCtx.getResourceLogs().SchemaUrl(), nil
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
+			if schemaURL, ok := val.(string); ok {
+				tCtx.getResourceLogs().SetSchemaUrl(schemaURL)
+			}
+			return nil
+		},
+	}
+}
+
+func accessScopeSchemaURL() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
 			return tCtx.getScopeLogs().SchemaUrl(), nil
@@ -515,7 +537,6 @@ func accessSchemaURL() ottl.StandardGetSetter[TransformContext] {
 		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
 			if schemaURL, ok := val.(string); ok {
 				tCtx.getScopeLogs().SetSchemaUrl(schemaURL)
-				tCtx.getResourceLogs().SetSchemaUrl(schemaURL)
 			}
 			return nil
 		},
