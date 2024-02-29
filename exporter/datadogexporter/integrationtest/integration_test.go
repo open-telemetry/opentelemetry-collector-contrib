@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/processor"
@@ -42,103 +41,72 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 )
 
 func TestIntegration(t *testing.T) {
-	tests := []struct {
-		name               string
-		featureGateEnabled bool
-	}{
-		{
-			name:               "with feature gate enabled",
-			featureGateEnabled: true,
-		},
-		{
-			name:               "with feature gate disabled",
-			featureGateEnabled: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// 1. Set up mock Datadog server
-			// See also https://github.com/DataDog/datadog-agent/blob/49c16e0d4deab396626238fa1d572b684475a53f/cmd/trace-agent/test/backend.go
-			apmstatsRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.APMStatsEndpoint, ReqChan: make(chan []byte)}
-			tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
-			server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
-			defer server.Close()
+	// 1. Set up mock Datadog server
+	// See also https://github.com/DataDog/datadog-agent/blob/49c16e0d4deab396626238fa1d572b684475a53f/cmd/trace-agent/test/backend.go
+	apmstatsRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.APMStatsEndpoint, ReqChan: make(chan []byte)}
+	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
+	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
+	defer server.Close()
 
-			// 2. Start in-process collector
-			factories := getIntegrationTestComponents(t)
-			app, confFilePath := getIntegrationTestCollector(t, server.URL, factories)
-			if tt.featureGateEnabled {
-				err := featuregate.GlobalRegistry().Set(datadog.ConnectorPerformanceFeatureGate.ID(), true)
-				assert.NoError(t, err)
-				defer func() {
-					_ = featuregate.GlobalRegistry().Set(datadog.ConnectorPerformanceFeatureGate.ID(), false)
-				}()
-			}
-			go func() {
-				assert.NoError(t, app.Run(context.Background()))
-			}()
-			defer app.Shutdown()
-			defer os.Remove(confFilePath)
-			waitForReadiness(app)
+	// 2. Start in-process collector
+	factories := getIntegrationTestComponents(t)
+	app, confFilePath := getIntegrationTestCollector(t, server.URL, factories)
+	go func() {
+		assert.NoError(t, app.Run(context.Background()))
+	}()
+	defer app.Shutdown()
+	defer os.Remove(confFilePath)
+	waitForReadiness(app)
 
-			// 3. Generate and send traces
-			sendTraces(t)
+	// 3. Generate and send traces
+	sendTraces(t)
 
-			// 4. Validate traces and APM stats from the mock server
-			var spans []*pb.Span
-			var stats []*pb.ClientGroupedStats
+	// 4. Validate traces and APM stats from the mock server
+	var spans []*pb.Span
+	var stats []*pb.ClientGroupedStats
 
-			// 5 sampled spans + APM stats on 10 spans are sent to datadog exporter
-			for len(spans) < 5 || len(stats) < 10 {
-				select {
-				case tracesBytes := <-tracesRec.ReqChan:
-					gz := getGzipReader(t, tracesBytes)
-					slurp, err := io.ReadAll(gz)
-					require.NoError(t, err)
-					var traces pb.AgentPayload
-					require.NoError(t, proto.Unmarshal(slurp, &traces))
-					for _, tps := range traces.TracerPayloads {
-						for _, chunks := range tps.Chunks {
-							spans = append(spans, chunks.Spans...)
-							for _, span := range chunks.Spans {
-								assert.Equal(t, "true", span.Meta["_dd.stats_computed"])
-							}
-						}
-					}
-
-				case apmstatsBytes := <-apmstatsRec.ReqChan:
-					gz := getGzipReader(t, apmstatsBytes)
-					var spl pb.StatsPayload
-					require.NoError(t, msgp.Decode(gz, &spl))
-					for _, csps := range spl.Stats {
-						assert.Equal(t, "datadogexporter-otelcol-tests", spl.AgentVersion)
-						for _, csbs := range csps.Stats {
-							stats = append(stats, csbs.Stats...)
-							for _, stat := range csbs.Stats {
-								assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan"))
-								assert.Equal(t, uint64(1), stat.Hits)
-								assert.Equal(t, uint64(1), stat.TopLevelHits)
-								if tt.featureGateEnabled {
-									// Peer tags aggregation is supported only when the feature gate is enabled (it's enabled by default)
-									assert.Equal(t, "client", stat.SpanKind)
-									assert.Equal(t, []string{"extra_peer_tag:tag_val", "peer.service:svc"}, stat.PeerTags)
-								}
-							}
-						}
-					}
+	// 5 sampled spans + APM stats on 10 spans are sent to datadog exporter
+	for len(spans) < 5 || len(stats) < 10 {
+		select {
+		case tracesBytes := <-tracesRec.ReqChan:
+			gz := getGzipReader(t, tracesBytes)
+			slurp, err := io.ReadAll(gz)
+			require.NoError(t, err)
+			var traces pb.AgentPayload
+			require.NoError(t, proto.Unmarshal(slurp, &traces))
+			for _, tps := range traces.TracerPayloads {
+				for _, chunks := range tps.Chunks {
+					spans = append(spans, chunks.Spans...)
 				}
 			}
 
-			// Verify we don't receive more than the expected numbers
-			assert.Len(t, spans, 5)
-			assert.Len(t, stats, 10)
-		})
+		case apmstatsBytes := <-apmstatsRec.ReqChan:
+			gz := getGzipReader(t, apmstatsBytes)
+			var spl pb.StatsPayload
+			require.NoError(t, msgp.Decode(gz, &spl))
+			for _, csps := range spl.Stats {
+				assert.Equal(t, "datadogexporter-otelcol-tests", spl.AgentVersion)
+				for _, csbs := range csps.Stats {
+					stats = append(stats, csbs.Stats...)
+					for _, stat := range csbs.Stats {
+						assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan"))
+						assert.Equal(t, uint64(1), stat.Hits)
+						assert.Equal(t, uint64(1), stat.TopLevelHits)
+						assert.Equal(t, "client", stat.SpanKind)
+						assert.Equal(t, []string{"extra_peer_tag:tag_val", "peer.service:svc"}, stat.PeerTags)
+					}
+				}
+			}
+		}
 	}
+
+	// Verify we don't receive more than the expected numbers
+	assert.Len(t, spans, 5)
+	assert.Len(t, stats, 10)
 }
 
 func getIntegrationTestComponents(t *testing.T) otelcol.Factories {

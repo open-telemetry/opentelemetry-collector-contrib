@@ -297,12 +297,9 @@ func (f *factory) createMetricsExporter(
 	set.Logger.Debug("Starting Datadog Trace-Agent StatsWriter")
 	go statsWriter.Run()
 
-	var statsIn chan []byte
-	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
-		statsIn = make(chan []byte, 1000)
-		statsv := set.BuildInfo.Command + set.BuildInfo.Version
-		f.consumeStatsPayload(ctx, statsIn, statsToAgent, statsv, acfg.AgentVersion, set.Logger)
-	}
+	statsIn := make(chan []byte, 1000)
+	statsv := set.BuildInfo.Command + set.BuildInfo.Version
+	f.consumeStatsPayload(ctx, statsIn, statsToAgent, statsv, acfg.AgentVersion, set.Logger)
 	pcfg := newMetadataConfigfromConfig(cfg)
 	metadataReporter, err := f.Reporter(set, pcfg)
 	if err != nil {
