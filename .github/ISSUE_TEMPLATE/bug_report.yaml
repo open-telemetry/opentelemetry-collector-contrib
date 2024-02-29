@@ -21,6 +21,7 @@ body:
       - cmd/configschema
       - cmd/githubgen
       - cmd/mdatagen
+      - cmd/mdatagen/internal/samplereceiver
       - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
