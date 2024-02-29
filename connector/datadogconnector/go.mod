@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-rc.4
 	github.com/DataDog/datadog-agent/pkg/trace v0.52.0-rc.4
-	github.com/DataDog/datadog-go/v5 v5.1.1
+	github.com/DataDog/datadog-go/v5 v5.5.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.4
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.95.0
