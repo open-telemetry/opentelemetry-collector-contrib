@@ -8,14 +8,14 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.50.2
 	github.com/DataDog/datadog-api-client-go/v2 v2.22.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.3
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.3
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.13.3
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.3
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.3
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.4
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.4
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.13.4
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.4
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.4
 	github.com/DataDog/sketches-go v1.4.4
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0
-	github.com/aws/aws-sdk-go v1.50.17
+	github.com/aws/aws-sdk-go v1.50.27
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.95.0
@@ -52,7 +52,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.23.1
 	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 	google.golang.org/protobuf v1.32.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
