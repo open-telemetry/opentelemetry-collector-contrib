@@ -95,7 +95,6 @@ extension/encoding/textencodingextension/                @open-telemetry/collect
 extension/encoding/zipkinencodingextension/              @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
 extension/headerssetterextension/                        @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/healthcheckextension/                          @open-telemetry/collector-contrib-approvers @jpkrohling
-extension/httpforwarder/                                 @open-telemetry/collector-contrib-approvers @atoulme @rmfitzpatrick
 extension/httpforwarderextension/                        @open-telemetry/collector-contrib-approvers @atoulme @rmfitzpatrick
 extension/jaegerremotesampling/                          @open-telemetry/collector-contrib-approvers @yurishkuro @frzifus
 extension/oauth2clientauthextension/                     @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling

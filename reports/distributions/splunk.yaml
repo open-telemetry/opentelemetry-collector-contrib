@@ -32,7 +32,6 @@ components:
         - file_storage
         - health_check
         - host_observer
-        - http_forwarder
         - k8s_observer
         - pprof
     processor:
