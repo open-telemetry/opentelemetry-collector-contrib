@@ -25,7 +25,6 @@ type staticResolver struct {
 	endpoints         []string
 	onChangeCallbacks []func([]string)
 	once              sync.Once // we trigger the onChange only once
-	mx                sync.Mutex
 }
 
 func newStaticResolver(endpoints []string) (*staticResolver, error) {
@@ -53,8 +52,6 @@ func (r *staticResolver) start(ctx context.Context) error {
 func (r *staticResolver) shutdown(context.Context) error {
 	r.endpoints = nil
 
-	r.mx.Lock()
-	defer r.mx.Unlock()
 	for _, callback := range r.onChangeCallbacks {
 		callback(r.endpoints)
 	}
@@ -65,8 +62,6 @@ func (r *staticResolver) shutdown(context.Context) error {
 func (r *staticResolver) resolve(ctx context.Context) ([]string, error) {
 	_ = stats.RecordWithTags(ctx, staticResolverMutators, mNumResolutions.M(1))
 
-	r.mx.Lock()
-	defer r.mx.Unlock()
 	r.once.Do(func() {
 		_ = stats.RecordWithTags(ctx, staticResolverMutators, mNumBackends.M(int64(len(r.endpoints))))
 
