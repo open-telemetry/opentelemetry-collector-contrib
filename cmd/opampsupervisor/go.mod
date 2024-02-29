@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.95.0
 	go.opentelemetry.io/collector/semconv v0.95.0
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 )
 
 require (

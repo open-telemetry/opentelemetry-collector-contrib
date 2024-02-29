@@ -67,7 +67,6 @@ func (m *Manager) Start(persister operator.Persister) error {
 
 func (m *Manager) closePreviousFiles() {
 	// m.previousPollFiles -> m.knownFiles[0]
-
 	for r, _ := m.previousPollFiles.Pop(); r != nil; r, _ = m.previousPollFiles.Pop() {
 		m.knownFiles[0].Add(r.Close())
 	}
@@ -171,7 +170,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.Debug("Consuming files", zap.Strings("paths", paths))
 	m.makeReaders(paths)
 
-	m.preConsume(ctx)
+	m.readLostFiles(ctx)
 
 	// read new readers to end
 	var wg sync.WaitGroup
@@ -202,7 +201,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 		return nil, nil
 	}
 
-	if len(fp.FirstBytes) == 0 {
+	if fp.Len() == 0 {
 		// Empty file, don't read it until we can compare its fingerprint
 		if err = file.Close(); err != nil {
 			m.Debugw("problem closing file", zap.Error(err))
