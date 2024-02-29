@@ -47,7 +47,6 @@ components:
         - resourcedetection
         - routing
         - span
-        - spanmetrics
         - tail_sampling
         - transform
     receiver:
