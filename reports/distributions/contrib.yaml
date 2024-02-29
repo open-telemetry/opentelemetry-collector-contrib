@@ -91,7 +91,6 @@ components:
         - resourcedetection
         - routing
         - span
-        - spanmetrics
         - sumologic
         - tail_sampling
         - transform
