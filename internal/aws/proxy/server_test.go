@@ -226,7 +226,7 @@ func TestCanCreateTransport(t *testing.T) {
 
 	_, err := NewServer(cfg, logger)
 	assert.Error(t, err, "NewServer should fail")
-	assert.Contains(t, err.Error(), "failed to parse proxy URL")
+	assert.Contains(t, err.Error(), "invalid control character in URL")
 }
 
 func TestGetServiceEndpointInvalidAWSConfig(t *testing.T) {

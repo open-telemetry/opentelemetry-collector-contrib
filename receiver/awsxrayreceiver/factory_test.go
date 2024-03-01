@@ -32,7 +32,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		t.Skip()
 	}
 
-	t.Setenv(defaultRegionEnvName, mockRegion)
+	t.Setenv(regionEnvName, mockRegion)
 
 	factory := NewFactory()
 	_, err := factory.CreateTracesReceiver(
