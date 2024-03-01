@@ -159,7 +159,7 @@ func (cc *consistentCommon) randomnessFromSpan(s ptrace.Span) (sampling.Randomne
 				if cc.strict {
 					err = ErrInconsistentArrivingTValue
 				} else {
-					cc.logger.Warn("inconsisent t-value cleared")
+					cc.logger.Warn("tracestate", zap.Error(ErrInconsistentArrivingTValue))
 					otts.ClearTValue()
 				}
 			}

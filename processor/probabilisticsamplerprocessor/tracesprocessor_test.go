@@ -412,6 +412,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 		tf    uint32
 		key   string
 		value pcommon.Value
+		log   string
 		sf    func(SamplerMode) (sampled bool, adjCount float64, tracestate string)
 	}{
 		{
@@ -584,7 +585,8 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "inconsistent threshold arriving",
+			name: "inconsistent arriving t-value",
+			log:  "inconsistent arriving t-value",
 			cfg: &Config{
 				SamplingPercentage: 100,
 			},
@@ -594,7 +596,8 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "inconsistent threshold not sampled",
+			name: "inconsistent arriving t-value not sampled",
+			log:  "inconsistent arriving t-value",
 			cfg: &Config{
 				SamplingPercentage: 1,
 			},
@@ -712,7 +715,11 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				}
 				cfg.SamplerMode = mode
 
-				tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
+				set := processortest.NewNopCreateSettings()
+				logger, observed := observer.New(zap.DebugLevel)
+				set.Logger = zap.New(logger)
+
+				tsp, err := newTracesProcessor(context.Background(), set, cfg, sink)
 				require.NoError(t, err)
 
 				tid := defaultTID
@@ -720,8 +727,6 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				if !tt.tid.IsEmpty() {
 					tid = tt.tid
 				}
-
-				// TODO: Test log messages in non-strict mode
 
 				td := makeSingleSpanWithAttrib(tid, sid, tt.ts, tt.tf, tt.key, tt.value)
 
@@ -756,6 +761,14 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					require.Equal(t, 0, len(sampledData))
 					assert.Equal(t, 0, sink.SpanCount())
 					require.Equal(t, "", expectTS)
+				}
+
+				if len(tt.log) == 0 {
+					require.Equal(t, 0, len(observed.All()), "should not have logs: %v", observed.All())
+				} else {
+					require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+					require.Equal(t, observed.All()[0].Message, "tracestate")
+					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), tt.log)
 				}
 			})
 		}
