@@ -19,17 +19,23 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 const (
-	regionEnvVarName = "AWS_DEFAULT_REGION"
+	regionEnvVarName = "AWS_REGION"
 	regionEnvVar     = "us-west-2"
 )
+
+func logSetup() (*zap.Logger, *observer.ObservedLogs) {
+	core, recorded := observer.New(zapcore.DebugLevel)
+	return zap.New(core), recorded
+}
 
 func TestHappyCase(t *testing.T) {
 	logger, recordedLogs := logSetup()
@@ -177,28 +183,6 @@ func TestTCPEndpointInvalid(t *testing.T) {
 	cfg.TCPAddr.Endpoint = "invalid\n"
 	_, err := NewServer(cfg, logger)
 	assert.Error(t, err, "NewServer should fail")
-}
-
-func TestCantGetAWSConfigSession(t *testing.T) {
-	logger, _ := logSetup()
-
-	t.Setenv(regionEnvVarName, regionEnvVar)
-
-	cfg := DefaultConfig()
-	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.TCPAddr.Endpoint = tcpAddr
-
-	origSession := newAWSSession
-	defer func() {
-		newAWSSession = origSession
-	}()
-
-	expectedErr := errors.New("expected newAWSSessionError")
-	newAWSSession = func(roleArn string, region string, log *zap.Logger) (*session.Session, error) {
-		return nil, expectedErr
-	}
-	_, err := NewServer(cfg, logger)
-	assert.EqualError(t, err, expectedErr.Error())
 }
 
 func TestCantGetServiceEndpoint(t *testing.T) {

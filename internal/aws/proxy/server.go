@@ -21,6 +21,7 @@ import (
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
@@ -46,7 +47,8 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 		logger.Debug("Using remote proxy", zap.String("address", cfg.ProxyAddress))
 	}
 
-	awsCfg, sess, err := getAWSConfigSession(cfg, logger)
+	sessionCfg := cfg.toSessionConfig()
+	awsCfg, sess, err := awsutil.GetAWSConfigSession(logger, &awsutil.Conn{}, sessionCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +68,7 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 		Credentials: sess.Config.Credentials,
 	}
 
-	transport, err := proxyServerTransport(cfg)
+	transport, err := awsutil.ProxyServerTransport(logger, sessionCfg)
 	if err != nil {
 		return nil, err
 	}
