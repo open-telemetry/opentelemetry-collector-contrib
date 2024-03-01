@@ -83,7 +83,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.95.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.95.0
@@ -210,6 +209,7 @@ require (
 	go.opentelemetry.io/collector/extension/ballastextension v0.95.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.95.0
 	go.opentelemetry.io/collector/otelcol v0.95.0
+	go.opentelemetry.io/collector/pdata v1.2.0
 	go.opentelemetry.io/collector/processor v0.95.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.95.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.95.0
@@ -536,6 +536,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd v0.95.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.95.0 // indirect
@@ -665,7 +666,6 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.95.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.95.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.2.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.2.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.95.0 // indirect
 	go.opentelemetry.io/collector/service v0.95.0 // indirect
 	go.opentelemetry.io/contrib/config v0.3.0 // indirect
