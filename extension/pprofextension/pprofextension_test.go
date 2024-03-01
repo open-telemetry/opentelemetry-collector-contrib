@@ -21,13 +21,13 @@ import (
 
 func TestPerformanceProfilerExtensionUsage(t *testing.T) {
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		BlockProfileFraction: 3,
 		MutexProfileFraction: 5,
 	}
-	tt, err := componenttest.SetupTelemetry(component.NewID("TestPprofExtension"))
+	tt, err := componenttest.SetupTelemetry(component.MustNewID("TestPprofExtension"))
 	require.NoError(t, err, "SetupTelemetry should succeed")
 
 	pprofExt := newServer(config, tt.TelemetrySettings())
@@ -57,11 +57,11 @@ func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
 	defer ln.Close()
 
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: endpoint,
 		},
 	}
-	tt, err := componenttest.SetupTelemetry(component.NewID("TestPprofExtension"))
+	tt, err := componenttest.SetupTelemetry(component.MustNewID("TestPprofExtension"))
 	require.NoError(t, err, "SetupTelemetry should succeed")
 	pprofExt := newServer(config, tt.TelemetrySettings())
 	require.NotNil(t, pprofExt)
@@ -71,12 +71,12 @@ func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
 
 func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
 
-	tt, err := componenttest.SetupTelemetry(component.NewID("TestPprofExtension"))
+	tt, err := componenttest.SetupTelemetry(component.MustNewID("TestPprofExtension"))
 	require.NoError(t, err, "SetupTelemetry should succeed")
 	pprofExt := newServer(config, tt.TelemetrySettings())
 	require.NotNil(t, pprofExt)
@@ -90,12 +90,12 @@ func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 
 func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
 
-	tt, err := componenttest.SetupTelemetry(component.NewID("TestPprofExtension"))
+	tt, err := componenttest.SetupTelemetry(component.MustNewID("TestPprofExtension"))
 	require.NoError(t, err, "SetupTelemetry should succeed")
 	pprofExt := newServer(config, tt.TelemetrySettings())
 	require.NotNil(t, pprofExt)
@@ -107,11 +107,11 @@ func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
 
 func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
-	tt, err := componenttest.SetupTelemetry(component.NewID("TestPprofExtension"))
+	tt, err := componenttest.SetupTelemetry(component.MustNewID("TestPprofExtension"))
 	require.NoError(t, err, "SetupTelemetry should succeed")
 	pprofExt := newServer(config, tt.TelemetrySettings())
 	require.NotNil(t, pprofExt)
@@ -128,12 +128,12 @@ func TestPerformanceProfilerLifecycleWithFile(t *testing.T) {
 	require.NoError(t, tmpFile.Close())
 
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		SaveToFile: tmpFile.Name(),
 	}
-	tt, err := componenttest.SetupTelemetry(component.NewID("TestPprofExtension"))
+	tt, err := componenttest.SetupTelemetry(component.MustNewID("TestPprofExtension"))
 	require.NoError(t, err, "SetupTelemetry should succeed")
 	pprofExt := newServer(config, tt.TelemetrySettings())
 	require.NotNil(t, pprofExt)

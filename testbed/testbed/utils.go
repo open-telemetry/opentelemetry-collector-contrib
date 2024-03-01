@@ -13,6 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
+// Deprecated: [v0.94.0] Use `testutil.GetAvailablePort(t testing.TB)` instead
 func GetAvailablePort(t testing.TB) int {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	_, port, err := net.SplitHostPort(endpoint)

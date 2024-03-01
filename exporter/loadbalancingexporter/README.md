@@ -47,7 +47,13 @@ Around R/N of the "routes" will be rerouted differently, where:
 
 This should be stable enough for most cases, and the larger the number of backends, the less disruption it should cause. Still, if routing stability is important for your use case and your list of backends are constantly changing, consider using the `groupbytrace` processor. This way, traces are dispatched atomically to this exporter, and the same decision about the backend is made for the trace as a whole.
 
-This also supports service name based exporting for traces. If you have two or more collectors that collect traces and then use spanmetrics processor to generate metrics and push to prometheus, there is a high chance of facing label collisions on prometheus if the routing is based on `traceID` because every collector sees the `service+operation` label. With service name based routing, each collector can only see one service name and can push metrics without any label collisions.
+This also supports service name based exporting for traces. If you have two or more collectors that collect traces and then use spanmetrics connector to generate metrics and push to prometheus, there is a high chance of facing label collisions on prometheus if the routing is based on `traceID` because every collector sees the `service+operation` label. With service name based routing, each collector can only see one service name and can push metrics without any label collisions.
+
+## Resilience and scaling considerations
+The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`, `dns`, `k8s`), create one exporter per endpoint. The exporter conforms to its published configuration regarding sending queue and retry mechanisms. Importantly, the `loadbalancingexporter` will not attempt to re-route data to a healthy endpoint on delivery failure, and data loss is therefore possible if the exporter's target remains unavailable once redelivery is exhausted. Due consideration needs to be given to the exporter queue and retry configuration when running in a highly elastic environment.
+
+- When using the `static` resolver and a target is unavailable, all the target's load-balanced telemetry will fail to be delivered until either the target is restored or removed from the static list. The same principle applies to the `dns` resolver.
+- When using `k8s`, `dns`, and likely future resolvers, topology changes are eventually reflected in the `loadbalancingexporter`. The `k8s` resolver will update more quickly than `dns`, but a window of time in which the true topology doesn't match the view of the `loadbalancingexporter` remains.
 
 ## Configuration
 

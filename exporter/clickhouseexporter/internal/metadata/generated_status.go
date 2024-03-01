@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("clickhouse")
+)
+
 const (
-	Type             = "clickhouse"
 	TracesStability  = component.StabilityLevelAlpha
 	MetricsStability = component.StabilityLevelAlpha
 	LogsStability    = component.StabilityLevelAlpha

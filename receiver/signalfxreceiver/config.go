@@ -17,18 +17,18 @@ var (
 
 // Config defines configuration for the SignalFx receiver.
 type Config struct {
-	confighttp.HTTPServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 }
 
 // Validate verifies that the endpoint is valid and the configured port is not 0
 func (rCfg *Config) Validate() error {
-	if rCfg.HTTPServerConfig.Endpoint == "" {
+	if rCfg.ServerConfig.Endpoint == "" {
 		return errEmptyEndpoint
 	}
 
-	_, err := extractPortFromEndpoint(rCfg.HTTPServerConfig.Endpoint)
+	_, err := extractPortFromEndpoint(rCfg.ServerConfig.Endpoint)
 	if err != nil {
 		return err
 	}

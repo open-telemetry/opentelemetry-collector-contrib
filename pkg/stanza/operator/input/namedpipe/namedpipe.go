@@ -134,8 +134,14 @@ func (n *Input) Start(_ operator.Persister) error {
 }
 
 func (n *Input) Stop() error {
-	n.pipe.Close()
-	n.cancel()
+	if n.pipe != nil {
+		n.pipe.Close()
+	}
+
+	if n.cancel != nil {
+		n.cancel()
+	}
+
 	n.wg.Wait()
 	return nil
 }

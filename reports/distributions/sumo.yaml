@@ -32,13 +32,13 @@ components:
         - headers_setter
         - health_check
         - host_observer
-        - http_forwarder
         - jaegerremotesampling
         - k8s_observer
         - oauth2client
         - oidc
         - pprof
         - sigv4auth
+        - sumologic
     processor:
         - attributes
         - cumulativetodelta
@@ -56,9 +56,7 @@ components:
         - resourcedetection
         - routing
         - schema
-        - servicegraph
         - span
-        - spanmetrics
         - sumologic
         - tail_sampling
         - transform

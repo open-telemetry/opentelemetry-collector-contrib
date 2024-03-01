@@ -6,6 +6,8 @@ package proxy // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 )
 
 // Config is the configuration for the local TCP proxy server.
@@ -13,7 +15,7 @@ type Config struct {
 	// endpoint is the TCP address and port on which this receiver listens for
 	// calls from the X-Ray SDK and relays them to the AWS X-Ray backend to
 	// get sampling rules and report sampling statistics.
-	confignet.TCPAddr `mapstructure:",squash"`
+	confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	// ProxyAddress defines the proxy address that the local TCP server
 	// forwards HTTP requests to AWS X-Ray backend through.
@@ -42,8 +44,8 @@ type Config struct {
 
 func DefaultConfig() *Config {
 	return &Config{
-		TCPAddr: confignet.TCPAddr{
-			Endpoint: "0.0.0.0:2000",
+		TCPAddrConfig: confignet.TCPAddrConfig{
+			Endpoint: localhostgate.EndpointForPort(2000),
 		},
 		ProxyAddress: "",
 		TLSSetting: configtls.TLSClientSetting{

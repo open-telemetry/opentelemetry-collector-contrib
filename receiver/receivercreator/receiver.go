@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -70,19 +69,6 @@ func newTracesReceiverCreator(params receiver.CreateSettings, cfg *Config, nextC
 	return r, nil
 }
 
-// loggingHost provides a safer version of host that logs errors instead of exiting the process.
-type loggingHost struct {
-	component.Host
-	logger *zap.Logger
-}
-
-// ReportFatalError causes a log to be made instead of terminating the process as Host does by default.
-func (h *loggingHost) ReportFatalError(err error) {
-	h.logger.Error("receiver reported a fatal error", zap.Error(err))
-}
-
-var _ component.Host = (*loggingHost)(nil)
-
 // Start receiver_creator.
 func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 	rc.observerHandler = &observerHandler{
@@ -92,7 +78,7 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 		nextLogsConsumer:      rc.nextLogsConsumer,
 		nextMetricsConsumer:   rc.nextMetricsConsumer,
 		nextTracesConsumer:    rc.nextTracesConsumer,
-		runner:                newReceiverRunner(rc.params, &loggingHost{host, rc.params.Logger}),
+		runner:                newReceiverRunner(rc.params, host),
 	}
 
 	observers := map[component.ID]observer.Observable{}

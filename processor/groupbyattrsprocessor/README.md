@@ -23,7 +23,7 @@ Typical use cases:
 * extract resources from "flat" data formats, such as Fluentbit logs or Prometheus metrics
 * associate Prometheus metrics to a *Resource* that describes the relevant host, based on label present on all metrics
 * optimize data packaging by extracting common attributes
-* [compacting](#compaction) multiple records that share the same Resource and InstrumentationLibrary attributes but are under multiple ResourceSpans/ResourceMetrics/ResourceLogs, into a single ResourceSpans/ResourceMetrics/ResourceLogs (when empty list of keys is being provided). This might happen e.g. when [groupbytrace](../groupbytraceprocessor) processor is being used or data comes in multiple requests. By compacting data, it takes less memory, is more efficiently processed, serialized and the number of export requests is reduced (e.g. in case of [jaeger](../../exporter/jaegerexporter) exporter).
+* [compacting](#compaction) multiple records that share the same Resource and InstrumentationLibrary attributes but are under multiple ResourceSpans/ResourceMetrics/ResourceLogs, into a single ResourceSpans/ResourceMetrics/ResourceLogs (when empty list of keys is being provided). This might happen e.g. when [groupbytrace](../groupbytraceprocessor) processor is being used or data comes in multiple requests. By compacting data, it takes less memory, is more efficiently processed, serialized and the number of export requests is reduced.
 
 It is recommended to use the `groupbyattrs` processor together with [batch](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor) processor, as a consecutive step, as this will reduce the fragmentation of data (by grouping records together under matching Resource/Instrumentation Library)
 
@@ -108,25 +108,25 @@ For example, consider the following input:
 
 ```go
 Resource {host.name="localhost"}
-  InstumentationLibrary {name="MyLibrary"}
+  InstrumentationLibrary {name="MyLibrary"}
   Spans
     Span {span_id=1, ...}
-  InstumentationLibrary {name="OtherLibrary"}
+  InstrumentationLibrary {name="OtherLibrary"}
   Spans
     Span {span_id=2, ...}
     
 Resource {host.name="localhost"}
-  InstumentationLibrary {name="MyLibrary"}
+  InstrumentationLibrary {name="MyLibrary"}
   Spans
     Span {span_id=3, ...}
     
 Resource {host.name="localhost"}
-  InstumentationLibrary {name="MyLibrary"}
+  InstrumentationLibrary {name="MyLibrary"}
   Spans
     Span {span_id=4, ...}
     
 Resource {host.name="otherhost"}
-  InstumentationLibrary {name="MyLibrary"}
+  InstrumentationLibrary {name="MyLibrary"}
   Spans
     Span {span_id=5, ...}
 ```
@@ -148,17 +148,17 @@ The output of the processor will therefore be:
 
 ```go
 Resource {host.name="localhost"}
-  InstumentationLibrary {name="MyLibrary"}
+  InstrumentationLibrary {name="MyLibrary"}
   Spans
     Span {span_id=1, ...}
     Span {span_id=3, ...}
     Span {span_id=4, ...}
-  InstumentationLibrary {name="OtherLibrary"}
+  InstrumentationLibrary {name="OtherLibrary"}
   Spans
     Span {span_id=2, ...}
 
 Resource {host.name="otherhost"}
-  InstumentationLibrary {name="MyLibrary"}
+  InstrumentationLibrary {name="MyLibrary"}
   Spans
     Span {span_id=5, ...}
 ```
@@ -178,7 +178,7 @@ processors:
 The `keys` property describes which attribute keys will be considered for grouping:
 
 * If the processed span, log record and metric data point has at least one of the specified attributes key, it will be moved to a *Resource* with the same value for these attributes. The *Resource* will be created if none exists with the same attributes.
-* If none of the specified attributes key is present in the processed span, log record or metric data point, it remains associated to the same *Resource* (no change).
+* If none of the specified attributes key is present in the processed span, log record or metric data point, it remains associated to the same *Resource* (no change), with multiple instances of the same *Resource* still [compacted](#compaction).
 
 Please refer to:
 

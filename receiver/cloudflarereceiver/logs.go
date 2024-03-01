@@ -38,7 +38,8 @@ type logsReceiver struct {
 }
 
 const secretHeaderName = "X-CF-Secret"
-const receiverScopeName = "otelcol/" + metadata.Type
+
+var receiverScopeName = "otelcol/" + metadata.Type.String()
 
 func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
 	recv := &logsReceiver{

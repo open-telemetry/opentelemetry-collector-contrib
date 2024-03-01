@@ -96,13 +96,13 @@ func (zr *zipkinReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	var err error
-	zr.server, err = zr.config.HTTPServerConfig.ToServer(host, zr.settings.TelemetrySettings, zr)
+	zr.server, err = zr.config.ServerConfig.ToServer(host, zr.settings.TelemetrySettings, zr)
 	if err != nil {
 		return err
 	}
 
 	var listener net.Listener
-	listener, err = zr.config.HTTPServerConfig.ToListener()
+	listener, err = zr.config.ServerConfig.ToListener()
 	if err != nil {
 		return err
 	}

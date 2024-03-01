@@ -54,7 +54,7 @@ query getBranchData(
           aheadBy
           behindBy
         }
-        repository{
+        repository {
           name
           defaultBranchRef {
             name
@@ -64,6 +64,49 @@ query getBranchData(
       pageInfo {
         endCursor
         hasNextPage
+      }
+    }
+  }
+}
+
+query getPullRequestData(
+  $name: String!
+  $owner: String!
+  $prFirst: Int!
+  # @genqlient(pointer: true)
+  $prCursor: String
+  $prStates: [PullRequestState!]
+) {
+  repository(name: $name, owner: $owner) {
+    pullRequests(first: $prFirst, after: $prCursor, states: $prStates) {
+      # @genqlient(typename: "PullRequestNode")
+      nodes {
+        ... on PullRequest {
+          createdAt
+          merged
+          mergedAt
+          mergeCommit {
+            deployments(last: 1, orderBy: { field: CREATED_AT, direction: ASC }) {
+              nodes {
+                createdAt
+              }
+              totalCount
+            }
+          }
+        }
+        headRefName
+        reviews(states: APPROVED, last: 1) {
+          totalCount
+          nodes {
+            ... on PullRequestReview {
+              createdAt
+            }
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
       }
     }
   }

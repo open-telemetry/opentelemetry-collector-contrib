@@ -18,6 +18,7 @@ func TestIPResolverCacheLookup(t *testing.T) {
 	}
 
 	require.Equal(t, "definitely invalid hostname", resolver.GetHostFromIP("127.0.0.1"))
+	resolver.Stop()
 }
 
 func TestIPResolverCacheInvalidation(t *testing.T) {
@@ -45,6 +46,7 @@ func TestIPResolver100Hits(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		require.Equal(t, "definitely invalid hostname", resolver.GetHostFromIP("127.0.0.1"))
 	}
+	resolver.Stop()
 }
 
 func TestIPResolverWithMultipleStops(_ *testing.T) {

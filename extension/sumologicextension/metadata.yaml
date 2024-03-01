@@ -1,0 +1,9 @@
+type: sumologic
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: [sumo]
+  codeowners:
+    active: [astencel-sumo, sumo-drosiek, swiatekm-sumo]

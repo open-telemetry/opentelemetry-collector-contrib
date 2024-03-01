@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
-				HTTPServerConfig: confighttp.HTTPServerConfig{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:13",
 					TLSSetting: &configtls.TLSServerSetting{
 						TLSSetting: configtls.TLSSetting{
