@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -24,10 +25,10 @@ func TestLoadMetadata(t *testing.T) {
 				SemConvVersion: "1.9.0",
 				Status: &Status{
 					Class: "receiver",
-					Stability: map[string][]string{
-						"development": {"logs"},
-						"beta":        {"traces"},
-						"stable":      {"metrics"},
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelDevelopment: {"logs"},
+						component.StabilityLevelBeta:        {"traces"},
+						component.StabilityLevelStable:      {"metrics"},
 					},
 					Distributions: []string{},
 					Codeowners: &Codeowners{

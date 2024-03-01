@@ -165,7 +165,8 @@ func templatize(tmplFile string, md metadata) *template.Template {
 					}
 					return result
 				},
-				"casesTitle": cases.Title(language.English).String,
+				"casesTitle":  cases.Title(language.English).String,
+				"toLowerCase": strings.ToLower,
 				"toCamelCase": func(s string) string {
 					caser := cases.Title(language.English).String
 					parts := strings.Split(s, "_")
