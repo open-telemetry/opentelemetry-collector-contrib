@@ -4,7 +4,6 @@
 package streams // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 
 import (
-	"context"
 	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
@@ -29,12 +28,12 @@ func Samples[D data.Point[D]](m metrics.Data[D]) Seq[D] {
 }
 
 // Aggregate each point and replace it by the result
-func Aggregate[D data.Point[D]](ctx context.Context, m metrics.Data[D], aggr Aggregator[D]) error {
+func Aggregate[D data.Point[D]](m metrics.Data[D], aggr Aggregator[D]) error {
 	var errs error
 
 	// for id, dp := range Samples(m)
 	Samples(m)(func(id Ident, dp D) bool {
-		next, err := aggr.Aggregate(ctx, id, dp)
+		next, err := aggr.Aggregate(id, dp)
 		if err != nil {
 			errs = errors.Join(errs, Error(id, err))
 			return true

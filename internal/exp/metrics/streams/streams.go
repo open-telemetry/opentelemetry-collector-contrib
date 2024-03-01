@@ -12,36 +12,33 @@ type Seq[T any] func(yield func(identity.Stream, T) bool) bool
 // on it
 type Map[T any] interface {
 	Load(identity.Stream) (T, bool)
-	Store(identity.Stream, T)
+	Store(identity.Stream, T) error
 	Delete(identity.Stream)
 	Items() func(yield func(identity.Stream, T) bool) bool
 	Len() int
 }
 
-func EmptyMap[T any]() HashMap[T] {
-	return HashMap[T]{items: make(map[identity.Stream]T)}
-}
+var _ Map[any] = HashMap[any](nil)
 
-type HashMap[T any] struct {
-	items map[identity.Stream]T
-}
+type HashMap[T any] map[identity.Stream]T
 
 func (m HashMap[T]) Load(id identity.Stream) (T, bool) {
-	v, ok := m.items[id]
+	v, ok := (map[identity.Stream]T)(m)[id]
 	return v, ok
 }
 
-func (m HashMap[T]) Store(id identity.Stream, v T) {
-	m.items[id] = v
+func (m HashMap[T]) Store(id identity.Stream, v T) error {
+	(map[identity.Stream]T)(m)[id] = v
+	return nil
 }
 
 func (m HashMap[T]) Delete(id identity.Stream) {
-	delete(m.items, id)
+	delete((map[identity.Stream]T)(m), id)
 }
 
 func (m HashMap[T]) Items() func(yield func(identity.Stream, T) bool) bool {
 	return func(yield func(identity.Stream, T) bool) bool {
-		for id, v := range m.items {
+		for id, v := range (map[identity.Stream]T)(m) {
 			if !yield(id, v) {
 				break
 			}
@@ -51,5 +48,5 @@ func (m HashMap[T]) Items() func(yield func(identity.Stream, T) bool) bool {
 }
 
 func (m HashMap[T]) Len() int {
-	return len(m.items)
+	return len((map[identity.Stream]T)(m))
 }

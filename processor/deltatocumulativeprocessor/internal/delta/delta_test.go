@@ -4,7 +4,6 @@
 package delta_test
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -22,11 +21,12 @@ import (
 
 var result any
 
-func BenchmarkAccumulator(b *testing.B) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+func aggr() streams.Aggregator[data.Number] {
+	return streams.IntoAggregator(delta.New[data.Number]())
+}
 
-	acc := delta.Numbers(ctx, delta.Options{MaxStale: 0})
+func BenchmarkAccumulator(b *testing.B) {
+	acc := aggr()
 	sum := random.Sum()
 
 	bench := func(b *testing.B, nstreams int) {
@@ -46,7 +46,7 @@ func BenchmarkAccumulator(b *testing.B) {
 			go func(id streams.Ident, num data.Number) {
 				for n := 0; n < nsamples; n++ {
 					num.SetTimestamp(num.Timestamp() + 1)
-					val, err := acc.Aggregate(ctx, id, num)
+					val, err := acc.Aggregate(id, num)
 					if err != nil {
 						panic(err)
 					}
@@ -69,10 +69,7 @@ func BenchmarkAccumulator(b *testing.B) {
 
 // verify the distinction between streams and the accumulated value
 func TestAddition(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	acc := delta.Numbers(ctx, delta.Options{MaxStale: 0})
+	acc := aggr()
 	sum := random.Sum()
 
 	type Idx int
@@ -102,7 +99,7 @@ func TestAddition(t *testing.T) {
 		dp.SetIntValue(val)
 		want[stream.idx] += val
 
-		got, err := acc.Aggregate(ctx, stream.id, dp)
+		got, err := acc.Aggregate(stream.id, dp)
 		require.NoError(t, err)
 
 		require.Equal(t, want[stream.idx], got.IntValue())
@@ -111,10 +108,7 @@ func TestAddition(t *testing.T) {
 
 // verify that start + last times are updated
 func TestTimes(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	acc := delta.Numbers(ctx, delta.Options{MaxStale: 0})
+	acc := aggr()
 	id, base := random.Sum().Stream()
 	point := func(start, last pcommon.Timestamp) data.Number {
 		dp := base.Clone()
@@ -126,7 +120,7 @@ func TestTimes(t *testing.T) {
 	// first sample: its the first ever, so take it as-is
 	{
 		dp := point(1000, 1000)
-		res, err := acc.Aggregate(ctx, id, dp)
+		res, err := acc.Aggregate(id, dp)
 
 		require.NoError(t, err)
 		require.Equal(t, time(1000), res.StartTimestamp())
@@ -136,7 +130,7 @@ func TestTimes(t *testing.T) {
 	// second sample: its subsequent, so keep original startTime, but update lastSeen
 	{
 		dp := point(1000, 1100)
-		res, err := acc.Aggregate(ctx, id, dp)
+		res, err := acc.Aggregate(id, dp)
 
 		require.NoError(t, err)
 		require.Equal(t, time(1000), res.StartTimestamp())
@@ -148,7 +142,7 @@ func TestTimes(t *testing.T) {
 	// still keep original startTime, but update lastSeen.
 	{
 		dp := point(1100, 1200)
-		res, err := acc.Aggregate(ctx, id, dp)
+		res, err := acc.Aggregate(id, dp)
 
 		require.NoError(t, err)
 		require.Equal(t, time(1000), res.StartTimestamp())
@@ -184,10 +178,7 @@ func TestErrs(t *testing.T) {
 	for _, c := range cases {
 		c := c
 		t.Run(fmt.Sprintf("%T", c.Err), func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-
-			acc := delta.Numbers(ctx, delta.Options{MaxStale: 0})
+			acc := aggr()
 			id, data := random.Sum().Stream()
 
 			good := data.Clone()
@@ -195,7 +186,7 @@ func TestErrs(t *testing.T) {
 			good.SetTimestamp(pcommon.Timestamp(c.Good.Time))
 			good.SetIntValue(int64(c.Good.Value))
 
-			r1, err := acc.Aggregate(ctx, id, good)
+			r1, err := acc.Aggregate(id, good)
 			require.NoError(t, err)
 
 			require.Equal(t, good.StartTimestamp(), r1.StartTimestamp())
@@ -207,7 +198,7 @@ func TestErrs(t *testing.T) {
 			bad.SetTimestamp(pcommon.Timestamp(c.Bad.Time))
 			bad.SetIntValue(int64(c.Bad.Value))
 
-			r2, err := acc.Aggregate(ctx, id, bad)
+			r2, err := acc.Aggregate(id, bad)
 			require.ErrorIs(t, err, c.Err)
 
 			// sample must be dropped => no change

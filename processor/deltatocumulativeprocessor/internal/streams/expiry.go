@@ -4,7 +4,6 @@
 package streams // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 
 import (
-	"context"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
@@ -12,57 +11,48 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/streams"
 )
 
-func ExpireAfter[T any](ctx context.Context, items streams.Map[T], ttl time.Duration) streams.Map[T] {
+func ExpireAfter[T any](items streams.Map[T], ttl time.Duration) Expiry[T] {
 	exp := Expiry[T]{
-		mtx: mtx[T, *staleness.Staleness[T]]{Map: staleness.NewStaleness(ttl, items)},
-		sig: make(chan struct{}),
+		Staleness: *staleness.NewStaleness[T](ttl, items),
+		sig:       make(chan struct{}),
 	}
-	go exp.Start(ctx)
-	return &exp
+	return exp
 }
 
+var _ streams.Map[any] = (*Expiry[any])(nil)
+
 type Expiry[T any] struct {
-	mtx[T, *staleness.Staleness[T]]
+	staleness.Staleness[T]
 	sig chan struct{}
 }
 
-func (e *Expiry[T]) Start(ctx context.Context) {
-	for {
-		e.mtx.Lock()
-		e.Map.ExpireOldEntries()
-		e.mtx.Unlock()
+func (e Expiry[T]) ExpireOldEntries() <-chan struct{} {
+	e.ExpireOldEntries()
 
-		n := e.Map.Len()
+	n := e.Staleness.Len()
+	sig := make(chan struct{})
+
+	go func() {
 		switch {
 		case n == 0:
-			// no more items: sleep until next write
-			select {
-			case <-e.sig:
-			case <-ctx.Done():
-				return
-			}
+			<-e.sig
 		case n > 0:
-			// sleep until earliest possible next expiry time
-			_, ts := e.Map.Next()
-			at := time.Until(ts.Add(e.Map.Max))
-
-			select {
-			case <-time.After(at):
-			case <-ctx.Done():
-				return
-			}
+			next := time.Until(e.Staleness.Next())
+			time.Sleep(next + e.Max)
 		}
-	}
+		close(sig)
+	}()
+	return sig
 }
 
-func (e *Expiry[T]) Store(id identity.Stream, v T) {
-	e.mtx.Lock()
-	e.mtx.Store(id, v)
-	e.mtx.Unlock()
+func (e Expiry[T]) Store(id identity.Stream, v T) error {
+	err := e.Staleness.Store(id, v)
 
 	// "try-send" to notify possibly sleeping expiry routine
 	select {
 	case e.sig <- struct{}{}:
 	default:
 	}
+
+	return err
 }

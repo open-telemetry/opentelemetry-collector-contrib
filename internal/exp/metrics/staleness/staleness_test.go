@@ -10,13 +10,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/streams"
 )
 
 func TestStaleness(t *testing.T) {
 	max := 1 * time.Second
 	stalenessMap := NewStaleness[int](
 		max,
-		&RawMap[identity.Stream, int]{},
+		make(streams.HashMap[int]),
 	)
 
 	idA := generateStreamID(t, map[string]any{

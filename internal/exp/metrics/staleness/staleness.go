@@ -41,9 +41,9 @@ func (s *Staleness[T]) Load(id identity.Stream) (T, bool) {
 }
 
 // Store the given key value pair in the map, and update the pair's staleness value to "now"
-func (s *Staleness[T]) Store(id identity.Stream, v T) {
+func (s *Staleness[T]) Store(id identity.Stream, v T) error {
 	s.pq.Update(id, NowFunc())
-	s.items.Store(id, v)
+	return s.items.Store(id, v)
 }
 
 func (s *Staleness[T]) Delete(id identity.Stream) {
@@ -75,6 +75,7 @@ func (s *Staleness[T]) Len() int {
 	return s.items.Len()
 }
 
-func (s *Staleness[T]) Next() (identity.Stream, time.Time) {
-	return s.pq.Peek()
+func (s *Staleness[T]) Next() time.Time {
+	_, ts := s.pq.Peek()
+	return ts
 }

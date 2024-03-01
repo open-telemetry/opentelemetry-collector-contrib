@@ -4,72 +4,50 @@
 package delta // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	exp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/streams"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 )
 
-type Options struct {
-	MaxStale time.Duration `json:"max_stale"`
-}
-
-func construct[D data.Point[D]](ctx context.Context, opts Options) streams.Aggregator[D] {
-	dps := streams.EmptyMap[D]()
-	if opts.MaxStale > 0 {
-		dps = streams.ExpireAfter(ctx, dps, opts.MaxStale)
+func New[D data.Point[D]]() Accumulator[D] {
+	return Accumulator[D]{
+		Map: make(exp.HashMap[D]),
 	}
-
-	var (
-		acc  = Accumulator[D]{dps: dps}
-		lock = Lock[D]{next: &acc}
-	)
-	return &lock
 }
 
-func Numbers(ctx context.Context, opts Options) streams.Aggregator[data.Number] {
-	return construct[data.Number](ctx, opts)
-}
-
-func Histograms(ctx context.Context, opts Options) streams.Aggregator[data.Histogram] {
-	return construct[data.Histogram](ctx, opts)
-}
-
-var _ streams.Aggregator[data.Number] = (*Accumulator[data.Number])(nil)
+var _ streams.Map[data.Number] = (*Accumulator[data.Number])(nil)
 
 type Accumulator[D data.Point[D]] struct {
-	dps streams.Map[D]
+	streams.Map[D]
 }
 
-// Aggregate implements delta-to-cumulative aggregation as per spec:
-// https://opentelemetry.io/docs/specs/otel/metrics/data-model/#sums-delta-to-cumulative
-func (a *Accumulator[D]) Aggregate(_ context.Context, id streams.Ident, dp D) (D, error) {
-	aggr, ok := a.dps.Load(id)
+func (a Accumulator[D]) Store(id streams.Ident, dp D) error {
+	aggr, ok := a.Map.Load(id)
 
 	// new series: initialize with current sample
 	if !ok {
 		clone := dp.Clone()
-		a.dps.Store(id, clone)
-		return clone, nil
+		a.Map.Store(id, clone)
+		return nil
 	}
 
 	// drop bad samples
 	switch {
 	case dp.StartTimestamp() < aggr.StartTimestamp():
 		// belongs to older series
-		return aggr, ErrOlderStart{Start: aggr.StartTimestamp(), Sample: dp.StartTimestamp()}
+		return ErrOlderStart{Start: aggr.StartTimestamp(), Sample: dp.StartTimestamp()}
 	case dp.Timestamp() <= aggr.Timestamp():
 		// out of order
-		return aggr, ErrOutOfOrder{Last: aggr.Timestamp(), Sample: dp.Timestamp()}
+		return ErrOutOfOrder{Last: aggr.Timestamp(), Sample: dp.Timestamp()}
 	}
 
 	res := aggr.Add(dp)
-	a.dps.Store(id, res)
-	return res, nil
+	a.Map.Store(id, res)
+	return nil
 }
 
 type ErrOlderStart struct {
