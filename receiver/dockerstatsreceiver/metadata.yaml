@@ -153,7 +153,7 @@ metrics:
   container.cpu.online:
     enabled: false
     description: "Number of online CPUs."
-    unit: "{CPUs}"
+    unit: "{cpus}"
     gauge:
       value_type: int
 
@@ -470,7 +470,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
   container.memory.fails:
-    enabled: true
+    enabled: false
     description: "Number of times the memory limit was hit."
     unit: "{fails}"
     sum:

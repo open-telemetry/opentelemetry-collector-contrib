@@ -511,7 +511,7 @@ type metricContainerCPUOnline struct {
 func (m *metricContainerCPUOnline) init() {
 	m.data.SetName("container.cpu.online")
 	m.data.SetDescription("Number of online CPUs.")
-	m.data.SetUnit("{CPUs}")
+	m.data.SetUnit("{cpus}")
 	m.data.SetEmptyGauge()
 }
 

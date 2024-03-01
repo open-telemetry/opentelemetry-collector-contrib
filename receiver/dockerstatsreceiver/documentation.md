@@ -62,14 +62,6 @@ Percent of CPU used by the container.
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
 
-### container.memory.fails
-
-Number of times the memory limit was hit.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {fails} | Sum | Int | Cumulative | true |
-
 ### container.memory.file
 
 Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2).
@@ -320,7 +312,7 @@ Number of online CPUs.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {CPUs} | Gauge | Int |
+| {cpus} | Gauge | Int |
 
 ### container.cpu.shares
 
@@ -421,6 +413,14 @@ Bytes that are waiting to get written back to the disk, from this cgroup (Only a
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
+
+### container.memory.fails
+
+Number of times the memory limit was hit.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {fails} | Sum | Int | Cumulative | true |
 
 ### container.memory.hierarchical_memory_limit
 

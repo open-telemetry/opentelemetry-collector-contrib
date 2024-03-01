@@ -176,7 +176,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerMemoryFails: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerMemoryFile: MetricConfig{
 			Enabled: true,
