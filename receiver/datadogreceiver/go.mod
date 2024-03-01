@@ -3,12 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.21
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.50.2
+	github.com/DataDog/datadog-agent/pkg/proto v0.51.1-0.20240229172441-18b62a1f67d3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.95.0
 	github.com/stretchr/testify v1.8.4
 	github.com/vmihailenco/msgpack/v4 v4.3.13
 	go.opentelemetry.io/collector/component v0.95.0
 	go.opentelemetry.io/collector/config/confighttp v0.95.0
+	go.opentelemetry.io/collector/confmap v0.95.0
 	go.opentelemetry.io/collector/consumer v0.95.0
 	go.opentelemetry.io/collector/pdata v1.2.0
 	go.opentelemetry.io/collector/receiver v0.95.0
@@ -59,7 +60,6 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.95.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.95.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.95.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.95.0 // indirect
 	go.opentelemetry.io/collector/extension v0.95.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.95.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.2.0 // indirect

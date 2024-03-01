@@ -18,9 +18,9 @@ func TestLoadMetadata(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name: "metadata-sample.yaml",
+			name: "internal/samplereceiver/metadata.yaml",
 			want: metadata{
-				Type:           "file",
+				Type:           "sample",
 				SemConvVersion: "1.9.0",
 				Status: &Status{
 					Class: "receiver",
@@ -29,8 +29,11 @@ func TestLoadMetadata(t *testing.T) {
 						"beta":        {"traces"},
 						"stable":      {"metrics"},
 					},
-					Distributions: []string{"contrib"},
-					Warnings:      []string{"Any additional information that should be brought to the consumer's attention"},
+					Distributions: []string{},
+					Codeowners: &Codeowners{
+						Active: []string{"dmitryax"},
+					},
+					Warnings: []string{"Any additional information that should be brought to the consumer's attention"},
 				},
 				ResourceAttributes: map[attributeName]attribute{
 					"string.resource.attr": {
@@ -213,8 +216,9 @@ func TestLoadMetadata(t *testing.T) {
 						},
 					},
 				},
-				ScopeName:       "otelcol",
-				ShortFolderName: ".",
+				ScopeName:       "otelcol/samplereceiver",
+				ShortFolderName: "sample",
+				Tests:           &tests{},
 			},
 		},
 		{
