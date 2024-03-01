@@ -4,7 +4,6 @@
 package fileexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 
 import (
-	"context"
 	"encoding/binary"
 	"io"
 	"sync"
@@ -78,6 +77,8 @@ func (w *fileWriter) startFlusher() {
 				ff.flush()
 				w.mutex.Unlock()
 			case <-w.stopTicker:
+				w.flushTicker.Stop()
+				w.flushTicker = nil
 				return
 			}
 		}
@@ -85,23 +86,22 @@ func (w *fileWriter) startFlusher() {
 }
 
 // Start starts the flush timer if set.
-func (w *fileWriter) start(context.Context) error {
+func (w *fileWriter) start() {
 	if w.flushInterval > 0 {
 		w.startFlusher()
 	}
-	return nil
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
 // It stops the flush ticker if set.
 func (w *fileWriter) shutdown() error {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
+
 	// Stop the flush ticker.
 	if w.flushTicker != nil {
-		w.flushTicker.Stop()
 		// Stop the go routine.
+		w.mutex.Lock()
 		close(w.stopTicker)
+		w.mutex.Unlock()
 	}
 	return w.file.Close()
 }

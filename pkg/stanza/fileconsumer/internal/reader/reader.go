@@ -158,7 +158,7 @@ func (r *Reader) Read(dst []byte) (n int, err error) {
 		return
 	}
 
-	if !r.needsUpdateFingerprint && len(r.Fingerprint.FirstBytes) < r.fingerprintSize {
+	if !r.needsUpdateFingerprint && r.Fingerprint.Len() < r.fingerprintSize {
 		r.needsUpdateFingerprint = true
 	}
 	return
@@ -173,7 +173,7 @@ func (r *Reader) Validate() bool {
 	if r.file == nil {
 		return false
 	}
-	refreshedFingerprint, err := fingerprint.New(r.file, r.fingerprintSize)
+	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize)
 	if err != nil {
 		return false
 	}
@@ -192,12 +192,12 @@ func (r *Reader) updateFingerprint() {
 	if r.file == nil {
 		return
 	}
-	refreshedFingerprint, err := fingerprint.New(r.file, r.fingerprintSize)
+	refreshedFingerprint, err := fingerprint.NewFromFile(r.file, r.fingerprintSize)
 	if err != nil {
 		return
 	}
-	if len(r.Fingerprint.FirstBytes) > 0 && !refreshedFingerprint.StartsWith(r.Fingerprint) {
+	if r.Fingerprint.Len() > 0 && !refreshedFingerprint.StartsWith(r.Fingerprint) {
 		return // fingerprint tampered, likely due to truncation
 	}
-	r.Fingerprint.FirstBytes = refreshedFingerprint.FirstBytes
+	r.Fingerprint = refreshedFingerprint
 }
