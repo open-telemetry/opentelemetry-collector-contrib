@@ -5,6 +5,7 @@ package datadog // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -14,17 +15,24 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
+const (
+	ExporterSourceTag  = "datadogexporter"
+	ConnectorSourceTag = "datadogconnector"
+)
+
 type metricsClient struct {
-	meter  metric.Meter
-	gauges map[string]float64
-	mutex  sync.Mutex
+	meter     metric.Meter
+	gauges    map[string]float64
+	mutex     sync.Mutex
+	sourceTag string
 }
 
 // InitializeMetricClient using a meter provider.
-func InitializeMetricClient(mp metric.MeterProvider) statsd.ClientInterface {
+func InitializeMetricClient(mp metric.MeterProvider, source string) statsd.ClientInterface {
 	return &metricsClient{
-		meter:  mp.Meter("datadog"),
-		gauges: make(map[string]float64),
+		meter:     mp.Meter("datadog"),
+		gauges:    make(map[string]float64),
+		sourceTag: fmt.Sprintf("source:%v", source),
 	}
 }
 
@@ -38,7 +46,7 @@ func (m *metricsClient) Gauge(name string, value float64, tags []string, _ float
 	}
 	m.gauges[name] = value
 	_, err := m.meter.Float64ObservableGauge(name, metric.WithFloat64Callback(func(_ context.Context, f metric.Float64Observer) error {
-		attr := attributeFromTags(tags)
+		attr := attributeFromTags(append(tags, m.sourceTag))
 		if v, ok := m.gauges[name]; ok {
 			f.Observe(v, metric.WithAttributeSet(attr))
 		}
@@ -55,7 +63,7 @@ func (m *metricsClient) Count(name string, value int64, tags []string, _ float64
 	if err != nil {
 		return err
 	}
-	attr := attributeFromTags(tags)
+	attr := attributeFromTags(append(tags, m.sourceTag))
 	counter.Add(context.Background(), value, metric.WithAttributeSet(attr))
 	return nil
 }
@@ -77,7 +85,7 @@ func (m *metricsClient) Histogram(name string, value float64, tags []string, _ f
 	if err != nil {
 		return err
 	}
-	attr := attributeFromTags(tags)
+	attr := attributeFromTags(append(tags, m.sourceTag))
 	hist.Record(context.Background(), value, metric.WithAttributeSet(attr))
 	return nil
 }
