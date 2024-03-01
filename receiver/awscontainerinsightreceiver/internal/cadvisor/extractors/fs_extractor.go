@@ -33,7 +33,7 @@ func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMem
 	metrics := make([]*CAdvisorMetric, 0, len(stats.Filesystem))
 
 	for _, v := range stats.Filesystem {
-		metric := NewCadvisorMetric(containerType, f.logger)
+		metric := newCadvisorMetric(containerType, f.logger)
 		if v.Device == "" {
 			continue
 		}

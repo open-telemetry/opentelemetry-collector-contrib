@@ -41,12 +41,12 @@ func (d *DiskIOMetricExtractor) extractIoMetrics(curStatsSet []cInfo.PerDiskStat
 	expectedKey := []string{ci.DiskIOAsync, ci.DiskIOSync, ci.DiskIORead, ci.DiskIOWrite, ci.DiskIOTotal}
 	for _, cur := range curStatsSet {
 		curDevName := devName(cur)
-		metric := NewCadvisorMetric(getDiskIOMetricType(containerType, d.logger), d.logger)
+		metric := newCadvisorMetric(getDiskIOMetricType(containerType, d.logger), d.logger)
 		metric.tags[ci.DiskDev] = curDevName
 		for _, key := range expectedKey {
 			if curVal, curOk := cur.Stats[key]; curOk {
 				mname := ci.MetricName(containerType, ioMetricName(namePrefix, key))
-				AssignRateValueToField(&d.rateCalculator, metric.fields, mname, infoName, float64(curVal), curTime, float64(time.Second))
+				assignRateValueToField(&d.rateCalculator, metric.fields, mname, infoName, float64(curVal), curTime, float64(time.Second))
 			}
 		}
 		if len(metric.fields) > 0 {
@@ -75,7 +75,7 @@ func devName(dStats cInfo.PerDiskStats) string {
 func NewDiskIOMetricExtractor(logger *zap.Logger) *DiskIOMetricExtractor {
 	return &DiskIOMetricExtractor{
 		logger:         logger,
-		rateCalculator: NewFloat64RateCalculator(),
+		rateCalculator: newFloat64RateCalculator(),
 	}
 }
 

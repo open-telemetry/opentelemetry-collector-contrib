@@ -28,7 +28,7 @@ func (m *MemMetricExtractor) GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInf
 		return metrics
 	}
 
-	metric := NewCadvisorMetric(containerType, m.logger)
+	metric := newCadvisorMetric(containerType, m.logger)
 	metric.cgroupPath = info.Name
 	curStats := GetStats(info)
 
@@ -42,16 +42,16 @@ func (m *MemMetricExtractor) GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInf
 	metric.fields[ci.MetricName(containerType, ci.MemWorkingset)] = curStats.Memory.WorkingSet
 
 	multiplier := float64(time.Second)
-	AssignRateValueToField(&m.rateCalculator, metric.fields, ci.MetricName(containerType, ci.MemPgfault), info.Name,
+	assignRateValueToField(&m.rateCalculator, metric.fields, ci.MetricName(containerType, ci.MemPgfault), info.Name,
 		float64(curStats.Memory.ContainerData.Pgfault), curStats.Timestamp, multiplier)
-	AssignRateValueToField(&m.rateCalculator, metric.fields, ci.MetricName(containerType, ci.MemPgmajfault), info.Name,
+	assignRateValueToField(&m.rateCalculator, metric.fields, ci.MetricName(containerType, ci.MemPgmajfault), info.Name,
 		float64(curStats.Memory.ContainerData.Pgmajfault), curStats.Timestamp, multiplier)
-	AssignRateValueToField(&m.rateCalculator, metric.fields, ci.MetricName(containerType, ci.MemHierarchicalPgfault), info.Name,
+	assignRateValueToField(&m.rateCalculator, metric.fields, ci.MetricName(containerType, ci.MemHierarchicalPgfault), info.Name,
 		float64(curStats.Memory.HierarchicalData.Pgfault), curStats.Timestamp, multiplier)
-	AssignRateValueToField(&m.rateCalculator, metric.fields, ci.MetricName(containerType, ci.MemHierarchicalPgmajfault), info.Name,
+	assignRateValueToField(&m.rateCalculator, metric.fields, ci.MetricName(containerType, ci.MemHierarchicalPgmajfault), info.Name,
 		float64(curStats.Memory.HierarchicalData.Pgmajfault), curStats.Timestamp, multiplier)
 	memoryFailuresTotal := curStats.Memory.ContainerData.Pgfault + curStats.Memory.ContainerData.Pgmajfault
-	AssignRateValueToField(&m.rateCalculator, metric.fields, ci.MetricName(containerType, ci.MemFailuresTotal), info.Name,
+	assignRateValueToField(&m.rateCalculator, metric.fields, ci.MetricName(containerType, ci.MemFailuresTotal), info.Name,
 		float64(memoryFailuresTotal), curStats.Timestamp, multiplier)
 
 	memoryCapacity := mInfo.GetMemoryCapacity()
@@ -74,6 +74,6 @@ func (m *MemMetricExtractor) Shutdown() error {
 func NewMemMetricExtractor(logger *zap.Logger) *MemMetricExtractor {
 	return &MemMetricExtractor{
 		logger:         logger,
-		rateCalculator: NewFloat64RateCalculator(),
+		rateCalculator: newFloat64RateCalculator(),
 	}
 }
