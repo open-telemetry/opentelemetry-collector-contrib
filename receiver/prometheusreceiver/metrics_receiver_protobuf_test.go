@@ -7,7 +7,6 @@ import (
 	"math"
 	"testing"
 
-	promcfg "github.com/prometheus/prometheus/config"
 	dto "github.com/prometheus/prometheus/prompb/io/prometheus/client"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -258,7 +257,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 	prometheusMetricFamilyToProtoBuf(t, buffer, nativeHistogram)
 
 	testCases := map[string]struct {
-		mutCfg   func(*promcfg.Config)
+		mutCfg   func(*PromConfig)
 		expected []testExpectation
 	}{
 		"native only": {
@@ -296,7 +295,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 			},
 		},
 		"classic only": {
-			mutCfg: func(cfg *promcfg.Config) {
+			mutCfg: func(cfg *PromConfig) {
 				for _, scrapeConfig := range cfg.ScrapeConfigs {
 					scrapeConfig.ScrapeClassicHistograms = true
 				}
@@ -352,7 +351,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 			}
 			mutCfg := tc.mutCfg
 			if mutCfg == nil {
-				mutCfg = func(*promcfg.Config) {}
+				mutCfg = func(*PromConfig) {}
 			}
 			testComponent(t, targets, func(c *Config) {
 				c.EnableProtobufNegotiation = true
