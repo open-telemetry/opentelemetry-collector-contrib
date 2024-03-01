@@ -5,7 +5,6 @@ package datadog // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -21,18 +20,18 @@ const (
 )
 
 type metricsClient struct {
-	meter     metric.Meter
-	gauges    map[string]float64
-	mutex     sync.Mutex
-	sourceTag string
+	meter  metric.Meter
+	gauges map[string]float64
+	mutex  sync.Mutex
+	source string
 }
 
 // InitializeMetricClient using a meter provider.
 func InitializeMetricClient(mp metric.MeterProvider, source string) statsd.ClientInterface {
 	return &metricsClient{
-		meter:     mp.Meter("datadog"),
-		gauges:    make(map[string]float64),
-		sourceTag: fmt.Sprintf("source:%v", source),
+		meter:  mp.Meter("datadog"),
+		gauges: make(map[string]float64),
+		source: source,
 	}
 }
 
@@ -46,7 +45,7 @@ func (m *metricsClient) Gauge(name string, value float64, tags []string, _ float
 	}
 	m.gauges[name] = value
 	_, err := m.meter.Float64ObservableGauge(name, metric.WithFloat64Callback(func(_ context.Context, f metric.Float64Observer) error {
-		attr := attributeFromTags(append(tags, m.sourceTag))
+		attr := m.attributeFromTags(tags)
 		if v, ok := m.gauges[name]; ok {
 			f.Observe(v, metric.WithAttributeSet(attr))
 		}
@@ -63,13 +62,17 @@ func (m *metricsClient) Count(name string, value int64, tags []string, _ float64
 	if err != nil {
 		return err
 	}
-	attr := attributeFromTags(append(tags, m.sourceTag))
+	attr := m.attributeFromTags(tags)
 	counter.Add(context.Background(), value, metric.WithAttributeSet(attr))
 	return nil
 }
 
-func attributeFromTags(tags []string) attribute.Set {
+func (m *metricsClient) attributeFromTags(tags []string) attribute.Set {
 	attr := make([]attribute.KeyValue, 0, len(tags))
+	attr = append(attr, attribute.KeyValue{
+		Key:   "source",
+		Value: attribute.StringValue(m.source),
+	})
 	for _, t := range tags {
 		kv := strings.Split(t, ":")
 		attr = append(attr, attribute.KeyValue{
@@ -85,7 +88,7 @@ func (m *metricsClient) Histogram(name string, value float64, tags []string, _ f
 	if err != nil {
 		return err
 	}
-	attr := attributeFromTags(append(tags, m.sourceTag))
+	attr := m.attributeFromTags(tags)
 	hist.Record(context.Background(), value, metric.WithAttributeSet(attr))
 	return nil
 }
