@@ -21,14 +21,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// assertNoErrorHost implements a component.Host that asserts that there were no errors.
-type assertNoErrorHost struct {
-	component.Host
-	*testing.T
-}
-
-var _ component.Host = (*assertNoErrorHost)(nil)
-
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
