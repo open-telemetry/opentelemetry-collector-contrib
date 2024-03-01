@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/docker
 go 1.21
 
 require (
-	github.com/docker/docker v24.0.9+incompatible
+	github.com/docker/docker v25.0.3+incompatible
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.95.0
@@ -36,9 +36,11 @@ require (
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/distribution/reference v0.5.0 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
+	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -60,6 +62,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
+	github.com/moby/sys/user v0.1.0 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -83,6 +86,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/collector v0.95.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.95.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.45.0 // indirect
 	go.opentelemetry.io/otel v1.23.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.2 // indirect
 	go.opentelemetry.io/otel/sdk v1.23.1 // indirect
