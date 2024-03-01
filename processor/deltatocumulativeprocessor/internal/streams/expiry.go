@@ -27,7 +27,7 @@ type Expiry[T any] struct {
 }
 
 func (e Expiry[T]) ExpireOldEntries() <-chan struct{} {
-	e.ExpireOldEntries()
+	e.Staleness.ExpireOldEntries()
 
 	n := e.Staleness.Len()
 	sig := make(chan struct{})

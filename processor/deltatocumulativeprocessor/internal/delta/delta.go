@@ -31,8 +31,7 @@ func (a Accumulator[D]) Store(id streams.Ident, dp D) error {
 	// new series: initialize with current sample
 	if !ok {
 		clone := dp.Clone()
-		a.Map.Store(id, clone)
-		return nil
+		return a.Map.Store(id, clone)
 	}
 
 	// drop bad samples
@@ -46,8 +45,7 @@ func (a Accumulator[D]) Store(id streams.Ident, dp D) error {
 	}
 
 	res := aggr.Add(dp)
-	a.Map.Store(id, res)
-	return nil
+	return a.Map.Store(id, res)
 }
 
 type ErrOlderStart struct {
