@@ -17,6 +17,7 @@ import (
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 )
 
 const (
@@ -38,8 +39,8 @@ type podKey struct {
 	namespace    string
 }
 
-func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger) []*extractors.CAdvisorMetric {
-	var metrics []*extractors.CAdvisorMetric
+func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger) []*stores.RawContainerInsightsMetric {
+	var metrics []*stores.RawContainerInsightsMetric
 	podKeys := make(map[string]podKey)
 
 	// first iteration of container infos processes individual container info and
@@ -88,8 +89,8 @@ func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInf
 }
 
 // processContainers get metrics for individual container and gather information for pod so we can look it up later.
-func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger) ([]*extractors.CAdvisorMetric, *podKey, error) {
-	var result []*extractors.CAdvisorMetric
+func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger) ([]*stores.RawContainerInsightsMetric, *podKey, error) {
+	var result []*stores.RawContainerInsightsMetric
 	var pKey *podKey
 
 	if isContainerInContainer(info.Name) {
@@ -123,9 +124,9 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 		podPath := path.Dir(info.Name)
 		pKey = &podKey{cgroupPath: podPath, podName: podName, podID: podID, namespace: namespace}
 
-		tags[ci.PodIDKey] = podID
-		tags[ci.K8sPodNameKey] = podName
-		tags[ci.K8sNamespace] = namespace
+		tags[ci.AttributePodID] = podID
+		tags[ci.AttributeK8sPodName] = podName
+		tags[ci.AttributeK8sNamespace] = namespace
 		switch containerName {
 		// For docker, pause container name is set to POD while containerd does not set it.
 		// See https://github.com/aws/amazon-cloudwatch-agent/issues/188
@@ -134,9 +135,9 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 			// other pod info like CPU, Mem are dealt within in processPod.
 			containerType = ci.TypeInfraContainer
 		default:
-			tags[ci.ContainerNamekey] = containerName
+			tags[ci.AttributeContainerName] = containerName
 			containerID := path.Base(info.Name)
-			tags[ci.ContainerIDkey] = containerID
+			tags[ci.AttributeContainerID] = containerID
 			pKey.containerIds = []string{containerID}
 			containerType = ci.TypeContainer
 			// TODO(pvasir): wait for upstream fix https://github.com/google/cadvisor/issues/2785
@@ -165,8 +166,8 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 	return result, pKey, nil
 }
 
-func processPod(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, podKeys map[string]podKey, logger *zap.Logger) []*extractors.CAdvisorMetric {
-	var result []*extractors.CAdvisorMetric
+func processPod(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, podKeys map[string]podKey, logger *zap.Logger) []*stores.RawContainerInsightsMetric {
+	var result []*stores.RawContainerInsightsMetric
 	if isContainerInContainer(info.Name) {
 		logger.Debug("drop metric because it's nested container", zap.String("name", info.Name))
 		return result
@@ -178,9 +179,9 @@ func processPod(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, 
 	}
 
 	tags := map[string]string{}
-	tags[ci.PodIDKey] = podKey.podID
-	tags[ci.K8sPodNameKey] = podKey.podName
-	tags[ci.K8sNamespace] = podKey.namespace
+	tags[ci.AttributePodID] = podKey.podID
+	tags[ci.AttributeK8sPodName] = podKey.podName
+	tags[ci.AttributeK8sNamespace] = podKey.namespace
 
 	tags[ci.Timestamp] = strconv.FormatInt(extractors.GetStats(info).Timestamp.UnixNano(), 10)
 

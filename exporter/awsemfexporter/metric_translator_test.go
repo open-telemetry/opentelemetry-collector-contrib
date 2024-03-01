@@ -280,6 +280,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	// need to have 1 more metric than the default because the first is not going to be retained because it is a delta metric
 	containerInsightMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
 	containerInsightMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsKubeAPIServerScraper")
+	gpuMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
+	gpuMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsDCGMExporterScraper")
 
 	counterSumMetrics := map[string]*metricInfo{
 		"spanCounter": {
@@ -368,10 +370,24 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 				"spanName":    "testSpan",
 			},
 			map[string]string{
-				(oTellibDimensionKey): "cloudwatch-lib",
-				"spanName":            "testSpan",
+				oTellibDimensionKey: "cloudwatch-lib",
+				"spanName":          "testSpan",
 			},
 			"myServiceNS/containerInsightsKubeAPIServerScraper",
+			containerInsightsReceiver,
+		},
+		{
+			"dcgm receiver",
+			gpuMetric,
+			map[string]string{
+				"isItAnError": "false",
+				"spanName":    "testSpan",
+			},
+			map[string]string{
+				oTellibDimensionKey: "cloudwatch-lib",
+				"spanName":          "testSpan",
+			},
+			"myServiceNS/containerInsightsDCGMExporterScraper",
 			containerInsightsReceiver,
 		},
 	}

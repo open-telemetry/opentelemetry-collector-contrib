@@ -10,6 +10,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 )
 
 func TestCPUStats(t *testing.T) {
@@ -22,7 +23,7 @@ func TestCPUStats(t *testing.T) {
 	containerType := containerinsight.TypeContainer
 	extractor := NewCPUMetricExtractor(nil)
 
-	var cMetrics []*CAdvisorMetric
+	var cMetrics []*stores.RawContainerInsightsMetric
 	if extractor.HasValue(result[0]) {
 		cMetrics = extractor.GetValue(result[0], MockCPUMemInfo, containerType)
 	}

@@ -11,6 +11,7 @@ import (
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	awsmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 )
 
 type NetMetricExtractor struct {
@@ -30,7 +31,7 @@ func (n *NetMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 	return info.Spec.HasNetwork
 }
 
-func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*CAdvisorMetric {
+func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*stores.RawContainerInsightsMetric {
 
 	// Just a protection here, there is no Container level Net metrics
 	if containerType == ci.TypePod || containerType == ci.TypeContainer {
@@ -47,7 +48,7 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 
 	// used for aggregation
 	netIfceMetrics := make([]map[string]any, len(curIfceStats))
-	metrics := make([]*CAdvisorMetric, len(curIfceStats))
+	metrics := make([]*stores.RawContainerInsightsMetric, len(curIfceStats))
 
 	for i, cur := range curIfceStats {
 		mType := getNetMetricType(containerType, n.logger)
@@ -70,10 +71,10 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 
 		netIfceMetrics[i] = netIfceMetric
 
-		metric := newCadvisorMetric(mType, n.logger)
-		metric.tags[ci.NetIfce] = cur.Name
+		metric := stores.NewRawContainerInsightsMetric(mType, n.logger)
+		metric.Tags[ci.NetIfce] = cur.Name
 		for k, v := range netIfceMetric {
-			metric.fields[ci.MetricName(mType, k)] = v
+			metric.Fields[ci.MetricName(mType, k)] = v
 		}
 
 		metrics[i] = metric
@@ -81,9 +82,9 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 
 	aggregatedFields := ci.SumFields(netIfceMetrics)
 	if len(aggregatedFields) > 0 {
-		metric := newCadvisorMetric(containerType, n.logger)
+		metric := stores.NewRawContainerInsightsMetric(containerType, n.logger)
 		for k, v := range aggregatedFields {
-			metric.fields[ci.MetricName(containerType, k)] = v
+			metric.Fields[ci.MetricName(containerType, k)] = v
 		}
 		metrics = append(metrics, metric)
 	}

@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
@@ -59,8 +60,10 @@ func (m mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) erro
 	assert.Equal(m.t, 1, md.ResourceMetrics().Len())
 
 	scopeMetrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	fmt.Printf("===== count %d\n", scopeMetrics.Len())
 	for i := 0; i < scopeMetrics.Len(); i++ {
 		metric := scopeMetrics.At(i)
+		fmt.Printf("===== count %v\n", metric.Name())
 		if metric.Name() == "http_connected_total" {
 			assert.Equal(m.t, float64(15), metric.Sum().DataPoints().At(0).DoubleValue())
 			*m.httpConnected = true
@@ -177,18 +180,18 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 	// build up a new PR
 	promFactory := prometheusreceiver.NewFactory()
 
-	targets := []*testData{
+	targets := []*mocks.TestData{
 		{
-			name: "prometheus",
-			pages: []mockPrometheusResponse{
-				{code: 200, data: renameMetric},
+			Name: "prometheus",
+			Pages: []mocks.MockPrometheusResponse{
+				{Code: 200, Data: renameMetric},
 			},
 		},
 	}
-	mp, cfg, err := setupMockPrometheus(targets...)
+	mp, cfg, err := mocks.SetupMockPrometheus(targets...)
 	assert.NoError(t, err)
 
-	split := strings.Split(mp.srv.URL, "http://")
+	split := strings.Split(mp.Srv.URL, "http://")
 
 	scrapeConfig := &config.ScrapeConfig{
 		HTTPClientConfig: configutil.HTTPClientConfig{
@@ -261,8 +264,8 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 	})
 
 	// wait for 2 scrapes, one initiated by us, another by the new scraper process
-	mp.wg.Wait()
-	mp.wg.Wait()
+	mp.Wg.Wait()
+	mp.Wg.Wait()
 
 	assert.True(t, *consumer.up)
 	assert.True(t, *consumer.httpConnected)

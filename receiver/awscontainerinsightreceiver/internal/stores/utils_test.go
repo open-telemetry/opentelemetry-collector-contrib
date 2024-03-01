@@ -106,13 +106,13 @@ func TestUtils_parseCronJobFromJob(t *testing.T) {
 func TestUtils_addKubernetesInfo(t *testing.T) {
 	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	tags := map[string]string{
-		ci.ContainerNamekey: "testContainer",
-		ci.K8sPodNameKey:    "testPod",
-		ci.PodIDKey:         "123",
-		ci.K8sNamespace:     "testNamespace",
-		ci.TypeService:      "testService",
-		ci.NodeNameKey:      "testNode",
-		ci.Timestamp:        strconv.FormatInt(time.Now().UnixNano(), 10),
+		ci.AttributeContainerName: "testContainer",
+		ci.AttributeK8sPodName:    "testPod",
+		ci.AttributePodID:         "123",
+		ci.AttributeK8sNamespace:  "testNamespace",
+		ci.TypeService:            "testService",
+		ci.NodeNameKey:            "testNode",
+		ci.Timestamp:              strconv.FormatInt(time.Now().UnixNano(), 10),
 	}
 
 	metric := &mockCIMetric{
@@ -122,10 +122,10 @@ func TestUtils_addKubernetesInfo(t *testing.T) {
 
 	kubernetesBlob := map[string]any{}
 	AddKubernetesInfo(metric, kubernetesBlob, false)
-	assert.Equal(t, "", metric.GetTag(ci.ContainerNamekey))
-	assert.Equal(t, "", metric.GetTag(ci.K8sPodNameKey))
-	assert.Equal(t, "", metric.GetTag(ci.PodIDKey))
-	assert.Equal(t, "testNamespace", metric.GetTag(ci.K8sNamespace))
+	assert.Equal(t, "", metric.GetTag(ci.AttributeContainerName))
+	assert.Equal(t, "", metric.GetTag(ci.AttributeK8sPodName))
+	assert.Equal(t, "", metric.GetTag(ci.AttributePodID))
+	assert.Equal(t, "testNamespace", metric.GetTag(ci.AttributeK8sNamespace))
 	assert.Equal(t, "testService", metric.GetTag(ci.TypeService))
 	assert.Equal(t, "testNode", metric.GetTag(ci.NodeNameKey))
 
@@ -136,13 +136,13 @@ func TestUtils_addKubernetesInfo(t *testing.T) {
 func TestUtils_addKubernetesInfoRetainContainerNameTag(t *testing.T) {
 	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	tags := map[string]string{
-		ci.ContainerNamekey: "testContainer",
-		ci.K8sPodNameKey:    "testPod",
-		ci.PodIDKey:         "123",
-		ci.K8sNamespace:     "testNamespace",
-		ci.TypeService:      "testService",
-		ci.NodeNameKey:      "testNode",
-		ci.Timestamp:        strconv.FormatInt(time.Now().UnixNano(), 10),
+		ci.AttributeContainerName: "testContainer",
+		ci.AttributeK8sPodName:    "testPod",
+		ci.AttributePodID:         "123",
+		ci.AttributeK8sNamespace:  "testNamespace",
+		ci.TypeService:            "testService",
+		ci.NodeNameKey:            "testNode",
+		ci.Timestamp:              strconv.FormatInt(time.Now().UnixNano(), 10),
 	}
 
 	metric := &mockCIMetric{
@@ -152,10 +152,10 @@ func TestUtils_addKubernetesInfoRetainContainerNameTag(t *testing.T) {
 
 	kubernetesBlob := map[string]any{}
 	AddKubernetesInfo(metric, kubernetesBlob, true)
-	assert.Equal(t, "testContainer", metric.GetTag(ci.ContainerNamekey))
-	assert.Equal(t, "", metric.GetTag(ci.K8sPodNameKey))
-	assert.Equal(t, "", metric.GetTag(ci.PodIDKey))
-	assert.Equal(t, "testNamespace", metric.GetTag(ci.K8sNamespace))
+	assert.Equal(t, "testContainer", metric.GetTag(ci.AttributeContainerName))
+	assert.Equal(t, "", metric.GetTag(ci.AttributeK8sPodName))
+	assert.Equal(t, "", metric.GetTag(ci.AttributePodID))
+	assert.Equal(t, "testNamespace", metric.GetTag(ci.AttributeK8sNamespace))
 	assert.Equal(t, "testService", metric.GetTag(ci.TypeService))
 	assert.Equal(t, "testNode", metric.GetTag(ci.NodeNameKey))
 
@@ -175,6 +175,7 @@ func TestUtils_TagMetricSource(t *testing.T) {
 		ci.TypeContainer,
 		ci.TypeContainerFS,
 		ci.TypeContainerDiskIO,
+		ci.TypeGpuContainer,
 	}
 
 	expectedSources := []string{
@@ -188,6 +189,7 @@ func TestUtils_TagMetricSource(t *testing.T) {
 		"[\"cadvisor\",\"pod\",\"calculated\"]",
 		"[\"cadvisor\",\"calculated\"]",
 		"[\"cadvisor\"]",
+		"[\"dcgm\",\"pod\",\"calculated\"]",
 	}
 	for i, mtype := range types {
 		tags := map[string]string{

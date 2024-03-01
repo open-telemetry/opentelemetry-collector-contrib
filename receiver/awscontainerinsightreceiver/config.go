@@ -57,4 +57,7 @@ type Config struct {
 	// EnableControlPlaneMetrics enables additional metrics sourced from the Kubernetes API server /metrics prometheus endpoint
 	// The default value is false.
 	EnableControlPlaneMetrics bool `mapstructure:"enable_control_plane_metrics"`
+
+	// EnableAcceleratedComputeMetrics enabled features with accelerated compute resources where metrics are scraped from vendor specific sources
+	EnableAcceleratedComputeMetrics bool `mapstructure:"accelerated_compute_metrics"`
 }

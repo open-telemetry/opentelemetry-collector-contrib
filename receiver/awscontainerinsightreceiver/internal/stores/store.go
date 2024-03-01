@@ -10,12 +10,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 )
-
-var _ cadvisor.Decorator = &K8sDecorator{}
 
 // CIMetric represents the raw metric interface for container insights
 type CIMetric interface {
@@ -89,7 +84,7 @@ func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool,
 	return k, nil
 }
 
-func (k *K8sDecorator) Decorate(metric *extractors.CAdvisorMetric) *extractors.CAdvisorMetric {
+func (k *K8sDecorator) Decorate(metric CIMetric) CIMetric {
 	kubernetesBlob := map[string]any{}
 	for _, store := range k.stores {
 		ok := store.Decorate(k.ctx, metric, kubernetesBlob)

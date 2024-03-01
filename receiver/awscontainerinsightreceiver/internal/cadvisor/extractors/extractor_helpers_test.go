@@ -9,11 +9,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 )
 
 func AssertContainsTaggedFloat(
 	t *testing.T,
-	cadvisorMetric *CAdvisorMetric,
+	cadvisorMetric *stores.RawContainerInsightsMetric,
 	field string,
 	expectedValue float64,
 	delta float64,
@@ -39,7 +41,7 @@ func AssertContainsTaggedFloat(
 
 func AssertContainsTaggedInt(
 	t *testing.T,
-	cadvisorMetric *CAdvisorMetric,
+	cadvisorMetric *stores.RawContainerInsightsMetric,
 	field string,
 	expectedValue int64,
 ) {
@@ -59,7 +61,7 @@ func AssertContainsTaggedInt(
 
 func AssertContainsTaggedUint(
 	t *testing.T,
-	cadvisorMetric *CAdvisorMetric,
+	cadvisorMetric *stores.RawContainerInsightsMetric,
 	field string,
 	expectedValue uint64,
 ) {
@@ -79,7 +81,7 @@ func AssertContainsTaggedUint(
 
 func AssertContainsTaggedField(
 	t *testing.T,
-	cadvisorMetric *CAdvisorMetric,
+	cadvisorMetric *stores.RawContainerInsightsMetric,
 	expectedFields map[string]any,
 	expectedTags map[string]string,
 ) {

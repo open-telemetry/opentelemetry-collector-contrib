@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 )
 
 var allowedPaths = regexp.MustCompile(`^(tmpfs|\/dev\/.*|overlay)$`)
@@ -23,17 +24,17 @@ func (f *FileSystemMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 	return info.Spec.HasFilesystem
 }
 
-func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*CAdvisorMetric {
+func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*stores.RawContainerInsightsMetric {
 	if containerType == ci.TypePod || containerType == ci.TypeInfraContainer {
 		return nil
 	}
 
 	containerType = getFSMetricType(containerType, f.logger)
 	stats := GetStats(info)
-	metrics := make([]*CAdvisorMetric, 0, len(stats.Filesystem))
+	metrics := make([]*stores.RawContainerInsightsMetric, 0, len(stats.Filesystem))
 
 	for _, v := range stats.Filesystem {
-		metric := newCadvisorMetric(containerType, f.logger)
+		metric := stores.NewRawContainerInsightsMetric(containerType, f.logger)
 		if v.Device == "" {
 			continue
 		}
@@ -41,23 +42,23 @@ func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMem
 			continue
 		}
 
-		metric.tags[ci.DiskDev] = v.Device
-		metric.tags[ci.FSType] = v.Type
+		metric.Tags[ci.DiskDev] = v.Device
+		metric.Tags[ci.FSType] = v.Type
 
-		metric.fields[ci.MetricName(containerType, ci.FSUsage)] = v.Usage
-		metric.fields[ci.MetricName(containerType, ci.FSCapacity)] = v.Limit
-		metric.fields[ci.MetricName(containerType, ci.FSAvailable)] = v.Available
+		metric.Fields[ci.MetricName(containerType, ci.FSUsage)] = v.Usage
+		metric.Fields[ci.MetricName(containerType, ci.FSCapacity)] = v.Limit
+		metric.Fields[ci.MetricName(containerType, ci.FSAvailable)] = v.Available
 
 		if v.Limit != 0 {
-			metric.fields[ci.MetricName(containerType, ci.FSUtilization)] = float64(v.Usage) / float64(v.Limit) * 100
+			metric.Fields[ci.MetricName(containerType, ci.FSUtilization)] = float64(v.Usage) / float64(v.Limit) * 100
 		}
 
 		if v.HasInodes {
-			metric.fields[ci.MetricName(containerType, ci.FSInodes)] = v.Inodes
-			metric.fields[ci.MetricName(containerType, ci.FSInodesfree)] = v.InodesFree
+			metric.Fields[ci.MetricName(containerType, ci.FSInodes)] = v.Inodes
+			metric.Fields[ci.MetricName(containerType, ci.FSInodesfree)] = v.InodesFree
 		}
 
-		metric.cgroupPath = info.Name
+		metric.ContainerName = info.Name
 		metrics = append(metrics, metric)
 	}
 	return metrics

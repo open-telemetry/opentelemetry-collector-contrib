@@ -13,6 +13,7 @@ import (
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	awsmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 )
 
 type DiskIOMetricExtractor struct {
@@ -24,8 +25,8 @@ func (d *DiskIOMetricExtractor) HasValue(info *cInfo.ContainerInfo) bool {
 	return info.Spec.HasDiskIo
 }
 
-func (d *DiskIOMetricExtractor) GetValue(info *cInfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*CAdvisorMetric {
-	var metrics []*CAdvisorMetric
+func (d *DiskIOMetricExtractor) GetValue(info *cInfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*stores.RawContainerInsightsMetric {
+	var metrics []*stores.RawContainerInsightsMetric
 	if containerType != ci.TypeNode && containerType != ci.TypeInstance {
 		return metrics
 	}
@@ -36,20 +37,20 @@ func (d *DiskIOMetricExtractor) GetValue(info *cInfo.ContainerInfo, _ CPUMemInfo
 	return metrics
 }
 
-func (d *DiskIOMetricExtractor) extractIoMetrics(curStatsSet []cInfo.PerDiskStats, namePrefix string, containerType string, infoName string, curTime time.Time) []*CAdvisorMetric {
-	var metrics []*CAdvisorMetric
+func (d *DiskIOMetricExtractor) extractIoMetrics(curStatsSet []cInfo.PerDiskStats, namePrefix string, containerType string, infoName string, curTime time.Time) []*stores.RawContainerInsightsMetric {
+	var metrics []*stores.RawContainerInsightsMetric
 	expectedKey := []string{ci.DiskIOAsync, ci.DiskIOSync, ci.DiskIORead, ci.DiskIOWrite, ci.DiskIOTotal}
 	for _, cur := range curStatsSet {
 		curDevName := devName(cur)
-		metric := newCadvisorMetric(getDiskIOMetricType(containerType, d.logger), d.logger)
-		metric.tags[ci.DiskDev] = curDevName
+		metric := stores.NewRawContainerInsightsMetric(getDiskIOMetricType(containerType, d.logger), d.logger)
+		metric.Tags[ci.DiskDev] = curDevName
 		for _, key := range expectedKey {
 			if curVal, curOk := cur.Stats[key]; curOk {
 				mname := ci.MetricName(containerType, ioMetricName(namePrefix, key))
-				assignRateValueToField(&d.rateCalculator, metric.fields, mname, infoName, float64(curVal), curTime, float64(time.Second))
+				assignRateValueToField(&d.rateCalculator, metric.Fields, mname, infoName, float64(curVal), curTime, float64(time.Second))
 			}
 		}
-		if len(metric.fields) > 0 {
+		if len(metric.Fields) > 0 {
 			metrics = append(metrics, metric)
 		}
 	}
