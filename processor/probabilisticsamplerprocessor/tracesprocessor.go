@@ -94,6 +94,8 @@ type zeroProbability struct {
 type consistentCommon struct {
 	// strict randomness checking
 	strict bool
+
+	logger *zap.Logger
 }
 
 // traceEqualizer adjusts thresholds absolutely.  Cannot be used with zero.
@@ -157,7 +159,7 @@ func (cc *consistentCommon) randomnessFromSpan(s ptrace.Span) (sampling.Randomne
 				if cc.strict {
 					err = ErrInconsistentArrivingTValue
 				} else {
-					// TODO: warning?
+					cc.logger.Warn("inconsisent t-value cleared")
 					otts.ClearTValue()
 				}
 			}
@@ -165,6 +167,17 @@ func (cc *consistentCommon) randomnessFromSpan(s ptrace.Span) (sampling.Randomne
 	}
 
 	return randomness, &wts, err
+}
+
+// safeProbToThresholdWithPrecision avoids the ErrPrecisionUnderflow
+// condition and falls back to use of full precision in certain corner cases.
+func safeProbToThresholdWithPrecision(ratio float64, prec uint8) (sampling.Threshold, error) {
+	th, err := sampling.ProbabilityToThresholdWithPrecision(ratio, prec)
+	if err == sampling.ErrPrecisionUnderflow {
+		// Use full-precision encoding.
+		th, err = sampling.ProbabilityToThreshold(ratio)
+	}
+	return th, err
 }
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform head sampling according to the given
@@ -205,7 +218,12 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 
 			tp.sampler = ts
 		case Equalizing:
-			threshold, err := sampling.ProbabilityToThresholdWithPrecision(ratio, cfg.SamplingPrecision)
+			threshold, err := safeProbToThresholdWithPrecision(ratio, cfg.SamplingPrecision)
+			if err == sampling.ErrPrecisionUnderflow {
+				// Considered valid, any case where precision underflow
+				// occurs, use full-precision encoding.
+				threshold, err = sampling.ProbabilityToThreshold(ratio)
+			}
 			if err != nil {
 				return nil, err
 			}
@@ -215,6 +233,7 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 				traceIDThreshold: threshold,
 				consistentCommon: consistentCommon{
 					strict: cfg.StrictRandomness,
+					logger: set.Logger,
 				},
 			}
 		case Proportional:
@@ -223,6 +242,7 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 				prec:  cfg.SamplingPrecision,
 				consistentCommon: consistentCommon{
 					strict: cfg.StrictRandomness,
+					logger: set.Logger,
 				},
 			}
 		}
@@ -277,17 +297,13 @@ func (ts *traceProportionalizer) decide(s ptrace.Span) (bool, *sampling.W3CTrace
 
 	// There is a potential here for the product probability to
 	// underflow, which is checked here.
-	threshold, err := sampling.ProbabilityToThresholdWithPrecision(incoming*ts.ratio, ts.prec)
+	threshold, err := safeProbToThresholdWithPrecision(incoming*ts.ratio, ts.prec)
 
 	if err == sampling.ErrProbabilityRange {
 		// Considered valid, a case where the sampling probability
 		// has fallen below the minimum supported value and simply
 		// becomes unsampled.
 		return false, wts, nil
-	} else if err == sampling.ErrPrecisionUnderflow {
-		// Considered valid, any case where precision underflow
-		// occurs, use full-precision encoding.
-		threshold, err = sampling.ProbabilityToThreshold(incoming * ts.ratio)
 	}
 	if err != nil {
 		return false, wts, err
@@ -326,7 +342,7 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 
 				probShould, wts, err := tp.sampler.decide(s)
 				if err != nil {
-					tp.logger.Error("trace-state", zap.Error(err))
+					tp.logger.Error("tracestate", zap.Error(err))
 				}
 
 				forceSample := priority == mustSampleSpan

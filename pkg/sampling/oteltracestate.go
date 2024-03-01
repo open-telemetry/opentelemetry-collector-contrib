@@ -97,9 +97,6 @@ func NewOpenTelemetryTraceState(input string) (OpenTelemetryTraceState, error) {
 			if otts.rnd, err = RValueToRandomness(value); err == nil {
 				otts.rvalue = value
 			} else {
-				// The zero-value for randomness implies always-sample;
-				// the threshold test is R < T, but T is not meaningful
-				// at zero, and this value implies zero adjusted count.
 				otts.rvalue = ""
 				otts.rnd = Randomness{}
 			}

@@ -19,6 +19,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
@@ -398,36 +400,16 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 // tracestate is correct with a number o cases that exercise the two
 // consistent sampling modes.
 func Test_tracesamplerprocessor_TraceState(t *testing.T) {
-	mustParseTID := func(in string) pcommon.TraceID {
-		b, err := hex.DecodeString(in)
-		if err != nil {
-			panic(err)
-		}
-		if len(b) != len(pcommon.TraceID{}) {
-			panic("incorrect size input")
-		}
-		return pcommon.TraceID(b)
-	}
 	// This hard-coded TraceID will sample at 50% and not at 49%.
 	// The equivalent randomness is 0x80000000000000.
 	defaultTID := mustParseTID("fefefefefefefefefe80000000000000")
 	sid := idutils.UInt64ToSpanID(0xfefefefe)
-	singleSpanWithAttrib := func(tid pcommon.TraceID, ts, key string, attribValue pcommon.Value) ptrace.Traces {
-		traces := ptrace.NewTraces()
-		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-		span.TraceState().FromRaw(ts)
-		span.SetTraceID(tid)
-		if key != "" {
-			attribValue.CopyTo(span.Attributes().PutEmpty(key))
-		}
-		span.SetSpanID(sid)
-		return traces
-	}
 	tests := []struct {
 		name  string
 		tid   pcommon.TraceID
 		cfg   *Config
 		ts    string
+		tf    uint32
 		key   string
 		value pcommon.Value
 		sf    func(SamplerMode) (sampled bool, adjCount float64, tracestate string)
@@ -678,13 +660,45 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "200 percent",
+			name: "200 percent equals 100 percent",
 			cfg: &Config{
 				SamplingPercentage: 200,
 			},
 			ts: "",
 			sf: func(SamplerMode) (bool, float64, string) {
 				return true, 1, "ot=th:0"
+			},
+		},
+		{
+			name: "proportional underflow",
+			cfg: &Config{
+				SamplingPercentage: 0.1, // causes underflow
+			},
+			// this trace ID will sample at all probabilities
+			tid: mustParseTID("111111111111111111ffffffffffffff"),
+			ts:  "ot=th:fffffffffffff", // 2**-52 sampling
+			sf: func(mode SamplerMode) (bool, float64, string) {
+				if mode == Equalizing {
+					return true, 1 << 52, "ot=th:fffffffffffff"
+				}
+				return false, 0, ""
+			},
+		},
+		{
+			// Note this test tests a probability value very close
+			// to the limit expressible in a float32, which is how
+			// the SamplingPercentage field is declared.  We can't
+			name: "precision underflow",
+			cfg: &Config{
+				SamplingPercentage: (1 - 8e-7) * 100, // very close to 100%
+				SamplingPrecision:  10,               // 10 sig figs is impossible
+			},
+			// this trace ID will sample at all probabilities
+			tid: mustParseTID("111111111111111111ffffffffffffff"),
+			sf: func(mode SamplerMode) (bool, float64, string) {
+				// adjusted counts are sufficiently close to 1.0
+				// truncated t-value w/ only 8 figures.
+				return true, 1, "ot=th:00000cccccccd"
 			},
 		},
 	}
@@ -707,7 +721,9 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					tid = tt.tid
 				}
 
-				td := singleSpanWithAttrib(tid, tt.ts, tt.key, tt.value)
+				// TODO: Test log messages in non-strict mode
+
+				td := makeSingleSpanWithAttrib(tid, sid, tt.ts, tt.tf, tt.key, tt.value)
 
 				err = tsp.ConsumeTraces(context.Background(), td)
 				require.NoError(t, err)
@@ -741,6 +757,145 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					assert.Equal(t, 0, sink.SpanCount())
 					require.Equal(t, "", expectTS)
 				}
+			})
+		}
+	}
+}
+
+// Test_tracesamplerprocessor_StrictTraceState checks that when
+// strictness checking is enabled, certain spans do not pass, with
+// errors.
+func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
+	defaultTID := mustParseTID("fefefefefefefefefe80000000000000")
+	sid := idutils.UInt64ToSpanID(0xfefefefe)
+	tests := []struct {
+		name string
+		tid  pcommon.TraceID
+		cfg  *Config
+		tf   uint32
+		ts   string
+		sf   func(SamplerMode) (bool, string)
+	}{
+		{
+			name: "missing randomness",
+			cfg: &Config{
+				SamplingPercentage: 100,
+			},
+			tf: 0, // (i.e., not randomFlagValue)
+			ts: "",
+			sf: func(SamplerMode) (bool, string) {
+				return false, "missing randomness"
+			},
+		},
+		{
+			name: "invalid r-value",
+			cfg: &Config{
+				SamplingPercentage: 100,
+			},
+			ts: "ot=rv:abababababababab", // 16 digits is too many
+			sf: func(SamplerMode) (bool, string) {
+				return false, "r-value must have 14 hex digits"
+			},
+		},
+		{
+			name: "invalid t-value",
+			cfg: &Config{
+				SamplingPercentage: 100,
+			},
+			tf: randomFlagValue,
+			ts: "ot=th:abababababababab", // 16 digits is too many
+			sf: func(SamplerMode) (bool, string) {
+				return false, "t-value exceeds 14 hex digits"
+			},
+		},
+		{
+			name: "t-value syntax",
+			cfg: &Config{
+				SamplingPercentage: 100,
+			},
+			tf: randomFlagValue,
+			ts: "ot=th:-1",
+			sf: func(SamplerMode) (bool, string) {
+				return false, "invalid syntax"
+			},
+		},
+		{
+			name: "inconsistent t-value trace ID",
+			cfg: &Config{
+				SamplingPercentage: 100,
+			},
+			tf:  randomFlagValue,
+			tid: mustParseTID("ffffffffffffffffff70000000000000"),
+			ts:  "ot=th:8",
+			sf: func(SamplerMode) (bool, string) {
+				return false, "inconsistent arriving t-value"
+			},
+		},
+		{
+			name: "inconsistent t-value r-value",
+			cfg: &Config{
+				SamplingPercentage: 100,
+			},
+			tf: randomFlagValue,
+			ts: "ot=th:8;rv:70000000000000",
+			sf: func(SamplerMode) (bool, string) {
+				return false, "inconsistent arriving t-value"
+			},
+		},
+	}
+	for _, tt := range tests {
+		for _, mode := range []SamplerMode{Equalizing, Proportional} {
+			t.Run(fmt.Sprint(mode, "_", tt.name), func(t *testing.T) {
+				sink := new(consumertest.TracesSink)
+				cfg := &Config{}
+				if tt.cfg != nil {
+					*cfg = *tt.cfg
+				}
+				cfg.StrictRandomness = true
+				cfg.SamplerMode = mode
+
+				set := processortest.NewNopCreateSettings()
+				logger, observed := observer.New(zap.DebugLevel)
+				set.Logger = zap.New(logger)
+
+				expectSampled := false
+				expectMessage := ""
+				if tt.sf != nil {
+					expectSampled, expectMessage = tt.sf(mode)
+
+				}
+
+				tsp, err := newTracesProcessor(context.Background(), set, cfg, sink)
+				if err != nil {
+					// Sometimes the constructor fails.
+					require.Contains(t, err.Error(), expectMessage)
+					return
+				}
+
+				tid := defaultTID
+
+				if !tt.tid.IsEmpty() {
+					tid = tt.tid
+				}
+
+				td := makeSingleSpanWithAttrib(tid, sid, tt.ts, tt.tf, "", pcommon.Value{})
+
+				err = tsp.ConsumeTraces(context.Background(), td)
+				require.NoError(t, err)
+
+				sampledData := sink.AllTraces()
+
+				if expectSampled {
+					require.Equal(t, 1, len(sampledData))
+					assert.Equal(t, 1, sink.SpanCount())
+					return
+				}
+				require.Equal(t, 0, len(sampledData))
+				assert.Equal(t, 0, sink.SpanCount())
+
+				require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+				require.Equal(t, observed.All()[0].Message, "tracestate")
+				require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), expectMessage)
 			})
 		}
 	}
@@ -817,4 +972,32 @@ func assertSampledData(t *testing.T, sampled []ptrace.Traces, serviceName string
 		}
 	}
 	return
+}
+
+// mustParseTID generates TraceIDs from their hex encoding, for
+// testing probability sampling.
+func mustParseTID(in string) pcommon.TraceID {
+	b, err := hex.DecodeString(in)
+	if err != nil {
+		panic(err)
+	}
+	if len(b) != len(pcommon.TraceID{}) {
+		panic("incorrect size input")
+	}
+	return pcommon.TraceID(b)
+}
+
+// makeSingleSpanWithAttrib is used to construct test data with
+// a specific TraceID and a single attribute.
+func makeSingleSpanWithAttrib(tid pcommon.TraceID, sid pcommon.SpanID, ts string, tf uint32, key string, attribValue pcommon.Value) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.TraceState().FromRaw(ts)
+	span.SetTraceID(tid)
+	span.SetSpanID(sid)
+	span.SetFlags(tf)
+	if key != "" {
+		attribValue.CopyTo(span.Attributes().PutEmpty(key))
+	}
+	return traces
 }
