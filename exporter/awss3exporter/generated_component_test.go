@@ -5,6 +5,7 @@ package awss3exporter
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -14,8 +15,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // assertNoErrorHost implements a component.Host that asserts that there were no errors.
@@ -81,19 +84,19 @@ func TestComponentLifecycle(t *testing.T) {
 			require.NotPanics(t, func() {
 				switch e := c.(type) {
 				case exporter.Logs:
-					logs := testdata.GenerateLogsManyLogRecordsSameResource(2)
+					logs := generateLifecycleTestLogs()
 					if !e.Capabilities().MutatesData {
 						logs.MarkReadOnly()
 					}
 					err = e.ConsumeLogs(context.Background(), logs)
 				case exporter.Metrics:
-					metrics := testdata.GenerateMetricsTwoMetrics()
+					metrics := generateLifecycleTestMetrics()
 					if !e.Capabilities().MutatesData {
 						metrics.MarkReadOnly()
 					}
 					err = e.ConsumeMetrics(context.Background(), metrics)
 				case exporter.Traces:
-					traces := testdata.GenerateTracesTwoSpansSameResource()
+					traces := generateLifecycleTestTraces()
 					if !e.Capabilities().MutatesData {
 						traces.MarkReadOnly()
 					}
@@ -105,4 +108,39 @@ func TestComponentLifecycle(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func generateLifecycleTestLogs() plog.Logs {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("resource", "R1")
+	l := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	l.Body().SetStr("test log message")
+	l.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return logs
+}
+
+func generateLifecycleTestMetrics() pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("resource", "R1")
+	m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("test_metric")
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("test_attr", "value_1")
+	dp.SetIntValue(123)
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return metrics
+}
+
+func generateLifecycleTestTraces() ptrace.Traces {
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("resource", "R1")
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.Attributes().PutStr("test_attr", "value_1")
+	span.SetName("test_span")
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-1 * time.Second)))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return traces
 }

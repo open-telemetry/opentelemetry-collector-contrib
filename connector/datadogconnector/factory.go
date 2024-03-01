@@ -8,6 +8,7 @@ package datadogconnector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 
+	"github.com/DataDog/datadog-agent/pkg/trace/timing"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
@@ -38,8 +39,9 @@ func createDefaultConfig() component.Config {
 // defines the consumer type of the connector
 // we want to consume traces and export metrics therefore define nextConsumer as metrics, consumer is the next component in the pipeline
 func createTracesToMetricsConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
-	initializeMetricsClient(params)
-	c, err := newTraceToMetricConnector(params.TelemetrySettings, cfg, nextConsumer)
+	metricsClient := datadog.InitializeMetricClient(params.MeterProvider)
+	timingReporter := timing.New(metricsClient)
+	c, err := newTraceToMetricConnector(params.TelemetrySettings, cfg, nextConsumer, metricsClient, timingReporter)
 	if err != nil {
 		return nil, err
 	}
@@ -47,10 +49,5 @@ func createTracesToMetricsConnector(_ context.Context, params connector.CreateSe
 }
 
 func createTracesToTracesConnector(_ context.Context, params connector.CreateSettings, _ component.Config, nextConsumer consumer.Traces) (connector.Traces, error) {
-	initializeMetricsClient(params)
 	return newTraceToTraceConnector(params.Logger, nextConsumer), nil
-}
-
-func initializeMetricsClient(params connector.CreateSettings) {
-	datadog.InitializeMetricClient(params.MeterProvider)
 }

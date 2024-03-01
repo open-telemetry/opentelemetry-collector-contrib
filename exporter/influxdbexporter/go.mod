@@ -7,7 +7,6 @@ require (
 	github.com/influxdata/influxdb-observability/common v0.5.8
 	github.com/influxdata/influxdb-observability/otel2influx v0.5.8
 	github.com/influxdata/line-protocol/v2 v2.2.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.95.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.95.0
 	go.opentelemetry.io/collector/config/confighttp v0.95.0
@@ -16,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.95.0
 	go.opentelemetry.io/collector/consumer v0.95.0
 	go.opentelemetry.io/collector/exporter v0.95.0
+	go.opentelemetry.io/collector/pdata v1.2.0
 	go.opentelemetry.io/otel/metric v1.23.1
 	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/goleak v1.3.0
@@ -62,7 +62,6 @@ require (
 	go.opentelemetry.io/collector/extension v0.95.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.95.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.2.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.2.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.95.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.95.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0 // indirect
@@ -85,11 +84,3 @@ retract (
 	v0.76.1
 	v0.65.0
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
