@@ -4,7 +4,9 @@
 package probabilisticsamplerprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"strconv"
 	"strings"
@@ -41,6 +43,7 @@ const (
 
 	// Hashing method: The constants below help translate user friendly percentages
 	// to numbers direct used in sampling.
+	numHashBucketsLg2     = 14
 	numHashBuckets        = 0x4000 // Using a power of 2 to avoid division.
 	bitMaskHashBuckets    = numHashBuckets - 1
 	percentageScaleFactor = numHashBuckets / 100.0
@@ -69,9 +72,18 @@ type traceProcessor struct {
 	logger  *zap.Logger
 }
 
+// samplerCommon includes fields used in all sampler modes.
+type samplerCommon struct {
+	// strict detetrmines how strongly randomness is enforced
+	strict bool
+
+	logger *zap.Logger
+}
+
 // inconsistentCommon implements updateTracestate() for samplers that
 // do not use OTel consistent sampling.
 type inconsistentCommon struct {
+	samplerCommon
 }
 
 // traceHasher is the original hash-based implementation.
@@ -79,7 +91,12 @@ type traceHasher struct {
 	// Hash-based calculation
 	hashScaledSamplerate uint32
 	hashSeed             uint32
-	probability          float64
+
+	// When not strict, this sampler inserts T-value and R-value
+	// to convey consistent sampling probability.
+	strict                  bool
+	unstrictTValueThreshold sampling.Threshold
+	unstrictTValueEncoding  string
 
 	inconsistentCommon
 }
@@ -92,18 +109,15 @@ type zeroProbability struct {
 // inconsistentCommon implements updateTracestate() for samplers that
 // use OTel consistent sampling.
 type consistentCommon struct {
-	// strict randomness checking
-	strict bool
-
-	logger *zap.Logger
+	samplerCommon
 }
 
 // traceEqualizer adjusts thresholds absolutely.  Cannot be used with zero.
 type traceEqualizer struct {
 	// TraceID-randomness-based calculation
-	traceIDThreshold sampling.Threshold
+	tValueThreshold sampling.Threshold
 
-	// tValueEncoding includes the leading "t:"
+	// tValueEncoding is the encoded string T-value representation.
 	tValueEncoding string
 
 	consistentCommon
@@ -114,7 +128,7 @@ type traceProportionalizer struct {
 	// ratio in the range [2**-56, 1]
 	ratio float64
 
-	// precision in number of hex digits
+	// prec is the precision in number of hex digits
 	prec uint8
 
 	consistentCommon
@@ -130,7 +144,7 @@ func (*consistentCommon) updateTracestate(tid pcommon.TraceID, should bool, wts 
 	}
 }
 
-func (cc *consistentCommon) randomnessFromSpan(s ptrace.Span) (sampling.Randomness, *sampling.W3CTraceState, error) {
+func (sc *samplerCommon) randomnessFromSpan(s ptrace.Span) (sampling.Randomness, *sampling.W3CTraceState, error) {
 	state := s.TraceState()
 	raw := state.AsRaw()
 
@@ -141,7 +155,7 @@ func (cc *consistentCommon) randomnessFromSpan(s ptrace.Span) (sampling.Randomne
 		if rv, has := wts.OTelValue().RValueRandomness(); has {
 			// When the tracestate is OK and has r-value, use it.
 			randomness = rv
-		} else if cc.strict && (s.Flags()&randomFlagValue) != randomFlagValue {
+		} else if sc.strict && (s.Flags()&randomFlagValue) != randomFlagValue {
 			// If strict and the flag is missing
 			err = ErrMissingRandomness
 		} else {
@@ -156,10 +170,10 @@ func (cc *consistentCommon) randomnessFromSpan(s ptrace.Span) (sampling.Randomne
 		otts := wts.OTelValue()
 		if tv, has := otts.TValueThreshold(); has {
 			if !tv.ShouldSample(randomness) {
-				if cc.strict {
+				if sc.strict {
 					err = ErrInconsistentArrivingTValue
 				} else {
-					cc.logger.Warn("tracestate", zap.Error(ErrInconsistentArrivingTValue))
+					sc.logger.Warn("tracestate", zap.Error(ErrInconsistentArrivingTValue))
 					otts.ClearTValue()
 				}
 			}
@@ -203,37 +217,53 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		}
 	}
 
+	common := samplerCommon{
+		strict: cfg.StrictRandomness,
+		logger: set.Logger,
+	}
+
 	if pct == 0 {
-		tp.sampler = &zeroProbability{}
+		tp.sampler = &zeroProbability{
+			inconsistentCommon: inconsistentCommon{
+				samplerCommon: common,
+			},
+		}
 	} else {
 		ratio := pct / 100
 		switch cfg.SamplerMode {
 		case HashSeed:
-			ts := &traceHasher{}
+			ts := &traceHasher{
+				inconsistentCommon: inconsistentCommon{
+					samplerCommon: common,
+				},
+			}
 
 			// Adjust sampling percentage on private so recalculations are avoided.
 			ts.hashScaledSamplerate = uint32(pct * percentageScaleFactor)
 			ts.hashSeed = cfg.HashSeed
-			ts.probability = ratio
+			ts.strict = cfg.StrictRandomness
 
+			if !ts.strict {
+				threshold, err := safeProbToThresholdWithPrecision(ratio, cfg.SamplingPrecision)
+				if err != nil {
+					return nil, err
+				}
+
+				ts.unstrictTValueEncoding = threshold.TValue()
+				ts.unstrictTValueThreshold = threshold
+			}
 			tp.sampler = ts
 		case Equalizing:
 			threshold, err := safeProbToThresholdWithPrecision(ratio, cfg.SamplingPrecision)
-			if err == sampling.ErrPrecisionUnderflow {
-				// Considered valid, any case where precision underflow
-				// occurs, use full-precision encoding.
-				threshold, err = sampling.ProbabilityToThreshold(ratio)
-			}
 			if err != nil {
 				return nil, err
 			}
 
 			tp.sampler = &traceEqualizer{
-				tValueEncoding:   threshold.TValue(),
-				traceIDThreshold: threshold,
+				tValueEncoding:  threshold.TValue(),
+				tValueThreshold: threshold,
 				consistentCommon: consistentCommon{
-					strict: cfg.StrictRandomness,
-					logger: set.Logger,
+					samplerCommon: common,
 				},
 			}
 		case Proportional:
@@ -241,8 +271,7 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 				ratio: ratio,
 				prec:  cfg.SamplingPrecision,
 				consistentCommon: consistentCommon{
-					strict: cfg.StrictRandomness,
-					logger: set.Logger,
+					samplerCommon: common,
 				},
 			}
 		}
@@ -257,34 +286,96 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-func (ts *traceHasher) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, error) {
-	// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
-	// with various different criteria to generate trace id and perhaps were already sampled without hashing.
-	// Hashing here prevents bias due to such systems.
+func (th *traceHasher) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, error) {
+	// In this mode, we do not assume the trace ID is random, unlike the
+	// other two modes (depending on strictness, and according to the OTel
+	// specification).
 	tid := s.TraceID()
-	decision := computeHash(tid[:], ts.hashSeed)&bitMaskHashBuckets < ts.hashScaledSamplerate
-	return decision, nil, nil
+	hashed := computeHash(tid[:], th.hashSeed) & bitMaskHashBuckets
+	should := hashed < th.hashScaledSamplerate
+
+	// In non-strict mode, insert T-value and R-value to mimic the operation
+	// of an OTel consistent probability sampler.
+	var retWts *sampling.W3CTraceState
+	if should && !th.strict {
+		// The body of this function does not change the return result,
+		// and errors are suppressed.
+		retWts = func() *sampling.W3CTraceState {
+			// The decision, supposedly independent of past decisions,
+			// can be incorporated into the decision, provided:
+			// - we are not strict,
+			_, wts, err := th.randomnessFromSpan(s)
+
+			// Since we're already being non-strict, and since we have an invalid
+			// tracestate, we'll just leave the tracestate alone.
+			if err != nil {
+				th.logger.Debug("invalid tracestate in hash_seed sampler, ignoring", zap.Error(err))
+				return nil
+			}
+			otts := wts.OTelValue()
+
+			// If the tracestate contains a proper R-value or T-value, we
+			// have to leave it alone.  The user should not be using this
+			// sampler mode if they are using specified forms of consistent
+			// sampling in OTel.
+			if _, has := otts.RValueRandomness(); has {
+				th.logger.Warn("tracestate has r-value, equalizing or proportional mode recommended")
+				return nil
+			}
+			if _, has := otts.TValueThreshold(); has {
+				th.logger.Warn("tracestate has t-value, equalizing or proportional mode recommended")
+				return nil
+			}
+
+			// When no sampling information is present, add an R-value
+			// and T-value to convey a sampling probability.
+			_ = otts.UpdateTValueWithSampling(th.unstrictTValueThreshold, th.unstrictTValueEncoding)
+
+			// Place the 32 bits we have into position 9-13, to
+			// form a (32-bits-significant) R-value.
+			var tid bytes.Buffer
+			// 8 bytes of 0s, these aren't used
+			_ = binary.Write(&tid, binary.BigEndian, uint64(0))
+
+			// count rejections
+			reject := uint64(numHashBuckets - hashed)
+
+			// only 14 bits of randomness are used
+			unusedBits := 32 - numHashBucketsLg2
+
+			// shift the most-significant bit into the
+			// most-significant position.
+			_ = binary.Write(&tid, binary.BigEndian, reject<<(24+unusedBits))
+
+			rnd := sampling.TraceIDToRandomness(pcommon.TraceID(tid.Bytes()))
+			otts.SetRValue(rnd)
+
+			// Return this to modify the span.
+			return wts
+		}()
+	}
+	return should, retWts, nil
 }
 
-func (ts *traceEqualizer) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, error) {
-	rnd, wts, err := ts.randomnessFromSpan(s)
+func (te *traceEqualizer) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, error) {
+	rnd, wts, err := te.randomnessFromSpan(s)
 	if err != nil {
 		return false, nil, err
 	}
 
-	should := ts.traceIDThreshold.ShouldSample(rnd)
+	should := te.tValueThreshold.ShouldSample(rnd)
 	if should {
 		// This error is unchecked by the rules of consistent probability sampling.
 		// If it was sampled correctly before, and it is still sampled after this
 		// decision, then the rejection threshold must be rising.
-		_ = wts.OTelValue().UpdateTValueWithSampling(ts.traceIDThreshold, ts.tValueEncoding)
+		_ = wts.OTelValue().UpdateTValueWithSampling(te.tValueThreshold, te.tValueEncoding)
 	}
 
 	return should, wts, err
 }
 
-func (ts *traceProportionalizer) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, error) {
-	rnd, wts, err := ts.randomnessFromSpan(s)
+func (tp *traceProportionalizer) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, error) {
+	rnd, wts, err := tp.randomnessFromSpan(s)
 	if err != nil {
 		return false, nil, err
 	}
@@ -297,7 +388,7 @@ func (ts *traceProportionalizer) decide(s ptrace.Span) (bool, *sampling.W3CTrace
 
 	// There is a potential here for the product probability to
 	// underflow, which is checked here.
-	threshold, err := safeProbToThresholdWithPrecision(incoming*ts.ratio, ts.prec)
+	threshold, err := safeProbToThresholdWithPrecision(incoming*tp.ratio, tp.prec)
 
 	if err == sampling.ErrProbabilityRange {
 		// Considered valid, a case where the sampling probability
@@ -312,7 +403,7 @@ func (ts *traceProportionalizer) decide(s ptrace.Span) (bool, *sampling.W3CTrace
 	should := threshold.ShouldSample(rnd)
 	if should {
 		// Note: an unchecked error here, because the threshold is
-		// larger by construction via `incoming*ts.ratio`, which was
+		// larger by construction via `incoming*tp.ratio`, which was
 		// already range-checked above.
 		_ = otts.UpdateTValueWithSampling(threshold, threshold.TValue())
 	}

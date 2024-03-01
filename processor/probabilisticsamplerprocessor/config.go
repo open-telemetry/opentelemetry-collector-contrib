@@ -41,14 +41,13 @@ type Config struct {
 
 	// SamplerMode selects the sampling behavior. Supported values:
 	//
-	// - "hash_seed_downsample": the legacy behavior of this
-	//    processor.  Using an FNV hash combined with the HashSeed
-	//    value, this sampler performs a non-consistent
-	//    probabilistic downsampling.  The number of spans output
-	//    is expected to equal SamplingPercentage (as a ratio)
-	//    times the number of spans inpout.  Statistically, a
-	//    span-to-metrics pipeline based on this mechanism may have
-	//    anomalous behavior.
+	// - "hash_seed": the legacy behavior of this processor.
+	//   Using an FNV hash combined with the HashSeed value, this
+	//   sampler performs a non-consistent probabilistic
+	//   downsampling.  The number of spans output is expected to
+	//   equal SamplingPercentage (as a ratio) times the number of
+	//   spans inpout, assuming good behavior from FNV and good
+	//   entropy in the hashed attributes or TraceID.
 	//
 	// - "equalizing": Using an OTel-specified consistent sampling
 	//   mechanism, this sampler selectively reduces the effective

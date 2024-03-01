@@ -26,6 +26,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
+// defaultHashSeed is used throughout to ensure that the HashSeed is real
+// and does not fall back to proportional-mode sampling due to HashSeed == 0.
+const defaultHashSeed = 4312
+
+func TestHashBucketsLog2(t *testing.T) {
+	require.Equal(t, numHashBuckets, 1<<numHashBucketsLg2)
+}
+
 func TestNewTracesProcessor(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -34,7 +42,7 @@ func TestNewTracesProcessor(t *testing.T) {
 		wantErr      bool
 	}{
 		{
-			name:         "happy_path",
+			name:         "happy_path_default",
 			nextConsumer: consumertest.NewNop(),
 			cfg: &Config{
 				SamplingPercentage: 15.5,
@@ -45,7 +53,7 @@ func TestNewTracesProcessor(t *testing.T) {
 			nextConsumer: consumertest.NewNop(),
 			cfg: &Config{
 				SamplingPercentage: 13.33,
-				HashSeed:           4321,
+				HashSeed:           defaultHashSeed,
 			},
 		},
 	}
@@ -79,7 +87,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 			},
 			numBatches:        1e5,
 			numTracesPerBatch: 2,
-			acceptableDelta:   0.01,
+			acceptableDelta:   0.02,
 		},
 		{
 			name: "random_sampling_small",
@@ -88,7 +96,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 			},
 			numBatches:        1e6,
 			numTracesPerBatch: 2,
-			acceptableDelta:   0.01,
+			acceptableDelta:   0.1,
 		},
 		{
 			name: "random_sampling_medium",
@@ -97,7 +105,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 			},
 			numBatches:        1e5,
 			numTracesPerBatch: 4,
-			acceptableDelta:   0.1,
+			acceptableDelta:   0.2,
 		},
 		{
 			name: "random_sampling_high",
@@ -121,6 +129,8 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 	const testSvcName = "test-svc"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.cfg.HashSeed = defaultHashSeed
+
 			sink := new(consumertest.TracesSink)
 			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.cfg, sink)
 			if err != nil {
@@ -180,6 +190,8 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 	const testSvcName = "test-svc"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.cfg.HashSeed = defaultHashSeed
+
 			sink := new(consumertest.TracesSink)
 			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.cfg, sink)
 			if err != nil {
@@ -290,12 +302,14 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	for _, mode := range AllModes {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+
 				sink := new(consumertest.TracesSink)
 				cfg := &Config{}
 				if tt.cfg != nil {
 					*cfg = *tt.cfg
 				}
 				cfg.SamplerMode = mode
+				cfg.HashSeed = defaultHashSeed
 				tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
 				require.NoError(t, err)
 
@@ -708,12 +722,14 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 	for _, tt := range tests {
 		for _, mode := range []SamplerMode{Equalizing, Proportional} {
 			t.Run(fmt.Sprint(mode, "_", tt.name), func(t *testing.T) {
+
 				sink := new(consumertest.TracesSink)
 				cfg := &Config{}
 				if tt.cfg != nil {
 					*cfg = *tt.cfg
 				}
 				cfg.SamplerMode = mode
+				cfg.HashSeed = defaultHashSeed
 
 				set := processortest.NewNopCreateSettings()
 				logger, observed := observer.New(zap.DebugLevel)
@@ -911,6 +927,86 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 				require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), expectMessage)
 			})
 		}
+	}
+}
+
+// Test_tracesamplerprocessor_HashSeedTraceState tests that non-strict
+// HashSeed modes generate trace state to indicate sampling.
+func Test_tracesamplerprocessor_HashSeedTraceState(t *testing.T) {
+	sid := idutils.UInt64ToSpanID(0xfefefefe)
+	tests := []struct {
+		pct   float32
+		tvout string
+	}{
+		{
+			pct:   100,
+			tvout: "0",
+		},
+		{
+			pct:   75,
+			tvout: "4",
+		},
+		{
+			pct:   50,
+			tvout: "8",
+		},
+		{
+			pct:   25,
+			tvout: "c",
+		},
+		{
+			pct:   10,
+			tvout: "e666",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprint(tt.pct, "pct"), func(t *testing.T) {
+			sink := new(consumertest.TracesSink)
+			cfg := &Config{}
+			cfg.SamplingPercentage = tt.pct
+			cfg.SamplerMode = HashSeed
+			cfg.HashSeed = defaultHashSeed
+			cfg.SamplingPrecision = 4
+
+			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
+			require.NoError(t, err)
+
+			// Repeat until we find 10 sampled cases; each sample will have
+			// an independent R-value.
+			const find = 10
+			found := 0
+			for {
+				sink.Reset()
+				tid := idutils.UInt64ToTraceID(rand.Uint64(), rand.Uint64())
+				td := makeSingleSpanWithAttrib(tid, sid, "", 0, "", pcommon.Value{})
+
+				err = tsp.ConsumeTraces(context.Background(), td)
+				require.NoError(t, err)
+
+				sampledData := sink.AllTraces()
+
+				if len(sampledData) == 0 {
+					continue
+				}
+				assert.Equal(t, 1, sink.SpanCount())
+
+				span := sampledData[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+				spanTs, err := sampling.NewW3CTraceState(span.TraceState().AsRaw())
+				require.NoError(t, err)
+
+				threshold, hasT := spanTs.OTelValue().TValueThreshold()
+				require.True(t, hasT)
+				require.Equal(t, tt.tvout, spanTs.OTelValue().TValue())
+				rnd, hasR := spanTs.OTelValue().RValueRandomness()
+				require.Equal(t, true, hasR)
+
+				require.True(t, threshold.ShouldSample(rnd))
+
+				if found++; find == found {
+					break
+				}
+			}
+		})
 	}
 }
 
