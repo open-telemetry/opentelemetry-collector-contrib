@@ -68,7 +68,7 @@ func (m *metricsClient) Count(name string, value int64, tags []string, _ float64
 }
 
 func (m *metricsClient) attributeFromTags(tags []string) attribute.Set {
-	attr := make([]attribute.KeyValue, 0, len(tags))
+	attr := make([]attribute.KeyValue, 0, len(tags) + 1)
 	attr = append(attr, attribute.KeyValue{
 		Key:   "source",
 		Value: attribute.StringValue(m.source),
