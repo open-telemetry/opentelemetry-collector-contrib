@@ -61,7 +61,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.95.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver v0.95.0 // indirect
@@ -104,7 +103,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.95.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.95.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.95.0 // indirect
@@ -218,17 +216,17 @@ require (
 	github.com/ClickHouse/ch-go v0.58.2 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.17.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.104 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.22.0 // indirect
-	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
-	github.com/DataDog/go-sqllexer v0.0.8 // indirect
+	github.com/DataDog/datadog-go/v5 v5.5.0 // indirect
+	github.com/DataDog/go-sqllexer v0.0.9 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.4 // indirect
@@ -260,27 +258,27 @@ require (
 	github.com/apache/thrift v0.19.0 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.50.17 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.25.0 // indirect
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.0 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.27.0 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.0 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.15.0 // indirect
+	github.com/aws/aws-sdk-go v1.50.27 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.25.2 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.1 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.27.4 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.4 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.15.2 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.59 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.0 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.2 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.0 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.23 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.26 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.14.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/kinesis v1.25.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/kinesis v1.27.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.19.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.22.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.27.0 // indirect
-	github.com/aws/smithy-go v1.20.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.20.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.23.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.28.1 // indirect
+	github.com/aws/smithy-go v1.20.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
@@ -381,7 +379,7 @@ require (
 	github.com/grobie/gomemcache v0.0.0-20230213081705-239240bbc445 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
-	github.com/haimrubinstein/go-syslog/v3 v3.0.3 // indirect
+	github.com/haimrubinstein/go-syslog/v3 v3.0.0 // indirect
 	github.com/hashicorp/consul/api v1.27.0 // indirect
 	github.com/hashicorp/cronexpr v1.1.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -452,7 +450,7 @@ require (
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/microsoft/ApplicationInsights-Go v0.4.4 // indirect
-	github.com/microsoft/go-mssqldb v1.6.0 // indirect
+	github.com/microsoft/go-mssqldb v1.7.0 // indirect
 	github.com/miekg/dns v1.1.56 // indirect
 	github.com/mistifyio/go-zfs v2.1.2-0.20190413222219-f784269be439+incompatible // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -580,7 +578,7 @@ require (
 	github.com/signalfx/sapm-proto v0.14.0 // indirect
 	github.com/sijms/go-ora/v2 v2.8.8 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/snowflakedb/gosnowflake v1.7.2 // indirect
+	github.com/snowflakedb/gosnowflake v1.8.0 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
@@ -679,7 +677,7 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.19.0 // indirect
+	golang.org/x/crypto v0.20.0 // indirect
 	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3 // indirect
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/oauth2 v0.17.0 // indirect
@@ -847,8 +845,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/head
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension => ../../extension/healthcheckextension
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder => ../../extension/httpforwarder
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension => ../../extension/oauth2clientauthextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../../extension/observer
@@ -926,8 +922,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/reso
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor => ../../processor/resourceprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor => ../../processor/routingprocessor/
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor => ../../processor/spanmetricsprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor => ../../processor/spanprocessor/
 

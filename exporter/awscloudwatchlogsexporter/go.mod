@@ -3,12 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsclo
 go 1.21
 
 require (
-	github.com/aws/aws-sdk-go v1.50.17
+	github.com/aws/aws-sdk-go v1.50.27
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.95.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.95.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.95.0
 	go.opentelemetry.io/collector/config/configretry v0.95.0
@@ -68,16 +67,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/a
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs => ../../internal/aws/cwlogs
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
-
 retract (
 	v0.76.2
 	v0.76.1
 	v0.65.0
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest

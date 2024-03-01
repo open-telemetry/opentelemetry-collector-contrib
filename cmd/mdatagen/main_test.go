@@ -11,9 +11,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/receiver/receivertest"
-
-	md "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen/internal/metadata"
 )
 
 func TestRunContents(t *testing.T) {
@@ -412,11 +409,4 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 			require.Equal(t, tt.expected, string(actual))
 		})
 	}
-}
-
-// TestGenerated verifies that the internal/metadata API is generated correctly.
-func TestGenerated(t *testing.T) {
-	mb := md.NewMetricsBuilder(md.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
-	m := mb.Emit()
-	require.Equal(t, 0, m.ResourceMetrics().Len())
 }

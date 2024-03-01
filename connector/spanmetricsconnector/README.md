@@ -5,7 +5,7 @@
 | ------------- |-----------|
 | Distributions | [contrib], [grafana], [liatrio], [splunk], [sumo] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Fspanmetrics%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Fspanmetrics) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Fspanmetrics%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Fspanmetrics) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@portertech](https://www.github.com/portertech) \| Seeking more code owners! |
 | Emeritus      | [@albertteoh](https://www.github.com/albertteoh) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
@@ -62,7 +62,7 @@ across all spans:
 
 ## Span to Metrics processor to Span to metrics connector
 
-The spanmetrics connector is a port of the [spanmetrics](../../processor/spanmetricsprocessor/README.md) processor, but with multiple improvements
+The spanmetrics connector is a port of the [spanmetrics](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/processor/spanmetricsprocessor/v0.95.0/processor/spanmetricsprocessor/README.md) processor, but with multiple improvements
 and breaking changes. It was done to bring the `spanmetrics` connector closer to the OpenTelemetry
 specification and make the component agnostic to exporters logic. The `spanmetrics` processor
 essentially was mixing the OTel with Prometheus conventions by using the OTel data model and
