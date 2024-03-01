@@ -57,16 +57,16 @@ func defaultResponder(startTimestamp *time.Time) responderFunc {
 
 func componentHealthResponder(
 	startTimestamp *time.Time,
-	settings *common.ComponentHealthSettings,
+	config *common.ComponentHealthConfig,
 ) responderFunc {
 	healthyFunc := func(now *time.Time) func(status.Event) bool {
 		return func(ev status.Event) bool {
 			if ev.Status() == component.StatusPermanentError {
-				return !settings.IncludePermanent
+				return !config.IncludePermanent
 			}
 
-			if ev.Status() == component.StatusRecoverableError && settings.IncludeRecoverable {
-				return now.Before(ev.Timestamp().Add(settings.RecoveryDuration))
+			if ev.Status() == component.StatusRecoverableError && config.IncludeRecoverable {
+				return now.Before(ev.Timestamp().Add(config.RecoveryDuration))
 			}
 
 			return ev.Status() != component.StatusFatalError
@@ -134,10 +134,10 @@ func legacyDefaultResponder(startTimestamp *time.Time) responderFunc {
 	}
 }
 
-func legacyCustomResponder(settings *ResponseBodySettings) responderFunc {
+func legacyCustomResponder(config *ResponseBodyConfig) responderFunc {
 	codeToMsgMap := map[int][]byte{
-		http.StatusOK:                 []byte(settings.Healthy),
-		http.StatusServiceUnavailable: []byte(settings.Unhealthy),
+		http.StatusOK:                 []byte(config.Healthy),
+		http.StatusServiceUnavailable: []byte(config.Unhealthy),
 	}
 	return func(st *status.AggregateStatus, w http.ResponseWriter) {
 		code := legacyResponseCodes[st.Status()]

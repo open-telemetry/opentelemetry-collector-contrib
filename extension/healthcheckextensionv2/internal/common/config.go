@@ -5,12 +5,12 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import "time"
 
-type ComponentHealthSettings struct {
+type ComponentHealthConfig struct {
 	IncludePermanent   bool          `mapstructure:"include_permanent_errors"`
 	IncludeRecoverable bool          `mapstructure:"include_recoverable_errors"`
 	RecoveryDuration   time.Duration `mapstructure:"recovery_duration"`
 }
 
-func (c ComponentHealthSettings) Enabled() bool {
+func (c ComponentHealthConfig) Enabled() bool {
 	return c.IncludePermanent || c.IncludeRecoverable
 }

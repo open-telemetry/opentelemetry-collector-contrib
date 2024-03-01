@@ -18,6 +18,9 @@ var (
 	extsIDMap = map[component.ID]struct{}{extsID: {}}
 )
 
+// Note: this interface had to be introduced because we need to be able to rewrite the
+// timestamps of some events during aggregation. The implementation in core doesn't currently
+// allow this, but this interface provides a workaround.
 type Event interface {
 	Status() component.Status
 	Err() error
