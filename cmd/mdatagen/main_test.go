@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 )
 
 func TestRunContents(t *testing.T) {
@@ -129,7 +130,7 @@ func TestInlineReplace(t *testing.T) {
 		outputFile     string
 		componentClass string
 		warnings       []string
-		stability      map[string][]string
+		stability      map[component.StabilityLevel][]string
 		distros        []string
 		codeowners     *Codeowners
 	}{
@@ -258,8 +259,11 @@ Some warning there.
 Some info about a component
 `,
 			outputFile: "readme_with_multiple_signals.md",
-			stability:  map[string][]string{"beta": {"metrics"}, "alpha": {"logs"}},
-			distros:    []string{"contrib"},
+			stability: map[component.StabilityLevel][]string{
+				component.StabilityLevelBeta:  {"metrics"},
+				component.StabilityLevelAlpha: {"logs"},
+			},
+			distros: []string{"contrib"},
 		},
 		{
 			name: "readme with cmd class",
@@ -270,15 +274,18 @@ Some info about a component
 
 Some info about a component
 `,
-			outputFile:     "readme_with_cmd_class.md",
-			stability:      map[string][]string{"beta": {"metrics"}, "alpha": {"logs"}},
+			outputFile: "readme_with_cmd_class.md",
+			stability: map[component.StabilityLevel][]string{
+				component.StabilityLevelBeta:  {"metrics"},
+				component.StabilityLevelAlpha: {"logs"},
+			},
 			componentClass: "cmd",
 			distros:        []string{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			stability := map[string][]string{"beta": {"metrics"}}
+			stability := map[component.StabilityLevel][]string{component.StabilityLevelBeta: {"metrics"}}
 			if len(tt.stability) > 0 {
 				stability = tt.stability
 			}
@@ -327,7 +334,9 @@ func TestGenerateStatusMetadata(t *testing.T) {
 			md: metadata{
 				Type: "foo",
 				Status: &Status{
-					Stability:     map[string][]string{"beta": {"metrics"}},
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"metrics"},
+					},
 					Distributions: []string{"contrib"},
 					Class:         "receiver",
 				},
@@ -364,7 +373,9 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 			md: metadata{
 				Type: "foo",
 				Status: &Status{
-					Stability:     map[string][]string{"alpha": {"metrics"}},
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelAlpha: {"metrics"},
+					},
 					Distributions: []string{"contrib"},
 					Class:         "receiver",
 				},

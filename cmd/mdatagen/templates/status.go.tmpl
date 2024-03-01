@@ -17,7 +17,7 @@ var (
 const (
 	{{- range $stability, $signals := .Status.Stability }}
 	{{- range $signal := $signals }}
-	{{ toCamelCase $signal }}Stability = component.StabilityLevel{{ casesTitle $stability }}
+	{{ toCamelCase $signal }}Stability = component.StabilityLevel{{ $stability.String }}
 	{{- end }}
 	{{- end }}
 )
