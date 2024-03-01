@@ -7,6 +7,3 @@ status:
   distributions: [contrib, splunk]
   codeowners:
     active: [zpzhuSplunk, splunkericl]
-
-tests:
-  config:

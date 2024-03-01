@@ -4,11 +4,11 @@ package datadog
 
 import (
 	"context"
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/metrics"
+	"github.com/DataDog/datadog-agent/pkg/trace/timing"
+	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
@@ -17,23 +17,12 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
-func setupMetricClient() (*metric.ManualReader, metrics.StatsClient, *metric.MeterProvider) {
-	initializeOnce = sync.Once{}
+func setupMetricClient() (*metric.ManualReader, statsd.ClientInterface, timing.Reporter) {
 	reader := metric.NewManualReader()
 	meterProvider := metric.NewMeterProvider(metric.WithReader(reader))
 	metricClient := InitializeMetricClient(meterProvider)
-	return reader, metricClient, meterProvider
-}
-
-func TestNewMetricClient(t *testing.T) {
-	_, metricClient, _ := setupMetricClient()
-	assert.Equal(t, metrics.Client, metricClient)
-}
-
-func TestNewMetricClientComplex(t *testing.T) {
-	_, _, meterProvider := setupMetricClient()
-	metricClient2 := InitializeMetricClient(meterProvider)
-	assert.Equal(t, metrics.Client, metricClient2)
+	timingReporter := timing.New(metricClient)
+	return reader, metricClient, timingReporter
 }
 
 func TestGauge(t *testing.T) {
