@@ -37,8 +37,12 @@ func (extension *solarwindsapmSettingsExtension) Start(ctx context.Context, _ co
 	ctx, extension.cancel = context.WithCancel(ctx)
 	configOk := validateSolarwindsApmSettingsExtensionConfiguration(extension.config, extension.logger)
 	if configOk {
-		extension.conn, _ = grpc.Dial(extension.config.Endpoint, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
-		extension.logger.Info("Dailed to " + extension.config.Endpoint)
+		var err error
+		extension.conn, err = grpc.Dial(extension.config.Endpoint, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+		if err != nil {
+			return err
+		}
+		extension.logger.Info("Dailed to endpoint", zap.String("endpoint", extension.config.Endpoint))
 		extension.client = collectorpb.NewTraceCollectorClient(extension.conn)
 		go func() {
 			ticker := newTicker(extension.config.Interval)
