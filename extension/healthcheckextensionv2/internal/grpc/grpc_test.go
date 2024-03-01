@@ -29,8 +29,8 @@ import (
 
 func TestCheck(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	settings := &Settings{
-		GRPCServerSettings: configgrpc.GRPCServerSettings{
+	config := &Config{
+		ServerConfig: configgrpc.ServerConfig{
 			NetAddr: confignet.NetAddr{
 				Endpoint:  addr,
 				Transport: "tcp",
@@ -51,13 +51,13 @@ func TestCheck(t *testing.T) {
 
 	tests := []struct {
 		name                    string
-		settings                *Settings
-		componentHealthSettings *common.ComponentHealthSettings
+		config                  *Config
+		componentHealthSettings *common.ComponentHealthConfig
 		teststeps               []teststep
 	}{
 		{
-			name:     "exclude recoverable and permanent errors",
-			settings: settings,
+			name:   "exclude recoverable and permanent errors",
+			config: config,
 			teststeps: []teststep{
 				{
 					service:        "",
@@ -203,9 +203,9 @@ func TestCheck(t *testing.T) {
 			},
 		},
 		{
-			name:     "include recoverable and exclude permanent errors",
-			settings: settings,
-			componentHealthSettings: &common.ComponentHealthSettings{
+			name:   "include recoverable and exclude permanent errors",
+			config: config,
+			componentHealthSettings: &common.ComponentHealthConfig{
 				IncludePermanent:   false,
 				IncludeRecoverable: true,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -379,9 +379,9 @@ func TestCheck(t *testing.T) {
 			},
 		},
 		{
-			name:     "include permanent and exclude recoverable errors",
-			settings: settings,
-			componentHealthSettings: &common.ComponentHealthSettings{
+			name:   "include permanent and exclude recoverable errors",
+			config: config,
+			componentHealthSettings: &common.ComponentHealthConfig{
 				IncludePermanent: true,
 			},
 			teststeps: []teststep{
@@ -534,9 +534,9 @@ func TestCheck(t *testing.T) {
 			},
 		},
 		{
-			name:     "include permanent and recoverable errors",
-			settings: settings,
-			componentHealthSettings: &common.ComponentHealthSettings{
+			name:   "include permanent and recoverable errors",
+			config: config,
+			componentHealthSettings: &common.ComponentHealthConfig{
 				IncludePermanent:   true,
 				IncludeRecoverable: true,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -692,7 +692,7 @@ func TestCheck(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			server = NewServer(
-				settings,
+				config,
 				tc.componentHealthSettings,
 				componenttest.NewNopTelemetrySettings(),
 				status.NewAggregator(testhelpers.ErrPriority(tc.componentHealthSettings)),
@@ -746,8 +746,8 @@ func TestCheck(t *testing.T) {
 
 func TestWatch(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	settings := &Settings{
-		GRPCServerSettings: configgrpc.GRPCServerSettings{
+	config := &Config{
+		ServerConfig: configgrpc.ServerConfig{
 			NetAddr: confignet.NetAddr{
 				Endpoint:  addr,
 				Transport: "tcp",
@@ -771,13 +771,13 @@ func TestWatch(t *testing.T) {
 
 	tests := []struct {
 		name                    string
-		settings                *Settings
-		componentHealthSettings *common.ComponentHealthSettings
+		config                  *Config
+		componentHealthSettings *common.ComponentHealthConfig
 		teststeps               []teststep
 	}{
 		{
-			name:     "exclude recoverable and permanent errors",
-			settings: settings,
+			name:   "exclude recoverable and permanent errors",
+			config: config,
 			teststeps: []teststep{
 				{
 					service:        "",
@@ -893,9 +893,9 @@ func TestWatch(t *testing.T) {
 			},
 		},
 		{
-			name:     "include recoverable and exclude permanent errors",
-			settings: settings,
-			componentHealthSettings: &common.ComponentHealthSettings{
+			name:   "include recoverable and exclude permanent errors",
+			config: config,
+			componentHealthSettings: &common.ComponentHealthConfig{
 				IncludePermanent:   false,
 				IncludeRecoverable: true,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -1005,9 +1005,9 @@ func TestWatch(t *testing.T) {
 			},
 		},
 		{
-			name:     "exclude permanent errors",
-			settings: settings,
-			componentHealthSettings: &common.ComponentHealthSettings{
+			name:   "exclude permanent errors",
+			config: config,
+			componentHealthSettings: &common.ComponentHealthConfig{
 				IncludePermanent:   false,
 				IncludeRecoverable: true,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -1087,9 +1087,9 @@ func TestWatch(t *testing.T) {
 			},
 		},
 		{
-			name:     "include recoverable 0s recovery duration",
-			settings: settings,
-			componentHealthSettings: &common.ComponentHealthSettings{
+			name:   "include recoverable 0s recovery duration",
+			config: config,
+			componentHealthSettings: &common.ComponentHealthConfig{
 				IncludePermanent:   false,
 				IncludeRecoverable: true,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -1218,9 +1218,9 @@ func TestWatch(t *testing.T) {
 			},
 		},
 		{
-			name:     "include permanent and exclude recoverable errors",
-			settings: settings,
-			componentHealthSettings: &common.ComponentHealthSettings{
+			name:   "include permanent and exclude recoverable errors",
+			config: config,
+			componentHealthSettings: &common.ComponentHealthConfig{
 				IncludePermanent:   true,
 				IncludeRecoverable: false,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -1328,9 +1328,9 @@ func TestWatch(t *testing.T) {
 			},
 		},
 		{
-			name:     "exclude recoverable errors",
-			settings: settings,
-			componentHealthSettings: &common.ComponentHealthSettings{
+			name:   "exclude recoverable errors",
+			config: config,
+			componentHealthSettings: &common.ComponentHealthConfig{
 				IncludePermanent:   true,
 				IncludeRecoverable: false,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -1410,9 +1410,9 @@ func TestWatch(t *testing.T) {
 			},
 		},
 		{
-			name:     "include recoverable and permanent errors",
-			settings: settings,
-			componentHealthSettings: &common.ComponentHealthSettings{
+			name:   "include recoverable and permanent errors",
+			config: config,
+			componentHealthSettings: &common.ComponentHealthConfig{
 				IncludePermanent:   true,
 				IncludeRecoverable: true,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -1530,7 +1530,7 @@ func TestWatch(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			server = NewServer(
-				settings,
+				config,
 				tc.componentHealthSettings,
 				componenttest.NewNopTelemetrySettings(),
 				status.NewAggregator(testhelpers.ErrPriority(tc.componentHealthSettings)),

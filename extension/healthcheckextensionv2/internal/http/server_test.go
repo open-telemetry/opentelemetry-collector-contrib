@@ -56,22 +56,22 @@ func TestStatus(t *testing.T) {
 	metrics := testhelpers.NewPipelineMetadata("metrics")
 
 	tests := []struct {
-		name                    string
-		settings                *Settings
-		legacySettings          LegacySettings
-		componentHealthSettings *common.ComponentHealthSettings
-		pipelines               map[string]*testhelpers.PipelineMetadata
-		teststeps               []teststep
+		name                  string
+		config                *Config
+		legacyConfig          LegacyConfig
+		componentHealthConfig *common.ComponentHealthConfig
+		pipelines             map[string]*testhelpers.PipelineMetadata
+		teststeps             []teststep
 	}{
 		{
-			name:           "exclude recoverable and permanent errors",
-			legacySettings: LegacySettings{UseV2Settings: true},
-			settings: &Settings{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+			name:         "exclude recoverable and permanent errors",
+			legacyConfig: LegacyConfig{UseV2: true},
+			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
-				Config: PathSettings{Enabled: false},
-				Status: PathSettings{
+				Config: PathConfig{Enabled: false},
+				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
 				},
@@ -302,14 +302,14 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name:           "exclude recoverable and permanent errors - verbose",
-			legacySettings: LegacySettings{UseV2Settings: true},
-			settings: &Settings{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+			name:         "exclude recoverable and permanent errors - verbose",
+			legacyConfig: LegacyConfig{UseV2: true},
+			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
-				Config: PathSettings{Enabled: false},
-				Status: PathSettings{
+				Config: PathConfig{Enabled: false},
+				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
 				},
@@ -1023,19 +1023,19 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name:           "include recoverable and exclude permanent errors",
-			legacySettings: LegacySettings{UseV2Settings: true},
-			settings: &Settings{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+			name:         "include recoverable and exclude permanent errors",
+			legacyConfig: LegacyConfig{UseV2: true},
+			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
-				Config: PathSettings{Enabled: false},
-				Status: PathSettings{
+				Config: PathConfig{Enabled: false},
+				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
 				},
 			},
-			componentHealthSettings: &common.ComponentHealthSettings{
+			componentHealthConfig: &common.ComponentHealthConfig{
 				IncludePermanent:   false,
 				IncludeRecoverable: true,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -1268,19 +1268,19 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name:           "include recoverable and exclude permanent errors - verbose",
-			legacySettings: LegacySettings{UseV2Settings: true},
-			settings: &Settings{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+			name:         "include recoverable and exclude permanent errors - verbose",
+			legacyConfig: LegacyConfig{UseV2: true},
+			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
-				Config: PathSettings{Enabled: false},
-				Status: PathSettings{
+				Config: PathConfig{Enabled: false},
+				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
 				},
 			},
-			componentHealthSettings: &common.ComponentHealthSettings{
+			componentHealthConfig: &common.ComponentHealthConfig{
 				IncludePermanent:   false,
 				IncludeRecoverable: true,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -1881,19 +1881,19 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name:           "include permanent and exclude recoverable errors",
-			legacySettings: LegacySettings{UseV2Settings: true},
-			settings: &Settings{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+			name:         "include permanent and exclude recoverable errors",
+			legacyConfig: LegacyConfig{UseV2: true},
+			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
-				Config: PathSettings{Enabled: false},
-				Status: PathSettings{
+				Config: PathConfig{Enabled: false},
+				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
 				},
 			},
-			componentHealthSettings: &common.ComponentHealthSettings{
+			componentHealthConfig: &common.ComponentHealthConfig{
 				IncludePermanent: true,
 			},
 			teststeps: []teststep{
@@ -2123,19 +2123,19 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name:           "include permanent and exclude recoverable errors - verbose",
-			legacySettings: LegacySettings{UseV2Settings: true},
-			settings: &Settings{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+			name:         "include permanent and exclude recoverable errors - verbose",
+			legacyConfig: LegacyConfig{UseV2: true},
+			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
-				Config: PathSettings{Enabled: false},
-				Status: PathSettings{
+				Config: PathConfig{Enabled: false},
+				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
 				},
 			},
-			componentHealthSettings: &common.ComponentHealthSettings{
+			componentHealthConfig: &common.ComponentHealthConfig{
 				IncludePermanent: true,
 			},
 			teststeps: []teststep{
@@ -2734,19 +2734,19 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name:           "include permanent and recoverable errors",
-			legacySettings: LegacySettings{UseV2Settings: true},
-			settings: &Settings{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+			name:         "include permanent and recoverable errors",
+			legacyConfig: LegacyConfig{UseV2: true},
+			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
-				Config: PathSettings{Enabled: false},
-				Status: PathSettings{
+				Config: PathConfig{Enabled: false},
+				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
 				},
 			},
-			componentHealthSettings: &common.ComponentHealthSettings{
+			componentHealthConfig: &common.ComponentHealthConfig{
 				IncludePermanent:   true,
 				IncludeRecoverable: true,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -2979,19 +2979,19 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name:           "include permanent and recoverable errors - verbose",
-			legacySettings: LegacySettings{UseV2Settings: true},
-			settings: &Settings{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+			name:         "include permanent and recoverable errors - verbose",
+			legacyConfig: LegacyConfig{UseV2: true},
+			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
-				Config: PathSettings{Enabled: false},
-				Status: PathSettings{
+				Config: PathConfig{Enabled: false},
+				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
 				},
 			},
-			componentHealthSettings: &common.ComponentHealthSettings{
+			componentHealthConfig: &common.ComponentHealthConfig{
 				IncludePermanent:   true,
 				IncludeRecoverable: true,
 				RecoveryDuration:   2 * time.Millisecond,
@@ -3592,14 +3592,14 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name:           "pipeline non-existent",
-			legacySettings: LegacySettings{UseV2Settings: true},
-			settings: &Settings{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+			name:         "pipeline non-existent",
+			legacyConfig: LegacyConfig{UseV2: true},
+			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
-				Config: PathSettings{Enabled: false},
-				Status: PathSettings{
+				Config: PathConfig{Enabled: false},
+				Status: PathConfig{
 					Enabled: true,
 					Path:    "/status",
 				},
@@ -3620,14 +3620,14 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name:           "status disabled",
-			legacySettings: LegacySettings{UseV2Settings: true},
-			settings: &Settings{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+			name:         "status disabled",
+			legacyConfig: LegacyConfig{UseV2: true},
+			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
-				Config: PathSettings{Enabled: false},
-				Status: PathSettings{
+				Config: PathConfig{Enabled: false},
+				Status: PathConfig{
 					Enabled: false,
 				},
 			},
@@ -3639,8 +3639,8 @@ func TestStatus(t *testing.T) {
 		},
 		{
 			name: "legacy - default response",
-			legacySettings: LegacySettings{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+			legacyConfig: LegacyConfig{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				Path: "/status",
@@ -3758,12 +3758,12 @@ func TestStatus(t *testing.T) {
 		},
 		{
 			name: "legacy - custom response",
-			legacySettings: LegacySettings{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+			legacyConfig: LegacyConfig{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				Path:         "/status",
-				ResponseBody: &ResponseBodySettings{Healthy: "ALL OK", Unhealthy: "NOT OK"},
+				ResponseBody: &ResponseBodyConfig{Healthy: "ALL OK", Unhealthy: "NOT OK"},
 			},
 			teststeps: []teststep{
 				{
@@ -3881,21 +3881,21 @@ func TestStatus(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			server = NewServer(
-				tc.settings,
-				tc.legacySettings,
-				tc.componentHealthSettings,
+				tc.config,
+				tc.legacyConfig,
+				tc.componentHealthConfig,
 				componenttest.NewNopTelemetrySettings(),
-				status.NewAggregator(testhelpers.ErrPriority(tc.componentHealthSettings)),
+				status.NewAggregator(testhelpers.ErrPriority(tc.componentHealthConfig)),
 			)
 
 			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() { require.NoError(t, server.Shutdown(context.Background())) }()
 
 			var url string
-			if tc.legacySettings.UseV2Settings {
-				url = fmt.Sprintf("http://%s%s", tc.settings.Endpoint, tc.settings.Status.Path)
+			if tc.legacyConfig.UseV2 {
+				url = fmt.Sprintf("http://%s%s", tc.config.Endpoint, tc.config.Status.Path)
 			} else {
-				url = fmt.Sprintf("http://%s%s", tc.legacySettings.Endpoint, tc.legacySettings.Path)
+				url = fmt.Sprintf("http://%s%s", tc.legacyConfig.Endpoint, tc.legacyConfig.Path)
 			}
 
 			client := &http.Client{}
@@ -3999,22 +3999,22 @@ func TestConfig(t *testing.T) {
 
 	for _, tc := range []struct {
 		name               string
-		settings           *Settings
+		config             *Config
 		setup              func()
 		expectedStatusCode int
 		expectedBody       []byte
 	}{
 		{
 			name: "config not notified",
-			settings: &Settings{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
-				Config: PathSettings{
+				Config: PathConfig{
 					Enabled: true,
 					Path:    "/config",
 				},
-				Status: PathSettings{
+				Status: PathConfig{
 					Enabled: false,
 				},
 			},
@@ -4023,15 +4023,15 @@ func TestConfig(t *testing.T) {
 		},
 		{
 			name: "config notified",
-			settings: &Settings{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
-				Config: PathSettings{
+				Config: PathConfig{
 					Enabled: true,
 					Path:    "/config",
 				},
-				Status: PathSettings{
+				Status: PathConfig{
 					Enabled: false,
 				},
 			},
@@ -4043,14 +4043,14 @@ func TestConfig(t *testing.T) {
 		},
 		{
 			name: "config disabled",
-			settings: &Settings{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
-				Config: PathSettings{
+				Config: PathConfig{
 					Enabled: false,
 				},
-				Status: PathSettings{
+				Status: PathConfig{
 					Enabled: false,
 				},
 			},
@@ -4060,9 +4060,9 @@ func TestConfig(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			server = NewServer(
-				tc.settings,
-				LegacySettings{UseV2Settings: true},
-				&common.ComponentHealthSettings{},
+				tc.config,
+				LegacyConfig{UseV2: true},
+				&common.ComponentHealthConfig{},
 				componenttest.NewNopTelemetrySettings(),
 				status.NewAggregator(status.PriorityPermanent),
 			)
@@ -4071,7 +4071,7 @@ func TestConfig(t *testing.T) {
 			defer func() { require.NoError(t, server.Shutdown(context.Background())) }()
 
 			client := &http.Client{}
-			url := fmt.Sprintf("http://%s%s", tc.settings.Endpoint, tc.settings.Config.Path)
+			url := fmt.Sprintf("http://%s%s", tc.config.Endpoint, tc.config.Config.Path)
 
 			if tc.setup != nil {
 				tc.setup()

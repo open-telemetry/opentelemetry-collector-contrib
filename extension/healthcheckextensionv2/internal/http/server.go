@@ -24,7 +24,7 @@ import (
 
 type Server struct {
 	telemetry      component.TelemetrySettings
-	httpSettings   confighttp.HTTPServerSettings
+	httpConfig     confighttp.ServerConfig
 	httpServer     *http.Server
 	mux            *http.ServeMux
 	responder      responder
@@ -38,9 +38,9 @@ var _ component.Component = (*Server)(nil)
 var _ extension.ConfigWatcher = (*Server)(nil)
 
 func NewServer(
-	settings *Settings,
-	legacySettings LegacySettings,
-	componentHealthSettings *common.ComponentHealthSettings,
+	config *Config,
+	legacyConfig LegacyConfig,
+	componentHealthConfig *common.ComponentHealthConfig,
 	telemetry component.TelemetrySettings,
 	aggregator *status.Aggregator,
 ) *Server {
@@ -52,27 +52,27 @@ func NewServer(
 		doneCh:     make(chan struct{}),
 	}
 
-	if legacySettings.UseV2Settings {
-		srv.httpSettings = settings.HTTPServerSettings
-		if componentHealthSettings != nil {
-			srv.responder = componentHealthResponder(&now, componentHealthSettings)
+	if legacyConfig.UseV2 {
+		srv.httpConfig = config.ServerConfig
+		if componentHealthConfig != nil {
+			srv.responder = componentHealthResponder(&now, componentHealthConfig)
 		} else {
 			srv.responder = defaultResponder(&now)
 		}
-		if settings.Status.Enabled {
-			srv.mux.Handle(settings.Status.Path, srv.statusHandler())
+		if config.Status.Enabled {
+			srv.mux.Handle(config.Status.Path, srv.statusHandler())
 		}
-		if settings.Config.Enabled {
-			srv.mux.Handle(settings.Config.Path, srv.configHandler())
+		if config.Config.Enabled {
+			srv.mux.Handle(config.Config.Path, srv.configHandler())
 		}
 	} else {
-		srv.httpSettings = legacySettings.HTTPServerSettings
-		if legacySettings.ResponseBody != nil {
-			srv.responder = legacyCustomResponder(legacySettings.ResponseBody)
+		srv.httpConfig = legacyConfig.ServerConfig
+		if legacyConfig.ResponseBody != nil {
+			srv.responder = legacyCustomResponder(legacyConfig.ResponseBody)
 		} else {
 			srv.responder = legacyDefaultResponder(&now)
 		}
-		srv.mux.Handle(legacySettings.Path, srv.statusHandler())
+		srv.mux.Handle(legacyConfig.Path, srv.statusHandler())
 	}
 
 	return srv
@@ -83,14 +83,14 @@ func (s *Server) Start(_ context.Context, host component.Host) error {
 	var err error
 	s.startTimestamp = time.Now()
 
-	s.httpServer, err = s.httpSettings.ToServer(host, s.telemetry, s.mux)
+	s.httpServer, err = s.httpConfig.ToServer(host, s.telemetry, s.mux)
 	if err != nil {
 		return err
 	}
 
-	ln, err := s.httpSettings.ToListener()
+	ln, err := s.httpConfig.ToListener()
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", s.httpSettings.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", s.httpConfig.Endpoint, err)
 	}
 
 	go func() {

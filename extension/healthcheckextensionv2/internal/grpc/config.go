@@ -5,6 +5,6 @@ package grpc // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import "go.opentelemetry.io/collector/config/configgrpc"
 
-type Settings struct {
-	configgrpc.GRPCServerSettings `mapstructure:",squash"`
+type Config struct {
+	configgrpc.ServerConfig `mapstructure:",squash"`
 }

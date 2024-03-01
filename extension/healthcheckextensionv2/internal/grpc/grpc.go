@@ -59,12 +59,12 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 			switch {
 			case st == nil:
 				sst = healthpb.HealthCheckResponse_SERVICE_UNKNOWN
-			case s.componentHealthSettings.IncludeRecoverable &&
-				s.componentHealthSettings.RecoveryDuration > 0 &&
+			case s.componentHealthConfig.IncludeRecoverable &&
+				s.componentHealthConfig.RecoveryDuration > 0 &&
 				st.Status() == component.StatusRecoverableError:
 				if failureTimer == nil {
 					failureTimer = time.AfterFunc(
-						s.componentHealthSettings.RecoveryDuration,
+						s.componentHealthConfig.RecoveryDuration,
 						func() { failureCh <- struct{}{} },
 					)
 				}
@@ -116,13 +116,13 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 func (s *Server) toServingStatus(
 	ev status.Event,
 ) healthpb.HealthCheckResponse_ServingStatus {
-	if s.componentHealthSettings.IncludeRecoverable &&
+	if s.componentHealthConfig.IncludeRecoverable &&
 		ev.Status() == component.StatusRecoverableError &&
-		time.Now().After(ev.Timestamp().Add(s.componentHealthSettings.RecoveryDuration)) {
+		time.Now().After(ev.Timestamp().Add(s.componentHealthConfig.RecoveryDuration)) {
 		return healthpb.HealthCheckResponse_NOT_SERVING
 	}
 
-	if s.componentHealthSettings.IncludePermanent && ev.Status() == component.StatusPermanentError {
+	if s.componentHealthConfig.IncludePermanent && ev.Status() == component.StatusPermanentError {
 		return healthpb.HealthCheckResponse_NOT_SERVING
 	}
 

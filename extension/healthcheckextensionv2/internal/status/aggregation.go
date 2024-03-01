@@ -9,7 +9,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// statusEvent contains a status and timestamp, and can contain an error
+// statusEvent contains a status and timestamp, and can contain an error. Note:
+// this is duplicated from core because we need to be able to "rewrite" the
+// timestamps of some events during aggregation.
 type statusEvent struct {
 	status    component.Status
 	err       error

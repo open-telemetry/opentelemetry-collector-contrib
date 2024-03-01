@@ -17,13 +17,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/grpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/http"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 )
 
 const (
-	// Use 0.0.0.0 to make the health check endpoint accessible
-	// in container orchestration environments like Kubernetes.
-	defaultGRPCEndpoint = "0.0.0.0:13132"
-	defaultHTTPEndpoint = "0.0.0.0:13133"
+	defaultGRPCPort = 13132
+	defaultHTTPPort = 13133
 )
 
 // NewFactory creates a factory for HealthCheck extension.
@@ -38,29 +37,29 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		LegacySettings: http.LegacySettings{
-			HTTPServerSettings: confighttp.HTTPServerSettings{
-				Endpoint: defaultHTTPEndpoint,
+		LegacyConfig: http.LegacyConfig{
+			ServerConfig: confighttp.ServerConfig{
+				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 			},
 			Path: "/",
 		},
-		HTTPSettings: &http.Settings{
-			HTTPServerSettings: confighttp.HTTPServerSettings{
-				Endpoint: defaultHTTPEndpoint,
+		HTTPConfig: &http.Config{
+			ServerConfig: confighttp.ServerConfig{
+				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 			},
-			Status: http.PathSettings{
+			Status: http.PathConfig{
 				Enabled: true,
 				Path:    "/status",
 			},
-			Config: http.PathSettings{
+			Config: http.PathConfig{
 				Enabled: false,
 				Path:    "/config",
 			},
 		},
-		GRPCSettings: &grpc.Settings{
-			GRPCServerSettings: configgrpc.GRPCServerSettings{
+		GRPCConfig: &grpc.Config{
+			ServerConfig: configgrpc.ServerConfig{
 				NetAddr: confignet.NetAddr{
-					Endpoint:  defaultGRPCEndpoint,
+					Endpoint:  localhostgate.EndpointForPort(defaultGRPCPort),
 					Transport: "tcp",
 				},
 			},

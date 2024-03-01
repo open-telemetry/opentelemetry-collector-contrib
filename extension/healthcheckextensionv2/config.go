@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	httpSettingsKey = "http"
-	grpcSettingsKey = "grpc"
+	httpConfigKey = "http"
+	grpcConfigKey = "grpc"
 )
 
 var (
@@ -30,51 +30,50 @@ var (
 // Config has the configuration for the extension enabling the health check
 // extension, used to report the health status of the service.
 type Config struct {
-	// LegacySettings contains the settings for the existing healthcheck extension, which we plan
-	// to deprecate and remove.
-	http.LegacySettings `mapstructure:",squash"`
+	// LegacyConfig contains the config for the existing healthcheck extension.
+	http.LegacyConfig `mapstructure:",squash"`
 
-	// GRPCSettings are v2 settings for the grpc healthcheck service.
-	GRPCSettings *grpc.Settings `mapstructure:"grpc"`
+	// GRPCConfig is v2 config for the grpc healthcheck service.
+	GRPCConfig *grpc.Config `mapstructure:"grpc"`
 
-	// HTTPSettings are v2 settings for the http healthcheck service.
-	HTTPSettings *http.Settings `mapstructure:"http"`
+	// HTTPConfig is v2 config for the http healthcheck service.
+	HTTPConfig *http.Config `mapstructure:"http"`
 
-	// ComponentHealthSettings are v2 settings shared between http and grpc services
-	ComponentHealthSettings *common.ComponentHealthSettings `mapstructure:"component_health"`
+	// ComponentHealthConfig is v2 config shared between http and grpc services
+	ComponentHealthConfig *common.ComponentHealthConfig `mapstructure:"component_health"`
 }
 
 var _ component.Config = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (c *Config) Validate() error {
-	if !c.UseV2Settings {
-		if c.LegacySettings.Endpoint == "" {
+	if !c.UseV2 {
+		if c.LegacyConfig.Endpoint == "" {
 			return errHTTPEndpointRequired
 		}
-		if !strings.HasPrefix(c.LegacySettings.Path, "/") {
+		if !strings.HasPrefix(c.LegacyConfig.Path, "/") {
 			return errInvalidPath
 		}
 		return nil
 	}
 
-	if c.GRPCSettings == nil && c.HTTPSettings == nil {
+	if c.GRPCConfig == nil && c.HTTPConfig == nil {
 		return errMissingProtocol
 	}
 
-	if c.HTTPSettings != nil {
-		if c.HTTPSettings.Endpoint == "" {
+	if c.HTTPConfig != nil {
+		if c.HTTPConfig.Endpoint == "" {
 			return errHTTPEndpointRequired
 		}
-		if c.HTTPSettings.Status.Enabled && !strings.HasPrefix(c.HTTPSettings.Status.Path, "/") {
+		if c.HTTPConfig.Status.Enabled && !strings.HasPrefix(c.HTTPConfig.Status.Path, "/") {
 			return errInvalidPath
 		}
-		if c.HTTPSettings.Config.Enabled && !strings.HasPrefix(c.HTTPSettings.Config.Path, "/") {
+		if c.HTTPConfig.Config.Enabled && !strings.HasPrefix(c.HTTPConfig.Config.Path, "/") {
 			return errInvalidPath
 		}
 	}
 
-	if c.GRPCSettings != nil && c.GRPCSettings.NetAddr.Endpoint == "" {
+	if c.GRPCConfig != nil && c.GRPCConfig.NetAddr.Endpoint == "" {
 		return errGRPCEndpointRequired
 	}
 
@@ -88,12 +87,12 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
-	if !conf.IsSet(httpSettingsKey) {
-		c.HTTPSettings = nil
+	if !conf.IsSet(httpConfigKey) {
+		c.HTTPConfig = nil
 	}
 
-	if !conf.IsSet(grpcSettingsKey) {
-		c.GRPCSettings = nil
+	if !conf.IsSet(grpcConfigKey) {
+		c.GRPCConfig = nil
 	}
 
 	return nil
