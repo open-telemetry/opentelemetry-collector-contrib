@@ -75,8 +75,7 @@ func newPRWTelemetry(set exporter.CreateSettings) (prwTelemetry, error) {
 
 	meter := metadata.Meter(set.TelemetrySettings)
 	// TODO: create helper functions similar to the processor helper: BuildCustomMetricName
-	prefix := "exporter/" + metadata.Type + "/"
-
+	prefix := "exporter/" + metadata.Type.String() + "/"
 	failedTranslations, errFailedTranslation := meter.Int64Counter(prefix+"failed_translations",
 		metric.WithDescription("Number of translation operations that failed to translate metrics from Otel to Prometheus"),
 		metric.WithUnit("1"),
