@@ -72,7 +72,7 @@ Ensure `APPLICATIONINSIGHTS_CONNECTION_STRING` is set in your environment, then 
 
 ```yaml
 exporters:
-  azuremonitor: {}
+  azuremonitor:
 ```
 
 ## Attribute mapping
