@@ -103,7 +103,7 @@ Emeritus Approvers:
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 
-- [Alex Boten](https://github.com/codeboten), ServiceNow
+- [Alex Boten](https://github.com/codeboten), Honeycomb
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk

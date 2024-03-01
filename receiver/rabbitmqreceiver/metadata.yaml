@@ -7,6 +7,7 @@ status:
   distributions: [contrib, observiq, sumo]
   codeowners:
     active: [djaglowski, cpheps]
+    seeking_new: true
 
 resource_attributes:
   rabbitmq.queue.name:

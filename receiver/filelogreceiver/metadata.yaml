@@ -7,3 +7,7 @@ status:
   distributions: [contrib, splunk, observiq, sumo]
   codeowners:
     active: [djaglowski]
+
+tests:
+  config:
+    include: [ testdata/simple.log ]

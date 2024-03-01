@@ -80,6 +80,10 @@ type Config struct {
 	// Exponential algorithm is being used.
 	// Please see following link for details: https://github.com/cenkalti/backoff
 	BackOff backOffConfig `mapstructure:"backoff"`
+
+	// StickySessionEnabled defines if sticky session support is enable.
+	// By default this is false.
+	StickySessionEnabled bool `mapstructure:"sticky_session_enabled"`
 }
 
 type accessCredentials struct {
