@@ -44,29 +44,29 @@ func newExtension(
 	var comps []component.Component
 
 	errPriority := status.PriorityPermanent
-	if config.ComponentHealthSettings != nil &&
-		config.ComponentHealthSettings.IncludeRecoverable &&
-		!config.ComponentHealthSettings.IncludePermanent {
+	if config.ComponentHealthConfig != nil &&
+		config.ComponentHealthConfig.IncludeRecoverable &&
+		!config.ComponentHealthConfig.IncludePermanent {
 		errPriority = status.PriorityRecoverable
 	}
 
 	aggregator := status.NewAggregator(errPriority)
 
-	if config.UseV2Settings && config.GRPCSettings != nil {
+	if config.UseV2 && config.GRPCConfig != nil {
 		grpcServer := grpc.NewServer(
-			config.GRPCSettings,
-			config.ComponentHealthSettings,
+			config.GRPCConfig,
+			config.ComponentHealthConfig,
 			set.TelemetrySettings,
 			aggregator,
 		)
 		comps = append(comps, grpcServer)
 	}
 
-	if !config.UseV2Settings || config.UseV2Settings && config.HTTPSettings != nil {
+	if !config.UseV2 || config.UseV2 && config.HTTPConfig != nil {
 		httpServer := http.NewServer(
-			config.HTTPSettings,
-			config.LegacySettings,
-			config.ComponentHealthSettings,
+			config.HTTPConfig,
+			config.LegacyConfig,
+			config.ComponentHealthConfig,
 			set.TelemetrySettings,
 			aggregator,
 		)

@@ -5,24 +5,24 @@ package http // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import "go.opentelemetry.io/collector/config/confighttp"
 
-// Settings contains the v2 settings for the http healthcheck service
-type Settings struct {
-	confighttp.HTTPServerSettings `mapstructure:",squash"`
+// Config contains the v2 config for the http healthcheck service
+type Config struct {
+	confighttp.ServerConfig `mapstructure:",squash"`
 
-	Config PathSettings `mapstructure:"config"`
-	Status PathSettings `mapstructure:"status"`
+	Config PathConfig `mapstructure:"config"`
+	Status PathConfig `mapstructure:"status"`
 }
 
-type PathSettings struct {
+type PathConfig struct {
 	Enabled bool   `mapstructure:"enabled"`
 	Path    string `mapstructure:"path"`
 }
 
-// LegacySettings contain the settings for the original healthcheck extension. We plan to migrate
-// incrementally towards the v2 settings and behavior. LegacySettings are intentionally handled
-// separately here and elsewhere to facilitate their eventual removal.
-type LegacySettings struct {
-	confighttp.HTTPServerSettings `mapstructure:",squash"`
+// LegacyConfig contains the config for the original healthcheck extension. We plan to migrate
+// incrementally towards the v2 config and behavior. LegacyConfig is intentionally handled
+// separately here and elsewhere to facilitate its eventual removal.
+type LegacyConfig struct {
+	confighttp.ServerConfig `mapstructure:",squash"`
 
 	// Path represents the path the health check service will serve.
 	// The default path is "/".
@@ -30,18 +30,19 @@ type LegacySettings struct {
 
 	// ResponseBody represents the body of the response returned by the health check service.
 	// This overrides the default response that it would return.
-	ResponseBody *ResponseBodySettings `mapstructure:"response_body"`
+	ResponseBody *ResponseBodyConfig `mapstructure:"response_body"`
 
-	// CheckCollectorPipeline contains the list of settings of collector pipeline health check
-	CheckCollectorPipeline *CheckCollectorPipelineSettings `mapstructure:"check_collector_pipeline"`
+	// CheckCollectorPipeline contains the config for collector pipeline health checks. It is
+	// retained for backwards compatibility, but is otherwise ignored.
+	CheckCollectorPipeline *CheckCollectorPipelineConfig `mapstructure:"check_collector_pipeline"`
 
-	// UseV2Settings is an explicit opt-in to v2 behavior. When true, LegacySettings will be ignored.
-	UseV2Settings bool `mapstructure:"use_v2_settings"`
+	// UseV2 is an explicit opt-in to v2 behavior. When true, LegacyConfig will be ignored.
+	UseV2 bool `mapstructure:"use_v2"`
 }
 
-// ResponseBodySettings are legacy settings that are currently supported, but can eventually be
+// ResponseBodyConfig is legacy config that is currently supported, but can eventually be
 // deprecated and removed.
-type ResponseBodySettings struct {
+type ResponseBodyConfig struct {
 	// Healthy represents the body of the response returned when the collector is healthy.
 	// The default value is ""
 	Healthy string `mapstructure:"healthy"`
@@ -51,10 +52,10 @@ type ResponseBodySettings struct {
 	Unhealthy string `mapstructure:"unhealthy"`
 }
 
-// CheckCollectorPipelineSettings are legacy settings that are currently ignored as the
+// CheckCollectorPipelineConfig is legacy config that is currently ignored as the
 // `check_collector_pipeline` feature in the original healtcheck extension was not working as
-// expected. These are here for backwards compatibility.
-type CheckCollectorPipelineSettings struct {
+// expected. This is here for backwards compatibility.
+type CheckCollectorPipelineConfig struct {
 	// Enabled indicates whether to not enable collector pipeline check.
 	Enabled bool `mapstructure:"enabled"`
 	// Interval the time range to check healthy status of collector pipeline

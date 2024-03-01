@@ -75,8 +75,8 @@ func SeedAggregator(
 	}
 }
 
-func ErrPriority(settings *common.ComponentHealthSettings) status.ErrorPriority {
-	if settings != nil && settings.IncludeRecoverable && !settings.IncludePermanent {
+func ErrPriority(config *common.ComponentHealthConfig) status.ErrorPriority {
+	if config != nil && config.IncludeRecoverable && !config.IncludePermanent {
 		return status.PriorityRecoverable
 	}
 	return status.PriorityPermanent

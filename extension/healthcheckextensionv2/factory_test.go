@@ -17,35 +17,36 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/grpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/http"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
-		LegacySettings: http.LegacySettings{
-			HTTPServerSettings: confighttp.HTTPServerSettings{
-				Endpoint: defaultHTTPEndpoint,
+		LegacyConfig: http.LegacyConfig{
+			ServerConfig: confighttp.ServerConfig{
+				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 			},
 			Path: "/",
 		},
-		HTTPSettings: &http.Settings{
-			HTTPServerSettings: confighttp.HTTPServerSettings{
-				Endpoint: defaultHTTPEndpoint,
+		HTTPConfig: &http.Config{
+			ServerConfig: confighttp.ServerConfig{
+				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 			},
-			Status: http.PathSettings{
+			Status: http.PathConfig{
 				Enabled: true,
 				Path:    "/status",
 			},
-			Config: http.PathSettings{
+			Config: http.PathConfig{
 				Enabled: false,
 				Path:    "/config",
 			},
 		},
-		GRPCSettings: &grpc.Settings{
-			GRPCServerSettings: configgrpc.GRPCServerSettings{
+		GRPCConfig: &grpc.Config{
+			ServerConfig: configgrpc.ServerConfig{
 				NetAddr: confignet.NetAddr{
-					Endpoint:  defaultGRPCEndpoint,
+					Endpoint:  localhostgate.EndpointForPort(defaultGRPCPort),
 					Transport: "tcp",
 				},
 			},

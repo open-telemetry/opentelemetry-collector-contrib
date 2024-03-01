@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/grpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/http"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -34,19 +35,19 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(metadata.Type),
 			expected: &Config{
-				LegacySettings: http.LegacySettings{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
-						Endpoint: defaultHTTPEndpoint,
+				LegacyConfig: http.LegacyConfig{
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 					},
 					Path: "/",
 				},
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "legacysettings"),
+			id: component.NewIDWithName(metadata.Type, "legacyconfig"),
 			expected: &Config{
-				LegacySettings: http.LegacySettings{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+				LegacyConfig: http.LegacyConfig{
+					ServerConfig: confighttp.ServerConfig{
 						Endpoint: "localhost:13",
 						TLSSetting: &configtls.TLSServerSetting{
 							TLSSetting: configtls.TLSSetting{
@@ -56,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 							},
 						},
 					},
-					CheckCollectorPipeline: &http.CheckCollectorPipelineSettings{
+					CheckCollectorPipeline: &http.CheckCollectorPipelineConfig{
 						Enabled:                  false,
 						Interval:                 "5m",
 						ExporterFailureThreshold: 5,
@@ -77,35 +78,35 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "v2all"),
 			expected: &Config{
-				LegacySettings: http.LegacySettings{
-					UseV2Settings: true,
-					HTTPServerSettings: confighttp.HTTPServerSettings{
-						Endpoint: defaultHTTPEndpoint,
+				LegacyConfig: http.LegacyConfig{
+					UseV2: true,
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 					},
 					Path: "/",
 				},
-				HTTPSettings: &http.Settings{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
-						Endpoint: defaultHTTPEndpoint,
+				HTTPConfig: &http.Config{
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 					},
-					Status: http.PathSettings{
+					Status: http.PathConfig{
 						Enabled: true,
 						Path:    "/status",
 					},
-					Config: http.PathSettings{
+					Config: http.PathConfig{
 						Enabled: false,
 						Path:    "/config",
 					},
 				},
-				GRPCSettings: &grpc.Settings{
-					GRPCServerSettings: configgrpc.GRPCServerSettings{
+				GRPCConfig: &grpc.Config{
+					ServerConfig: configgrpc.ServerConfig{
 						NetAddr: confignet.NetAddr{
-							Endpoint:  defaultGRPCEndpoint,
+							Endpoint:  localhostgate.EndpointForPort(defaultGRPCPort),
 							Transport: "tcp",
 						},
 					},
 				},
-				ComponentHealthSettings: &common.ComponentHealthSettings{
+				ComponentHealthConfig: &common.ComponentHealthConfig{
 					IncludePermanent:   true,
 					IncludeRecoverable: true,
 					RecoveryDuration:   5 * time.Minute,
@@ -115,22 +116,22 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "v2httpcustomized"),
 			expected: &Config{
-				LegacySettings: http.LegacySettings{
-					UseV2Settings: true,
-					HTTPServerSettings: confighttp.HTTPServerSettings{
-						Endpoint: defaultHTTPEndpoint,
+				LegacyConfig: http.LegacyConfig{
+					UseV2: true,
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 					},
 					Path: "/",
 				},
-				HTTPSettings: &http.Settings{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+				HTTPConfig: &http.Config{
+					ServerConfig: confighttp.ServerConfig{
 						Endpoint: "localhost:13",
 					},
-					Status: http.PathSettings{
+					Status: http.PathConfig{
 						Enabled: true,
 						Path:    "/health",
 					},
-					Config: http.PathSettings{
+					Config: http.PathConfig{
 						Enabled: true,
 						Path:    "/conf",
 					},
@@ -144,15 +145,15 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "v2grpccustomized"),
 			expected: &Config{
-				LegacySettings: http.LegacySettings{
-					UseV2Settings: true,
-					HTTPServerSettings: confighttp.HTTPServerSettings{
-						Endpoint: defaultHTTPEndpoint,
+				LegacyConfig: http.LegacyConfig{
+					UseV2: true,
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 					},
 					Path: "/",
 				},
-				GRPCSettings: &grpc.Settings{
-					GRPCServerSettings: configgrpc.GRPCServerSettings{
+				GRPCConfig: &grpc.Config{
+					ServerConfig: configgrpc.ServerConfig{
 						NetAddr: confignet.NetAddr{
 							Endpoint:  "localhost:13",
 							Transport: "tcp",

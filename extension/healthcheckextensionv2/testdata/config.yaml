@@ -1,5 +1,5 @@
 healthcheckv2:
-healthcheckv2/legacysettings:
+healthcheckv2/legacyconfig:
   endpoint: "localhost:13"
   tls:
     ca_file: "/path/to/ca"
@@ -15,7 +15,7 @@ healthcheckv2/invalidpath:
   endpoint: "localhost:13"
   path: "invalid"
 healthcheckv2/v2all:
-  use_v2_settings: true
+  use_v2: true
   http:
   grpc:
   component_health:
@@ -23,7 +23,7 @@ healthcheckv2/v2all:
     include_recoverable_errors: true
     recovery_duration: 5m
 healthcheckv2/v2httpcustomized:
-  use_v2_settings: true
+  use_v2: true
   http:
     endpoint: "localhost:13"
     status:
@@ -33,16 +33,16 @@ healthcheckv2/v2httpcustomized:
       enabled: true
       path: "/conf"
 healthcheckv2/v2httpmissingendpoint:
-  use_v2_settings: true
+  use_v2: true
   http:
     endpoint: ""
 healthcheckv2/v2grpccustomized:
-  use_v2_settings: true
+  use_v2: true
   grpc:
     endpoint: "localhost:13"
 healthcheckv2/v2grpcmissingendpoint:
-  use_v2_settings: true
+  use_v2: true
   grpc:
     endpoint: ""
 healthcheckv2/v2noprotocols:
-  use_v2_settings: true
+  use_v2: true

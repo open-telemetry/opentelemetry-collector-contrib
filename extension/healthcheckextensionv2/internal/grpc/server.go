@@ -17,31 +17,31 @@ import (
 
 type Server struct {
 	healthpb.UnimplementedHealthServer
-	grpcServer              *grpc.Server
-	aggregator              *status.Aggregator
-	settings                *Settings
-	componentHealthSettings *common.ComponentHealthSettings
-	telemetry               component.TelemetrySettings
-	doneCh                  chan struct{}
+	grpcServer            *grpc.Server
+	aggregator            *status.Aggregator
+	config                *Config
+	componentHealthConfig *common.ComponentHealthConfig
+	telemetry             component.TelemetrySettings
+	doneCh                chan struct{}
 }
 
 var _ component.Component = (*Server)(nil)
 
 func NewServer(
-	settings *Settings,
-	componentHealthSettings *common.ComponentHealthSettings,
+	config *Config,
+	componentHealthConfig *common.ComponentHealthConfig,
 	telemetry component.TelemetrySettings,
 	aggregator *status.Aggregator,
 ) *Server {
 	srv := &Server{
-		settings:                settings,
-		componentHealthSettings: componentHealthSettings,
-		telemetry:               telemetry,
-		aggregator:              aggregator,
-		doneCh:                  make(chan struct{}),
+		config:                config,
+		componentHealthConfig: componentHealthConfig,
+		telemetry:             telemetry,
+		aggregator:            aggregator,
+		doneCh:                make(chan struct{}),
 	}
-	if srv.componentHealthSettings == nil {
-		srv.componentHealthSettings = &common.ComponentHealthSettings{}
+	if srv.componentHealthConfig == nil {
+		srv.componentHealthConfig = &common.ComponentHealthConfig{}
 	}
 	return srv
 }
@@ -49,13 +49,13 @@ func NewServer(
 // Start implements the component.Component interface.
 func (s *Server) Start(_ context.Context, host component.Host) error {
 	var err error
-	s.grpcServer, err = s.settings.ToServer(host, s.telemetry)
+	s.grpcServer, err = s.config.ToServer(host, s.telemetry)
 	if err != nil {
 		return err
 	}
 
 	healthpb.RegisterHealthServer(s.grpcServer, s)
-	ln, err := s.settings.ToListener()
+	ln, err := s.config.ToListenerContext(context.Background())
 
 	go func() {
 		defer close(s.doneCh)
