@@ -12,6 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.95.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.95.0
 	github.com/shirou/gopsutil/v3 v3.24.1
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3

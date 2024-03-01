@@ -4,13 +4,13 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: datadogexporter
+component: signalfxexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Stop dropping incoming OTel payloads when the processing channel is full and eliminate OOM issues in the trace agent and collector component in high load scenarios, making the OTel pipeline more reliable.
+note: Fix memory leak in shutdown
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [31398]
+issues: [30864, 30438]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

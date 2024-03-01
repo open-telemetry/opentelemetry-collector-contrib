@@ -216,14 +216,14 @@ require (
 	github.com/ClickHouse/ch-go v0.58.2 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.17.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.104 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.51.1-0.20240301173728-334e775e420a // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.51.1-0.20240301173728-334e775e420a // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.51.1-0.20240301173728-334e775e420a // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.51.1-0.20240301173728-334e775e420a // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.51.1-0.20240301173728-334e775e420a // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.51.1-0.20240301173728-334e775e420a // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.51.1-0.20240301173728-334e775e420a // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.22.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.5.0 // indirect
 	github.com/DataDog/go-sqllexer v0.0.9 // indirect
@@ -555,9 +555,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
-	github.com/prometheus/client_golang v1.18.0 // indirect
+	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
-	github.com/prometheus/common v0.46.0 // indirect
+	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/prometheus/prometheus v0.48.1 // indirect
@@ -617,7 +617,7 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.etcd.io/bbolt v1.3.9 // indirect
 	go.mongodb.org/atlas v0.36.0 // indirect
-	go.mongodb.org/mongo-driver v1.13.1 // indirect
+	go.mongodb.org/mongo-driver v1.14.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.95.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.95.0 // indirect
