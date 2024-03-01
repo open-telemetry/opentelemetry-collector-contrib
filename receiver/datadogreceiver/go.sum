@@ -1,5 +1,5 @@
-github.com/DataDog/datadog-agent/pkg/proto v0.51.1-0.20240229172441-18b62a1f67d3 h1:Pk6c2bd6CJvwt99i1GIPq/mJKc+N+5hW4uibIwbtD+c=
-github.com/DataDog/datadog-agent/pkg/proto v0.51.1-0.20240229172441-18b62a1f67d3/go.mod h1:wjr5YlVvGip6VmAGzHrdBaGUu1LaA9B6gHvInm5kHiY=
+github.com/DataDog/datadog-agent/pkg/proto v0.51.1-0.20240301173728-334e775e420a h1:vN5cl8mKqADznzz6cnz/lgoBfHVs4zDgz0fr0ZkeXa4=
+github.com/DataDog/datadog-agent/pkg/proto v0.51.1-0.20240301173728-334e775e420a/go.mod h1:wjr5YlVvGip6VmAGzHrdBaGUu1LaA9B6gHvInm5kHiY=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/cespare/xxhash/v2 v2.2.0 h1:DC2CZ1Ep5Y4k3ZQ899DldepgrayRUGE6BBZ/cd9Cj44=
