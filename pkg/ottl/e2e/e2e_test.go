@@ -480,7 +480,7 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], ParseXML("<Log id="1"><Message>This is a log message!</Message></Log>"))`,
+			statement: `set(attributes["test"], ParseXML("<Log id=\"1\"><Message>This is a log message!</Message></Log>"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				log := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
 				log.PutStr("tag", "Log")
@@ -492,7 +492,7 @@ func Test_e2e_converters(t *testing.T) {
 
 				message := logChildren.AppendEmpty().SetEmptyMap()
 				message.PutStr("tag", "Message")
-				message.PutStr("content", "This is a log message")
+				message.PutStr("content", "This is a log message!")
 			},
 		},
 		{
