@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumul
 go 1.21
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.95.0
 	github.com/stretchr/testify v1.8.4
@@ -15,7 +14,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.23.1
 	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 )
 
 require (

@@ -4,7 +4,6 @@ go 1.21
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.95.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.95.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.95.0
@@ -15,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.95.0
 	go.opentelemetry.io/otel/metric v1.23.1
 	go.opentelemetry.io/otel/trace v1.23.1
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.21.0
 	golang.org/x/time v0.5.0
 )
@@ -74,13 +73,5 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

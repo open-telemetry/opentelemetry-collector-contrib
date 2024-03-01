@@ -5,17 +5,18 @@ go 1.21
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.104
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel
-	github.com/DataDog/datadog-agent/pkg/trace v0.50.2
+	github.com/DataDog/datadog-agent/pkg/trace v0.51.1-0.20240229172441-18b62a1f67d3
 	github.com/DataDog/datadog-api-client-go/v2 v2.22.0
+	github.com/DataDog/datadog-go/v5 v5.5.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.3
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.3
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.13.3
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.3
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.3
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.4
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.4
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.13.4
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.4
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.4
 	github.com/DataDog/sketches-go v1.4.4
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0
-	github.com/aws/aws-sdk-go v1.50.17
+	github.com/aws/aws-sdk-go v1.50.27
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.95.0
@@ -52,7 +53,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.23.1
 	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 	google.golang.org/protobuf v1.32.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
@@ -69,14 +70,13 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.2.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2 v2.2.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.50.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.50.2 // indirect
-	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
-	github.com/DataDog/go-sqllexer v0.0.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.51.1-0.20240229172441-18b62a1f67d3 // indirect
+	github.com/DataDog/go-sqllexer v0.0.9 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect

@@ -21,6 +21,7 @@ body:
       - cmd/configschema
       - cmd/githubgen
       - cmd/mdatagen
+      - cmd/mdatagen/internal/samplereceiver
       - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
@@ -173,7 +174,6 @@ body:
       - processor/routing
       - processor/schema
       - processor/span
-      - processor/spanmetrics
       - processor/sumologic
       - processor/tailsampling
       - processor/transform

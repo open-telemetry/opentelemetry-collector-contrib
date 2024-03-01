@@ -43,6 +43,7 @@ func run(ymlPath string) error {
 	}
 
 	ymlDir := filepath.Dir(ymlPath)
+	packageName := filepath.Base(ymlDir)
 
 	md, err := loadMetadata(ymlPath)
 	if err != nil {
@@ -75,7 +76,7 @@ func run(ymlPath string) error {
 
 	if md.Tests != nil {
 		if err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
-			filepath.Join(ymlDir, "generated_component_test.go"), md, md.ShortFolderName+md.Status.Class); err != nil {
+			filepath.Join(ymlDir, "generated_component_test.go"), md, packageName); err != nil {
 			return err
 		}
 	}

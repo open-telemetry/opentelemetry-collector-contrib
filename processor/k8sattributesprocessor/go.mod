@@ -5,7 +5,6 @@ go 1.21
 require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.95.0
 	github.com/stretchr/testify v1.8.4
@@ -24,7 +23,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 	k8s.io/api v0.29.2
 	k8s.io/apimachinery v0.29.2
 	k8s.io/client-go v0.29.2
@@ -83,6 +82,7 @@ require (
 	github.com/prometheus/common v0.46.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rs/cors v1.10.1 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.95.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v0.95.0 // indirect
@@ -139,11 +139,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8ste
 
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
 replace cloud.google.com/go v0.54.0 => cloud.google.com/go v0.110.10
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
