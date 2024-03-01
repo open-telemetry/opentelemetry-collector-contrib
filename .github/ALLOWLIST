@@ -22,7 +22,7 @@
 internal/common
 
 ## DEPRECATED components
-processor/spanmetricsprocessor/
+exporter/f5cloudexporter/
 
 ## UNMAINTAINED components
 exporter/alibabacloudlogserviceexporter/

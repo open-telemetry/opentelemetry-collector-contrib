@@ -6,7 +6,7 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib], [observiq], [sumo] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fmongodb%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fmongodb) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fmongodb%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fmongodb) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@djaglowski](https://www.github.com/djaglowski), [@schmikei](https://www.github.com/schmikei) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@djaglowski](https://www.github.com/djaglowski), [@schmikei](https://www.github.com/schmikei) \| Seeking more code owners! |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -78,13 +78,11 @@ The following metric are available with versions:
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 
 ## Feature gate configurations
+
 See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
 
-**ALPHA**: `receiver.mongodb.removeDatabaseAttr`
+**BETA**: `receiver.mongodb.removeDatabaseAttr`
 
-The feature gate `receiver.mongodb.removeDatabaseAttr` once enabled will remove database name attribute, 
-because both resource and datapoint attributes are called database.
-
-This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims
-to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default
-is 0.94.0.
+The feature gate `receiver.mongodb.removeDatabaseAttr` is enabled by default but may be disabled.
+Unless disabled, it will remove the database name attribute from data points because it is already found on the resource.
+This feature gate will eventually be removed.

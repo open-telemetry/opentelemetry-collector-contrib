@@ -62,7 +62,7 @@ func TestNewReceiver(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
 	mockScraper := func(context.Context, Config, *sarama.Config, receiver.CreateSettings) (scraperhelper.Scraper, error) {
-		return scraperhelper.NewScraper("brokers", func(ctx context.Context) (pmetric.Metrics, error) {
+		return scraperhelper.NewScraper("brokers", func(context.Context) (pmetric.Metrics, error) {
 			return pmetric.Metrics{}, nil
 		})
 	}

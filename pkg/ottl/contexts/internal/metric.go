@@ -5,7 +5,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -48,7 +47,7 @@ func MetricPathGetSetter[K MetricContext](path ottl.Path[K]) (ottl.GetSetter[K],
 	case "data_points":
 		return accessDataPoints[K](), nil
 	default:
-		return nil, fmt.Errorf("invalid metric path expression %v", path)
+		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Metric", MetricRef)
 	}
 }
 

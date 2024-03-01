@@ -49,11 +49,6 @@ func TestNew(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name:    "nil next Consumer",
-			args:    args{},
-			wantErr: component.ErrNilNextConsumer,
-		},
-		{
 			name: "happy path",
 			args: args{
 				nextConsumer: consumertest.NewNop(),

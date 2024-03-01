@@ -297,7 +297,7 @@ func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
 `
 	c := http.Client{
 		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, err error) {
+			DialContext: func(context.Context, string, string) (conn net.Conn, err error) {
 				return net.Dial("unix", socketName)
 			},
 		},

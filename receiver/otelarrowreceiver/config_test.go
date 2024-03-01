@@ -48,8 +48,8 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
-				GRPC: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				GRPC: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:4317",
 						Transport: "tcp",
 					},
@@ -97,8 +97,8 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
-				GRPC: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				GRPC: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "/tmp/grpc_otlp.sock",
 						Transport: "unix",
 					},

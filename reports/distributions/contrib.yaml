@@ -54,6 +54,7 @@ components:
         - tencentcloud_logservice
         - zipkin
     extension:
+        - ack
         - asapclient
         - awsproxy
         - basicauth
@@ -66,7 +67,6 @@ components:
         - headers_setter
         - health_check
         - host_observer
-        - http_forwarder
         - jaegerremotesampling
         - k8s_observer
         - oauth2client
@@ -90,7 +90,6 @@ components:
         - resourcedetection
         - routing
         - span
-        - spanmetrics
         - sumologic
         - tail_sampling
         - transform

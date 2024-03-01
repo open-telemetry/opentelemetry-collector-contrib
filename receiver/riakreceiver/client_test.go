@@ -83,7 +83,7 @@ func TestNewClient(t *testing.T) {
 func TestGetStatsDetails(t *testing.T) {
 	t.Run("Non-200 Response", func(t *testing.T) {
 		// Setup test server
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 		}))
 		defer ts.Close()
@@ -99,7 +99,7 @@ func TestGetStatsDetails(t *testing.T) {
 		data := loadAPIResponseData(t, statsAPIResponseFile)
 
 		// Setup test server
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			_, err := w.Write(data)
 			require.NoError(t, err)
 		}))

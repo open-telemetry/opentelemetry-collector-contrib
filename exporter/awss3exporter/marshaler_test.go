@@ -35,4 +35,10 @@ func TestMarshaler(t *testing.T) {
 		assert.Error(t, err)
 		require.Nil(t, m)
 	}
+	{
+		m, err := newMarshaler("body", zap.NewNop())
+		assert.NoError(t, err)
+		require.NotNil(t, m)
+		assert.Equal(t, m.format(), "txt")
+	}
 }

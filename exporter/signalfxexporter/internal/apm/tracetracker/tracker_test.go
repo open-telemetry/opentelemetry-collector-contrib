@@ -85,7 +85,8 @@ type correlationTestClient struct {
 	correlateCounter int64
 }
 
-func (c *correlationTestClient) Start() { /*no-op*/ }
+func (c *correlationTestClient) Start()    { /*no-op*/ }
+func (c *correlationTestClient) Shutdown() { /*no-op*/ }
 func (c *correlationTestClient) Get(_ string, dimValue string, cb correlations.SuccessfulGetCB) {
 	atomic.AddInt64(&c.getCounter, 1)
 	go func() {
