@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/stora
 
 go 1.21
 
-toolchain go1.21.6
-
 require (
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/mattn/go-sqlite3 v1.14.22
