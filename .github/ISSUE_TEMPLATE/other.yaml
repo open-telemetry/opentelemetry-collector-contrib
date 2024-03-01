@@ -47,7 +47,6 @@ body:
       - exporter/dataset
       - exporter/dynatrace
       - exporter/elasticsearch
-      - exporter/f5cloud
       - exporter/file
       - exporter/googlecloud
       - exporter/googlecloudpubsub
