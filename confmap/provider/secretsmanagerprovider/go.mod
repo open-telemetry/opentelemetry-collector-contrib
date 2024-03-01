@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provide
 
 go 1.21
 
-toolchain go1.21.6
-
 require (
 	github.com/aws/aws-sdk-go-v2 v1.25.2
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.28.1
