@@ -9,17 +9,19 @@ import (
 )
 
 var (
-	Type = component.MustNewType("http_forwarder")
+	Type = component.MustNewType("sample")
 )
 
 const (
-	ExtensionStability = component.StabilityLevelDeprecated
+	TracesStability  = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelStable
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol")
+	return settings.MeterProvider.Meter("otelcol/samplereceiver")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol")
+	return settings.TracerProvider.Tracer("otelcol/samplereceiver")
 }
