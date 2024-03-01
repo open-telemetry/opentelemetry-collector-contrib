@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/metrics"
+	"github.com/DataDog/datadog-go/v5/statsd"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )
@@ -20,19 +20,12 @@ type metricsClient struct {
 	mutex  sync.Mutex
 }
 
-var initializeOnce sync.Once
-
-// InitializeMetricClient using a meter provider. If the client has already been initialized,
-// this function just returns the previous one.
-func InitializeMetricClient(mp metric.MeterProvider) metrics.StatsClient {
-	initializeOnce.Do(func() {
-		m := &metricsClient{
-			meter:  mp.Meter("datadog"),
-			gauges: make(map[string]float64),
-		}
-		metrics.Client = m
-	})
-	return metrics.Client
+// InitializeMetricClient using a meter provider.
+func InitializeMetricClient(mp metric.MeterProvider) statsd.ClientInterface {
+	return &metricsClient{
+		meter:  mp.Meter("datadog"),
+		gauges: make(map[string]float64),
+	}
 }
 
 func (m *metricsClient) Gauge(name string, value float64, tags []string, _ float64) error {
@@ -89,10 +82,66 @@ func (m *metricsClient) Histogram(name string, value float64, tags []string, _ f
 	return nil
 }
 
+func (m *metricsClient) Distribution(name string, value float64, tags []string, rate float64) error {
+	return m.Histogram(name, value, tags, rate)
+}
+
 func (m *metricsClient) Timing(name string, value time.Duration, tags []string, rate float64) error {
-	return m.Histogram(name, float64(value.Milliseconds()), tags, rate)
+	return m.TimeInMilliseconds(name, value.Seconds()*1000, tags, rate)
+}
+
+func (m *metricsClient) TimeInMilliseconds(name string, value float64, tags []string, rate float64) error {
+	return m.Histogram(name, value, tags, rate)
+}
+
+func (m *metricsClient) Decr(name string, tags []string, rate float64) error {
+	return m.Count(name, -1, tags, rate)
+}
+
+func (m *metricsClient) Incr(name string, tags []string, rate float64) error {
+	return m.Count(name, 1, tags, rate)
 }
 
 func (m *metricsClient) Flush() error {
+	return nil
+}
+
+func (m *metricsClient) Set(string, string, []string, float64) error {
+	return nil
+}
+
+func (m *metricsClient) Event(*statsd.Event) error {
+	return nil
+}
+
+func (m *metricsClient) SimpleEvent(string, string) error {
+	return nil
+}
+
+func (m *metricsClient) ServiceCheck(*statsd.ServiceCheck) error {
+	return nil
+}
+
+func (m *metricsClient) SimpleServiceCheck(string, statsd.ServiceCheckStatus) error {
+	return nil
+}
+
+func (m *metricsClient) Close() error {
+	return nil
+}
+
+func (m *metricsClient) IsClosed() bool {
+	return false
+}
+
+func (m *metricsClient) GetTelemetry() statsd.Telemetry {
+	return statsd.Telemetry{}
+}
+
+func (m *metricsClient) GaugeWithTimestamp(string, float64, []string, float64, time.Time) error {
+	return nil
+}
+
+func (m *metricsClient) CountWithTimestamp(string, int64, []string, float64, time.Time) error {
 	return nil
 }
