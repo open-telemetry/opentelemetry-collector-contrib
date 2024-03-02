@@ -43,6 +43,7 @@ type Reader struct {
 	processFunc            emit.Callback
 	emitFunc               emit.Callback
 	deleteAtEOF            bool
+	replayFile             bool
 	needsUpdateFingerprint bool
 }
 
@@ -56,6 +57,9 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	defer func() {
 		if r.needsUpdateFingerprint {
 			r.updateFingerprint()
+		}
+		if r.replayFile {
+			r.Offset = 0
 		}
 	}()
 

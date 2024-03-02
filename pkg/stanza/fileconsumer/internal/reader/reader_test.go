@@ -35,6 +35,43 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 	require.Equal(t, fingerprint.New([]byte("testlog1\n")), reader.Fingerprint)
 }
 
+func TestFileReader_ReplayTest(t *testing.T) {
+	testCases := []struct {
+		testName   string
+		replayFile bool
+	}{
+		{"replay_enabeld", true},
+		{"replay_disabled", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			tempDir := t.TempDir()
+			temp := filetest.OpenTemp(t, tempDir)
+			tempCopy := filetest.OpenFile(t, temp.Name())
+
+			f, sink := testFactory(t, withReplay(tc.replayFile))
+			fp, err := f.NewFingerprint(temp)
+			require.NoError(t, err)
+
+			reader, err := f.NewReader(tempCopy, fp)
+			require.NoError(t, err)
+			defer reader.Close()
+
+			filetest.WriteString(t, temp, "testlog1\n")
+			reader.ReadToEnd(context.Background())
+			sink.ExpectToken(t, []byte("testlog1"))
+
+			reader.ReadToEnd(context.Background())
+			if tc.replayFile {
+				sink.ExpectToken(t, []byte("testlog1"))
+			} else {
+				sink.ExpectNoCalls(t)
+			}
+		})
+	}
+}
+
 // Test that a fingerprint:
 // - Starts empty
 // - Updates as a file is read

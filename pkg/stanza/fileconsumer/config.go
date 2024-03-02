@@ -81,6 +81,7 @@ type Config struct {
 	FlushPeriod        time.Duration   `mapstructure:"force_flush_period,omitempty"`
 	Header             *HeaderConfig   `mapstructure:"header,omitempty"`
 	DeleteAfterRead    bool            `mapstructure:"delete_after_read,omitempty"`
+	ReplayFile         bool            `mapstructure:"replay_file,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -161,6 +162,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 		Attributes:        c.Resolver,
 		HeaderConfig:      hCfg,
 		DeleteAtEOF:       c.DeleteAfterRead,
+		ReplayFile:        c.ReplayFile,
 	}
 
 	return &Manager{
