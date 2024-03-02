@@ -405,4 +405,5 @@ type WorkflowRun struct {
 	HeadCommit          HeadCommit            `json:"head_commit,omitempty"`
 	Repository          Repository            `json:"repository,omitempty"`
 	HeadRepository      HeadRepository        `json:"head_repository,omitempty"`
+	Workflow            Workflow              `json:"workflow,omitempty"`
 }

@@ -209,13 +209,13 @@ func TestResourceAndSpanAttributesCreation(t *testing.T) {
 					span := ss.Spans().At(i)
 					attrs := span.Attributes()
 
-					stepValue, found := attrs.Get("ci.github.step.name")
-					if !found {
-						continue // Skip if the attribute is not found
+					stepValue, found := attrs.Get("ci.github.workflow.job.step.name")
+					if !found || stepValue.Str() == "" { // Skip if the attribute is not found or name is empty
+						continue
 					}
 
 					stepName := stepValue.Str()
-					expectedStepName := expectedStep["ci.github.step.name"]
+					expectedStepName := expectedStep["ci.github.workflow.job.step.name"]
 
 					if stepName == expectedStepName {
 						stepFound = true
@@ -231,7 +231,7 @@ func TestResourceAndSpanAttributesCreation(t *testing.T) {
 					}
 				}
 
-				require.True(t, stepFound, "Step '%s' not found in any span", expectedStep["ci.github.step.name"])
+				require.True(t, stepFound, "Step '%s' not found in any span", expectedStep["ci.github.workflow.job.step.name"])
 			}
 
 		})
