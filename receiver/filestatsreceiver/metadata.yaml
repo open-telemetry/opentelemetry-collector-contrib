@@ -63,5 +63,3 @@ metrics:
     gauge:
       value_type: int
     unit: "{file}"
-tests:
-  config:

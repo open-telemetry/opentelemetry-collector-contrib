@@ -16,6 +16,3 @@ status:
   - liatrio
   codeowners:
     active: [MovieStoreGuy, astencel-sumo, crobert-1]
-
-tests:
-  config:

@@ -9,12 +9,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -62,45 +59,6 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(test.name+"-shutdown", func(t *testing.T) {
 			c, err := test.createFn(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
-			err = c.Shutdown(context.Background())
-			require.NoError(t, err)
-		})
-
-		t.Run(test.name+"-lifecycle", func(t *testing.T) {
-
-			// TODO support lifecycle
-			t.SkipNow()
-
-			c, err := test.createFn(context.Background(), exportertest.NewNopCreateSettings(), cfg)
-			require.NoError(t, err)
-			host := componenttest.NewNopHost()
-			err = c.Start(context.Background(), host)
-			require.NoError(t, err)
-			require.NotPanics(t, func() {
-				switch e := c.(type) {
-				case exporter.Logs:
-					logs := generateLifecycleTestLogs()
-					if !e.Capabilities().MutatesData {
-						logs.MarkReadOnly()
-					}
-					err = e.ConsumeLogs(context.Background(), logs)
-				case exporter.Metrics:
-					metrics := generateLifecycleTestMetrics()
-					if !e.Capabilities().MutatesData {
-						metrics.MarkReadOnly()
-					}
-					err = e.ConsumeMetrics(context.Background(), metrics)
-				case exporter.Traces:
-					traces := generateLifecycleTestTraces()
-					if !e.Capabilities().MutatesData {
-						traces.MarkReadOnly()
-					}
-					err = e.ConsumeTraces(context.Background(), traces)
-				}
-			})
-
-			require.NoError(t, err)
-
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
