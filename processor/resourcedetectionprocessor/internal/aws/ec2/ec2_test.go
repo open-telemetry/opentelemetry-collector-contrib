@@ -6,6 +6,7 @@ package ec2
 import (
 	"context"
 	"errors"
+	"net/http"
 	"regexp"
 	"testing"
 
@@ -35,6 +36,18 @@ type mockMetadata struct {
 }
 
 var _ ec2provider.Provider = (*mockMetadata)(nil)
+
+type mockClientBuilder struct{}
+
+func (e *mockClientBuilder) buildClient(_ string, _ *http.Client) (ec2iface.EC2API, error) {
+	return &mockEC2Client{}, nil
+}
+
+type mockClientBuilderError struct{}
+
+func (e *mockClientBuilderError) buildClient(_ string, _ *http.Client) (ec2iface.EC2API, error) {
+	return &mockEC2ClientError{}, nil
+}
 
 func (mm mockMetadata) InstanceID(_ context.Context) (string, error) {
 	if !mm.isAvailable {
@@ -146,7 +159,7 @@ func TestDetector_Detect(t *testing.T) {
 		args          args
 		want          pcommon.Resource
 		wantErr       bool
-		tagsProvider  ec2iface.EC2API
+		tagsProvider  ec2ifaceBuilder
 	}{
 		{
 			name: "success",
@@ -207,7 +220,7 @@ func TestDetector_Detect(t *testing.T) {
 				attr.PutStr("ec2.tag.tag2", "val2")
 				return res
 			}(),
-			tagsProvider: &mockEC2Client{},
+			tagsProvider: &mockClientBuilder{},
 		},
 		{
 			name: "success without tags returned from describeTags",
@@ -237,7 +250,7 @@ func TestDetector_Detect(t *testing.T) {
 				attr.PutStr("host.name", "example-hostname")
 				return res
 			}(),
-			tagsProvider: &mockEC2ClientError{},
+			tagsProvider: &mockClientBuilderError{},
 		},
 		{
 			name: "endpoint not available",
@@ -278,7 +291,7 @@ func TestDetector_Detect(t *testing.T) {
 				logger:           zap.NewNop(),
 				rb:               metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 				tagKeyRegexes:    tt.tagKeyRegexes,
-				ec2Client:        tt.tagsProvider,
+				ec2ClientBuilder: tt.tagsProvider,
 			}
 			got, _, err := d.Detect(tt.args.ctx)
 

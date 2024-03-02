@@ -31,12 +31,29 @@ const (
 
 var _ internal.Detector = (*Detector)(nil)
 
+type ec2ifaceBuilder interface {
+	buildClient(region string, client *http.Client) (ec2iface.EC2API, error)
+}
+
+type ec2ClientBuilder struct{}
+
+func (e *ec2ClientBuilder) buildClient(region string, client *http.Client) (ec2iface.EC2API, error) {
+	sess, err := session.NewSession(&aws.Config{
+		Region:     aws.String(region),
+		HTTPClient: client},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return ec2.New(sess), nil
+}
+
 type Detector struct {
 	metadataProvider ec2provider.Provider
 	tagKeyRegexes    []*regexp.Regexp
 	logger           *zap.Logger
 	rb               *metadata.ResourceBuilder
-	ec2Client        ec2iface.EC2API
+	ec2ClientBuilder ec2ifaceBuilder
 }
 
 func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
@@ -55,6 +72,7 @@ func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (in
 		tagKeyRegexes:    tagKeyRegexes,
 		logger:           set.Logger,
 		rb:               metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		ec2ClientBuilder: &ec2ClientBuilder{},
 	}, nil
 }
 
@@ -86,8 +104,13 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	res := d.rb.Emit()
 
 	if len(d.tagKeyRegexes) != 0 {
-		client := getClientConfig(ctx, d.logger)
-		tags, err := connectAndFetchEc2Tags(d.ec2Client, meta.Region, meta.InstanceID, d.tagKeyRegexes, client)
+		httpClient := getClientConfig(ctx, d.logger)
+		ec2Client, err := d.ec2ClientBuilder.buildClient(meta.Region, httpClient)
+		if err != nil {
+			d.logger.Warn("failed to build ec2 client", zap.Error(err))
+			return res, conventions.SchemaURL, nil
+		}
+		tags, err := fetchEC2Tags(ec2Client, meta.InstanceID, d.tagKeyRegexes)
 		if err != nil {
 			d.logger.Warn("failed fetching ec2 instance tags", zap.Error(err))
 		} else {
@@ -106,21 +129,6 @@ func getClientConfig(ctx context.Context, logger *zap.Logger) *http.Client {
 		logger.Debug("Error retrieving client from context thus creating default", zap.Error(err))
 	}
 	return client
-}
-
-func connectAndFetchEc2Tags(svc ec2iface.EC2API, region string, instanceID string, tagKeyRegexes []*regexp.Regexp, client *http.Client) (map[string]string, error) {
-	if svc != nil {
-		return fetchEC2Tags(svc, instanceID, tagKeyRegexes)
-	}
-	sess, err := session.NewSession(&aws.Config{
-		Region:     aws.String(region),
-		HTTPClient: client},
-	)
-	if err != nil {
-		return nil, err
-	}
-	svc = ec2.New(sess)
-	return fetchEC2Tags(svc, instanceID, tagKeyRegexes)
 }
 
 func fetchEC2Tags(svc ec2iface.EC2API, instanceID string, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {
