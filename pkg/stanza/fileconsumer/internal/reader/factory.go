@@ -41,6 +41,7 @@ type Factory struct {
 	EmitFunc          emit.Callback
 	Attributes        attrs.Resolver
 	DeleteAtEOF       bool
+	ReplayFile        bool
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
@@ -71,6 +72,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		decoder:           decode.New(f.Encoding),
 		lineSplitFunc:     f.SplitFunc,
 		deleteAtEOF:       f.DeleteAtEOF,
+		replayFile:        f.ReplayFile,
 	}
 
 	if r.Fingerprint.Len() > r.fingerprintSize {

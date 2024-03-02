@@ -61,6 +61,7 @@ func testFactory(t *testing.T, opts ...testFactoryOpt) (*Factory, *emittest.Sink
 		FlushTimeout:      cfg.flushPeriod,
 		EmitFunc:          sink.Callback,
 		Attributes:        cfg.attributes,
+		ReplayFile:        cfg.replayFile,
 	}, sink
 }
 
@@ -77,6 +78,7 @@ type testFactoryCfg struct {
 	flushPeriod       time.Duration
 	sinkChanSize      int
 	attributes        attrs.Resolver
+	replayFile        bool
 }
 
 func withFingerprintSize(size int) testFactoryOpt {
@@ -118,6 +120,11 @@ func withSinkChanSize(n int) testFactoryOpt {
 func fromEnd() testFactoryOpt {
 	return func(c *testFactoryCfg) {
 		c.fromBeginning = false
+	}
+}
+func withReplay(replay bool) testFactoryOpt {
+	return func(c *testFactoryCfg) {
+		c.replayFile = replay
 	}
 }
 
