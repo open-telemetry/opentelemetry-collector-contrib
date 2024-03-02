@@ -68,6 +68,9 @@ func (extension *solarwindsapmSettingsExtension) Shutdown(_ context.Context) err
 	if extension.conn != nil {
 		return extension.conn.Close()
 	}
+	if extension.cancel != nil {
+		extension.cancel()
+	}
 	return nil
 }
 
