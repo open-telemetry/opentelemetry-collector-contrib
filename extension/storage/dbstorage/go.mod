@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/stora
 
 go 1.21
 
-toolchain go1.21.6
-
 require (
 	github.com/jackc/pgx/v4 v4.18.1
 	github.com/mattn/go-sqlite3 v1.14.22
@@ -13,7 +11,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.23.1
 	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 )
 
 require (

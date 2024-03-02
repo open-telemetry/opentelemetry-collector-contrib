@@ -28,7 +28,7 @@ import (
 
 type k8sobjectsreceiver struct {
 	setting         receiver.CreateSettings
-	objects         []*K8sObjectsConfig
+	config          *Config
 	stopperChanList []chan struct{}
 	client          dynamic.Interface
 	consumer        consumer.Logs
@@ -38,10 +38,6 @@ type k8sobjectsreceiver struct {
 
 func newReceiver(params receiver.CreateSettings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
 	transport := "http"
-	client, err := config.getDynamicClient()
-	if err != nil {
-		return nil, err
-	}
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             params.ID,
@@ -60,19 +56,23 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 	}
 
 	return &k8sobjectsreceiver{
-		client:   client,
 		setting:  params,
 		consumer: consumer,
-		objects:  config.Objects,
+		config:   config,
 		obsrecv:  obsrecv,
 		mu:       sync.Mutex{},
 	}, nil
 }
 
 func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error {
+	client, err := kr.config.getDynamicClient()
+	if err != nil {
+		return err
+	}
+	kr.client = client
 	kr.setting.Logger.Info("Object Receiver started")
 
-	for _, object := range kr.objects {
+	for _, object := range kr.config.Objects {
 		kr.start(ctx, object)
 	}
 	return nil

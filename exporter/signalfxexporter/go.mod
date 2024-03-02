@@ -12,6 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.95.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.95.0
 	github.com/shirou/gopsutil/v3 v3.24.1
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
@@ -30,7 +31,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 	golang.org/x/sys v0.17.0
 	gopkg.in/yaml.v3 v3.0.1
 )
