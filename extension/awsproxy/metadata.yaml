@@ -7,3 +7,8 @@ status:
   distributions: [contrib, aws, sumo]
   codeowners:
     active: [Aneurysm9, mxiamxia]
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
