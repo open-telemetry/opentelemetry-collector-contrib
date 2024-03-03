@@ -219,7 +219,6 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				ScopeName:       "otelcol/samplereceiver",
 				ShortFolderName: "sample",
-				Tests:           &tests{},
 			},
 		},
 		{

@@ -695,6 +695,3 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-
-tests:
-  config:

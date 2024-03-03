@@ -3,12 +3,12 @@
 package {{ .Package }}
 
 import (
-    "go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 )
 
-{{ if eq .Parent "" }}
+{{ if eq .Parent "" -}}
 var (
 	Type = component.MustNewType("{{ .Type }}")
 )

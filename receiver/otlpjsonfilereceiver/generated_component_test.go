@@ -9,12 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestComponentLifecycle(t *testing.T) {
@@ -61,9 +59,7 @@ func TestComponentLifecycle(t *testing.T) {
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
-
 		t.Run(test.name+"-lifecycle", func(t *testing.T) {
-
 			firstRcvr, err := test.createFn(context.Background(), receivertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
 			host := componenttest.NewNopHost()
