@@ -69,3 +69,4 @@ metrics:
 
 tests:
   config:
+  skip_lifecycle: false
