@@ -26,7 +26,7 @@ func TestNewDatabase(t *testing.T) {
 	ctx := context.Background()
 	databaseID := databaseID()
 
-	database, err := NewDatabase(ctx, databaseID, "../../testdata/serviceAccount.json")
+	database, err := NewDatabase(ctx, databaseID, "../../testdata/serviceAccount.json", false)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, database.Client())
@@ -37,7 +37,7 @@ func TestNewDatabaseWithError(t *testing.T) {
 	ctx := context.Background()
 	databaseID := databaseID()
 
-	database, err := NewDatabase(ctx, databaseID, "does not exist")
+	database, err := NewDatabase(ctx, databaseID, "does not exist", false)
 
 	assert.Error(t, err)
 	assert.Nil(t, database)
@@ -49,7 +49,7 @@ func TestNewDatabaseWithNoCredentialsFilePath(t *testing.T) {
 
 	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "../../testdata/serviceAccount.json")
 
-	database, err := NewDatabase(ctx, databaseID, "")
+	database, err := NewDatabase(ctx, databaseID, "", false)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, database.Client())
@@ -62,6 +62,7 @@ func TestNewDatabaseFromClientWithRole(t *testing.T) {
 
 	database, err := NewDatabase(ctx, databaseID, "", true)
 
+	assert.NoError(t, err)
 	assert.NotNil(t, database.Client())
 	assert.Equal(t, databaseID, database.DatabaseID())
 }
