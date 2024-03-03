@@ -10,4 +10,4 @@ status:
 
 tests:
   config:
-  skip_lifecycle: true
+  skip_lifecycle: false
