@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -51,12 +50,12 @@ func mockIntrospectionQueues(w http.ResponseWriter, _ *http.Request) {
 // mock server create
 func createMockServer() *httptest.Server {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch strings.TrimSpace(r.URL.Path) {
-		case "/services/server/introspection/indexer":
+		switch r.URL.String() {
+		case "/services/server/introspection/indexer?output_mode=json":
 			mockIndexerThroughput(w, r)
-		case "/services/data/indexes-extended":
+		case "/services/data/indexes-extended?output_mode=json&count=-1":
 			mockIndexesExtended(w, r)
-		case "/services/server/introspection/queues":
+		case "/services/server/introspection/queues?output_mode=json&count=-1":
 			mockIntrospectionQueues(w, r)
 		default:
 			http.NotFoundHandler().ServeHTTP(w, r)
@@ -84,11 +83,17 @@ func TestScraper(t *testing.T) {
 	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
 
 	cfg := &Config{
-		ClientConfig: confighttp.ClientConfig{
+		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: ts.URL,
-			Auth: &configauth.Authentication{
-				AuthenticatorID: component.MustNewIDWithName("basicauth", "client"),
-			},
+			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+		},
+		SHEndpoint: confighttp.ClientConfig{
+			Endpoint: ts.URL,
+			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
+		},
+		CMEndpoint: confighttp.ClientConfig{
+			Endpoint: ts.URL,
+			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
