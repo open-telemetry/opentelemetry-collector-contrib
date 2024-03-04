@@ -10,5 +10,4 @@ status:
 
 
 tests:
-  config:
   expect_consumer_error: true
