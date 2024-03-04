@@ -377,6 +377,7 @@ Unlike functions, they do not modify any input telemetry and always return a val
 
 Available Converters:
 
+- [Base64Decode](#base64decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [ExtractPatterns](#extractpatterns)
@@ -416,6 +417,21 @@ Available Converters:
 - [UnixNano](#unixnano)
 - [UnixSeconds](#unixseconds)
 - [UUID](#UUID)
+
+### Base64Decode
+
+`Base64Decode(value)`
+
+The `Base64Decode` Converter takes a base64 encoded string and returns the decoded string.
+
+`value` is a valid base64 encoded string.
+
+Examples:
+
+- `Base64Decode("aGVsbG8gd29ybGQ=")`
+
+
+- `Base64Decode(attributes["encoded field"])`
 
 ### Concat
 
