@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.28.1
 	github.com/aws/smithy-go v1.20.1
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/confmap v0.95.0
+	go.opentelemetry.io/collector/confmap v0.95.1-0.20240301231835-2fa6df8ad748
 )
 
 require (
@@ -19,7 +19,6 @@ require (
 	github.com/knadh/koanf/v2 v2.1.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
