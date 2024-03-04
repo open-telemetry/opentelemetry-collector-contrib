@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.12.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.12.0
 	go.opentelemetry.io/build-tools/multimod v0.12.1-0.20240108171606-a2b17e6d6e63
-	go.opentelemetry.io/collector/cmd/builder v0.95.0
+	go.opentelemetry.io/collector/cmd/builder v0.95.1-0.20240301231835-2fa6df8ad748
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.18.0
 	golang.org/x/vuln v1.0.4
@@ -223,7 +223,7 @@ require (
 	go.opentelemetry.io/build-tools v0.12.0 // indirect
 	go.tmz.dev/musttag v0.7.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.26.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.19.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230307190834-24139beb5833 // indirect
