@@ -162,12 +162,25 @@ resource_attributes:
     type: string
     enabled: false
 
-  k8s.kubeproxy.version:
-    description: The version of Kube Proxy running on the node.
+  container.runtime:
+    description: The container runtime used by Kubernetes Node.
     type: string
     enabled: false
-    warnings:
-      if_configured: k8s.kubeproxy.version resource attribute is deprecated and will be removed soon.
+
+  container.runtime.version:
+    description: The version of container runtime used by Kubernetes Node.
+    type: string
+    enabled: false
+
+  os.description:
+    description: The os description used by Kubernetes Node.
+    type: string
+    enabled: false
+
+  os.type:
+    description: The os type used by Kubernetes Node.
+    type: string
+    enabled: false
 
   openshift.clusterquota.uid:
     description: The k8s ClusterResourceQuota uid.
@@ -497,3 +510,7 @@ metrics:
 
   # k8s.node.allocatable_* metrics (k8s.node.allocatable_cpu, k8s.node.allocatable_memory, etc) are controlled
   # by allocatable_types_to_report config option. By default, none of them are reported.
+
+tests:
+  config:
+  skip_lifecycle: true

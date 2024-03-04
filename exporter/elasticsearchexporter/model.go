@@ -28,9 +28,9 @@ type mappingModel interface {
 //
 // See: https://github.com/open-telemetry/oteps/blob/master/text/logs/0097-log-data-model.md
 type encodeModel struct {
-	mode  string
 	dedup bool
 	dedot bool
+	mode  MappingMode
 }
 
 const (
@@ -43,7 +43,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 	var document objmodel.Document
 
 	switch m.mode {
-	case "ecs":
+	case MappingECS:
 		document.AddTimestamp("@timestamp", record.Timestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
 		document.AddTraceID("trace.id", record.TraceID())
 		document.AddSpanID("span.id", record.SpanID())
@@ -95,6 +95,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 		document.AddString("SeverityText", record.SeverityText())
 		document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
 		document.AddAttribute("Body", record.Body())
+		m.encodeAttributes(&document, record.Attributes())
 		document.AddAttributes("Attributes", record.Attributes())
 		document.AddAttributes("Resource", resource.Attributes())
 		document.AddAttributes("Scope", scopeToAttributes(scope))
@@ -123,9 +124,9 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 	document.AddInt("TraceStatus", int64(span.Status().Code()))
 	document.AddString("TraceStatusDescription", span.Status().Message())
 	document.AddString("Link", spanLinksToString(span.Links()))
-	document.AddAttributes("Attributes", span.Attributes())
+	m.encodeAttributes(&document, span.Attributes())
 	document.AddAttributes("Resource", resource.Attributes())
-	document.AddEvents("Events", span.Events())
+	m.encodeEvents(&document, span.Events())
 	document.AddInt("Duration", durationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
 	document.AddAttributes("Scope", scopeToAttributes(scope))
 
@@ -138,6 +139,22 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 	var buf bytes.Buffer
 	err := document.Serialize(&buf, m.dedot)
 	return buf.Bytes(), err
+}
+
+func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map) {
+	key := "Attributes"
+	if m.mode == MappingRaw {
+		key = ""
+	}
+	document.AddAttributes(key, attributes)
+}
+
+func (m *encodeModel) encodeEvents(document *objmodel.Document, events ptrace.SpanEventSlice) {
+	key := "Events"
+	if m.mode == MappingRaw {
+		key = ""
+	}
+	document.AddEvents(key, events)
 }
 
 func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {

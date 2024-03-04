@@ -9,19 +9,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type expectedView struct {
+	name     string
+	tagCount int
+}
+
 func TestMetrics(t *testing.T) {
 	metricViews := metricViews()
-	viewNames := []string{
-		"kafka_receiver_messages",
-		"kafka_receiver_current_offset",
-		"kafka_receiver_offset_lag",
-		"kafka_receiver_partition_start",
-		"kafka_receiver_partition_close",
-		"kafka_receiver_unmarshal_failed_metric_points",
-		"kafka_receiver_unmarshal_failed_log_records",
-		"kafka_receiver_unmarshal_failed_spans",
+	viewNames := []expectedView{
+		{name: "kafka_receiver_messages", tagCount: 2},
+		{name: "kafka_receiver_current_offset", tagCount: 2},
+		{name: "kafka_receiver_offset_lag", tagCount: 2},
+		{name: "kafka_receiver_partition_start", tagCount: 1},
+		{name: "kafka_receiver_partition_close", tagCount: 1},
+		{name: "kafka_receiver_unmarshal_failed_metric_points", tagCount: 1},
+		{name: "kafka_receiver_unmarshal_failed_log_records", tagCount: 1},
+		{name: "kafka_receiver_unmarshal_failed_spans", tagCount: 1},
 	}
-	for i, viewName := range viewNames {
-		assert.Equal(t, viewName, metricViews[i].Name)
+
+	for i, expectedView := range viewNames {
+		assert.Equal(t, expectedView.name, metricViews[i].Name)
+		assert.Equal(t, expectedView.tagCount, len(metricViews[i].TagKeys))
 	}
 }

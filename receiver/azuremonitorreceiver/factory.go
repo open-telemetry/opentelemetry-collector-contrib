@@ -54,7 +54,7 @@ func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rC
 	}
 
 	azureScraper := newScraper(cfg, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, azureScraper.scrape, scraperhelper.WithStart(azureScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), azureScraper.scrape, scraperhelper.WithStart(azureScraper.start))
 	if err != nil {
 		return nil, err
 	}

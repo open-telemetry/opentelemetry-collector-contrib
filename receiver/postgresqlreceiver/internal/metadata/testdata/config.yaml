@@ -60,6 +60,8 @@ all_set:
       enabled: true
     postgresql.index.name:
       enabled: true
+    postgresql.schema.name:
+      enabled: true
     postgresql.table.name:
       enabled: true
 none_set:
@@ -122,6 +124,8 @@ none_set:
     postgresql.database.name:
       enabled: false
     postgresql.index.name:
+      enabled: false
+    postgresql.schema.name:
       enabled: false
     postgresql.table.name:
       enabled: false

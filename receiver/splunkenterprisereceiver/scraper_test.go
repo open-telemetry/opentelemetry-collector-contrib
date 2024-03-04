@@ -84,10 +84,10 @@ func TestScraper(t *testing.T) {
 	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
 
 	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: ts.URL,
 			Auth: &configauth.Authentication{
-				AuthenticatorID: component.NewID("basicauth/client"),
+				AuthenticatorID: component.MustNewIDWithName("basicauth", "client"),
 			},
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
@@ -100,7 +100,7 @@ func TestScraper(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.NewID("basicauth/client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
 		},
 	}
 

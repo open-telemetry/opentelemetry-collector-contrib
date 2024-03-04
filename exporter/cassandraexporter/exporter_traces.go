@@ -22,24 +22,16 @@ type tracesExporter struct {
 	cfg    *Config
 }
 
-func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error) {
-	cluster := gocql.NewCluster(cfg.DSN)
-	session, err := cluster.CreateSession()
-	cluster.Keyspace = cfg.Keyspace
-	cluster.Consistency = gocql.Quorum
-	cluster.Port = cfg.Port
-	cluster.Timeout = cfg.Timeout
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &tracesExporter{logger: logger, client: session, cfg: cfg}, nil
+func newTracesExporter(logger *zap.Logger, cfg *Config) *tracesExporter {
+	return &tracesExporter{logger: logger, cfg: cfg}
 }
 
 func initializeTraceKernel(cfg *Config) error {
 	ctx := context.Background()
-	cluster := gocql.NewCluster(cfg.DSN)
+	cluster, err := newCluster(cfg)
+	if err != nil {
+		return err
+	}
 	cluster.Consistency = gocql.Quorum
 	cluster.Port = cfg.Port
 	cluster.Timeout = cfg.Timeout
@@ -88,6 +80,20 @@ func parseCreateDatabaseSQL(cfg *Config) string {
 }
 
 func (e *tracesExporter) Start(_ context.Context, _ component.Host) error {
+	cluster, err := newCluster(e.cfg)
+	if err != nil {
+		return err
+	}
+	cluster.Keyspace = e.cfg.Keyspace
+	cluster.Consistency = gocql.Quorum
+	cluster.Port = e.cfg.Port
+	cluster.Timeout = e.cfg.Timeout
+
+	session, err := cluster.CreateSession()
+	if err != nil {
+		return err
+	}
+	e.client = session
 	initializeErr := initializeTraceKernel(e.cfg)
 	return initializeErr
 }

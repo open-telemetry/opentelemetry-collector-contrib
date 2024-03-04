@@ -27,7 +27,7 @@ const (
 
 var emitPerfMetricsWithObjects = featuregate.GlobalRegistry().MustRegister(
 	emitPerfMetricsWithObjectsFeatureGateID,
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, the receiver emits vCenter performance metrics with object metric label dimension."),
 )
 

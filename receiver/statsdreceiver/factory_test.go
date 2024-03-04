@@ -8,23 +8,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
-
-type testHost struct {
-	component.Host
-	t *testing.T
-}
-
-// ReportFatalError causes the test to be run to fail.
-func (h *testHost) ReportFatalError(err error) {
-	h.t.Fatalf("receiver reported a fatal error: %v", err)
-}
-
-var _ component.Host = (*testHost)(nil)
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()

@@ -7,3 +7,6 @@ status:
   distributions: [core, contrib, aws, observiq, liatrio]
   codeowners:
     active: [Aneurysm9, rapphil]
+
+tests:
+  expect_consumer_error: true

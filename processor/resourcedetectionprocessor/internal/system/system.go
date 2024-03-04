@@ -32,6 +32,14 @@ var (
 		featuregate.WithRegisterFromVersion("v0.89.0"),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/495"),
 	)
+	hostCPUSteppingAsStringID          = "processor.resourcedetection.hostCPUSteppingAsString"
+	hostCPUSteppingAsStringFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		hostCPUSteppingAsStringID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("Change type of host.cpu.stepping to string."),
+		featuregate.WithRegisterFromVersion("v0.95.0"),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/664"),
+	)
 )
 
 const (
@@ -232,7 +240,16 @@ func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) error {
 	}
 
 	d.rb.SetHostCPUModelName(cpuInfo.ModelName)
-	d.rb.SetHostCPUStepping(int64(cpuInfo.Stepping))
+	if hostCPUSteppingAsStringFeatureGate.IsEnabled() {
+		d.rb.SetHostCPUStepping(fmt.Sprintf("%d", cpuInfo.Stepping))
+	} else {
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31136
+		d.logger.Info("This attribute will change from int to string. Switch now using the feature gate.",
+			zap.String("attribute", "host.cpu.stepping"),
+			zap.String("feature gate", hostCPUSteppingAsStringID),
+		)
+		d.rb.SetHostCPUSteppingAsInt(int64(cpuInfo.Stepping))
+	}
 	d.rb.SetHostCPUCacheL2Size(int64(cpuInfo.CacheSize))
 	return nil
 }

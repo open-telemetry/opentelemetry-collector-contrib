@@ -84,7 +84,7 @@ func TestInvalidConfig(t *testing.T) {
 		CollectionInterval: 30 * time.Second,
 	}
 	err := component.ValidateConfig(cfg)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Equal(t, "invalid authType for kubernetes: ", err.Error())
 
 	// Wrong distro
@@ -94,6 +94,6 @@ func TestInvalidConfig(t *testing.T) {
 		CollectionInterval: 30 * time.Second,
 	}
 	err = component.ValidateConfig(cfg)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Equal(t, "\"wrong\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", err.Error())
 }

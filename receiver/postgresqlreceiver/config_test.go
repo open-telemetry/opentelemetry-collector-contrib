@@ -27,7 +27,7 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			desc:                  "missing username and password",
-			defaultConfigModifier: func(cfg *Config) {},
+			defaultConfigModifier: func(*Config) {},
 			expected: multierr.Combine(
 				errors.New(ErrNoUsername),
 				errors.New(ErrNoPassword),
@@ -109,14 +109,14 @@ func TestValidate(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
+	cm, confErr := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, confErr)
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	t.Run("postgresql", func(t *testing.T) {
-		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	t.Run("postgresql/minimal", func(t *testing.T) {
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "minimal").String())
 		require.NoError(t, err)
 		require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -128,6 +128,24 @@ func TestLoadConfig(t *testing.T) {
 		require.Equal(t, expected, cfg)
 	})
 
+	t.Run("postgresql/pool", func(t *testing.T) {
+		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "pool").String())
+		require.NoError(t, err)
+		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+		expected := factory.CreateDefaultConfig().(*Config)
+		expected.Endpoint = "localhost:5432"
+		expected.AddrConfig.Transport = "tcp"
+		expected.Username = "otel"
+		expected.Password = "${env:POSTGRESQL_PASSWORD}"
+		expected.ConnectionPool = ConnectionPool{
+			MaxIdleTime: ptr(30 * time.Second),
+			MaxIdle:     ptr(5),
+		}
+
+		require.Equal(t, expected, cfg)
+	})
+
 	t.Run("postgresql/all", func(t *testing.T) {
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "all").String())
 		require.NoError(t, err)
@@ -135,7 +153,7 @@ func TestLoadConfig(t *testing.T) {
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"
-		expected.NetAddr.Transport = "tcp"
+		expected.AddrConfig.Transport = "tcp"
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.Databases = []string{"otel"}
@@ -150,7 +168,17 @@ func TestLoadConfig(t *testing.T) {
 				KeyFile:  "/home/otel/mypostgreskey.key",
 			},
 		}
+		expected.ConnectionPool = ConnectionPool{
+			MaxIdleTime: ptr(30 * time.Second),
+			MaxLifetime: ptr(time.Minute),
+			MaxIdle:     ptr(5),
+			MaxOpen:     ptr(10),
+		}
 
 		require.Equal(t, expected, cfg)
 	})
+}
+
+func ptr[T any](value T) *T {
+	return &value
 }

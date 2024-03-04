@@ -7,3 +7,6 @@ status:
   distributions: [contrib, sumo, grafana]
   codeowners:
     active: [jpkrohling, mapno]
+
+tests:
+  config:

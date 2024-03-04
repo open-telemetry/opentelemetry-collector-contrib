@@ -94,6 +94,13 @@ type Parser struct {
 	cache  cache
 }
 
+func (r *Parser) Stop() error {
+	if r.cache != nil {
+		r.cache.stop()
+	}
+	return nil
+}
+
 // Process will parse an entry for regex.
 func (r *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	return r.ParserOperator.ProcessWith(ctx, entry, r.parse)

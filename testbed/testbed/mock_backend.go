@@ -41,9 +41,10 @@ type MockBackend struct {
 	logFile     *os.File
 
 	// Start/stop flags
-	isStarted bool
-	stopOnce  sync.Once
-	startedAt time.Time
+	isStarted  bool
+	stopOnce   sync.Once
+	startedAt  time.Time
+	startMutex sync.Mutex
 
 	// Recording fields.
 	isRecording     bool
@@ -100,6 +101,8 @@ func (mb *MockBackend) Start() error {
 	}
 
 	mb.isStarted = true
+	mb.startMutex.Lock()
+	defer mb.startMutex.Unlock()
 	mb.startedAt = time.Now()
 	return nil
 }
@@ -130,6 +133,8 @@ func (mb *MockBackend) EnableRecording() {
 }
 
 func (mb *MockBackend) GetStats() string {
+	mb.startMutex.Lock()
+	defer mb.startMutex.Unlock()
 	received := mb.DataItemsReceived()
 	return printer.Sprintf("Received:%10d items (%d/sec)", received, int(float64(received)/time.Since(mb.startedAt).Seconds()))
 }
@@ -190,8 +195,6 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) 
 		return err
 	}
 
-	tc.numSpansReceived.Add(uint64(td.SpanCount()))
-
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
 		ils := rs.At(i).ScopeSpans()
@@ -221,6 +224,7 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) 
 	}
 
 	tc.backend.ConsumeTrace(td)
+	tc.numSpansReceived.Add(uint64(td.SpanCount()))
 
 	return nil
 }

@@ -351,6 +351,7 @@ metrics:
     unit: "By"
     gauge:
       value_type: int
+
 tests:
   config:
     endpoint: localhost:6379

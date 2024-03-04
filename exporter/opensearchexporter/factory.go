@@ -30,12 +30,12 @@ func NewFactory() exporter.Factory {
 
 func newDefaultConfig() component.Config {
 	return &Config{
-		HTTPClientSettings: confighttp.NewDefaultHTTPClientSettings(),
-		Dataset:            defaultDataset,
-		Namespace:          defaultNamespace,
-		BulkAction:         defaultBulkAction,
-		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
-		MappingsSettings:   MappingsSettings{Mode: defaultMappingMode},
+		ClientConfig:     confighttp.NewDefaultClientConfig(),
+		Dataset:          defaultDataset,
+		Namespace:        defaultNamespace,
+		BulkAction:       defaultBulkAction,
+		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+		MappingsSettings: MappingsSettings{Mode: defaultMappingMode},
 	}
 }
 

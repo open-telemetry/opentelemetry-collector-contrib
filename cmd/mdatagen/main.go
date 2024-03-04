@@ -43,6 +43,7 @@ func run(ymlPath string) error {
 	}
 
 	ymlDir := filepath.Dir(ymlPath)
+	packageName := filepath.Base(ymlDir)
 
 	md, err := loadMetadata(ymlPath)
 	if err != nil {
@@ -61,6 +62,12 @@ func run(ymlPath string) error {
 				filepath.Join(codeDir, "generated_status.go"), md, "metadata"); err != nil {
 				return err
 			}
+			if !md.Tests.SkipLifecycle || !md.Tests.SkipShutdown {
+				if err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
+					filepath.Join(ymlDir, "generated_component_test.go"), md, packageName); err != nil {
+					return err
+				}
+			}
 		}
 
 		if _, err = os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
@@ -70,13 +77,6 @@ func run(ymlPath string) error {
 				md, statusStart, statusEnd); err != nil {
 				return err
 			}
-		}
-	}
-
-	if md.Tests != nil {
-		if err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
-			filepath.Join(ymlDir, "generated_component_test.go"), md, md.ShortFolderName+md.Status.Class); err != nil {
-			return err
 		}
 	}
 
@@ -164,7 +164,8 @@ func templatize(tmplFile string, md metadata) *template.Template {
 					}
 					return result
 				},
-				"casesTitle": cases.Title(language.English).String,
+				"casesTitle":  cases.Title(language.English).String,
+				"toLowerCase": strings.ToLower,
 				"toCamelCase": func(s string) string {
 					caser := cases.Title(language.English).String
 					parts := strings.Split(s, "_")
@@ -190,8 +191,8 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				"isExtension": func() bool {
 					return md.Status.Class == "extension"
 				},
-				"skipLifecycle": func() bool {
-					return md.Tests.SkipLifecycle
+				"isConnector": func() bool {
+					return md.Status.Class == "connector"
 				},
 				"supportsLogs": func() bool {
 					for _, signals := range md.Status.Stability {
@@ -217,6 +218,97 @@ func templatize(tmplFile string, md metadata) *template.Template {
 					for _, signals := range md.Status.Stability {
 						for _, s := range signals {
 							if s == "traces" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsLogsToLogs": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "logs_to_logs" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsLogsToMetrics": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "logs_to_metrics" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsLogsToTraces": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "logs_to_traces" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsMetricsToLogs": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "metrics_to_logs" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsMetricsToMetrics": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "metrics_to_metrics" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsMetricsToTraces": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "metrics_to_traces" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+
+				"supportsTracesToLogs": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "traces_to_logs" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsTracesToMetrics": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "traces_to_metrics" {
+								return true
+							}
+						}
+					}
+					return false
+				},
+				"supportsTracesToTraces": func() bool {
+					for _, signals := range md.Status.Stability {
+						for _, s := range signals {
+							if s == "traces_to_traces" {
 								return true
 							}
 						}

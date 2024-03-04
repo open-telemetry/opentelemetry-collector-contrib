@@ -28,7 +28,7 @@ import (
 
 type k8sobjectsreceiver struct {
 	setting         receiver.CreateSettings
-	objects         []*K8sObjectsConfig
+	config          *Config
 	stopperChanList []chan struct{}
 	client          dynamic.Interface
 	consumer        consumer.Logs
@@ -38,10 +38,6 @@ type k8sobjectsreceiver struct {
 
 func newReceiver(params receiver.CreateSettings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
 	transport := "http"
-	client, err := config.getDynamicClient()
-	if err != nil {
-		return nil, err
-	}
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             params.ID,
@@ -60,19 +56,23 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 	}
 
 	return &k8sobjectsreceiver{
-		client:   client,
 		setting:  params,
 		consumer: consumer,
-		objects:  config.Objects,
+		config:   config,
 		obsrecv:  obsrecv,
 		mu:       sync.Mutex{},
 	}, nil
 }
 
 func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error {
+	client, err := kr.config.getDynamicClient()
+	if err != nil {
+		return err
+	}
+	kr.client = client
 	kr.setting.Logger.Info("Object Receiver started")
 
-	for _, object := range kr.objects {
+	for _, object := range kr.config.Objects {
 		kr.start(ctx, object)
 	}
 	return nil
@@ -141,7 +141,7 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
 				logRecordCount := logs.LogRecordCount()
 				err = kr.consumer.ConsumeLogs(obsCtx, logs)
-				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, logRecordCount, err)
+				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
 			}
 		case <-stopperChan:
 			return
@@ -223,7 +223,7 @@ func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsCon
 			} else {
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
 				err := kr.consumer.ConsumeLogs(obsCtx, logs)
-				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, 1, err)
+				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), 1, err)
 			}
 		case <-stopperChan:
 			watcher.Stop()

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build linux
-// +build linux
 
 package namedpipe // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/namedpipe"
 
@@ -135,8 +134,14 @@ func (n *Input) Start(_ operator.Persister) error {
 }
 
 func (n *Input) Stop() error {
-	n.pipe.Close()
-	n.cancel()
+	if n.pipe != nil {
+		n.pipe.Close()
+	}
+
+	if n.cancel != nil {
+		n.cancel()
+	}
+
 	n.wg.Wait()
 	return nil
 }

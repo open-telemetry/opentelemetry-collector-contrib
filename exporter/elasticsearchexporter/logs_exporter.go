@@ -54,9 +54,9 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 	}
 
 	model := &encodeModel{
-		mode:  cfg.Mapping.Mode,
 		dedup: cfg.Mapping.Dedup,
 		dedot: cfg.Mapping.Dedot,
+		mode:  cfg.MappingMode(),
 	}
 
 	indexStr := cfg.LogsIndex

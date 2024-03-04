@@ -7,3 +7,7 @@ status:
   distributions: [contrib, splunk, observiq, aws]
   codeowners:
     active: [dmitryax, atoulme]
+
+
+tests:
+  expect_consumer_error: true

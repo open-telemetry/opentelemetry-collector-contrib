@@ -317,4 +317,5 @@ This metric requires WAL to be enabled with at least one replica.
 | ---- | ----------- | ------ | ------- |
 | postgresql.database.name | The name of the database. | Any Str | true |
 | postgresql.index.name | The name of the index on a table. | Any Str | true |
-| postgresql.table.name | The schema name followed by the table name. | Any Str | true |
+| postgresql.schema.name | The schema name. | Any Str | true |
+| postgresql.table.name | The table name. | Any Str | true |

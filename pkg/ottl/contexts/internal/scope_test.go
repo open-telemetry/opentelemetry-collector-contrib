@@ -340,11 +340,11 @@ func TestScopePathGetSetter(t *testing.T) {
 			is := createInstrumentationScope()
 
 			got, err := accessor.Get(context.Background(), newInstrumentationScopeContext(is))
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), newInstrumentationScopeContext(is), tt.newVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			expectedIS := createInstrumentationScope()
 			tt.modified(expectedIS)

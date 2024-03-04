@@ -27,7 +27,7 @@ import (
 func TestTypeStr(t *testing.T) {
 	factory := NewFactory()
 
-	assert.Equal(t, "skywalking", string(factory.Type()))
+	assert.Equal(t, "skywalking", factory.Type().String())
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -41,9 +41,9 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the skywalking receiver to be created
-	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
-		NetAddr: confignet.NetAddr{
-			Endpoint:  defaultGRPCBindEndpoint,
+	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "0.0.0.0:11800",
 			Transport: "tcp",
 		},
 	}
@@ -86,9 +86,9 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
-		NetAddr: confignet.NetAddr{
-			Endpoint:  defaultGRPCBindEndpoint,
+	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "0.0.0.0:11800",
 			Transport: "tcp",
 		},
 	}
@@ -104,9 +104,9 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
-		NetAddr: confignet.NetAddr{
-			Endpoint:  defaultGRPCBindEndpoint,
+	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "0.0.0.0:11800",
 			Transport: "tcp",
 		},
 		TLSSetting: &configtls.TLSServerSetting{
@@ -126,8 +126,8 @@ func TestCreateTLSHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.HTTP = &confighttp.HTTPServerSettings{
-		Endpoint: defaultHTTPBindEndpoint,
+	cfg.(*Config).Protocols.HTTP = &confighttp.ServerConfig{
+		Endpoint: "0.0.0.0:12800",
 		TLSSetting: &configtls.TLSServerSetting{
 			TLSSetting: configtls.TLSSetting{
 				CertFile: "./testdata/server.crt",
@@ -146,8 +146,8 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.HTTP = &confighttp.HTTPServerSettings{
-		Endpoint: defaultHTTPBindEndpoint,
+	cfg.(*Config).Protocols.HTTP = &confighttp.ServerConfig{
+		Endpoint: "0.0.0.0:12800",
 	}
 	set := receivertest.NewNopCreateSettings()
 	traceSink := new(consumertest.TracesSink)

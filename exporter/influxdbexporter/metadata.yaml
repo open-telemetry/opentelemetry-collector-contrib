@@ -7,3 +7,6 @@ status:
   distributions: [contrib, observiq, liatrio]
   codeowners:
     active: [jacobmarble]
+
+tests:
+  expect_consumer_error: true

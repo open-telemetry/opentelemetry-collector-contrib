@@ -7,5 +7,3 @@ status:
   distributions: [contrib, observiq, sumo]
   codeowners:
     active: [jacobmarble]
-tests:
-  config:

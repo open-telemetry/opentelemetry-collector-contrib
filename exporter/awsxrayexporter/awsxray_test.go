@@ -13,7 +13,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -32,9 +31,9 @@ func TestTraceExport(t *testing.T) {
 	ctx := context.Background()
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	err = traceExporter.Shutdown(ctx)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestXraySpanTraceResourceExtraction(t *testing.T) {
@@ -48,9 +47,9 @@ func TestXrayAndW3CSpanTraceExport(t *testing.T) {
 	ctx := context.Background()
 	td := constructXrayAndW3CSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	err = traceExporter.Shutdown(ctx)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestXrayAndW3CSpanTraceResourceExtraction(t *testing.T) {
@@ -70,7 +69,7 @@ func TestTelemetryEnabled(t *testing.T) {
 	registry := telemetry.NewRegistry()
 	sink := telemetrytest.NewSenderSink()
 	// preload the sender that the exporter will use
-	sender, loaded := registry.LoadOrStore(component.NewID(""), sink)
+	sender, loaded := registry.LoadOrStore(exportertest.NewNopCreateSettings().ID, sink)
 	require.False(t, loaded)
 	require.NotNil(t, sender)
 	require.Equal(t, sink, sender)
@@ -81,9 +80,9 @@ func TestTelemetryEnabled(t *testing.T) {
 	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	err = traceExporter.Shutdown(ctx)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.EqualValues(t, 1, sink.StartCount.Load())
 	assert.EqualValues(t, 1, sink.StopCount.Load())
 	assert.True(t, sink.HasRecording())

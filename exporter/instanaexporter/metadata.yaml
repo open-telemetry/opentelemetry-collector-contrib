@@ -7,3 +7,6 @@ status:
   distributions: [contrib]
   codeowners:
     active: [jpkrohling, hickeyma]
+
+tests:
+  expect_consumer_error: true

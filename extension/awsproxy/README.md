@@ -42,6 +42,9 @@ The TCP address and port on which this proxy listens for requests.
 
 Default: `0.0.0.0:2000`
 
+The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:2000. This will become the default in a future release.
+
+
 ### proxy_address (Optional)
 Defines the proxy address that this extension forwards HTTP requests to the AWS backend through. If left unconfigured, requests will be sent directly.
 This will generally be set to a NAT gateway when the collector is running on a network without public internet.
