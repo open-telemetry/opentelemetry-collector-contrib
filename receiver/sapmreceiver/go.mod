@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/gorilla/mux v1.8.1
 	github.com/jaegertracing/jaeger v1.54.0
-	github.com/klauspost/compress v1.17.6
+	github.com/klauspost/compress v1.17.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.95.0
@@ -71,7 +71,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.23.1 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.23.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.26.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
