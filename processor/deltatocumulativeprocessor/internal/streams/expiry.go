@@ -9,6 +9,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/staleness"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/streams"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/clock"
 )
 
 func ExpireAfter[T any](items streams.Map[T], ttl time.Duration) Expiry[T] {
@@ -37,8 +38,9 @@ func (e Expiry[T]) ExpireOldEntries() <-chan struct{} {
 		case n == 0:
 			<-e.sig
 		case n > 0:
-			next := time.Until(e.Staleness.Next())
-			time.Sleep(next + e.Max)
+			expires := e.Staleness.Next().Add(e.Max)
+			until := clock.Until(expires)
+			clock.Sleep(until)
 		}
 		close(sig)
 	}()

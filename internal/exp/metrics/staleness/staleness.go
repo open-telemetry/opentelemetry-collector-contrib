@@ -62,6 +62,9 @@ func (s *Staleness[T]) Items() func(yield func(identity.Stream, T) bool) bool {
 func (s *Staleness[T]) ExpireOldEntries() {
 	now := NowFunc()
 	for {
+		if s.Len() == 0 {
+			return
+		}
 		_, ts := s.pq.Peek()
 		if now.Sub(ts) < s.Max {
 			break
