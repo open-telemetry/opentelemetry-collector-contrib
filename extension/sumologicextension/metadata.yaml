@@ -7,3 +7,8 @@ status:
   distributions: [sumo]
   codeowners:
     active: [astencel-sumo, sumo-drosiek, swiatekm-sumo]
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

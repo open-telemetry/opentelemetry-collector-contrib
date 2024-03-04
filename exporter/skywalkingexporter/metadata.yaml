@@ -10,5 +10,4 @@ status:
     emeritus: [liqiangz]
 
 tests:
-  config:
   skip_lifecycle: true
