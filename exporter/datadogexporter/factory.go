@@ -142,7 +142,7 @@ func (f *factory) StopReporter() {
 }
 
 func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
-	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, datadog.InitializeMetricClient(params.MeterProvider), attrsTranslator)
+	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, datadog.InitializeMetricClient(params.MeterProvider, datadog.ExporterSourceTag), attrsTranslator)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +299,7 @@ func (f *factory) createMetricsExporter(
 		return nil, err
 	}
 	statsToAgent := make(chan *pb.StatsPayload)
-	metricsClient := datadog.InitializeMetricClient(set.MeterProvider)
+	metricsClient := datadog.InitializeMetricClient(set.MeterProvider, datadog.ExporterSourceTag)
 	timingReporter := timing.New(metricsClient)
 	statsWriter := writer.NewStatsWriter(acfg, statsToAgent, telemetry.NewNoopCollector(), metricsClient, timingReporter)
 

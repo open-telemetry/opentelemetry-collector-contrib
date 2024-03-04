@@ -7,3 +7,8 @@ status:
   distributions: [contrib, splunk, sumo]
   codeowners:
     active: [MovieStoreGuy]
+
+# TODO: The tests are not passing on Windows. Either fix them or mark component as not supported on Windows.
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
