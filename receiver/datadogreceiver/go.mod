@@ -6,7 +6,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.51.1-0.20240301173728-334e775e420a
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.95.0
 	github.com/stretchr/testify v1.8.4
-	github.com/vmihailenco/msgpack/v4 v4.3.12
+	github.com/vmihailenco/msgpack/v5 v5.4.1
 	go.opentelemetry.io/collector/component v0.95.0
 	go.opentelemetry.io/collector/config/confighttp v0.95.0
 	go.opentelemetry.io/collector/confmap v0.95.0
@@ -53,6 +53,7 @@ require (
 	github.com/rs/cors v1.10.1 // indirect
 	github.com/tinylib/msgp v1.1.9 // indirect
 	github.com/vmihailenco/tagparser v0.1.2 // indirect
+	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opentelemetry.io/collector v0.95.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.95.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v0.95.0 // indirect
@@ -72,7 +73,6 @@ require (
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240102182953-50ed04b92917 // indirect
 	google.golang.org/grpc v1.61.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
