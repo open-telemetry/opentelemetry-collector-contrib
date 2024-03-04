@@ -14,6 +14,7 @@ import (
 
 	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -65,7 +66,11 @@ func (e *groupingFileExporter) consumeTraces(ctx context.Context, td ptrace.Trac
 		}
 	}
 
-	return errs
+	if errs != nil {
+		return consumererror.NewPermanent(errs)
+	}
+
+	return nil
 }
 
 func (e *groupingFileExporter) consumeMetrics(ctx context.Context, md pmetric.Metrics) error {
