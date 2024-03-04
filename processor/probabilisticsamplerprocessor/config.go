@@ -72,6 +72,10 @@ type Config struct {
 	// be useful until support for the flag is widely deployed,
 	StrictRandomness bool `mapstructure:"strict_randomness"`
 
+	// How many hex digits of th: value to use, max, from 1 up to
+	// 14.  Default is 5.
+	SamplingPrecision uint8 `mapstructure:"sampling_precision"`
+
 	///////
 	// Logs only fields below.
 
@@ -85,10 +89,6 @@ type Config struct {
 
 	// SamplingPriority (logs only) enables using a log record attribute as the sampling priority of the log record.
 	SamplingPriority string `mapstructure:"sampling_priority"`
-
-	// How many hex digits of th: value to use, max, from 1 up to
-	// 14.  Default is 5.
-	SamplingPrecision uint8 `mapstructure:"sampling_precision"`
 }
 
 var _ component.Config = (*Config)(nil)
