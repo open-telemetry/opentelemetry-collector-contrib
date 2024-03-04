@@ -8,3 +8,7 @@ status:
   codeowners:
     active: [mx-psi, dineshg13]
     emeritus: [gbbr]
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

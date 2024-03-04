@@ -9,6 +9,6 @@ status:
     active: [rogercoll]
   unsupported_platforms: [windows]
 
+# TODO: Update the receiver to pass the tests
 tests:
-  config:
   skip_lifecycle: true

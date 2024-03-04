@@ -7,6 +7,7 @@ status:
   distributions: [contrib, observiq, sumo]
   codeowners:
     active: [djaglowski, schmikei]
+    seeking_new: true
 
 resource_attributes:
   database:
@@ -350,6 +351,6 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [ ]
 
+# TODO: Update the receiver to pass the tests
 tests:
-  config:
   skip_lifecycle: true

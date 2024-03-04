@@ -8,6 +8,7 @@ status:
   codeowners:
     active: [portertech]
     emeritus: [albertteoh]
+    seeking_new: true
 
 tests:
   config:
