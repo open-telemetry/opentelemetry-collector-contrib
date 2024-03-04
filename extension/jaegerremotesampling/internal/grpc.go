@@ -70,7 +70,7 @@ func (s *SamplingGRPCServer) Start(ctx context.Context, host component.Host) err
 	healthServer.SetServingStatus("jaeger.api_v2.SamplingManager", grpc_health_v1.HealthCheckResponse_SERVING)
 	grpc_health_v1.RegisterHealthServer(server, healthServer)
 
-	listener, err := s.settings.ToListenerContext(ctx)
+	listener, err := s.settings.NetAddr.Listen(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to listen on gRPC port: %w", err)
 	}

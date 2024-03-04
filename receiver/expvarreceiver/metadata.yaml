@@ -264,5 +264,3 @@ metrics:
     unit: 1
     gauge:
       value_type: double
-tests:
-  config:

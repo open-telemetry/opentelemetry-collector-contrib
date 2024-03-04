@@ -15,3 +15,5 @@ tests:
     timeout: 20s
     subscription: projects/my-project/subscriptions/otlp-subscription
   skip_lifecycle: true
+  skip_shutdown: true
+

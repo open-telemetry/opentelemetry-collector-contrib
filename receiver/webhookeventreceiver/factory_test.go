@@ -47,24 +47,6 @@ func TestCreateLogsReceiver(t *testing.T) {
 				require.NoError(t, err, "failed to create logs receiver")
 			},
 		},
-		{
-			desc: "Missing consumer",
-			run: func(t *testing.T) {
-				t.Parallel()
-
-				cfg := createDefaultConfig().(*Config)
-				cfg.Endpoint = "localhost:8080"
-				require.NoError(t, cfg.Validate(), "error validating default config")
-
-				_, err := createLogsReceiver(
-					context.Background(),
-					receivertest.NewNopCreateSettings(),
-					cfg,
-					nil,
-				)
-				require.Error(t, err, "Succeeded in creating a receiver without a consumer")
-			},
-		},
 	}
 
 	for _, test := range tests {

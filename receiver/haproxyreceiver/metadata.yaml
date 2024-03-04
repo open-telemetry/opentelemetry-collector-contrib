@@ -261,6 +261,3 @@ metrics:
       value_type: double
       input_type: string
     unit: "{sessions}"
-
-tests:
-  config:
