@@ -7,6 +7,6 @@ status:
   distributions: [contrib, observiq, sumo, splunk]
   codeowners:
     active: [atoulme, pdelewski]
+
 tests:
-  config:
   expect_consumer_error: true

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 )
 
 func TestFileReader_FingerprintUpdated(t *testing.T) {
@@ -31,7 +32,7 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 	filetest.WriteString(t, temp, "testlog1\n")
 	reader.ReadToEnd(context.Background())
 	sink.ExpectToken(t, []byte("testlog1"))
-	require.Equal(t, []byte("testlog1\n"), reader.Fingerprint.FirstBytes)
+	require.Equal(t, fingerprint.New([]byte("testlog1\n")), reader.Fingerprint)
 }
 
 // Test that a fingerprint:
@@ -63,7 +64,7 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 			f, _ := testFactory(t, withSinkChanSize(3*fpSize/lineLen), withFingerprintSize(fpSize))
 			fp, err := f.NewFingerprint(temp)
 			require.NoError(t, err)
-			require.Equal(t, []byte(""), fp.FirstBytes)
+			require.Equal(t, fingerprint.New([]byte("")), fp)
 
 			reader, err := f.NewReader(tempCopy, fp)
 			require.NoError(t, err)
@@ -87,7 +88,7 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 
 				filetest.WriteString(t, temp, line)
 				reader.ReadToEnd(context.Background())
-				require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
+				require.Equal(t, fingerprint.New(fileContent[:expectedFP]), reader.Fingerprint)
 			}
 		})
 	}
@@ -124,7 +125,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 
 			fp, err := f.NewFingerprint(temp)
 			require.NoError(t, err)
-			require.Equal(t, []byte(""), fp.FirstBytes)
+			require.Equal(t, fingerprint.New([]byte("")), fp)
 
 			reader, err := f.NewReader(filetest.OpenFile(t, temp.Name()), fp)
 			require.NoError(t, err)
@@ -147,7 +148,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 
 				filetest.WriteString(t, temp, line)
 				reader.ReadToEnd(context.Background())
-				require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
+				require.Equal(t, fingerprint.New(fileContent[:expectedFP]), reader.Fingerprint)
 			}
 
 			// Recreate the factory with a larger fingerprint size
@@ -163,7 +164,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 
 			filetest.WriteString(t, temp, line)
 			reader.ReadToEnd(context.Background())
-			require.Equal(t, fileContent[:fpSizeUp], reader.Fingerprint.FirstBytes)
+			require.Equal(t, fingerprint.New(fileContent[:fpSizeUp]), reader.Fingerprint)
 
 			// Recreate the factory with a smaller fingerprint size
 			fpSizeDown := fpSize / 2
@@ -178,7 +179,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 
 			filetest.WriteString(t, temp, line)
 			reader.ReadToEnd(context.Background())
-			require.Equal(t, fileContent[:fpSizeDown], reader.Fingerprint.FirstBytes)
+			require.Equal(t, fingerprint.New(fileContent[:fpSizeDown]), reader.Fingerprint)
 		})
 	}
 }
