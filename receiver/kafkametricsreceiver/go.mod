@@ -7,12 +7,12 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.95.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.95.1-0.20240301231835-2fa6df8ad748
-	go.opentelemetry.io/collector/config/configtls v0.95.1-0.20240301231835-2fa6df8ad748
-	go.opentelemetry.io/collector/confmap v0.95.1-0.20240301231835-2fa6df8ad748
-	go.opentelemetry.io/collector/consumer v0.95.1-0.20240301231835-2fa6df8ad748
-	go.opentelemetry.io/collector/pdata v1.2.1-0.20240301231835-2fa6df8ad748
-	go.opentelemetry.io/collector/receiver v0.95.1-0.20240301231835-2fa6df8ad748
+	go.opentelemetry.io/collector/component v0.96.0
+	go.opentelemetry.io/collector/config/configtls v0.96.0
+	go.opentelemetry.io/collector/confmap v0.96.0
+	go.opentelemetry.io/collector/consumer v0.96.0
+	go.opentelemetry.io/collector/pdata v1.3.0
+	go.opentelemetry.io/collector/receiver v0.96.0
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
 	go.uber.org/goleak v1.3.0
@@ -64,9 +64,9 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.2.1-0.20240301231835-2fa6df8ad748 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
+	go.opentelemetry.io/collector v0.96.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.3.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.96.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
