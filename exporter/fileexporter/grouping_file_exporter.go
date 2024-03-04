@@ -23,6 +23,7 @@ import (
 )
 
 type groupingFileExporter struct {
+	conf          *Config
 	logger        *zap.Logger
 	marshaller    *marshaller
 	pathPrefix    string
@@ -141,8 +142,8 @@ func (e *groupingFileExporter) consumeLogs(ctx context.Context, ld plog.Logs) er
 	return errs
 }
 
-func (e *groupingFileExporter) write(ctx context.Context, pathSegment string, buf []byte) error {
-	writer, err := e.getWriter(ctx, pathSegment)
+func (e *groupingFileExporter) write(_ context.Context, pathSegment string, buf []byte) error {
+	writer, err := e.getWriter(pathSegment)
 	if err != nil {
 		return err
 	}
@@ -155,7 +156,7 @@ func (e *groupingFileExporter) write(ctx context.Context, pathSegment string, bu
 	return nil
 }
 
-func (e *groupingFileExporter) getWriter(ctx context.Context, pathSegment string) (*fileWriter, error) {
+func (e *groupingFileExporter) getWriter(pathSegment string) (*fileWriter, error) {
 	fullPath := e.fullPath(pathSegment)
 
 	e.mutex.Lock()
@@ -178,10 +179,7 @@ func (e *groupingFileExporter) getWriter(ctx context.Context, pathSegment string
 
 	e.writers.Add(fullPath, writer)
 
-	err = writer.start(ctx)
-	if err != nil {
-		return nil, err
-	}
+	writer.start()
 
 	return writer, nil
 }
@@ -237,8 +235,28 @@ func group[T any](e *groupingFileExporter, groups map[string][]T, resource pcomm
 	groups[pathSegment] = append(groups[pathSegment], resourceEntries)
 }
 
-// Start is a noop.
+// Start initializes and starts the exporter.
 func (e *groupingFileExporter) Start(context.Context, component.Host) error {
+	e.marshaller = newMarshaller(e.conf)
+	export := buildExportFunc(e.conf)
+
+	pathParts := strings.Split(e.conf.Path, "*")
+
+	e.pathPrefix = cleanPathPrefix(pathParts[0])
+	e.attribute = e.conf.GroupBy.ResourceAttribute
+	e.pathSuffix = pathParts[1]
+	e.maxOpenFiles = e.conf.GroupBy.MaxOpenFiles
+	e.newFileWriter = func(path string) (*fileWriter, error) {
+		return newFileWriter(path, nil, e.conf.FlushInterval, export)
+	}
+
+	writers, err := simplelru.NewLRU(e.conf.GroupBy.MaxOpenFiles, e.onEvict)
+	if err != nil {
+		return err
+	}
+
+	e.writers = writers
+
 	return nil
 }
 
@@ -248,7 +266,12 @@ func (e *groupingFileExporter) Shutdown(context.Context) error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 
+	if e.writers == nil {
+		return nil
+	}
+
 	e.writers.Purge()
+	e.writers = nil
 
 	return nil
 }

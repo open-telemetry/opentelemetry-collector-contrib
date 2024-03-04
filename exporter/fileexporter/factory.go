@@ -132,10 +132,18 @@ func getOrCreateFileExporter(cfg component.Config, logger *zap.Logger) FileExpor
 	return c.(FileExporter)
 }
 
-func newFileExporter(conf *Config) FileExporter {
-	return &fileExporter{
-		conf: conf,
+func newFileExporter(conf *Config, logger *zap.Logger) FileExporter {
+	if conf.GroupBy == nil || !conf.GroupBy.Enabled {
+		return &fileExporter{
+			conf: conf,
+		}
 	}
+
+	return &groupingFileExporter{
+		conf:   conf,
+		logger: logger,
+	}
+
 }
 
 func newFileWriter(path string, rotation *Rotation, flushInterval time.Duration, export exportFunc) (*fileWriter, error) {

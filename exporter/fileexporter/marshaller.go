@@ -34,6 +34,17 @@ type marshaller struct {
 	formatType string
 }
 
+func newMarshaller(conf *Config) *marshaller {
+	return &marshaller{
+		formatType:       conf.FormatType,
+		tracesMarshaler:  tracesMarshalers[conf.FormatType],
+		metricsMarshaler: metricsMarshalers[conf.FormatType],
+		logsMarshaler:    logsMarshalers[conf.FormatType],
+		compression:      conf.Compression,
+		compressor:       buildCompressor(conf.Compression),
+	}
+}
+
 func (m *marshaller) marshalTraces(td ptrace.Traces) ([]byte, error) {
 	buf, err := m.tracesMarshaler.MarshalTraces(td)
 	if err != nil {

@@ -139,8 +139,7 @@ func TestGroupingFileTracesExporter(t *testing.T) {
 			tmpDir := t.TempDir()
 			conf.Path = tmpDir + "/*.log"
 			zapCore, logs := observer.New(zap.DebugLevel)
-			feI, err := newFileExporter(conf, zap.New(zapCore))
-			assert.NoError(t, err)
+			feI := newFileExporter(conf, zap.New(zapCore))
 			require.IsType(t, &groupingFileExporter{}, feI)
 			gfe := feI.(*groupingFileExporter)
 
@@ -216,8 +215,7 @@ func TestGroupingFileLogsExporter(t *testing.T) {
 			tmpDir := t.TempDir()
 			conf.Path = tmpDir + "/*.log"
 			zapCore, logs := observer.New(zap.DebugLevel)
-			feI, err := newFileExporter(conf, zap.New(zapCore))
-			assert.NoError(t, err)
+			feI := newFileExporter(conf, zap.New(zapCore))
 			require.IsType(t, &groupingFileExporter{}, feI)
 			gfe := feI.(*groupingFileExporter)
 
@@ -295,8 +293,7 @@ func TestGroupingFileMetricsExporter(t *testing.T) {
 			conf.Path = tmpDir + "/*.log"
 
 			zapCore, logs := observer.New(zap.DebugLevel)
-			feI, err := newFileExporter(conf, zap.New(zapCore))
-			assert.NoError(t, err)
+			feI := newFileExporter(conf, zap.New(zapCore))
 			require.IsType(t, &groupingFileExporter{}, feI)
 			gfe := feI.(*groupingFileExporter)
 
@@ -465,8 +462,7 @@ func BenchmarkExporters(b *testing.B) {
 		logs = append(logs, ld)
 	}
 	for _, tc := range tests {
-		fe, err := newFileExporter(tc.conf, zap.NewNop())
-		require.NoError(b, err)
+		fe := newFileExporter(tc.conf, zap.NewNop())
 
 		// remove marshaling time from the benchmark
 		tm := &testMarshaller{content: bytes.Repeat([]byte{'a'}, 512)}
