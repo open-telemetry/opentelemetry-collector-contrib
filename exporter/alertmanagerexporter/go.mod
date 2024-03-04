@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.95.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.96.0
 	github.com/prometheus/common v0.48.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.96.0
