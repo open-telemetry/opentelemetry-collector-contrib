@@ -18,8 +18,8 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.2.1-0.20240301231835-2fa6df8ad748 // indirect
-	go.opentelemetry.io/collector/featuregate v1.2.1-0.20240301231835-2fa6df8ad748 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.3.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

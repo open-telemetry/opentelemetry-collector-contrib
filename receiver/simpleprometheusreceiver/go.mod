@@ -134,13 +134,13 @@ require (
 	go.opentelemetry.io/collector v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
 	go.opentelemetry.io/collector/config/configcompression v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.2.1-0.20240301231835-2fa6df8ad748 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.3.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
 	go.opentelemetry.io/collector/config/internal v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
 	go.opentelemetry.io/collector/extension v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
-	go.opentelemetry.io/collector/featuregate v1.2.1-0.20240301231835-2fa6df8ad748 // indirect
-	go.opentelemetry.io/collector/pdata v1.2.1-0.20240301231835-2fa6df8ad748 // indirect
+	go.opentelemetry.io/collector/featuregate v1.3.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.3.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect

@@ -11,7 +11,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.27.0
 	go.opentelemetry.io/collector/component v0.95.1-0.20240301231835-2fa6df8ad748
 	go.opentelemetry.io/collector/config/confignet v0.95.1-0.20240301231835-2fa6df8ad748
-	go.opentelemetry.io/collector/config/configopaque v1.2.1-0.20240301231835-2fa6df8ad748
+	go.opentelemetry.io/collector/config/configopaque v1.3.0
 	go.opentelemetry.io/collector/confmap v0.95.1-0.20240301231835-2fa6df8ad748
 	go.opentelemetry.io/collector/consumer v0.95.1-0.20240301231835-2fa6df8ad748
 	go.opentelemetry.io/collector/exporter v0.95.1-0.20240301231835-2fa6df8ad748
@@ -94,8 +94,8 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
 	go.opentelemetry.io/collector/extension v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
-	go.opentelemetry.io/collector/featuregate v1.2.1-0.20240301231835-2fa6df8ad748 // indirect
-	go.opentelemetry.io/collector/pdata v1.2.1-0.20240301231835-2fa6df8ad748 // indirect
+	go.opentelemetry.io/collector/featuregate v1.3.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.3.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.47.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
