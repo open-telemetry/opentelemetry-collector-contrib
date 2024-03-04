@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	go.opentelemetry.io/collector/extension v0.95.0
-	go.opentelemetry.io/collector/pdata v1.2.0
+	go.opentelemetry.io/collector/pdata v1.2.1-0.20240301231835-2fa6df8ad748
 )
 
 require (
