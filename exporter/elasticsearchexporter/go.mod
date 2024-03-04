@@ -10,13 +10,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.95.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.95.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.95.0
+	go.opentelemetry.io/collector/component v0.95.1-0.20240301231835-2fa6df8ad748
 	go.opentelemetry.io/collector/config/configopaque v1.2.1-0.20240301231835-2fa6df8ad748
-	go.opentelemetry.io/collector/config/configtls v0.95.0
-	go.opentelemetry.io/collector/confmap v0.95.0
-	go.opentelemetry.io/collector/exporter v0.95.0
+	go.opentelemetry.io/collector/config/configtls v0.95.1-0.20240301231835-2fa6df8ad748
+	go.opentelemetry.io/collector/confmap v0.95.1-0.20240301231835-2fa6df8ad748
+	go.opentelemetry.io/collector/exporter v0.95.1-0.20240301231835-2fa6df8ad748
 	go.opentelemetry.io/collector/pdata v1.2.1-0.20240301231835-2fa6df8ad748
-	go.opentelemetry.io/collector/semconv v0.95.0
+	go.opentelemetry.io/collector/semconv v0.95.1-0.20240301231835-2fa6df8ad748
 	go.opentelemetry.io/otel/metric v1.23.1
 	go.opentelemetry.io/otel/trace v1.23.1
 	go.uber.org/goleak v1.3.0
@@ -48,12 +48,12 @@ require (
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.46.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	go.opentelemetry.io/collector v0.95.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v0.95.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.95.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.95.0 // indirect
-	go.opentelemetry.io/collector/extension v0.95.0 // indirect
-	go.opentelemetry.io/collector/receiver v0.95.0 // indirect
+	go.opentelemetry.io/collector v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
+	go.opentelemetry.io/collector/config/configretry v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
+	go.opentelemetry.io/collector/consumer v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
+	go.opentelemetry.io/collector/extension v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
+	go.opentelemetry.io/collector/receiver v0.95.1-0.20240301231835-2fa6df8ad748 // indirect
 	go.opentelemetry.io/otel v1.23.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.45.2 // indirect
 	go.opentelemetry.io/otel/sdk v1.23.1 // indirect
