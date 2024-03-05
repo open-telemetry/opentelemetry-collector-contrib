@@ -89,7 +89,7 @@ func (s *SamplingGRPCServer) Start(ctx context.Context, host component.Host) err
 	return nil
 }
 
-// Shutdown stops the grps server gracefully.
+// Shutdown stops the grpc server gracefully.
 func (s *SamplingGRPCServer) Shutdown(_ context.Context) error {
 	if s.grpcServer == nil {
 		return errGRPCServerNotRunning
