@@ -2,7 +2,7 @@ receivers:
   otlp:
     protocols:
       http:
-        endpoint: "localhost:{{.EndpointPort}}"
+        endpoint: "localhost:{{.OTLPHTTPEndpointPort}}"
 exporters:
   debug:
     verbosity: basic

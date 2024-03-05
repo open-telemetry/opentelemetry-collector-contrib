@@ -13,9 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
+	"go.uber.org/zap"
 )
 
 // Commander can start/stop/restart the Agent executable and also watch for a signal

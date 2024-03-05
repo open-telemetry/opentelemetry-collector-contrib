@@ -31,13 +31,12 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/open-telemetry/opamp-go/server"
 	"github.com/open-telemetry/opamp-go/server/types"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
 var _ clientTypes.Logger = testLogger{}
@@ -472,4 +471,49 @@ func waitForSupervisorConnection(connection chan bool, connected bool) {
 			break
 		}
 	}
+}
+
+func TestSupervisorTestConfigPersistence(t *testing.T) {
+	// Create a temporary directory to store the test config file.
+	tempDir := t.TempDir()
+
+	var agentConfig atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						agentConfig.Store(string(config.Body))
+					}
+				}
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "persistence", map[string]string{"url": server.addr, "storage_dir": tempDir})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	cfg, hash, _, _ := createSimplePipelineCollectorConf(t)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: cfg.Bytes()},
+				},
+			},
+			ConfigHash: hash,
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		// ensure that the config file was written to the storage directory
+		_, err := os.Stat(path.Join(tempDir, "last_recv_remote_config.yaml"))
+		return err == nil
+	}, 5*time.Second, 250*time.Millisecond, "Config file was not written to persistent storage directory")
 }
