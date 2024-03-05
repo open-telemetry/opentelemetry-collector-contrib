@@ -28,5 +28,5 @@ processors:
  
         # upper limit of streams to track. new streams exceeding this limit
         # will be dropped
-        [ max_streams: <int> | default = off]
+        [ max_streams: <int> | default = 0 (off) ]
 ```
