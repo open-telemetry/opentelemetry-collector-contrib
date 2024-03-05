@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.96.0
 	github.com/open-telemetry/otel-arrow v0.17.0
 	github.com/open-telemetry/otel-arrow/collector v0.17.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.0
 	go.opentelemetry.io/collector/config/configgrpc v0.96.0
 	go.opentelemetry.io/collector/config/confignet v0.96.0
