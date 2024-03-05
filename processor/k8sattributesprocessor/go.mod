@@ -7,7 +7,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.96.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.96.0
 	go.opentelemetry.io/collector/component v0.96.0

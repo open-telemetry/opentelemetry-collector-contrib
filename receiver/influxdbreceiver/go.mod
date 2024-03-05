@@ -9,7 +9,7 @@ require (
 	github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c
 	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.96.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.0
 	go.opentelemetry.io/collector/config/confighttp v0.96.0
 	go.opentelemetry.io/collector/confmap v0.96.0

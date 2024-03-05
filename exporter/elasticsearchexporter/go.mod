@@ -9,7 +9,7 @@ require (
 	github.com/lestrrat-go/strftime v1.0.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.96.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.0
 	go.opentelemetry.io/collector/config/configopaque v1.3.0
 	go.opentelemetry.io/collector/config/configtls v0.96.0
