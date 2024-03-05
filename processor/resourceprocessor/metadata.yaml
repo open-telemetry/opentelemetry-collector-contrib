@@ -1,4 +1,5 @@
 type: resource
+scope_name: otelcol/resource
 
 status:
   class: processor

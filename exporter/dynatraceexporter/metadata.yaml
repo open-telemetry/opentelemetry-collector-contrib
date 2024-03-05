@@ -1,4 +1,5 @@
 type: dynatrace
+scope_name: otelcol/dynatrace
 
 status:
   class: exporter

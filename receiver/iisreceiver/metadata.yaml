@@ -1,4 +1,5 @@
 type: iis
+scope_name: otelcol/iisreceiver
 
 status:
   class: receiver
