@@ -28,3 +28,15 @@ processors:
 ```
 
 There is no further configuration required. All delta samples are converted to cumulative.
+
+## Troubleshooting
+
+The following metrics are recorded when [telemetry is
+enabled](https://opentelemetry.io/docs/collector/configuration/#telemetry):
+
+| Name                                     | Description                                                                           | Unit    |
+|------------------------------------------|---------------------------------------------------------------------------------------|---------|
+| `deltatocumulative_streams_count`        | Number of streams currently tracked by the aggregation state                          |         |
+| `deltatocumulative_datapoints_processed` | Total number of datapoints processed, whether successful or not                       |         |
+| `deltatocumulative_datapoints_dropped`   | Faulty datapoints that were dropped due to the reason given in the `reason` attribute |         |
+| `deltatocumulative_seconds_lost`         | Total length of all gaps in the streams, which occur e.g. due to lost in transit      | seconds |

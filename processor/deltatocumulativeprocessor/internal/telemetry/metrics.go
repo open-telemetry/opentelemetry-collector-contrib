@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package telemetry
 
 import (
@@ -6,19 +9,20 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 )
 
 type Metrics struct {
 	streams metric.Int64UpDownCounter
 	total   metric.Int64Counter
 	dropped metric.Int64Counter
-	lost    metric.Int64Counter
+	gaps    metric.Int64Counter
 }
 
 func metrics(meter metric.Meter) Metrics {
@@ -28,7 +32,7 @@ func metrics(meter metric.Meter) Metrics {
 	)
 
 	return Metrics{
-		streams: updown("streams",
+		streams: updown("streams.count",
 			metric.WithDescription("number of streams tracked"),
 			metric.WithUnit("{stream}"),
 		),
@@ -40,7 +44,7 @@ func metrics(meter metric.Meter) Metrics {
 			metric.WithDescription("number of dropped datapoints due to given 'reason'"),
 			metric.WithUnit("{datapoint}"),
 		),
-		lost: count("lost",
+		gaps: count("gaps.length",
 			metric.WithDescription("total duration where data was expected but not received"),
 			metric.WithUnit("s"),
 		),
@@ -58,7 +62,6 @@ var _ streams.Map[any] = (*Map[any])(nil)
 
 type Map[T any] struct {
 	streams.Map[T]
-
 	Metrics
 }
 
@@ -67,29 +70,29 @@ func (m *Map[T]) Store(id streams.Ident, v T) error {
 	_, old := m.Load(id)
 
 	var (
-		olderStart *delta.ErrOlderStart
-		outOfOrder *delta.ErrOutOfOrder
-		gap        *delta.ErrGap
+		olderStart delta.ErrOlderStart
+		outOfOrder delta.ErrOutOfOrder
+		gap        delta.ErrGap
 	)
 
 	err := m.Map.Store(id, v)
 	switch {
 	case err == nil:
 		// all good
-	case errors.As(err, olderStart):
+	case errors.As(err, &olderStart):
 		// non fatal. record but ignore
-		inc(m.dropped, reason(olderStart))
+		inc(m.dropped, reason(&olderStart))
 		err = nil
-	case errors.As(err, outOfOrder):
+	case errors.As(err, &outOfOrder):
 		// non fatal. record but ignore
-		inc(m.dropped, reason(outOfOrder))
+		inc(m.dropped, reason(&outOfOrder))
 		err = nil
-	case errors.As(err, gap):
-		// a gap occured. record its length, but ignore
+	case errors.As(err, &gap):
+		// a gap occurred. record its length, but ignore
 		from := gap.From.AsTime()
 		to := gap.To.AsTime()
 		lost := to.Sub(from).Seconds()
-		m.lost.Add(nil, int64(lost))
+		m.gaps.Add(context.TODO(), int64(lost))
 		err = nil
 	}
 
@@ -110,14 +113,14 @@ type addable[Opts any] interface {
 }
 
 func inc[A addable[O], O any](a A, opts ...O) {
-	a.Add(nil, 1, opts...)
+	a.Add(context.TODO(), 1, opts...)
 }
 
 func dec[A addable[O], O any](a A, opts ...O) {
-	a.Add(nil, -1, opts...)
+	a.Add(context.TODO(), -1, opts...)
 }
 
-func reason[E error](err *E) metric.AddOption {
+func reason[E error](_ *E) metric.AddOption {
 	reason := reflect.TypeOf(*new(E)).Name()
 	reason = strings.TrimPrefix(reason, "Err")
 	return metric.WithAttributes(attribute.String("reason", reason))
