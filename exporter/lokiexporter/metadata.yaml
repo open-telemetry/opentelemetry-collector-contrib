@@ -11,5 +11,4 @@ status:
     active: [gramidt, gouthamve, jpkrohling, mar4uk]
 
 tests:
-  config:
   expect_consumer_error: true

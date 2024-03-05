@@ -135,6 +135,3 @@ metrics:
     gauge:
       value_type: int
     enabled: true
-
-tests:
-  config:

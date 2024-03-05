@@ -140,6 +140,8 @@ The following settings can be optionally configured:
   - Default: `[db.name, net.sock.peer.addr, net.peer.name, rpc.service, net.sock.peer.name, net.peer.name, http.url, http.target]`
 - `metrics_flush_interval`: the interval at which metrics are flushed to the exporter.
   - Default: Metrics are flushed on every received batch of traces.
+- `database_name_attribute`: the attribute name used to identify the database name from span attributes.
+  - Default: `db.name`
 
 ## Example configuration
 

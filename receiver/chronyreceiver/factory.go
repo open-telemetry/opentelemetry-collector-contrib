@@ -34,13 +34,15 @@ func newMetricsReceiver(
 		return nil, fmt.Errorf("wrong config provided: %w", errInvalidValue)
 	}
 
-	chronyc, err := chrony.New(cfg.Endpoint, cfg.Timeout)
-	if err != nil {
-		return nil, err
-	}
+	s := newScraper(ctx, cfg, set)
 	scraper, err := scraperhelper.NewScraper(
 		metadata.Type.String(),
-		newScraper(ctx, chronyc, cfg, set).scrape,
+		s.scrape,
+		scraperhelper.WithStart(func(ctx context.Context, host component.Host) error {
+			chronyc, err := chrony.New(cfg.Endpoint, cfg.Timeout)
+			s.client = chronyc
+			return err
+		}),
 	)
 	if err != nil {
 		return nil, err
