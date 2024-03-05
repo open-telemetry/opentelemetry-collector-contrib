@@ -411,6 +411,7 @@ Available Converters:
 - [Time](#time)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
+- [Unix](#unix)
 - [UnixMicro](#unixmicro)
 - [UnixMilli](#unixmilli)
 - [UnixNano](#unixnano)
@@ -1031,6 +1032,21 @@ While some common paths can return a `time.Time` object, you will most like need
 Examples:
 
 - `TruncateTime(start_time, Duration("1s"))`
+
+### Unix
+
+`Unix(seconds, nanoseconds)`
+
+The `Unix` Converter returns an epoch timestamp as a Unix time. Similar to [Golang's Unix function](https://pkg.go.dev/time#Unix).
+
+`seconds` is `int64`. If `seconds` is another type an error is returned.
+`nanoseconds` is `int64`. If `nanoseconds` is another type an error is returned.
+
+The returned type is `time.Time`.
+
+Examples:
+
+- `Unix(1672527600)`
 
 ### UnixMicro
 
