@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azured
 go 1.21
 
 require (
-	github.com/Azure/azure-kusto-go v0.15.0
+	github.com/Azure/azure-kusto-go v0.15.1
 	github.com/google/uuid v1.6.0
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.96.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.0
 	go.opentelemetry.io/collector/config/configopaque v1.3.0
 	go.opentelemetry.io/collector/config/configretry v0.96.0

@@ -6,7 +6,7 @@ require (
 	github.com/jaegertracing/jaeger v1.54.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.96.0
 	github.com/openzipkin/zipkin-go v0.4.2
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/pdata v1.3.0
 	go.opentelemetry.io/collector/semconv v0.96.0
 	go.uber.org/goleak v1.3.0
