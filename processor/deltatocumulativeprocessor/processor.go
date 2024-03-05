@@ -53,6 +53,9 @@ func newProcessor(cfg *Config, log *zap.Logger, next consumer.Metrics) *Processo
 		proc.exp = &exp
 		dps = &exp
 	}
+	if cfg.MaxStreams > 0 {
+		dps = streams.Limit(dps, cfg.MaxStreams)
+	}
 
 	proc.aggr = streams.IntoAggregator(dps)
 	return &proc
