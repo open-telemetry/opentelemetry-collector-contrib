@@ -36,7 +36,7 @@ func Unix[K any](seconds ottl.IntGetter[K], nanoseconds ottl.Optional[ottl.IntGe
 			return nil, err
 		}
 
-		var nsec int64 = 0
+		var nsec int64
 
 		if !nanoseconds.IsEmpty() {
 			nsec, err = nanoseconds.Get().Get(ctx, tCtx)
