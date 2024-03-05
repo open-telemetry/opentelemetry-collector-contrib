@@ -65,11 +65,11 @@ func TestCheck(t *testing.T) {
 				},
 				{
 					service:     traces.PipelineID.String(),
-					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+					expectedErr: grpcstatus.Error(codes.NotFound, "Service not found."),
 				},
 				{
 					service:     metrics.PipelineID.String(),
-					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+					expectedErr: grpcstatus.Error(codes.NotFound, "Service not found."),
 				},
 				{
 					step: func() {
@@ -217,11 +217,11 @@ func TestCheck(t *testing.T) {
 				},
 				{
 					service:     traces.PipelineID.String(),
-					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+					expectedErr: grpcstatus.Error(codes.NotFound, "Service not found."),
 				},
 				{
 					service:     metrics.PipelineID.String(),
-					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+					expectedErr: grpcstatus.Error(codes.NotFound, "Service not found."),
 				},
 				{
 					step: func() {
@@ -391,11 +391,11 @@ func TestCheck(t *testing.T) {
 				},
 				{
 					service:     traces.PipelineID.String(),
-					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+					expectedErr: grpcstatus.Error(codes.NotFound, "Service not found."),
 				},
 				{
 					service:     metrics.PipelineID.String(),
-					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+					expectedErr: grpcstatus.Error(codes.NotFound, "Service not found."),
 				},
 				{
 					step: func() {
@@ -548,11 +548,11 @@ func TestCheck(t *testing.T) {
 				},
 				{
 					service:     traces.PipelineID.String(),
-					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+					expectedErr: grpcstatus.Error(codes.NotFound, "Service not found."),
 				},
 				{
 					service:     metrics.PipelineID.String(),
-					expectedErr: grpcstatus.Error(codes.NotFound, "unknown service"),
+					expectedErr: grpcstatus.Error(codes.NotFound, "Service not found."),
 				},
 				{
 					step: func() {

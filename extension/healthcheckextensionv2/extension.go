@@ -92,7 +92,7 @@ func newExtension(
 
 // Start implements the component.Component interface.
 func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) error {
-	hc.telemetry.Logger.Info("Starting health check extension V2", zap.Any("config", hc.config))
+	hc.telemetry.Logger.Debug("Starting health check extension V2", zap.Any("config", hc.config))
 
 	for _, comp := range hc.subcomponents {
 		if err := comp.Start(ctx, host); err != nil {
@@ -141,24 +141,12 @@ func (hc *healthCheckExtension) NotifyConfig(ctx context.Context, conf *confmap.
 // Ready implements the extension.PipelineWatcher interface.
 func (hc *healthCheckExtension) Ready() error {
 	close(hc.readyCh)
-	var err error
-	for _, comp := range hc.subcomponents {
-		if pw, ok := comp.(extension.PipelineWatcher); ok {
-			err = multierr.Append(err, pw.Ready())
-		}
-	}
-	return err
+	return nil
 }
 
 // NotReady implements the extension.PipelineWatcher interface.
 func (hc *healthCheckExtension) NotReady() error {
-	var err error
-	for _, comp := range hc.subcomponents {
-		if pw, ok := comp.(extension.PipelineWatcher); ok {
-			err = multierr.Append(err, pw.NotReady())
-		}
-	}
-	return err
+	return nil
 }
 
 func (hc *healthCheckExtension) eventLoop(ctx context.Context) {

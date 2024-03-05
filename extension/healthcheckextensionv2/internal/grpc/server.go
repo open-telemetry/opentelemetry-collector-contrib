@@ -55,7 +55,7 @@ func (s *Server) Start(_ context.Context, host component.Host) error {
 	}
 
 	healthpb.RegisterHealthServer(s.grpcServer, s)
-	ln, err := s.config.ToListenerContext(context.Background())
+	ln, err := s.config.NetAddr.Listen(context.Background())
 
 	go func() {
 		defer close(s.doneCh)
