@@ -34,6 +34,7 @@ func newSolarwindsApmSettingsExtension(extensionCfg *Config, logger *zap.Logger)
 
 func (extension *solarwindsapmSettingsExtension) Start(ctx context.Context, _ component.Host) error {
 	extension.logger.Debug("Starting up solarwinds apm settings extension")
+	ctx = context.Background()
 	ctx, extension.cancel = context.WithCancel(ctx)
 	configOk := validateSolarwindsApmSettingsExtensionConfiguration(extension.config, extension.logger)
 	if configOk {
