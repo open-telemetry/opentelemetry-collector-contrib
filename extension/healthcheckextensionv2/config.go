@@ -21,10 +21,10 @@ const (
 )
 
 var (
-	errMissingProtocol      = errors.New("healthcheck extension: must be configured for HTTP or gRPC")
-	errGRPCEndpointRequired = errors.New("healthcheck extension: grpc endpoint required")
-	errHTTPEndpointRequired = errors.New("healthcheck extension: http endpoint required")
-	errInvalidPath          = errors.New("healthcheck extension: path must start with /")
+	errMissingProtocol      = errors.New("must specify at least one protocol")
+	errGRPCEndpointRequired = errors.New("grpc endpoint required")
+	errHTTPEndpointRequired = errors.New("http endpoint required")
+	errInvalidPath          = errors.New("path must start with /")
 )
 
 // Config has the configuration for the extension enabling the health check
