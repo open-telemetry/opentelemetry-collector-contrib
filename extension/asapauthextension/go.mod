@@ -5,7 +5,7 @@ go 1.21
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.7.0
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.0
 	go.opentelemetry.io/collector/config/configopaque v1.3.0
 	go.opentelemetry.io/collector/confmap v0.96.0

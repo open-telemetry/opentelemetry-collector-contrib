@@ -9,7 +9,7 @@ require (
 	github.com/microsoft/go-mssqldb v1.7.0
 	github.com/sijms/go-ora/v2 v2.8.8
 	github.com/snowflakedb/gosnowflake v1.8.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.0
 	go.opentelemetry.io/collector/pdata v1.3.0
 	go.opentelemetry.io/collector/receiver v0.96.0

@@ -8,7 +8,7 @@ require (
 	github.com/DataDog/datadog-go/v5 v5.5.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.4
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.4
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.0
 	go.opentelemetry.io/collector/featuregate v1.3.0
 	go.opentelemetry.io/collector/pdata v1.3.0
