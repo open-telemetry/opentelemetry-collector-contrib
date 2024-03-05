@@ -170,7 +170,7 @@ The response body contains either a partial or complete aggregate status in JSON
 aggregation process functions similar to a priority queue, where the most relevant status bubbles
 to the top. By default, FatalError > PermanentError > RecoverableError, however, the priority of
 RecoverableError and PermanentError will be reversed if `include_permanent_errors` is `false` and
-and `include_recoverable_errors` is `true` as this configuration makes RecoverableErrors more
+`include_recoverable_errors` is `true` as this configuration makes RecoverableErrors more
 relevant.
 
 ###### Collector Health
