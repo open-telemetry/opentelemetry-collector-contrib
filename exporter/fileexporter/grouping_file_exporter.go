@@ -105,7 +105,11 @@ func (e *groupingFileExporter) consumeMetrics(ctx context.Context, md pmetric.Me
 		}
 	}
 
-	return errs
+	if errs != nil {
+		return consumererror.NewPermanent(errs)
+	}
+
+	return nil
 }
 
 func (e *groupingFileExporter) consumeLogs(ctx context.Context, ld plog.Logs) error {
@@ -139,7 +143,11 @@ func (e *groupingFileExporter) consumeLogs(ctx context.Context, ld plog.Logs) er
 		}
 	}
 
-	return errs
+	if errs != nil {
+		return consumererror.NewPermanent(errs)
+	}
+
+	return nil
 }
 
 func (e *groupingFileExporter) write(_ context.Context, pathSegment string, buf []byte) error {
