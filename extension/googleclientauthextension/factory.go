@@ -6,9 +6,8 @@
 package googleclientauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension"
 
 import (
-	"go.opentelemetry.io/collector/extension"
-
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension"
+	"go.opentelemetry.io/collector/extension"
 )
 
 func NewFactory() extension.Factory {
