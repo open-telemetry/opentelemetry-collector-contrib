@@ -139,6 +139,9 @@ probe pipeline status, pass the pipeline name as a query parameter, e.g. `/statu
 The HTTP status code returned maps to the overall collector or pipeline status, with the mapping
 described below.
 
+⚠️ Take care not to expose this endpoint on non-localhost ports as it contains the internal state
+of the running collector.
+
 ##### Mapping of Component Status to HTTP Status
 
 Component statuses are aggregated into overall collector status and overall pipeline status. In each
@@ -338,6 +341,9 @@ The HTTP service optionally exposes an endpoint that provides the collector conf
 the configuration returned is unfiltered and may contain sensitive information. As such, the
 configuration is disabled by default. Enable it using the `http.config.enabled` setting. By
 default the path will be `/config`, but it can be changed using the `http.config.path` setting.
+
+⚠️ Take care not to expose this endpoint on non-localhost ports as it contains the unobfuscated
+config of the running collector.
 
 #### gRPC Service
 
