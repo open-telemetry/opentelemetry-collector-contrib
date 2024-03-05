@@ -4,6 +4,7 @@
 package clock // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/clock"
 
 import (
+	"sync"
 	"time"
 )
 
@@ -50,26 +51,26 @@ type Settable interface {
 }
 
 func Fake() Settable {
-	return &fake{sig: make(chan time.Time)}
+	clock := &fake{}
+	clock.Set(time.Time{})
+	return clock
 }
 
 type fake struct {
-	time time.Time
-
-	sig chan time.Time
+	mtx sync.RWMutex
+	ts  time.Time
 }
 
 func (f *fake) Set(now time.Time) {
-	f.time = now
-
-	select {
-	case f.sig <- now:
-	default:
-	}
+	f.mtx.Lock()
+	f.ts = now
+	f.mtx.Unlock()
 }
 
-func (f fake) Now() time.Time {
-	return f.time
+func (f *fake) Now() time.Time {
+	f.mtx.RLock()
+	defer f.mtx.RUnlock()
+	return f.ts
 }
 
 func (f *fake) After(d time.Duration) <-chan time.Time {
