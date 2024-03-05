@@ -202,8 +202,12 @@ func (hc *healthCheckExtension) eventLoop(ctx context.Context) {
 	// After shutdown read late arriving events from channel and discard
 	for {
 		select {
-		case <-hc.eventCh:
-			hc.telemetry.Logger.Info("healthcheck: discarding event received after shutdown")
+		case esp := <-hc.eventCh:
+			hc.telemetry.Logger.Info(
+				"discarding event received after shutdown",
+				zap.Any("source", esp.source),
+				zap.Any("event", esp.event),
+			)
 		case <-ctx.Done():
 			return
 		}
