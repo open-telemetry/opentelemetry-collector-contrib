@@ -249,6 +249,3 @@ metrics:
       input_type: string
       monotonic: true
       aggregation_temporality: cumulative
-
-tests:
-  config:

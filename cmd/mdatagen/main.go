@@ -62,6 +62,12 @@ func run(ymlPath string) error {
 				filepath.Join(codeDir, "generated_status.go"), md, "metadata"); err != nil {
 				return err
 			}
+			if !md.Tests.SkipLifecycle || !md.Tests.SkipShutdown {
+				if err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
+					filepath.Join(ymlDir, "generated_component_test.go"), md, packageName); err != nil {
+					return err
+				}
+			}
 		}
 
 		if _, err = os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
@@ -71,13 +77,6 @@ func run(ymlPath string) error {
 				md, statusStart, statusEnd); err != nil {
 				return err
 			}
-		}
-	}
-
-	if md.Tests != nil {
-		if err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
-			filepath.Join(ymlDir, "generated_component_test.go"), md, packageName); err != nil {
-			return err
 		}
 	}
 
@@ -165,7 +164,8 @@ func templatize(tmplFile string, md metadata) *template.Template {
 					}
 					return result
 				},
-				"casesTitle": cases.Title(language.English).String,
+				"casesTitle":  cases.Title(language.English).String,
+				"toLowerCase": strings.ToLower,
 				"toCamelCase": func(s string) string {
 					caser := cases.Title(language.English).String
 					parts := strings.Split(s, "_")
@@ -193,9 +193,6 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				},
 				"isConnector": func() bool {
 					return md.Status.Class == "connector"
-				},
-				"skipLifecycle": func() bool {
-					return md.Tests.SkipLifecycle
 				},
 				"supportsLogs": func() bool {
 					for _, signals := range md.Status.Stability {

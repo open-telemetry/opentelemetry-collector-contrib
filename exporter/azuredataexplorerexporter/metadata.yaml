@@ -8,6 +8,7 @@ status:
   codeowners:
     active: [asaharn, ag-ramachandran]
 
+# TODO: Update the exporter to pass the tests
 tests:
   config:
     cluster_uri: "https://CLUSTER.kusto.windows.net"

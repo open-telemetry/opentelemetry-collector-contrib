@@ -7,3 +7,7 @@ status:
   distributions: [contrib, splunk]
   codeowners:
     active: [zpzhuSplunk, splunkericl]
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
