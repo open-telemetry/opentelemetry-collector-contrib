@@ -7,7 +7,6 @@ import (
 	"hash"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
@@ -32,6 +31,5 @@ func OfStream[DataPoint attrPoint](m Metric, dp DataPoint) Stream {
 }
 
 type attrPoint interface {
-	pmetric.NumberDataPoint | pmetric.HistogramDataPoint | pmetric.ExponentialHistogramDataPoint | pmetric.SummaryDataPoint
 	Attributes() pcommon.Map
 }

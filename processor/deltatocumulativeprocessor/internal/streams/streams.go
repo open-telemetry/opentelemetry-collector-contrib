@@ -4,32 +4,32 @@
 package streams // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 
 import (
-	"hash"
-	"strconv"
-
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/streams"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
+)
+
+type Ident = identity.Stream
+
+type (
+	Seq[T any] streams.Seq[T]
+	Map[T any] streams.Map[T]
 )
 
 type Aggregator[D data.Point[D]] interface {
 	Aggregate(Ident, D) (D, error)
 }
 
-type Ident struct {
-	metric metrics.Ident
-	attrs  [16]byte
+func IntoAggregator[D data.Point[D]](m Map[D]) MapAggr[D] {
+	return MapAggr[D]{Map: m}
 }
 
-func (i Ident) Hash() hash.Hash64 {
-	sum := i.metric.Hash()
-	sum.Write(i.attrs[:])
-	return sum
+type MapAggr[D data.Point[D]] struct {
+	Map[D]
 }
 
-func (i Ident) String() string {
-	return strconv.FormatUint(i.Hash().Sum64(), 16)
-}
-
-func (i Ident) Metric() metrics.Ident {
-	return i.metric
+func (a MapAggr[D]) Aggregate(id Ident, dp D) (D, error) {
+	err := a.Map.Store(id, dp)
+	v, _ := a.Map.Load(id)
+	return v, err
 }

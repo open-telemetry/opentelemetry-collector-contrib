@@ -10,13 +10,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/streams"
 )
 
 func TestStaleness(t *testing.T) {
 	max := 1 * time.Second
 	stalenessMap := NewStaleness[int](
 		max,
-		&RawMap[identity.Stream, int]{},
+		make(streams.HashMap[int]),
 	)
 
 	idA := generateStreamID(t, map[string]any{
@@ -45,13 +46,13 @@ func TestStaleness(t *testing.T) {
 
 	// Add the values to the map
 	NowFunc = func() time.Time { return timeA }
-	stalenessMap.Store(idA, valueA)
+	_ = stalenessMap.Store(idA, valueA)
 	NowFunc = func() time.Time { return timeB }
-	stalenessMap.Store(idB, valueB)
+	_ = stalenessMap.Store(idB, valueB)
 	NowFunc = func() time.Time { return timeC }
-	stalenessMap.Store(idC, valueC)
+	_ = stalenessMap.Store(idC, valueC)
 	NowFunc = func() time.Time { return timeD }
-	stalenessMap.Store(idD, valueD)
+	_ = stalenessMap.Store(idD, valueD)
 
 	// Set the time to 2.5s and run expire
 	// This should remove B, but the others should remain
