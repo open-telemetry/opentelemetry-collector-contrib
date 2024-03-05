@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package ottlfuncs
 
 import (
@@ -15,7 +18,7 @@ func Test_Unix(t *testing.T) {
 		name        string
 		seconds     ottl.IntGetter[any]
 		nanoseconds ottl.Optional[ottl.IntGetter[any]]
-		expected    time.Time
+		expected    int64
 	}{
 		{
 			name: "January 1, 2023",
@@ -25,7 +28,7 @@ func Test_Unix(t *testing.T) {
 				},
 			},
 			nanoseconds: ottl.Optional[ottl.IntGetter[any]]{},
-			expected:    time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local),
+			expected:    int64(1672527600),
 		},
 	}
 	for _, tt := range tests {
@@ -34,7 +37,8 @@ func Test_Unix(t *testing.T) {
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+			want := time.Unix(tt.expected, 0)
+			assert.Equal(t, want, result)
 		})
 	}
 }
