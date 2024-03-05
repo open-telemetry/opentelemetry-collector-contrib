@@ -66,6 +66,3 @@ metrics:
       monotonic: false
     unit: "{error}"
     attributes: [error.message]
-
-tests:
-  config:

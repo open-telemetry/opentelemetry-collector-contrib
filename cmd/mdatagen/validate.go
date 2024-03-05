@@ -89,10 +89,7 @@ func (s *Status) validateStability() error {
 		return errors.New("missing stability")
 	}
 	for stability, component := range s.Stability {
-		if stability != "development" && stability != "alpha" && stability != "beta" && stability != "stable" && stability != "deprecated" && stability != "unmaintained" {
-			errs = multierr.Append(errs, fmt.Errorf("invalid stability: %v", stability))
-		}
-		if component == nil {
+		if len(component) == 0 {
 			errs = multierr.Append(errs, fmt.Errorf("missing component for stability: %v", stability))
 		}
 		for _, c := range component {

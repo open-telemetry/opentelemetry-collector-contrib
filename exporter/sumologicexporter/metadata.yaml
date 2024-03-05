@@ -8,6 +8,6 @@ status:
   codeowners:
     active: [sumo-drosiek]
 
+# TODO: Update the exporter to pass the tests
 tests:
-  config:
   skip_lifecycle: true

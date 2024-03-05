@@ -9,6 +9,3 @@ status:
   codeowners:
     active: [dmitryax, crobert-1]
     emeritus: [pmcollins]
-
-tests:
-  config:
