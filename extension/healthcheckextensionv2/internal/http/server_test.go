@@ -3933,7 +3933,6 @@ func TestStatus(t *testing.T) {
 				if ts.expectedComponentStatus != nil {
 					st := &serializableStatus{}
 					require.NoError(t, json.Unmarshal(body, st))
-					fmt.Println(string(body))
 					if strings.Contains(ts.queryParams, "verbose") {
 						assertStatusDetailed(t, ts.expectedComponentStatus, st)
 						continue

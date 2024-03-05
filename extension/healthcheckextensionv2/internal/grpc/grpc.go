@@ -15,16 +15,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2/internal/status"
 )
 
-var statusToServingStatusMap = map[component.Status]healthpb.HealthCheckResponse_ServingStatus{
-	component.StatusNone:             healthpb.HealthCheckResponse_NOT_SERVING,
-	component.StatusStarting:         healthpb.HealthCheckResponse_NOT_SERVING,
-	component.StatusOK:               healthpb.HealthCheckResponse_SERVING,
-	component.StatusRecoverableError: healthpb.HealthCheckResponse_SERVING,
-	component.StatusPermanentError:   healthpb.HealthCheckResponse_SERVING,
-	component.StatusFatalError:       healthpb.HealthCheckResponse_NOT_SERVING,
-	component.StatusStopping:         healthpb.HealthCheckResponse_NOT_SERVING,
-	component.StatusStopped:          healthpb.HealthCheckResponse_NOT_SERVING,
-}
+var (
+	errNotFound     = grpcstatus.Error(codes.NotFound, "Service not found.")
+	errShuttingDown = grpcstatus.Error(codes.Canceled, "Server shutting down.")
+	errStreamSend   = grpcstatus.Error(codes.Canceled, "Error sending; stream terminated.")
+	errStreamEnded  = grpcstatus.Error(codes.Canceled, "Stream has ended.")
+
+	statusToServingStatusMap = map[component.Status]healthpb.HealthCheckResponse_ServingStatus{
+		component.StatusNone:             healthpb.HealthCheckResponse_NOT_SERVING,
+		component.StatusStarting:         healthpb.HealthCheckResponse_NOT_SERVING,
+		component.StatusOK:               healthpb.HealthCheckResponse_SERVING,
+		component.StatusRecoverableError: healthpb.HealthCheckResponse_SERVING,
+		component.StatusPermanentError:   healthpb.HealthCheckResponse_SERVING,
+		component.StatusFatalError:       healthpb.HealthCheckResponse_NOT_SERVING,
+		component.StatusStopping:         healthpb.HealthCheckResponse_NOT_SERVING,
+		component.StatusStopped:          healthpb.HealthCheckResponse_NOT_SERVING,
+	}
+)
 
 func (s *Server) Check(
 	_ context.Context,
@@ -32,7 +39,7 @@ func (s *Server) Check(
 ) (*healthpb.HealthCheckResponse, error) {
 	st, ok := s.aggregator.AggregateStatus(status.Scope(req.Service), status.Concise)
 	if !ok {
-		return nil, grpcstatus.Error(codes.NotFound, "unknown service")
+		return nil, errNotFound
 	}
 
 	return &healthpb.HealthCheckResponse{
@@ -52,7 +59,7 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 		select {
 		case st, ok := <-sub:
 			if !ok {
-				return grpcstatus.Error(codes.Canceled, "Server shutting down.")
+				return errShuttingDown
 			}
 			var sst healthpb.HealthCheckResponse_ServingStatus
 
@@ -90,7 +97,7 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 
 			err := stream.Send(&healthpb.HealthCheckResponse{Status: sst})
 			if err != nil {
-				return grpcstatus.Error(codes.Canceled, "Stream has ended.")
+				return errStreamSend
 			}
 		case <-failureCh:
 			failureTimer.Stop()
@@ -105,10 +112,10 @@ func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_
 				},
 			)
 			if err != nil {
-				return grpcstatus.Error(codes.Canceled, "Stream has ended.")
+				return errStreamSend
 			}
 		case <-stream.Context().Done():
-			return grpcstatus.Error(codes.Canceled, "Stream has ended.")
+			return errStreamEnded
 		}
 	}
 }
