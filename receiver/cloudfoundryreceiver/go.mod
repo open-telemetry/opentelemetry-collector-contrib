@@ -5,7 +5,7 @@ go 1.21
 require (
 	code.cloudfoundry.org/go-loggregator v7.4.0+incompatible
 	github.com/cloudfoundry-incubator/uaago v0.0.0-20190307164349-8136b7bbe76e
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.0
 	go.opentelemetry.io/collector/config/confighttp v0.96.0
 	go.opentelemetry.io/collector/config/configopaque v1.3.0

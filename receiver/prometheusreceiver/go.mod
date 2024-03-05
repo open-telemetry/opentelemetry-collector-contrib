@@ -12,7 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.96.0
 	github.com/prometheus/common v0.48.0
 	github.com/prometheus/prometheus v0.48.1
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.0
 	go.opentelemetry.io/collector/confmap v0.96.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.96.0

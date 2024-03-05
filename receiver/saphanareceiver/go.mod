@@ -7,7 +7,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.96.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.0
 	go.opentelemetry.io/collector/config/confignet v0.96.0
 	go.opentelemetry.io/collector/config/configopaque v1.3.0
@@ -47,7 +47,7 @@ require (
 	github.com/prometheus/client_model v0.6.0 // indirect
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	github.com/stretchr/objx v0.5.0 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/collector v0.96.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.96.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect

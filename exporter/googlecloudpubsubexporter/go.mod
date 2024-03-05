@@ -5,7 +5,7 @@ go 1.21
 require (
 	cloud.google.com/go/pubsub v1.36.1
 	github.com/google/uuid v1.6.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.0
 	go.opentelemetry.io/collector/config/configretry v0.96.0
 	go.opentelemetry.io/collector/confmap v0.96.0

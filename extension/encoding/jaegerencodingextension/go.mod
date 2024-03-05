@@ -7,7 +7,7 @@ require (
 	github.com/jaegertracing/jaeger v1.54.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.96.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.0
 	go.opentelemetry.io/collector/confmap v0.96.0
 	go.opentelemetry.io/collector/extension v0.96.0
