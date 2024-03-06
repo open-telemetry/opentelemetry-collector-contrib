@@ -66,15 +66,6 @@ var traceJSON = []byte(`
 	"traceSegmentId": "a12ff60b-5807-463b-a1f8-fb1c8608219e"
 }]`)
 
-func TestTraceSource(t *testing.T) {
-	set := receivertest.NewNopCreateSettings()
-	set.ID = skywalkingReceiver
-	mockSwReceiver := newSkywalkingReceiver(&configuration{}, set)
-	err := mockSwReceiver.registerTraceConsumer(nil)
-	assert.Equal(t, err, component.ErrNilNextConsumer)
-	require.NotNil(t, mockSwReceiver)
-}
-
 func TestStartAndShutdown(t *testing.T) {
 	port := 12800
 	config := &configuration{

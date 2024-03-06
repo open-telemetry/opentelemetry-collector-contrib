@@ -44,6 +44,8 @@ var (
 	defaultPeerAttributes = []string{
 		semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeNetSockPeerName, semconv.AttributeNetPeerName, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget,
 	}
+
+	defaultDatabaseNameAttribute = semconv.AttributeDBName
 )
 
 type metricSeries struct {
@@ -108,6 +110,10 @@ func newConnector(set component.TelemetrySettings, config component.Config) *ser
 
 	if pConfig.VirtualNodePeerAttributes == nil {
 		pConfig.VirtualNodePeerAttributes = defaultPeerAttributes
+	}
+
+	if pConfig.DatabaseNameAttribute == "" {
+		pConfig.DatabaseNameAttribute = defaultDatabaseNameAttribute
 	}
 
 	meter := metadata.Meter(set)
@@ -289,7 +295,7 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
-						if dbName, ok := findAttributeValue(semconv.AttributeDBName, rAttributes, span.Attributes()); ok {
+						if dbName, ok := findAttributeValue(p.config.DatabaseNameAttribute, rAttributes, span.Attributes()); ok {
 							e.ConnectionType = store.Database
 							e.ServerService = dbName
 							e.ServerLatencySec = spanDuration(span)

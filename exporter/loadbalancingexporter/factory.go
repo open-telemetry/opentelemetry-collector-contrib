@@ -32,6 +32,7 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	otlpFactory := otlpexporter.NewFactory()
 	otlpDefaultCfg := otlpFactory.CreateDefaultConfig().(*otlpexporter.Config)
+	otlpDefaultCfg.Endpoint = "placeholder:4317"
 
 	return &Config{
 		Protocol: Protocol{

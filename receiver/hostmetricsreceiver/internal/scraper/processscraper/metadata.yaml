@@ -1,4 +1,5 @@
 type: hostmetricsreceiver/process
+scope_name: otelcol/hostmetricsreceiver/process
 
 parent: hostmetrics
 
@@ -45,6 +46,10 @@ resource_attributes:
   process.owner:
     description: The username of the user that owns the process.
     enabled: true
+    type: string
+  process.cgroup:
+    description: cgroup associated with the process (Linux only).
+    enabled: false
     type: string
 
 attributes:

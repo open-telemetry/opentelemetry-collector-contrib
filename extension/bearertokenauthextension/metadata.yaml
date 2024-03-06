@@ -1,4 +1,5 @@
 type: bearertokenauth
+scope_name: otelcol/bearertokenauth
 
 status:
   class: extension

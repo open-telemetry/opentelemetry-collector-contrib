@@ -55,7 +55,7 @@ type MetricsConfig struct {
 
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send metrics to.
 	// If unset, the value is obtained from the Site.
-	confignet.TCPAddr `mapstructure:",squash"`
+	confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	ExporterConfig MetricsExporterConfig `mapstructure:",squash"`
 
@@ -248,7 +248,7 @@ type MetricsExporterConfig struct {
 type TracesConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send traces to.
 	// If unset, the value is obtained from the Site.
-	confignet.TCPAddr `mapstructure:",squash"`
+	confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	// ignored resources
 	// A blacklist of regular expressions can be provided to disable certain traces based on their resource name
@@ -310,7 +310,7 @@ type TracesConfig struct {
 type LogsConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send logs to.
 	// If unset, the value is obtained from the Site.
-	confignet.TCPAddr `mapstructure:",squash"`
+	confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	// DumpPayloads report whether payloads should be dumped when logging level is debug.
 	DumpPayloads bool `mapstructure:"dump_payloads"`
@@ -573,17 +573,17 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 
 	// If an endpoint is not explicitly set, override it based on the site.
 	if !configMap.IsSet("metrics::endpoint") {
-		c.Metrics.TCPAddr.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
+		c.Metrics.TCPAddrConfig.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
 	}
 	if !configMap.IsSet("traces::endpoint") {
-		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
+		c.Traces.TCPAddrConfig.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
 	}
 	if !configMap.IsSet("logs::endpoint") {
-		c.Logs.TCPAddr.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
+		c.Logs.TCPAddrConfig.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
 	}
 
 	// Return an error if an endpoint is explicitly set to ""
-	if c.Metrics.TCPAddr.Endpoint == "" || c.Traces.TCPAddr.Endpoint == "" || c.Logs.TCPAddr.Endpoint == "" {
+	if c.Metrics.TCPAddrConfig.Endpoint == "" || c.Traces.TCPAddrConfig.Endpoint == "" || c.Logs.TCPAddrConfig.Endpoint == "" {
 		return errEmptyEndpoint
 	}
 

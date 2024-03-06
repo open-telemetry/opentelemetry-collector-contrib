@@ -21,8 +21,6 @@ type tracesFailover struct {
 	config   *Config
 	failover *failoverRouter[consumer.Traces]
 	logger   *zap.Logger
-
-	done chan struct{}
 }
 
 func (f *tracesFailover) Capabilities() consumer.Capabilities {
@@ -62,19 +60,17 @@ func (f *tracesFailover) Shutdown(_ context.Context) error {
 	if f.failover != nil {
 		f.failover.Shutdown()
 	}
-	close(f.done)
 	return nil
 }
 
 func newTracesToTraces(set connector.CreateSettings, cfg component.Config, traces consumer.Traces) (connector.Traces, error) {
 	config := cfg.(*Config)
-	done := make(chan struct{})
 	tr, ok := traces.(connector.TracesRouterAndConsumer)
 	if !ok {
 		return nil, errors.New("consumer is not of type TracesRouter")
 	}
 
-	failover := newFailoverRouter[consumer.Traces](tr.Consumer, config, done)
+	failover := newFailoverRouter[consumer.Traces](tr.Consumer, config)
 	err := failover.registerConsumers()
 	if err != nil {
 		return nil, err
@@ -84,6 +80,5 @@ func newTracesToTraces(set connector.CreateSettings, cfg component.Config, trace
 		config:   config,
 		failover: failover,
 		logger:   set.TelemetrySettings.Logger,
-		done:     done,
 	}, nil
 }

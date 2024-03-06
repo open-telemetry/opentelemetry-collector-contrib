@@ -63,10 +63,7 @@ func createTracesExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	fe, err := getOrCreateFileExporter(cfg)
-	if err != nil {
-		return nil, err
-	}
+	fe := getOrCreateFileExporter(cfg)
 	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
@@ -83,10 +80,7 @@ func createMetricsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	fe, err := getOrCreateFileExporter(cfg)
-	if err != nil {
-		return nil, err
-	}
+	fe := getOrCreateFileExporter(cfg)
 	return exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
@@ -103,10 +97,7 @@ func createLogsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	fe, err := getOrCreateFileExporter(cfg)
-	if err != nil {
-		return nil, err
-	}
+	fe := getOrCreateFileExporter(cfg)
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
@@ -122,51 +113,32 @@ func createLogsExporter(
 // or returns the already cached one. Caching is required because the factory is asked trace and
 // metric receivers separately when it gets CreateTracesReceiver() and CreateMetricsReceiver()
 // but they must not create separate objects, they must use one Exporter object per configuration.
-func getOrCreateFileExporter(cfg component.Config) (FileExporter, error) {
+func getOrCreateFileExporter(cfg component.Config) FileExporter {
 	conf := cfg.(*Config)
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		e, err := newFileExporter(conf)
-		if err != nil {
-			return &errorComponent{err: err}
-		}
-
-		return e
+		return newFileExporter(conf)
 	})
 
-	component := fe.Unwrap()
-	if errComponent, ok := component.(*errorComponent); ok {
-		return nil, errComponent.err
-	}
-
-	return component.(FileExporter), nil
+	c := fe.Unwrap()
+	return c.(FileExporter)
 }
 
-func newFileExporter(conf *Config) (FileExporter, error) {
-	marshaller := &marshaller{
-		formatType:       conf.FormatType,
-		tracesMarshaler:  tracesMarshalers[conf.FormatType],
-		metricsMarshaler: metricsMarshalers[conf.FormatType],
-		logsMarshaler:    logsMarshalers[conf.FormatType],
-		compression:      conf.Compression,
-		compressor:       buildCompressor(conf.Compression),
-	}
-	export := buildExportFunc(conf)
-
-	writer, err := newFileWriter(conf.Path, conf.Rotation, conf.FlushInterval, export)
-	if err != nil {
-		return nil, err
-	}
-
+func newFileExporter(conf *Config) FileExporter {
 	return &fileExporter{
-		marshaller: marshaller,
-		writer:     writer,
-	}, nil
+		conf: conf,
+	}
 }
 
-func newFileWriter(path string, rotation *Rotation, flushInterval time.Duration, export exportFunc) (*fileWriter, error) {
+func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInterval time.Duration, export exportFunc) (*fileWriter, error) {
 	var wc io.WriteCloser
 	if rotation == nil {
-		f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+		fileFlags := os.O_RDWR | os.O_CREATE
+		if shouldAppend {
+			fileFlags |= os.O_APPEND
+		} else {
+			fileFlags |= os.O_TRUNC
+		}
+		f, err := os.OpenFile(path, fileFlags, 0644)
 		if err != nil {
 			return nil, err
 		}

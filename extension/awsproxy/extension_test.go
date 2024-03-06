@@ -17,7 +17,7 @@ func TestInvalidEndpoint(t *testing.T) {
 	_, err := newXrayProxy(
 		&Config{
 			ProxyConfig: proxy.Config{
-				TCPAddr: confignet.TCPAddr{
+				TCPAddrConfig: confignet.TCPAddrConfig{
 					Endpoint: "invalidEndpoint",
 				},
 			},

@@ -1,4 +1,5 @@
 type: snowflake
+scope_name: otelcol/snowflakereceiver
 
 status:
   class: receiver

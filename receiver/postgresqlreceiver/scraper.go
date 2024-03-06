@@ -23,6 +23,8 @@ import (
 const (
 	readmeURL            = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
 	separateSchemaAttrID = "receiver.postgresql.separateSchemaAttr"
+
+	defaultPostgreSQLDatabase = "postgres"
 )
 
 var (
@@ -68,22 +70,6 @@ func (e *errsMux) combine() error {
 	return e.errs.Combine()
 }
 
-type postgreSQLClientFactory interface {
-	getClient(c *Config, database string) (client, error)
-}
-
-type defaultClientFactory struct{}
-
-func (d *defaultClientFactory) getClient(c *Config, database string) (client, error) {
-	return newPostgreSQLClient(postgreSQLConfig{
-		username: c.Username,
-		password: string(c.Password),
-		database: database,
-		tls:      c.TLSClientSetting,
-		address:  c.NetAddr,
-	})
-}
-
 func newPostgreSQLScraper(
 	settings receiver.CreateSettings,
 	config *Config,
@@ -122,7 +108,7 @@ type dbRetrieval struct {
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
 func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	databases := p.config.Databases
-	listClient, err := p.clientFactory.getClient(p.config, "")
+	listClient, err := p.clientFactory.getClient(defaultPostgreSQLDatabase)
 	if err != nil {
 		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
 		return pmetric.NewMetrics(), err
@@ -130,10 +116,10 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	defer listClient.Close()
 
 	if len(databases) == 0 {
-		dbList, err := listClient.listDatabases(ctx)
-		if err != nil {
-			p.logger.Error("Failed to request list of databases from postgres", zap.Error(err))
-			return pmetric.NewMetrics(), err
+		dbList, dbErr := listClient.listDatabases(ctx)
+		if dbErr != nil {
+			p.logger.Error("Failed to request list of databases from postgres", zap.Error(dbErr))
+			return pmetric.NewMetrics(), dbErr
 		}
 		databases = dbList
 	}
@@ -156,10 +142,10 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
 	for _, database := range databases {
-		dbClient, err := p.clientFactory.getClient(p.config, database)
-		if err != nil {
-			errs.add(err)
-			p.logger.Error("Failed to initialize connection to postgres", zap.String("database", database), zap.Error(err))
+		dbClient, dbErr := p.clientFactory.getClient(database)
+		if dbErr != nil {
+			errs.add(dbErr)
+			p.logger.Error("Failed to initialize connection to postgres", zap.String("database", database), zap.Error(dbErr))
 			continue
 		}
 		defer dbClient.Close()
@@ -177,6 +163,13 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectDatabaseLocks(ctx, now, listClient, &errs)
 
 	return p.mb.Emit(), errs.combine()
+}
+
+func (p *postgreSQLScraper) shutdown(_ context.Context) error {
+	if p.clientFactory != nil {
+		p.clientFactory.close()
+	}
+	return nil
 }
 
 func (p *postgreSQLScraper) retrieveDBMetrics(

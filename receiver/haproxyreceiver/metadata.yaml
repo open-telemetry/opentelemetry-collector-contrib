@@ -1,4 +1,5 @@
 type: haproxy
+scope_name: otelcol/haproxyreceiver
 
 status:
   class: receiver
@@ -261,6 +262,3 @@ metrics:
       value_type: double
       input_type: string
     unit: "{sessions}"
-
-tests:
-  config:
