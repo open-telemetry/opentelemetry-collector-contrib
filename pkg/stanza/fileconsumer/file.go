@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
@@ -36,9 +37,14 @@ type Manager struct {
 	currentPollFiles  *fileset.Fileset[*reader.Reader]
 	previousPollFiles *fileset.Fileset[*reader.Reader]
 	knownFiles        []*fileset.Fileset[*reader.Metadata]
+
+	openFiles           metric.Int64UpDownCounter
+	readingFiles        metric.Int64UpDownCounter
+	previousOpenedFiles int64
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
+	m.previousOpenedFiles = 0
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
 
@@ -122,6 +128,7 @@ func (m *Manager) startPoller(ctx context.Context) {
 
 // poll checks all the watched paths for new entries
 func (m *Manager) poll(ctx context.Context) {
+	m.reportMetrics(ctx)
 	// Used to keep track of the number of batches processed in this poll cycle
 	batchesProcessed := 0
 
@@ -178,12 +185,19 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 		wg.Add(1)
 		go func(r *reader.Reader) {
 			defer wg.Done()
+			m.readingFiles.Add(ctx, 1)
 			r.ReadToEnd(ctx)
+			m.readingFiles.Add(ctx, -1)
 		}(r)
 	}
 	wg.Wait()
 
 	m.postConsume()
+}
+
+func (m *Manager) reportMetrics(ctx context.Context) {
+	m.openFiles.Add(ctx, int64(m.totalReaders())-m.previousOpenedFiles)
+	m.previousOpenedFiles = int64(m.totalReaders())
 }
 
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {

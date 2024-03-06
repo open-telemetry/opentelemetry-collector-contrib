@@ -49,7 +49,9 @@ OUTER:
 		lostWG.Add(1)
 		go func(r *reader.Reader) {
 			defer lostWG.Done()
+			m.readingFiles.Add(ctx, 1)
 			r.ReadToEnd(ctx)
+			m.readingFiles.Add(ctx, -1)
 		}(lostReader)
 	}
 	lostWG.Wait()

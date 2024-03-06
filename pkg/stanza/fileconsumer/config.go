@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -93,7 +94,7 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, set component.Tele
 	return c.Build(logger, set, emit, WithSplitFunc(splitFunc))
 }
 
-func (c Config) Build(logger *zap.SugaredLogger, _ component.TelemetrySettings, emit emit.Callback, opts ...Option) (*Manager, error) {
+func (c Config) Build(logger *zap.SugaredLogger, set component.TelemetrySettings, emit emit.Callback, opts ...Option) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -166,6 +167,26 @@ func (c Config) Build(logger *zap.SugaredLogger, _ component.TelemetrySettings, 
 	for i := 0; i < len(knownFiles); i++ {
 		knownFiles[i] = fileset.New[*reader.Metadata](c.MaxConcurrentFiles / 2)
 	}
+
+	meter := set.MeterProvider.Meter("otelcol/fileconsumer")
+
+	openedFiles, err := meter.Int64UpDownCounter(
+		"fileconsumer"+"/"+"open_files",
+		metric.WithDescription("Number of open files"),
+		metric.WithUnit("1"),
+	)
+	if err != nil {
+		return nil, err
+	}
+	readingFiles, err := meter.Int64UpDownCounter(
+		"fileconsumer"+"/"+"reading_files",
+		metric.WithDescription("Number of open files that are being read"),
+		metric.WithUnit("1"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Manager{
 		SugaredLogger:     logger.With("component", "fileconsumer"),
 		readerFactory:     readerFactory,
@@ -176,6 +197,8 @@ func (c Config) Build(logger *zap.SugaredLogger, _ component.TelemetrySettings, 
 		currentPollFiles:  fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
 		previousPollFiles: fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
 		knownFiles:        knownFiles,
+		openFiles:         openedFiles,
+		readingFiles:      readingFiles,
 	}, nil
 }
 
