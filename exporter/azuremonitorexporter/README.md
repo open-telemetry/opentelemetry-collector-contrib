@@ -22,6 +22,14 @@ To configure the Azure Monitor Exporter, you must specify one of the following s
 - `connection_string` (recommended): The Azure Application Insights Connection String is required to send telemetry data to the monitoring service. It is the recommended method for configuring the exporter, aligning with Azure Monitor's best practices. If you need guidance on creating Azure resources, please refer to the step-by-step guides to [Create an Application Insights resource](https://docs.microsoft.com/azure/azure-monitor/app/create-new-resource) and [find your connection string](https://docs.microsoft.com/azure/azure-monitor/app/sdk-connection-string?tabs=net#find-your-connection-string).
 - `instrumentation_key`: Application Insights instrumentation key, which can be found in the Application Insights resource in the Azure Portal. While it is currently supported, its use is discouraged and it is slated for deprecation. It is highly encouraged to use the `connection_string` setting for new configurations and migrate existing configurations to use the `connection_string` as soon as possible.
 
+### Environment Variable Support
+
+In addition to the above configuration options, the Azure Monitor Exporter now supports setting the connection string via the `APPLICATIONINSIGHTS_CONNECTION_STRING` environment variable. This method is particularly useful for cloud or containerized environments where managing configuration through environment variables is standard practice.
+
+**Note:** If both the environment variable and the `connection_string` configuration option are provided, the environment variable takes precedence.
+
+### Configuration Options
+
 **Important**: Only one of `connection_string` or `instrumentation_key` should be specified in your configuration. If both are provided, `connection_string` will be used as the priority setting.
 
 The following settings can be optionally configured:
@@ -56,6 +64,15 @@ exporters:
 exporters:
   azuremonitor:
     instrumentation_key: b1cd0778-85fc-4677-a3fa-79d3c23e0efd
+```
+
+Example using environment variable:
+
+Ensure `APPLICATIONINSIGHTS_CONNECTION_STRING` is set in your environment, then configure the exporter without specifying a connection string or instrumentation key:
+
+```yaml
+exporters:
+  azuremonitor:
 ```
 
 ## Attribute mapping

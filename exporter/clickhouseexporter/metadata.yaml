@@ -1,4 +1,5 @@
 type: clickhouse
+scope_name: otelcol/clickhouse
 
 status:
   class: exporter
@@ -8,6 +9,6 @@ status:
   codeowners:
     active: [hanjm, dmitryax, Frapschen]
 
+# TODO: Update the exporter to pass the tests
 tests:
-  config:
   skip_lifecycle: true

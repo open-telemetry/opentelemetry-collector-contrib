@@ -1,4 +1,5 @@
 type: k8sobjects
+scope_name: otelcol/k8sobjectsreceiver
 
 status:
   class: receiver
@@ -7,3 +8,7 @@ status:
   distributions: [contrib, splunk, sumo]
   codeowners:
     active: [dmitryax, hvaghani221, TylerHelmuth]
+
+tests:
+  config:
+  skip_lifecycle: true

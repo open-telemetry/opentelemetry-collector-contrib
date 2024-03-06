@@ -1,4 +1,5 @@
 type: awsemf
+scope_name: otelcol/awsemf
 
 status:
   class: exporter

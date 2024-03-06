@@ -107,7 +107,7 @@ func (c *Config) Unmarshal(component *confmap.Conf) error {
 	}
 
 	builder := builderFunc()
-	if err := component.Unmarshal(builder); err != nil {
+	if err := component.Unmarshal(builder, confmap.WithIgnoreUnused()); err != nil {
 		return fmt.Errorf("unmarshal to %s: %w", typeString, err)
 	}
 

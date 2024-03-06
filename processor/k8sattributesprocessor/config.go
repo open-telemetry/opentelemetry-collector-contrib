@@ -132,7 +132,7 @@ type ExtractConfig struct {
 	//   k8s.cluster.uid
 	//
 	// Specifying anything other than these values will result in an error.
-	// By default, the following fields are extracted and added to spans, metrics and logs as attributes:
+	// By default, the following fields are extracted and added to spans, metrics and logs as resource attributes:
 	//  - k8s.pod.name
 	//  - k8s.pod.uid
 	//  - k8s.pod.start_time

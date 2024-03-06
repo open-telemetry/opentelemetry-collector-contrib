@@ -238,7 +238,7 @@ will or will not proxy traffic as defined by these environment variables.
 ### Monitored Resources
 
 For metrics and logs, this exporter maps the OpenTelemetry Resource to a Google
-Cloud [Logging\(https://cloud.google.com/logging/docs/api/v2/resource-list) or
+Cloud [Logging](https://cloud.google.com/logging/docs/api/v2/resource-list) or
 [Monitoring](https://cloud.google.com/monitoring/api/resources) Monitored Resource.
 
 The complete mapping logic can be found [here](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/internal/resourcemapping/resourcemapping.go).
