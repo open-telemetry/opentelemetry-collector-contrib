@@ -11,7 +11,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.27.0
 	go.opentelemetry.io/collector/component v0.96.1-0.20240305232712-5a68058e0e3a
 	go.opentelemetry.io/collector/config/confignet v0.96.1-0.20240305232712-5a68058e0e3a
-	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240305230428-621d8669ec4c
+	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/confmap v0.96.1-0.20240305232712-5a68058e0e3a
 	go.opentelemetry.io/collector/consumer v0.96.1-0.20240305232712-5a68058e0e3a
 	go.opentelemetry.io/collector/exporter v0.96.1-0.20240305232712-5a68058e0e3a
@@ -94,8 +94,8 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/collector/extension v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/collector/extension/auth v0.96.1-0.20240305232712-5a68058e0e3a // indirect
-	go.opentelemetry.io/collector/featuregate v1.3.1-0.20240305230428-621d8669ec4c // indirect
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240305230428-621d8669ec4c // indirect
+	go.opentelemetry.io/collector/featuregate v1.3.1-0.20240306115632-b2693620eff6 // indirect
+	go.opentelemetry.io/collector/pdata v1.3.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.47.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect

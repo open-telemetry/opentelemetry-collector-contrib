@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.96.1-0.20240305232712-5a68058e0e3a
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.96.1-0.20240305232712-5a68058e0e3a
 	go.opentelemetry.io/collector/otelcol v0.96.1-0.20240305232712-5a68058e0e3a
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240305230428-621d8669ec4c
+	go.opentelemetry.io/collector/pdata v1.3.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/semconv v0.96.1-0.20240305232712-5a68058e0e3a
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
@@ -87,7 +87,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/collector/config/confignet v0.96.1-0.20240305232712-5a68058e0e3a // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240305230428-621d8669ec4c // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/collector/config/configretry v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/collector/config/configtls v0.96.1-0.20240305232712-5a68058e0e3a // indirect
@@ -101,7 +101,7 @@ require (
 	go.opentelemetry.io/collector/connector v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/collector/extension v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/collector/extension/auth v0.96.1-0.20240305232712-5a68058e0e3a // indirect
-	go.opentelemetry.io/collector/featuregate v1.3.1-0.20240305230428-621d8669ec4c // indirect
+	go.opentelemetry.io/collector/featuregate v1.3.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/collector/processor v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/collector/receiver v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/collector/service v0.96.1-0.20240305232712-5a68058e0e3a // indirect

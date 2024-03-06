@@ -51,7 +51,7 @@ require (
 	go.opentelemetry.io/collector/extension/ballastextension v0.96.1-0.20240305232712-5a68058e0e3a
 	go.opentelemetry.io/collector/extension/zpagesextension v0.96.1-0.20240305232712-5a68058e0e3a
 	go.opentelemetry.io/collector/otelcol v0.96.1-0.20240305232712-5a68058e0e3a
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240305230428-621d8669ec4c
+	go.opentelemetry.io/collector/pdata v1.3.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/processor v0.96.1-0.20240305232712-5a68058e0e3a
 	go.opentelemetry.io/collector/processor/batchprocessor v0.96.1-0.20240305232712-5a68058e0e3a
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.96.1-0.20240305232712-5a68058e0e3a
@@ -216,7 +216,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/collector/config/configauth v0.96.1-0.20240305232712-5a68058e0e3a // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240305230428-621d8669ec4c // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/collector/config/internal v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.96.1-0.20240305232712-5a68058e0e3a // indirect
@@ -226,7 +226,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/collector/connector v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/collector/extension/auth v0.96.1-0.20240305232712-5a68058e0e3a // indirect
-	go.opentelemetry.io/collector/featuregate v1.3.1-0.20240305230428-621d8669ec4c // indirect
+	go.opentelemetry.io/collector/featuregate v1.3.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/collector/service v0.96.1-0.20240305232712-5a68058e0e3a // indirect
 	go.opentelemetry.io/contrib/config v0.4.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.47.0 // indirect
