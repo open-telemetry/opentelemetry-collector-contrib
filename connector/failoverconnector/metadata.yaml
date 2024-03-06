@@ -1,4 +1,5 @@
 type: failover
+scope_name: otelcol/failover
 
 status:
   class: connector

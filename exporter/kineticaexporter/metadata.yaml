@@ -1,4 +1,5 @@
 type: kinetica
+scope_name: otelcol/kinetica
 
 status:
   class: exporter

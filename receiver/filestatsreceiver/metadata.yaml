@@ -1,4 +1,5 @@
 type: filestats
+scope_name: otelcol/filestatsreceiver
 
 status:
   class: receiver

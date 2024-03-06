@@ -1,4 +1,5 @@
 type: mongodbatlas
+scope_name: otelcol/mongodbatlasreceiver
 
 status:
   class: receiver

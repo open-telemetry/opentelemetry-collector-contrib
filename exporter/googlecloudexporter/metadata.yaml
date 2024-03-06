@@ -1,4 +1,5 @@
 type: googlecloud
+scope_name: otelcol/googlecloud
 
 status:
   class: exporter
