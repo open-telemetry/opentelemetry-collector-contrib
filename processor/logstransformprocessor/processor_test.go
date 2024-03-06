@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -225,7 +226,7 @@ type laggyOperatorConfig struct {
 	helper.WriterConfig
 }
 
-func (l *laggyOperatorConfig) Build(s *zap.SugaredLogger) (operator.Operator, error) {
+func (l *laggyOperatorConfig) Build(s *zap.SugaredLogger, _ component.TelemetrySettings) (operator.Operator, error) {
 	wo, err := l.WriterConfig.Build(s)
 	if err != nil {
 		return nil, err

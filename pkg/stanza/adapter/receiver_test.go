@@ -138,7 +138,7 @@ func BenchmarkReadLine(b *testing.B) {
 	pipe, err := pipeline.Config{
 		Operators:     operatorCfgs,
 		DefaultOutput: emitter,
-	}.Build(zap.NewNop().Sugar())
+	}.Build(zap.NewNop().Sugar(), componenttest.NewNopTelemetrySettings())
 	require.NoError(b, err)
 
 	// Populate the file that will be consumed
@@ -203,7 +203,7 @@ func BenchmarkParseAndMap(b *testing.B) {
 	pipe, err := pipeline.Config{
 		Operators:     operatorCfgs,
 		DefaultOutput: emitter,
-	}.Build(zap.NewNop().Sugar())
+	}.Build(zap.NewNop().Sugar(), componenttest.NewNopTelemetrySettings())
 	require.NoError(b, err)
 
 	// Populate the file that will be consumed

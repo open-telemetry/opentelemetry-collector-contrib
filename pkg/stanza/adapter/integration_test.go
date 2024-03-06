@@ -31,7 +31,7 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 				Builder: noop.NewConfig(),
 			},
 		},
-	}.Build(zap.NewNop().Sugar())
+	}.Build(zap.NewNop().Sugar(), componenttest.NewNopTelemetrySettings())
 	if err != nil {
 		return nil, err
 	}

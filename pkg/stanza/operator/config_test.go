@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -18,7 +19,7 @@ type FakeBuilder struct {
 	Array        []string `json:"array" yaml:"array"`
 }
 
-func (f *FakeBuilder) Build(_ *zap.SugaredLogger) (Operator, error) {
+func (f *FakeBuilder) Build(_ *zap.SugaredLogger, _ component.TelemetrySettings) (Operator, error) {
 	return nil, nil
 }
 func (f *FakeBuilder) ID() string     { return "operator" }

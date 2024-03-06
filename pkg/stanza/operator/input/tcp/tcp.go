@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/jpillora/backoff"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
@@ -86,8 +87,8 @@ func (c Config) defaultSplitFuncBuilder(enc encoding.Encoding) (bufio.SplitFunc,
 }
 
 // Build will build a tcp input operator.
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(logger)
+func (c Config) Build(logger *zap.SugaredLogger, set component.TelemetrySettings) (operator.Operator, error) {
+	inputOperator, err := c.InputConfig.Build(logger, set)
 	if err != nil {
 		return nil, err
 	}

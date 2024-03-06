@@ -41,7 +41,7 @@ func NewUnstartableConfig() operator.Config {
 }
 
 // Build will build an unstartable operator
-func (c *UnstartableConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c *UnstartableConfig) Build(logger *zap.SugaredLogger, _ component.TelemetrySettings) (operator.Operator, error) {
 	o, _ := c.OutputConfig.Build(logger)
 	return &UnstartableOperator{OutputOperator: o}, nil
 }

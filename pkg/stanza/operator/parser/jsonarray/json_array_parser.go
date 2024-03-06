@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/valyala/fastjson"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
@@ -52,7 +53,7 @@ type Config struct {
 }
 
 // Build will build a json array parser operator.
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger, _ component.TelemetrySettings) (operator.Operator, error) {
 	parserOperator, err := c.ParserConfig.Build(logger)
 	if err != nil {
 		return nil, err

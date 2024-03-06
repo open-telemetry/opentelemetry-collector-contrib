@@ -164,8 +164,8 @@ type BenchOpConfig struct {
 }
 
 // Build will build a noop operator.
-func (c BenchOpConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(logger)
+func (c BenchOpConfig) Build(logger *zap.SugaredLogger, set component.TelemetrySettings) (operator.Operator, error) {
+	inputOperator, err := c.InputConfig.Build(logger, set)
 	if err != nil {
 		return nil, err
 	}
