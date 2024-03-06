@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/build-tools/checkfile v0.12.0
 	go.opentelemetry.io/build-tools/chloggen v0.13.0
 	go.opentelemetry.io/build-tools/crosslink v0.12.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.12.0
+	go.opentelemetry.io/build-tools/issuegenerator v0.13.0
 	go.opentelemetry.io/build-tools/multimod v0.13.0
 	go.opentelemetry.io/collector/cmd/builder v0.96.1-0.20240305232712-5a68058e0e3a
 	go.opentelemetry.io/collector/cmd/mdatagen v0.96.1-0.20240305232712-5a68058e0e3a
@@ -242,7 +242,7 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20230307190834-24139beb5833 // indirect
 	golang.org/x/mod v0.15.0 // indirect
 	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/oauth2 v0.16.0 // indirect
+	golang.org/x/oauth2 v0.17.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/term v0.17.0 // indirect
