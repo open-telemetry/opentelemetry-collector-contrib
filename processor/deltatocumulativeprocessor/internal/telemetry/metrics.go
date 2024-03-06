@@ -113,11 +113,11 @@ type addable[Opts any] interface {
 }
 
 func inc[A addable[O], O any](a A, opts ...O) {
-	a.Add(context.TODO(), 1, opts...)
+	a.Add(context.Background(), 1, opts...)
 }
 
 func dec[A addable[O], O any](a A, opts ...O) {
-	a.Add(context.TODO(), -1, opts...)
+	a.Add(context.Background(), -1, opts...)
 }
 
 func reason[E error](_ *E) metric.AddOption {
