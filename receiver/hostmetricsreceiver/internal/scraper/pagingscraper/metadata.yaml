@@ -1,4 +1,5 @@
 type: hostmetricsreceiver/paging
+scope_name: otelcol/hostmetricsreceiver/paging
 
 parent: hostmetrics
 

@@ -1,4 +1,5 @@
 type: db_storage
+scope_name: otelcol/dbstorage
 
 status:
   class: extension

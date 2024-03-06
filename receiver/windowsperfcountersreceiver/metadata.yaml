@@ -1,4 +1,5 @@
 type: windowsperfcounters
+scope_name: otelcol/windowsperfcountersreceiver
 
 status:
   class: receiver

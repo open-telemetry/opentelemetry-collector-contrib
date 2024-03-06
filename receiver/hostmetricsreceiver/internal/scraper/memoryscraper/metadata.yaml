@@ -1,4 +1,5 @@
 type: hostmetricsreceiver/memory
+scope_name: otelcol/hostmetricsreceiver/memory
 
 parent: hostmetrics
 
