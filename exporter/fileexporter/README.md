@@ -47,6 +47,7 @@ The following settings are optional:
   - localtime : [default: false (use UTC)] whether or not the timestamps in backup files is formatted according to the host's local time.
 
 - `format`[default: json]: define the data format of encoded telemetry data. The setting can be overridden with `proto`.
+- `append`[default: `false`] defines whether append to the file (`true`) or truncate (`false`). If `append: true` is set then setting `rotation` or `compression` is currently not supported.
 - `compression`[no default]: the compression algorithm used when exporting telemetry data to file. Supported compression algorithms:`zstd`
 - `flush_interval`[default: 1s]: `time.Duration` interval between flushes. See [time.ParseDuration](https://pkg.go.dev/time#ParseDuration) for valid formats. 
 NOTE: a value without unit is in nanoseconds and `flush_interval` is ignored and writes are not buffered if `rotation` is set.

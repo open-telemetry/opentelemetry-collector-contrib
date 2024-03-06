@@ -1,4 +1,5 @@
 type: saphana
+scope_name: otelcol/saphanareceiver
 
 status:
   class: receiver

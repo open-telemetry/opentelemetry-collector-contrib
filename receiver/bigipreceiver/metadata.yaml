@@ -1,4 +1,5 @@
 type: bigip
+scope_name: otelcol/bigipreceiver
 
 status:
   class: receiver
