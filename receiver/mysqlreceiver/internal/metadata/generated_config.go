@@ -91,16 +91,16 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		MysqlClientNetworkIo: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlCommands: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlConnectionCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlConnectionErrors: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlDoubleWrites: MetricConfig{
 			Enabled: true,
@@ -145,10 +145,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		MysqlQueryCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlQuerySlowCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlReplicaSQLDelay: MetricConfig{
 			Enabled: false,

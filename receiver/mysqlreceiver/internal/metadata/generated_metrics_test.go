@@ -79,15 +79,19 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMysqlBufferPoolUsageDataPoint(ts, 1, AttributeBufferPoolDataDirty)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlClientNetworkIoDataPoint(ts, "1", AttributeDirectionReceived)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommandDelete)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlConnectionCountDataPoint(ts, "1")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlConnectionErrorsDataPoint(ts, "1", AttributeConnectionErrorAccept)
 
@@ -144,9 +148,11 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMysqlQueryClientCountDataPoint(ts, "1")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlQueryCountDataPoint(ts, "1")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlQuerySlowCountDataPoint(ts, "1")
 

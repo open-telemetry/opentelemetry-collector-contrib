@@ -236,7 +236,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [prepared_statements_command]
   mysql.commands:
-    enabled: false
+    enabled: true
     description: The number of times each type of command has been executed.
     unit: 1
     sum:
@@ -382,7 +382,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [threads]
   mysql.client.network.io:
-    enabled: false
+    enabled: true
     description: The number of transmitted bytes between server and clients.
     unit: By
     sum:
@@ -447,7 +447,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [schema, table_name, write_lock_type]
   mysql.connection.count:
-    enabled: false
+    enabled: true
     description: The number of connection attempts (successful or not) to the MySQL server.
     unit: 1
     sum:
@@ -456,7 +456,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
   mysql.connection.errors:
-    enabled: false
+    enabled: true
     description: Errors that occur during the client connection process.
     unit: 1
     sum:
@@ -563,7 +563,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
   mysql.query.count:
-    enabled: false
+    enabled: true
     description: The number of statements executed by the server.
     unit: 1
     sum:
@@ -572,7 +572,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
   mysql.query.slow.count:
-    enabled: false
+    enabled: true
     description: The number of slow queries.
     unit: 1
     sum:
