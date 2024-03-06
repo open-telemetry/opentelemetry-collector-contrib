@@ -1,4 +1,5 @@
 type: schema
+scope_name: otelcol/schema
 
 status:
   class: processor

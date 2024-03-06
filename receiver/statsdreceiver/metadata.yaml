@@ -1,4 +1,5 @@
 type: statsd
+scope_name: otelcol/statsdreceiver
 
 status:
   class: receiver

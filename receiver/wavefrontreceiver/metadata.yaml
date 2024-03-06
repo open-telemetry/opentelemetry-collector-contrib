@@ -1,4 +1,5 @@
 type: wavefront
+scope_name: otelcol/wavefrontreceiver
 
 status:
   class: receiver

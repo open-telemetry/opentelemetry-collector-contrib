@@ -1,4 +1,5 @@
 type: journald
+scope_name: otelcol/journaldreceiver
 
 status:
   class: receiver

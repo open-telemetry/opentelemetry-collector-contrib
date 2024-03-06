@@ -1,4 +1,5 @@
 type: sshcheck
+scope_name: otelcol/sshcheckreceiver
 
 status:
   class: receiver
