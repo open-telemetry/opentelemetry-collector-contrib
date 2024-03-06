@@ -34,9 +34,9 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 
 func TestClientCreation(t *testing.T) {
 	cfg := &Config{
-		IdxEndpoint: confighttp.HTTPClientSettings{
+		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
-			Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("basicauth/client")},
+			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
@@ -63,9 +63,9 @@ func TestClientCreation(t *testing.T) {
 // ad-hoc searches
 func TestClientCreateRequest(t *testing.T) {
 	cfg := &Config{
-		IdxEndpoint: confighttp.HTTPClientSettings{
+		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
-			Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("basicauth/client")},
+			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
@@ -144,9 +144,9 @@ func TestClientCreateRequest(t *testing.T) {
 // createAPIRequest creates a request for api calls i.e. to introspection endpoint
 func TestAPIRequestCreate(t *testing.T) {
 	cfg := &Config{
-		IdxEndpoint: confighttp.HTTPClientSettings{
+		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
-			Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("basicauth/client")},
+			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,

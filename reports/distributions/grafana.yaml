@@ -19,6 +19,7 @@ components:
         - attributes
         - k8sattributes
         - probabilistic_sampler
+        - resourcedetection
         - span
         - tail_sampling
         - transform

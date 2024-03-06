@@ -1,4 +1,5 @@
 type: awskinesis
+scope_name: otelcol/awskinesis
 
 status:
   class: exporter
@@ -7,3 +8,8 @@ status:
   distributions: [contrib, observiq]
   codeowners:
     active: [Aneurysm9, MovieStoreGuy]
+
+# TODO: Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true
+

@@ -139,6 +139,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 		return
 	}
 	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+
 	sr := searchResponse{
 		search: searchDict[`SplunkLicenseIndexUsageSearch`],
 	}
@@ -211,6 +212,7 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(ctx context.Context, now pcom
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSchedulerAvgExecutionLatency.Enabled {
 		return
 	}
+
 	sr := searchResponse{
 		search: searchDict[`SplunkSchedulerAvgExecLatencySearch`],
 	}
