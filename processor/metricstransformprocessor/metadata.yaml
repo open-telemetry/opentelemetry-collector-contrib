@@ -1,4 +1,5 @@
 type: metricstransform
+scope_name: otelcol/metricstransform
 
 status:
   class: processor

@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/otelcol"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
@@ -29,7 +30,7 @@ func TestWriteConfigDoc(t *testing.T) {
 		dr,
 		configschema.CfgInfo{
 			Group:       "receiver",
-			Type:        "redis",
+			Type:        component.MustNewType("redis"),
 			CfgInstance: cfg,
 		},
 		func(dir string, bytes []byte, perm os.FileMode) error {

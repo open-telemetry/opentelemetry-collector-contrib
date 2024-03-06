@@ -22,7 +22,6 @@
 internal/common
 
 ## DEPRECATED components
-exporter/f5cloudexporter/
 
 ## UNMAINTAINED components
 exporter/alibabacloudlogserviceexporter/

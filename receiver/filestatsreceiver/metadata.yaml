@@ -1,4 +1,5 @@
 type: filestats
+scope_name: otelcol/filestatsreceiver
 
 status:
   class: receiver
@@ -63,5 +64,3 @@ metrics:
     gauge:
       value_type: int
     unit: "{file}"
-tests:
-  config:

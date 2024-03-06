@@ -1,4 +1,5 @@
 type: windowseventlog
+scope_name: otelcol/windowseventlogreceiver
 
 status:
   class: receiver
