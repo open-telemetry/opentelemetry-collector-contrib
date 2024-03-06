@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/me
 go 1.21
 
 require (
-	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/otel v1.23.1
+	github.com/stretchr/testify v1.9.0
+	go.opentelemetry.io/otel v1.24.0
 	go.uber.org/goleak v1.3.0
 )
 

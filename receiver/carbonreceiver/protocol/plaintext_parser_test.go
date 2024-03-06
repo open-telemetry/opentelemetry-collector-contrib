@@ -27,17 +27,16 @@ func Test_plaintextParser_Parse(t *testing.T) {
 				GaugeMetricType,
 				"tst.int",
 				pcommon.NewMap(),
-				1582230020,
+				time.Unix(1582230020, 0),
 				1,
 			),
 		},
 		{
 			line: "tst.dbl 3.14 1582230020",
 			want: buildDoubleMetric(
-				GaugeMetricType,
 				"tst.dbl",
 				nil,
-				1582230020,
+				time.Unix(1582230020, 0),
 				3.14,
 			),
 		},
@@ -53,17 +52,16 @@ func Test_plaintextParser_Parse(t *testing.T) {
 					m.PutStr("k2", "v_2")
 					return m
 				}(),
-				1582230020,
+				time.Unix(1582230020, 0),
 				128,
 			),
 		},
 		{
 			line: "tst.int.1tag;k0=v_0 1.23 1582230020",
 			want: buildDoubleMetric(
-				GaugeMetricType,
 				"tst.int.1tag",
 				map[string]any{"k0": "v_0"},
-				1582230020,
+				time.Unix(1582230020, 0),
 				1.23,
 			),
 		},
@@ -90,6 +88,53 @@ func Test_plaintextParser_Parse(t *testing.T) {
 			got, err := p.Parse(tt.line)
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.wantErr, err != nil)
+		})
+	}
+
+	// tests for floating point timestamps
+	fpTests := []struct {
+		line string
+		want pmetric.Metric
+	}{
+		{
+			line: "tst.floattimestamp 3.14 1582230020.1234",
+			want: buildDoubleMetric(
+				"tst.floattimestamp",
+				nil,
+				time.Unix(1582230020, 123400000),
+				3.14,
+			),
+		},
+		{
+			line: "tst.floattimestampnofractionalpart 3.14 1582230020.",
+			want: buildDoubleMetric(
+				"tst.floattimestampnofractionalpart",
+				nil,
+				time.Unix(1582230020, 0),
+				3.14,
+			),
+		},
+	}
+
+	for _, tt := range fpTests {
+		t.Run(tt.line, func(t *testing.T) {
+			got, err := p.Parse(tt.line)
+			require.NoError(t, err)
+
+			// allow for rounding difference in float conversion.
+			assert.WithinDuration(
+				t,
+				tt.want.Gauge().DataPoints().At(0).Timestamp().AsTime(),
+				got.Gauge().DataPoints().At(0).Timestamp().AsTime(),
+				100*time.Nanosecond,
+			)
+
+			// if the delta on the timestamp is OK, copy them onto the test
+			// object so that we can test for equality on the remaining properties.
+			got.Gauge().DataPoints().At(0).SetTimestamp(
+				tt.want.Gauge().DataPoints().At(0).Timestamp(),
+			)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -175,7 +220,7 @@ func buildIntMetric(
 	typ TargetMetricType,
 	name string,
 	attributes pcommon.Map,
-	timestamp int64,
+	timestamp time.Time,
 	value int64,
 ) pmetric.Metric {
 	m := pmetric.NewMetric()
@@ -188,30 +233,22 @@ func buildIntMetric(
 	} else {
 		dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
 	}
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(timestamp, 0)))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 	attributes.CopyTo(dp.Attributes())
 	dp.SetIntValue(value)
 	return m
 }
 
 func buildDoubleMetric(
-	typ TargetMetricType,
 	name string,
 	attributes map[string]any,
-	timestamp int64,
+	timestamp time.Time,
 	value float64,
 ) pmetric.Metric {
 	m := pmetric.NewMetric()
 	m.SetName(name)
-	var dp pmetric.NumberDataPoint
-	if typ == CumulativeMetricType {
-		sum := m.SetEmptySum()
-		sum.SetIsMonotonic(true)
-		dp = sum.DataPoints().AppendEmpty()
-	} else {
-		dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
-	}
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(timestamp, 0)))
+	var dp pmetric.NumberDataPoint = m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 	_ = dp.Attributes().FromRaw(attributes)
 	dp.SetDoubleValue(value)
 	return m

@@ -1,4 +1,5 @@
 type: kubeletstats
+scope_name: otelcol/kubeletstatsreceiver
 
 status:
   class: receiver
@@ -499,3 +500,9 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+
+tests:
+  config:
+    ca_file: "testdata/testcert.crt"
+    key_file: "testdata/testkey.key"
+    cert_file: "testdata/testcert.crt"

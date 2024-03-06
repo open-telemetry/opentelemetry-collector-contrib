@@ -5,7 +5,6 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
 	"sync"
 	"time"
@@ -26,7 +25,7 @@ import (
 var _ exporter.Logs = (*logExporterImp)(nil)
 
 type logExporterImp struct {
-	loadBalancer loadBalancer
+	loadBalancer *loadBalancer
 
 	started    bool
 	shutdownWg sync.WaitGroup
@@ -87,16 +86,13 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 		balancingKey = random()
 	}
 
-	endpoint := e.loadBalancer.Endpoint(balancingKey[:])
-	exp, err := e.loadBalancer.Exporter(endpoint)
+	le, endpoint, err := e.loadBalancer.exporterAndEndpoint(balancingKey[:])
 	if err != nil {
 		return err
 	}
 
-	le, ok := exp.(exporter.Logs)
-	if !ok {
-		return fmt.Errorf("unable to export logs, unexpected exporter type: expected exporter.Logs but got %T", exp)
-	}
+	le.consumeWG.Add(1)
+	defer le.consumeWG.Done()
 
 	start := time.Now()
 	err = le.ConsumeLogs(ctx, ld)

@@ -1,4 +1,5 @@
 type: k8s_events
+scope_name: otelcol/k8seventsreceiver
 
 status:
   class: receiver
@@ -8,6 +9,6 @@ status:
   codeowners:
     active: [dmitryax, TylerHelmuth]
 
+# TODO: Update the receiver to pass the tests
 tests:
-  config:
   skip_lifecycle: true

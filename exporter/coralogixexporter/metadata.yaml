@@ -1,4 +1,5 @@
 type: coralogix
+scope_name: otelcol/coralogix
 
 status:
   class: exporter
