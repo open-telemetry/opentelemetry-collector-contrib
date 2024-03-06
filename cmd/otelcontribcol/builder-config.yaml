@@ -444,4 +444,4 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension => ../../extension/solarwindsapmsettingsextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver => ../../receiver/namedpipereceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery => ../../internal/sqlquery
-  - github.com/haimrubinstein/go-syslog/v3 => github.com/haimrubinstein/go-syslog/v3 v3.0.0
+
