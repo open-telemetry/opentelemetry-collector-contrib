@@ -21,6 +21,7 @@ type S3UploaderConfig struct {
 	RoleArn          string `mapstructure:"role_arn"`
 	S3ForcePathStyle bool   `mapstructure:"s3_force_path_style"`
 	DisableSSL       bool   `mapstructure:"disable_ssl"`
+	Compression      bool   `mapstructure:"compression"`
 }
 
 type MarshalerType string
@@ -47,6 +48,9 @@ func (c *Config) Validate() error {
 	}
 	if c.S3Uploader.S3Bucket == "" {
 		errs = multierr.Append(errs, errors.New("bucket is required"))
+	}
+	if c.S3Uploader.Compression && c.MarshalerName == SumoIC {
+		errs = multierr.Append(errs, errors.New("marshaler does not support compression"))
 	}
 	return errs
 }

@@ -5,6 +5,7 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"math/rand"
@@ -38,11 +39,16 @@ func randomInRange(low, hi int) int {
 	return low + rand.Intn(hi-low)
 }
 
-func getS3Key(time time.Time, keyPrefix string, partition string, filePrefix string, metadata string, fileformat string) string {
+func getS3Key(time time.Time, keyPrefix string, partition string, filePrefix string, metadata string, fileformat string, compression bool) string {
 	timeKey := getTimeKey(time, partition)
 	randomID := randomInRange(100000000, 999999999)
 
 	s3Key := keyPrefix + "/" + timeKey + "/" + filePrefix + metadata + "_" + strconv.Itoa(randomID) + "." + fileformat
+
+	// add ".gz" extension to files if compression is enabled
+	if compression {
+		s3Key += ".gz"
+	}
 
 	return s3Key
 }
@@ -74,13 +80,32 @@ func getSession(config *Config, sessionConfig *aws.Config) (*session.Session, er
 }
 
 func (s3writer *s3Writer) writeBuffer(_ context.Context, buf []byte, config *Config, metadata string, format string) error {
+	compressionEnabled := config.S3Uploader.Compression
 	now := time.Now()
 	key := getS3Key(now,
 		config.S3Uploader.S3Prefix, config.S3Uploader.S3Partition,
-		config.S3Uploader.FilePrefix, metadata, format)
+		config.S3Uploader.FilePrefix, metadata, format, compressionEnabled)
 
-	// create a reader from data data in memory
-	reader := bytes.NewReader(buf)
+	encoding := ""
+	var reader *bytes.Reader
+	if compressionEnabled {
+		// set s3 uploader content encoding to "gzip"
+		encoding = "gzip"
+		var gzipContents bytes.Buffer
+
+		// create a gzip from data
+		gzipWriter := gzip.NewWriter(&gzipContents)
+		_, err := gzipWriter.Write(buf)
+		if err != nil {
+			return err
+		}
+		gzipWriter.Close()
+
+		reader = bytes.NewReader(gzipContents.Bytes())
+	} else {
+		// create a reader from data in memory
+		reader = bytes.NewReader(buf)
+	}
 
 	sessionConfig := getSessionConfig(config)
 	sess, err := getSession(config, sessionConfig)
@@ -92,9 +117,10 @@ func (s3writer *s3Writer) writeBuffer(_ context.Context, buf []byte, config *Con
 	uploader := s3manager.NewUploader(sess)
 
 	_, err = uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(config.S3Uploader.S3Bucket),
-		Key:    aws.String(key),
-		Body:   reader,
+		Bucket:          aws.String(config.S3Uploader.S3Bucket),
+		Key:             aws.String(key),
+		Body:            reader,
+		ContentEncoding: &encoding,
 	})
 	if err != nil {
 		return err
