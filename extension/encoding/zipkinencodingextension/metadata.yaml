@@ -1,4 +1,5 @@
 type: zipkin_encoding
+scope_name: otelcol/zipkinencoding
 
 status:
   class: extension

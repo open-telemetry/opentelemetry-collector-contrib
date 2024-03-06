@@ -1,4 +1,5 @@
 type: logstransform
+scope_name: otelcol/logstransform
 
 status:
   class: processor

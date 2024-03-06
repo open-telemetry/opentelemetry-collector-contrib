@@ -129,10 +129,16 @@ func newFileExporter(conf *Config) FileExporter {
 	}
 }
 
-func newFileWriter(path string, rotation *Rotation, flushInterval time.Duration, export exportFunc) (*fileWriter, error) {
+func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInterval time.Duration, export exportFunc) (*fileWriter, error) {
 	var wc io.WriteCloser
 	if rotation == nil {
-		f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+		fileFlags := os.O_RDWR | os.O_CREATE
+		if shouldAppend {
+			fileFlags |= os.O_APPEND
+		} else {
+			fileFlags |= os.O_TRUNC
+		}
+		f, err := os.OpenFile(path, fileFlags, 0644)
 		if err != nil {
 			return nil, err
 		}
