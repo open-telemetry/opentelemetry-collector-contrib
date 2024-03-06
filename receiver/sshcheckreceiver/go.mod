@@ -8,13 +8,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.96.0
 	github.com/pkg/sftp v1.13.6
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.96.1-0.20240305232712-5a68058e0e3a
-	go.opentelemetry.io/collector/confmap v0.96.1-0.20240305232712-5a68058e0e3a
-	go.opentelemetry.io/collector/consumer v0.96.1-0.20240305232712-5a68058e0e3a
-	go.opentelemetry.io/collector/extension v0.96.1-0.20240305232712-5a68058e0e3a
-	go.opentelemetry.io/collector/extension/auth v0.96.1-0.20240305232712-5a68058e0e3a
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240305230428-621d8669ec4c
-	go.opentelemetry.io/collector/receiver v0.96.1-0.20240305232712-5a68058e0e3a
+	go.opentelemetry.io/collector/component v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/confmap v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/consumer v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/extension v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/extension/auth v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/pdata v1.3.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/receiver v0.96.1-0.20240306115632-b2693620eff6
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.21.0
@@ -25,8 +25,8 @@ require (
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.96.0 // indirect
-	go.opentelemetry.io/collector v0.96.1-0.20240305232712-5a68058e0e3a // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240305232712-5a68058e0e3a // indirect
+	go.opentelemetry.io/collector v0.96.1-0.20240306115632-b2693620eff6 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240306115632-b2693620eff6 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
 )
 
@@ -64,7 +64,7 @@ require (
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	google.golang.org/grpc v1.62.0 // indirect
+	google.golang.org/grpc v1.62.1 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
