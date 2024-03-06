@@ -31,7 +31,7 @@ install_collector() {
 }
 
 ###########################################################################################################
-clusterName="otel-demo"
+clusterName="prod-eks-otel-a-us-east-1"
 clusterArn="arn:aws:eks:us-east-1:172597598159:cluster/${clusterName}"
 
 aws eks --region us-east-1 update-kubeconfig --name "${clusterName}"
