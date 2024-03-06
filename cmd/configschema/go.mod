@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/otelcol v0.96.1-0.20240305232712-5a68058e0e3a
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.96.1-0.20240305232712-5a68058e0e3a
 	go.uber.org/goleak v1.3.0
-	golang.org/x/mod v0.15.0
+	golang.org/x/mod v0.16.0
 	golang.org/x/text v0.14.0
 	gopkg.in/yaml.v2 v2.4.0
 )
