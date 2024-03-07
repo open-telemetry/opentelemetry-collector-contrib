@@ -320,6 +320,11 @@ func (t *transaction) UpdateMetadata(_ storage.SeriesRef, _ labels.Labels, _ met
 	return 0, nil
 }
 
+func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, _ labels.Labels, _ int64, _ int64) (storage.SeriesRef, error) {
+	//TODO: implement this func
+	return 0, nil
+}
+
 func (t *transaction) AddTargetInfo(labels labels.Labels) {
 	attrs := t.nodeResource.Attributes()
 	for _, lbl := range labels {
