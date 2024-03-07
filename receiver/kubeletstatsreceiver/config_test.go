@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 					CollectionInterval: duration,
 					InitialDelay:       time.Second,
 				},
-				TCPAddr: confignet.TCPAddr{
+				TCPAddrConfig: confignet.TCPAddrConfig{
 					Endpoint: "1.2.3.4:5555",
 				},
 				ClientConfig: kube.ClientConfig{

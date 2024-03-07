@@ -1,4 +1,5 @@
 type: udplog
+scope_name: otelcol/udplogreceiver
 
 status:
   class: receiver

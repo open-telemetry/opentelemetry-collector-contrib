@@ -1,4 +1,5 @@
 type: nsxt
+scope_name: otelcol/nsxtreceiver
 
 status:
   class: receiver
@@ -112,5 +113,3 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     enabled: true
-tests:
-  config:
