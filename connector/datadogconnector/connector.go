@@ -13,6 +13,7 @@ import (
 	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	"github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -39,7 +40,7 @@ type traceToMetricConnector struct {
 
 	enableContainerStats bool
 	containerTagAttrs    map[string]string
-	containerTagCache    map[string][]string
+	containerTagCache    *cache.Cache
 
 	// in specifies the channel through which the agent will output Stats Payloads
 	// resulting from ingested traces.
@@ -80,7 +81,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 		metricsConsumer:      metricsConsumer,
 		enableContainerStats: cfg.(*Config).Traces.EnableContainerStats,
 		containerTagAttrs:    ddtags,
-		containerTagCache:    make(map[string][]string),
+		containerTagCache:    cache.New(cache.DefaultExpiration, cache.DefaultExpiration),
 		exit:                 make(chan struct{}),
 	}, nil
 }
@@ -129,7 +130,6 @@ func (c *traceToMetricConnector) Capabilities() consumer.Capabilities {
 }
 
 func (c *traceToMetricConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
-	c.agent.Ingest(ctx, traces)
 	if c.enableContainerStats && len(c.containerTagAttrs) > 0 {
 		for i := 0; i < traces.ResourceSpans().Len(); i++ {
 			rs := traces.ResourceSpans().At(i)
@@ -141,12 +141,17 @@ func (c *traceToMetricConnector) ConsumeTraces(ctx context.Context, traces ptrac
 			ddContainerTags := attributes.ContainerTagsFromResourceAttributes(attrs)
 			for attr := range c.containerTagAttrs {
 				if val, ok := ddContainerTags[attr]; ok {
-					c.containerTagCache[containerID.AsString()] = append(c.containerTagCache[containerID.AsString()], val)
+					var cacheVal []string
+					if val, ok := c.containerTagCache.Get(containerID.AsString()); ok {
+						cacheVal = val.([]string)
+					}
+					cacheVal = append(cacheVal, val)
+					c.containerTagCache.Set(containerID.AsString(), cacheVal, cache.DefaultExpiration)
 				}
 			}
-
 		}
 	}
+	c.agent.Ingest(ctx, traces)
 	return nil
 }
 
@@ -163,11 +168,12 @@ func (c *traceToMetricConnector) run() {
 			var mx pmetric.Metrics
 			var err error
 			// Enrich the stats with container tags
-			if c.enableContainerStats && len(c.containerTagCache) > 0 {
+			if c.enableContainerStats {
 				for _, stat := range stats.Stats {
 					if stat.ContainerID != "" {
-						if tags, ok := c.containerTagCache[stat.ContainerID]; ok {
-							stat.Tags = append(stat.Tags, tags...)
+						if tags, ok := c.containerTagCache.Get(stat.ContainerID); ok {
+							tagList := tags.([]string)
+							stat.Tags = append(stat.Tags, tagList...)
 						}
 					}
 				}
