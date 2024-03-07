@@ -25,26 +25,26 @@ func (p *PipelineMetadata) InstanceIDs() []*component.InstanceID {
 }
 
 // NewPipelineMetadata returns a metadata for a hypothetical pipeline.
-func NewPipelineMetadata(typeVal component.Type) *PipelineMetadata {
-	pipelineID := component.NewID(typeVal)
+func NewPipelineMetadata(typestr string) *PipelineMetadata {
+	pipelineID := component.MustNewID(typestr)
 	return &PipelineMetadata{
 		PipelineID: pipelineID,
 		ReceiverID: &component.InstanceID{
-			ID:   component.NewIDWithName(typeVal, "in"),
+			ID:   component.NewIDWithName(component.MustNewType(typestr), "in"),
 			Kind: component.KindReceiver,
 			PipelineIDs: map[component.ID]struct{}{
 				pipelineID: {},
 			},
 		},
 		ProcessorID: &component.InstanceID{
-			ID:   component.NewID("batch"),
+			ID:   component.MustNewID("batch"),
 			Kind: component.KindProcessor,
 			PipelineIDs: map[component.ID]struct{}{
 				pipelineID: {},
 			},
 		},
 		ExporterID: &component.InstanceID{
-			ID:   component.NewIDWithName(typeVal, "out"),
+			ID:   component.NewIDWithName(component.MustNewType(typestr), "out"),
 			Kind: component.KindExporter,
 			PipelineIDs: map[component.ID]struct{}{
 				pipelineID: {},
@@ -54,10 +54,10 @@ func NewPipelineMetadata(typeVal component.Type) *PipelineMetadata {
 }
 
 // NewPipelines returns a map of hypothetical pipelines identified by their stringified typeVal.
-func NewPipelines(typeVals ...component.Type) map[string]*PipelineMetadata {
-	result := make(map[string]*PipelineMetadata, len(typeVals))
-	for _, val := range typeVals {
-		result[string(val)] = NewPipelineMetadata(val)
+func NewPipelines(typestrs ...string) map[string]*PipelineMetadata {
+	result := make(map[string]*PipelineMetadata, len(typestrs))
+	for _, typestr := range typestrs {
+		result[typestr] = NewPipelineMetadata(typestr)
 	}
 	return result
 }
