@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"math/rand"
 	"strconv"
 	"time"
@@ -39,14 +40,14 @@ func randomInRange(low, hi int) int {
 	return low + rand.Intn(hi-low)
 }
 
-func getS3Key(time time.Time, keyPrefix string, partition string, filePrefix string, metadata string, fileformat string, compression bool) string {
+func getS3Key(time time.Time, keyPrefix string, partition string, filePrefix string, metadata string, fileformat string, compression configcompression.Type) string {
 	timeKey := getTimeKey(time, partition)
 	randomID := randomInRange(100000000, 999999999)
 
 	s3Key := keyPrefix + "/" + timeKey + "/" + filePrefix + metadata + "_" + strconv.Itoa(randomID) + "." + fileformat
 
 	// add ".gz" extension to files if compression is enabled
-	if compression {
+	if compression == configcompression.TypeGzip {
 		s3Key += ".gz"
 	}
 
@@ -80,15 +81,14 @@ func getSession(config *Config, sessionConfig *aws.Config) (*session.Session, er
 }
 
 func (s3writer *s3Writer) writeBuffer(_ context.Context, buf []byte, config *Config, metadata string, format string) error {
-	compressionEnabled := config.S3Uploader.Compression
 	now := time.Now()
 	key := getS3Key(now,
 		config.S3Uploader.S3Prefix, config.S3Uploader.S3Partition,
-		config.S3Uploader.FilePrefix, metadata, format, compressionEnabled)
+		config.S3Uploader.FilePrefix, metadata, format, config.S3Uploader.Compression)
 
 	encoding := ""
 	var reader *bytes.Reader
-	if compressionEnabled {
+	if config.S3Uploader.Compression == configcompression.TypeGzip {
 		// set s3 uploader content encoding to "gzip"
 		encoding = "gzip"
 		var gzipContents bytes.Buffer

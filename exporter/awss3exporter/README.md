@@ -34,7 +34,7 @@ The following exporter configuration parameters are supported.
 | `endpoint`            | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                       |             |
 | `s3_force_path_style` | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       |
 | `disable_ssl`         | set this to `true` to disable SSL when sending requests                                                                                    | false       |
-| `compression`         | should the file be compressed using gzip                                                                                                   | false       |
+| `compression`         | should the file be compressed                                                                                                              | none        |
 
 ### Marshaler
 
@@ -43,9 +43,13 @@ Marshaler determines the format of data sent to AWS S3. Currently, the following
 - `otlp_json` (default): the [OpenTelemetry Protocol format](https://github.com/open-telemetry/opentelemetry-proto), represented as json.
 - `otlp_proto`: the [OpenTelemetry Protocol format](https://github.com/open-telemetry/opentelemetry-proto), represented as Protocol Buffers. A single protobuf message is written into each object.
 - `sumo_ic`: the [Sumo Logic Installed Collector Archive format](https://help.sumologic.com/docs/manage/data-archiving/archive/).
-  **This format is supported only for logs and does not support `compression` option as it is compressed by default**
+  **This format is supported only for logs.**
 - `body`: export the log body as string.
   **This format is supported only for logs.**
+
+### Compression
+- `none` (default): No compression will be applied
+- `gzip`: Files will be compressed with gzip. **This does not support `sumo_ic`marshaler.**
 
 # Example Configuration
 
