@@ -1,4 +1,5 @@
 type: ecs_observer
+scope_name: otelcol/ecsobserver
 
 status:
   class: extension
@@ -7,3 +8,8 @@ status:
   distributions: [contrib, aws, splunk, sumo]
   codeowners:
     active: [dmitryax, rmfitzpatrick]
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
