@@ -59,11 +59,10 @@ func isSameMetric(ts *prompb.TimeSeries, lbls []prompb.Label) bool {
 	return true
 }
 
-// AddExemplars finds a bucket bound that corresponds to the exemplars value and add the exemplar to the specific sig;
-// we only add exemplars if samples are presents
-// tsMap is unmodified if either of its parameters is nil and samples are nil.
-func (c *PrometheusConverter) AddExemplars(dataPoint pmetric.HistogramDataPoint, boundsData []bucketBoundsData) {
-	if len(boundsData) == 0 {
+// AddExemplars adds exemplars for the dataPoint. For each exemplar, if it can find a bucket bound corresponding to its value,
+// the exemplar is added to the bucket bound's time series, provided that the time series' has samples.
+func (c *PrometheusConverter) AddExemplars(dataPoint pmetric.HistogramDataPoint, bucketBounds []bucketBoundsData) {
+	if len(bucketBounds) == 0 {
 		return
 	}
 
@@ -71,13 +70,13 @@ func (c *PrometheusConverter) AddExemplars(dataPoint pmetric.HistogramDataPoint,
 	if len(exemplars) == 0 {
 		return
 	}
-	sort.Sort(byBucketBoundsData(boundsData))
+	sort.Sort(byBucketBoundsData(bucketBounds))
 
 	for _, exemplar := range exemplars {
-		for _, bound := range boundsData {
+		for _, bound := range bucketBounds {
 			if len(bound.ts.Samples) > 0 && exemplar.Value <= bound.bound {
 				bound.ts.Exemplars = append(bound.ts.Exemplars, exemplar)
-				return
+				break
 			}
 		}
 	}
