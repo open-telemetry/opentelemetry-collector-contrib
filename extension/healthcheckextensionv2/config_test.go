@@ -100,7 +100,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				GRPCConfig: &grpc.Config{
 					ServerConfig: configgrpc.ServerConfig{
-						NetAddr: confignet.NetAddr{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  localhostgate.EndpointForPort(defaultGRPCPort),
 							Transport: "tcp",
 						},
@@ -154,7 +154,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				GRPCConfig: &grpc.Config{
 					ServerConfig: configgrpc.ServerConfig{
-						NetAddr: confignet.NetAddr{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:13",
 							Transport: "tcp",
 						},

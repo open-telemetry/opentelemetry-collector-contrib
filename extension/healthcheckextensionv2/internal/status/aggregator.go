@@ -14,7 +14,7 @@ import (
 
 // Extensions are treated as a pseudo pipeline and extsID is used as a map key
 var (
-	extsID    = component.NewID("extensions")
+	extsID    = component.MustNewID("extensions")
 	extsIDMap = map[component.ID]struct{}{extsID: {}}
 )
 
