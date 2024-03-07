@@ -131,6 +131,7 @@ func TestCreateMetricExporter(t *testing.T) {
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
+			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})
 	}
 }
@@ -205,6 +206,7 @@ func TestCreateLogExporter(t *testing.T) {
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
+			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})
 	}
 }
@@ -279,6 +281,7 @@ func TestCreateTraceExporter(t *testing.T) {
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
+			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})
 	}
 }

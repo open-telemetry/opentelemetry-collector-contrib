@@ -8,7 +8,9 @@ jobs.
 
 ## Configuration
 
-The following settings are required, omitting them will either cause your receiver to fail to compile or result in 4/5xx return codes during scraping.
+The following settings are required, omitting them will either cause your receiver to fail to compile or result in 4/5xx return codes during scraping. 
+
+**NOTE:** These must be set for each Splunk instance type (indexer, search head, or cluster master) from which you wish to pull metrics. At present, only one of each type is accepted, per configured receiver instance. This means, for example, that if you have three different "indexer" type instances that you would like to pull metrics from you will need to configure three different `splunkenterprise` receivers for each indexer node you wish to monitor.
 
 * `basicauth` (from [basicauthextension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/basicauthextension)): A configured stanza for the basicauthextension.
 * `auth` (no default): String name referencing your auth extension.
@@ -23,16 +25,38 @@ Example:
 
 ```yaml
 extensions:
-    basicauth/client:
+    basicauth/indexer:
+        client_auth:
+            username: admin
+            password: securityFirst
+    basicauth/cluster_master:
         client_auth:
             username: admin
             password: securityFirst
 
 receivers:
     splunkenterprise:
-        auth: basicauth/client
-        endpoint: "https://localhost:8089"
-        timeout: 45s
+        indexer:
+            auth: 
+              authenticator: basicauth/indexer
+            endpoint: "https://localhost:8089"
+            timeout: 45s
+        cluster_master:
+            auth: 
+              authenticator: basicauth/cluster_master
+            endpoint: "https://localhost:8089"
+            timeout: 45s
+
+exporters:
+  logging:
+    loglevel: info
+
+service:
+  extensions: [basicauth/indexer, basicauth/cluster_master]
+  pipelines:
+    metrics:
+      receivers: [splunkenterprise]
+      exporters: [logging]
 ```
 
 For a full list of settings exposed by this receiver please look [here](./config.go) with a detailed configuration [here](./testdata/config.yaml).

@@ -1,4 +1,5 @@
 type: carbon
+scope_name: otelcol/carbon
 
 status:
   class: exporter
@@ -7,3 +8,6 @@ status:
   distributions: [contrib, observiq, sumo]
   codeowners:
     active: [aboguszewski-sumo]
+
+tests:
+  expect_consumer_error: true

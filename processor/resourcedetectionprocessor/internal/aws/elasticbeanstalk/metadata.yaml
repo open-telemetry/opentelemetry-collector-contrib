@@ -23,3 +23,7 @@ resource_attributes:
     description: The service.version
     type: string
     enabled: true
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

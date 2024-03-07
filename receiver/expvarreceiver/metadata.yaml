@@ -1,4 +1,5 @@
 type: expvar
+scope_name: otelcol/expvarreceiver
 
 status:
   class: receiver
@@ -264,5 +265,3 @@ metrics:
     unit: 1
     gauge:
       value_type: double
-tests:
-  config:

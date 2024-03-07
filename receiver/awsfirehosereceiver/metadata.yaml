@@ -1,4 +1,5 @@
 type: awsfirehose
+scope_name: otelcol/awsfirehosereceiver
 
 status:
   class: receiver

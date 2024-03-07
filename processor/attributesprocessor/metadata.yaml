@@ -1,4 +1,5 @@
 type: attributes
+scope_name: otelcol/attributes
 
 status:
   class: processor
