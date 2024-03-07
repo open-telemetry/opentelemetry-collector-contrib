@@ -70,8 +70,8 @@ func (c *PrometheusConverter) AddExemplars(dataPoint pmetric.HistogramDataPoint,
 	if len(exemplars) == 0 {
 		return
 	}
-	sort.Sort(byBucketBoundsData(bucketBounds))
 
+	sort.Sort(byBucketBoundsData(bucketBounds))
 	for _, exemplar := range exemplars {
 		for _, bound := range bucketBounds {
 			if len(bound.ts.Samples) > 0 && exemplar.Value <= bound.bound {
@@ -91,36 +91,7 @@ func (c *PrometheusConverter) AddSample(sample *prompb.Sample, lbls []prompb.Lab
 		return nil
 	}
 
-	h := timeSeriesSignature(lbls)
-	ts := c.unique[h]
-	if ts != nil {
-		if !isSameMetric(ts, lbls) {
-			// Collision, try to find it
-			ts = nil
-			for _, cTS := range c.conflicts[h] {
-				if isSameMetric(cTS, lbls) {
-					ts = cTS
-					break
-				}
-			}
-			if ts == nil {
-				// New collision
-				ts = &prompb.TimeSeries{
-					Labels: lbls,
-				}
-				c.conflicts[h] = append(c.conflicts[h], ts)
-			}
-		}
-
-		ts.Samples = append(ts.Samples, *sample)
-		return ts
-	}
-
-	// The metric is new
-	ts = &prompb.TimeSeries{
-		Labels:  lbls,
-		Samples: []prompb.Sample{*sample},
-	}
-	c.unique[h] = ts
+	ts, _ := c.getOrCreateTimeSeries(lbls)
+	ts.Samples = append(ts.Samples, *sample)
 	return ts
 }

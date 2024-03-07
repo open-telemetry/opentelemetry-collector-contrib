@@ -40,8 +40,6 @@ type MetricsConverter interface {
 	AddHistogramDataPoints(pmetric.HistogramDataPointSlice, pcommon.Resource, Settings, string) error
 	// AddExponentialHistogramDataPoints adds exponential histogtram metric data points.
 	AddExponentialHistogramDataPoints(pmetric.ExponentialHistogramDataPointSlice, pcommon.Resource, Settings, string) error
-	// AddMetricIfNeeded adds a corresponding metric if it doesn't already exist.
-	AddMetricIfNeeded([]prompb.Label, pcommon.Timestamp, pcommon.Timestamp)
 }
 
 // FromMetrics converts pmetric.Metrics to another metrics format via the converter.

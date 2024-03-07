@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"slices"
 	"sort"
 	"strconv"
 	"time"
@@ -99,9 +100,10 @@ func timeSeriesSignature(labels []prompb.Label) uint64 {
 var seps = []byte{'\xff'}
 
 // createAttributes creates a slice of Prometheus Labels with OTLP attributes and pairs of string values.
-// Unpaired string values are ignored. String pairs overwrite OTLP labels if collisions happen, and overwrites are
-// logged. Resulting label names are sanitized.
-func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externalLabels map[string]string, extras ...string) []prompb.Label {
+// Unpaired string values are ignored. String pairs overwrite OTLP labels if collisions happen and
+// if logOnOverwrite is true, the overwrite is logged. Resulting label names are sanitized.
+func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externalLabels map[string]string,
+	ignoreAttrs []string, logOnOverwrite bool, extras ...string) []prompb.Label {
 	resourceAttrs := resource.Attributes()
 	serviceName, haveServiceName := resourceAttrs.Get(conventions.AttributeServiceName)
 	instance, haveInstanceID := resourceAttrs.Get(conventions.AttributeServiceInstanceID)
@@ -118,13 +120,17 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	// map ensures no duplicate label name
 	l := make(map[string]string, maxLabelCount)
 
-	// Ensure attributes are sorted by key for consistent merging of keys which
-	// collide when sanitized.
 	labels := make([]prompb.Label, 0, maxLabelCount)
+	// XXX: Should we always drop service namespace/service name/service instance ID from the labels
+	// (as they get mapped to other Prometheus labels)?
 	attributes.Range(func(key string, value pcommon.Value) bool {
-		labels = append(labels, prompb.Label{Name: key, Value: value.AsString()})
+		if !slices.Contains(ignoreAttrs, key) {
+			labels = append(labels, prompb.Label{Name: key, Value: value.AsString()})
+		}
 		return true
 	})
+	// Ensure attributes are sorted by key for consistent merging of keys which
+	// collide when sanitized.
 	sort.Stable(ByLabelName(labels))
 
 	for _, label := range labels {
@@ -162,7 +168,7 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 			break
 		}
 		_, found := l[extras[i]]
-		if found {
+		if found && logOnOverwrite {
 			log.Println("label " + extras[i] + " is overwritten. Check if Prometheus reserved labels are used.")
 		}
 		// internal labels should be maintained
@@ -218,7 +224,7 @@ func (c *PrometheusConverter) AddHistogramDataPoints(dataPoints pmetric.Histogra
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
-		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels)
+		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false)
 
 		// If the sum is unset, it indicates the _sum metric point should be
 		// omitted
@@ -289,7 +295,7 @@ func (c *PrometheusConverter) AddHistogramDataPoints(dataPoints pmetric.Histogra
 		startTimestamp := pt.StartTimestamp()
 		if settings.ExportCreatedMetric && startTimestamp != 0 {
 			labels := createLabels(createdSuffix, baseLabels)
-			c.AddMetricIfNeeded(labels, startTimestamp, pt.Timestamp())
+			c.addTimeSeriesIfNeeded(labels, startTimestamp, pt.Timestamp())
 		}
 	}
 
@@ -417,7 +423,7 @@ func (c *PrometheusConverter) AddSummaryDataPoints(dataPoints pmetric.SummaryDat
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
-		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels)
+		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false)
 
 		// treat sum as a sample in an individual TimeSeries
 		sum := &prompb.Sample{
@@ -460,75 +466,82 @@ func (c *PrometheusConverter) AddSummaryDataPoints(dataPoints pmetric.SummaryDat
 		startTimestamp := pt.StartTimestamp()
 		if settings.ExportCreatedMetric && startTimestamp != 0 {
 			createdLabels := createLabels(baseName+createdSuffix, baseLabels)
-			c.AddMetricIfNeeded(createdLabels, startTimestamp, pt.Timestamp())
+			c.addTimeSeriesIfNeeded(createdLabels, startTimestamp, pt.Timestamp())
 		}
 	}
 
 	return nil
 }
 
-func (c *PrometheusConverter) AddMetricIfNeeded(lbls []prompb.Label, startTimestamp pcommon.Timestamp, timestamp pcommon.Timestamp) {
+// getOrCreateTimeSeries returns the time series corresponding to the label set if existent, and false.
+// Otherwise it creates a new one and returns that, and true.
+func (c *PrometheusConverter) getOrCreateTimeSeries(lbls []prompb.Label) (*prompb.TimeSeries, bool) {
 	h := timeSeriesSignature(lbls)
 	ts := c.unique[h]
 	if ts != nil {
 		if isSameMetric(ts, lbls) {
 			// We already have this metric
-			return
+			return ts, false
 		}
 
 		// Look for a matching conflict
 		for _, cTS := range c.conflicts[h] {
 			if isSameMetric(cTS, lbls) {
 				// We already have this metric
-				return
+				return cTS, false
 			}
 		}
 
 		// New conflict
-		c.conflicts[h] = append(c.conflicts[h], &prompb.TimeSeries{
+		ts = &prompb.TimeSeries{
 			Labels: lbls,
-			Samples: []prompb.Sample{
-				{ // convert ns to ms
-					Value:     float64(convertTimeStamp(startTimestamp)),
-					Timestamp: convertTimeStamp(timestamp),
-				},
-			},
-		})
-		return
+		}
+		c.conflicts[h] = append(c.conflicts[h], ts)
+		return ts, true
 	}
 
 	// This metric is new
-	c.unique[h] = &prompb.TimeSeries{
+	ts = &prompb.TimeSeries{
 		Labels: lbls,
-		Samples: []prompb.Sample{
-			{ // convert ns to ms
+	}
+	c.unique[h] = ts
+	return ts, true
+}
+
+// addTimeSeriesIfNeeded adds a corresponding time series if it doesn't already exist.
+// If the time series doesn't already exist, it gets added with startTimestamp for its value and timestamp for its timestamp,
+// both converted to milliseconds.
+func (c *PrometheusConverter) addTimeSeriesIfNeeded(lbls []prompb.Label, startTimestamp pcommon.Timestamp, timestamp pcommon.Timestamp) {
+	ts, created := c.getOrCreateTimeSeries(lbls)
+	if created {
+		ts.Samples = []prompb.Sample{
+			{
+				// convert ns to ms
 				Value:     float64(convertTimeStamp(startTimestamp)),
 				Timestamp: convertTimeStamp(timestamp),
 			},
-		},
+		}
 	}
 }
 
-// addResourceTargetInfo converts the resource to the target info metric
+// addResourceTargetInfo converts the resource to the target info metric.
 func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp, converter MetricsConverter) {
 	if settings.DisableTargetInfo {
 		return
 	}
 
 	attributes := resource.Attributes()
-	serviceName, haveServiceName := attributes.Get(conventions.AttributeServiceName)
-	serviceNamespace, haveServiceNamespace := attributes.Get(conventions.AttributeServiceNamespace)
-	instance, haveInstanceID := attributes.Get(conventions.AttributeServiceInstanceID)
-
+	identifyingAttrs := []string{
+		conventions.AttributeServiceNamespace,
+		conventions.AttributeServiceName,
+		conventions.AttributeServiceInstanceID,
+	}
 	nonIdentifyingAttrsCount := attributes.Len()
-	if haveServiceName {
-		nonIdentifyingAttrsCount--
-	}
-	if haveInstanceID {
-		nonIdentifyingAttrsCount--
-	}
-	if haveServiceNamespace {
-		nonIdentifyingAttrsCount--
+	for _, a := range identifyingAttrs {
+		_, haveAttr := attributes.Get(a)
+		if haveAttr {
+			nonIdentifyingAttrsCount--
+		}
 	}
 	if nonIdentifyingAttrsCount == 0 {
 		// If we only have job + instance, then target_info isn't useful, so don't add it.
@@ -540,64 +553,7 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 		name = settings.Namespace + "_" + name
 	}
 
-	// Calculate the maximum possible number of labels we could return so we can preallocate l
-	maxLabelCount := attributes.Len() + len(settings.ExternalLabels) + 1
-	// map ensures no duplicate label names
-	ls := make(map[string]string, maxLabelCount)
-
-	// Pre-allocate the labels.
-	labels := make([]prompb.Label, 0, maxLabelCount)
-	attributes.Range(func(key string, value pcommon.Value) bool {
-		// Ignore resource attributes used for job + instance
-		if key != conventions.AttributeServiceName && key != conventions.AttributeServiceNamespace && key != conventions.AttributeServiceInstanceID {
-			labels = append(labels, prompb.Label{Name: key, Value: value.AsString()})
-		}
-		return true
-	})
-	// Ensure attributes are sorted by key for consistent merging of keys which
-	// collide when sanitized.
-	sort.Stable(ByLabelName(labels))
-
-	for _, label := range labels {
-		finalKey := prometheustranslator.NormalizeLabel(label.Name)
-		if existingValue, alreadyExists := ls[finalKey]; alreadyExists {
-			ls[finalKey] = existingValue + ";" + label.Value
-		} else {
-			ls[finalKey] = label.Value
-		}
-	}
-
-	// Map service.name + service.namespace to job
-	if haveServiceName {
-		val := serviceName.AsString()
-		if haveServiceNamespace {
-			val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
-		}
-		ls[model.JobLabel] = val
-	}
-	// Map service.instance.id to instance
-	if haveInstanceID {
-		ls[model.InstanceLabel] = instance.AsString()
-	}
-	for key, value := range settings.ExternalLabels {
-		// External labels have already been sanitized
-		if _, alreadyExists := ls[key]; alreadyExists {
-			// Skip external labels if they are overridden by metric attributes
-			continue
-		}
-		ls[key] = value
-	}
-
-	if _, found := ls[model.MetricNameLabel]; found {
-		log.Println("label " + model.MetricNameLabel + " is overwritten. Check if Prometheus reserved labels are used.")
-	}
-	ls[model.MetricNameLabel] = name
-
-	labels = labels[:0]
-	for k, v := range ls {
-		labels = append(labels, prompb.Label{Name: k, Value: v})
-	}
-
+	labels := createAttributes(resource, resource.Attributes(), settings.ExternalLabels, identifyingAttrs, false, model.MetricNameLabel, name)
 	sample := &prompb.Sample{
 		Value: float64(1),
 		// convert ns to ms

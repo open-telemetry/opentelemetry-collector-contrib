@@ -21,6 +21,8 @@ func (c *PrometheusConverter) AddGaugeNumberDataPoints(dataPoints pmetric.Number
 			resource,
 			pt.Attributes(),
 			settings.ExternalLabels,
+			nil,
+			true,
 			model.MetricNameLabel,
 			name,
 		)
@@ -50,6 +52,8 @@ func (c *PrometheusConverter) AddSumNumberDataPoints(dataPoints pmetric.NumberDa
 			resource,
 			pt.Attributes(),
 			settings.ExternalLabels,
+			nil,
+			true,
 			model.MetricNameLabel,
 			name,
 		)
@@ -72,7 +76,7 @@ func (c *PrometheusConverter) AddSumNumberDataPoints(dataPoints pmetric.NumberDa
 			ts.Exemplars = append(ts.Exemplars, exemplars...)
 		}
 
-		// add _created time series if needed
+		// add created time series if needed
 		if settings.ExportCreatedMetric && metric.Sum().IsMonotonic() {
 			startTimestamp := pt.StartTimestamp()
 			if startTimestamp == 0 {
@@ -87,7 +91,7 @@ func (c *PrometheusConverter) AddSumNumberDataPoints(dataPoints pmetric.NumberDa
 					break
 				}
 			}
-			c.AddMetricIfNeeded(createdLabels, startTimestamp, pt.Timestamp())
+			c.addTimeSeriesIfNeeded(createdLabels, startTimestamp, pt.Timestamp())
 		}
 	}
 	return nil

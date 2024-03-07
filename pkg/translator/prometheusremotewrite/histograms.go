@@ -24,35 +24,12 @@ func (c *PrometheusConverter) AddExponentialHistogramDataPoints(dataPoints pmetr
 			resource,
 			pt.Attributes(),
 			settings.ExternalLabels,
+			nil,
+			true,
 			model.MetricNameLabel,
 			baseName,
 		)
-		h := timeSeriesSignature(lbls)
-		ts := c.unique[h]
-		if ts != nil {
-			if !isSameMetric(ts, lbls) {
-				// Collision
-				ts = nil
-				for _, cTS := range c.conflicts[h] {
-					if isSameMetric(cTS, lbls) {
-						ts = cTS
-						break
-					}
-				}
-				if ts == nil {
-					// New conflict
-					ts = &prompb.TimeSeries{
-						Labels: lbls,
-					}
-					c.conflicts[h] = append(c.conflicts[h], ts)
-				}
-			}
-		} else {
-			ts = &prompb.TimeSeries{
-				Labels: lbls,
-			}
-			c.unique[h] = ts
-		}
+		ts, _ := c.getOrCreateTimeSeries(lbls)
 
 		histogram, err := exponentialToNativeHistogram(pt)
 		if err != nil {
