@@ -31,7 +31,7 @@ func TestCheck(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	config := &Config{
 		ServerConfig: configgrpc.ServerConfig{
-			NetAddr: confignet.NetAddr{
+			NetAddr: confignet.AddrConfig{
 				Endpoint:  addr,
 				Transport: "tcp",
 			},
@@ -748,7 +748,7 @@ func TestWatch(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	config := &Config{
 		ServerConfig: configgrpc.ServerConfig{
-			NetAddr: confignet.NetAddr{
+			NetAddr: confignet.AddrConfig{
 				Endpoint:  addr,
 				Transport: "tcp",
 			},
