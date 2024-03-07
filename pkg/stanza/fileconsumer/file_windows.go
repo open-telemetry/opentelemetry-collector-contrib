@@ -15,6 +15,9 @@ func (m *Manager) readLostFiles(ctx context.Context) {
 
 // On windows, we close files immediately after reading because they cannot be moved while open.
 func (m *Manager) postConsume() {
+	if m.noTracking {
+		return
+	}
 	// m.currentPollFiles -> m.previousPollFiles
 	m.previousPollFiles = m.currentPollFiles
 	m.closePreviousFiles()

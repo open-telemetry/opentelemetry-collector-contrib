@@ -33,6 +33,7 @@ type Manager struct {
 	maxBatches    int
 	maxBatchFiles int
 
+	noTracking        bool
 	currentPollFiles  *fileset.Fileset[*reader.Reader]
 	previousPollFiles *fileset.Fileset[*reader.Reader]
 	knownFiles        []*fileset.Fileset[*reader.Metadata]
@@ -244,6 +245,10 @@ func (m *Manager) makeReaders(paths []string) {
 }
 
 func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
+	if m.noTracking {
+		return m.readerFactory.NewReader(file, fp)
+	}
+
 	// Check previous poll cycle for match
 	if oldReader := m.previousPollFiles.Match(fp, fileset.StartsWith); oldReader != nil {
 		return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())

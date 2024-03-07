@@ -80,7 +80,6 @@ type Config struct {
 	FlushPeriod        time.Duration   `mapstructure:"force_flush_period,omitempty"`
 	Header             *HeaderConfig   `mapstructure:"header,omitempty"`
 	DeleteAfterRead    bool            `mapstructure:"delete_after_read,omitempty"`
-	ReplayFile         bool            `mapstructure:"replay_file,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -161,7 +160,6 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 		Attributes:        c.Resolver,
 		HeaderConfig:      hCfg,
 		DeleteAtEOF:       c.DeleteAfterRead,
-		ReplayFile:        c.ReplayFile,
 	}
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
 	for i := 0; i < len(knownFiles); i++ {
@@ -174,6 +172,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 		pollInterval:      c.PollInterval,
 		maxBatchFiles:     c.MaxConcurrentFiles / 2,
 		maxBatches:        c.MaxBatches,
+		noTracking:        o.noTracking,
 		currentPollFiles:  fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
 		previousPollFiles: fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
 		knownFiles:        knownFiles,
@@ -231,7 +230,8 @@ func (c Config) validate() error {
 }
 
 type options struct {
-	splitFunc bufio.SplitFunc
+	splitFunc  bufio.SplitFunc
+	noTracking bool
 }
 
 type Option func(*options)
@@ -240,5 +240,13 @@ type Option func(*options)
 func WithSplitFunc(f bufio.SplitFunc) Option {
 	return func(o *options) {
 		o.splitFunc = f
+	}
+}
+
+// WithNoTracking forces the readerFactory to not keep track of files in memory. When used, the reader will
+// read from the beginning of each file every time it is polled.
+func WithNoTracking() Option {
+	return func(o *options) {
+		o.noTracking = true
 	}
 }

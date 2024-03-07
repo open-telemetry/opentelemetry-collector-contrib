@@ -16,9 +16,10 @@ import (
 // this can mean either files which were removed, or rotated into a name not matching the pattern
 // we do this before reading existing files to ensure we emit older log lines before newer ones
 func (m *Manager) readLostFiles(ctx context.Context) {
-	if m.readerFactory.DeleteAtEOF {
-		// Lost files are not expected when delete_at_eof is enabled
-		// since we are deleting the files before they can become lost.
+	if m.noTracking || m.readerFactory.DeleteAtEOF {
+		// Lost files are not expected when delete_at_eof is enabled since we
+		// are deleting the files before they can become lost.  We also don't
+		// know what files were lost if no tracking is set up.
 		return
 	}
 	lostReaders := make([]*reader.Reader, 0, m.previousPollFiles.Len())
@@ -58,8 +59,11 @@ OUTER:
 // On non-windows platforms, we keep files open between poll cycles so that we can detect
 // and read "lost" files, which have been moved out of the matching pattern.
 func (m *Manager) postConsume() {
-	m.closePreviousFiles()
+	if m.noTracking {
+		return
+	}
 
+	m.closePreviousFiles()
 	// m.currentPollFiles -> m.previousPollFiles
 	m.previousPollFiles = m.currentPollFiles
 }
