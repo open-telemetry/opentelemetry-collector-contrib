@@ -395,11 +395,20 @@ func createInstrumentationScope() pcommon.InstrumentationScope {
 }
 
 type instrumentationScopeContext struct {
-	is pcommon.InstrumentationScope
+	is            pcommon.InstrumentationScope
+	schemaURLItem SchemaURLItem
 }
 
 func (r *instrumentationScopeContext) GetInstrumentationScope() pcommon.InstrumentationScope {
 	return r.is
+}
+
+func (r *instrumentationScopeContext) GetScopeSchemaURLItem() SchemaURLItem {
+	return r.schemaURLItem
+}
+
+func (r *instrumentationScopeContext) SetScopeSchemaURLItem(schema SchemaURLItem) {
+	r.schemaURLItem = schema
 }
 
 func newInstrumentationScopeContext(is pcommon.InstrumentationScope) *instrumentationScopeContext {

@@ -21,6 +21,18 @@ import (
 var _ internal.ResourceContext = TransformContext{}
 var _ internal.InstrumentationScopeContext = TransformContext{}
 
+type LogScopeSchemaURLItem struct {
+	scopeLogs plog.ScopeLogs
+}
+
+func (schema LogScopeSchemaURLItem) SchemaURL() string {
+	return schema.SchemaURL()
+}
+
+func (schema LogScopeSchemaURLItem) SetSchemaURL(v string) {
+	schema.SetSchemaURL(v)
+}
+
 type TransformContext struct {
 	logRecord            plog.LogRecord
 	instrumentationScope pcommon.InstrumentationScope
@@ -28,6 +40,7 @@ type TransformContext struct {
 	cache                pcommon.Map
 	scopeLogs            plog.ScopeLogs
 	resourceLogs         plog.ResourceLogs
+	logSchemaURLItem     internal.SchemaURLItem
 }
 
 type Option func(*ottl.Parser[TransformContext])
@@ -40,6 +53,7 @@ func NewTransformContext(logRecord plog.LogRecord, instrumentationScope pcommon.
 		cache:                pcommon.NewMap(),
 		scopeLogs:            scopeLogs,
 		resourceLogs:         resourceLogs,
+		logSchemaURLItem:     LogScopeSchemaURLItem{scopeLogs: scopeLogs},
 	}
 }
 
@@ -65,6 +79,14 @@ func (tCtx TransformContext) getScopeLogs() plog.ScopeLogs {
 
 func (tCtx TransformContext) getResourceLogs() plog.ResourceLogs {
 	return tCtx.resourceLogs
+}
+
+func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
+	return tCtx.logSchemaURLItem
+}
+
+func (tCtx TransformContext) SetScopeSchemaURLItem(schema internal.SchemaURLItem) {
+	tCtx.logSchemaURLItem = schema
 }
 
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {

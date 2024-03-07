@@ -14,6 +14,8 @@ import (
 
 type InstrumentationScopeContext interface {
 	GetInstrumentationScope() pcommon.InstrumentationScope
+	GetScopeSchemaURLItem() SchemaURLItem
+	SetScopeSchemaURLItem(s SchemaURLItem)
 }
 
 func ScopePathGetSetter[K InstrumentationScopeContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
@@ -113,6 +115,20 @@ func accessInstrumentationScopeDroppedAttributesCount[K InstrumentationScopeCont
 		Setter: func(ctx context.Context, tCtx K, val any) error {
 			if i, ok := val.(int64); ok {
 				tCtx.GetInstrumentationScope().SetDroppedAttributesCount(uint32(i))
+			}
+			return nil
+		},
+	}
+}
+
+func accessInstrumentationScopeSchemaURLItem[K InstrumentationScopeContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (any, error) {
+			return tCtx.GetScopeSchemaURLItem(), nil
+		},
+		Setter: func(ctx context.Context, tCtx K, val any) error {
+			if schemaURLItem, ok := val.(SchemaURLItem); ok {
+				tCtx.SetScopeSchemaURLItem(schemaURLItem)
 			}
 			return nil
 		},
