@@ -477,8 +477,8 @@ func (c *PrometheusConverter) AddMetricIfNeeded(lbls []prompb.Label, startTimest
 		}
 
 		// Look for a matching conflict
-		for _, ts := range c.conflicts[h] {
-			if isSameMetric(ts, lbls) {
+		for _, cTS := range c.conflicts[h] {
+			if isSameMetric(cTS, lbls) {
 				// We already have this metric
 				return
 			}
@@ -520,17 +520,17 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 	serviceNamespace, haveServiceNamespace := attributes.Get(conventions.AttributeServiceNamespace)
 	instance, haveInstanceID := attributes.Get(conventions.AttributeServiceInstanceID)
 
-	nonIdentifyingAttrs := attributes.Len()
+	nonIdentifyingAttrsCount := attributes.Len()
 	if haveServiceName {
-		nonIdentifyingAttrs--
+		nonIdentifyingAttrsCount--
 	}
 	if haveInstanceID {
-		nonIdentifyingAttrs--
+		nonIdentifyingAttrsCount--
 	}
 	if haveServiceNamespace {
-		nonIdentifyingAttrs--
+		nonIdentifyingAttrsCount--
 	}
-	if nonIdentifyingAttrs == 0 {
+	if nonIdentifyingAttrsCount == 0 {
 		// If we only have job + instance, then target_info isn't useful, so don't add it.
 		return
 	}
