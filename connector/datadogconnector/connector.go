@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	semconv "go.opentelemetry.io/collector/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
 
@@ -35,6 +36,10 @@ type traceToMetricConnector struct {
 	// translator specifies the translator used to transform APM Stats Payloads
 	// from the agent to OTLP Metrics.
 	translator *metrics.Translator
+
+	enableContainerStats bool
+	containerTagAttrs    map[string]string
+	containerTagCache    map[string][]string
 
 	// in specifies the channel through which the agent will output Stats Payloads
 	// resulting from ingested traces.
@@ -60,14 +65,23 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 		return nil, fmt.Errorf("failed to create metrics translator: %w", err)
 	}
 
+	ctags := make(map[string]string, len(cfg.(*Config).Traces.ContainerTagAttributes))
+	for _, val := range cfg.(*Config).Traces.ContainerTagAttributes {
+		ctags[val] = ""
+	}
+	ddtags := attributes.ContainerTagFromAttributes(ctags)
+
 	ctx := context.Background()
 	return &traceToMetricConnector{
-		logger:          set.Logger,
-		agent:           datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(cfg.(*Config).Traces, attributesTranslator), in, metricsClient, timingReporter),
-		translator:      trans,
-		in:              in,
-		metricsConsumer: metricsConsumer,
-		exit:            make(chan struct{}),
+		logger:               set.Logger,
+		agent:                datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(cfg.(*Config).Traces, attributesTranslator), in, metricsClient, timingReporter),
+		translator:           trans,
+		in:                   in,
+		metricsConsumer:      metricsConsumer,
+		enableContainerStats: cfg.(*Config).Traces.EnableContainerStats,
+		containerTagAttrs:    ddtags,
+		containerTagCache:    make(map[string][]string),
+		exit:                 make(chan struct{}),
 	}, nil
 }
 
@@ -80,6 +94,9 @@ func getTraceAgentCfg(cfg TracesConfig, attributesTranslator *attributes.Transla
 	acfg.ComputeStatsBySpanKind = cfg.ComputeStatsBySpanKind
 	acfg.PeerTagsAggregation = cfg.PeerTagsAggregation
 	acfg.PeerTags = cfg.PeerTags
+	if cfg.EnableContainerStats {
+		acfg.Features["enable_cid_stats"] = struct{}{}
+	}
 	if v := cfg.TraceBuffer; v > 0 {
 		acfg.TraceBuffer = v
 	}
@@ -113,6 +130,23 @@ func (c *traceToMetricConnector) Capabilities() consumer.Capabilities {
 
 func (c *traceToMetricConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
 	c.agent.Ingest(ctx, traces)
+	if c.enableContainerStats && len(c.containerTagAttrs) > 0 {
+		for i := 0; i < traces.ResourceSpans().Len(); i++ {
+			rs := traces.ResourceSpans().At(i)
+			attrs := rs.Resource().Attributes()
+			containerID, ok := attrs.Get(semconv.AttributeContainerID)
+			if !ok {
+				continue
+			}
+			ddContainerTags := attributes.ContainerTagsFromResourceAttributes(attrs)
+			for attr := range c.containerTagAttrs {
+				if val, ok := ddContainerTags[attr]; ok {
+					c.containerTagCache[containerID.AsString()] = append(c.containerTagCache[containerID.AsString()], val)
+				}
+			}
+
+		}
+	}
 	return nil
 }
 
@@ -128,7 +162,19 @@ func (c *traceToMetricConnector) run() {
 			}
 			var mx pmetric.Metrics
 			var err error
+			// Enrich the stats with container tags
+			if c.enableContainerStats && len(c.containerTagCache) > 0 {
+				for _, stat := range stats.Stats {
+					if stat.ContainerID != "" {
+						if tags, ok := c.containerTagCache[stat.ContainerID]; ok {
+							stat.Tags = append(stat.Tags, tags...)
+						}
+					}
+				}
+			}
+
 			c.logger.Debug("Received stats payload", zap.Any("stats", stats))
+
 			mx, err = c.translator.StatsToMetrics(stats)
 			if err != nil {
 				c.logger.Error("Failed to convert stats to metrics", zap.Error(err))

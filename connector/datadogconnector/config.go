@@ -63,6 +63,12 @@ type TracesConfig struct {
 	// TraceBuffer specifies the number of Datadog Agent TracerPayloads to buffer before dropping.
 	// The default value is 1000.
 	TraceBuffer int `mapstructure:"trace_buffer"`
+
+	// EnableContainerStats specifies whether to enable container stats collection.
+	EnableContainerStats bool `mapstructure:"enable_container_stats"`
+
+	// ContainerTagAttributes specifies the list of container attributes to be added to the span tags.
+	ContainerTagAttributes []string `mapstructure:"container_tag_attributes"`
 }
 
 // Validate the configuration for errors. This is required by component.Config.
