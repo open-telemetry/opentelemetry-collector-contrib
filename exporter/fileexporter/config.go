@@ -5,6 +5,7 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -21,6 +22,12 @@ type Config struct {
 
 	// Path of the file to write to. Path is relative to current directory.
 	Path string `mapstructure:"path"`
+
+	// Mode defines whether the exporter should append to the file
+	// Options:
+	// - false[default]:  truncates the file
+	// - true:  appends to the file.
+	Append bool `mapstructure:"append"`
 
 	// Rotation defines an option about rotation of telemetry files
 	Rotation *Rotation `mapstructure:"rotation"`
@@ -69,6 +76,12 @@ var _ component.Config = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	if cfg.Path == "" {
 		return errors.New("path must be non-empty")
+	}
+	if cfg.Append && cfg.Compression != "" {
+		return fmt.Errorf("append and compression enabled at the same time is not supported")
+	}
+	if cfg.Append && cfg.Rotation != nil {
+		return fmt.Errorf("append and rotation enabled at the same time is not supported")
 	}
 	if cfg.FormatType != formatTypeJSON && cfg.FormatType != formatTypeProto {
 		return errors.New("format type is not supported")

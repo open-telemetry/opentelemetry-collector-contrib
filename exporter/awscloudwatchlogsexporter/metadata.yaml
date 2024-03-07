@@ -1,4 +1,5 @@
 type: awscloudwatchlogs
+scope_name: otelcol/awscloudwatchlogs
 
 status:
   class: exporter

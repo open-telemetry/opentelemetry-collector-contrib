@@ -1,4 +1,5 @@
 type: apache
+scope_name: otelcol/apachereceiver
 
 status:
   class: receiver

@@ -1,4 +1,5 @@
 type: aerospike
+scope_name: otelcol/aerospikereceiver
 
 status:
   class: receiver
