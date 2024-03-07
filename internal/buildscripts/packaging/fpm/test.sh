@@ -38,6 +38,19 @@ podman build -t $image_name -f "$SCRIPT_DIR/$pkg_type/Dockerfile.test" "$SCRIPT_
 podman rm -fv $container_name >/dev/null 2>&1 || true
 
 # test install
+CRUN_VER='1.14.4'
+mkdir -p "${HOME}/.local/bin"
+curl -L "https://github.com/containers/crun/releases/download/${CRUN_VER}/crun-${CRUN_VER}-linux-amd64" -o "${HOME}/.local/bin/crun"
+chmod +x "${HOME}/.local/bin/crun"
+mkdir -p "${HOME}/.config/containers"
+cat << EOF > "${HOME}/.config/containers/containers.conf"
+[engine.runtimes]
+crun = [
+  "${HOME}/.local/bin/crun",
+  "/usr/bin/crun"
+]
+EOF
+
 echo
 podman run --name $container_name -d $image_name
 install_pkg $container_name "$PKG_PATH"

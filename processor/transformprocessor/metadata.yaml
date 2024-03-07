@@ -1,4 +1,5 @@
 type: transform
+scope_name: otelcol/transform
 
 status:
   class: processor

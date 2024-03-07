@@ -24,11 +24,10 @@ import (
 
 var _ exporter.Traces = (*traceExporterImp)(nil)
 
-type exporterTraces map[component.Component]map[string]ptrace.Traces
-type endpointTraces map[string]ptrace.Traces
+type exporterTraces map[*wrappedExporter]ptrace.Traces
 
 type traceExporterImp struct {
-	loadBalancer loadBalancer
+	loadBalancer *loadBalancer
 	routingKey   routingKey
 
 	stopped    bool
@@ -80,13 +79,10 @@ func (e *traceExporterImp) Shutdown(context.Context) error {
 }
 
 func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	var errs error
-	var exp component.Component
-
 	batches := batchpersignal.SplitTraces(td)
 
 	exporterSegregatedTraces := make(exporterTraces)
-	endpointSegregatedTraces := make(endpointTraces)
+	endpoints := make(map[*wrappedExporter]string)
 	for _, batch := range batches {
 		routingID, err := routingIdentifiersFromTraces(batch, e.routingKey)
 		if err != nil {
@@ -94,61 +90,45 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 		}
 
 		for rid := range routingID {
-			endpoint := e.loadBalancer.Endpoint([]byte(rid))
-			exp, err = e.loadBalancer.Exporter(endpoint)
+			exp, endpoint, err := e.loadBalancer.exporterAndEndpoint([]byte(rid))
 			if err != nil {
 				return err
 			}
-			_, ok := exp.(exporter.Traces)
-			if !ok {
-				return fmt.Errorf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", exp)
-			}
 
-			_, ok = endpointSegregatedTraces[endpoint]
+			_, ok := exporterSegregatedTraces[exp]
 			if !ok {
-				endpointSegregatedTraces[endpoint] = ptrace.NewTraces()
+				exp.consumeWG.Add(1)
+				exporterSegregatedTraces[exp] = ptrace.NewTraces()
 			}
-			endpointSegregatedTraces[endpoint] = mergeTraces(endpointSegregatedTraces[endpoint], batch)
+			exporterSegregatedTraces[exp] = mergeTraces(exporterSegregatedTraces[exp], batch)
 
-			_, ok = exporterSegregatedTraces[exp]
-			if !ok {
-				exporterSegregatedTraces[exp] = endpointTraces{}
-			}
-			exporterSegregatedTraces[exp][endpoint] = endpointSegregatedTraces[endpoint]
+			endpoints[exp] = endpoint
 		}
 	}
 
-	errs = multierr.Append(errs, e.consumeTrace(ctx, exporterSegregatedTraces))
+	var errs error
+
+	for exp, td := range exporterSegregatedTraces {
+		start := time.Now()
+		err := exp.ConsumeTraces(ctx, td)
+		exp.consumeWG.Done()
+		errs = multierr.Append(errs, err)
+		duration := time.Since(start)
+
+		if err == nil {
+			_ = stats.RecordWithTags(
+				ctx,
+				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoints[exp]), successTrueMutator},
+				mBackendLatency.M(duration.Milliseconds()))
+		} else {
+			_ = stats.RecordWithTags(
+				ctx,
+				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoints[exp]), successFalseMutator},
+				mBackendLatency.M(duration.Milliseconds()))
+		}
+	}
 
 	return errs
-}
-
-func (e *traceExporterImp) consumeTrace(ctx context.Context, exporterSegregatedTraces exporterTraces) error {
-	var err error
-
-	for exp, endpointTraces := range exporterSegregatedTraces {
-		for endpoint, td := range endpointTraces {
-			te, _ := exp.(exporter.Traces)
-
-			start := time.Now()
-			err = te.ConsumeTraces(ctx, td)
-			duration := time.Since(start)
-
-			if err == nil {
-				_ = stats.RecordWithTags(
-					ctx,
-					[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
-					mBackendLatency.M(duration.Milliseconds()))
-			} else {
-				_ = stats.RecordWithTags(
-					ctx,
-					[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
-					mBackendLatency.M(duration.Milliseconds()))
-			}
-		}
-	}
-
-	return err
 }
 
 func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]bool, error) {

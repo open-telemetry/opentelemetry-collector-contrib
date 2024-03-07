@@ -1,4 +1,5 @@
 type: deltatorate
+scope_name: otelcol/deltatorate
 
 status:
   class: processor
