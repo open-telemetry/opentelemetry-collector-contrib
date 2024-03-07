@@ -258,7 +258,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 		labels := make([]prompb.Label, len(baseLabels), len(baseLabels)+extraLabelCount+1) // +1 for name
 		copy(labels, baseLabels)
 
-		for extrasIdx := 0; extrasIdx < extraLabelCount; extrasIdx++ {
+		for extrasIdx := 0; extrasIdx < len(extras); extrasIdx += 2 {
 			labels = append(labels, prompb.Label{Name: extras[extrasIdx], Value: extras[extrasIdx+1]})
 		}
 
@@ -457,7 +457,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 		labels := make([]prompb.Label, len(baseLabels), len(baseLabels)+extraLabelCount+1) // +1 for name
 		copy(labels, baseLabels)
 
-		for extrasIdx := 0; extrasIdx < extraLabelCount; extrasIdx++ {
+		for extrasIdx := 0; extrasIdx < len(extras); extrasIdx += 2 {
 			labels = append(labels, prompb.Label{Name: extras[extrasIdx], Value: extras[extrasIdx+1]})
 		}
 
