@@ -68,13 +68,12 @@ func (a ByLabelName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 // timeSeriesSignature returns a hashed label set signature.
 // The label slice should not contain duplicate label names; this method sorts the slice by label name before creating
 // the signature.
-// The algorithm is the same as in Prometheus' Labels.Hash method.
+// The algorithm is the same as in Prometheus' labels.StableHash function.
 func timeSeriesSignature(labels []prompb.Label) uint64 {
 	sort.Sort(ByLabelName(labels))
 
 	// Use xxhash.Sum64(b) for fast path as it's faster.
 	b := make([]byte, 0, 1024)
-
 	for i, v := range labels {
 		if len(b)+len(v.Name)+len(v.Value)+2 >= cap(b) {
 			// If labels entry is 1KB+ do not allocate whole entry.
