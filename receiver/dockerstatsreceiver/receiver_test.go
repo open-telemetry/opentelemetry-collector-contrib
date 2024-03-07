@@ -53,7 +53,7 @@ var (
 		ContainerCPUUsageSystem:                    metricEnabled,
 		ContainerCPUUsageTotal:                     metricEnabled,
 		ContainerCPUUsageUsermode:                  metricEnabled,
-		ContainerCPUOnline:                         metricEnabled,
+		ContainerCPULogicalCount:                   metricEnabled,
 		ContainerMemoryActiveAnon:                  metricEnabled,
 		ContainerMemoryActiveFile:                  metricEnabled,
 		ContainerMemoryCache:                       metricEnabled,

@@ -84,7 +84,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordContainerCPULimitDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerCPUOnlineDataPoint(ts, 1)
+			mb.RecordContainerCPULogicalCountDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordContainerCPUSharesDataPoint(ts, 1)
@@ -508,12 +508,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
-				case "container.cpu.online":
-					assert.False(t, validatedMetrics["container.cpu.online"], "Found a duplicate in the metrics slice: container.cpu.online")
-					validatedMetrics["container.cpu.online"] = true
+				case "container.cpu.logical_count":
+					assert.False(t, validatedMetrics["container.cpu.logical_count"], "Found a duplicate in the metrics slice: container.cpu.logical_count")
+					validatedMetrics["container.cpu.logical_count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of online CPUs.", ms.At(i).Description())
+					assert.Equal(t, "Number of cores available to the container.", ms.At(i).Description())
 					assert.Equal(t, "{cpus}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

@@ -501,21 +501,21 @@ func newMetricContainerCPULimit(cfg MetricConfig) metricContainerCPULimit {
 	return m
 }
 
-type metricContainerCPUOnline struct {
+type metricContainerCPULogicalCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills container.cpu.online metric with initial data.
-func (m *metricContainerCPUOnline) init() {
-	m.data.SetName("container.cpu.online")
-	m.data.SetDescription("Number of online CPUs.")
+// init fills container.cpu.logical_count metric with initial data.
+func (m *metricContainerCPULogicalCount) init() {
+	m.data.SetName("container.cpu.logical_count")
+	m.data.SetDescription("Number of cores available to the container.")
 	m.data.SetUnit("{cpus}")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricContainerCPUOnline) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricContainerCPULogicalCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -526,14 +526,14 @@ func (m *metricContainerCPUOnline) recordDataPoint(start pcommon.Timestamp, ts p
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerCPUOnline) updateCapacity() {
+func (m *metricContainerCPULogicalCount) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerCPUOnline) emit(metrics pmetric.MetricSlice) {
+func (m *metricContainerCPULogicalCount) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -541,8 +541,8 @@ func (m *metricContainerCPUOnline) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerCPUOnline(cfg MetricConfig) metricContainerCPUOnline {
-	m := metricContainerCPUOnline{config: cfg}
+func newMetricContainerCPULogicalCount(cfg MetricConfig) metricContainerCPULogicalCount {
+	m := metricContainerCPULogicalCount{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3688,7 +3688,7 @@ type MetricsBuilder struct {
 	metricContainerBlockioIoWaitTimeRecursive        metricContainerBlockioIoWaitTimeRecursive
 	metricContainerBlockioSectorsRecursive           metricContainerBlockioSectorsRecursive
 	metricContainerCPULimit                          metricContainerCPULimit
-	metricContainerCPUOnline                         metricContainerCPUOnline
+	metricContainerCPULogicalCount                   metricContainerCPULogicalCount
 	metricContainerCPUShares                         metricContainerCPUShares
 	metricContainerCPUThrottlingDataPeriods          metricContainerCPUThrottlingDataPeriods
 	metricContainerCPUThrottlingDataThrottledPeriods metricContainerCPUThrottlingDataThrottledPeriods
@@ -3777,7 +3777,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricContainerBlockioIoWaitTimeRecursive:        newMetricContainerBlockioIoWaitTimeRecursive(mbc.Metrics.ContainerBlockioIoWaitTimeRecursive),
 		metricContainerBlockioSectorsRecursive:           newMetricContainerBlockioSectorsRecursive(mbc.Metrics.ContainerBlockioSectorsRecursive),
 		metricContainerCPULimit:                          newMetricContainerCPULimit(mbc.Metrics.ContainerCPULimit),
-		metricContainerCPUOnline:                         newMetricContainerCPUOnline(mbc.Metrics.ContainerCPUOnline),
+		metricContainerCPULogicalCount:                   newMetricContainerCPULogicalCount(mbc.Metrics.ContainerCPULogicalCount),
 		metricContainerCPUShares:                         newMetricContainerCPUShares(mbc.Metrics.ContainerCPUShares),
 		metricContainerCPUThrottlingDataPeriods:          newMetricContainerCPUThrottlingDataPeriods(mbc.Metrics.ContainerCPUThrottlingDataPeriods),
 		metricContainerCPUThrottlingDataThrottledPeriods: newMetricContainerCPUThrottlingDataThrottledPeriods(mbc.Metrics.ContainerCPUThrottlingDataThrottledPeriods),
@@ -3910,7 +3910,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerBlockioIoWaitTimeRecursive.emit(ils.Metrics())
 	mb.metricContainerBlockioSectorsRecursive.emit(ils.Metrics())
 	mb.metricContainerCPULimit.emit(ils.Metrics())
-	mb.metricContainerCPUOnline.emit(ils.Metrics())
+	mb.metricContainerCPULogicalCount.emit(ils.Metrics())
 	mb.metricContainerCPUShares.emit(ils.Metrics())
 	mb.metricContainerCPUThrottlingDataPeriods.emit(ils.Metrics())
 	mb.metricContainerCPUThrottlingDataThrottledPeriods.emit(ils.Metrics())
@@ -4037,9 +4037,9 @@ func (mb *MetricsBuilder) RecordContainerCPULimitDataPoint(ts pcommon.Timestamp,
 	mb.metricContainerCPULimit.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordContainerCPUOnlineDataPoint adds a data point to container.cpu.online metric.
-func (mb *MetricsBuilder) RecordContainerCPUOnlineDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerCPUOnline.recordDataPoint(mb.startTime, ts, val)
+// RecordContainerCPULogicalCountDataPoint adds a data point to container.cpu.logical_count metric.
+func (mb *MetricsBuilder) RecordContainerCPULogicalCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricContainerCPULogicalCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordContainerCPUSharesDataPoint adds a data point to container.cpu.shares metric.

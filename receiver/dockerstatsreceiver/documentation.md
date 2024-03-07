@@ -306,9 +306,9 @@ This metric is only reported if the container has limits set with -cpus, -cpuset
 | ---- | ----------- | ---------- |
 | {cpus} | Gauge | Double |
 
-### container.cpu.online
+### container.cpu.logical_count
 
-Number of online CPUs.
+Number of cores available to the container.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

@@ -104,13 +104,13 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: By
-          - description: 'Number of online CPUs.'
+          - description: 'Number of cores available to the container.'
             gauge:
               dataPoints:
                 - asInt: 2
                   startTimeUnixNano: "1687762436124732000"
                   timeUnixNano: "1687762436137493000"
-            name: container.cpu.online
+            name: container.cpu.logical_count
             unit: "{cpus}"
           - description: CPU shares set for the container.
             gauge:
