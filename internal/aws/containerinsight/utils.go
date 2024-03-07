@@ -5,6 +5,8 @@ package containerinsight // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"fmt"
 	"log"
+	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -78,6 +80,15 @@ func IsContainer(mType string) bool {
 func IsPod(mType string) bool {
 	switch mType {
 	case TypePod, TypePodNet:
+		return true
+	}
+	return false
+}
+
+func IsWindowsHostProcessContainer() bool {
+	// todo: Remove this workaround func when Windows AMIs has containerd 1.7 which solves upstream bug
+	// https://kubernetes.io/docs/tasks/configure-pod-container/create-hostprocess-pod/#containerd-v1-6
+	if runtime.GOOS == OperatingSystemWindows && os.Getenv(RunInContainer) == TrueValue && os.Getenv(RunAsHostProcessContainer) == TrueValue {
 		return true
 	}
 	return false

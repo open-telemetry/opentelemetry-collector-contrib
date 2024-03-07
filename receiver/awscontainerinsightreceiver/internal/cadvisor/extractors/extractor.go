@@ -33,7 +33,7 @@ type MetricExtractor interface {
 	Shutdown() error
 }
 
-func newFloat64RateCalculator() awsmetrics.MetricCalculator {
+func NewFloat64RateCalculator() awsmetrics.MetricCalculator {
 	return awsmetrics.NewMetricCalculator(func(prev *awsmetrics.MetricValue, val any, timestamp time.Time) (any, bool) {
 		if prev != nil {
 			deltaNs := timestamp.Sub(prev.Timestamp)
@@ -46,7 +46,7 @@ func newFloat64RateCalculator() awsmetrics.MetricCalculator {
 	})
 }
 
-func assignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields map[string]any, metricName string,
+func AssignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields map[string]any, metricName string,
 	cinfoName string, curVal any, curTime time.Time, multiplier float64) {
 	mKey := awsmetrics.NewKey(cinfoName+metricName, nil)
 	if val, ok := rateCalculator.Calculate(mKey, curVal, curTime); ok {

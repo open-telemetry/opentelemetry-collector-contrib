@@ -43,16 +43,16 @@ func (m *MemMetricExtractor) GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInf
 	metric.Fields[ci.MetricName(containerType, ci.MemWorkingset)] = curStats.Memory.WorkingSet
 
 	multiplier := float64(time.Second)
-	assignRateValueToField(&m.rateCalculator, metric.Fields, ci.MetricName(containerType, ci.MemPgfault), info.Name,
+	AssignRateValueToField(&m.rateCalculator, metric.Fields, ci.MetricName(containerType, ci.MemPgfault), info.Name,
 		float64(curStats.Memory.ContainerData.Pgfault), curStats.Timestamp, multiplier)
-	assignRateValueToField(&m.rateCalculator, metric.Fields, ci.MetricName(containerType, ci.MemPgmajfault), info.Name,
+	AssignRateValueToField(&m.rateCalculator, metric.Fields, ci.MetricName(containerType, ci.MemPgmajfault), info.Name,
 		float64(curStats.Memory.ContainerData.Pgmajfault), curStats.Timestamp, multiplier)
-	assignRateValueToField(&m.rateCalculator, metric.Fields, ci.MetricName(containerType, ci.MemHierarchicalPgfault), info.Name,
+	AssignRateValueToField(&m.rateCalculator, metric.Fields, ci.MetricName(containerType, ci.MemHierarchicalPgfault), info.Name,
 		float64(curStats.Memory.HierarchicalData.Pgfault), curStats.Timestamp, multiplier)
-	assignRateValueToField(&m.rateCalculator, metric.Fields, ci.MetricName(containerType, ci.MemHierarchicalPgmajfault), info.Name,
+	AssignRateValueToField(&m.rateCalculator, metric.Fields, ci.MetricName(containerType, ci.MemHierarchicalPgmajfault), info.Name,
 		float64(curStats.Memory.HierarchicalData.Pgmajfault), curStats.Timestamp, multiplier)
 	memoryFailuresTotal := curStats.Memory.ContainerData.Pgfault + curStats.Memory.ContainerData.Pgmajfault
-	assignRateValueToField(&m.rateCalculator, metric.Fields, ci.MetricName(containerType, ci.MemFailuresTotal), info.Name,
+	AssignRateValueToField(&m.rateCalculator, metric.Fields, ci.MetricName(containerType, ci.MemFailuresTotal), info.Name,
 		float64(memoryFailuresTotal), curStats.Timestamp, multiplier)
 
 	memoryCapacity := mInfo.GetMemoryCapacity()
@@ -75,6 +75,6 @@ func (m *MemMetricExtractor) Shutdown() error {
 func NewMemMetricExtractor(logger *zap.Logger) *MemMetricExtractor {
 	return &MemMetricExtractor{
 		logger:         logger,
-		rateCalculator: newFloat64RateCalculator(),
+		rateCalculator: NewFloat64RateCalculator(),
 	}
 }

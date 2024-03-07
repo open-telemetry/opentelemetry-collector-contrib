@@ -6,6 +6,7 @@ package awscontainerinsightreceiver // import "github.com/open-telemetry/opentel
 import (
 	"context"
 	"errors"
+	"runtime"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -22,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/gpu"
 	hostInfo "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8sapiserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 )
 
@@ -34,14 +36,14 @@ type metricsProvider interface {
 
 // awsContainerInsightReceiver implements the receiver.Metrics
 type awsContainerInsightReceiver struct {
-	settings          component.TelemetrySettings
-	nextConsumer      consumer.Metrics
-	config            *Config
-	cancel            context.CancelFunc
-	cadvisor          metricsProvider
-	k8sapiserver      metricsProvider
-	prometheusScraper *k8sapiserver.PrometheusScraper
-	dcgmScraper       *gpu.DcgmScraper
+	settings                 component.TelemetrySettings
+	nextConsumer             consumer.Metrics
+	config                   *Config
+	cancel                   context.CancelFunc
+	containerMetricsProvider metricsProvider
+	k8sapiserver             metricsProvider
+	prometheusScraper        *k8sapiserver.PrometheusScraper
+	dcgmScraper              *gpu.DcgmScraper
 }
 
 // newAWSContainerInsightReceiver creates the aws container insight receiver with the given parameters.
@@ -76,30 +78,37 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 			return err
 		}
 
-		decoratorOption := cadvisor.WithDecorator(k8sDecorator)
-		acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.settings.Logger, decoratorOption)
-		if err != nil {
-			return err
-		}
+		if runtime.GOOS == ci.OperatingSystemWindows {
+			acir.containerMetricsProvider, err = k8swindows.New(acir.settings.Logger, k8sDecorator, *hostinfo)
+			if err != nil {
+				return err
+			}
+		} else {
+			decoratorOption := cadvisor.WithDecorator(k8sDecorator)
+			acir.containerMetricsProvider, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.settings.Logger, decoratorOption)
+			if err != nil {
+				return err
+			}
 
-		leaderElection, err := k8sapiserver.NewLeaderElection(acir.settings.Logger, k8sapiserver.WithLeaderLockName(acir.config.LeaderLockName),
-			k8sapiserver.WithLeaderLockUsingConfigMapOnly(acir.config.LeaderLockUsingConfigMapOnly))
-		if err != nil {
-			return err
-		}
+			var leaderElection *k8sapiserver.LeaderElection
+			leaderElection, err = k8sapiserver.NewLeaderElection(acir.settings.Logger, k8sapiserver.WithLeaderLockName(acir.config.LeaderLockName),
+				k8sapiserver.WithLeaderLockUsingConfigMapOnly(acir.config.LeaderLockUsingConfigMapOnly))
+			if err != nil {
+				return err
+			}
 
-		acir.k8sapiserver, err = k8sapiserver.NewK8sAPIServer(hostinfo, acir.settings.Logger, leaderElection, acir.config.AddFullPodNameMetricLabel, acir.config.EnableControlPlaneMetrics)
-		if err != nil {
-			return err
-		}
-		err = acir.initPrometheusScraper(ctx, host, hostinfo, leaderElection)
-		if err != nil {
-			acir.settings.Logger.Debug("Unable to start kube apiserver prometheus scraper", zap.Error(err))
-		}
-
-		err = acir.initDcgmScraper(ctx, host, hostinfo, k8sDecorator)
-		if err != nil {
-			acir.settings.Logger.Debug("Unable to start dcgm scraper", zap.Error(err))
+			acir.k8sapiserver, err = k8sapiserver.NewK8sAPIServer(hostinfo, acir.settings.Logger, leaderElection, acir.config.AddFullPodNameMetricLabel, acir.config.EnableControlPlaneMetrics)
+			if err != nil {
+				return err
+			}
+			err = acir.initPrometheusScraper(ctx, host, hostinfo, leaderElection)
+			if err != nil {
+				acir.settings.Logger.Debug("Unable to start kube apiserver prometheus scraper", zap.Error(err))
+			}
+			err = acir.initDcgmScraper(ctx, host, hostinfo, k8sDecorator)
+			if err != nil {
+				acir.settings.Logger.Debug("Unable to start dcgm scraper", zap.Error(err))
+			}
 		}
 	}
 	if acir.config.ContainerOrchestrator == ci.ECS {
@@ -111,7 +120,7 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 
 		ecsOption := cadvisor.WithECSInfoCreator(ecsInfo)
 
-		acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.settings.Logger, ecsOption)
+		acir.containerMetricsProvider, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.settings.Logger, ecsOption)
 		if err != nil {
 			return err
 		}
@@ -209,8 +218,8 @@ func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 	if acir.k8sapiserver != nil {
 		errs = errors.Join(errs, acir.k8sapiserver.Shutdown())
 	}
-	if acir.cadvisor != nil {
-		errs = errors.Join(errs, acir.cadvisor.Shutdown())
+	if acir.containerMetricsProvider != nil {
+		errs = errors.Join(errs, acir.containerMetricsProvider.Shutdown())
 	}
 
 	if acir.dcgmScraper != nil {
@@ -224,14 +233,15 @@ func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 // collectData collects container stats from Amazon ECS Task Metadata Endpoint
 func (acir *awsContainerInsightReceiver) collectData(ctx context.Context) error {
 	var mds []pmetric.Metrics
-	if acir.cadvisor == nil && acir.k8sapiserver == nil {
+
+	if acir.containerMetricsProvider == nil && acir.k8sapiserver == nil {
 		err := errors.New("both cadvisor and k8sapiserver failed to start")
 		acir.settings.Logger.Error("Failed to collect stats", zap.Error(err))
 		return err
 	}
 
-	if acir.cadvisor != nil {
-		mds = append(mds, acir.cadvisor.GetMetrics()...)
+	if acir.containerMetricsProvider != nil {
+		mds = append(mds, acir.containerMetricsProvider.GetMetrics()...)
 	}
 
 	if acir.k8sapiserver != nil {

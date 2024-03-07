@@ -56,14 +56,14 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 
 		infoName := info.Name + containerType + cur.Name // used to identify the network interface
 		multiplier := float64(time.Second)
-		assignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetRxBytes, infoName, float64(cur.RxBytes), curStats.Timestamp, multiplier)
-		assignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetRxPackets, infoName, float64(cur.RxPackets), curStats.Timestamp, multiplier)
-		assignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetRxDropped, infoName, float64(cur.RxDropped), curStats.Timestamp, multiplier)
-		assignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetRxErrors, infoName, float64(cur.RxErrors), curStats.Timestamp, multiplier)
-		assignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetTxBytes, infoName, float64(cur.TxBytes), curStats.Timestamp, multiplier)
-		assignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetTxPackets, infoName, float64(cur.TxPackets), curStats.Timestamp, multiplier)
-		assignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetTxDropped, infoName, float64(cur.TxDropped), curStats.Timestamp, multiplier)
-		assignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetTxErrors, infoName, float64(cur.TxErrors), curStats.Timestamp, multiplier)
+		AssignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetRxBytes, infoName, float64(cur.RxBytes), curStats.Timestamp, multiplier)
+		AssignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetRxPackets, infoName, float64(cur.RxPackets), curStats.Timestamp, multiplier)
+		AssignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetRxDropped, infoName, float64(cur.RxDropped), curStats.Timestamp, multiplier)
+		AssignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetRxErrors, infoName, float64(cur.RxErrors), curStats.Timestamp, multiplier)
+		AssignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetTxBytes, infoName, float64(cur.TxBytes), curStats.Timestamp, multiplier)
+		AssignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetTxPackets, infoName, float64(cur.TxPackets), curStats.Timestamp, multiplier)
+		AssignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetTxDropped, infoName, float64(cur.TxDropped), curStats.Timestamp, multiplier)
+		AssignRateValueToField(&n.rateCalculator, netIfceMetric, ci.NetTxErrors, infoName, float64(cur.TxErrors), curStats.Timestamp, multiplier)
 
 		if netIfceMetric[ci.NetRxBytes] != nil && netIfceMetric[ci.NetTxBytes] != nil {
 			netIfceMetric[ci.NetTotalBytes] = netIfceMetric[ci.NetRxBytes].(float64) + netIfceMetric[ci.NetTxBytes].(float64)
@@ -99,7 +99,7 @@ func (n *NetMetricExtractor) Shutdown() error {
 func NewNetMetricExtractor(logger *zap.Logger) *NetMetricExtractor {
 	return &NetMetricExtractor{
 		logger:         logger,
-		rateCalculator: newFloat64RateCalculator(),
+		rateCalculator: NewFloat64RateCalculator(),
 	}
 }
 

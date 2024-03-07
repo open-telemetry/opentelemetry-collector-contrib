@@ -851,6 +851,9 @@ kubectl apply -f config.yaml
 
 The attribute `container_status_reason` is present only when `container_status` is in "Waiting" or "Terminated" State. The attribute `container_last_termination_reason` is present only when `container_status` is in "Terminated" State.
 
+## Available Metrics and Resource Attributes on Windows
+Refer [Metrics on Windows](./internal/k8swindows/README.md)
+
 This is a sample configuration for AWS Container Insights using the `awscontainerinsightreceiver` and `awsemfexporter` for an ECS cluster to collect the instance level metrics:
 ```
 receivers:

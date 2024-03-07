@@ -10,12 +10,6 @@ import (
 	"time"
 )
 
-const (
-	rootfs     = "/rootfs"            // the root directory "/" is mounted as "/rootfs" in container
-	hostProc   = rootfs + "/proc"     // "/rootfs/proc" in container refers to the host proc directory "/proc"
-	hostMounts = hostProc + "/mounts" // "/rootfs/proc/mounts" in container refers to "/proc/mounts" in the host
-)
-
 func hostJitter(max time.Duration) time.Duration {
 	hostName, err := os.Hostname()
 	if err != nil {

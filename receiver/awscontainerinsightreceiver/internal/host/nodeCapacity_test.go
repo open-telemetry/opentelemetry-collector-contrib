@@ -1,6 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !windows
+// +build !windows
+
 package host
 
 import (
@@ -65,10 +68,7 @@ func TestNodeCapacity(t *testing.T) {
 	}
 	cpuInfoOption = func(nc *nodeCapacity) {
 		nc.cpuInfo = func(ctx context.Context) ([]cpu.InfoStat, error) {
-			return []cpu.InfoStat{
-				{},
-				{},
-			}, nil
+			return []cpu.InfoStat{}, nil
 		}
 	}
 	nc, err = newNodeCapacity(zap.NewNop(), lstatOption, setEnvOption, virtualMemOption, cpuInfoOption)
