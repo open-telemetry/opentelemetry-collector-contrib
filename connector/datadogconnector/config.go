@@ -64,11 +64,8 @@ type TracesConfig struct {
 	// The default value is 1000.
 	TraceBuffer int `mapstructure:"trace_buffer"`
 
-	// EnableContainerStats specifies whether to enable container stats collection.
-	EnableContainerStats bool `mapstructure:"enable_container_stats"`
-
-	// ContainerTagAttributes specifies the list of container attributes to be added to the span tags.
-	ContainerTagAttributes []string `mapstructure:"container_tag_attributes"`
+	// ResourceAttributesAsContainerTags specifies the list of resource attributes to be used as container tags.
+	ResourceAttributesAsContainerTags []string `mapstructure:"resource_attributes_as_container_tags"`
 }
 
 // Validate the configuration for errors. This is required by component.Config.

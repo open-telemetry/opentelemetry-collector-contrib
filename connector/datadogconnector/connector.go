@@ -38,9 +38,8 @@ type traceToMetricConnector struct {
 	// from the agent to OTLP Metrics.
 	translator *metrics.Translator
 
-	enableContainerStats bool
-	containerTagAttrs    map[string]string
-	containerTagCache    *cache.Cache
+	resourceAttrs     map[string]string
+	containerTagCache *cache.Cache
 
 	// in specifies the channel through which the agent will output Stats Payloads
 	// resulting from ingested traces.
@@ -66,23 +65,22 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 		return nil, fmt.Errorf("failed to create metrics translator: %w", err)
 	}
 
-	ctags := make(map[string]string, len(cfg.(*Config).Traces.ContainerTagAttributes))
-	for _, val := range cfg.(*Config).Traces.ContainerTagAttributes {
+	ctags := make(map[string]string, len(cfg.(*Config).Traces.ResourceAttributesAsContainerTags))
+	for _, val := range cfg.(*Config).Traces.ResourceAttributesAsContainerTags {
 		ctags[val] = ""
 	}
 	ddtags := attributes.ContainerTagFromAttributes(ctags)
 
 	ctx := context.Background()
 	return &traceToMetricConnector{
-		logger:               set.Logger,
-		agent:                datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(cfg.(*Config).Traces, attributesTranslator), in, metricsClient, timingReporter),
-		translator:           trans,
-		in:                   in,
-		metricsConsumer:      metricsConsumer,
-		enableContainerStats: cfg.(*Config).Traces.EnableContainerStats,
-		containerTagAttrs:    ddtags,
-		containerTagCache:    cache.New(cache.DefaultExpiration, cache.DefaultExpiration),
-		exit:                 make(chan struct{}),
+		logger:            set.Logger,
+		agent:             datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(cfg.(*Config).Traces, attributesTranslator), in, metricsClient, timingReporter),
+		translator:        trans,
+		in:                in,
+		metricsConsumer:   metricsConsumer,
+		resourceAttrs:     ddtags,
+		containerTagCache: cache.New(cache.DefaultExpiration, cache.DefaultExpiration),
+		exit:              make(chan struct{}),
 	}, nil
 }
 
@@ -95,7 +93,7 @@ func getTraceAgentCfg(cfg TracesConfig, attributesTranslator *attributes.Transla
 	acfg.ComputeStatsBySpanKind = cfg.ComputeStatsBySpanKind
 	acfg.PeerTagsAggregation = cfg.PeerTagsAggregation
 	acfg.PeerTags = cfg.PeerTags
-	if cfg.EnableContainerStats {
+	if len(cfg.ResourceAttributesAsContainerTags) > 0 {
 		acfg.Features["enable_cid_stats"] = struct{}{}
 	}
 	if v := cfg.TraceBuffer; v > 0 {
@@ -130,7 +128,7 @@ func (c *traceToMetricConnector) Capabilities() consumer.Capabilities {
 }
 
 func (c *traceToMetricConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
-	if c.enableContainerStats && len(c.containerTagAttrs) > 0 {
+	if len(c.resourceAttrs) > 0 {
 		for i := 0; i < traces.ResourceSpans().Len(); i++ {
 			rs := traces.ResourceSpans().At(i)
 			attrs := rs.Resource().Attributes()
@@ -139,14 +137,18 @@ func (c *traceToMetricConnector) ConsumeTraces(ctx context.Context, traces ptrac
 				continue
 			}
 			ddContainerTags := attributes.ContainerTagsFromResourceAttributes(attrs)
-			for attr := range c.containerTagAttrs {
+			for attr := range c.resourceAttrs {
 				if val, ok := ddContainerTags[attr]; ok {
-					var cacheVal []string
-					if val, ok := c.containerTagCache.Get(containerID.AsString()); ok {
-						cacheVal = val.([]string)
+					var cacheVal map[string]struct{}
+					if v, ok := c.containerTagCache.Get(containerID.AsString()); ok {
+						cacheVal = v.(map[string]struct{})
+						cacheVal[fmt.Sprintf("%s:%s", attr, val)] = struct{}{}
+					} else {
+						cacheVal = make(map[string]struct{})
+						cacheVal[fmt.Sprintf("%s:%s", attr, val)] = struct{}{}
+						c.containerTagCache.Set(containerID.AsString(), cacheVal, cache.DefaultExpiration)
 					}
-					cacheVal = append(cacheVal, val)
-					c.containerTagCache.Set(containerID.AsString(), cacheVal, cache.DefaultExpiration)
+
 				}
 			}
 		}
@@ -168,12 +170,14 @@ func (c *traceToMetricConnector) run() {
 			var mx pmetric.Metrics
 			var err error
 			// Enrich the stats with container tags
-			if c.enableContainerStats {
+			if len(c.resourceAttrs) > 0 {
 				for _, stat := range stats.Stats {
 					if stat.ContainerID != "" {
 						if tags, ok := c.containerTagCache.Get(stat.ContainerID); ok {
-							tagList := tags.([]string)
-							stat.Tags = append(stat.Tags, tagList...)
+							tagList := tags.(map[string]struct{})
+							for tag := range tagList {
+								stat.Tags = append(stat.Tags, tag)
+							}
 						}
 					}
 				}
