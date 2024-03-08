@@ -175,6 +175,11 @@ func (c *traceToMetricConnector) run() {
 					if stat.ContainerID != "" {
 						if tags, ok := c.containerTagCache.Get(stat.ContainerID); ok {
 							tagList := tags.(map[string]struct{})
+							// Add unique tags to the stats
+							for _, tag := range stat.Tags {
+								tagList[tag] = struct{}{}
+							}
+							stat.Tags = make([]string, 0, len(tagList))
 							for tag := range tagList {
 								stat.Tags = append(stat.Tags, tag)
 							}
