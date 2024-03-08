@@ -195,7 +195,7 @@ func setNormalizeCPURatioFeatureGate(t *testing.T, val bool) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		featuregate.GlobalRegistry().Set(
+		err := featuregate.GlobalRegistry().Set(
 			normalizeCPURatioFeatureGate.ID(),
 			wasEnabled,
 		)
