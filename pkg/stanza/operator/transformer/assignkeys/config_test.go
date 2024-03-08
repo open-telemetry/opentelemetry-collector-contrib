@@ -14,11 +14,11 @@ import (
 // Test unmarshalling of values into config struct
 func TestUnmarshal(t *testing.T) {
 	// Manually adding operator to the Registry as its behind a feature gate
-	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
+	operator.RegisterFactory(NewFactory())
 
 	operatortest.ConfigUnmarshalTests{
-		DefaultConfig: NewConfig(),
-		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
+		Factory:   NewFactory(),
+		TestsFile: filepath.Join(".", "testdata", "config.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
 				Name: "assign_keys_body",

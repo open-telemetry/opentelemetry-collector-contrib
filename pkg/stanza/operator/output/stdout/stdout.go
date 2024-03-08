@@ -10,6 +10,7 @@ import (
 	"os"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -20,15 +21,15 @@ import (
 // Stdout is a global handle to standard output
 var Stdout io.Writer = os.Stdout
 
+var operatorType = component.MustNewType("stdout")
+
 func init() {
-	operator.Register("stdout", func() operator.Builder { return NewConfig("") })
+	operator.RegisterFactory(NewFactory())
 }
 
-// NewConfig creates a new stdout config with default values
+// Deprecated [v0.97.0] Use Factory.NewDefaultConfig instead.
 func NewConfig(operatorID string) *Config {
-	return &Config{
-		OutputConfig: helper.NewOutputConfig(operatorID, "stdout"),
-	}
+	return NewFactory().NewDefaultConfig(operatorID).(*Config)
 }
 
 // Config is the configuration of the Stdout operator
@@ -36,9 +37,38 @@ type Config struct {
 	helper.OutputConfig `mapstructure:",squash"`
 }
 
-// Build will build a stdout operator.
+// Deprecated [v0.97.0] Use Factory.CreateOperator instead.
 func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	outputOperator, err := c.OutputConfig.Build(logger)
+	set := component.TelemetrySettings{}
+	if logger != nil {
+		set.Logger = logger.Desugar()
+	}
+	return NewFactory().CreateOperator(&c, set)
+}
+
+type factory struct{}
+
+// NewFactory creates a factory
+func NewFactory() operator.Factory {
+	return &factory{}
+}
+
+// Type gets the type of the operator
+func (f *factory) Type() component.Type {
+	return operatorType
+}
+
+// NewDefaultConfig creates the default configuration
+func (f *factory) NewDefaultConfig(operatorID string) component.Config {
+	return &Config{
+		OutputConfig: helper.NewOutputConfig(operatorID, "stdout"),
+	}
+}
+
+// CreateOperator creates a new stdout operator
+func (f *factory) CreateOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
+	c := cfg.(*Config)
+	outputOperator, err := helper.NewOutputOperator(c.OutputConfig, set)
 	if err != nil {
 		return nil, err
 	}

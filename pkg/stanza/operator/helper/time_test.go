@@ -574,14 +574,15 @@ func TestSetInvalidLocation(t *testing.T) {
 }
 
 func TestUnmarshalTimeConfig(t *testing.T) {
+	f := newHelpersFactory()
 	operatortest.ConfigUnmarshalTests{
-		DefaultConfig: newHelpersConfig(),
-		TestsFile:     filepath.Join(".", "testdata", "timestamp.yaml"),
+		Factory:   f,
+		TestsFile: filepath.Join(".", "testdata", "timestamp.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
 				Name: "layout",
 				Expect: func() *helpersConfig {
-					c := newHelpersConfig()
+					c := f.NewDefaultConfig("").(*helpersConfig)
 					c.Time = NewTimeParser()
 					c.Time.Layout = "%Y-%m-%d"
 					return c
@@ -590,7 +591,7 @@ func TestUnmarshalTimeConfig(t *testing.T) {
 			{
 				Name: "layout_type",
 				Expect: func() *helpersConfig {
-					c := newHelpersConfig()
+					c := f.NewDefaultConfig("").(*helpersConfig)
 					c.Time = NewTimeParser()
 					c.Time.LayoutType = "epoch"
 					return c
@@ -599,7 +600,7 @@ func TestUnmarshalTimeConfig(t *testing.T) {
 			{
 				Name: "location",
 				Expect: func() *helpersConfig {
-					c := newHelpersConfig()
+					c := f.NewDefaultConfig("").(*helpersConfig)
 					c.Time = NewTimeParser()
 					c.Time.Location = "America/Shiprock"
 					return c
@@ -608,7 +609,7 @@ func TestUnmarshalTimeConfig(t *testing.T) {
 			{
 				Name: "parse_from",
 				Expect: func() *helpersConfig {
-					c := newHelpersConfig()
+					c := f.NewDefaultConfig("").(*helpersConfig)
 					from := entry.NewBodyField("from")
 					c.Time = NewTimeParser()
 					c.Time.ParseFrom = &from

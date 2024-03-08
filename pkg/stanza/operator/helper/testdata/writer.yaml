@@ -1,13 +1,10 @@
 string:
   type: helpers_test
-  writer:
-    output: test
+  output: test
 slice:
   type: helpers_test
-  writer:
-    output: [test1, test2]
+  output: [test1, test2]
 invalid:
   type: helpers_test
-  writer:
-    output:
-      foo: bar
+  output:
+    foo: bar

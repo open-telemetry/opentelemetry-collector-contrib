@@ -9,20 +9,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
-const (
-	operatorType      = "namedpipe"
-	DefaultMaxLogSize = 1024 * 1024
-)
+const DefaultMaxLogSize = 1024 * 1024
 
+// Deprecated: [v0.97.0] Use Factory.NewDefaultConfig instead.
 func NewConfig() *Config {
-	return NewConfigWithID(operatorType)
+	return NewFactory().NewDefaultConfig(operatorType.String()).(*Config)
 }
 
-// NewConfig creates a new stdin input config with default values
+// Deprecated: [v0.97.0] Use Factory.NewDefaultConfig instead.
 func NewConfigWithID(operatorID string) *Config {
-	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, operatorType),
-	}
+	return NewFactory().NewDefaultConfig(operatorID).(*Config)
 }
 
 // Config is the configuration of a stdin input operator.

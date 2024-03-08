@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/expr-lang/expr/vm"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -29,9 +30,14 @@ type TransformerConfig struct {
 	IfExpr       string `mapstructure:"if"`
 }
 
-// Build will build a transformer operator.
+// Deprecated [v0.97.0] Use NewTransformer instead.
 func (c TransformerConfig) Build(logger *zap.SugaredLogger) (TransformerOperator, error) {
-	writerOperator, err := c.WriterConfig.Build(logger)
+	return NewTransformer(c, component.TelemetrySettings{Logger: logger.Desugar()})
+}
+
+// NewTransformer creates a new transformer operator.
+func NewTransformer(c TransformerConfig, set component.TelemetrySettings) (TransformerOperator, error) {
+	writerOperator, err := NewWriter(c.WriterConfig, set)
 	if err != nil {
 		return TransformerOperator{}, errors.WithDetails(err, "operator_id", c.ID())
 	}

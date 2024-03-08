@@ -98,14 +98,15 @@ func TestScopeNameParser(t *testing.T) {
 }
 
 func TestUnmarshalScopeNameConfig(t *testing.T) {
+	f := newHelpersFactory()
 	operatortest.ConfigUnmarshalTests{
-		DefaultConfig: newHelpersConfig(),
-		TestsFile:     filepath.Join(".", "testdata", "scope_name.yaml"),
+		Factory:   f,
+		TestsFile: filepath.Join(".", "testdata", "scope_name.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
 				Name: "parse_from",
 				Expect: func() *helpersConfig {
-					c := newHelpersConfig()
+					c := f.NewDefaultConfig("").(*helpersConfig)
 					c.Scope = NewScopeNameParser()
 					c.Scope.ParseFrom = entry.NewBodyField("from")
 					return c

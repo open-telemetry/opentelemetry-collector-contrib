@@ -8,19 +8,21 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func TestInputConfigMissingBase(t *testing.T) {
-	config := InputConfig{
+	c := InputConfig{
 		WriterConfig: WriterConfig{
 			OutputIDs: []string{"test-output"},
 		},
 	}
 
-	_, err := config.Build(testutil.Logger(t))
+	_, err := NewInput(c, componenttest.NewNopTelemetrySettings())
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing required `type` field.")
 }
@@ -29,8 +31,10 @@ func TestInputConfigMissingOutput(t *testing.T) {
 	config := InputConfig{
 		WriterConfig: WriterConfig{
 			BasicConfig: BasicConfig{
-				OperatorID:   "test-id",
-				OperatorType: "test-type",
+				Identity: operator.Identity{
+					Type: "test-type",
+					ID:   "test-id",
+				},
 			},
 		},
 	}
@@ -40,30 +44,35 @@ func TestInputConfigMissingOutput(t *testing.T) {
 }
 
 func TestInputConfigValid(t *testing.T) {
-	config := InputConfig{
+	c := InputConfig{
 		WriterConfig: WriterConfig{
 			BasicConfig: BasicConfig{
-				OperatorID:   "test-id",
-				OperatorType: "test-type",
+				Identity: operator.Identity{
+					Type: "test-type",
+					ID:   "test-id",
+				},
 			},
 			OutputIDs: []string{"test-output"},
 		},
 	}
 
-	_, err := config.Build(testutil.Logger(t))
+	_, err := NewInput(c, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 }
 
 func TestInputOperatorCanProcess(t *testing.T) {
-	input := InputOperator{
-		WriterOperator: WriterOperator{
-			BasicOperator: BasicOperator{
-				OperatorID:    "test-id",
-				OperatorType:  "test-type",
-				SugaredLogger: testutil.Logger(t),
+	input, err := NewInput(InputConfig{
+		WriterConfig: WriterConfig{
+			BasicConfig: BasicConfig{
+				Identity: operator.Identity{
+					Type: "test-type",
+					ID:   "test-id",
+				},
 			},
+			OutputIDs: []string{"test-output"},
 		},
-	}
+	}, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
 	require.False(t, input.CanProcess())
 }
 

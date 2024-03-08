@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -21,8 +22,10 @@ func TestOperator(t *testing.T) {
 	cfg := Config{
 		OutputConfig: helper.OutputConfig{
 			BasicConfig: helper.BasicConfig{
-				OperatorID:   "test_operator_id",
-				OperatorType: "stdout",
+				Identity: operator.Identity{
+					ID:   "test_operator_id",
+					Type: "stdout",
+				},
 			},
 		},
 	}

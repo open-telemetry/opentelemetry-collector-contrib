@@ -7,20 +7,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-const operatorType = "journald_input"
-
-// NewConfig creates a new input config with default values
+// Deprecated [v0.97.0] Use Factory.CreateDefaultConfig instead.
 func NewConfig() *Config {
-	return NewConfigWithID(operatorType)
+	return NewFactory().NewDefaultConfig(operatorType.String()).(*Config)
 }
 
-// NewConfigWithID creates a new input config with default values
+// Deprecated [v0.97.0] Use Factory.CreateDefaultConfig instead.
 func NewConfigWithID(operatorID string) *Config {
-	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, operatorType),
-		StartAt:     "end",
-		Priority:    "info",
-	}
+	return NewFactory().NewDefaultConfig(operatorID).(*Config)
 }
 
 // Config is the configuration of a journald input operator
