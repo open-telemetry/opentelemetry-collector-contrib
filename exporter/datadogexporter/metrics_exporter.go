@@ -13,7 +13,6 @@ import (
 	"time"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
-	"github.com/DataDog/datadog-agent/pkg/serializer"
 	"github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
@@ -24,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/fx"
 	"go.uber.org/zap"
 	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
@@ -89,16 +87,6 @@ func translatorFromConfig(set component.TelemetrySettings, cfg *Config, attrsTra
 
 	options = append(options, otlpmetrics.WithStatsOut(statsOut))
 	return otlpmetrics.NewTranslator(set, attrsTranslator, options...)
-}
-
-func newSerializer(cfg *Config) *serializer.Serializer {
-	newTraceAgent := `
-
-	`
-	fx.New(
-		serializer.NewSerializer,
-		fx.Supply(forwarder),
-	)
 }
 
 func newMetricsExporter(

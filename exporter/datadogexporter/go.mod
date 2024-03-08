@@ -4,6 +4,8 @@ go 1.21
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.104
+	github.com/DataDog/datadog-agent/comp/core/config v0.52.0-rc.3
+	github.com/DataDog/datadog-agent/comp/core/log v0.52.0-rc.3
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-rc.3
 	github.com/DataDog/datadog-agent/pkg/serializer v0.53.0-devel
 	github.com/DataDog/datadog-agent/pkg/trace v0.52.0-rc.3
@@ -54,6 +56,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.96.1-0.20240305232712-5a68058e0e3a
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
+	go.uber.org/fx v1.18.2
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/protobuf v1.33.0
@@ -72,8 +75,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v4 v4.2.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2 v2.2.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1 // indirect
-	github.com/DataDog/datadog-agent/comp/core/config v0.52.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/comp/core/log v0.52.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/core/secrets v0.52.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/core/status v0.52.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.52.0-rc.3 // indirect
@@ -82,6 +83,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/aggregator/ckey v0.52.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.52.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.52.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/logs v0.52.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/model v0.52.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/setup v0.52.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.52.0-rc.3 // indirect
@@ -317,7 +319,6 @@ require (
 	go.opentelemetry.io/proto/otlp v1.1.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/dig v1.17.0 // indirect
-	go.uber.org/fx v1.18.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
