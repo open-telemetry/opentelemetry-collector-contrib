@@ -39,8 +39,7 @@ The following configuration options can also be configured:
 - `key_file` (no default) Path to the TLS key to use for TLS required connections.
 - `max_content_length_logs` (default: 2097152): Maximum log payload size in bytes. Log batches of bigger size will be
   broken down into several requests. Default value is 2097152 bytes (2 MiB). Maximum allowed value is 838860800
-  (~ 800 MB). Keep in mind that Splunk Observability backend doesn't accept requests bigger than 2 MiB. This
-  configuration value can be raised only if used with Splunk Core/Cloud. When set to 0, it will treat as infinite length and it will create only 1 request per batch.
+  (~ 800 MB). When set to 0, it will treat as infinite length and it will create only 1 request per batch.
 - `max_content_length_metrics` (default: 2097152): Maximum metric payload size in bytes. Metric batches of bigger size
   will be broken down into several requests. Default value is 2097152 bytes (2 MiB). Maximum allowed value is 838860800
   (~ 800 MB). When set to 0, it will treat as infinite length and it will create only one request per batch.
