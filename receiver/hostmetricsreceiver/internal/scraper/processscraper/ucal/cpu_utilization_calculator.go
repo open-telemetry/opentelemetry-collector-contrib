@@ -11,10 +11,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var normalizeCPURatioFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.hostmetricsreceiver.normalizeProcessCpuUtilization",
+var normalizeProcessCPUUtilizationFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.hostmetrics.normalizeProcessCPUUtilization",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, normalizes the process.cpu.utilization metric onto the interval [0-1] by dividing by the metric number of logical processors."),
+	featuregate.WithRegisterDescription("When enabled, normalizes the process.cpu.utilization metric onto the interval [0-1] by dividing the value by the number of logical processors."),
 	featuregate.WithRegisterFromVersion("v0.97.0"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31368"),
 )
@@ -57,7 +57,7 @@ func cpuUtilization(logicalCores int, startStats *cpu.TimesStat, startTime pcomm
 	systemUtilization := (endStats.System - startStats.System) / elapsedTime
 	ioWaitUtilization := (endStats.Iowait - startStats.Iowait) / elapsedTime
 
-	if normalizeCPURatioFeatureGate.IsEnabled() && logicalCores > 0 {
+	if normalizeProcessCPUUtilizationFeatureGate.IsEnabled() && logicalCores > 0 {
 		// Normalize onto the [0-1] interval by dividing by the number of logical cores
 		userUtilization /= float64(logicalCores)
 		systemUtilization /= float64(logicalCores)

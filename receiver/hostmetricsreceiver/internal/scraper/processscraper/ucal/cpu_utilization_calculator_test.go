@@ -144,7 +144,7 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 	for _, test := range testCases {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			setNormalizeCPURatioFeatureGate(t, test.normalize)
+			setNormalizeProcessCPUUtilizationFeatureGate(t, test.normalize)
 			recorder := inMemoryRecorder{}
 			calculator := CPUUtilizationCalculator{
 				previousReadTime: test.previousReadTime,
@@ -186,17 +186,17 @@ func Test_cpuUtilization(t *testing.T) {
 
 }
 
-func setNormalizeCPURatioFeatureGate(t *testing.T, val bool) {
-	wasEnabled := normalizeCPURatioFeatureGate.IsEnabled()
+func setNormalizeProcessCPUUtilizationFeatureGate(t *testing.T, val bool) {
+	wasEnabled := normalizeProcessCPUUtilizationFeatureGate.IsEnabled()
 	err := featuregate.GlobalRegistry().Set(
-		normalizeCPURatioFeatureGate.ID(),
+		normalizeProcessCPUUtilizationFeatureGate.ID(),
 		val,
 	)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		err := featuregate.GlobalRegistry().Set(
-			normalizeCPURatioFeatureGate.ID(),
+			normalizeProcessCPUUtilizationFeatureGate.ID(),
 			wasEnabled,
 		)
 		require.NoError(t, err)
