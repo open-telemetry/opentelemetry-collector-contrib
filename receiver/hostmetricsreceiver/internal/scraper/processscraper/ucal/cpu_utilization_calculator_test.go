@@ -9,6 +9,8 @@ import (
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -30,6 +32,7 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 		previousReadTime    pcommon.Timestamp
 		previousCPUStat     *cpu.TimesStat
 		expectedUtilization *CPUUtilization
+		normalize           bool
 	}{
 		{
 			name:         "no previous times",
@@ -74,7 +77,7 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 			},
 		},
 		{
-			name:             "one second time delta, 2 logical cores",
+			name:             "one second time delta, 2 logical cores, normalized",
 			logicalCores:     2,
 			previousReadTime: 1640097430772858000,
 			currentReadTime:  1640097431772858000,
@@ -93,12 +96,55 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 				System: 0.15,
 				Iowait: 0.0005,
 			},
+			normalize: true,
+		},
+		{
+			name:             "one second time delta, 2 logical cores, not normalized",
+			logicalCores:     2,
+			previousReadTime: 1640097430772858000,
+			currentReadTime:  1640097431772858000,
+			previousCPUStat: &cpu.TimesStat{
+				User:   8258.4,
+				System: 6193.3,
+				Iowait: 34.201,
+			},
+			currentCPUStat: &cpu.TimesStat{
+				User:   8258.5,
+				System: 6193.6,
+				Iowait: 34.202,
+			},
+			expectedUtilization: &CPUUtilization{
+				User:   0.1,
+				System: 0.3,
+				Iowait: 0.001,
+			},
+		},
+		{
+			name:             "0 logical cores",
+			logicalCores:     0,
+			previousReadTime: 1640097430772858000,
+			currentReadTime:  1640097431772858000,
+			previousCPUStat: &cpu.TimesStat{
+				User:   8258.4,
+				System: 6193.3,
+				Iowait: 34.201,
+			},
+			currentCPUStat: &cpu.TimesStat{
+				User:   8258.5,
+				System: 6193.6,
+				Iowait: 34.202,
+			},
+			expectedUtilization: &CPUUtilization{
+				User:   0.1,
+				System: 0.3,
+				Iowait: 0.001,
+			},
 		},
 	}
 	for _, test := range testCases {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
+			setNormalizeCPURatioFeatureGate(t, test.normalize)
 			recorder := inMemoryRecorder{}
 			calculator := CPUUtilizationCalculator{
 				previousReadTime: test.previousReadTime,
@@ -138,4 +184,21 @@ func Test_cpuUtilization(t *testing.T) {
 	assert.InDelta(t, expectedUtilization.System, actualUtilization.System, 0.00001)
 	assert.InDelta(t, expectedUtilization.Iowait, actualUtilization.Iowait, 0.00001)
 
+}
+
+func setNormalizeCPURatioFeatureGate(t *testing.T, val bool) {
+	wasEnabled := normalizeCPURatioFeatureGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(
+		normalizeCPURatioFeatureGate.ID(),
+		val,
+	)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		featuregate.GlobalRegistry().Set(
+			normalizeCPURatioFeatureGate.ID(),
+			wasEnabled,
+		)
+		require.NoError(t, err)
+	})
 }

@@ -7,7 +7,12 @@ change_type: bug_fix
 component: hostmetricsreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Take into account the number of logical cores when calculating process.cpu.utilization so its value does not exceed 1.
+note: Adds the receiver.hostmetricsreceiver.normalizeProcessCpuUtilization feature gate to optionally normalize process.cpu.utilization values.
+
+subtext: >
+  When enabled, the receiver.hostmetricsreceiver.normalizeProcessCpuUtilization feature gate will cause process.cpu.utilization
+  values to be divided by the number of logical cores on the system. This is necessary to produce a value on the interval of
+  [0-1], as the description of process.cpu.utilization the metric says.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [31368]
