@@ -1441,6 +1441,7 @@ func TestNoTracking(t *testing.T) {
 			cfg.StartAt = "beginning"
 			operator, sink := testManager(t, cfg)
 			operator.noTracking = tc.noTracking
+			operator.pollInterval = time.Hour // we control the polling in the test directly
 
 			temp := filetest.OpenTemp(t, tempDir)
 			filetest.WriteString(t, temp, " testlog1 \n")
@@ -1450,6 +1451,7 @@ func TestNoTracking(t *testing.T) {
 				require.NoError(t, operator.Stop())
 			}()
 
+			operator.poll(context.Background())
 			sink.ExpectToken(t, []byte("testlog1"))
 
 			// Poll again and see if the file is replayed.

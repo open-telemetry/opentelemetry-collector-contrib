@@ -161,9 +161,15 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 		HeaderConfig:      hCfg,
 		DeleteAtEOF:       c.DeleteAfterRead,
 	}
-	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
-	for i := 0; i < len(knownFiles); i++ {
-		knownFiles[i] = fileset.New[*reader.Metadata](c.MaxConcurrentFiles / 2)
+	currentPollFiles := fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2)
+	var previousPollFiles *fileset.Fileset[*reader.Reader]
+	var knownFiles []*fileset.Fileset[*reader.Metadata]
+	if !o.noTracking {
+		previousPollFiles = fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2)
+		knownFiles = make([]*fileset.Fileset[*reader.Metadata], 3)
+		for i := 0; i < len(knownFiles); i++ {
+			knownFiles[i] = fileset.New[*reader.Metadata](c.MaxConcurrentFiles / 2)
+		}
 	}
 	return &Manager{
 		SugaredLogger:     logger.With("component", "fileconsumer"),
@@ -173,8 +179,8 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 		maxBatchFiles:     c.MaxConcurrentFiles / 2,
 		maxBatches:        c.MaxBatches,
 		noTracking:        o.noTracking,
-		currentPollFiles:  fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
-		previousPollFiles: fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
+		currentPollFiles:  currentPollFiles,
+		previousPollFiles: previousPollFiles,
 		knownFiles:        knownFiles,
 	}, nil
 }
