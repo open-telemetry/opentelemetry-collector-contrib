@@ -508,9 +508,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
-				case "container.cpu.logical_count":
-					assert.False(t, validatedMetrics["container.cpu.logical_count"], "Found a duplicate in the metrics slice: container.cpu.logical_count")
-					validatedMetrics["container.cpu.logical_count"] = true
+				case "container.cpu.logical.count":
+					assert.False(t, validatedMetrics["container.cpu.logical.count"], "Found a duplicate in the metrics slice: container.cpu.logical.count")
+					validatedMetrics["container.cpu.logical.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of cores available to the container.", ms.At(i).Description())

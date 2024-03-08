@@ -151,7 +151,7 @@ metrics:
     unit: "1"
     gauge:
       value_type: int
-  container.cpu.logical_count:
+  container.cpu.logical.count:
     enabled: false
     description: "Number of cores available to the container."
     unit: "{cpus}"

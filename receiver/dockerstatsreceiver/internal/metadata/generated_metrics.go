@@ -507,9 +507,9 @@ type metricContainerCPULogicalCount struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills container.cpu.logical_count metric with initial data.
+// init fills container.cpu.logical.count metric with initial data.
 func (m *metricContainerCPULogicalCount) init() {
-	m.data.SetName("container.cpu.logical_count")
+	m.data.SetName("container.cpu.logical.count")
 	m.data.SetDescription("Number of cores available to the container.")
 	m.data.SetUnit("{cpus}")
 	m.data.SetEmptyGauge()
@@ -4037,7 +4037,7 @@ func (mb *MetricsBuilder) RecordContainerCPULimitDataPoint(ts pcommon.Timestamp,
 	mb.metricContainerCPULimit.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordContainerCPULogicalCountDataPoint adds a data point to container.cpu.logical_count metric.
+// RecordContainerCPULogicalCountDataPoint adds a data point to container.cpu.logical.count metric.
 func (mb *MetricsBuilder) RecordContainerCPULogicalCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricContainerCPULogicalCount.recordDataPoint(mb.startTime, ts, val)
 }

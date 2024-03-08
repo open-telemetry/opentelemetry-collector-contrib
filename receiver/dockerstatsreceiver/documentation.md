@@ -306,7 +306,7 @@ This metric is only reported if the container has limits set with -cpus, -cpuset
 | ---- | ----------- | ---------- |
 | {cpus} | Gauge | Double |
 
-### container.cpu.logical_count
+### container.cpu.logical.count
 
 Number of cores available to the container.
 

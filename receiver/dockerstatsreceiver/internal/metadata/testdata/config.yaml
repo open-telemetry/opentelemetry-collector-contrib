@@ -19,7 +19,7 @@ all_set:
       enabled: true
     container.cpu.limit:
       enabled: true
-    container.cpu.logical_count:
+    container.cpu.logical.count:
       enabled: true
     container.cpu.shares:
       enabled: true
@@ -178,7 +178,7 @@ none_set:
       enabled: false
     container.cpu.limit:
       enabled: false
-    container.cpu.logical_count:
+    container.cpu.logical.count:
       enabled: false
     container.cpu.shares:
       enabled: false
