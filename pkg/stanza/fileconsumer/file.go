@@ -69,10 +69,6 @@ func (m *Manager) Stop() error {
 		m.cancel = nil
 	}
 	m.wg.Wait()
-	if m.tracker == nil {
-		return nil
-	}
-
 	m.tracker.ClosePreviousFiles()
 	if m.persister != nil {
 		if err := checkpoint.Save(context.Background(), m.persister, m.tracker.GetMetadata()); err != nil {

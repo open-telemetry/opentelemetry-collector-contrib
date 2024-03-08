@@ -158,13 +158,13 @@ func (t *noStateTracker) EndConsume() {
 	}
 }
 
-func (t *noStateTracker) GetOpenFile(fp *fingerprint.Fingerprint) *reader.Reader { return nil }
+func (t *noStateTracker) GetOpenFile(_ *fingerprint.Fingerprint) *reader.Reader { return nil }
 
-func (t *noStateTracker) GetClosedFile(fp *fingerprint.Fingerprint) *reader.Metadata { return nil }
+func (t *noStateTracker) GetClosedFile(_ *fingerprint.Fingerprint) *reader.Metadata { return nil }
 
 func (t *noStateTracker) GetMetadata() []*reader.Metadata { return nil }
 
-func (t *noStateTracker) LoadMetadata(metadata []*reader.Metadata) {}
+func (t *noStateTracker) LoadMetadata(_ []*reader.Metadata) {}
 
 func (t *noStateTracker) PreviousPollFiles() []*reader.Reader { return nil }
 

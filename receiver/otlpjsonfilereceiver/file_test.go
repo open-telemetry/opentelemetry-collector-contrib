@@ -104,7 +104,7 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
 
-	md := testdata.GenerateMetricsManyMetricsSameResource(5)
+	md := testdata.GenerateMetrics(5)
 	marshaler := &pmetric.JSONMarshaler{}
 	b, err := marshaler.MarshalMetrics(md)
 	assert.NoError(t, err)

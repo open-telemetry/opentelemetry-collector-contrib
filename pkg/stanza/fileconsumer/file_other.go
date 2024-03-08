@@ -17,8 +17,8 @@ import (
 // we do this before reading existing files to ensure we emit older log lines before newer ones
 func (m *Manager) readLostFiles(ctx context.Context) {
 	if m.readerFactory.DeleteAtEOF {
-		// Lost files are not expected when delete_at_eof is enabled since we
-		// are deleting the files before they can become lost.
+		// Lost files are not expected when delete_at_eof is enabled
+		// since we are deleting the files before they can become lost.
 		return
 	}
 	previousPollFiles := m.tracker.PreviousPollFiles()

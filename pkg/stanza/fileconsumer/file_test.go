@@ -1439,6 +1439,7 @@ func TestNoTracking(t *testing.T) {
 			tempDir := t.TempDir()
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
+			cfg.PollInterval = 1000 * time.Hour // We control the polling within the test.
 
 			opts := make([]Option, 0)
 			if tc.noTracking {
@@ -1454,6 +1455,7 @@ func TestNoTracking(t *testing.T) {
 				require.NoError(t, operator.Stop())
 			}()
 
+			operator.poll(context.Background())
 			sink.ExpectToken(t, []byte("testlog1"))
 
 			// Poll again and see if the file is replayed.
