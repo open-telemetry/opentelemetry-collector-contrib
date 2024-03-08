@@ -257,14 +257,8 @@ docker-telemetrygen:
 
 .PHONY: generate
 generate: install-tools
-	cd cmd/mdatagen && $(GOCMD) install .
+	cd ./internal/tools && go install go.opentelemetry.io/collector/cmd/mdatagen
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
-
-.PHONY: mdatagen-test
-mdatagen-test:
-	cd cmd/mdatagen && $(GOCMD) install .
-	cd cmd/mdatagen && $(GOCMD) generate ./...
-	cd cmd/mdatagen && $(GOCMD) test ./...
 
 .PHONY: githubgen-install
 githubgen-install:

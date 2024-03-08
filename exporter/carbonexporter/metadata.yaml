@@ -1,4 +1,5 @@
 type: carbon
+scope_name: otelcol/carbon
 
 status:
   class: exporter
@@ -9,5 +10,4 @@ status:
     active: [aboguszewski-sumo]
 
 tests:
-  config:
   expect_consumer_error: true

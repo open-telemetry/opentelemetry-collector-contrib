@@ -1,4 +1,5 @@
 type: awss3
+scope_name: otelcol/awss3
 
 status:
   class: exporter
@@ -7,6 +8,6 @@ status:
   distributions: [contrib, observiq, sumo, splunk]
   codeowners:
     active: [atoulme, pdelewski]
+
 tests:
-  config:
   expect_consumer_error: true

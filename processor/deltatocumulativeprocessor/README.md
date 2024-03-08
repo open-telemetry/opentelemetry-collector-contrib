@@ -23,6 +23,8 @@ metrics from delta temporality to cumulative, by accumulating samples in memory.
 ``` yaml
 processors:
     deltatocumulative:
+        # how long until a series not receiving new samples is removed
+        [ max_stale: <duration> | default = 5m ]
 ```
 
 There is no further configuration required. All delta samples are converted to cumulative.

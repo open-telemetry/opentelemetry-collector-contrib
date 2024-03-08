@@ -1,4 +1,5 @@
 type: signalfx
+scope_name: otelcol/signalfxreceiver
 
 status:
   class: receiver
@@ -8,6 +9,3 @@ status:
   codeowners:
     active: ["dmitryax"]
     emeritus:
-
-tests:
-  config:

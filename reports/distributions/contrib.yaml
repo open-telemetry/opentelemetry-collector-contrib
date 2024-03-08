@@ -25,7 +25,6 @@ components:
         - dataset
         - dynatrace
         - elasticsearch
-        - f5cloud
         - file
         - googlecloud
         - googlecloudpubsub
