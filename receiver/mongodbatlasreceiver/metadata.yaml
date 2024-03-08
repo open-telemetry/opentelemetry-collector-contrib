@@ -1,4 +1,5 @@
 type: mongodbatlas
+scope_name: otelcol/mongodbatlasreceiver
 
 status:
   class: receiver
@@ -7,6 +8,7 @@ status:
   distributions: [contrib, splunk, observiq, sumo]
   codeowners:
     active: [djaglowski, schmikei]
+    seeking_new: true
 
 resource_attributes:
   mongodb_atlas.org_name:
@@ -728,3 +730,8 @@ metrics:
     attributes: [cpu_state]
     gauge:
       value_type: double
+
+tests:
+  config:
+    alerts:
+      enabled: true
