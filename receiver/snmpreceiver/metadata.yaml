@@ -1,4 +1,5 @@
 type: snmp
+scope_name: otelcol/snmpreceiver
 
 status:
   class: receiver

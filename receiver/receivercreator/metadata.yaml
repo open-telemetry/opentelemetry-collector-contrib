@@ -1,4 +1,5 @@
 type: receiver_creator
+scope_name: otelcol/receivercreator
 
 status:
   class: receiver
