@@ -6,9 +6,8 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"errors"
 
-	"go.uber.org/multierr"
-
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.uber.org/multierr"
 )
 
 // S3UploaderConfig contains aws s3 uploader related config to controls things

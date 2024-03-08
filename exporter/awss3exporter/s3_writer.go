@@ -8,7 +8,6 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/config/configcompression"
 	"math/rand"
 	"strconv"
 	"time"
@@ -17,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"go.opentelemetry.io/collector/config/configcompression"
 )
 
 type s3Writer struct {
