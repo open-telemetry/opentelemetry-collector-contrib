@@ -7,7 +7,7 @@ package ackextension // import "github.com/open-telemetry/opentelemetry-collecto
 // to check the status of given ack ids.
 type AckExtension interface {
 	// ProcessEvent marks the beginning of processing an event. It generates an ack ID for the associated partition ID.
-	// ACK IDs are only unique within a partition. Two partitions can have the same ACK IDs but they are generated for different events.
+	// ACK IDs are only unique within a partition. Two partitions can have the same ACK IDs, but they are generated for different events.
 	ProcessEvent(partitionID string) (ackID uint64)
 
 	// Ack acknowledges an event has been processed.
