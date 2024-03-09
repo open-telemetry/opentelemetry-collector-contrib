@@ -11,9 +11,12 @@ import (
 
 	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
 	"github.com/DataDog/datadog-agent/comp/core/log"
-	"github.com/DataDog/datadog-agent/comp/core/log/logimpl"
+	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	"github.com/DataDog/datadog-agent/pkg/serializer"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
+	"go.uber.org/zap"
 )
 
 func newConfigComponent(set component.TelemetrySettings, cfg *Config) (coreconfig.Component, error) {
@@ -58,33 +61,28 @@ forwarder_timeout: 10`, set.Logger.Level().String(), cfg.API.Site, cfg.API.Key)
 	return c, nil
 }
 
-func newLogComponent(set component.TelemetrySettings, cfg *Config) (log.Component, error) {
-	c, err := newConfigComponent(set, cfg)
-	if err != nil {
-		return nil, err
-	}
-	var l log.Component
-	app := fx.New(
-		logimpl.Module(),
-		fx.Supply(c),
-		fx.Populate(&l),
-	)
-	if err := app.Err(); err != nil {
-		return nil, err
-	}
-
-	return l, nil
+func newLogComponent(set component.TelemetrySettings) (log.Component, error) {
+	return &zaplogger{
+		logger: set.Logger,
+	}, nil
 }
 
-func newAgentForwarder(set component.TelemetrySettings, cfg *Config) (coreconfig.AgentForwarder, error) {
-	c, err := newConfigComponent(set, cfg)
-	if err != nil {
-		return nil, err
-	}
-	var f coreconfig.AgentForwarder
+func newAgentForwarder(set component.TelemetrySettings, cfg *Config, config coreconfig.Component) (defaultforwarder.Forwarder, error) {
+	var f defaultforwarder.Component
 	app := fx.New(
-		coreconfig.Module(),
-		fx.Supply(c),
+		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
+			return &fxevent.ZapLogger{Logger: log}
+		}),
+		defaultforwarder.Module(),
+		fx.Supply(set.Logger),
+		fx.Supply(cfg),
+		fx.Supply(set),
+		fx.Supply(config),
+		fx.Provide(newLogComponent),
+
+		fx.Provide(func(c coreconfig.Component, l log.Component) (defaultforwarder.Params, error) {
+			return defaultforwarder.NewParams(c, l), nil
+		}),
 		fx.Populate(&f),
 	)
 	if err := app.Err(); err != nil {
@@ -92,4 +90,30 @@ func newAgentForwarder(set component.TelemetrySettings, cfg *Config) (coreconfig
 	}
 
 	return f, nil
+}
+
+type orchestratorinterfaceimpl struct {
+	f defaultforwarder.Forwarder
+}
+
+func (o *orchestratorinterfaceimpl) Get() (defaultforwarder.Forwarder, bool) {
+	return o.f, true
+}
+
+func (o *orchestratorinterfaceimpl) Reset() {
+	o.f = nil
+}
+
+func newSerializer(set component.TelemetrySettings, cfg *Config) (*serializer.Serializer, error) {
+	c, err := newConfigComponent(set, cfg)
+	if err != nil {
+		return nil, err
+	}
+	f, err := newAgentForwarder(set, cfg, c)
+	if err != nil {
+		return nil, err
+	}
+	return serializer.NewSerializer(f, &orchestratorinterfaceimpl{
+		f: f,
+	}, c, ""), nil
 }

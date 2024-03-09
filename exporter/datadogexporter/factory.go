@@ -39,6 +39,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
+var metricExportSerializerFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.metricexportserializer",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
+)
+
 var metricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.metricexportnativeclient",
 	featuregate.StageBeta,
@@ -55,6 +61,10 @@ var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 // isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
 func isMetricExportV2Enabled() bool {
 	return metricExportNativeClientFeatureGate.IsEnabled()
+}
+
+func isMetricExportSerializerEnabled() bool {
+	return metricExportSerializerFeatureGate.IsEnabled()
 }
 
 // enableNativeMetricExport switches metric export to call native Datadog APIs instead of Zorkian APIs.
