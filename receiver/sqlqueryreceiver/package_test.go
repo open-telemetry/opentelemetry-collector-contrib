@@ -8,7 +8,8 @@ import (
 
 	"go.uber.org/goleak"
 )
-// // Regarding the godbus/dbus ignore: see https://github.com/99designs/keyring/issues/103
+
+// Regarding the godbus/dbus ignore: see https://github.com/99designs/keyring/issues/103
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m, goleak.IgnoreAnyFunction("github.com/godbus/dbus.(*Conn).inWorker"))
 }
