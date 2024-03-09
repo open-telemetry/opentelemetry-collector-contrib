@@ -4,6 +4,7 @@
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -12,8 +13,10 @@ import (
 	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
 	"github.com/DataDog/datadog-agent/comp/core/log"
 	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter"
 	"github.com/DataDog/datadog-agent/pkg/serializer"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
@@ -116,4 +119,22 @@ func newSerializer(set component.TelemetrySettings, cfg *Config) (*serializer.Se
 	return serializer.NewSerializer(f, &orchestratorinterfaceimpl{
 		f: f,
 	}, c, ""), nil
+}
+
+func newSerializerExporter(ctx context.Context, set exporter.CreateSettings, cfg *Config) (exporter.Metrics, error) {
+	s, err := newSerializer(set.TelemetrySettings, cfg)
+	if err != nil {
+		return nil, err
+	}
+	factory := serializerexporter.NewFactory(s, nil, func(_ context.Context) (string, error) {
+		return "", nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	exp, err := factory.CreateMetricsExporter(ctx, set, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return exp, nil
 }

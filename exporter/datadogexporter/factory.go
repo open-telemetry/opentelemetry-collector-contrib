@@ -326,6 +326,17 @@ func (f *factory) createMetricsExporter(
 		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
 	}
 
+	if isMetricExportSerializerEnabled() {
+		exp, err := newSerializerExporter(ctx, set, cfg)
+		if err != nil {
+			cancel()
+			f.wg.Wait() // then wait for shutdown
+			return nil, err
+		}
+		return exp, nil
+
+	}
+
 	if cfg.OnlyMetadata {
 		pushMetricsFn = func(_ context.Context, md pmetric.Metrics) error {
 			// only sending metadata use only metrics
