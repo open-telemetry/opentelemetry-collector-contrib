@@ -35,9 +35,8 @@ func TestE2E(t *testing.T) {
 	expectedFile := filepath.Join("testdata", "e2e", "expected.yaml")
 	expected, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	kubeConfig, err := clientcmd.BuildConfigFromFlags("", testKubeConfig)
-	require.NoError(t, err)
-	dynamicClient, err := dynamic.NewForConfig(kubeConfig)
+
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
 
 	metricsConsumer := new(consumertest.MetricsSink)
@@ -45,11 +44,11 @@ func TestE2E(t *testing.T) {
 	defer shutdownSink()
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, dynamicClient, testID)
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, "")
 
 	defer func() {
 		for _, obj := range append(collectorObjs) {
-			require.NoErrorf(t, k8stest.DeleteObject(dynamicClient, obj), "failed to delete object %s", obj.GetName())
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
 		}
 	}()
 

@@ -124,10 +124,12 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		// all namespaces including kube-system which contains cluster uid information (kube-system-uid)
 		if c.extractNamespaceLabelsAnnotations() {
 			newNamespaceInformer = newNamespaceSharedInformer
-		} else {
+		} else if rules.ClusterUID {
 			// use kube-system shared informer to only watch kube-system namespace
 			// reducing overhead of watching all the namespaces
 			newNamespaceInformer = newKubeSystemSharedInformer
+		} else {
+			newNamespaceInformer = NewNoOpInformer
 		}
 	}
 
