@@ -41,4 +41,7 @@ type Reporter interface {
 	OnDebugf(
 		template string,
 		args ...any)
+
+	RecordAcceptedMetric()
+	RecordRefusedMetric()
 }

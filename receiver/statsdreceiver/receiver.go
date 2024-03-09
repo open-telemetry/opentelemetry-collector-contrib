@@ -116,8 +116,12 @@ func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 					}
 				}
 			case metric := <-transferChan:
-				if err := r.parser.Aggregate(metric.Raw, metric.Addr); err != nil {
+				err := r.parser.Aggregate(metric.Raw, metric.Addr)
+				if err != nil {
 					r.reporter.OnDebugf("Error aggregating metric", zap.Error(err))
+					r.reporter.RecordRefusedMetric()
+				} else {
+					r.reporter.RecordAcceptedMetric()
 				}
 			case <-ctx.Done():
 				ticker.Stop()
