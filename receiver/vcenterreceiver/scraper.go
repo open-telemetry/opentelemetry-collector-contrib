@@ -25,10 +25,10 @@ const (
 	emitPerfMetricsWithObjectsFeatureGateID = "receiver.vcenter.emitPerfMetricsWithObjects"
 )
 
-var emitPerfMetricsWithObjects = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	emitPerfMetricsWithObjectsFeatureGateID,
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, the receiver emits vCenter performance metrics with object metric label dimension."),
+	featuregate.StageStable,
+	featuregate.WithRegisterToVersion("v0.97.0"),
 )
 
 var _ receiver.Metrics = (*vcenterMetricScraper)(nil)
@@ -38,10 +38,10 @@ type vcenterMetricScraper struct {
 	config *Config
 	mb     *metadata.MetricsBuilder
 	logger *zap.Logger
+
 	// map of vm name => compute name
-	vmToComputeMap     map[string]string
-	vmToResourcePool   map[string]*object.ResourcePool
-	emitPerfWithObject bool
+	vmToComputeMap   map[string]string
+	vmToResourcePool map[string]*object.ResourcePool
 }
 
 func newVmwareVcenterScraper(
@@ -51,13 +51,12 @@ func newVmwareVcenterScraper(
 ) *vcenterMetricScraper {
 	client := newVcenterClient(config)
 	return &vcenterMetricScraper{
-		client:             client,
-		config:             config,
-		logger:             logger,
-		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		vmToComputeMap:     make(map[string]string),
-		vmToResourcePool:   make(map[string]*object.ResourcePool),
-		emitPerfWithObject: emitPerfMetricsWithObjects.IsEnabled(),
+		client:           client,
+		config:           config,
+		logger:           logger,
+		mb:               metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		vmToComputeMap:   make(map[string]string),
+		vmToResourcePool: make(map[string]*object.ResourcePool),
 	}
 }
 
