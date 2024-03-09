@@ -1,7 +1,11 @@
-package ackextension
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package ackextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 
 import (
 	"sync"
+	"sync/atomic"
 )
 
 type InMemoryAckExtension struct {
@@ -13,21 +17,21 @@ func NewInMemoryAckExtension() AckExtension {
 }
 
 type ackStatus struct {
-	id     uint64
+	id     atomic.Uint64
 	ackMap sync.Map
 }
 
 func newAckStatus() *ackStatus {
 	id := uint64(0)
-	ret := ackStatus{id: id}
+	ret := ackStatus{}
+	ret.id.Store(id)
 	ret.ackMap.Store(id, false)
 	return &ret
 }
 
 func (as *ackStatus) nextAck() uint64 {
-	as.id += 1
-	as.ackMap.Store(as.id, false)
-	return as.id
+	as.ackMap.Store(as.id.Add(1), false)
+	return as.id.Load()
 }
 
 func (as *ackStatus) ack(key uint64) {
@@ -36,8 +40,8 @@ func (as *ackStatus) ack(key uint64) {
 	}
 }
 
-func (as *ackStatus) queryAcks(ackIDs []uint64) map[uint64]bool {
-	result := map[uint64]bool{}
+func (as *ackStatus) computeAcks(ackIDs []uint64) map[uint64]bool {
+	result := make(map[uint64]bool, len(ackIDs))
 	for _, val := range ackIDs {
 		if isAcked, ok := as.ackMap.Load(val); ok && isAcked.(bool) {
 			result[val] = true
@@ -52,8 +56,8 @@ func (as *ackStatus) queryAcks(ackIDs []uint64) map[uint64]bool {
 
 func (i *InMemoryAckExtension) ProcessEvent(partitionID string) (ackID uint64) {
 	if actual, loaded := i.partitionMap.LoadOrStore(partitionID, newAckStatus()); loaded {
-		ackStats := actual.(*ackStatus)
-		return ackStats.nextAck()
+		status := actual.(*ackStatus)
+		return status.nextAck()
 	}
 
 	return 0
@@ -61,20 +65,20 @@ func (i *InMemoryAckExtension) ProcessEvent(partitionID string) (ackID uint64) {
 
 func (i *InMemoryAckExtension) Ack(partitionID string, ackID uint64) {
 	if val, ok := i.partitionMap.Load(partitionID); ok {
-		if ackStats, ok := val.(*ackStatus); ok {
-			ackStats.ack(ackID)
+		if status, ok := val.(*ackStatus); ok {
+			status.ack(ackID)
 		}
 	}
 }
 
 func (i *InMemoryAckExtension) QueryAcks(partitionID string, ackIDs []uint64) map[uint64]bool {
 	if val, ok := i.partitionMap.Load(partitionID); ok {
-		if ackStats, ok := val.(*ackStatus); ok {
-			return ackStats.queryAcks(ackIDs)
+		if status, ok := val.(*ackStatus); ok {
+			return status.computeAcks(ackIDs)
 		}
 	}
 
-	result := map[uint64]bool{}
+	result := make(map[uint64]bool, len(ackIDs))
 	for _, ackID := range ackIDs {
 		result[ackID] = false
 	}
