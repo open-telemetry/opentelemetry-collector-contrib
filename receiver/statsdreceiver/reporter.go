@@ -25,6 +25,8 @@ type reporter struct {
 	staticAttrs          []attribute.KeyValue
 	acceptedMetricPoints metric.Int64Counter
 	refusedMetricPoints  metric.Int64Counter
+	flushedMetricPoints  metric.Int64Counter
+	flushCount           metric.Int64Counter
 }
 
 var _ transport.Reporter = (*reporter)(nil)
@@ -69,6 +71,24 @@ func newReporter(set receiver.CreateSettings) (transport.Reporter, error) {
 		return nil, err
 	}
 
+	r.flushedMetricPoints, err = metadata.Meter(set.TelemetrySettings).Int64Counter(
+		"receiver/statsd.flushed_metric_points",
+		metric.WithDescription("Number of metric data points flushed"),
+		metric.WithUnit("1"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	r.flushCount, err = metadata.Meter(set.TelemetrySettings).Int64Counter(
+		"receiver/statsd.flushes",
+		metric.WithDescription("Number of flush operations"),
+		metric.WithUnit("1"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return r, nil
 }
 
@@ -78,10 +98,31 @@ func (r *reporter) OnDebugf(template string, args ...any) {
 	}
 }
 
-func (r *reporter) RecordAcceptedMetric() {
-	r.acceptedMetricPoints.Add(context.Background(), 1, metric.WithAttributes(r.staticAttrs...))
+func (r *reporter) RecordReceivedMetric(err error) {
+	if err == nil {
+		r.acceptedMetricPoints.Add(context.Background(), 1, metric.WithAttributes(r.staticAttrs...))
+	} else {
+		r.refusedMetricPoints.Add(context.Background(), 1, metric.WithAttributes(r.staticAttrs...))
+	}
 }
 
-func (r *reporter) RecordRefusedMetric() {
-	r.refusedMetricPoints.Add(context.Background(), 1, metric.WithAttributes(r.staticAttrs...))
+func (r *reporter) RecordFlushedMetrics(count int64, err error) {
+	var status string
+	if err == nil {
+		status = "success"
+	} else {
+		status = "failure"
+	}
+	r.flushedMetricPoints.Add(
+		context.Background(),
+		count,
+		metric.WithAttributes(r.staticAttrs...),
+		metric.WithAttributes(attribute.String("status", status)),
+	)
+	r.flushCount.Add(
+		context.Background(),
+		1,
+		metric.WithAttributes(r.staticAttrs...),
+		metric.WithAttributes(attribute.String("status", status)),
+	)
 }

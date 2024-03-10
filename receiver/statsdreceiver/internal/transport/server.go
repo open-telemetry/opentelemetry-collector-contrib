@@ -42,6 +42,6 @@ type Reporter interface {
 		template string,
 		args ...any)
 
-	RecordAcceptedMetric()
-	RecordRefusedMetric()
+	RecordReceivedMetric(err error)
+	RecordFlushedMetrics(count int64, err error)
 }
