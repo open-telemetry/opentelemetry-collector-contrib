@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata: 
   name: {{ .Name }}-{{ .DataType }}-deployment
-  namespace: e2ek8sattribute
+  namespace: e2ek8sattribute-namespacedrbac
 spec:
   replicas: 1
   selector:
@@ -14,6 +14,7 @@ spec:
         workload: deployment
       labels:
         app: {{ .Name }}-{{ .DataType }}-deployment
+        component: telemetrygen
     spec:
       containers:
       - command:

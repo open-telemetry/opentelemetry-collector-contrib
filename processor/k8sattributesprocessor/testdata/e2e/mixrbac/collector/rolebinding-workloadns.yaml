@@ -10,4 +10,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: otelcol-{{ .TestID }}
-    namespace: e2ek8sattribute
+    namespace: e2ek8sattribute-mixrbac

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: {{ .Name }}-{{ .DataType }}-daemonset
-  namespace: e2ek8sattribute
+  namespace: e2ek8sattribute-clusterrbac
 spec:
   selector:
     matchLabels:

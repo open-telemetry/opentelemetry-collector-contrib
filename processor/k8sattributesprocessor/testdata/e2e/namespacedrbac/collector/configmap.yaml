@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Name }}-config
-  namespace: e2ek8sattribute
+  namespace: e2ek8sattribute-namespacedrbac
 data:
   relay: |
     exporters:
@@ -15,7 +15,16 @@ data:
     processors:
       k8sattributes:
         filter:
-          namespace: e2ek8sattribute
+          namespace: e2ek8sattribute-namespacedrbac
+          node_from_env_var: MY_NODE_NAME
+          labels:
+          - key: component
+            value: telemetrygen
+            op: equals
+          fields:
+          - key: spec.restartPolicy
+            value: Never
+            op: not-equals
         extract:
           annotations:
           - from: pod

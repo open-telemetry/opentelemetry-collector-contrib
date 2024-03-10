@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata: 
   name: {{ .Name }}-{{ .DataType }}-statefulset
-  namespace: e2ek8sattribute
+  namespace: e2ek8sattribute-clusterrbac
 spec:
   serviceName: {{ .Name }}-{{ .DataType }}-statefulset
   replicas: 1

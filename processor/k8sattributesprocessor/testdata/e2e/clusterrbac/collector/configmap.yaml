@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Name }}-config
-  namespace: e2ek8sattribute
+  namespace: e2ek8sattribute-clusterrbac
 data:
   relay: |
     exporters:

@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ .Name }}-{{ .DataType}}-job
-  namespace: e2ek8sattribute
+  namespace: e2ek8sattribute-clusterrbac
 spec:
   template:
     metadata:
