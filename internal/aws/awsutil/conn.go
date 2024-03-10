@@ -70,7 +70,7 @@ func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify
 	// http2.ConfigureTransport will setup transport layer to use HTTP2
 	h2transport, err := http2.ConfigureTransports(transport)
 	if err != nil {
-		loger.Warn("Failed to configure HTTP2 transport: %v", err)
+		logger.Warn("Failed to configure HTTP2 transport: %v", err)
 	} else {
 		// Adding timeout settings to the http2 transport to prevent bad tcp connection hanging the requests for too long
 		// See: https://t.corp.amazon.com/P104567981
