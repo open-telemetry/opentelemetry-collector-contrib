@@ -62,14 +62,24 @@ func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify
 	transport := &http.Transport{
 		MaxIdleConnsPerHost: maxIdle,
 		TLSClientConfig:     tls,
+		IdleConnTimeout:     90 * time.Second, // Should be longer than PutTelemetryRecords call frequency: 60 seconds
 		Proxy:               http.ProxyURL(proxyURL),
 	}
 
 	// is not enabled by default as we configure TLSClientConfig for supporting SSL to data plane.
 	// http2.ConfigureTransport will setup transport layer to use HTTP2
-	if err = http2.ConfigureTransport(transport); err != nil {
-		logger.Error("unable to configure http2 transport", zap.Error(err))
-		return nil, err
+	h2transport, err := http2.ConfigureTransports(transport)
+	if err != nil {
+		log.Warnf("Failed to configure HTTP2 transport: %v", err)
+	} else {
+		// Adding timeout settings to the http2 transport to prevent bad tcp connection hanging the requests for too long
+		// See: https://t.corp.amazon.com/P104567981
+		// Doc: https://pkg.go.dev/golang.org/x/net/http2#Transport
+		//  - ReadIdleTimeout is the time before a ping is sent when no frame has been received from a connection
+		//  - PingTimeout is the time before the TCP connection being closed if a Ping response is not received
+		// So in total, if a TCP connection goes bad, it would take the combined time before the TCP connection is closed
+		h2transport.ReadIdleTimeout = 1 * time.Second
+		h2transport.PingTimeout = 2 * time.Second
 	}
 
 	http := &http.Client{
