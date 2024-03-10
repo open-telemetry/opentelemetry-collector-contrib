@@ -6,6 +6,7 @@ package k8stest // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"errors"
 	"fmt"
+
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
@@ -26,17 +27,17 @@ func NewK8sClient(kubeconfigPath string) (*K8sClient, error) {
 	}
 	restConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
-		return nil, fmt.Errorf("unable to load kubeconfig from %s: %v", kubeconfigPath, err)
+		return nil, fmt.Errorf("unable to load kubeconfig from %s: %w", kubeconfigPath, err)
 	}
 
 	dynamicClient, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
-		return nil, fmt.Errorf("error creating dynamic client: %v", err)
+		return nil, fmt.Errorf("error creating dynamic client: %w", err)
 	}
 
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(restConfig)
 	if err != nil {
-		return nil, fmt.Errorf("error creating discovery client: %v", err)
+		return nil, fmt.Errorf("error creating discovery client: %w", err)
 	}
 
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient))
