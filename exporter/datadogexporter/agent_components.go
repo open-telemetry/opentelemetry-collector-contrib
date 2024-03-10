@@ -15,6 +15,7 @@ import (
 	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter"
 	"github.com/DataDog/datadog-agent/pkg/serializer"
+	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.uber.org/fx"
@@ -70,29 +71,31 @@ func newLogComponent(set component.TelemetrySettings) (log.Component, error) {
 	}, nil
 }
 
-func newAgentForwarder(set component.TelemetrySettings, cfg *Config, config coreconfig.Component) (defaultforwarder.Forwarder, error) {
+func newAgentForwarder(set component.TelemetrySettings, cfg *Config) (defaultforwarder.Forwarder, coreconfig.Component, error) {
 	var f defaultforwarder.Component
+	var c coreconfig.Component
 	app := fx.New(
 		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
 			return &fxevent.ZapLogger{Logger: log}
 		}),
 		defaultforwarder.Module(),
 		fx.Supply(set.Logger),
+		fx.Provide(newConfigComponent),
 		fx.Supply(cfg),
 		fx.Supply(set),
-		fx.Supply(config),
 		fx.Provide(newLogComponent),
 
 		fx.Provide(func(c coreconfig.Component, l log.Component) (defaultforwarder.Params, error) {
 			return defaultforwarder.NewParams(c, l), nil
 		}),
 		fx.Populate(&f),
+		fx.Populate(&c),
 	)
 	if err := app.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return f, nil
+	return f, c, nil
 }
 
 type orchestratorinterfaceimpl struct {
@@ -107,34 +110,59 @@ func (o *orchestratorinterfaceimpl) Reset() {
 	o.f = nil
 }
 
-func newSerializer(set component.TelemetrySettings, cfg *Config) (*serializer.Serializer, error) {
-	c, err := newConfigComponent(set, cfg)
+func newSerializer(ctx context.Context, set component.TelemetrySettings, cfg *Config) (*serializer.Serializer, error) {
+	f, c, err := newAgentForwarder(set, cfg)
 	if err != nil {
 		return nil, err
 	}
-	f, err := newAgentForwarder(set, cfg, c)
-	if err != nil {
-		return nil, err
-	}
+
+	go f.Start()
 	return serializer.NewSerializer(f, &orchestratorinterfaceimpl{
 		f: f,
 	}, c, ""), nil
 }
 
+type tagEnricher struct{}
+
+func (t *tagEnricher) SetCardinality(cardinality string) error {
+	return nil
+}
+
+func (t *tagEnricher) Enrich(ctx context.Context, extraTags []string, dimensions *otlpmetrics.Dimensions) []string {
+	return nil
+}
+
 func newSerializerExporter(ctx context.Context, set exporter.CreateSettings, cfg *Config) (exporter.Metrics, error) {
-	s, err := newSerializer(set.TelemetrySettings, cfg)
+	s, err := newSerializer(ctx, set.TelemetrySettings, cfg)
 	if err != nil {
 		return nil, err
 	}
-	factory := serializerexporter.NewFactory(s, nil, func(_ context.Context) (string, error) {
+	factory := serializerexporter.NewFactory(s, &tagEnricher{}, func(_ context.Context) (string, error) {
 		return "", nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	exp, err := factory.CreateMetricsExporter(ctx, set, cfg)
-	if err != nil {
-		return nil, err
+	exporterConfig := &serializerexporter.ExporterConfig{
+		Metrics: serializerexporter.MetricsConfig{
+			Enabled:  true,
+			DeltaTTL: cfg.Metrics.DeltaTTL,
+			ExporterConfig: serializerexporter.MetricsExporterConfig{
+				ResourceAttributesAsTags:           cfg.Metrics.ExporterConfig.ResourceAttributesAsTags,
+				InstrumentationScopeMetadataAsTags: cfg.Metrics.ExporterConfig.InstrumentationScopeMetadataAsTags,
+			},
+			HistConfig: serializerexporter.HistogramConfig{
+				Mode: string(cfg.Metrics.HistConfig.Mode),
+			},
+		},
 	}
+	exporterConfig.TimeoutSettings = cfg.TimeoutSettings
+	exporterConfig.QueueSettings = cfg.QueueSettings
+	fmt.Printf("### createMetricsExporter: %#v\n", exporterConfig)
+	exp, err := factory.CreateMetricsExporter(ctx, set, exporterConfig)
+	if err != nil {
+		return nil, fmt.Errorf("creating exporter %v", err)
+	}
+	fmt.Printf("### createMetricsExporter: %v\n", exp)
 	return exp, nil
 }
