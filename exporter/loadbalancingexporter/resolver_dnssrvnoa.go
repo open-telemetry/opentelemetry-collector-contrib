@@ -133,6 +133,7 @@ func (r *dnssrvnoaResolver) periodicallyResolve() {
 			}
 			cancel()
 		case <-r.stopCh:
+			ticker.Stop()
 			return
 		}
 	}

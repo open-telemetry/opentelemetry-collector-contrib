@@ -177,7 +177,7 @@ The format for the name of an SRV record is `_service._proto.name` such as `_lda
 Note that we do not define a port in the config since the port is provided by the record. The target must be either an A or AAAA record. For more information see https://www.ietf.org/rfc/rfc2782.txt
 
 > [!IMPORTANT]
-> Currently priority and weight are not supported features. Additionally, all targets should map to a single IP address.
+> Currently priority and weight are not supported features. Additionally, all targets must map to a single IP address.
 
 
 Example Config:
