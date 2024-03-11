@@ -148,7 +148,11 @@ func (lb *loadBalancer) removeExtraExporters(ctx context.Context, endpoints []st
 	}
 	for existing := range lb.exporters {
 		if !endpointFound(existing, endpointsWithPort) {
-			_ = lb.exporters[existing].Shutdown(ctx)
+			exp := lb.exporters[existing]
+			// Shutdown the exporter asynchronously to avoid blocking the resolver
+			go func() {
+				_ = exp.Shutdown(ctx)
+			}()
 			delete(lb.exporters, existing)
 		}
 	}
@@ -164,9 +168,10 @@ func endpointFound(endpoint string, endpoints []string) bool {
 	return false
 }
 
-func (lb *loadBalancer) Shutdown(context.Context) error {
+func (lb *loadBalancer) Shutdown(ctx context.Context) error {
+	err := lb.res.shutdown(ctx)
 	lb.stopped = true
-	return nil
+	return err
 }
 
 // exporterAndEndpoint returns the exporter and the endpoint for the given identifier.

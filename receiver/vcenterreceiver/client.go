@@ -89,14 +89,13 @@ func (vc *vcenterClient) Datacenters(ctx context.Context) ([]*object.Datacenter,
 	return datacenters, nil
 }
 
-// Clusters returns the clusterComputeResources of the vSphere SDK
-func (vc *vcenterClient) Clusters(ctx context.Context, datacenter *object.Datacenter) ([]*object.ClusterComputeResource, error) {
+func (vc *vcenterClient) Computes(ctx context.Context, datacenter *object.Datacenter) ([]*object.ComputeResource, error) {
 	vc.finder = vc.finder.SetDatacenter(datacenter)
-	clusters, err := vc.finder.ClusterComputeResourceList(ctx, "*")
+	computes, err := vc.finder.ComputeResourceList(ctx, "*")
 	if err != nil {
-		return []*object.ClusterComputeResource{}, fmt.Errorf("unable to get cluster lists: %w", err)
+		return []*object.ComputeResource{}, fmt.Errorf("unable to get compute lists: %w", err)
 	}
-	return clusters, nil
+	return computes, nil
 }
 
 // ResourcePools returns the resourcePools in the vSphere SDK
