@@ -152,6 +152,25 @@ and its contributors.
   and in the respective testing harnesses. To align with the test goal of the project, components must be testable within the framework defined within
   the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
   components number with a comment within the PR explaining as to why it can not be tested.
+- Enable [goleak checks](https://github.com/uber-go/goleak) to help ensure your component does not leak goroutines. This
+  requires adding a file named `package_test.go` to every sub-directory containing tests. This file should have the following contents by default:
+```
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package fooreceiver
+
+import (
+	"testing"
+
+	"go.uber.org/goleak"
+)
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
+```
+
 - Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/metadata-schema.yaml).
 Here is a minimal representation:
 ```
