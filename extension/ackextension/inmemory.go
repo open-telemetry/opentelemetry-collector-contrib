@@ -4,15 +4,18 @@
 package ackextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 
 import (
+	"context"
 	"sync"
 	"sync/atomic"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 type InMemoryAckExtension struct {
 	partitionMap sync.Map
 }
 
-func NewInMemoryAckExtension() AckExtension {
+func newInMemoryAckExtension() *InMemoryAckExtension {
 	return &InMemoryAckExtension{}
 }
 
@@ -54,6 +57,17 @@ func (as *ackStatus) computeAcks(ackIDs []uint64) map[uint64]bool {
 	return result
 }
 
+// Start of InMemoryAckExtension does nothing and returns nil
+func (i *InMemoryAckExtension) Start(_ context.Context, _ component.Host) error {
+	return nil
+}
+
+// Shutdown of InMemoryAckExtension does nothing and returns nil
+func (i *InMemoryAckExtension) Shutdown(_ context.Context) error {
+	return nil
+}
+
+// ProcessEvent marks the beginning of processing an event. It generates an ack ID for the associated partition ID.
 func (i *InMemoryAckExtension) ProcessEvent(partitionID string) (ackID uint64) {
 	if actual, loaded := i.partitionMap.LoadOrStore(partitionID, newAckStatus()); loaded {
 		status := actual.(*ackStatus)
@@ -63,6 +77,7 @@ func (i *InMemoryAckExtension) ProcessEvent(partitionID string) (ackID uint64) {
 	return 0
 }
 
+// Ack acknowledges an event has been processed.
 func (i *InMemoryAckExtension) Ack(partitionID string, ackID uint64) {
 	if val, ok := i.partitionMap.Load(partitionID); ok {
 		if status, ok := val.(*ackStatus); ok {
@@ -71,6 +86,7 @@ func (i *InMemoryAckExtension) Ack(partitionID string, ackID uint64) {
 	}
 }
 
+// QueryAcks checks the statuses of given ackIDs for a partition.
 func (i *InMemoryAckExtension) QueryAcks(partitionID string, ackIDs []uint64) map[uint64]bool {
 	if val, ok := i.partitionMap.Load(partitionID); ok {
 		if status, ok := val.(*ackStatus); ok {

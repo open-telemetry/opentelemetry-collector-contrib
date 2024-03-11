@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ackextension_test
+package ackextension
 
 import (
 	"fmt"
@@ -9,12 +9,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 )
 
 func TestExtensionAck(t *testing.T) {
-	ext := ackextension.NewInMemoryAckExtension()
+	ext := newInMemoryAckExtension()
 
 	// send events through different partitions
 	for i := 0; i < 100; i++ {
@@ -71,7 +69,7 @@ func TestExtensionAck(t *testing.T) {
 }
 
 func TestExtensionAckAsync(t *testing.T) {
-	ext := ackextension.NewInMemoryAckExtension()
+	ext := newInMemoryAckExtension()
 	partitionCount := 100
 	var wg sync.WaitGroup
 	wg.Add(partitionCount)

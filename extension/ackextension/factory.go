@@ -31,5 +31,5 @@ func createDefaultConfig() component.Config {
 }
 
 func createExtension(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
-	return nil, nil
+	return newInMemoryAckExtension(), nil
 }
