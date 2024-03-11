@@ -19,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/staleness"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/maybe"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/telemetry"
@@ -34,7 +35,7 @@ type Processor struct {
 	cancel context.CancelFunc
 
 	aggr  streams.Aggregator[data.Number]
-	stale *staleness.Staleness[data.Number]
+	stale maybe.Ptr[staleness.Staleness[data.Number]]
 
 	mtx sync.Mutex
 }
@@ -54,14 +55,14 @@ func newProcessor(cfg *Config, log *zap.Logger, meter metric.Meter, next consume
 	dps = telemetry.Observe(dps, meter)
 
 	if cfg.MaxStale > 0 {
-		stale := staleness.NewStaleness(cfg.MaxStale, dps)
+		stale := maybe.Some(staleness.NewStaleness(cfg.MaxStale, dps))
 		proc.stale = stale
-		dps = stale
+		dps, _ = stale.Try()
 	}
 	if cfg.MaxStreams > 0 {
 		lim := streams.Limit(dps, cfg.MaxStreams)
-		if proc.stale != nil {
-			lim.Evictor = proc.stale
+		if stale, ok := proc.stale.Try(); ok {
+			lim.Evictor = stale
 		}
 		dps = lim
 	}
@@ -71,7 +72,8 @@ func newProcessor(cfg *Config, log *zap.Logger, meter metric.Meter, next consume
 }
 
 func (p *Processor) Start(_ context.Context, _ component.Host) error {
-	if p.stale == nil {
+	stale, ok := p.stale.Try()
+	if !ok {
 		return nil
 	}
 
@@ -83,7 +85,7 @@ func (p *Processor) Start(_ context.Context, _ component.Host) error {
 				return
 			case <-tick.C:
 				p.mtx.Lock()
-				p.stale.ExpireOldEntries()
+				stale.ExpireOldEntries()
 				p.mtx.Unlock()
 			}
 		}
