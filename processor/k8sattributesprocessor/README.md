@@ -206,7 +206,7 @@ When running the k8sattributesprocessor to receive telemetry traffic from pods i
 ```yaml
 k8sattributes:
   filter:
-    namespace: <WORKLOAD_NS>
+    namespace: <WORKLOAD_NAMESPACE>
 ```
 With the namespace filter set, the processor will only look up pods and replicasets in the selected namespace. Note that with just a role binding, the processor can not query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects.
 
@@ -222,7 +222,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: otel-collector
-  namespace: <WORKLOAD_NS>
+  namespace: <WORKLOAD_NAMESPACE>
 rules:
 - apiGroups: [""]
   resources: ["pods"]
@@ -235,7 +235,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: otel-collector
-  namespace: <WORKLOAD_NS>
+  namespace: <WORKLOAD_NAMESPACE>
 subjects:
 - kind: ServiceAccount
   name: otel-collector

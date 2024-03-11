@@ -49,7 +49,9 @@ func newExpectedValue(mode int, value string) *expectedValue {
 	}
 }
 
-// TestE2E tests the k8s attributes processor with a real k8s cluster.
+// TestE2E_ClusterRBAC tests the k8s attributes processor in a k8s cluster with the collector's service account having
+// cluster-wide permissions to list/watch namespaces, nodes, pods and replicasets. The config in the test does not
+// set filter::namespace.
 // The test requires a prebuilt otelcontribcol image uploaded to a kind k8s cluster defined in
 // `/tmp/kube-config-otelcol-e2e-testing`. Run the following command prior to running the test locally:
 //
@@ -114,7 +116,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":               newExpectedValue(regex, "telemetrygen-"+testID+"-traces-job-[a-z0-9]*"),
 				"k8s.pod.ip":                 newExpectedValue(exist, ""),
-				"k8s.pod.uid":                newExpectedValue(exist, ""),
+				"k8s.pod.uid":                newExpectedValue(regex, uidRe),
 				"k8s.pod.start_time":         newExpectedValue(exist, ""),
 				"k8s.node.name":              newExpectedValue(exist, ""),
 				"k8s.namespace.name":         newExpectedValue(equal, testNs),
@@ -123,7 +125,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.annotations.workload":   newExpectedValue(equal, "job"),
 				"k8s.labels.app":             newExpectedValue(equal, "telemetrygen-"+testID+"-traces-job"),
 				"k8s.container.name":         newExpectedValue(equal, "telemetrygen"),
-				"k8s.cluster.uid":            newExpectedValue(exist, ""),
+				"k8s.cluster.uid":            newExpectedValue(regex, uidRe),
 				"container.image.name":       newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":        newExpectedValue(equal, "latest"),
 				"container.id":               newExpectedValue(exist, ""),
@@ -138,7 +140,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":               newExpectedValue(equal, "telemetrygen-"+testID+"-traces-statefulset-0"),
 				"k8s.pod.ip":                 newExpectedValue(exist, ""),
-				"k8s.pod.uid":                newExpectedValue(exist, ""),
+				"k8s.pod.uid":                newExpectedValue(regex, uidRe),
 				"k8s.pod.start_time":         newExpectedValue(exist, ""),
 				"k8s.node.name":              newExpectedValue(exist, ""),
 				"k8s.namespace.name":         newExpectedValue(equal, testNs),
@@ -147,7 +149,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.annotations.workload":   newExpectedValue(equal, "statefulset"),
 				"k8s.labels.app":             newExpectedValue(equal, "telemetrygen-"+testID+"-traces-statefulset"),
 				"k8s.container.name":         newExpectedValue(equal, "telemetrygen"),
-				"k8s.cluster.uid":            newExpectedValue(exist, ""),
+				"k8s.cluster.uid":            newExpectedValue(regex, uidRe),
 				"container.image.name":       newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":        newExpectedValue(equal, "latest"),
 				"container.id":               newExpectedValue(exist, ""),
@@ -162,7 +164,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":               newExpectedValue(regex, "telemetrygen-"+testID+"-traces-deployment-[a-z0-9]*-[a-z0-9]*"),
 				"k8s.pod.ip":                 newExpectedValue(exist, ""),
-				"k8s.pod.uid":                newExpectedValue(exist, ""),
+				"k8s.pod.uid":                newExpectedValue(regex, uidRe),
 				"k8s.pod.start_time":         newExpectedValue(exist, ""),
 				"k8s.node.name":              newExpectedValue(exist, ""),
 				"k8s.namespace.name":         newExpectedValue(equal, testNs),
@@ -173,7 +175,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.annotations.workload":   newExpectedValue(equal, "deployment"),
 				"k8s.labels.app":             newExpectedValue(equal, "telemetrygen-"+testID+"-traces-deployment"),
 				"k8s.container.name":         newExpectedValue(equal, "telemetrygen"),
-				"k8s.cluster.uid":            newExpectedValue(exist, ""),
+				"k8s.cluster.uid":            newExpectedValue(regex, uidRe),
 				"container.image.name":       newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":        newExpectedValue(equal, "latest"),
 				"container.id":               newExpectedValue(exist, ""),
@@ -187,7 +189,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":               newExpectedValue(regex, "telemetrygen-"+testID+"-traces-daemonset-[a-z0-9]*"),
 				"k8s.pod.ip":                 newExpectedValue(exist, ""),
-				"k8s.pod.uid":                newExpectedValue(exist, ""),
+				"k8s.pod.uid":                newExpectedValue(regex, uidRe),
 				"k8s.pod.start_time":         newExpectedValue(exist, ""),
 				"k8s.node.name":              newExpectedValue(exist, ""),
 				"k8s.namespace.name":         newExpectedValue(equal, testNs),
@@ -196,7 +198,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.annotations.workload":   newExpectedValue(equal, "daemonset"),
 				"k8s.labels.app":             newExpectedValue(equal, "telemetrygen-"+testID+"-traces-daemonset"),
 				"k8s.container.name":         newExpectedValue(equal, "telemetrygen"),
-				"k8s.cluster.uid":            newExpectedValue(exist, ""),
+				"k8s.cluster.uid":            newExpectedValue(regex, uidRe),
 				"container.image.name":       newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":        newExpectedValue(equal, "latest"),
 				"container.id":               newExpectedValue(exist, ""),
@@ -211,7 +213,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":               newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-job-[a-z0-9]*"),
 				"k8s.pod.ip":                 newExpectedValue(exist, ""),
-				"k8s.pod.uid":                newExpectedValue(exist, ""),
+				"k8s.pod.uid":                newExpectedValue(regex, uidRe),
 				"k8s.pod.start_time":         newExpectedValue(exist, ""),
 				"k8s.node.name":              newExpectedValue(exist, ""),
 				"k8s.namespace.name":         newExpectedValue(equal, testNs),
@@ -220,7 +222,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.annotations.workload":   newExpectedValue(equal, "job"),
 				"k8s.labels.app":             newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-job"),
 				"k8s.container.name":         newExpectedValue(equal, "telemetrygen"),
-				"k8s.cluster.uid":            newExpectedValue(exist, ""),
+				"k8s.cluster.uid":            newExpectedValue(regex, uidRe),
 				"container.image.name":       newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":        newExpectedValue(equal, "latest"),
 				"container.id":               newExpectedValue(exist, ""),
@@ -235,7 +237,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":               newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-statefulset-0"),
 				"k8s.pod.ip":                 newExpectedValue(exist, ""),
-				"k8s.pod.uid":                newExpectedValue(exist, ""),
+				"k8s.pod.uid":                newExpectedValue(regex, uidRe),
 				"k8s.pod.start_time":         newExpectedValue(exist, ""),
 				"k8s.node.name":              newExpectedValue(exist, ""),
 				"k8s.namespace.name":         newExpectedValue(equal, testNs),
@@ -244,7 +246,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.annotations.workload":   newExpectedValue(equal, "statefulset"),
 				"k8s.labels.app":             newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-statefulset"),
 				"k8s.container.name":         newExpectedValue(equal, "telemetrygen"),
-				"k8s.cluster.uid":            newExpectedValue(exist, ""),
+				"k8s.cluster.uid":            newExpectedValue(regex, uidRe),
 				"container.image.name":       newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":        newExpectedValue(equal, "latest"),
 				"container.id":               newExpectedValue(exist, ""),
@@ -259,7 +261,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":               newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-deployment-[a-z0-9]*-[a-z0-9]*"),
 				"k8s.pod.ip":                 newExpectedValue(exist, ""),
-				"k8s.pod.uid":                newExpectedValue(exist, ""),
+				"k8s.pod.uid":                newExpectedValue(regex, uidRe),
 				"k8s.pod.start_time":         newExpectedValue(exist, ""),
 				"k8s.node.name":              newExpectedValue(exist, ""),
 				"k8s.namespace.name":         newExpectedValue(equal, testNs),
@@ -270,7 +272,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.annotations.workload":   newExpectedValue(equal, "deployment"),
 				"k8s.labels.app":             newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-deployment"),
 				"k8s.container.name":         newExpectedValue(equal, "telemetrygen"),
-				"k8s.cluster.uid":            newExpectedValue(exist, ""),
+				"k8s.cluster.uid":            newExpectedValue(regex, uidRe),
 				"container.image.name":       newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":        newExpectedValue(equal, "latest"),
 				"container.id":               newExpectedValue(exist, ""),
@@ -284,7 +286,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":               newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-daemonset-[a-z0-9]*"),
 				"k8s.pod.ip":                 newExpectedValue(exist, ""),
-				"k8s.pod.uid":                newExpectedValue(exist, ""),
+				"k8s.pod.uid":                newExpectedValue(regex, uidRe),
 				"k8s.pod.start_time":         newExpectedValue(exist, ""),
 				"k8s.node.name":              newExpectedValue(exist, ""),
 				"k8s.namespace.name":         newExpectedValue(equal, testNs),
@@ -293,7 +295,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.annotations.workload":   newExpectedValue(equal, "daemonset"),
 				"k8s.labels.app":             newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-daemonset"),
 				"k8s.container.name":         newExpectedValue(equal, "telemetrygen"),
-				"k8s.cluster.uid":            newExpectedValue(exist, ""),
+				"k8s.cluster.uid":            newExpectedValue(regex, uidRe),
 				"container.image.name":       newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":        newExpectedValue(equal, "latest"),
 				"container.id":               newExpectedValue(exist, ""),
@@ -308,7 +310,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":               newExpectedValue(regex, "telemetrygen-"+testID+"-logs-job-[a-z0-9]*"),
 				"k8s.pod.ip":                 newExpectedValue(exist, ""),
-				"k8s.pod.uid":                newExpectedValue(exist, ""),
+				"k8s.pod.uid":                newExpectedValue(regex, uidRe),
 				"k8s.pod.start_time":         newExpectedValue(exist, ""),
 				"k8s.node.name":              newExpectedValue(exist, ""),
 				"k8s.namespace.name":         newExpectedValue(equal, testNs),
@@ -317,7 +319,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.annotations.workload":   newExpectedValue(equal, "job"),
 				"k8s.labels.app":             newExpectedValue(equal, "telemetrygen-"+testID+"-logs-job"),
 				"k8s.container.name":         newExpectedValue(equal, "telemetrygen"),
-				"k8s.cluster.uid":            newExpectedValue(exist, ""),
+				"k8s.cluster.uid":            newExpectedValue(regex, uidRe),
 				"container.image.name":       newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":        newExpectedValue(equal, "latest"),
 				"container.id":               newExpectedValue(exist, ""),
@@ -332,7 +334,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":               newExpectedValue(equal, "telemetrygen-"+testID+"-logs-statefulset-0"),
 				"k8s.pod.ip":                 newExpectedValue(exist, ""),
-				"k8s.pod.uid":                newExpectedValue(exist, ""),
+				"k8s.pod.uid":                newExpectedValue(regex, uidRe),
 				"k8s.pod.start_time":         newExpectedValue(exist, ""),
 				"k8s.node.name":              newExpectedValue(exist, ""),
 				"k8s.namespace.name":         newExpectedValue(equal, testNs),
@@ -341,7 +343,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.annotations.workload":   newExpectedValue(equal, "statefulset"),
 				"k8s.labels.app":             newExpectedValue(equal, "telemetrygen-"+testID+"-logs-statefulset"),
 				"k8s.container.name":         newExpectedValue(equal, "telemetrygen"),
-				"k8s.cluster.uid":            newExpectedValue(exist, ""),
+				"k8s.cluster.uid":            newExpectedValue(regex, uidRe),
 				"container.image.name":       newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":        newExpectedValue(equal, "latest"),
 				"container.id":               newExpectedValue(exist, ""),
@@ -355,7 +357,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":               newExpectedValue(regex, "telemetrygen-"+testID+"-logs-deployment-[a-z0-9]*-[a-z0-9]*"),
 				"k8s.pod.ip":                 newExpectedValue(exist, ""),
-				"k8s.pod.uid":                newExpectedValue(exist, ""),
+				"k8s.pod.uid":                newExpectedValue(regex, uidRe),
 				"k8s.pod.start_time":         newExpectedValue(exist, ""),
 				"k8s.node.name":              newExpectedValue(exist, ""),
 				"k8s.namespace.name":         newExpectedValue(equal, testNs),
@@ -366,7 +368,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.annotations.workload":   newExpectedValue(equal, "deployment"),
 				"k8s.labels.app":             newExpectedValue(equal, "telemetrygen-"+testID+"-logs-deployment"),
 				"k8s.container.name":         newExpectedValue(equal, "telemetrygen"),
-				"k8s.cluster.uid":            newExpectedValue(exist, ""),
+				"k8s.cluster.uid":            newExpectedValue(regex, uidRe),
 				"container.image.name":       newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":        newExpectedValue(equal, "latest"),
 				"container.id":               newExpectedValue(exist, ""),
@@ -381,7 +383,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":               newExpectedValue(regex, "telemetrygen-"+testID+"-logs-daemonset-[a-z0-9]*"),
 				"k8s.pod.ip":                 newExpectedValue(exist, ""),
-				"k8s.pod.uid":                newExpectedValue(exist, ""),
+				"k8s.pod.uid":                newExpectedValue(regex, uidRe),
 				"k8s.pod.start_time":         newExpectedValue(exist, ""),
 				"k8s.node.name":              newExpectedValue(exist, ""),
 				"k8s.namespace.name":         newExpectedValue(equal, testNs),
@@ -390,7 +392,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.annotations.workload":   newExpectedValue(equal, "daemonset"),
 				"k8s.labels.app":             newExpectedValue(equal, "telemetrygen-"+testID+"-logs-daemonset"),
 				"k8s.container.name":         newExpectedValue(equal, "telemetrygen"),
-				"k8s.cluster.uid":            newExpectedValue(exist, ""),
+				"k8s.cluster.uid":            newExpectedValue(regex, uidRe),
 				"container.image.name":       newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":        newExpectedValue(equal, "latest"),
 				"container.id":               newExpectedValue(exist, ""),
