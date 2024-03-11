@@ -1,4 +1,5 @@
 type: opamp
+scope_name: otelcol/opamp
 
 status:
   class: extension

@@ -202,7 +202,9 @@ func (c *capturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	go func() {
-		c.receivedRequest <- receivedRequest{body, r.Header}
+		if c.receivedRequest != nil {
+			c.receivedRequest <- receivedRequest{body, r.Header}
+		}
 	}()
 	w.WriteHeader(c.statusCode)
 }
@@ -1266,7 +1268,7 @@ func Test_PushMetricsData_Summary_NaN_Sum(t *testing.T) {
 func TestReceiveMetricsWithCompression(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.MaxContentLengthMetrics = 1800
-	request, err := runMetricsExport(cfg, createMetricsData(1, 100), 1, false, t)
+	request, err := runMetricsExport(cfg, createMetricsData(1, 100), 2, false, t)
 	assert.NoError(t, err)
 	assert.Equal(t, "gzip", request[0].headers.Get("Content-Encoding"))
 	assert.NotEqual(t, "", request)
@@ -1363,8 +1365,7 @@ func TestInvalidURL(t *testing.T) {
 }
 
 func TestHeartbeatStartupFailed(t *testing.T) {
-	rr := make(chan receivedRequest)
-	capture := capturingData{receivedRequest: rr, statusCode: 403}
+	capture := capturingData{statusCode: 403}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -1398,6 +1399,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 		exporter.Start(context.Background(), componenttest.NewNopHost()),
 		fmt.Sprintf("%s: heartbeat on startup failed: HTTP 403 \"Forbidden\"", params.ID.Type()),
 	)
+	assert.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 func TestHeartbeatStartupPass_Disabled(t *testing.T) {
@@ -1433,11 +1435,11 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 func TestHeartbeatStartupPass(t *testing.T) {
-	rr := make(chan receivedRequest)
-	capture := capturingData{receivedRequest: rr, statusCode: 200}
+	capture := capturingData{statusCode: 200}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -1468,6 +1470,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 type badJSON struct {

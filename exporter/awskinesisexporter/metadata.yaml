@@ -1,4 +1,5 @@
 type: awskinesis
+scope_name: otelcol/awskinesis
 
 status:
   class: exporter

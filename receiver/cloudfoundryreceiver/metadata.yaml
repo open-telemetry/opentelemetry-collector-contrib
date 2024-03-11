@@ -1,4 +1,5 @@
 type: cloudfoundry
+scope_name: otelcol/cloudfoundryreceiver
 
 status:
   class: receiver

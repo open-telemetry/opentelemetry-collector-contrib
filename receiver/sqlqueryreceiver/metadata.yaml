@@ -1,4 +1,5 @@
 type: sqlquery
+scope_name: otelcol/sqlqueryreceiver
 
 status:
   class: receiver

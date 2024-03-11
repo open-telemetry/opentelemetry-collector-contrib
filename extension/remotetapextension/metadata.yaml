@@ -1,4 +1,5 @@
 type: remotetap
+scope_name: otelcol/remotetap
 
 status:
   class: extension

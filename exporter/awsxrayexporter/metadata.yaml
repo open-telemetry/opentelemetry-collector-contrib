@@ -1,4 +1,5 @@
 type: awsxray
+scope_name: otelcol/awsxray
 
 status:
   class: exporter
