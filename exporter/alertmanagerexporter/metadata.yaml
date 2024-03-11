@@ -1,4 +1,5 @@
 type: alertmanager
+scope_name: otelcol/alertmanager
 
 status:
   class: exporter

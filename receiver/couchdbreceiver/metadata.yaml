@@ -1,4 +1,5 @@
 type: couchdb
+scope_name: otelcol/couchdbreceiver
 
 status:
   class: receiver
@@ -99,5 +100,3 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [ operation ]
-tests:
-  config:

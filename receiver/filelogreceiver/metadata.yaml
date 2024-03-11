@@ -1,4 +1,5 @@
 type: filelog
+scope_name: otelcol/filelogreceiver
 
 status:
   class: receiver
