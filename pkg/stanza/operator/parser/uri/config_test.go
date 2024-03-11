@@ -11,10 +11,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
-func TestParserGoldenConfig(t *testing.T) {
+func TestUnmarshal(t *testing.T) {
 	operatortest.ConfigUnmarshalTests{
-		DefaultConfig: NewConfig(),
-		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
+		Factory:   NewFactory(),
+		TestsFile: filepath.Join(".", "testdata", "config.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
 				Name:   "default",

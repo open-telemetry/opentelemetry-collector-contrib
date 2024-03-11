@@ -16,8 +16,8 @@ import (
 
 func TestUnmarshal(t *testing.T) {
 	operatortest.ConfigUnmarshalTests{
-		DefaultConfig: NewConfig(),
-		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
+		Factory:   NewFactory(),
+		TestsFile: filepath.Join(".", "testdata", "config.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
 				Name:      "default",
@@ -142,7 +142,7 @@ func TestRFC6587ConfigOptions(t *testing.T) {
 		{
 			desc: "Octet Counting with RFC3164",
 			cfg: &Config{
-				ParserConfig: helper.NewParserConfig(operatorType, operatorType),
+				ParserConfig: helper.NewParserConfig(operatorType.String(), operatorType.String()),
 				BaseConfig: BaseConfig{
 					Protocol:            RFC3164,
 					EnableOctetCounting: true,
@@ -153,7 +153,7 @@ func TestRFC6587ConfigOptions(t *testing.T) {
 		{
 			desc: "Non-Transparent-Framing with RFC3164",
 			cfg: &Config{
-				ParserConfig: helper.NewParserConfig(operatorType, operatorType),
+				ParserConfig: helper.NewParserConfig(operatorType.String(), operatorType.String()),
 				BaseConfig: BaseConfig{
 					Protocol:                     RFC3164,
 					NonTransparentFramingTrailer: &validFramingTrailer,
@@ -164,7 +164,7 @@ func TestRFC6587ConfigOptions(t *testing.T) {
 		{
 			desc: "Non-Transparent-Framing and Octet counting both enabled with RFC5424",
 			cfg: &Config{
-				ParserConfig: helper.NewParserConfig(operatorType, operatorType),
+				ParserConfig: helper.NewParserConfig(operatorType.String(), operatorType.String()),
 				BaseConfig: BaseConfig{
 					Protocol:                     RFC5424,
 					NonTransparentFramingTrailer: &validFramingTrailer,
@@ -176,7 +176,7 @@ func TestRFC6587ConfigOptions(t *testing.T) {
 		{
 			desc: "Valid Octet Counting",
 			cfg: &Config{
-				ParserConfig: helper.NewParserConfig(operatorType, operatorType),
+				ParserConfig: helper.NewParserConfig(operatorType.String(), operatorType.String()),
 				BaseConfig: BaseConfig{
 					Protocol:                     RFC5424,
 					NonTransparentFramingTrailer: nil,
@@ -188,7 +188,7 @@ func TestRFC6587ConfigOptions(t *testing.T) {
 		{
 			desc: "Valid Non-Transparent-Framing Trailer",
 			cfg: &Config{
-				ParserConfig: helper.NewParserConfig(operatorType, operatorType),
+				ParserConfig: helper.NewParserConfig(operatorType.String(), operatorType.String()),
 				BaseConfig: BaseConfig{
 					Protocol:                     RFC5424,
 					NonTransparentFramingTrailer: &validFramingTrailer,
@@ -200,7 +200,7 @@ func TestRFC6587ConfigOptions(t *testing.T) {
 		{
 			desc: "Invalid Non-Transparent-Framing Trailer",
 			cfg: &Config{
-				ParserConfig: helper.NewParserConfig(operatorType, operatorType),
+				ParserConfig: helper.NewParserConfig(operatorType.String(), operatorType.String()),
 				BaseConfig: BaseConfig{
 					Protocol:                     RFC5424,
 					NonTransparentFramingTrailer: &invalidFramingTrailer,

@@ -577,14 +577,15 @@ func TestBuildCustomMapping(t *testing.T) {
 }
 
 func TestUnmarshalSeverityConfig(t *testing.T) {
+	f := newHelpersFactory()
 	operatortest.ConfigUnmarshalTests{
-		DefaultConfig: newHelpersConfig(),
-		TestsFile:     filepath.Join(".", "testdata", "severity.yaml"),
+		Factory:   f,
+		TestsFile: filepath.Join(".", "testdata", "severity.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
 				Name: "mapping",
 				Expect: func() *helpersConfig {
-					c := newHelpersConfig()
+					c := f.NewDefaultConfig("").(*helpersConfig)
 					c.Severity = NewSeverityConfig()
 					c.Severity.Mapping = allTheThingsMap
 					return c
@@ -593,7 +594,7 @@ func TestUnmarshalSeverityConfig(t *testing.T) {
 			{
 				Name: "parse_from",
 				Expect: func() *helpersConfig {
-					c := newHelpersConfig()
+					c := f.NewDefaultConfig("").(*helpersConfig)
 					c.Severity = NewSeverityConfig()
 					from := entry.NewBodyField("from")
 					c.Severity.ParseFrom = &from
@@ -603,7 +604,7 @@ func TestUnmarshalSeverityConfig(t *testing.T) {
 			{
 				Name: "preset",
 				Expect: func() *helpersConfig {
-					c := newHelpersConfig()
+					c := f.NewDefaultConfig("").(*helpersConfig)
 					c.Severity = NewSeverityConfig()
 					c.Severity.Preset = "http"
 					return c

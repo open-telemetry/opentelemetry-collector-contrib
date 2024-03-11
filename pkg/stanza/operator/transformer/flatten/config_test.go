@@ -13,8 +13,8 @@ import (
 // Test unmarshalling of values into config struct
 func TestUnmarshal(t *testing.T) {
 	operatortest.ConfigUnmarshalTests{
-		DefaultConfig: NewConfig(),
-		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
+		Factory:   NewFactory(),
+		TestsFile: filepath.Join(".", "testdata", "config.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
 				Name: "flatten_body_one_level",

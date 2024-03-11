@@ -6,24 +6,20 @@ package windows // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 )
 
-const operatorType = "windows_eventlog_input"
-
-// NewConfig will return an event log config with default values.
+// Deprecated: [v0.97.0] Use Factory.NewDefaultConfig instead.
 func NewConfig() *Config {
-	return NewConfigWithID(operatorType)
+	return NewFactory().NewDefaultConfig(operatorType.String()).(*Config)
 }
 
-// NewConfig will return an event log config with default values.
+// Deprecated: [v0.97.0] Use Factory.NewDefaultConfig instead.
 func NewConfigWithID(operatorID string) *Config {
-	return &Config{
-		InputConfig:  helper.NewInputConfig(operatorID, operatorType),
-		MaxReads:     100,
-		StartAt:      "end",
-		PollInterval: 1 * time.Second,
-	}
+	return NewFactory().NewDefaultConfig(operatorID).(*Config)
 }
 
 // Config is the configuration of a windows event log operator.
@@ -35,4 +31,13 @@ type Config struct {
 	PollInterval       time.Duration `mapstructure:"poll_interval,omitempty"`
 	Raw                bool          `mapstructure:"raw,omitempty"`
 	ExcludeProviders   []string      `mapstructure:"exclude_providers,omitempty"`
+}
+
+// Deprecated [v0.97.0] Use Factory.CreateOperator instead.
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	set := component.TelemetrySettings{}
+	if logger != nil {
+		set.Logger = logger.Desugar()
+	}
+	return NewFactory().CreateOperator(&c, set)
 }

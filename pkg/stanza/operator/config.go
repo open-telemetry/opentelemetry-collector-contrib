@@ -11,17 +11,17 @@ import (
 	"go.uber.org/zap"
 )
 
-// Config is the configuration of an operator
+// Deprecated [v0.97.0] Use Identity and GlobalFactoryRegistry instead.
 type Config struct {
 	Builder
 }
 
-// NewConfig wraps the builder interface in a concrete struct
+// Deprecated [v0.97.0] Use Identity and GlobalFactoryRegistry instead.
 func NewConfig(b Builder) Config {
 	return Config{Builder: b}
 }
 
-// Builder is an entity that can build a single operator
+// Deprecated [v0.97.0] Use Identity and GlobalFactoryRegistry instead.
 type Builder interface {
 	ID() string
 	Type() string
@@ -29,7 +29,6 @@ type Builder interface {
 	SetID(string)
 }
 
-// UnmarshalJSON will unmarshal a config from JSON.
 func (c *Config) UnmarshalJSON(bytes []byte) error {
 	var typeUnmarshaller struct {
 		Type string
@@ -57,7 +56,6 @@ func (c *Config) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-// UnmarshalYAML will unmarshal a config from YAML.
 func (c *Config) UnmarshalYAML(unmarshal func(any) error) error {
 	rawConfig := map[string]any{}
 	err := unmarshal(&rawConfig)

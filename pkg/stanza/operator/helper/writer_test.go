@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -18,23 +19,29 @@ import (
 )
 
 func TestWriterConfigMissingOutput(t *testing.T) {
-	config := WriterConfig{
+	c := WriterConfig{
 		BasicConfig: BasicConfig{
-			OperatorType: "testtype",
+			Identity: operator.Identity{
+				Type: "test-type",
+				ID:   "test-id",
+			},
 		},
 	}
-	_, err := config.Build(testutil.Logger(t))
+	_, err := NewWriter(c, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 }
 
 func TestWriterConfigValidBuild(t *testing.T) {
-	config := WriterConfig{
+	c := WriterConfig{
 		OutputIDs: []string{"output"},
 		BasicConfig: BasicConfig{
-			OperatorType: "testtype",
+			Identity: operator.Identity{
+				Type: "test-type",
+				ID:   "test-id",
+			},
 		},
 	}
-	_, err := config.Build(testutil.Logger(t))
+	_, err := NewWriter(c, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 }
 
@@ -119,25 +126,24 @@ func TestWriterSetOutputsValid(t *testing.T) {
 }
 
 func TestUnmarshalWriterConfig(t *testing.T) {
+	f := newHelpersFactory()
 	operatortest.ConfigUnmarshalTests{
-		DefaultConfig: newHelpersConfig(),
-		TestsFile:     filepath.Join(".", "testdata", "writer.yaml"),
+		Factory:   f,
+		TestsFile: filepath.Join(".", "testdata", "writer.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
 				Name: "string",
 				Expect: func() *helpersConfig {
-					c := newHelpersConfig()
-					c.Writer = NewWriterConfig(helpersTestType, helpersTestType)
-					c.Writer.OutputIDs = []string{"test"}
+					c := f.NewDefaultConfig("").(*helpersConfig)
+					c.WriterConfig.OutputIDs = []string{"test"}
 					return c
 				}(),
 			},
 			{
 				Name: "slice",
 				Expect: func() *helpersConfig {
-					c := newHelpersConfig()
-					c.Writer = NewWriterConfig(helpersTestType, helpersTestType)
-					c.Writer.OutputIDs = []string{"test1", "test2"}
+					c := f.NewDefaultConfig("").(*helpersConfig)
+					c.WriterConfig.OutputIDs = []string{"test1", "test2"}
 					return c
 				}(),
 			},

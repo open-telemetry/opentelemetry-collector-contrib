@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -16,14 +17,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+var operatorType = component.MustNewType("generate_input")
+
 func init() {
-	operator.Register("generate_input", func() operator.Builder { return NewConfig("") })
+	operator.RegisterFactory(NewFactory())
 }
 
-// NewConfig creates a new generate input config with default values
+// Deprecated [v0.97.0] Use Factory.CreateOperator instead.
 func NewConfig(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, "generate_input"),
+		InputConfig: helper.NewInputConfig(operatorID, operatorType.String()),
 	}
 }
 
@@ -35,9 +38,38 @@ type Config struct {
 	Static             bool        `mapstructure:"static"`
 }
 
-// Build will build a generate input operator.
-func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(logger)
+// Deprecated [v0.97.0] Use Factory.CreateOperator instead.
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	set := component.TelemetrySettings{}
+	if logger != nil {
+		set.Logger = logger.Desugar()
+	}
+	return NewFactory().CreateOperator(&c, set)
+}
+
+type factory struct{}
+
+// NewFactory creates a new factory.
+func NewFactory() operator.Factory {
+	return &factory{}
+}
+
+// Type gets the type of the operator.
+func (f *factory) Type() component.Type {
+	return operatorType
+}
+
+// NewDefaultConfig creates a new default configuration.
+func (f *factory) NewDefaultConfig(operatorID string) component.Config {
+	return &Config{
+		InputConfig: helper.NewInputConfig(operatorID, operatorType.String()),
+	}
+}
+
+// CreateOperator creates a generate input operator.
+func (f *factory) CreateOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
+	c := cfg.(*Config)
+	inputOperator, err := helper.NewInput(c.InputConfig, set)
 	if err != nil {
 		return nil, err
 	}

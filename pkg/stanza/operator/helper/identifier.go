@@ -19,8 +19,13 @@ type IdentifierConfig struct {
 	Resource map[string]ExprStringConfig `mapstructure:"resource"`
 }
 
-// Build will build an identifier from the supplied configuration
+// Deprecated [v0.97.0] Use NewResourceIdentifier instead.
 func (c IdentifierConfig) Build() (Identifier, error) {
+	return NewResourceIdentifier(c)
+}
+
+// NewResourceIdentifier creates a new resource identifier.
+func NewResourceIdentifier(c IdentifierConfig) (Identifier, error) {
 	identifier := Identifier{
 		resource: make(map[string]*ExprString),
 	}

@@ -3,38 +3,46 @@
 package helper
 
 import (
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-const helpersTestType = "helpers_test"
+var helpersTestType = component.MustNewType("helpers_test")
 
 func init() {
-	operator.Register(helpersTestType, func() operator.Builder { return newHelpersConfig() })
+	operator.RegisterFactory(newHelpersFactory())
 }
 
 type helpersConfig struct {
-	BasicConfig `mapstructure:",squash"`
-	Writer      WriterConfig    `mapstructure:"writer"`
-	Time        TimeParser      `mapstructure:"time"`
-	Severity    SeverityConfig  `mapstructure:"severity"`
-	Scope       ScopeNameParser `mapstructure:"scope"`
-	Size        ByteSize        `mapstructure:"size"`
+	WriterConfig `mapstructure:",squash"`
+	Time         TimeParser      `mapstructure:"time"`
+	Severity     SeverityConfig  `mapstructure:"severity"`
+	Scope        ScopeNameParser `mapstructure:"scope"`
+	Size         ByteSize        `mapstructure:"size"`
 }
 
-func newHelpersConfig() *helpersConfig {
-	return &helpersConfig{
-		BasicConfig: NewBasicConfig(helpersTestType, helpersTestType),
-		Writer:      NewWriterConfig(helpersTestType, helpersTestType),
-		Time:        NewTimeParser(),
-		Severity:    NewSeverityConfig(),
-		Scope:       NewScopeNameParser(),
+type helpersFactory struct{}
+
+func newHelpersFactory() helpersFactory {
+	return helpersFactory{}
+}
+
+func (f helpersFactory) Type() component.Type {
+	return helpersTestType
+}
+
+func (f helpersFactory) NewDefaultConfig(operatorID string) component.Config {
+	cfg := &helpersConfig{
+		WriterConfig: NewWriterConfig(operatorID, helpersTestType.String()),
+		Time:         NewTimeParser(),
+		Severity:     NewSeverityConfig(),
+		Scope:        NewScopeNameParser(),
 	}
+	return cfg
 }
 
-// This function is impelmented for compatibility with operatortest
-// but is not meant to be used directly
-func (h *helpersConfig) Build(*zap.SugaredLogger) (operator.Operator, error) {
-	panic("not impelemented")
+// This function is impelmented for compatibility with operator.Factory but is not meant to be used directly
+func (f helpersFactory) CreateOperator(_ component.Config, _ component.TelemetrySettings) (operator.Operator, error) {
+	panic("not implemented")
 }

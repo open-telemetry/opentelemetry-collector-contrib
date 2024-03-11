@@ -13,8 +13,8 @@ import (
 
 func TestConfig(t *testing.T) {
 	operatortest.ConfigUnmarshalTests{
-		DefaultConfig: NewConfig(),
-		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
+		Factory:   NewFactory(),
+		TestsFile: filepath.Join(".", "testdata", "config.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
 				Name:   "default",

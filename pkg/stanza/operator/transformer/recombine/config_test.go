@@ -13,8 +13,8 @@ import (
 
 func TestUnmarshal(t *testing.T) {
 	operatortest.ConfigUnmarshalTests{
-		DefaultConfig: NewConfig(),
-		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
+		Factory:   NewFactory(),
+		TestsFile: filepath.Join(".", "testdata", "config.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
 				Name:      "default",
@@ -26,7 +26,7 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					cfg.OperatorID = "merge-split-lines"
+					cfg.Identity.ID = "merge-split-lines"
 					return cfg
 				}(),
 			},

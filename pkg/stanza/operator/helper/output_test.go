@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -22,8 +23,10 @@ func TestOutputConfigMissingBase(t *testing.T) {
 func TestOutputConfigBuildValid(t *testing.T) {
 	config := OutputConfig{
 		BasicConfig: BasicConfig{
-			OperatorID:   "test-id",
-			OperatorType: "test-type",
+			Identity: operator.Identity{
+				Type: "test-type",
+				ID:   "test-id",
+			},
 		},
 	}
 	_, err := config.Build(testutil.Logger(t))
@@ -31,13 +34,15 @@ func TestOutputConfigBuildValid(t *testing.T) {
 }
 
 func TestOutputOperatorCanProcess(t *testing.T) {
-	output := OutputOperator{
-		BasicOperator: BasicOperator{
-			OperatorID:    "test-id",
-			OperatorType:  "test-type",
-			SugaredLogger: testutil.Logger(t),
+	output, err := NewOutputOperator(OutputConfig{
+		BasicConfig: BasicConfig{
+			Identity: operator.Identity{
+				Type: "test-type",
+				ID:   "test-id",
+			},
 		},
-	}
+	}, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
 	require.True(t, output.CanProcess())
 }
 

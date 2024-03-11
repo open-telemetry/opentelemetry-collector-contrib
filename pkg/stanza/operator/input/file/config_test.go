@@ -18,8 +18,8 @@ import (
 
 func TestUnmarshal(t *testing.T) {
 	operatortest.ConfigUnmarshalTests{
-		DefaultConfig: NewConfig(),
-		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
+		Factory:   NewFactory(),
+		TestsFile: filepath.Join(".", "testdata", "config.yaml"),
 		Tests: []operatortest.ConfigUnmarshalTest{
 			{
 				Name:      "default",
@@ -97,7 +97,6 @@ func TestUnmarshal(t *testing.T) {
 			{
 				Name:      "include_invalid",
 				ExpectErr: true,
-				Expect:    nil,
 			},
 			{
 				Name:      "exclude_one",
@@ -172,7 +171,6 @@ func TestUnmarshal(t *testing.T) {
 			{
 				Name:      "exclude_invalid",
 				ExpectErr: true,
-				Expect:    nil,
 			},
 			{
 				Name:      "poll_interval_no_units",

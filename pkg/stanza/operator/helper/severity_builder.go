@@ -117,8 +117,13 @@ type SeverityConfig struct {
 	OverwriteText bool           `mapstructure:"overwrite_text,omitempty"`
 }
 
-// Build builds a SeverityParser from a SeverityConfig
+// Deprecated [v0.97.0] Use NewSeverityParser instead.
 func (c *SeverityConfig) Build(_ *zap.SugaredLogger) (SeverityParser, error) {
+	return NewServerityParser(c)
+}
+
+// NewSeverityParser creates a new severity parser.
+func NewServerityParser(c *SeverityConfig) (SeverityParser, error) {
 	operatorMapping := getBuiltinMapping(c.Preset)
 
 	for severity, unknown := range c.Mapping {

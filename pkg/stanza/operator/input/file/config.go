@@ -4,31 +4,22 @@
 package file // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-const operatorType = "file_input"
-
-func init() {
-	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
-}
-
-// NewConfig creates a new input config with default values
+// Deprecated [v0.97.0] Use Factory.NewDefaultConfig instead.
 func NewConfig() *Config {
-	return NewConfigWithID(operatorType)
+	return NewFactory().NewDefaultConfig("").(*Config)
 }
 
-// NewConfigWithID creates a new input config with default values
+// Deprecated [v0.97.0] Use Factory.NewDefaultConfig instead.
 func NewConfigWithID(operatorID string) *Config {
-	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, operatorType),
-		Config:      *fileconsumer.NewConfig(),
-	}
+	return NewFactory().NewDefaultConfig(operatorID).(*Config)
 }
 
 // Config is the configuration of a file input operator
@@ -37,33 +28,11 @@ type Config struct {
 	fileconsumer.Config `mapstructure:",squash"`
 }
 
-// Build will build a file input operator from the supplied configuration
+// Deprecated [v0.97.0] Use Factory.CreateOperator instead.
 func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(logger)
-	if err != nil {
-		return nil, err
+	set := component.TelemetrySettings{}
+	if logger != nil {
+		set.Logger = logger.Desugar()
 	}
-
-	var toBody toBodyFunc = func(token []byte) any {
-		return string(token)
-	}
-	if decode.IsNop(c.Config.Encoding) {
-		toBody = func(token []byte) any {
-			copied := make([]byte, len(token))
-			copy(copied, token)
-			return copied
-		}
-	}
-
-	input := &Input{
-		InputOperator: inputOperator,
-		toBody:        toBody,
-	}
-
-	input.fileConsumer, err = c.Config.Build(logger, input.emit)
-	if err != nil {
-		return nil, err
-	}
-
-	return input, nil
+	return NewFactory().CreateOperator(&c, set)
 }

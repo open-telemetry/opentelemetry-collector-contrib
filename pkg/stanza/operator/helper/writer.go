@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -26,9 +27,14 @@ type WriterConfig struct {
 	OutputIDs   []string `mapstructure:"output"`
 }
 
-// Build will build a writer operator from the config.
+// Deprecated [v0.97.0] Use NewWriter instead.
 func (c WriterConfig) Build(logger *zap.SugaredLogger) (WriterOperator, error) {
-	basicOperator, err := c.BasicConfig.Build(logger)
+	return NewWriter(c, component.TelemetrySettings{Logger: logger.Desugar()})
+}
+
+// NewWriter creates a new writer operator.
+func NewWriter(c WriterConfig, set component.TelemetrySettings) (WriterOperator, error) {
+	basicOperator, err := NewBasicOperator(c.BasicConfig, set)
 	if err != nil {
 		return WriterOperator{}, err
 	}

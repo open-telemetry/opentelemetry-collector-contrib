@@ -6,6 +6,7 @@ package drop // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -13,15 +14,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+var operatorType = component.MustNewType("drop_output")
+
 func init() {
-	operator.Register("drop_output", func() operator.Builder { return NewConfig("") })
+	operator.RegisterFactory(NewFactory())
 }
 
-// NewConfig creates a new drop output config with default values
+// Deprecated [v0.97.0] Use Factory.NewDefaultConfig instead.
 func NewConfig(operatorID string) *Config {
-	return &Config{
-		OutputConfig: helper.NewOutputConfig(operatorID, "drop_output"),
-	}
+	return NewFactory().NewDefaultConfig(operatorID).(*Config)
 }
 
 // Config is the configuration of a drop output operator.
@@ -29,16 +30,38 @@ type Config struct {
 	helper.OutputConfig `mapstructure:",squash"`
 }
 
-// Build will build a drop output operator.
+// Deprecated [v0.97.0] Use NewFactory.CreateOperator instead.
 func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	outputOperator, err := c.OutputConfig.Build(logger)
+	return NewFactory().CreateOperator(&c, component.TelemetrySettings{Logger: logger.Desugar()})
+}
+
+type factory struct{}
+
+// NewFactory creates a factory.
+func NewFactory() operator.Factory {
+	return &factory{}
+}
+
+// Type gets the type of the operator.
+func (f *factory) Type() component.Type {
+	return operatorType
+}
+
+// NewDefaultConfig creates the default configuration.
+func (f *factory) NewDefaultConfig(operatorID string) component.Config {
+	return &Config{
+		OutputConfig: helper.NewOutputConfig(operatorID, operatorType.String()),
+	}
+}
+
+// CreateOperator creates an operator.
+func (f *factory) CreateOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
+	c := cfg.(*Config)
+	outputOperator, err := helper.NewOutputOperator(c.OutputConfig, set)
 	if err != nil {
 		return nil, err
 	}
-
-	return &Output{
-		OutputOperator: outputOperator,
-	}, nil
+	return &Output{OutputOperator: outputOperator}, nil
 }
 
 // Output is an operator that consumes and ignores incoming entries.

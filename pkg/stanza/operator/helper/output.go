@@ -4,6 +4,7 @@
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
@@ -22,18 +23,18 @@ type OutputConfig struct {
 	BasicConfig `mapstructure:",squash"`
 }
 
-// Build will build an output operator.
+// Deprecated [v0.97.0] Use NewOutputOperator instead.
 func (c OutputConfig) Build(logger *zap.SugaredLogger) (OutputOperator, error) {
-	basicOperator, err := c.BasicConfig.Build(logger)
+	return NewOutputOperator(c, component.TelemetrySettings{Logger: logger.Desugar()})
+}
+
+// NewOutputOperator creates a new output operator.
+func NewOutputOperator(c OutputConfig, set component.TelemetrySettings) (OutputOperator, error) {
+	basicOperator, err := NewBasicOperator(c.BasicConfig, set)
 	if err != nil {
 		return OutputOperator{}, err
 	}
-
-	outputOperator := OutputOperator{
-		BasicOperator: basicOperator,
-	}
-
-	return outputOperator, nil
+	return OutputOperator{BasicOperator: basicOperator}, nil
 }
 
 // OutputOperator provides a basic implementation of an output operator.

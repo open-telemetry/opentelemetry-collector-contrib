@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -34,9 +35,14 @@ type ParserConfig struct {
 	ScopeNameParser   *ScopeNameParser    `mapstructure:"scope_name,omitempty"`
 }
 
-// Build will build a parser operator.
+// Deprecated [v0.97.0] Use NewParser instead.
 func (c ParserConfig) Build(logger *zap.SugaredLogger) (ParserOperator, error) {
-	transformerOperator, err := c.TransformerConfig.Build(logger)
+	return NewParser(c, component.TelemetrySettings{Logger: logger.Desugar()})
+}
+
+// NewParser creates a new parser operator.
+func NewParser(c ParserConfig, set component.TelemetrySettings) (ParserOperator, error) {
+	transformerOperator, err := NewTransformer(c.TransformerConfig, set)
 	if err != nil {
 		return ParserOperator{}, err
 	}
@@ -60,7 +66,7 @@ func (c ParserConfig) Build(logger *zap.SugaredLogger) (ParserOperator, error) {
 	}
 
 	if c.SeverityConfig != nil {
-		severityParser, err := c.SeverityConfig.Build(logger)
+		severityParser, err := NewServerityParser(c.SeverityConfig)
 		if err != nil {
 			return ParserOperator{}, err
 		}

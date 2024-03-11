@@ -19,8 +19,12 @@ type AttributerConfig struct {
 	Attributes map[string]ExprStringConfig `mapstructure:"attributes"`
 }
 
-// Build will build a attributer from the supplied configuration
+// Deprecated [v0.97.0] Use NewAttributer instead.
 func (c AttributerConfig) Build() (Attributer, error) {
+	return NewAttributer(c)
+}
+
+func NewAttributer(c AttributerConfig) (Attributer, error) {
 	attributer := Attributer{
 		attributes: make(map[string]*ExprString),
 	}
