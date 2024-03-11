@@ -134,6 +134,7 @@ func TestWithDNSResolverNoEndpoints(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
+	defer func() { assert.NoError(t, p.Shutdown(context.Background())) }()
 
 	// test
 	_, e, _ := p.exporterAndEndpoint([]byte{128, 128, 0, 0})
