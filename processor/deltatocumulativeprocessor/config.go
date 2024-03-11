@@ -13,8 +13,8 @@ import (
 var _ component.ConfigValidator = (*Config)(nil)
 
 type Config struct {
-	MaxStale   time.Duration `json:"max_stale"`
-	MaxStreams int           `json:"max_streams"`
+	MaxStale   time.Duration `mapstructure:"max_stale"`
+	MaxStreams int           `mapstructure:"max_streams"`
 }
 
 func (c *Config) Validate() error {
