@@ -72,10 +72,11 @@ func (e *traceExporterImp) Start(ctx context.Context, host component.Host) error
 	return e.loadBalancer.Start(ctx, host)
 }
 
-func (e *traceExporterImp) Shutdown(context.Context) error {
+func (e *traceExporterImp) Shutdown(ctx context.Context) error {
+	err := e.loadBalancer.Shutdown(ctx)
 	e.stopped = true
 	e.shutdownWg.Wait()
-	return nil
+	return err
 }
 
 func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
