@@ -182,6 +182,7 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 }
 
 func (exp *metricsExporter) PushMetricsDataScrubbed(ctx context.Context, md pmetric.Metrics) error {
+	fmt.Printf("### PushMetricsDataScrubbed called \n")
 	return exp.scrubber.Scrub(exp.PushMetricsData(ctx, md))
 }
 

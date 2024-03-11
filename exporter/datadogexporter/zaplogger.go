@@ -78,3 +78,23 @@ func (z *zaplogger) Criticalf(format string, params ...any) error {
 func (z *zaplogger) Flush() {
 	_ = z.logger.Sync()
 }
+
+func (z *zaplogger) Close() {
+	_ = z.logger.Sync()
+}
+
+func (z *zaplogger) Closed() bool {
+	return false
+}
+
+func (z *zaplogger) SetAdditionalStackDepth(depth int) error {
+	return nil
+}
+func (z *zaplogger) SetContext(context interface{}) {}
+
+func (z *zaplogger) traceWithCallDepth(callDepth int, message fmt.Stringer)    {}
+func (z *zaplogger) debugWithCallDepth(callDepth int, message fmt.Stringer)    {}
+func (z *zaplogger) infoWithCallDepth(callDepth int, message fmt.Stringer)     {}
+func (z *zaplogger) warnWithCallDepth(callDepth int, message fmt.Stringer)     {}
+func (z *zaplogger) errorWithCallDepth(callDepth int, message fmt.Stringer)    {}
+func (z *zaplogger) criticalWithCallDepth(callDepth int, message fmt.Stringer) {}

@@ -327,17 +327,27 @@ func (f *factory) createMetricsExporter(
 	}
 
 	if isMetricExportSerializerEnabled() {
-		exp, err := newSerializerExporter(ctx, set, cfg)
+		newExp, err := newSerializerExporter(ctx, set, cfg)
 		if err != nil {
 			cancel()
 			f.wg.Wait() // then wait for shutdown
 			return nil, err
 		}
-		return exp, nil
+		fmt.Printf("### created new exporter\n")
+		exporter, err := exporterhelper.NewMetricsExporter(ctx, set, cfg, newExp.ConsumeMetrics,
+			exporterhelper.WithQueue(cfg.QueueSettings),
+			exporterhelper.WithTimeout(cfg.TimeoutSettings),
+			// the metrics remapping code mutates data
+			exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+		)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Printf("### created metric exporter\n")
 
-	}
-
-	if cfg.OnlyMetadata {
+		return resourcetotelemetry.WrapMetricsExporter(
+			resourcetotelemetry.Settings{Enabled: cfg.Metrics.ExporterConfig.ResourceAttributesAsTags}, exporter), nil
+	} else if cfg.OnlyMetadata {
 		pushMetricsFn = func(_ context.Context, md pmetric.Metrics) error {
 			// only sending metadata use only metrics
 			f.onceMetadata.Do(func() {
