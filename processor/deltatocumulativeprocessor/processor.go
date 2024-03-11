@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -15,6 +16,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/staleness"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
@@ -31,8 +33,8 @@ type Processor struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	aggr streams.Aggregator[data.Number]
-	exp  *streams.Expiry[data.Number]
+	aggr  streams.Aggregator[data.Number]
+	stale *staleness.Staleness[data.Number]
 
 	mtx sync.Mutex
 }
@@ -52,9 +54,16 @@ func newProcessor(cfg *Config, log *zap.Logger, meter metric.Meter, next consume
 	dps = telemetry.Observe(dps, meter)
 
 	if cfg.MaxStale > 0 {
-		exp := streams.ExpireAfter(dps, cfg.MaxStale)
-		proc.exp = &exp
-		dps = &exp
+		stale := staleness.NewStaleness(cfg.MaxStale, dps)
+		proc.stale = stale
+		dps = stale
+	}
+	if cfg.MaxStreams > 0 {
+		lim := streams.Limit(dps, cfg.MaxStreams)
+		if proc.stale != nil {
+			lim.Evictor = proc.stale
+		}
+		dps = lim
 	}
 
 	proc.aggr = streams.IntoAggregator(dps)
@@ -62,22 +71,23 @@ func newProcessor(cfg *Config, log *zap.Logger, meter metric.Meter, next consume
 }
 
 func (p *Processor) Start(_ context.Context, _ component.Host) error {
-	if p.exp != nil {
-		go func() {
-			for {
-				p.mtx.Lock()
-				next := p.exp.ExpireOldEntries()
-				p.mtx.Unlock()
-
-				select {
-				case <-next:
-				case <-p.ctx.Done():
-					return
-				}
-			}
-		}()
+	if p.stale == nil {
+		return nil
 	}
 
+	go func() {
+		tick := time.NewTicker(time.Minute)
+		for {
+			select {
+			case <-p.ctx.Done():
+				return
+			case <-tick.C:
+				p.mtx.Lock()
+				p.stale.ExpireOldEntries()
+				p.mtx.Unlock()
+			}
+		}
+	}()
 	return nil
 }
 

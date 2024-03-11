@@ -1,4 +1,5 @@
 type: jaegerremotesampling
+scope_name: otelcol/jaegerremotesampling
 
 status:
   class: extension

@@ -27,6 +27,8 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
+var dummyID = component.MustNewID("dummy")
+
 func TestEndpointCorrectness(t *testing.T) {
 	// Declare errors for tests that should fail
 	var errBad, errScheme error
@@ -50,13 +52,13 @@ func TestEndpointCorrectness(t *testing.T) {
 			expected: errBad,
 			config: &Config{
 				IdxEndpoint: confighttp.ClientConfig{
-					Auth: &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
+					Auth: &configauth.Authentication{AuthenticatorID: dummyID},
 				},
 				SHEndpoint: confighttp.ClientConfig{
-					Auth: &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
+					Auth: &configauth.Authentication{AuthenticatorID: dummyID},
 				},
 				CMEndpoint: confighttp.ClientConfig{
-					Auth: &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
+					Auth: &configauth.Authentication{AuthenticatorID: dummyID},
 				},
 			},
 		},
@@ -65,7 +67,7 @@ func TestEndpointCorrectness(t *testing.T) {
 			expected: errBad,
 			config: &Config{
 				IdxEndpoint: confighttp.ClientConfig{
-					Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
+					Auth:     &configauth.Authentication{AuthenticatorID: dummyID},
 					Endpoint: "123.321.12.1:1",
 				},
 			},
@@ -75,7 +77,7 @@ func TestEndpointCorrectness(t *testing.T) {
 			expected: errScheme,
 			config: &Config{
 				IdxEndpoint: confighttp.ClientConfig{
-					Auth:     &configauth.Authentication{AuthenticatorID: component.NewID("dummy")},
+					Auth:     &configauth.Authentication{AuthenticatorID: dummyID},
 					Endpoint: "gss://123.124.32.12:90",
 				},
 			},

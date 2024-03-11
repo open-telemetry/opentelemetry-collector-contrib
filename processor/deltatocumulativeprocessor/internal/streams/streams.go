@@ -33,3 +33,5 @@ func (a MapAggr[D]) Aggregate(id Ident, dp D) (D, error) {
 	v, _ := a.Map.Load(id)
 	return v, err
 }
+
+type Evictor = streams.Evictor

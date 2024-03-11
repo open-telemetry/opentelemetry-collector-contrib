@@ -1,4 +1,5 @@
 type: cassandra
+scope_name: otelcol/cassandra
 
 status:
   class: exporter

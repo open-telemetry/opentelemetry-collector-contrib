@@ -1,4 +1,5 @@
 type: vcenter
+scope_name: otelcol/vcenterreceiver
 
 status:
   class: receiver
