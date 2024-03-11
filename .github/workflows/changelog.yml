@@ -89,7 +89,7 @@ jobs:
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
         run: |
           markdown-link-check \
-            --verbose \
+            --verbose --ignore /none \
             --config .github/workflows/check_links_config.json \
             changelog_preview.md \
             || { echo "Check that anchor links are lowercase"; exit 1; }
