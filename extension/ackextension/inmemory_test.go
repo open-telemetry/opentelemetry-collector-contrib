@@ -61,18 +61,10 @@ func TestExtensionAck(t *testing.T) {
 
 	// querying the same acked events should result in false
 	for i := 0; i < 100; i++ {
-		if i%2 == 0 {
-			result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{0, 1, 2})
-			require.Equal(t, len(result), 3)
-			require.Equal(t, result[0], false)
-			require.Equal(t, result[1], false)
-			require.Equal(t, result[2], false)
-		} else {
-			result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{0, 1, 2})
-			require.Equal(t, len(result), 3)
-			require.Equal(t, result[0], false)
-			require.Equal(t, result[1], false)
-			require.Equal(t, result[2], false)
-		}
+		result := ext.QueryAcks(fmt.Sprintf("part-%d", i), []uint64{0, 1, 2})
+		require.Equal(t, len(result), 3)
+		require.Equal(t, result[0], false)
+		require.Equal(t, result[1], false)
+		require.Equal(t, result[2], false)
 	}
 }
