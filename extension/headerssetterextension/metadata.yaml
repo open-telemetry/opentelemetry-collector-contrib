@@ -1,4 +1,5 @@
 type: headers_setter
+scope_name: otelcol/headerssetter
 
 status:
   class: extension

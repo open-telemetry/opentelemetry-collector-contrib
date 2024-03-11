@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/streams"
 )
 
 // We override how Now() is returned, so we can have deterministic tests
@@ -19,29 +20,34 @@ var NowFunc = time.Now
 // NOTE: Staleness methods are *not* thread-safe. If the user needs to use Staleness in a multi-threaded
 // environment, then it is the user's responsibility to properly serialize calls to Staleness methods
 type Staleness[T any] struct {
-	max time.Duration
+	Max time.Duration
 
-	items Map[T]
+	items streams.Map[T]
 	pq    PriorityQueue
 }
 
-func NewStaleness[T any](max time.Duration, newMap Map[T]) *Staleness[T] {
+func NewStaleness[T any](max time.Duration, items streams.Map[T]) *Staleness[T] {
 	return &Staleness[T]{
-		max:   max,
-		items: newMap,
+		Max: max,
+
+		items: items,
 		pq:    NewPriorityQueue(),
 	}
 }
 
 // Load the value at key. If it does not exist, the boolean will be false and the value returned will be the zero value
-func (s *Staleness[T]) Load(key identity.Stream) (T, bool) {
-	return s.items.Load(key)
+func (s *Staleness[T]) Load(id identity.Stream) (T, bool) {
+	return s.items.Load(id)
 }
 
 // Store the given key value pair in the map, and update the pair's staleness value to "now"
-func (s *Staleness[T]) Store(id identity.Stream, value T) {
+func (s *Staleness[T]) Store(id identity.Stream, v T) error {
 	s.pq.Update(id, NowFunc())
-	s.items.Store(id, value)
+	return s.items.Store(id, v)
+}
+
+func (s *Staleness[T]) Delete(id identity.Stream) {
+	s.items.Delete(id)
 }
 
 // Items returns an iterator function that in future go version can be used with range
@@ -55,13 +61,24 @@ func (s *Staleness[T]) Items() func(yield func(identity.Stream, T) bool) bool {
 // be removed. But if an entry had a stalness value of 30 minutes, then it *wouldn't* be removed.
 func (s *Staleness[T]) ExpireOldEntries() {
 	now := NowFunc()
-
 	for {
+		if s.Len() == 0 {
+			return
+		}
 		_, ts := s.pq.Peek()
-		if now.Sub(ts) < s.max {
+		if now.Sub(ts) < s.Max {
 			break
 		}
 		id, _ := s.pq.Pop()
 		s.items.Delete(id)
 	}
+}
+
+func (s *Staleness[T]) Len() int {
+	return s.items.Len()
+}
+
+func (s *Staleness[T]) Next() time.Time {
+	_, ts := s.pq.Peek()
+	return ts
 }

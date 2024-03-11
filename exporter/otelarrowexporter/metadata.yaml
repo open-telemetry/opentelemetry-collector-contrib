@@ -1,4 +1,5 @@
 type: otelarrow
+scope_name: otelcol/otelarrow
 
 status:
   class: exporter

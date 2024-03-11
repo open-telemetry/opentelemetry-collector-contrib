@@ -1,4 +1,5 @@
 type: tencentcloud_logservice
+scope_name: otelcol/tencentcloudlogservice
 
 status:
   class: exporter

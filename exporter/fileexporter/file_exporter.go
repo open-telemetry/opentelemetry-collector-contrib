@@ -56,7 +56,7 @@ func (e *fileExporter) Start(_ context.Context, _ component.Host) error {
 	export := buildExportFunc(e.conf)
 
 	var err error
-	e.writer, err = newFileWriter(e.conf.Path, e.conf.Rotation, e.conf.FlushInterval, export)
+	e.writer, err = newFileWriter(e.conf.Path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export)
 	if err != nil {
 		return err
 	}
