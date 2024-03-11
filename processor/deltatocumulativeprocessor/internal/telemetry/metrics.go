@@ -6,8 +6,6 @@ package telemetry // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"errors"
-	"reflect"
-	"strings"
 
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/otel/attribute"
@@ -18,32 +16,56 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 )
 
-type Metrics struct {
-	streams metric.Int64UpDownCounter
+type Streams struct {
+	tracked metric.Int64UpDownCounter
+	limit   metric.Int64ObservableGauge
+	evicted metric.Int64Counter
+}
+
+type Datapoints struct {
 	total   metric.Int64Counter
 	dropped metric.Int64Counter
-	gaps    metric.Int64Counter
+}
+
+type Metrics struct {
+	streams Streams
+	dps     Datapoints
+
+	gaps metric.Int64Counter
 }
 
 func metrics(meter metric.Meter) Metrics {
 	var (
 		count  = use(meter.Int64Counter)
 		updown = use(meter.Int64UpDownCounter)
+		gauge  = use(meter.Int64ObservableGauge)
 	)
 
 	return Metrics{
-		streams: updown("streams.count",
-			metric.WithDescription("number of streams tracked"),
-			metric.WithUnit("{stream}"),
-		),
-		total: count("datapoints.processed",
-			metric.WithDescription("number of datapoints processed"),
-			metric.WithUnit("{datapoint}"),
-		),
-		dropped: count("datapoints.dropped",
-			metric.WithDescription("number of dropped datapoints due to given 'reason'"),
-			metric.WithUnit("{datapoint}"),
-		),
+		streams: Streams{
+			tracked: updown("streams.tracked",
+				metric.WithDescription("number of streams tracked"),
+				metric.WithUnit("{stream}"),
+			),
+			limit: gauge("streams.limit",
+				metric.WithDescription("upper limit of tracked streams"),
+				metric.WithUnit("{stream}"),
+			),
+			evicted: count("streams.evicted",
+				metric.WithDescription("number of streams evicted"),
+				metric.WithUnit("{stream}"),
+			),
+		},
+		dps: Datapoints{
+			total: count("datapoints.processed",
+				metric.WithDescription("number of datapoints processed"),
+				metric.WithUnit("{datapoint}"),
+			),
+			dropped: count("datapoints.dropped",
+				metric.WithDescription("number of dropped datapoints due to given 'reason'"),
+				metric.WithUnit("{datapoint}"),
+			),
+		},
 		gaps: count("gaps.length",
 			metric.WithDescription("total duration where data was expected but not received"),
 			metric.WithUnit("s"),
@@ -51,7 +73,18 @@ func metrics(meter metric.Meter) Metrics {
 	}
 }
 
-func Observe[T any](items streams.Map[T], meter metric.Meter) streams.Map[T] {
+func (m Metrics) WithLimit(meter metric.Meter, max int64) {
+	then := metric.Callback(func(_ context.Context, o metric.Observer) error {
+		o.ObserveInt64(m.streams.limit, max)
+		return nil
+	})
+	_, err := meter.RegisterCallback(then, m.streams.limit)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func Observe[T any](items streams.Map[T], meter metric.Meter) *Map[T] {
 	return &Map[T]{
 		Map:     items,
 		Metrics: metrics(meter),
@@ -66,13 +99,15 @@ type Map[T any] struct {
 }
 
 func (m *Map[T]) Store(id streams.Ident, v T) error {
-	inc(m.total)
+	inc(m.dps.total)
 	_, old := m.Load(id)
 
 	var (
 		olderStart delta.ErrOlderStart
 		outOfOrder delta.ErrOutOfOrder
 		gap        delta.ErrGap
+		limit      streams.ErrLimit
+		evict      streams.ErrEvicted
 	)
 
 	err := m.Map.Store(id, v)
@@ -81,11 +116,17 @@ func (m *Map[T]) Store(id streams.Ident, v T) error {
 		// all good
 	case errors.As(err, &olderStart):
 		// non fatal. record but ignore
-		inc(m.dropped, reason(&olderStart))
+		inc(m.dps.dropped, reason("older-start"))
 		err = nil
 	case errors.As(err, &outOfOrder):
 		// non fatal. record but ignore
-		inc(m.dropped, reason(&outOfOrder))
+		inc(m.dps.dropped, reason("out-of-order"))
+		err = nil
+	case errors.As(err, &evict):
+		inc(m.streams.evicted)
+		err = nil
+	case errors.As(err, &limit):
+		inc(m.dps.dropped, reason("stream-limit"))
 		err = nil
 	case errors.As(err, &gap):
 		// a gap occurred. record its length, but ignore
@@ -98,13 +139,13 @@ func (m *Map[T]) Store(id streams.Ident, v T) error {
 
 	// not dropped and not seen before => new stream
 	if err == nil && !old {
-		inc(m.streams)
+		inc(m.streams.tracked)
 	}
 	return err
 }
 
 func (m *Map[T]) Delete(id streams.Ident) {
-	dec(m.streams)
+	dec(m.streams.tracked)
 	m.Map.Delete(id)
 }
 
@@ -120,9 +161,7 @@ func dec[A addable[O], O any](a A, opts ...O) {
 	a.Add(context.Background(), -1, opts...)
 }
 
-func reason[E error](_ *E) metric.AddOption {
-	reason := reflect.TypeOf(*new(E)).Name()
-	reason = strings.TrimPrefix(reason, "Err")
+func reason(reason string) metric.AddOption {
 	return metric.WithAttributes(attribute.String("reason", reason))
 }
 

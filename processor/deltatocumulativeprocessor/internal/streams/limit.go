@@ -57,7 +57,3 @@ type ErrEvicted struct {
 func (e ErrEvicted) Error() string {
 	return fmt.Sprintf("%s. evicted stream %s", e.ErrLimit, e.id)
 }
-
-func (e ErrEvicted) Unwrap() error {
-	return e.ErrLimit
-}
