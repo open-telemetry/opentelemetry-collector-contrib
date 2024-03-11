@@ -23,10 +23,10 @@ type ackStatus struct {
 
 func newAckStatus() *ackStatus {
 	id := uint64(0)
-	ret := ackStatus{}
-	ret.id.Store(id)
-	ret.ackMap.Store(id, false)
-	return &ret
+	as := ackStatus{}
+	as.id.Store(id)
+	as.ackMap.Store(id, false)
+	return &as
 }
 
 func (as *ackStatus) nextAck() uint64 {
