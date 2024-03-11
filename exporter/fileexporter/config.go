@@ -24,7 +24,7 @@ type Config struct {
 	// Path of the file to write to. Path is relative to current directory.
 	Path string `mapstructure:"path"`
 
-	// Mode defines whether the exporter should append to the file
+	// Mode defines whether the exporter should append to the file.
 	// Options:
 	// - false[default]:  truncates the file
 	// - true:  appends to the file.

@@ -689,7 +689,7 @@ func TestAppend(t *testing.T) {
 	// Wrap the buffer with the buffered writer closer that implements flush() method.
 	bwc := newBufferedWriteCloser(buf)
 	// Create a file exporter with flushing enabled.
-	feI := newFileExporter(cfg)
+	feI := newFileExporter(cfg, zap.NewNop())
 	assert.IsType(t, &fileExporter{}, feI)
 	fe := feI.(*fileExporter)
 
