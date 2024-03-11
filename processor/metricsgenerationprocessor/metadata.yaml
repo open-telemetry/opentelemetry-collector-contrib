@@ -1,4 +1,5 @@
 type: experimental_metricsgeneration
+scope_name: otelcol/metricsgeneration
 
 status:
   class: processor

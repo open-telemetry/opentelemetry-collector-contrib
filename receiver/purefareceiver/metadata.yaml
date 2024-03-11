@@ -1,4 +1,5 @@
 type: purefa
+scope_name: otelcol/purefareceiver
 
 status:
   class: receiver

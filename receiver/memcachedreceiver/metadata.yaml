@@ -1,4 +1,5 @@
 type: memcached
+scope_name: otelcol/memcachedreceiver
 
 status:
   class: receiver
