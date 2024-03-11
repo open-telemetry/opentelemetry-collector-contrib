@@ -82,7 +82,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.96.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension v0.95.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.96.0
