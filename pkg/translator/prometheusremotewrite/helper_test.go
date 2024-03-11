@@ -956,6 +956,16 @@ func TestCreateLabels(t *testing.T) {
 				{Name: model.MetricNameLabel, Value: "test"},
 			},
 		},
+		{
+			name:       "no base labels, 1 extra",
+			metricName: "test",
+			baseLabels: nil,
+			extras:     []string{"extra1", "extraValue1"},
+			expected: []prompb.Label{
+				{Name: "extra1", Value: "extraValue1"},
+				{Name: model.MetricNameLabel, Value: "test"},
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

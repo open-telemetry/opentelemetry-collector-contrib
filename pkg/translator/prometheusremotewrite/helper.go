@@ -485,6 +485,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 
 // createLabels returns a copy of baseLabels, adding to it the pair model.MetricNameLabel=name.
 // If extras are provided, corresponding label pairs are also added to the returned slice.
+// If extras is uneven length, the last (unpaired) extra will be ignored.
 func createLabels(name string, baseLabels []prompb.Label, extras ...string) []prompb.Label {
 	extraLabelCount := len(extras) / 2
 	labels := make([]prompb.Label, len(baseLabels), len(baseLabels)+extraLabelCount+1) // +1 for name
