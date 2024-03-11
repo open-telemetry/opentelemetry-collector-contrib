@@ -12,7 +12,7 @@ require (
 	github.com/jstemmer/go-junit-report v1.0.0
 	go.opentelemetry.io/build-tools/checkfile v0.13.0
 	go.opentelemetry.io/build-tools/chloggen v0.13.0
-	go.opentelemetry.io/build-tools/crosslink v0.12.0
+	go.opentelemetry.io/build-tools/crosslink v0.13.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.13.0
 	go.opentelemetry.io/build-tools/multimod v0.13.0
 	go.opentelemetry.io/collector/cmd/builder v0.96.1-0.20240306115632-b2693620eff6
