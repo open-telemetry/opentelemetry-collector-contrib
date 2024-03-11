@@ -166,13 +166,9 @@ service:
         - loadbalancing
 ```
 
-The DNSSRVNOA Resolver is useful in situations when you want to return hostnames instead of IPs for endpoints. An example would be a `StatefulSet`-backed headless kubernetes `Service` with istio.
+DNSSRVNOA means "Using DNS resolution of SRV records without doing a second resolution of the resulting A records." The provided SRV record will be resolved and return A records. Instead of querying DNS for the IPs of those A records the hostnames will be returned to the load balancer and the kernel will perform the DNS resolutions.
 
-The format for the name of an SRV record is `_service._proto.name` such as `_ldap._tcp.example.com`. The full record contains:
-
-| _service._proto.name | TTL | Class | SRV(type) | Priority | Weight | Port | Target |
-|----------------------|-----|-------|-----------|----------|--------|------|--------|
-| _otlp._tcp.otel-collector.example.com | 900 | IN | SRV | 10 | 5 | 4317 | otel-collector.example.com |
+An example where DNSSRVNOA is useful would be a `StatefulSet`-backed headless kubernetes `Service` with istio.
 
 Note that we do not define a port in the config since the port is provided by the record. The target must be either an A or AAAA record. For more information see https://www.ietf.org/rfc/rfc2782.txt
 
@@ -318,6 +314,12 @@ service:
       exporters:
         - debug
 ```
+
+## Picking a Resolver
+* `static` should be used when you know every endpoint and the IP addresses for those endpoints do not change.
+* `dns` should be used when a single hostname resolves to all endpoints.
+* `k8s` should be used when a single kubernetes `Service` contains all endpoints.
+* `dnssrvnoa` should be used when you have an SRV record which covers all endpoints, each endpoint must map to a single IP address, and you want the endpoints provided to the loadbalancer to be in the form of a hostname (`A` record) instead of an IP address.
 
 ## Metrics
 
