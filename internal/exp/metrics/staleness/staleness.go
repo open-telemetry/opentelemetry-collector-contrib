@@ -13,6 +13,11 @@ import (
 // We override how Now() is returned, so we can have deterministic tests
 var NowFunc = time.Now
 
+var (
+	_ streams.Map[any] = (*Staleness[any])(nil)
+	_ streams.Evictor  = (*Staleness[any])(nil)
+)
+
 // Staleness a a wrapper over a map that adds an additional "staleness" value to each entry. Users can
 // call ExpireOldEntries() to automatically remove all entries from the map whole staleness value is
 // older than the `max`
@@ -81,4 +86,10 @@ func (s *Staleness[T]) Len() int {
 func (s *Staleness[T]) Next() time.Time {
 	_, ts := s.pq.Peek()
 	return ts
+}
+
+func (s *Staleness[T]) Evict() identity.Stream {
+	id, _ := s.pq.Pop()
+	s.items.Delete(id)
+	return id
 }
