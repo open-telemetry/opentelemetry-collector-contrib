@@ -6,5 +6,5 @@ status:
     development: [traces]
   distributions: [contrib]
   codeowners:
-    active: [adcharre]
+    active: [atoulme, adcharre]
 
