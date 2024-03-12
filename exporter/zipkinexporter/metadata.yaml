@@ -1,4 +1,5 @@
 type: zipkin
+scope_name: otelcol/zipkin
 
 status:
   class: exporter

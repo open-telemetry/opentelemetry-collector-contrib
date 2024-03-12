@@ -1,4 +1,5 @@
 type: k8s_cluster
+scope_name: otelcol/k8sclusterreceiver
 
 status:
   class: receiver
