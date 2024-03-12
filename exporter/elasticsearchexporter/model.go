@@ -40,13 +40,20 @@ const (
 )
 
 func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) ([]byte, error) {
+	var document objmodel.Document
 	switch m.mode {
+	case MappingECS:
+		document = m.encodeLogECSMode(resource, record, scope)
 	default:
-		return m.encodeLogDefaultMode(resource, record, scope)
+		document = m.encodeLogDefaultMode(resource, record, scope)
 	}
+
+	var buf bytes.Buffer
+	err := document.Serialize(&buf, m.dedot)
+	return buf.Bytes(), err
 }
 
-func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) ([]byte, error) {
+func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
 	var document objmodel.Document
 
 	switch m.mode {
@@ -121,9 +128,13 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 		document.Sort()
 	}
 
-	var buf bytes.Buffer
-	err := document.Serialize(&buf, m.dedot)
-	return buf.Bytes(), err
+	return document
+
+}
+
+func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
+	var document objmodel.Document
+	return document
 }
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) ([]byte, error) {
