@@ -40,6 +40,7 @@ type metricsReceiver struct {
 	settings receiver.CreateSettings
 	client   *docker.Client
 	mb       *metadata.MetricsBuilder
+	cancel   context.CancelFunc
 }
 
 func newMetricsReceiver(set receiver.CreateSettings, config *Config) *metricsReceiver {
@@ -65,7 +66,17 @@ func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	go r.client.ContainerEventLoop(ctx)
+	cctx, cancel := context.WithCancel(ctx)
+	r.cancel = cancel
+
+	go r.client.ContainerEventLoop(cctx)
+	return nil
+}
+
+func (r *metricsReceiver) shutdown(context.Context) error {
+	if r.cancel != nil {
+		r.cancel()
+	}
 	return nil
 }
 
