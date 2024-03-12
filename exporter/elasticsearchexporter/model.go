@@ -44,7 +44,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 	var document objmodel.Document
 	switch m.mode {
 	case MappingECS:
-		document = m.encodeLogECSMode(resource, record, scope)
+		document = m.encodeLogECSMode(resource, record, scope, time.Now())
 	default:
 		document = m.encodeLogDefaultMode(resource, record, scope)
 	}
@@ -133,7 +133,7 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 
 }
 
-func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
+func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope, now time.Time) objmodel.Document {
 	var document objmodel.Document
 
 	// First, try to map resource-level attributes to ECS fields.
@@ -159,7 +159,7 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 	mapLogAttributesToECS(&document, record.Attributes(), recordAttrsConversionMap)
 
 	// Handle special cases.
-	document.AddTimestamp("event.received", pcommon.NewTimestampFromTime(time.Now()))
+	document.Add("event.received", objmodel.TimestampValue(now))
 	// TODO: add more!
 	return document
 }
