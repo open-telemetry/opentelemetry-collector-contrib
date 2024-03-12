@@ -14,7 +14,7 @@ resourceSpans:
                 value:
                   stringValue: value1
             links:
-              - spanId: fd0da883bb27cd6b
+              - spanId: ""
                 traceId: 8c8b1765a7b0acf0b66aa4623fcb7bd5
             parentSpanId: ""
             spanId: ""
