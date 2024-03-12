@@ -60,6 +60,8 @@ func TestNewDatabaseFromClientWithRole(t *testing.T) {
 	ctx := context.Background()
 	databaseID := databaseID()
 
+	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "../../testdata/serviceAccount.json")
+
 	database, err := NewDatabase(ctx, databaseID, "", true)
 
 	assert.NoError(t, err)
