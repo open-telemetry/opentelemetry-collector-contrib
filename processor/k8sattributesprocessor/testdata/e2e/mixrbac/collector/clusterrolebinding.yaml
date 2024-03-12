@@ -9,4 +9,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ .Name }}
-    namespace: default
+    namespace: e2ek8sattribute-mixrbac
