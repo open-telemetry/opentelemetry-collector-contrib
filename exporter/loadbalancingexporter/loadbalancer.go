@@ -168,9 +168,10 @@ func endpointFound(endpoint string, endpoints []string) bool {
 	return false
 }
 
-func (lb *loadBalancer) Shutdown(context.Context) error {
+func (lb *loadBalancer) Shutdown(ctx context.Context) error {
+	err := lb.res.shutdown(ctx)
 	lb.stopped = true
-	return nil
+	return err
 }
 
 // exporterAndEndpoint returns the exporter and the endpoint for the given identifier.
