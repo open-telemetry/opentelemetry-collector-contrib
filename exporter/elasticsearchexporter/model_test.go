@@ -310,6 +310,51 @@ func TestEncodeLogECSMode(t *testing.T) {
 	require.Equal(t, expectedDoc, doc)
 }
 
+func TestEncodeLogECSModeRecordTimestamps(t *testing.T) {
+	tests := map[string]struct {
+		timeUnixNano         int64
+		observedTimeUnixNano int64
+		expectedTimestamp    time.Time
+	}{
+		"only_observed_set": {
+			observedTimeUnixNano: 1710273641123456789,
+			expectedTimestamp:    time.Unix(0, 1710273641123456789),
+		},
+		"both_set": {
+			timeUnixNano:         1710273639345678901,
+			observedTimeUnixNano: 1710273641123456789,
+			expectedTimestamp:    time.Unix(0, 1710273639345678901),
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			resource := pcommon.NewResource()
+			scope := pcommon.NewInstrumentationScope()
+			record := plog.NewLogRecord()
+
+			if test.timeUnixNano > 0 {
+				record.SetTimestamp(pcommon.Timestamp(test.timeUnixNano))
+			}
+			if test.observedTimeUnixNano > 0 {
+				record.SetObservedTimestamp(pcommon.Timestamp(test.observedTimeUnixNano))
+			}
+
+			m := encodeModel{}
+			now := time.Now()
+			doc := m.encodeLogECSMode(resource, record, scope, now)
+
+			expectedDoc := objmodel.Document{}
+			expectedDoc.AddTimestamp("@timestamp", pcommon.NewTimestampFromTime(test.expectedTimestamp))
+			expectedDoc.Add("event.received", objmodel.TimestampValue(now))
+
+			doc.Sort()
+			expectedDoc.Sort()
+			require.Equal(t, expectedDoc, doc)
+		})
+	}
+}
+
 func TestMapLogAttributesToECS(t *testing.T) {
 	tests := map[string]struct {
 		attrs         func() pcommon.Map
