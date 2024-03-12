@@ -69,6 +69,11 @@
       },
       {
         "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/build-tools"],
+        "groupName": "All go.opentelemetry.io/build-tools packages"
+      },
+      {
+        "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://github.com/googlecloudplatform"],
         "groupName": "All github.com/googlecloudplatform packages"
       },
