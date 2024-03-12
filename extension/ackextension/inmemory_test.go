@@ -14,19 +14,19 @@ import (
 func TestAckPartitionNextAckConcurrency(t *testing.T) {
 	ackSize := 1_000_000
 	ap := newAckStatus(uint64(ackSize))
-	ackIdMap := sync.Map{}
+	ackIDMap := sync.Map{}
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	go func() {
 		for i := 0; i < ackSize/2; i++ {
-			ackIdMap.Store(ap.nextAck(), struct {
+			ackIDMap.Store(ap.nextAck(), struct {
 			}{})
 		}
 		wg.Done()
 	}()
 	go func() {
 		for i := 0; i < ackSize/2; i++ {
-			ackIdMap.Store(ap.nextAck(), struct {
+			ackIDMap.Store(ap.nextAck(), struct {
 			}{})
 		}
 		wg.Done()
@@ -35,7 +35,7 @@ func TestAckPartitionNextAckConcurrency(t *testing.T) {
 	wg.Wait()
 
 	var size int
-	ackIdMap.Range(func(k, v interface{}) bool {
+	ackIDMap.Range(func(k, v interface{}) bool {
 		size++
 		return true
 	})
@@ -164,7 +164,10 @@ func TestExtensionAck_QueryAcks_Unidempotent(t *testing.T) {
 }
 
 func TestExtensionAckAsync(t *testing.T) {
-	conf := Config{}
+	conf := Config{
+		MaxNumPartition:               defaultMaxNumPartition,
+		MaxNumPendingAcksPerPartition: defaultMaxNumPendingAcksPerPartition,
+	}
 	ext := newInMemoryAckExtension(&conf)
 
 	partitionCount := 100
