@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/apache/thrift v0.19.0
 	github.com/gorilla/mux v1.8.1
-	github.com/jaegertracing/jaeger v1.54.0
+	github.com/jaegertracing/jaeger v1.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.96.0
 	github.com/stretchr/testify v1.9.0
@@ -55,7 +55,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
-	github.com/prometheus/common v0.48.0 // indirect
+	github.com/prometheus/common v0.49.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rs/cors v1.10.1 // indirect
 	go.opentelemetry.io/collector v0.96.1-0.20240306115632-b2693620eff6 // indirect
@@ -66,7 +66,7 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.96.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/collector/extension v0.96.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.96.1-0.20240306115632-b2693620eff6 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.47.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.46.0 // indirect
