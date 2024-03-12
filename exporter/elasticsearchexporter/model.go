@@ -140,7 +140,16 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 	resourceAttrsConversionMap := map[string]string{
 		semconv.AttributeServiceInstanceID:     "service.node.name",
 		semconv.AttributeDeploymentEnvironment: "service.environment",
-		// TODO: add more!
+		semconv.AttributeTelemetrySDKName:      "agent.name",
+		semconv.AttributeTelemetrySDKVersion:   "agent.version",
+		semconv.AttributeTelemetrySDKLanguage:  "service.language.name",
+		semconv.AttributeCloudPlatform:         "cloud.service.name",
+		semconv.AttributeContainerImageTags:    "container.image.tag",
+		semconv.AttributeHostName:              "host.hostname",
+		semconv.AttributeHostArch:              "host.architecture",
+		semconv.AttributeProcessExecutablePath: "process.executable",
+		semconv.AttributeOSType:                "os.platform",
+		semconv.AttributeOSDescription:         "os.full",
 	}
 	mapLogAttributesToECS(&document, resource.Attributes(), resourceAttrsConversionMap)
 
@@ -158,7 +167,6 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 
 	// Handle special cases.
 	document.Add("event.received", objmodel.TimestampValue(now))
-	// TODO: add more!
 	return document
 }
 

@@ -220,8 +220,43 @@ func TestEncodeEvents(t *testing.T) {
 
 func TestEncodeLogECSMode(t *testing.T) {
 	resource := pcommon.NewResource()
-	resource.Attributes().PutStr(semconv.AttributeServiceName, "foo.bar")
-	// TODO: add more!
+	err := resource.Attributes().FromRaw(map[string]any{
+		semconv.AttributeServiceName:           "foo.bar",
+		semconv.AttributeServiceVersion:        "1.1.0",
+		semconv.AttributeServiceInstanceID:     "i-103de39e0a",
+		semconv.AttributeTelemetrySDKName:      "perl-otel",
+		semconv.AttributeTelemetrySDKVersion:   "7.9.12",
+		semconv.AttributeTelemetrySDKLanguage:  "perl",
+		semconv.AttributeCloudProvider:         "gcp",
+		semconv.AttributeCloudAccountID:        "19347013",
+		semconv.AttributeCloudRegion:           "us-west-1",
+		semconv.AttributeCloudAvailabilityZone: "us-west-1b",
+		semconv.AttributeCloudPlatform:         "gke",
+		semconv.AttributeContainerName:         "happy-seger",
+		semconv.AttributeContainerID:           "e69cc5d3dda",
+		semconv.AttributeContainerImageName:    "my-app",
+		semconv.AttributeContainerRuntime:      "docker",
+		semconv.AttributeHostName:              "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		semconv.AttributeHostID:                "i-103de39e0a",
+		semconv.AttributeHostType:              "t2.medium",
+		semconv.AttributeHostArch:              "x86_64",
+		semconv.AttributeProcessPID:            9833,
+		semconv.AttributeProcessCommandLine:    "/usr/bin/ssh -l user 10.0.0.16",
+		semconv.AttributeProcessExecutablePath: "/usr/bin/ssh",
+		semconv.AttributeOSType:                "darwin",
+		semconv.AttributeOSDescription:         "Mac OS Mojave",
+		semconv.AttributeOSName:                "Mac OS X",
+		semconv.AttributeOSVersion:             "10.14.1",
+		semconv.AttributeDeviceID:              "00000000-54b3-e7c7-0000-000046bffd97",
+		semconv.AttributeDeviceModelIdentifier: "SM-G920F",
+		semconv.AttributeDeviceModelName:       "Samsung Galaxy S6",
+		semconv.AttributeDeviceManufacturer:    "Samsung",
+	})
+	require.NoError(t, err)
+
+	resourceContainerImageTags := resource.Attributes().PutEmptySlice(semconv.AttributeContainerImageTags)
+	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
+	require.NoError(t, err)
 
 	scope := pcommon.NewInstrumentationScope()
 	record := plog.NewLogRecord()
@@ -230,11 +265,45 @@ func TestEncodeLogECSMode(t *testing.T) {
 	now := time.Now()
 	doc := m.encodeLogECSMode(resource, record, scope, now)
 
+	expectedDocFields := pcommon.NewMap()
+	err = expectedDocFields.FromRaw(map[string]any{
+		"service.name":            "foo.bar",
+		"service.version":         "1.1.0",
+		"service.node.name":       "i-103de39e0a",
+		"agent.name":              "perl-otel",
+		"agent.version":           "7.9.12",
+		"service.language.name":   "perl",
+		"cloud.provider":          "gcp",
+		"cloud.account.id":        "19347013",
+		"cloud.region":            "us-west-1",
+		"cloud.availability_zone": "us-west-1b",
+		"cloud.service.name":      "gke",
+		"container.name":          "happy-seger",
+		"container.id":            "e69cc5d3dda",
+		"container.image.name":    "my-app",
+		"container.runtime":       "docker",
+		"host.hostname":           "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		"host.id":                 "i-103de39e0a",
+		"host.type":               "t2.medium",
+		"host.architecture":       "x86_64",
+		"process.pid":             9833,
+		"process.command_line":    "/usr/bin/ssh -l user 10.0.0.16",
+		"process.executable":      "/usr/bin/ssh",
+		"os.platform":             "darwin",
+		"os.full":                 "Mac OS Mojave",
+		"os.name":                 "Mac OS X",
+		"os.version":              "10.14.1",
+		"device.id":               "00000000-54b3-e7c7-0000-000046bffd97",
+		"device.model.identifier": "SM-G920F",
+		"device.model.name":       "Samsung Galaxy S6",
+		"device.manufacturer":     "Samsung",
+	})
+	require.NoError(t, err)
+
 	expectedDoc := objmodel.Document{}
-	expectedDoc.Add("service.name", objmodel.StringValue("foo.bar"))
+	expectedDoc.AddAttributes("", expectedDocFields)
 	expectedDoc.Add("event.received", objmodel.TimestampValue(now))
-	expectedDoc.Add("agent.name", objmodel.StringValue("perl-otel"))
-	// TODO: add more!
+	expectedDoc.Add("container.image.tag", objmodel.ArrValue(objmodel.StringValue("v3.4.0")))
 
 	doc.Sort()
 	expectedDoc.Sort()
