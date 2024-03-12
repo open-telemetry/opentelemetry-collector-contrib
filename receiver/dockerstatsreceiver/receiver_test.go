@@ -301,6 +301,7 @@ func TestScrapeV2(t *testing.T) {
 				receivertest.NewNopCreateSettings(), tc.cfgBuilder.withEndpoint(mockDockerEngine.URL).build())
 			err := receiver.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
+			defer func() { require.NoError(t, receiver.shutdown(context.Background())) }()
 
 			actualMetrics, err := receiver.scrapeV2(context.Background())
 			require.NoError(t, err)

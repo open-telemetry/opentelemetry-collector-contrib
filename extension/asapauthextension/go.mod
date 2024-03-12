@@ -6,15 +6,15 @@ require (
 	bitbucket.org/atlassian/go-asap/v2 v2.7.0
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.96.1-0.20240305232712-5a68058e0e3a
-	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240305230428-621d8669ec4c
-	go.opentelemetry.io/collector/confmap v0.96.1-0.20240305232712-5a68058e0e3a
-	go.opentelemetry.io/collector/extension v0.96.1-0.20240305232712-5a68058e0e3a
-	go.opentelemetry.io/collector/extension/auth v0.96.1-0.20240305232712-5a68058e0e3a
+	go.opentelemetry.io/collector/component v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/confmap v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/extension v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/extension/auth v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
 	go.uber.org/multierr v1.11.0
-	google.golang.org/grpc v1.62.0
+	google.golang.org/grpc v1.62.1
 )
 
 require (
@@ -39,8 +39,8 @@ require (
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240305232712-5a68058e0e3a // indirect
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240305230428-621d8669ec4c // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240306115632-b2693620eff6 // indirect
+	go.opentelemetry.io/collector/pdata v1.3.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
