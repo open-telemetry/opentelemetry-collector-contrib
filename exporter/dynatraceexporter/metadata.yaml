@@ -1,4 +1,5 @@
 type: dynatrace
+scope_name: otelcol/dynatrace
 
 status:
   class: exporter
@@ -9,5 +10,4 @@ status:
     active: [dyladan, arminru, evan-bradley]
 
 tests:
-  config:
   expect_consumer_error: true

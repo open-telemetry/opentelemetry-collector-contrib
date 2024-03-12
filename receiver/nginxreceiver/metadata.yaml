@@ -1,4 +1,5 @@
 type: nginx
+scope_name: otelcol/nginxreceiver
 
 status:
   class: receiver
@@ -55,6 +56,3 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [state]
-
-tests:
-  config:

@@ -31,7 +31,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
 type metricsExporter struct {
@@ -86,9 +85,7 @@ func translatorFromConfig(set component.TelemetrySettings, cfg *Config, attrsTra
 	options = append(options, otlpmetrics.WithInitialCumulMonoValueMode(
 		otlpmetrics.InitialCumulMonoValueMode(cfg.Metrics.SumConfig.InitialCumulativeMonotonicMode)))
 
-	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
-		options = append(options, otlpmetrics.WithStatsOut(statsOut))
-	}
+	options = append(options, otlpmetrics.WithStatsOut(statsOut))
 	return otlpmetrics.NewTranslator(set, attrsTranslator, options...)
 }
 

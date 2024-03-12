@@ -26,10 +26,12 @@ func TestCreateMetricsExporterError(t *testing.T) {
 	cfg := &Config{
 		FormatType: formatTypeJSON,
 	}
-	_, err := createMetricsExporter(
+	e, err := createMetricsExporter(
 		context.Background(),
 		exportertest.NewNopCreateSettings(),
 		cfg)
+	require.NoError(t, err)
+	err = e.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 }
 
@@ -65,10 +67,12 @@ func TestCreateTracesExporterError(t *testing.T) {
 	cfg := &Config{
 		FormatType: formatTypeJSON,
 	}
-	_, err := createTracesExporter(
+	e, err := createTracesExporter(
 		context.Background(),
 		exportertest.NewNopCreateSettings(),
 		cfg)
+	require.NoError(t, err)
+	err = e.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 }
 
@@ -90,10 +94,12 @@ func TestCreateLogsExporterError(t *testing.T) {
 	cfg := &Config{
 		FormatType: formatTypeJSON,
 	}
-	_, err := createLogsExporter(
+	e, err := createLogsExporter(
 		context.Background(),
 		exportertest.NewNopCreateSettings(),
 		cfg)
+	require.NoError(t, err)
+	err = e.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 }
 
@@ -162,7 +168,7 @@ func TestNewFileWriter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newFileWriter(tt.args.cfg.Path, tt.args.cfg.Rotation, tt.args.cfg.FlushInterval, nil)
+			got, err := newFileWriter(tt.args.cfg.Path, tt.args.cfg.Append, tt.args.cfg.Rotation, tt.args.cfg.FlushInterval, nil)
 			defer func() {
 				assert.NoError(t, got.file.Close())
 			}()

@@ -1,4 +1,5 @@
 type: googlecloudpubsub
+scope_name: otelcol/googlecloudpubsub
 
 status:
   class: exporter
@@ -8,6 +9,6 @@ status:
   codeowners:
     active: [alexvanboxel]
 
+# TODO: Update the exporter to pass the tests
 tests:
-  config:
   skip_lifecycle: true

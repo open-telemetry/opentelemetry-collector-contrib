@@ -13,6 +13,7 @@ import (
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/trace/timing"
 	"github.com/DataDog/datadog-agent/pkg/trace/writer"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
@@ -140,9 +141,8 @@ func (f *factory) StopReporter() {
 	})
 }
 
-func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
-	datadog.InitializeMetricClient(params.MeterProvider)
-	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider)
+func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
+	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, datadog.InitializeMetricClient(params.MeterProvider, datadog.ExporterSourceTag), attrsTranslator)
 	if err != nil {
 		return nil, err
 	}
@@ -285,35 +285,35 @@ func (f *factory) createMetricsExporter(
 
 	ctx, cancel := context.WithCancel(ctx)
 	// cancel() runs on shutdown
-	var pushMetricsFn consumer.ConsumeMetricsFunc
-	acfg, err := newTraceAgentConfig(ctx, set, cfg, hostProvider)
-	if err != nil {
-		cancel()
-		return nil, err
-	}
-	statsToAgent := make(chan *pb.StatsPayload)
-	statsWriter := writer.NewStatsWriter(acfg, statsToAgent, telemetry.NewNoopCollector())
-
-	set.Logger.Debug("Starting Datadog Trace-Agent StatsWriter")
-	go statsWriter.Run()
-
-	var statsIn chan []byte
-	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
-		statsIn = make(chan []byte, 1000)
-		statsv := set.BuildInfo.Command + set.BuildInfo.Version
-		f.consumeStatsPayload(ctx, statsIn, statsToAgent, statsv, acfg.AgentVersion, set.Logger)
-	}
-	pcfg := newMetadataConfigfromConfig(cfg)
-	metadataReporter, err := f.Reporter(set, pcfg)
-	if err != nil {
-		cancel()
-		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
-	}
 
 	attrsTranslator, err := f.AttributesTranslator(set.TelemetrySettings)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
+	}
+
+	var pushMetricsFn consumer.ConsumeMetricsFunc
+	acfg, err := newTraceAgentConfig(ctx, set, cfg, hostProvider, attrsTranslator)
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+	statsToAgent := make(chan *pb.StatsPayload)
+	metricsClient := datadog.InitializeMetricClient(set.MeterProvider, datadog.ExporterSourceTag)
+	timingReporter := timing.New(metricsClient)
+	statsWriter := writer.NewStatsWriter(acfg, statsToAgent, telemetry.NewNoopCollector(), metricsClient, timingReporter)
+
+	set.Logger.Debug("Starting Datadog Trace-Agent StatsWriter")
+	go statsWriter.Run()
+
+	statsIn := make(chan []byte, 1000)
+	statsv := set.BuildInfo.Command + set.BuildInfo.Version
+	f.consumeStatsPayload(ctx, statsIn, statsToAgent, statsv, acfg.AgentVersion, set.Logger)
+	pcfg := newMetadataConfigfromConfig(cfg)
+	metadataReporter, err := f.Reporter(set, pcfg)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
 	}
 
 	if cfg.OnlyMetadata {
@@ -395,7 +395,14 @@ func (f *factory) createTracesExporter(
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	// cancel() runs on shutdown
-	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider)
+
+	attrsTranslator, err := f.AttributesTranslator(set.TelemetrySettings)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
+	}
+
+	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider, attrsTranslator)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
