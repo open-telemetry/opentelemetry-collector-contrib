@@ -117,6 +117,7 @@ The following settings can be optionally configured:
   One of either `AGGREGATION_TEMPORALITY_CUMULATIVE` or `AGGREGATION_TEMPORALITY_DELTA`.
 - `namespace`: Defines the namespace of the generated metrics. If `namespace` provided, generated metric name will be added `namespace.` prefix.
 - `metrics_flush_interval` (default: `15s`): Defines the flush interval of the generated metrics.
+- `metrics_expiration` (default: `0`): Defines the expiration time as `time.Duration`, after which, if no new spans are received, metrics will no longer be exported. Setting to `0` means the metrics will never expire (default behavior).
 - `exemplars`:  Use to configure how to attach exemplars to histograms
   - `enabled` (default: `false`): enabling will add spans as Exemplars.
 - `events`: Use to configure the events metric.
@@ -154,6 +155,7 @@ connectors:
     dimensions_cache_size: 1000
     aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"    
     metrics_flush_interval: 15s
+    metrics_expiration: 5m
     events:
       enabled: true
       dimensions:
