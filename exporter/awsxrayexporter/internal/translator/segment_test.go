@@ -408,7 +408,9 @@ func TestFixSegmentName(t *testing.T) {
 
 func TestFixAnnotationKey(t *testing.T) {
 	if remoteXrayExporterDotConverter.IsEnabled() {
-		return
+        validDotKey := "Key_1"
+        fixedKey := fixAnnotationKey(validDotKey)
+        assert.Equal(t, validDotKey, fixedKey)
 	}
 	validKey := "Key_1"
 	fixedKey := fixAnnotationKey(validKey)
@@ -490,11 +492,7 @@ func TestSpanWithAttributesPartlyIndexed(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	if remoteXrayExporterDotConverter.IsEnabled() {
-		attributes["attr1.1"] = "val1"
-	} else {
-		attributes["attr1@1"] = "val1"
-	}
+	attributes["attr1@1"] = "val1"
 	attributes["attr2@2"] = "val2"
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
@@ -503,11 +501,8 @@ func TestSpanWithAttributesPartlyIndexed(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, 1, len(segment.Annotations))
-	if remoteXrayExporterDotConverter.IsEnabled() {
-		assert.Equal(t, "val1", segment.Annotations["attr1.1"])
-	} else {
-		assert.Equal(t, "val1", segment.Annotations["attr1_1"])
-	}
+
+	assert.Equal(t, "val1", segment.Annotations["attr1_1"])
 	assert.Equal(t, "val2", segment.Metadata["default"]["attr2@2"])
 }
 
@@ -516,11 +511,7 @@ func TestSpanWithAnnotationsAttribute(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
 	attributes["attr1@1"] = "val1"
-	if remoteXrayExporterDotConverter.IsEnabled() {
-		attributes["attr2.2"] = "val2"
-	} else {
-		attributes["attr2@2"] = "val2"
-	}
+	attributes["attr2@2"] = "val2"
 	attributes[awsxray.AWSXraySegmentAnnotationsAttribute] = []string{"attr2@2", "not_exist"}
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
@@ -529,11 +520,8 @@ func TestSpanWithAnnotationsAttribute(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, 1, len(segment.Annotations))
-	if remoteXrayExporterDotConverter.IsEnabled() {
-		assert.Equal(t, "val2", segment.Annotations["attr2.2"])
-	} else {
-		assert.Equal(t, "val2", segment.Annotations["attr2_2"])
-	}
+
+    assert.Equal(t, "val2", segment.Annotations["attr2_2"])
 	assert.Equal(t, "val1", segment.Metadata["default"]["attr1@1"])
 }
 
@@ -541,26 +529,17 @@ func TestSpanWithAttributesAllIndexed(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	if remoteXrayExporterDotConverter.IsEnabled() {
-		attributes["attr1.1"] = "val1"
-		attributes["attr2.2"] = "val2"
-	} else {
-		attributes["attr1@1"] = "val1"
-		attributes["attr2@2"] = "val2"
-	}
+
+	attributes["attr1@1"] = "val1"
+	attributes["attr2@2"] = "val2"
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{"attr1@1", "not_exist"}, true, nil, false)
 
 	assert.NotNil(t, segment)
-	if remoteXrayExporterDotConverter.IsEnabled() {
-		assert.Equal(t, "val1", segment.Annotations["attr1.1"])
-		assert.Equal(t, "val2", segment.Annotations["attr2.2"])
-	} else {
-		assert.Equal(t, "val1", segment.Annotations["attr1_1"])
-		assert.Equal(t, "val2", segment.Annotations["attr2_2"])
-	}
+	assert.Equal(t, "val1", segment.Annotations["attr1_1"])
+	assert.Equal(t, "val2", segment.Annotations["attr2_2"])
 }
 
 func TestSpanWithAttributesSegmentMetadata(t *testing.T) {

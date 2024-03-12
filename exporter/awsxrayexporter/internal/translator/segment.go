@@ -519,9 +519,6 @@ func fixSegmentName(name string) string {
 // the list of valid characters here:
 // https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
 func fixAnnotationKey(key string) string {
-	if remoteXrayExporterDotConverter.IsEnabled() {
-		return key
-	}
 	return strings.Map(func(r rune) rune {
 		switch {
 		case '0' <= r && r <= '9':
@@ -530,6 +527,8 @@ func fixAnnotationKey(key string) string {
 			fallthrough
 		case 'a' <= r && r <= 'z':
 			return r
+		case remoteXrayExporterDotConverter.IsEnabled() && r == '.':
+		    return r
 		default:
 			return '_'
 		}
