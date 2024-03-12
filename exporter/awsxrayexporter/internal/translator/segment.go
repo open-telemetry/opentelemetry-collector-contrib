@@ -528,7 +528,7 @@ func fixAnnotationKey(key string) string {
 		case 'a' <= r && r <= 'z':
 			return r
 		case remoteXrayExporterDotConverter.IsEnabled() && r == '.':
-		    return r
+			return r
 		default:
 			return '_'
 		}

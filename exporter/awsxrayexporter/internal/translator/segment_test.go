@@ -408,9 +408,9 @@ func TestFixSegmentName(t *testing.T) {
 
 func TestFixAnnotationKey(t *testing.T) {
 	if remoteXrayExporterDotConverter.IsEnabled() {
-        validDotKey := "Key_1"
-        fixedKey := fixAnnotationKey(validDotKey)
-        assert.Equal(t, validDotKey, fixedKey)
+		validDotKey := "Key_1"
+		fixedKey := fixAnnotationKey(validDotKey)
+		assert.Equal(t, validDotKey, fixedKey)
 	}
 	validKey := "Key_1"
 	fixedKey := fixAnnotationKey(validKey)
@@ -521,7 +521,7 @@ func TestSpanWithAnnotationsAttribute(t *testing.T) {
 	assert.NotNil(t, segment)
 	assert.Equal(t, 1, len(segment.Annotations))
 
-    assert.Equal(t, "val2", segment.Annotations["attr2_2"])
+	assert.Equal(t, "val2", segment.Annotations["attr2_2"])
 	assert.Equal(t, "val1", segment.Metadata["default"]["attr1@1"])
 }
 
