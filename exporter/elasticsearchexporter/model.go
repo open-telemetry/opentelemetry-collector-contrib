@@ -40,6 +40,13 @@ const (
 )
 
 func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) ([]byte, error) {
+	switch m.mode {
+	default:
+		return m.encodeLogDefaultMode(resource, record, scope)
+	}
+}
+
+func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) ([]byte, error) {
 	var document objmodel.Document
 
 	switch m.mode {
