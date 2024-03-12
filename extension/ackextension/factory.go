@@ -30,6 +30,6 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createExtension(_ context.Context, _ extension.CreateSettings, _ component.Config) (extension.Extension, error) {
-	return newInMemoryAckExtension(), nil
+func createExtension(_ context.Context, _ extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+	return newInMemoryAckExtension(cfg.(*Config)), nil
 }

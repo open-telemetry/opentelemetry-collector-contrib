@@ -12,7 +12,11 @@ import (
 )
 
 func TestExtensionAck(t *testing.T) {
-	ext := newInMemoryAckExtension()
+	conf := Config{
+		MaxNumPartition:               defaultMaxNumPartition,
+		MaxNumPendingAcksPerPartition: defaultMaxNumPendingAcksPerPartition,
+	}
+	ext := newInMemoryAckExtension(&conf)
 
 	// send events through different partitions
 	for i := 0; i < 100; i++ {
@@ -69,7 +73,9 @@ func TestExtensionAck(t *testing.T) {
 }
 
 func TestExtensionAckAsync(t *testing.T) {
-	ext := newInMemoryAckExtension()
+	conf := Config{}
+	ext := newInMemoryAckExtension(&conf)
+
 	partitionCount := 100
 	var wg sync.WaitGroup
 	wg.Add(partitionCount)
