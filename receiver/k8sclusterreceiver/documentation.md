@@ -428,6 +428,7 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | container.runtime | The container runtime used by Kubernetes Node. | Any Str | false |
 | container.runtime.version | The version of container runtime used by Kubernetes Node. | Any Str | false |
 | k8s.container.name | The k8s container name | Any Str | true |
+| k8s.container.status.last_terminated_reason | Last terminated reason of a container. | Any Str | false |
 | k8s.cronjob.name | The k8s CronJob name | Any Str | true |
 | k8s.cronjob.uid | The k8s CronJob uid. | Any Str | true |
 | k8s.daemonset.name | The k8s daemonset name. | Any Str | true |
