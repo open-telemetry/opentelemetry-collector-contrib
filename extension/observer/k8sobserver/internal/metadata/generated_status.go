@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("k8s_observer")
+)
+
 const (
-	Type               = "k8s_observer"
 	ExtensionStability = component.StabilityLevelAlpha
 )
 

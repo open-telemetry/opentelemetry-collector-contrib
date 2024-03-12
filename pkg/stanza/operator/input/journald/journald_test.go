@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build linux
-// +build linux
 
 package journald
 
@@ -203,6 +202,13 @@ func TestBuildConfig(t *testing.T) {
 				cfg.Dmesg = true
 			},
 			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--dmesg"},
+		},
+		{
+			Name: "all",
+			Config: func(cfg *Config) {
+				cfg.All = true
+			},
+			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--all"},
 		},
 	}
 

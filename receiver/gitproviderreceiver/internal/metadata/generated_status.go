@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("gitprovider")
+)
+
 const (
-	Type             = "gitprovider"
 	MetricsStability = component.StabilityLevelDevelopment
 )
 

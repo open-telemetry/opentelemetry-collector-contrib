@@ -24,8 +24,8 @@ var _ component.Config = (*Config)(nil)
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 
-	kube.ClientConfig `mapstructure:",squash"`
-	confignet.TCPAddr `mapstructure:",squash"`
+	kube.ClientConfig       `mapstructure:",squash"`
+	confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	// ExtraMetadataLabels contains list of extra metadata that should be taken from /pods endpoint
 	// and put as extra labels on metrics resource.

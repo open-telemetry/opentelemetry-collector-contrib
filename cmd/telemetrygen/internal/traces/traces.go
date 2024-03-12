@@ -6,6 +6,7 @@ package traces
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -72,13 +73,13 @@ func Start(cfg *Config) error {
 		defer func() {
 			logger.Info("stop the batch span processor")
 			if tempError := ssp.Shutdown(context.Background()); tempError != nil {
-				logger.Error("failed to stop the batch span processor", zap.Error(err))
+				logger.Error("failed to stop the batch span processor", zap.Error(tempError))
 			}
 		}()
 	}
 
 	var attributes []attribute.KeyValue
-	// may be overridden by `-otlp-attributes service.name="foo"`
+	// may be overridden by `--otlp-attributes service.name="foo"`
 	attributes = append(attributes, semconv.ServiceNameKey.String(cfg.ServiceName))
 	attributes = append(attributes, cfg.GetAttributes()...)
 
@@ -139,6 +140,7 @@ func Run(c *Config, logger *zap.Logger) error {
 		wg.Add(1)
 		w := worker{
 			numTraces:        c.NumTraces,
+			numChildSpans:    int(math.Max(1, float64(c.NumChildSpans))),
 			propagateContext: c.PropagateContext,
 			statusCode:       statusCode,
 			limitPerSecond:   limit,

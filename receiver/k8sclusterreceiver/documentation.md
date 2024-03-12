@@ -439,7 +439,6 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.job.name | The k8s pod name. | Any Str | true |
 | k8s.job.uid | The k8s job uid. | Any Str | true |
 | k8s.kubelet.version | The version of Kubelet running on the node. | Any Str | false |
-| k8s.kubeproxy.version | The version of Kube Proxy running on the node. | Any Str | false |
 | k8s.namespace.name | The k8s namespace name. | Any Str | true |
 | k8s.namespace.uid | The k8s namespace uid. | Any Str | true |
 | k8s.node.name | The k8s node name. | Any Str | true |
@@ -458,4 +457,4 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | openshift.clusterquota.name | The k8s ClusterResourceQuota name. | Any Str | true |
 | openshift.clusterquota.uid | The k8s ClusterResourceQuota uid. | Any Str | true |
 | os.description | The os description used by Kubernetes Node. | Any Str | false |
-| os.version | The version of operating system used by Kubernetes Node. | Any Str | false |
+| os.type | The os type used by Kubernetes Node. | Any Str | false |

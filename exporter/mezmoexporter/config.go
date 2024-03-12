@@ -33,9 +33,9 @@ const (
 
 // Config defines configuration for Mezmo exporter.
 type Config struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
-	configretry.BackOffConfig     `mapstructure:"retry_on_failure"`
+	confighttp.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
 	// IngestURL is the URL to send telemetry to.
 	IngestURL string `mapstructure:"ingest_url"`
@@ -45,8 +45,8 @@ type Config struct {
 }
 
 // returns default http client settings
-func createDefaultHTTPClientSettings() confighttp.HTTPClientSettings {
-	return confighttp.HTTPClientSettings{
+func createDefaultClientConfig() confighttp.ClientConfig {
+	return confighttp.ClientConfig{
 		Timeout: defaultTimeout,
 	}
 }

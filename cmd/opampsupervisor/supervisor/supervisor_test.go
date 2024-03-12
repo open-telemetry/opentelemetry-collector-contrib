@@ -4,6 +4,7 @@
 package supervisor
 
 import (
+	"bytes"
 	"os"
 	"sync/atomic"
 	"testing"
@@ -52,6 +53,7 @@ func Test_composeEffectiveConfig(t *testing.T) {
 
 	expectedConfig, err := os.ReadFile("../testdata/collector/effective_config.yaml")
 	require.NoError(t, err)
+	expectedConfig = bytes.ReplaceAll(expectedConfig, []byte("\r\n"), []byte("\n"))
 
 	require.True(t, configChanged)
 	require.Equal(t, string(expectedConfig), s.effectiveConfig.Load().(string))

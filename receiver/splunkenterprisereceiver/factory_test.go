@@ -20,17 +20,17 @@ import (
 
 func TestFactoryCreate(t *testing.T) {
 	factory := NewFactory()
-	require.EqualValues(t, "splunkenterprise", factory.Type())
+	require.EqualValues(t, metadata.Type, factory.Type())
 }
 
 func TestDefaultConfig(t *testing.T) {
-	cfg := confighttp.NewDefaultHTTPClientSettings()
+	cfg := confighttp.NewDefaultClientConfig()
 	cfg.Headers = map[string]configopaque.String{
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
 
 	expectedConf := &Config{
-		HTTPClientSettings: cfg,
+		ClientConfig: cfg,
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Minute,
 			InitialDelay:       1 * time.Second,
@@ -64,23 +64,6 @@ func TestCreateMetricsReceiver(t *testing.T) {
 				)
 
 				require.NoError(t, err, "failed to create metrics receiver with valid inputs")
-			},
-		},
-		{
-			desc: "Missing consumer",
-			run: func(t *testing.T) {
-				t.Parallel()
-
-				cfg := createDefaultConfig().(*Config)
-
-				_, err := createMetricsReceiver(
-					context.Background(),
-					receivertest.NewNopCreateSettings(),
-					cfg,
-					nil,
-				)
-
-				require.Error(t, err, "created metrics receiver without consumer")
 			},
 		},
 	}

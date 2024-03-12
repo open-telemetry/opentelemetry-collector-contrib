@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("prometheusremotewrite")
+)
+
 const (
-	Type             = "prometheusremotewrite"
 	MetricsStability = component.StabilityLevelBeta
 )
 

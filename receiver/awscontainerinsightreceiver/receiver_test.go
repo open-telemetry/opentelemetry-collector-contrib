@@ -71,7 +71,7 @@ func TestReceiverForNilConsumer(t *testing.T) {
 		nil,
 	)
 
-	require.NotNil(t, err)
+	require.Error(t, err)
 	require.Nil(t, metricsReceiver)
 }
 
@@ -92,13 +92,13 @@ func TestCollectData(t *testing.T) {
 	r.k8sapiserver = &mockK8sAPIServer{}
 	r.cadvisor = &mockCadvisor{}
 	err = r.collectData(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// test the case when cadvisor and k8sapiserver failed to initialize
 	r.cadvisor = nil
 	r.k8sapiserver = nil
 	err = r.collectData(ctx)
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestCollectDataWithErrConsumer(t *testing.T) {
@@ -119,7 +119,7 @@ func TestCollectDataWithErrConsumer(t *testing.T) {
 	ctx := context.Background()
 
 	err = r.collectData(ctx)
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestCollectDataWithECS(t *testing.T) {
@@ -140,10 +140,10 @@ func TestCollectDataWithECS(t *testing.T) {
 
 	r.cadvisor = &mockCadvisor{}
 	err = r.collectData(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// test the case when cadvisor and k8sapiserver failed to initialize
 	r.cadvisor = nil
 	err = r.collectData(ctx)
-	require.NotNil(t, err)
+	require.Error(t, err)
 }

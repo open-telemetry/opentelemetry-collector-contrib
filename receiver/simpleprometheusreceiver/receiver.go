@@ -56,7 +56,7 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 func getPrometheusConfigWrapper(cfg *Config, params receiver.CreateSettings) (*prometheusreceiver.Config, error) {
 	if cfg.TLSEnabled {
 		params.Logger.Warn("the `tls_config` and 'tls_enabled' settings are deprecated, please use `tls` instead")
-		cfg.HTTPClientSettings.TLSSetting = configtls.TLSClientSetting{
+		cfg.ClientConfig.TLSSetting = configtls.TLSClientSetting{
 			TLSSetting: configtls.TLSSetting{
 				CAFile:   cfg.TLSConfig.CAFile,
 				CertFile: cfg.TLSConfig.CertFile,
@@ -129,7 +129,7 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 	}
 
 	scrapeConfig.HTTPClientConfig = httpConfig
-	out.PrometheusConfig = &config.Config{ScrapeConfigs: []*config.ScrapeConfig{
+	out.PrometheusConfig = &prometheusreceiver.PromConfig{ScrapeConfigs: []*config.ScrapeConfig{
 		scrapeConfig,
 	}}
 

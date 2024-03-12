@@ -23,14 +23,14 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateExporter(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, metadata.Type, string(factory.Type()))
+	assert.Equal(t, metadata.Type, factory.Type())
 
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
 	params := exportertest.NewNopCreateSettings()
 
 	te, err := factory.CreateTracesExporter(context.Background(), params, eCfg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
 	me, err := factory.CreateMetricsExporter(context.Background(), params, eCfg)

@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("remotetap")
+)
+
 const (
-	Type             = "remotetap"
 	LogsStability    = component.StabilityLevelAlpha
 	MetricsStability = component.StabilityLevelAlpha
 	TracesStability  = component.StabilityLevelAlpha

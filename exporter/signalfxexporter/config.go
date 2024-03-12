@@ -50,9 +50,9 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for SignalFx exporter.
 type Config struct {
-	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
-	configretry.BackOffConfig     `mapstructure:"retry_on_failure"`
-	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
+	confighttp.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// AccessToken is the authentication token provided by SignalFx.
 	AccessToken configopaque.String `mapstructure:"access_token"`
@@ -112,7 +112,7 @@ type Config struct {
 
 	// ExcludeMetrics defines dpfilter.MetricFilters that will determine metrics to be
 	// excluded from sending to SignalFx backend. If translations enabled with
-	// TranslationRules options, the exclusion will be applie on translated metrics.
+	// TranslationRules options, the exclusion will be applied on translated metrics.
 	ExcludeMetrics []dpfilters.MetricFilter `mapstructure:"exclude_metrics"`
 
 	// IncludeMetrics defines dpfilter.MetricFilters to override exclusion any of metric.
@@ -134,6 +134,10 @@ type Config struct {
 	// Whether to drop  histogram bucket metrics dispatched to Splunk Observability.
 	// Default value is set to false.
 	DropHistogramBuckets bool `mapstructure:"drop_histogram_buckets"`
+
+	// Whether to send histogram metrics in OTLP format to Splunk Observability.
+	// Default value is set to false.
+	SendOTLPHistograms bool `mapstructure:"send_otlp_histograms"`
 }
 
 type DimensionClientConfig struct {
@@ -220,7 +224,7 @@ func (cfg *Config) Validate() error {
 			` "ingest_url" and "api_url" should be explicitly set`)
 	}
 
-	if cfg.HTTPClientSettings.Timeout < 0 {
+	if cfg.ClientConfig.Timeout < 0 {
 		return errors.New(`cannot have a negative "timeout"`)
 	}
 
@@ -242,7 +246,7 @@ func loadConfig(bytes []byte) (Config, error) {
 		return cfg, err
 	}
 
-	if err := confmap.NewFromStringMap(data).Unmarshal(&cfg, confmap.WithErrorUnused()); err != nil {
+	if err := confmap.NewFromStringMap(data).Unmarshal(&cfg); err != nil {
 		return cfg, fmt.Errorf("failed to load default exclude metrics: %w", err)
 	}
 

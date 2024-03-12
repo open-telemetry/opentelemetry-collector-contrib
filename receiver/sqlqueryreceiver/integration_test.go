@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
-// +build integration
 
 package sqlqueryreceiver
 
@@ -30,6 +29,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
@@ -50,10 +50,10 @@ func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 	// Start the SQL Query receiver.
 	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort)
 	config.CollectionInterval = time.Second
-	config.Queries = []Query{
+	config.Queries = []sqlquery.Query{
 		{
 			SQL: "select * from simple_logs where id > $1",
-			Logs: []LogsCfg{
+			Logs: []sqlquery.LogsCfg{
 				{
 					BodyColumn: "body",
 				},
@@ -86,10 +86,10 @@ func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 	// Start new SQL Query receiver with the same configuration.
 	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort)
 	config.CollectionInterval = time.Second
-	config.Queries = []Query{
+	config.Queries = []sqlquery.Query{
 		{
 			SQL: "select * from simple_logs where id > $1",
-			Logs: []LogsCfg{
+			Logs: []sqlquery.LogsCfg{
 				{
 					BodyColumn: "body",
 				},
@@ -137,10 +137,10 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort)
 	config.CollectionInterval = time.Second
 	config.StorageID = &storageExtension.ID
-	config.Queries = []Query{
+	config.Queries = []sqlquery.Query{
 		{
 			SQL: "select * from simple_logs where id > $1",
-			Logs: []LogsCfg{
+			Logs: []sqlquery.LogsCfg{
 				{
 					BodyColumn: "body",
 				},
@@ -179,10 +179,10 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort)
 	config.CollectionInterval = time.Second
 	config.StorageID = &storageExtension.ID
-	config.Queries = []Query{
+	config.Queries = []sqlquery.Query{
 		{
 			SQL: "select * from simple_logs where id > $1",
-			Logs: []LogsCfg{
+			Logs: []sqlquery.LogsCfg{
 				{
 					BodyColumn: "body",
 				},
@@ -212,10 +212,10 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort)
 	config.CollectionInterval = time.Second
 	config.StorageID = &storageExtension.ID
-	config.Queries = []Query{
+	config.Queries = []sqlquery.Query{
 		{
 			SQL: "select * from simple_logs where id > $1",
-			Logs: []LogsCfg{
+			Logs: []sqlquery.LogsCfg{
 				{
 					BodyColumn: "body",
 				},
@@ -355,77 +355,77 @@ func TestPostgresqlIntegrationMetrics(t *testing.T) {
 				rCfg.Driver = "postgres"
 				rCfg.DataSource = fmt.Sprintf("host=%s port=%s user=otel password=otel sslmode=disable",
 					ci.Host(t), ci.MappedPort(t, postgresqlPort))
-				rCfg.Queries = []Query{
+				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
-						Metrics: []MetricCfg{
+						Metrics: []sqlquery.MetricCfg{
 							{
 								MetricName:       "genre.count",
 								ValueColumn:      "count",
 								AttributeColumns: []string{"genre"},
-								ValueType:        MetricValueTypeInt,
-								DataType:         MetricTypeGauge,
+								ValueType:        sqlquery.MetricValueTypeInt,
+								DataType:         sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:       "genre.imdb",
 								ValueColumn:      "avg",
 								AttributeColumns: []string{"genre"},
-								ValueType:        MetricValueTypeDouble,
-								DataType:         MetricTypeGauge,
+								ValueType:        sqlquery.MetricValueTypeDouble,
+								DataType:         sqlquery.MetricTypeGauge,
 							},
 						},
 					},
 					{
 						SQL: "select 1::smallint as a, 2::integer as b, 3::bigint as c, 4.1::decimal as d," +
 							" 4.2::numeric as e, 4.3::real as f, 4.4::double precision as g, null as h",
-						Metrics: []MetricCfg{
+						Metrics: []sqlquery.MetricCfg{
 							{
 								MetricName:  "a",
 								ValueColumn: "a",
-								ValueType:   MetricValueTypeInt,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "b",
 								ValueColumn: "b",
-								ValueType:   MetricValueTypeInt,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "c",
 								ValueColumn: "c",
-								ValueType:   MetricValueTypeInt,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "d",
 								ValueColumn: "d",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "e",
 								ValueColumn: "e",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "f",
 								ValueColumn: "f",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "g",
 								ValueColumn: "g",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "h",
 								ValueColumn: "h",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 						},
 					},
@@ -468,23 +468,23 @@ func TestOracleDBIntegrationMetrics(t *testing.T) {
 				rCfg.Driver = "oracle"
 				rCfg.DataSource = fmt.Sprintf("oracle://otel:p@ssw%%25rd@%s:%s/XE",
 					ci.Host(t), ci.MappedPort(t, oraclePort))
-				rCfg.Queries = []Query{
+				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*) as count, avg(imdb_rating) as avg from sys.movie group by genre",
-						Metrics: []MetricCfg{
+						Metrics: []sqlquery.MetricCfg{
 							{
 								MetricName:       "genre.count",
 								ValueColumn:      "COUNT",
 								AttributeColumns: []string{"GENRE"},
-								ValueType:        MetricValueTypeInt,
-								DataType:         MetricTypeGauge,
+								ValueType:        sqlquery.MetricValueTypeInt,
+								DataType:         sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:       "genre.imdb",
 								ValueColumn:      "AVG",
 								AttributeColumns: []string{"GENRE"},
-								ValueType:        MetricValueTypeDouble,
-								DataType:         MetricTypeGauge,
+								ValueType:        sqlquery.MetricValueTypeDouble,
+								DataType:         sqlquery.MetricTypeGauge,
 							},
 						},
 					},
@@ -525,23 +525,23 @@ func TestMysqlIntegrationMetrics(t *testing.T) {
 				rCfg.Driver = "mysql"
 				rCfg.DataSource = fmt.Sprintf("otel:otel@tcp(%s:%s)/otel",
 					ci.Host(t), ci.MappedPort(t, mysqlPort))
-				rCfg.Queries = []Query{
+				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
-						Metrics: []MetricCfg{
+						Metrics: []sqlquery.MetricCfg{
 							{
 								MetricName:       "genre.count",
 								ValueColumn:      "count(*)",
 								AttributeColumns: []string{"genre"},
-								ValueType:        MetricValueTypeInt,
-								DataType:         MetricTypeGauge,
+								ValueType:        sqlquery.MetricValueTypeInt,
+								DataType:         sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:       "genre.imdb",
 								ValueColumn:      "avg(imdb_rating)",
 								AttributeColumns: []string{"genre"},
-								ValueType:        MetricValueTypeDouble,
-								DataType:         MetricTypeGauge,
+								ValueType:        sqlquery.MetricValueTypeDouble,
+								DataType:         sqlquery.MetricTypeGauge,
 							},
 						},
 					},
@@ -554,42 +554,42 @@ func TestMysqlIntegrationMetrics(t *testing.T) {
 							"cast(3.3 as float) as e, " +
 							"cast(3.4 as double) as f, " +
 							"null as g",
-						Metrics: []MetricCfg{
+						Metrics: []sqlquery.MetricCfg{
 							{
 								MetricName:  "a",
 								ValueColumn: "a",
-								ValueType:   MetricValueTypeInt,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "b",
 								ValueColumn: "b",
-								ValueType:   MetricValueTypeInt,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "c",
 								ValueColumn: "c",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "d",
 								ValueColumn: "d",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "e",
 								ValueColumn: "e",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 							{
 								MetricName:  "f",
 								ValueColumn: "f",
-								ValueType:   MetricValueTypeDouble,
-								DataType:    MetricTypeGauge,
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
 							},
 						},
 					},

@@ -56,7 +56,7 @@ func TestCreateExtension(t *testing.T) {
 				assert.Error(t, err)
 				assert.Nil(t, ext)
 			} else {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 				assert.NotNil(t, ext)
 			}
 		})

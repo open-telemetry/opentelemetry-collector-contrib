@@ -62,7 +62,7 @@ func TestReceiverForNilConsumer(t *testing.T) {
 		&fakeRestClient{},
 	)
 
-	require.NotNil(t, err)
+	require.Error(t, err)
 	require.Nil(t, metricsReceiver)
 }
 

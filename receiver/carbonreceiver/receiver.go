@@ -93,7 +93,7 @@ func buildTransportServer(config Config) (transport.Server, error) {
 // Start tells the receiver to start its processing.
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
-func (r *carbonReceiver) Start(_ context.Context, host component.Host) error {
+func (r *carbonReceiver) Start(_ context.Context, _ component.Host) error {
 	server, err := buildTransportServer(*r.config)
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func (r *carbonReceiver) Start(_ context.Context, host component.Host) error {
 	r.server = server
 	go func() {
 		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter); err != nil {
-			host.ReportFatalError(err)
+			r.settings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil

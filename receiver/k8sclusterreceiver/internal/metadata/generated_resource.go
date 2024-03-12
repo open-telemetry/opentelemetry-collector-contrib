@@ -140,13 +140,6 @@ func (rb *ResourceBuilder) SetK8sKubeletVersion(val string) {
 	}
 }
 
-// SetK8sKubeproxyVersion sets provided value as "k8s.kubeproxy.version" attribute.
-func (rb *ResourceBuilder) SetK8sKubeproxyVersion(val string) {
-	if rb.config.K8sKubeproxyVersion.Enabled {
-		rb.res.Attributes().PutStr("k8s.kubeproxy.version", val)
-	}
-}
-
 // SetK8sNamespaceName sets provided value as "k8s.namespace.name" attribute.
 func (rb *ResourceBuilder) SetK8sNamespaceName(val string) {
 	if rb.config.K8sNamespaceName.Enabled {
@@ -273,10 +266,10 @@ func (rb *ResourceBuilder) SetOsDescription(val string) {
 	}
 }
 
-// SetOsVersion sets provided value as "os.version" attribute.
-func (rb *ResourceBuilder) SetOsVersion(val string) {
-	if rb.config.OsVersion.Enabled {
-		rb.res.Attributes().PutStr("os.version", val)
+// SetOsType sets provided value as "os.type" attribute.
+func (rb *ResourceBuilder) SetOsType(val string) {
+	if rb.config.OsType.Enabled {
+		rb.res.Attributes().PutStr("os.type", val)
 	}
 }
 

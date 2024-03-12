@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build linux
-// +build linux
 
 package journald // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/journald"
 
@@ -112,6 +111,10 @@ func (c Config) buildArgs() ([]string, error) {
 			return nil, err
 		}
 		args = append(args, matches...)
+	}
+
+	if c.All {
+		args = append(args, "--all")
 	}
 
 	return args, nil

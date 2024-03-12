@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoint = defaultEndpoint
 
-	storageID := component.NewIDWithName(component.Type("file_storage"), "clickhouse")
+	storageID := component.MustNewIDWithName("file_storage", "clickhouse")
 
 	tests := []struct {
 		id       component.ID
@@ -261,7 +261,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			} else {
 				// Validate DSN
 				opts, err := clickhouse.ParseDSN(got)
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 				assert.Equalf(t, tt.wantChOptions.Secure, opts.TLS != nil, "TLSConfig is not nil")
 				assert.Equalf(t, tt.wantChOptions.DialTimeout, opts.DialTimeout, "DialTimeout is not nil")
 				if tt.wantChOptions.Compress != 0 {

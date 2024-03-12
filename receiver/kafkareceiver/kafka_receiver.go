@@ -6,6 +6,7 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/IBM/sarama"
@@ -125,7 +126,7 @@ func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
 	return sarama.NewConsumerGroup(config.Brokers, config.GroupID, saramaConfig)
 }
 
-func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) error {
+func (c *kafkaTracesConsumer) Start(_ context.Context, _ component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -160,7 +161,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, consumerGroup); err != nil {
-			host.ReportFatalError(err)
+			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	<-consumerGroup.ready
@@ -209,7 +210,7 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshaler 
 	}, nil
 }
 
-func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) error {
+func (c *kafkaMetricsConsumer) Start(_ context.Context, _ component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -244,7 +245,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, metricsConsumerGroup); err != nil {
-			host.ReportFatalError(err)
+			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	<-metricsConsumerGroup.ready
@@ -293,7 +294,7 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshaler Log
 	}, nil
 }
 
-func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error {
+func (c *kafkaLogsConsumer) Start(_ context.Context, _ component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -328,7 +329,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 	}
 	go func() {
 		if err := c.consumeLoop(ctx, logsConsumerGroup); err != nil {
-			host.ReportFatalError(err)
+			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	<-logsConsumerGroup.ready
@@ -446,7 +447,10 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			}
 
 			ctx := c.obsrecv.StartTracesOp(session.Context())
-			statsTags := []tag.Mutator{tag.Upsert(tagInstanceName, c.id.String())}
+			statsTags := []tag.Mutator{
+				tag.Upsert(tagInstanceName, c.id.String()),
+				tag.Upsert(tagPartition, strconv.Itoa(int(claim.Partition()))),
+			}
 			_ = stats.RecordWithTags(ctx, statsTags,
 				statMessageCount.M(1),
 				statMessageOffset.M(message.Offset),
@@ -526,7 +530,10 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 			}
 
 			ctx := c.obsrecv.StartMetricsOp(session.Context())
-			statsTags := []tag.Mutator{tag.Upsert(tagInstanceName, c.id.String())}
+			statsTags := []tag.Mutator{
+				tag.Upsert(tagInstanceName, c.id.String()),
+				tag.Upsert(tagPartition, strconv.Itoa(int(claim.Partition()))),
+			}
 			_ = stats.RecordWithTags(ctx, statsTags,
 				statMessageCount.M(1),
 				statMessageOffset.M(message.Offset),
@@ -610,9 +617,13 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			}
 
 			ctx := c.obsrecv.StartLogsOp(session.Context())
+			statsTags := []tag.Mutator{
+				tag.Upsert(tagInstanceName, c.id.String()),
+				tag.Upsert(tagPartition, strconv.Itoa(int(claim.Partition()))),
+			}
 			_ = stats.RecordWithTags(
 				ctx,
-				[]tag.Mutator{tag.Upsert(tagInstanceName, c.id.String())},
+				statsTags,
 				statMessageCount.M(1),
 				statMessageOffset.M(message.Offset),
 				statMessageOffsetLag.M(claim.HighWaterMarkOffset()-message.Offset-1))

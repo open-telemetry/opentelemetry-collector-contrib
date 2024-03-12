@@ -72,7 +72,7 @@ func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
 	d, _ := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
 	res, _, err := d.Detect(context.TODO())
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 0, res.Attributes().Len())
 }
 
@@ -138,7 +138,7 @@ func Test_ecsDetectV4(t *testing.T) {
 	d := Detector{provider: &mockMetaDataProvider{isV4: true, taskArnVersion: 1}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	got, _, err := d.Detect(context.TODO())
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, got)
 	assert.Equal(t, want.Attributes().AsRaw(), got.Attributes().AsRaw())
 }
@@ -167,7 +167,7 @@ func Test_ecsDetectV4WithTaskArnVersion2(t *testing.T) {
 	d := Detector{provider: &mockMetaDataProvider{isV4: true, taskArnVersion: 2}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	got, _, err := d.Detect(context.TODO())
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, got)
 	assert.Equal(t, want.Attributes().AsRaw(), got.Attributes().AsRaw())
 }
@@ -191,7 +191,7 @@ func Test_ecsDetectV3(t *testing.T) {
 	d := Detector{provider: &mockMetaDataProvider{isV4: false, taskArnVersion: 1}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	got, _, err := d.Detect(context.TODO())
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, got)
 	assert.Equal(t, want.Attributes().AsRaw(), got.Attributes().AsRaw())
 }
@@ -215,7 +215,7 @@ func Test_ecsDetectV3WithTaskArnVersion2(t *testing.T) {
 	d := Detector{provider: &mockMetaDataProvider{isV4: false, taskArnVersion: 2}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	got, _, err := d.Detect(context.TODO())
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, got)
 	assert.Equal(t, want.Attributes().AsRaw(), got.Attributes().AsRaw())
 }

@@ -33,7 +33,7 @@ func TestScrape(t *testing.T) {
 	testScrape(ctx, t, cfg)
 }
 
-func TestScrapeWithPerfObjects(t *testing.T) {
+func TestScrapeWithoutPerfObjects(t *testing.T) {
 	ctx := context.Background()
 	mockServer := mock.MockServer(t, false)
 	defer mockServer.Close()
@@ -46,13 +46,13 @@ func TestScrapeWithPerfObjects(t *testing.T) {
 	}
 
 	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, receivertest.NewNopCreateSettings())
-	scraper.emitPerfWithObject = true
+	scraper.emitPerfWithObject = false
 
 	metrics, err := scraper.scrape(ctx)
 	require.NoError(t, err)
 	require.NotEqual(t, metrics.MetricCount(), 0)
 
-	goldenPath := filepath.Join("testdata", "metrics", "expected_with_object.yaml")
+	goldenPath := filepath.Join("testdata", "metrics", "expected_without_objects.yaml")
 	expectedMetrics, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
 

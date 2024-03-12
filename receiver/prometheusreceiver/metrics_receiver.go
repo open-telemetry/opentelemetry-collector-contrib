@@ -66,7 +66,7 @@ func newPrometheusReceiver(set receiver.CreateSettings, cfg *Config, next consum
 
 // Start is the method that starts Prometheus scraping. It
 // is controlled by having previously defined a Configuration using perhaps New.
-func (r *pReceiver) Start(_ context.Context, host component.Host) error {
+func (r *pReceiver) Start(_ context.Context, _ component.Host) error {
 	discoveryCtx, cancel := context.WithCancel(context.Background())
 	r.cancelFunc = cancel
 
@@ -75,7 +75,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	// add scrape configs defined by the collector configs
 	baseCfg := r.cfg.PrometheusConfig
 
-	err := r.initPrometheusComponents(discoveryCtx, host, logger)
+	err := r.initPrometheusComponents(discoveryCtx, logger)
 	if err != nil {
 		r.settings.Logger.Error("Failed to initPrometheusComponents Prometheus components", zap.Error(err))
 		return err
@@ -102,7 +102,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (r *pReceiver) startTargetAllocator(allocConf *targetAllocator, baseCfg *config.Config) error {
+func (r *pReceiver) startTargetAllocator(allocConf *TargetAllocator, baseCfg *PromConfig) error {
 	r.settings.Logger.Info("Starting target allocator discovery")
 	// immediately sync jobs, not waiting for the first tick
 	savedHash, err := r.syncTargetAllocator(uint64(0), allocConf, baseCfg)
@@ -132,7 +132,7 @@ func (r *pReceiver) startTargetAllocator(allocConf *targetAllocator, baseCfg *co
 
 // syncTargetAllocator request jobs from targetAllocator and update underlying receiver, if the response does not match the provided compareHash.
 // baseDiscoveryCfg can be used to provide additional ScrapeConfigs which will be added to the retrieved jobs.
-func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAllocator, baseCfg *config.Config) (uint64, error) {
+func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAllocator, baseCfg *PromConfig) (uint64, error) {
 	r.settings.Logger.Debug("Syncing target allocator jobs")
 	scrapeConfigsResponse, err := r.getScrapeConfigsResponse(allocConf.Endpoint)
 	if err != nil {
@@ -160,7 +160,7 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAll
 				RefreshInterval: model.Duration(30 * time.Second),
 			}
 		} else {
-			httpSD = *allocConf.HTTPSDConfig
+			httpSD = promHTTP.SDConfig(*allocConf.HTTPSDConfig)
 		}
 		escapedJob := url.QueryEscape(jobName)
 		httpSD.URL = fmt.Sprintf("%s/jobs/%s/targets?collector_id=%s", allocConf.Endpoint, escapedJob, allocConf.CollectorID)
@@ -220,8 +220,8 @@ func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config
 	return jobToScrapeConfig, nil
 }
 
-func (r *pReceiver) applyCfg(cfg *config.Config) error {
-	if err := r.scrapeManager.ApplyConfig(cfg); err != nil {
+func (r *pReceiver) applyCfg(cfg *PromConfig) error {
+	if err := r.scrapeManager.ApplyConfig((*config.Config)(cfg)); err != nil {
 		return err
 	}
 
@@ -233,14 +233,14 @@ func (r *pReceiver) applyCfg(cfg *config.Config) error {
 	return r.discoveryManager.ApplyConfig(discoveryCfg)
 }
 
-func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component.Host, logger log.Logger) error {
+func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Logger) error {
 	r.discoveryManager = discovery.NewManager(ctx, logger)
 
 	go func() {
 		r.settings.Logger.Info("Starting discovery manager")
 		if err := r.discoveryManager.Run(); err != nil && !errors.Is(err, context.Canceled) {
 			r.settings.Logger.Error("Discovery manager failed", zap.Error(err))
-			host.ReportFatalError(err)
+			r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 
@@ -282,7 +282,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 		r.settings.Logger.Info("Starting scrape manager")
 		if err := r.scrapeManager.Run(r.discoveryManager.SyncCh()); err != nil {
 			r.settings.Logger.Error("Scrape manager failed", zap.Error(err))
-			host.ReportFatalError(err)
+			r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil
@@ -291,7 +291,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 // gcInterval returns the longest scrape interval used by a scrape config,
 // plus a delta to prevent race conditions.
 // This ensures jobs are not garbage collected between scrapes.
-func gcInterval(cfg *config.Config) time.Duration {
+func gcInterval(cfg *PromConfig) time.Duration {
 	gcInterval := defaultGCInterval
 	if time.Duration(cfg.GlobalConfig.ScrapeInterval)+gcIntervalDelta > gcInterval {
 		gcInterval = time.Duration(cfg.GlobalConfig.ScrapeInterval) + gcIntervalDelta

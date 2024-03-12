@@ -702,11 +702,11 @@ func Test_newPathGetSetter(t *testing.T) {
 			tCtx := NewTransformContext(span, il, resource)
 
 			got, err := accessor.Get(context.Background(), tCtx)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), tCtx, tt.newVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			exSpan, exIl, exRes := createTelemetry()
 			exCache := pcommon.NewMap()

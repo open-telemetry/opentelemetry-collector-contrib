@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
-// +build integration
 
 package hostmetricsreceiver
 
@@ -33,7 +32,7 @@ func Test_ProcessScrape(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithCustomConfig(
-			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
 				pCfg := (&processscraper.Factory{}).CreateDefaultConfig().(*processscraper.Config)
@@ -63,7 +62,7 @@ func Test_ProcessScrapeWithCustomRootPath(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithCustomConfig(
-			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
 				pCfg := (&processscraper.Factory{}).CreateDefaultConfig().(*processscraper.Config)
@@ -94,7 +93,7 @@ func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithCustomConfig(
-			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
 				pCfg := (&processscraper.Factory{}).CreateDefaultConfig().(*processscraper.Config)

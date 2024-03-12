@@ -297,7 +297,7 @@ func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
 `
 	c := http.Client{
 		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, err error) {
+			DialContext: func(context.Context, string, string) (conn net.Conn, err error) {
 				return net.Dial("unix", socketName)
 			},
 		},
@@ -414,7 +414,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 
 				var opts []ocOption
 				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, receiver.CreateSettings{ID: exporter.receiverID, TelemetrySettings: testTel.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, opts...)
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.NotNil(t, ocr)
 
 				ocr.traceConsumer = sink
@@ -565,7 +565,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 
 				var opts []ocOption
 				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, receiver.CreateSettings{ID: exporter.receiverID, TelemetrySettings: testTel.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, opts...)
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.NotNil(t, ocr)
 
 				ocr.metricsConsumer = sink
@@ -601,7 +601,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 
 func TestInvalidTLSCredentials(t *testing.T) {
 	cfg := Config{
-		GRPCServerSettings: configgrpc.GRPCServerSettings{
+		ServerConfig: configgrpc.ServerConfig{
 			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
 					CertFile: "willfail",

@@ -6,7 +6,8 @@ status:
     alpha: [logs, metrics, traces]
   distributions: [contrib]
   codeowners:
-    active: [pmcollins]
+    active: [atoulme]
+    emeritus: [pmcollins]
 
 tests:
   config:

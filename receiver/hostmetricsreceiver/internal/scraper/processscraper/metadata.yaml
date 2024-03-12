@@ -46,6 +46,10 @@ resource_attributes:
     description: The username of the user that owns the process.
     enabled: true
     type: string
+  process.cgroup:
+    description: cgroup associated with the process (Linux only).
+    enabled: false
+    type: string
 
 attributes:
   direction:

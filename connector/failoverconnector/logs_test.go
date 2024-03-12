@@ -28,9 +28,9 @@ func TestLogsRegisterConsumers(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]component.ID{{logsFirst}, {logsSecond}, {logsThird}},
-		RetryInterval:    5 * time.Minute,
-		RetryGap:         10 * time.Second,
-		MaxRetries:       5,
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
+		MaxRetries:       10000,
 	}
 
 	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
@@ -50,15 +50,14 @@ func TestLogsRegisterConsumers(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
-	tc, idx, ok := failoverConnector.failover.getCurrentConsumer()
-	tc1 := failoverConnector.failover.GetConsumerAtIndex(1)
-	tc2 := failoverConnector.failover.GetConsumerAtIndex(2)
+	lc, _, ok := failoverConnector.failover.getCurrentConsumer()
+	lc1 := failoverConnector.failover.GetConsumerAtIndex(1)
+	lc2 := failoverConnector.failover.GetConsumerAtIndex(2)
 
 	assert.True(t, ok)
-	require.Equal(t, idx, 0)
-	require.Implements(t, (*consumer.Logs)(nil), tc)
-	require.Implements(t, (*consumer.Logs)(nil), tc1)
-	require.Implements(t, (*consumer.Logs)(nil), tc2)
+	require.Implements(t, (*consumer.Logs)(nil), lc)
+	require.Implements(t, (*consumer.Logs)(nil), lc1)
+	require.Implements(t, (*consumer.Logs)(nil), lc2)
 }
 
 func TestLogsWithValidFailover(t *testing.T) {
@@ -69,9 +68,9 @@ func TestLogsWithValidFailover(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]component.ID{{logsFirst}, {logsSecond}, {logsThird}},
-		RetryInterval:    5 * time.Minute,
-		RetryGap:         10 * time.Second,
-		MaxRetries:       5,
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
+		MaxRetries:       10000,
 	}
 
 	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
@@ -91,12 +90,11 @@ func TestLogsWithValidFailover(t *testing.T) {
 		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
 	}()
 
-	tr := sampleLog()
+	ld := sampleLog()
 
-	require.NoError(t, conn.ConsumeLogs(context.Background(), tr))
-	_, idx, ok := failoverConnector.failover.getCurrentConsumer()
-	assert.True(t, ok)
-	require.Equal(t, idx, 1)
+	require.Eventually(t, func() bool {
+		return consumeLogsAndCheckStable(failoverConnector, 1, ld)
+	}, 3*time.Second, 5*time.Millisecond)
 }
 
 func TestLogsWithFailoverError(t *testing.T) {
@@ -107,9 +105,9 @@ func TestLogsWithFailoverError(t *testing.T) {
 
 	cfg := &Config{
 		PipelinePriority: [][]component.ID{{logsFirst}, {logsSecond}, {logsThird}},
-		RetryInterval:    5 * time.Minute,
-		RetryGap:         10 * time.Second,
-		MaxRetries:       5,
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
+		MaxRetries:       10000,
 	}
 
 	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
@@ -131,57 +129,15 @@ func TestLogsWithFailoverError(t *testing.T) {
 		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
 	}()
 
-	tr := sampleLog()
+	ld := sampleLog()
 
-	assert.EqualError(t, conn.ConsumeLogs(context.Background(), tr), "All provided pipelines return errors")
+	assert.EqualError(t, conn.ConsumeLogs(context.Background(), ld), "All provided pipelines return errors")
 }
 
-func TestLogsWithFailoverRecovery(t *testing.T) {
-	var sinkFirst, sinkSecond, sinkThird consumertest.LogsSink
-	logsFirst := component.NewIDWithName(component.DataTypeLogs, "logs/first")
-	logsSecond := component.NewIDWithName(component.DataTypeLogs, "logs/second")
-	logsThird := component.NewIDWithName(component.DataTypeLogs, "logs/third")
-
-	cfg := &Config{
-		PipelinePriority: [][]component.ID{{logsFirst}, {logsSecond}, {logsThird}},
-		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       1000,
-	}
-
-	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
-		logsFirst:  &sinkFirst,
-		logsSecond: &sinkSecond,
-		logsThird:  &sinkThird,
-	})
-
-	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Logs))
-
-	require.NoError(t, err)
-
-	failoverConnector := conn.(*logsFailover)
-	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
-	defer func() {
-		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
-	}()
-
-	tr := sampleLog()
-
-	require.NoError(t, conn.ConsumeLogs(context.Background(), tr))
-	_, idx, ok := failoverConnector.failover.getCurrentConsumer()
-
-	assert.True(t, ok)
-	require.Equal(t, idx, 1)
-
-	// Simulate recovery of exporter
-	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewNop())
-
-	time.Sleep(100 * time.Millisecond)
-
-	_, idx, ok = failoverConnector.failover.getCurrentConsumer()
-	assert.True(t, ok)
-	require.Equal(t, idx, 0)
+func consumeLogsAndCheckStable(conn *logsFailover, idx int, lr plog.Logs) bool {
+	_ = conn.ConsumeLogs(context.Background(), lr)
+	stableIndex := conn.failover.pS.TestStableIndex()
+	return stableIndex == idx
 }
 
 func sampleLog() plog.Logs {

@@ -33,13 +33,13 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
 				Protocols: Protocols{
-					GRPC: &configgrpc.GRPCServerSettings{
-						NetAddr: confignet.NetAddr{
+					GRPC: &configgrpc.ServerConfig{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:9876",
 							Transport: "tcp",
 						},
 					},
-					ThriftHTTP: &confighttp.HTTPServerSettings{
+					ThriftHTTP: &confighttp.ServerConfig{
 						Endpoint: ":3456",
 					},
 					ThriftCompact: &ProtocolUDP{
@@ -67,21 +67,21 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "defaults"),
 			expected: &Config{
 				Protocols: Protocols{
-					GRPC: &configgrpc.GRPCServerSettings{
-						NetAddr: confignet.NetAddr{
-							Endpoint:  defaultGRPCBindEndpoint,
+					GRPC: &configgrpc.ServerConfig{
+						NetAddr: confignet.AddrConfig{
+							Endpoint:  "0.0.0.0:14250",
 							Transport: "tcp",
 						},
 					},
-					ThriftHTTP: &confighttp.HTTPServerSettings{
-						Endpoint: defaultHTTPBindEndpoint,
+					ThriftHTTP: &confighttp.ServerConfig{
+						Endpoint: "0.0.0.0:14268",
 					},
 					ThriftCompact: &ProtocolUDP{
-						Endpoint:        defaultThriftCompactBindEndpoint,
+						Endpoint:        "0.0.0.0:6831",
 						ServerConfigUDP: defaultServerConfigUDP(),
 					},
 					ThriftBinary: &ProtocolUDP{
-						Endpoint:        defaultThriftBinaryBindEndpoint,
+						Endpoint:        "0.0.0.0:6832",
 						ServerConfigUDP: defaultServerConfigUDP(),
 					},
 				},
@@ -91,14 +91,14 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "mixed"),
 			expected: &Config{
 				Protocols: Protocols{
-					GRPC: &configgrpc.GRPCServerSettings{
-						NetAddr: confignet.NetAddr{
+					GRPC: &configgrpc.ServerConfig{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:9876",
 							Transport: "tcp",
 						},
 					},
 					ThriftCompact: &ProtocolUDP{
-						Endpoint:        defaultThriftCompactBindEndpoint,
+						Endpoint:        "0.0.0.0:6831",
 						ServerConfigUDP: defaultServerConfigUDP(),
 					},
 				},
@@ -108,8 +108,8 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "tls"),
 			expected: &Config{
 				Protocols: Protocols{
-					GRPC: &configgrpc.GRPCServerSettings{
-						NetAddr: confignet.NetAddr{
+					GRPC: &configgrpc.ServerConfig{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:9876",
 							Transport: "tcp",
 						},
@@ -120,7 +120,7 @@ func TestLoadConfig(t *testing.T) {
 							},
 						},
 					},
-					ThriftHTTP: &confighttp.HTTPServerSettings{
+					ThriftHTTP: &confighttp.ServerConfig{
 						Endpoint: ":3456",
 					},
 				},
@@ -174,7 +174,7 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "thrift-http-no-port",
 			apply: func(cfg *Config) {
-				cfg.ThriftHTTP = &confighttp.HTTPServerSettings{
+				cfg.ThriftHTTP = &confighttp.ServerConfig{
 					Endpoint: "localhost:",
 				}
 			},
@@ -201,8 +201,8 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "grpc-invalid-host",
 			apply: func(cfg *Config) {
-				cfg.GRPC = &configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				cfg.GRPC = &configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "1234",
 						Transport: "tcp",
 					},

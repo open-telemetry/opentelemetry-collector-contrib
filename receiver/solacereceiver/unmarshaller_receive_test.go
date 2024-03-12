@@ -326,7 +326,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 		{ // don't expect any events when none are present in the span data
 			name:                 "No Events",
 			spanData:             &receive_v1.SpanData{},
-			populateExpectedSpan: func(span ptrace.Span) {},
+			populateExpectedSpan: func(ptrace.Span) {},
 		},
 		{ // when an enqueue event is present, expect it to be added to the span events
 			name: "Enqueue Event Queue",
@@ -402,7 +402,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 					},
 				},
 			},
-			populateExpectedSpan: func(span ptrace.Span) {},
+			populateExpectedSpan: func(ptrace.Span) {},
 			unmarshallingErrors:  1,
 		},
 		{ // Local Transaction
@@ -649,7 +649,7 @@ func TestReceiveUnmarshallerReceiveBaggageString(t *testing.T) {
 			u := newTestReceiveV1Unmarshaller(t)
 			err := u.unmarshalBaggage(actual, testCase.baggage)
 			if testCase.errStr == "" {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			} else {
 				assert.ErrorContains(t, err, testCase.errStr)
 			}

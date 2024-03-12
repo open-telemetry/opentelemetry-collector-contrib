@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("rabbitmq")
+)
+
 const (
-	Type             = "rabbitmq"
 	MetricsStability = component.StabilityLevelBeta
 )
 

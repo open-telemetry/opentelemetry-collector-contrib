@@ -24,6 +24,16 @@ go install github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemet
 
 Check the [`go install` reference](https://go.dev/ref/mod#go-install) to install specific versions.
 
+### Docker build
+
+You can build locally the Docker image with:
+
+```bash
+make docker-telemetrygen
+```
+
+Using github actions, we also push a docker image on commit to main or on release to this [Github docker registry](https://github.com/open-telemetry/opentelemetry-collector-contrib/pkgs/container/opentelemetry-collector-contrib%2Ftelemetrygen).
+
 ## Running
 
 First, you'll need an OpenTelemetry Collector to receive the telemetry data. Follow the project's instructions for a detailed setting up guide. The following configuration file should be sufficient:

@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("memcached")
+)
+
 const (
-	Type             = "memcached"
 	MetricsStability = component.StabilityLevelBeta
 )
 
