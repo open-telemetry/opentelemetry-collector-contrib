@@ -138,8 +138,6 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 
 	// First, try to map resource-level attributes to ECS fields.
 	resourceAttrsConversionMap := map[string]string{
-		semconv.AttributeServiceName:           "service.name",
-		semconv.AttributeServiceVersion:        "service.version",
 		semconv.AttributeServiceInstanceID:     "service.node.name",
 		semconv.AttributeDeploymentEnvironment: "service.environment",
 		// TODO: add more!
