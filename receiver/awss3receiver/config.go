@@ -33,6 +33,7 @@ type Config struct {
 func createDefaultConfig() component.Config {
 	return &Config{
 		S3Downloader: S3DownloaderConfig{
+			Region:      "us-east-1",
 			S3Partition: "minute",
 		},
 	}

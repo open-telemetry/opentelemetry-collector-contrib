@@ -15,3 +15,35 @@
 Receiver for retrieving trace previously stored in S3 by the [AWS S3 Exporter](../../exporter/awss3exporter/README.md).
 
 ## Configuration
+The following exporter configuration parameters are supported.
+
+| Name                  | Description                                                                                                                                | Default     |
+|:----------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|-------------|
+| `starttime`           | The time at which to start retrieving data.                                                                                                |             |
+| `endtime`             | The time at which to stop retrieving data.                                                                                                 |             |
+| `s3downloader:`       |                                                                                                                                            |             |
+| `region`              | AWS region.                                                                                                                                | "us-east-1" |
+| `s3_bucket`           | S3 bucket                                                                                                                                  |             |
+| `s3_prefix`           | prefix for the S3 key (root directory inside bucket).                                                                                      |             |
+| `s3_partition`        | time granularity of S3 key: hour or minute                                                                                                 | "minute"    |
+| `file_prefix`         | file prefix defined by user                                                                                                                |             |
+| `endpoint`            | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                       |             |
+| `s3_force_path_style` | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       |
+
+### Time format for `starttime` and `endtime`
+The `starttime` and `endtime` fields are used to specify the time range for which to retrieve data. 
+The time format is either `YYYY-MM-DD HH:MM` or simply `YYYY-MM-DD`, in which case the time is assumed to be `00:00`.
+
+### Example Configuration
+
+```yaml
+receivers:
+  awss3:
+    starttime: "2024-01-01 01:00"
+    endtime: "2024-01-02"
+    s3downloader:
+        region: "us-west-1"
+        s3_bucket: "mybucket"
+        s3_prefix: "trace"
+        s3_partition: "minute"
+```
