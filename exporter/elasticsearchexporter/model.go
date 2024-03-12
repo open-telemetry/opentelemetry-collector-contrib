@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -137,9 +138,10 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 
 	// First, try to map resource-level attributes to ECS fields.
 	resourceAttrsConversionMap := map[string]string{
-		"service.name":        "service.name",
-		"service.version":     "service.version",
-		"service.instance.id": "service.node.name",
+		semconv.AttributeServiceName:           "service.name",
+		semconv.AttributeServiceVersion:        "service.version",
+		semconv.AttributeServiceInstanceID:     "service.node.name",
+		semconv.AttributeDeploymentEnvironment: "service.environment",
 		// TODO: add more!
 	}
 	mapLogAttributesToECS(&document, resource.Attributes(), resourceAttrsConversionMap)
