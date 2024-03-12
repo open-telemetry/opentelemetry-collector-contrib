@@ -238,6 +238,13 @@ func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 }
 
 func mapLogAttributesToECS(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string) {
+	if len(conversionMap) == 0 {
+		// No conversions to be done; add all attributes at top level of
+		// document.
+		document.AddAttributes("", attrs)
+		return
+	}
+
 	attrs.Range(func(k string, v pcommon.Value) bool {
 		// If mapping to ECS key is found, use it.
 		if ecsKey, exists := conversionMap[k]; exists {
