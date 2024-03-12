@@ -40,7 +40,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 		GraphiteTemplate:   "%{_metric_}",
 
 		ClientConfig: confighttp.ClientConfig{
-			Timeout: 5 * time.Second,
+			IdleConnTimeout: confighttp.NewDefaultClientConfig().IdleConnTimeout,
+			MaxIdleConns:    confighttp.NewDefaultClientConfig().MaxIdleConns,
+			Timeout:         5 * time.Second,
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: qs,
