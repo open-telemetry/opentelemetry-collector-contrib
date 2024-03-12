@@ -44,20 +44,24 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 
 	switch m.mode {
 	case MappingECS:
-		document.AddTimestamp("@timestamp", record.Timestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
+		if record.Timestamp() != 0 {
+			document.AddTimestamp("@timestamp", record.Timestamp())
+		} else {
+			document.AddTimestamp("@timestamp", record.ObservedTimestamp())
+		}
+
 		document.AddTraceID("trace.id", record.TraceID())
 		document.AddSpanID("span.id", record.SpanID())
 
-		if f := record.Flags(); f != 0 {
-			document.AddInt("trace.flags", int64(record.Flags()))
-		}
-
 		if n := record.SeverityNumber(); n != plog.SeverityNumberUnspecified {
-			document.AddInt("log.syslog.severity.code", int64(record.SeverityNumber()))
-			document.AddString("log.syslog.severity.name", record.SeverityText())
+			document.AddInt("event.severity", int64(record.SeverityNumber()))
 		}
 
-		document.AddAttribute("message", record.Body())
+		document.AddString("log.level", record.SeverityText())
+
+		if record.Body().Type() == pcommon.ValueTypeStr {
+			document.AddAttribute("message", record.Body())
+		}
 
 		fieldMapper := func(k string) string {
 			switch k {
