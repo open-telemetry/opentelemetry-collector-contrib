@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/open-telemetry/otel-arrow v0.18.0
-	github.com/open-telemetry/otel-arrow/collector v0.17.0
+	github.com/open-telemetry/otel-arrow/collector v0.18.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/config/configauth v0.96.1-0.20240306115632-b2693620eff6
