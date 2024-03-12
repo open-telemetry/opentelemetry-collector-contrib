@@ -234,6 +234,7 @@ require (
 	code.cloudfoundry.org/go-diodes v0.0.0-20211115184647-b584dd5df32c // indirect
 	code.cloudfoundry.org/go-loggregator v7.4.0+incompatible // indirect
 	code.cloudfoundry.org/rfc5424 v0.0.0-20201103192249-000122071b78 // indirect
+	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
 	github.com/AthenZ/athenz v1.10.39 // indirect
@@ -392,7 +393,7 @@ require (
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
 	github.com/go-resty/resty/v2 v2.7.0 // indirect
-	github.com/go-sql-driver/mysql v1.7.1 // indirect
+	github.com/go-sql-driver/mysql v1.8.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/go-zookeeper/zk v1.0.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
