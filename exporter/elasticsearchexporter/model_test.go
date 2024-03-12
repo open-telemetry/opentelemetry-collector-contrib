@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
@@ -219,5 +219,22 @@ func TestEncodeEvents(t *testing.T) {
 }
 
 func TestEncodeLogECSMode(t *testing.T) {
-	// TODO
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr(semconv.AttributeServiceName, "foo.bar")
+	// TODO: add more!
+
+	scope := pcommon.NewInstrumentationScope()
+	record := plog.NewLogRecord()
+
+	m := encodeModel{}
+	now := time.Now()
+	doc := m.encodeLogECSMode(resource, record, scope, now)
+
+	expectedDoc := objmodel.Document{}
+	expectedDoc.Add("service.name", objmodel.StringValue("foo.bar"))
+	expectedDoc.Add("event.received", objmodel.TimestampValue(now))
+	// TODO: add more!
+
+	require.Equal(t, expectedDoc, doc)
+
 }
