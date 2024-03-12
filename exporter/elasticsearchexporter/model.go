@@ -82,6 +82,7 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 
 func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
 	var document objmodel.Document
+	// TODO
 	return document
 }
 
