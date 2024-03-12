@@ -460,7 +460,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var doc objmodel.Document
-			mapLogAttributesToECS(&doc, test.attrs(), test.conversionMap)
+			encodeLogAttributesECSMode(&doc, test.attrs(), test.conversionMap)
 
 			doc.Sort()
 			expectedDoc := test.expectedDoc()
