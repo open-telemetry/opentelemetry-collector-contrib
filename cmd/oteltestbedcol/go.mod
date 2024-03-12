@@ -47,6 +47,7 @@ require (
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/receiver v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.96.1-0.20240306115632-b2693620eff6
+	go.uber.org/goleak v1.3.0
 	golang.org/x/sys v0.18.0
 )
 
