@@ -233,8 +233,135 @@ func TestEncodeLogECSMode(t *testing.T) {
 	expectedDoc := objmodel.Document{}
 	expectedDoc.Add("service.name", objmodel.StringValue("foo.bar"))
 	expectedDoc.Add("event.received", objmodel.TimestampValue(now))
+	expectedDoc.Add("agent.name", objmodel.StringValue("perl-otel"))
 	// TODO: add more!
 
+	doc.Sort()
+	expectedDoc.Sort()
 	require.Equal(t, expectedDoc, doc)
+}
 
+func TestMapLogAttributesToECS(t *testing.T) {
+	tests := map[string]struct {
+		attrs         func() pcommon.Map
+		conversionMap map[string]string
+		expectedDoc   func() objmodel.Document
+	}{
+		"no_attrs": {
+			attrs: func() pcommon.Map {
+				return pcommon.NewMap()
+			},
+			conversionMap: map[string]string{
+				"foo.bar": "baz",
+			},
+			expectedDoc: func() objmodel.Document {
+				return objmodel.Document{}
+			},
+		},
+		"no_conversion_map": {
+			attrs: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo.bar", "baz")
+				return m
+			},
+			expectedDoc: func() objmodel.Document {
+				d := objmodel.Document{}
+				d.AddString("foo.bar", "baz")
+				return d
+			},
+		},
+		"empty_conversion_map": {
+			attrs: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo.bar", "baz")
+				return m
+			},
+			conversionMap: map[string]string{},
+			expectedDoc: func() objmodel.Document {
+				d := objmodel.Document{}
+				d.AddString("foo.bar", "baz")
+				return d
+			},
+		},
+		"all_attrs_in_conversion_map": {
+			attrs: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo.bar", "baz")
+				m.PutInt("qux", 17)
+				return m
+			},
+			conversionMap: map[string]string{
+				"foo.bar": "bar.qux",
+				"qux":     "foo",
+			},
+			expectedDoc: func() objmodel.Document {
+				d := objmodel.Document{}
+				d.AddString("bar.qux", "baz")
+				d.AddInt("foo", 17)
+				return d
+			},
+		},
+		"some_attrs_in_conversion_map": {
+			attrs: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo.bar", "baz")
+				m.PutInt("qux", 17)
+				return m
+			},
+			conversionMap: map[string]string{
+				"foo.bar": "bar.qux",
+			},
+			expectedDoc: func() objmodel.Document {
+				d := objmodel.Document{}
+				d.AddString("bar.qux", "baz")
+				d.AddInt("qux", 17)
+				return d
+			},
+		},
+		"no_attrs_in_conversion_map": {
+			attrs: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo.bar", "baz")
+				m.PutInt("qux", 17)
+				return m
+			},
+			conversionMap: map[string]string{
+				"baz": "qux",
+			},
+			expectedDoc: func() objmodel.Document {
+				d := objmodel.Document{}
+				d.AddString("foo.bar", "baz")
+				d.AddInt("qux", 17)
+				return d
+			},
+		},
+		"extra_keys_in_conversion_map": {
+			attrs: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo.bar", "baz")
+				return m
+			},
+			conversionMap: map[string]string{
+				"foo.bar": "bar.qux",
+				"qux":     "foo",
+			},
+			expectedDoc: func() objmodel.Document {
+				d := objmodel.Document{}
+				d.AddString("bar.qux", "baz")
+				return d
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var doc objmodel.Document
+			mapLogAttributesToECS(&doc, test.attrs(), test.conversionMap)
+
+			doc.Sort()
+			expectedDoc := test.expectedDoc()
+			expectedDoc.Sort()
+			require.Equal(t, expectedDoc, doc)
+		})
+	}
 }
