@@ -5,10 +5,10 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
-	"go.uber.org/multierr"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/multierr"
 )
 
 // S3DownloaderConfig contains aws s3 downloader related config to controls things
@@ -47,26 +47,26 @@ func (c Config) Validate() error {
 	if c.StartTime == "" {
 		errs = multierr.Append(errs, errors.New("start time is required"))
 	} else {
-		if _, err := parseTime(c.StartTime); err != nil {
+		if err := validateTime(c.StartTime); err != nil {
 			errs = multierr.Append(errs, errors.New("unable to parse start date"))
 		}
 	}
 	if c.EndTime == "" {
 		errs = multierr.Append(errs, errors.New("end time is required"))
 	} else {
-		if _, err := parseTime(c.EndTime); err != nil {
+		if err := validateTime(c.EndTime); err != nil {
 			errs = multierr.Append(errs, errors.New("unable to parse end time"))
 		}
 	}
 	return errs
 }
 
-func parseTime(str string) (time.Time, error) {
+func validateTime(str string) error {
 	layouts := []string{"2006-01-02 15:04", time.DateOnly}
 	for _, layout := range layouts {
-		if t, err := time.Parse(layout, str); err == nil {
-			return t, nil
+		if _, err := time.Parse(layout, str); err == nil {
+			return nil
 		}
 	}
-	return time.Time{}, errors.New("unable to parse time string")
+	return errors.New("unable to parse time string")
 }

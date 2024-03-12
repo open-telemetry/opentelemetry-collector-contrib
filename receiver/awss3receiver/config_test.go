@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package awss3receiver
 
 import (
@@ -55,6 +58,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
 				S3Downloader: S3DownloaderConfig{
+					Region:      "us-east-1",
 					S3Bucket:    "abucket",
 					S3Partition: "minute",
 				},

@@ -5,6 +5,7 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
@@ -13,11 +14,11 @@ import (
 type awss3Receiver struct {
 }
 
-func newAWSS3TraceReceiver(cfg *Config, traces consumer.Traces, logger *zap.Logger) (*awss3Receiver, error) {
+func newAWSS3TraceReceiver(_ *Config, _ consumer.Traces, _ *zap.Logger) (*awss3Receiver, error) {
 	return &awss3Receiver{}, nil
 }
 
-func (r *awss3Receiver) Start(ctx context.Context, _ component.Host) error {
+func (r *awss3Receiver) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
