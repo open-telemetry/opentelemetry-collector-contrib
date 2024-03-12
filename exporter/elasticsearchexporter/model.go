@@ -167,11 +167,7 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 
 	// Handle special cases.
 	document.Add("event.received", objmodel.TimestampValue(now))
-	if record.Timestamp() != 0 {
-		document.AddTimestamp("@timestamp", record.Timestamp())
-	} else {
-		document.AddTimestamp("@timestamp", record.ObservedTimestamp())
-	}
+	encodeLogTimestampECSMode(&document, record)
 
 	return document
 }
@@ -270,4 +266,13 @@ func encodeLogAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, 
 		document.AddAttribute(k, v)
 		return true
 	})
+}
+
+func encodeLogTimestampECSMode(document *objmodel.Document, record plog.LogRecord) {
+	if record.Timestamp() != 0 {
+		document.AddTimestamp("@timestamp", record.Timestamp())
+		return
+	}
+
+	document.AddTimestamp("@timestamp", record.ObservedTimestamp())
 }
