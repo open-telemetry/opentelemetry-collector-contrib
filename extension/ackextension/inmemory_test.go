@@ -35,7 +35,7 @@ func TestAckPartitionNextAckConcurrency(t *testing.T) {
 	wg.Wait()
 
 	var size int
-	ackIDMap.Range(func(k, v interface{}) bool {
+	ackIDMap.Range(func(_, _ any) bool {
 		size++
 		return true
 	})
