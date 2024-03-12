@@ -259,7 +259,14 @@ func TestEncodeLogECSMode(t *testing.T) {
 	require.NoError(t, err)
 
 	scope := pcommon.NewInstrumentationScope()
+
 	record := plog.NewLogRecord()
+	err = record.Attributes().FromRaw(map[string]any{
+		"event.name": "user-password-change",
+	})
+	require.NoError(t, err)
+	observedTimestamp := pcommon.Timestamp(1710273641123456789)
+	record.SetObservedTimestamp(observedTimestamp)
 
 	m := encodeModel{}
 	now := time.Now()
@@ -297,11 +304,13 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"device.model.identifier": "SM-G920F",
 		"device.model.name":       "Samsung Galaxy S6",
 		"device.manufacturer":     "Samsung",
+		"event.action":            "user-password-change",
 	})
 	require.NoError(t, err)
 
 	expectedDoc := objmodel.Document{}
 	expectedDoc.AddAttributes("", expectedDocFields)
+	expectedDoc.AddTimestamp("@timestamp", observedTimestamp)
 	expectedDoc.Add("event.received", objmodel.TimestampValue(now))
 	expectedDoc.Add("container.image.tag", objmodel.ArrValue(objmodel.StringValue("v3.4.0")))
 

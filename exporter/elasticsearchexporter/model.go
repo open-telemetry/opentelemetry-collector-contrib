@@ -161,7 +161,7 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 
 	// Finally, try to map record-level attributes to ECS fields.
 	recordAttrsConversionMap := map[string]string{
-		// None at the moment
+		"event.name": "event.action",
 	}
 	encodeLogAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
 
