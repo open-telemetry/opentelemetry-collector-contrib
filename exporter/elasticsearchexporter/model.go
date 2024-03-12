@@ -151,19 +151,19 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 		semconv.AttributeOSType:                "os.platform",
 		semconv.AttributeOSDescription:         "os.full",
 	}
-	mapLogAttributesToECS(&document, resource.Attributes(), resourceAttrsConversionMap)
+	encodeLogAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap)
 
 	// Then, try to map scope-level attributes to ECS fields.
 	scopeAttrsConversionMap := map[string]string{
 		// None at the moment
 	}
-	mapLogAttributesToECS(&document, scope.Attributes(), scopeAttrsConversionMap)
+	encodeLogAttributesECSMode(&document, scope.Attributes(), scopeAttrsConversionMap)
 
 	// Finally, try to map record-level attributes to ECS fields.
 	recordAttrsConversionMap := map[string]string{
 		// None at the moment
 	}
-	mapLogAttributesToECS(&document, record.Attributes(), recordAttrsConversionMap)
+	encodeLogAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
 
 	// Handle special cases.
 	document.Add("event.received", objmodel.TimestampValue(now))
@@ -251,7 +251,7 @@ func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 	return attrs
 }
 
-func mapLogAttributesToECS(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string) {
+func encodeLogAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string) {
 	if len(conversionMap) == 0 {
 		// No conversions to be done; add all attributes at top level of
 		// document.
