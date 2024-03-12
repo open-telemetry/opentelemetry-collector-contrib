@@ -11,49 +11,51 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+// InMemoryAckExtension is the in-memory implementation of the AckExtension
 type InMemoryAckExtension struct {
-	partitionMap                  *lru.Cache[string, *ackStatus]
+	partitionMap                  *lru.Cache[string, *ackPartition]
 	maxNumPendingAcksPerPartition uint64
 }
 
 func newInMemoryAckExtension(conf *Config) *InMemoryAckExtension {
-	cache, _ := lru.New[string, *ackStatus](int(conf.MaxNumPartition))
+	cache, _ := lru.New[string, *ackPartition](int(conf.MaxNumPartition))
 	return &InMemoryAckExtension{
 		partitionMap:                  cache,
 		maxNumPendingAcksPerPartition: defaultMaxNumPendingAcksPerPartition,
 	}
 }
 
-type ackStatus struct {
+type ackPartition struct {
 	id     atomic.Uint64
 	ackMap *lru.Cache[uint64, bool]
 }
 
-func newAckStatus(maxPendingAcks uint64) *ackStatus {
+func newAckStatus(maxPendingAcks uint64) *ackPartition {
 	id := uint64(0)
 
 	cache, _ := lru.New[uint64, bool](int(maxPendingAcks))
 	cache.Add(id, false)
 
-	as := ackStatus{
+	as := ackPartition{
 		ackMap: cache,
 	}
 	as.id.Store(id)
 	return &as
 }
 
-func (as *ackStatus) nextAck() uint64 {
-	as.ackMap.Add(as.id.Add(1), false)
-	return as.id.Load()
+func (as *ackPartition) nextAck() uint64 {
+	id := as.id.Add(1)
+	as.ackMap.Add(id, false)
+	return id
 }
 
-func (as *ackStatus) ack(key uint64) {
+func (as *ackPartition) ack(key uint64) {
 	if _, ok := as.ackMap.Get(key); ok {
 		as.ackMap.Add(key, true)
 	}
 }
 
-func (as *ackStatus) computeAcks(ackIDs []uint64) map[uint64]bool {
+func (as *ackPartition) computeAcks(ackIDs []uint64) map[uint64]bool {
 	result := make(map[uint64]bool, len(ackIDs))
 	for _, val := range ackIDs {
 		if isAcked, ok := as.ackMap.Get(val); ok && isAcked {
