@@ -158,6 +158,7 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 
 	// Handle special cases.
 	document.AddTimestamp("event.received", pcommon.NewTimestampFromTime(time.Now()))
+	// TODO: add more!
 	return document
 }
 
