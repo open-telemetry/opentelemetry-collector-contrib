@@ -134,7 +134,30 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 
 func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
 	var document objmodel.Document
-	// TODO
+
+	// First, try to map resource-level attributes to ECS fields.
+	resourceAttrsConversionMap := map[string]string{
+		"service.name":        "service.name",
+		"service.version":     "service.version",
+		"service.instance.id": "service.node.name",
+		// TODO: add more!
+	}
+	mapLogAttributesToECS(&document, resource.Attributes(), resourceAttrsConversionMap)
+
+	// Then, try to map scope-level attributes to ECS fields.
+	scopeAttrsConversionMap := map[string]string{
+		// None at the moment
+	}
+	mapLogAttributesToECS(&document, scope.Attributes(), scopeAttrsConversionMap)
+
+	// Finally, try to map record-level attributes to ECS fields.
+	recordAttrsConversionMap := map[string]string{
+		// None at the moment
+	}
+	mapLogAttributesToECS(&document, record.Attributes(), recordAttrsConversionMap)
+
+	// Handle special cases.
+	document.AddTimestamp("event.received", pcommon.NewTimestampFromTime(time.Now()))
 	return document
 }
 
@@ -211,4 +234,18 @@ func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 		attrs.PutStr(k, v.(string))
 	}
 	return attrs
+}
+
+func mapLogAttributesToECS(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string) {
+	attrs.Range(func(k string, v pcommon.Value) bool {
+		// If mapping to ECS key is found, use it.
+		if ecsKey, exists := conversionMap[k]; exists {
+			document.AddAttribute(ecsKey, v)
+			return true
+		}
+
+		// Otherwise, add key at top level with attribute name as-is.
+		document.AddAttribute(k, v)
+		return true
+	})
 }
