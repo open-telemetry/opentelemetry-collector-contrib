@@ -361,9 +361,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 		expectedDoc   func() objmodel.Document
 	}{
 		"no_attrs": {
-			attrs: func() pcommon.Map {
-				return pcommon.NewMap()
-			},
+			attrs: pcommon.NewMap,
 			conversionMap: map[string]string{
 				"foo.bar": "baz",
 			},
