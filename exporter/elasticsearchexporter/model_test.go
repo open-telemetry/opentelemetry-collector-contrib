@@ -217,3 +217,7 @@ func TestEncodeEvents(t *testing.T) {
 		})
 	}
 }
+
+func TestEncodeLogECSMode(t *testing.T) {
+	// TODO
+}
