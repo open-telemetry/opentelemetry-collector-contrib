@@ -6,7 +6,7 @@ require (
 	github.com/IBM/sarama v1.43.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.54.0
+	github.com/jaegertracing/jaeger v1.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.96.0
@@ -66,7 +66,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
-	github.com/prometheus/common v0.48.0 // indirect
+	github.com/prometheus/common v0.49.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect

@@ -57,13 +57,14 @@ func (e *logExporterImp) Start(ctx context.Context, host component.Host) error {
 	return e.loadBalancer.Start(ctx, host)
 }
 
-func (e *logExporterImp) Shutdown(context.Context) error {
+func (e *logExporterImp) Shutdown(ctx context.Context) error {
 	if !e.started {
 		return nil
 	}
+	err := e.loadBalancer.Shutdown(ctx)
 	e.started = false
 	e.shutdownWg.Wait()
-	return nil
+	return err
 }
 
 func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {

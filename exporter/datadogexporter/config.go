@@ -319,8 +319,12 @@ type LogsConfig struct {
 // TagsConfig defines the tag-related configuration
 // It is embedded in the configuration
 type TagsConfig struct {
-	// Hostname is the host name for unified service tagging.
-	// If unset, it is determined automatically.
+	// Hostname is the fallback hostname used for payloads without hostname-identifying attributes.
+	// This option will NOT change the hostname applied to your metrics, traces and logs if they already have hostname-identifying attributes.
+	// If unset, the hostname will be determined automatically. See https://docs.datadoghq.com/opentelemetry/schema_semantics/hostname/?tab=datadogexporter#fallback-hostname-logic for details.
+	//
+	// Prefer using the `datadog.host.name` resource attribute over using this setting.
+	// See https://docs.datadoghq.com/opentelemetry/schema_semantics/hostname/?tab=datadogexporter#general-hostname-semantic-conventions for details.
 	Hostname string `mapstructure:"hostname"`
 }
 
@@ -365,11 +369,15 @@ type HostMetadataConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 
 	// HostnameSource is the source for the hostname of host metadata.
+	// This hostname is used for identifying the infrastructure list, host map and host tag information related to the host where the Datadog exporter is running.
+	// Changing this setting will not change the host used to tag your metrics, traces and logs in any way.
+	// For remote hosts, see https://docs.datadoghq.com/opentelemetry/schema_semantics/host_metadata/.
+	//
 	// Valid values are 'first_resource' and 'config_or_system':
 	// - 'first_resource' picks the host metadata hostname from the resource
 	//    attributes on the first OTLP payload that gets to the exporter.
 	//    If the first payload lacks hostname-like attributes, it will fallback to 'config_or_system'.
-	//    Do not use this hostname source if receiving data from multiple hosts.
+	//    **Do not use this hostname source if receiving data from multiple hosts**.
 	// - 'config_or_system' picks the host metadata hostname from the 'hostname' setting,
 	//    If this is empty it will use available system APIs and cloud provider endpoints.
 	//
