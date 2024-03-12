@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Name }}
-  namespace: default
+  namespace: e2ek8sattribute-mixrbac
 spec:
   replicas: 1
   selector:
