@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.50.27
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/config/configcompression v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/confmap v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/consumer v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/exporter v0.96.1-0.20240306115632-b2693620eff6
