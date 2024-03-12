@@ -50,3 +50,9 @@ func (m HashMap[T]) Items() func(yield func(identity.Stream, T) bool) bool {
 func (m HashMap[T]) Len() int {
 	return len((map[identity.Stream]T)(m))
 }
+
+// Evictors remove the "least important" stream based on some strategy such as
+// the oldest, least active, etc.
+type Evictor interface {
+	Evict() identity.Stream
+}
