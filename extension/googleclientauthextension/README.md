@@ -42,4 +42,4 @@ service:
 Following are the configuration fields:
 - **project** - The Google Cloud Project telemetry is sent to if the `gcp.project.id` resource attribute is not set. If unspecified, this is determined using application default credentials.
 - [**scopes**](https://datatracker.ietf.org/doc/html/rfc6749#section-3.3) - The oauth 2.0 scopes requested by the extension.
-- [**quota_project**](https://cloud.google.com/apis/docs/system-parameters) - The project for quota and billing purposes. The caller must have serviceusage.services.use permission on the project.
+- [**quota_project**](https://cloud.google.com/apis/docs/system-parameters) - The project for quota and billing purposes. The caller must have `serviceusage.services.use` permission on the project.
