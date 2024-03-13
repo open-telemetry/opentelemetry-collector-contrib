@@ -275,8 +275,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 	record.SetObservedTimestamp(observedTimestamp)
 
 	m := encodeModel{}
-	now := time.Now()
-	doc := m.encodeLogECSMode(resource, record, scope, now)
+	doc := m.encodeLogECSMode(resource, record, scope)
 
 	expectedDocFields := pcommon.NewMap()
 	err = expectedDocFields.FromRaw(map[string]any{
@@ -361,8 +360,7 @@ func TestEncodeLogECSModeRecordTimestamps(t *testing.T) {
 			}
 
 			m := encodeModel{}
-			now := time.Now()
-			doc := m.encodeLogECSMode(resource, record, scope, now)
+			doc := m.encodeLogECSMode(resource, record, scope)
 
 			expectedDoc := objmodel.Document{}
 			expectedDoc.AddTimestamp("@timestamp", pcommon.NewTimestampFromTime(test.expectedTimestamp))
