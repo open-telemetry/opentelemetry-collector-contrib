@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	defaultMaxNumPartition               = 1_000_000
-	defaultMaxNumPendingAcksPerPartition = 1_000_000
+	defaultMaxNumPartition               uint64 = 1_000_000
+	defaultMaxNumPendingAcksPerPartition uint64 = 1_000_000
 )
 
 // Config defines configuration for ack extension
