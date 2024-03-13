@@ -28,7 +28,7 @@ func TestValidateConfig(t *testing.T) {
 			desc:   "Missing valid endpoint",
 			expect: errMissingEndpointFromConfig,
 			conf: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "",
 				},
 			},
@@ -37,7 +37,7 @@ func TestValidateConfig(t *testing.T) {
 			desc:   "Valid Secret",
 			expect: nil,
 			conf: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:8080",
 				},
 				Secret: "mysecret",
@@ -70,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	expect := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:8080",
 		},
 		Path:   "/ghaevents",

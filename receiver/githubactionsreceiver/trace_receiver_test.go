@@ -39,7 +39,7 @@ func TestCreateNewTracesReceiver(t *testing.T) {
 		{
 			desc: "User defined config success",
 			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:8080",
 				},
 				Secret: "mysecret",

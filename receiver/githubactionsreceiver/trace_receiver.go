@@ -78,7 +78,7 @@ func (gar *githubActionsReceiver) Start(ctx context.Context, host component.Host
 	endpoint := fmt.Sprintf("%s%s", gar.config.Endpoint, gar.config.Path)
 	gar.logger.Info("Starting GithubActions server", zap.String("endpoint", endpoint))
 	gar.server = &http.Server{
-		Addr:    gar.config.HTTPServerSettings.Endpoint,
+		Addr:    gar.config.ServerConfig.Endpoint,
 		Handler: gar,
 	}
 

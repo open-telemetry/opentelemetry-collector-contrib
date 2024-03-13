@@ -28,11 +28,11 @@ func eventToTraces(event interface{}, config *Config, logger *zap.Logger) (ptrac
 		logger.Info("Processing WorkflowJobEvent", zap.String("job_name", e.WorkflowJob.Name), zap.String("repo", e.Repository.FullName))
 		jobResource := resourceSpans.Resource()
 		createResourceAttributes(jobResource, e, config, logger)
-		traceID, err := generateTraceID(e.WorkflowJob.RunID, e.WorkflowJob.RunAttempt)
 
+		traceID, err := generateTraceID(e.WorkflowJob.RunID, e.WorkflowJob.RunAttempt)
 		if err != nil {
 			logger.Error("Failed to generate trace ID", zap.Error(err))
-			return traces, fmt.Errorf("failed to generate trace ID")
+			return ptrace.Traces{}, fmt.Errorf("failed to generate trace ID: %w", err)
 		}
 
 		if e.WorkflowJob.Status == "completed" {
@@ -43,11 +43,11 @@ func eventToTraces(event interface{}, config *Config, logger *zap.Logger) (ptrac
 	case *WorkflowRunEvent:
 		logger.Info("Processing WorkflowRunEvent", zap.String("workflow_name", e.WorkflowRun.Name), zap.String("repo", e.Repository.FullName))
 		runResource := resourceSpans.Resource()
-		traceID, err := generateTraceID(e.WorkflowRun.ID, e.WorkflowRun.RunAttempt)
 
+		traceID, err := generateTraceID(e.WorkflowRun.ID, e.WorkflowRun.RunAttempt)
 		if err != nil {
 			logger.Error("Failed to generate trace ID", zap.Error(err))
-			return traces, fmt.Errorf("failed to generate trace ID")
+			return ptrace.Traces{}, fmt.Errorf("failed to generate trace ID: %w", err)
 		}
 
 		if e.WorkflowRun.Status == "completed" {
@@ -130,7 +130,7 @@ func createRootSpan(resourceSpans ptrace.ResourceSpans, event *WorkflowRunEvent,
 	rootSpanID, err := generateParentSpanID(event.WorkflowRun.ID, event.WorkflowRun.RunAttempt)
 	if err != nil {
 		logger.Error("Failed to generate root span ID", zap.Error(err))
-		return pcommon.SpanID{}, err
+		return pcommon.SpanID{}, fmt.Errorf("failed to generate root span ID: %w", err)
 	}
 
 	span.SetTraceID(traceID)
