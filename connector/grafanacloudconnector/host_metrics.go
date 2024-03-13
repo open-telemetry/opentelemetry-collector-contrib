@@ -46,7 +46,6 @@ func (h *hostMetrics) metrics() (*pmetric.Metrics, int) {
 		pm = &metrics
 
 		ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-		ilm.Scope().SetName(typeStr)
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName(hostInfoMetric)
 		m.SetEmptyGauge()
