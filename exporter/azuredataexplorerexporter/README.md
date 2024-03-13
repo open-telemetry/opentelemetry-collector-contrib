@@ -63,6 +63,9 @@ exporters:
     # Set to "system" for system-assigned managed identity.
     # Set the MI client Id (GUID) for user-assigned managed identity.
     managed_identity_id: "z80da32c-108c-415c-a19e-643f461a677a"
+    # Workload identity authentication is enabled
+    # Set to true to use workload identity
+    use_workload_identity: true
     # Database for the logs
     db_name: "oteldb"
     # Metric table name
