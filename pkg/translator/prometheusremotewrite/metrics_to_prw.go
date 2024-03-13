@@ -21,6 +21,10 @@ type Settings struct {
 }
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.
+//
+// Deprecated: FromMetrics exists for historical compatibility and should not be used.
+// Use instead PrometheusConverter.FromMetrics() and then PrometheusConverter.TimeSeries()
+// to obtain the Prometheus remote write format metrics.
 func FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.TimeSeries, error) {
 	c := NewPrometheusConverter()
 	errs := c.FromMetrics(md, settings)
