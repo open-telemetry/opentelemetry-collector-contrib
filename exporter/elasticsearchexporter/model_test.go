@@ -251,6 +251,10 @@ func TestEncodeLogECSMode(t *testing.T) {
 		semconv.AttributeDeviceModelIdentifier: "SM-G920F",
 		semconv.AttributeDeviceModelName:       "Samsung Galaxy S6",
 		semconv.AttributeDeviceManufacturer:    "Samsung",
+		"k8s.namespace.name":                   "default",
+		"k8s.node.name":                        "node-1",
+		"k8s.pod.name":                         "opentelemetry-pod-autoconf",
+		"k8s.pod.uid":                          "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
 	})
 	require.NoError(t, err)
 
@@ -305,6 +309,10 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"device.model.name":       "Samsung Galaxy S6",
 		"device.manufacturer":     "Samsung",
 		"event.action":            "user-password-change",
+		"kubernetes.namespace":    "default",
+		"kubernetes.node.name":    "node-1",
+		"kubernetes.pod.name":     "opentelemetry-pod-autoconf",
+		"kubernetes.pod.uid":      "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
 	})
 	require.NoError(t, err)
 

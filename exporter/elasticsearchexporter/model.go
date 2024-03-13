@@ -150,6 +150,10 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 		semconv.AttributeProcessExecutablePath: "process.executable",
 		semconv.AttributeOSType:                "os.platform",
 		semconv.AttributeOSDescription:         "os.full",
+		"k8s.namespace.name":                   "kubernetes.namespace",
+		"k8s.node.name":                        "kubernetes.node.name",
+		"k8s.pod.name":                         "kubernetes.pod.name",
+		"k8s.pod.uid":                          "kubernetes.pod.uid",
 	}
 	encodeLogAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap)
 
