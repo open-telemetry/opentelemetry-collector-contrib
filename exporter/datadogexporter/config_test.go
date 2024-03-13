@@ -5,12 +5,19 @@ package datadogexporter
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestValidate(t *testing.T) {
+	idleConnTimeout := 30 * time.Second
+	maxIdleConn := 300
+	maxIdleConnPerHost := 150
+	maxConnPerHost := 250
 
 	tests := []struct {
 		name string
@@ -94,8 +101,8 @@ func TestValidate(t *testing.T) {
 			name: "TLS settings are valid",
 			cfg: &Config{
 				API: APIConfig{Key: "notnull"},
-				LimitedClientConfig: LimitedClientConfig{
-					TLSSetting: LimitedTLSClientSettings{
+				ClientConfig: confighttp.ClientConfig{
+					TLSSetting: configtls.ClientConfig{
 						InsecureSkipVerify: true,
 					},
 				},
@@ -115,6 +122,23 @@ func TestValidate(t *testing.T) {
 				Traces: TracesConfig{PeerTags: []string{"tag1", "tag2"}},
 			},
 		},
+		{
+			name: "With confighttp client configs",
+			cfg: &Config{
+				API: APIConfig{Key: "notnull"},
+				ClientConfig: confighttp.ClientConfig{
+					ReadBufferSize:      100,
+					WriteBufferSize:     200,
+					Timeout:             10 * time.Second,
+					IdleConnTimeout:     &idleConnTimeout,
+					MaxIdleConns:        &maxIdleConn,
+					MaxIdleConnsPerHost: &maxIdleConnPerHost,
+					MaxConnsPerHost:     &maxConnPerHost,
+					DisableKeepAlives:   true,
+					TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
+				},
+			},
+		},
 	}
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
@@ -129,10 +153,26 @@ func TestValidate(t *testing.T) {
 }
 
 func TestUnmarshal(t *testing.T) {
+	cfgWithHTTPConfigs := NewFactory().CreateDefaultConfig().(*Config)
+	idleConnTimeout := 30 * time.Second
+	maxIdleConn := 300
+	maxIdleConnPerHost := 150
+	maxConnPerHost := 250
+	cfgWithHTTPConfigs.ReadBufferSize = 100
+	cfgWithHTTPConfigs.WriteBufferSize = 200
+	cfgWithHTTPConfigs.Timeout = 10 * time.Second
+	cfgWithHTTPConfigs.MaxIdleConns = &maxIdleConn
+	cfgWithHTTPConfigs.MaxIdleConnsPerHost = &maxIdleConnPerHost
+	cfgWithHTTPConfigs.MaxConnsPerHost = &maxConnPerHost
+	cfgWithHTTPConfigs.IdleConnTimeout = &idleConnTimeout
+	cfgWithHTTPConfigs.DisableKeepAlives = true
+	cfgWithHTTPConfigs.TLSSetting.InsecureSkipVerify = true
+	cfgWithHTTPConfigs.warnings = nil
+
 	tests := []struct {
 		name      string
 		configMap *confmap.Conf
-		cfg       Config
+		cfg       *Config
 		err       string
 	}{
 		{
@@ -263,6 +303,21 @@ func TestUnmarshal(t *testing.T) {
 				},
 			}),
 			err: "\"metrics::sums::initial_cumulative_monotonic_value\" can only be configured when \"metrics::sums::cumulative_monotonic_mode\" is set to \"to_delta\"",
+		},
+		{
+			name: "unmarshall confighttp client configs",
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"read_buffer_size":        100,
+				"write_buffer_size":       200,
+				"timeout":                 "10s",
+				"max_idle_conns":          300,
+				"max_idle_conns_per_host": 150,
+				"max_conns_per_host":      250,
+				"disable_keep_alives":     true,
+				"idle_conn_timeout":       "30s",
+				"tls":                     map[string]any{"insecure_skip_verify": true},
+			}),
+			cfg: cfgWithHTTPConfigs,
 		},
 	}
 

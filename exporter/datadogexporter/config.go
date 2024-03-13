@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -390,24 +391,11 @@ type HostMetadataConfig struct {
 	Tags []string `mapstructure:"tags"`
 }
 
-// LimitedTLSClientSetting is a subset of TLSClientSetting, see LimitedClientConfig for more details
-type LimitedTLSClientSettings struct {
-	// InsecureSkipVerify controls whether a client verifies the server's
-	// certificate chain and host name.
-	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
-}
-
-type LimitedClientConfig struct {
-	TLSSetting LimitedTLSClientSettings `mapstructure:"tls,omitempty"`
-}
-
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
-
-	LimitedClientConfig `mapstructure:",squash"`
+	confighttp.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
 	TagsConfig `mapstructure:",squash"`
 
