@@ -517,7 +517,6 @@ func TestSpanWithAttributesPartlyIndexed(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, 1, len(segment.Annotations))
-
 	assert.Equal(t, "val1", segment.Annotations["attr1_1"])
 	assert.Equal(t, "val2", segment.Metadata["default"]["attr2@2"])
 }
@@ -536,7 +535,6 @@ func TestSpanWithAnnotationsAttribute(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, 1, len(segment.Annotations))
-
 	assert.Equal(t, "val2", segment.Annotations["attr2_2"])
 	assert.Equal(t, "val1", segment.Metadata["default"]["attr1@1"])
 }
@@ -545,7 +543,6 @@ func TestSpanWithAttributesAllIndexed(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-
 	attributes["attr1@1"] = "val1"
 	attributes["attr2@2"] = "val2"
 	resource := constructDefaultResource()
