@@ -5,10 +5,33 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"sort"
+	"strconv"
 
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
+
+type Settings struct {
+	Namespace           string
+	ExternalLabels      map[string]string
+	DisableTargetInfo   bool
+	ExportCreatedMetric bool
+	AddMetricSuffixes   bool
+	SendMetadata        bool
+}
+
+// FromMetrics converts pmetric.Metrics to Prometheus remote write format.
+func FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.TimeSeries, error) {
+	c := NewPrometheusConverter()
+	errs := c.FromMetrics(md, settings)
+	tss := c.TimeSeries()
+	out := make(map[string]*prompb.TimeSeries, len(tss))
+	for i := range tss {
+		out[strconv.Itoa(i)] = &tss[i]
+	}
+
+	return out, errs
+}
 
 // PrometheusConverter converts from OTel write format to Prometheus write format.
 type PrometheusConverter struct {
@@ -25,7 +48,7 @@ func NewPrometheusConverter() *PrometheusConverter {
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.
 func (c *PrometheusConverter) FromMetrics(md pmetric.Metrics, settings Settings) error {
-	return FromMetrics(md, settings, c)
+	return convertMetrics(md, settings, c)
 }
 
 // TimeSeries returns a slice of the prompb.TimeSeries that were converted from OTel format.

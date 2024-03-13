@@ -15,15 +15,6 @@ import (
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
-type Settings struct {
-	Namespace           string
-	ExternalLabels      map[string]string
-	DisableTargetInfo   bool
-	ExportCreatedMetric bool
-	AddMetricSuffixes   bool
-	SendMetadata        bool
-}
-
 type MetricsConverter interface {
 	// AddSample adds a sample and returns the corresponding TimeSeries.
 	AddSample(*prompb.Sample, []prompb.Label) *prompb.TimeSeries
@@ -42,8 +33,8 @@ type MetricsConverter interface {
 	AddExponentialHistogramDataPoints(pmetric.ExponentialHistogramDataPointSlice, pcommon.Resource, Settings, string) error
 }
 
-// FromMetrics converts pmetric.Metrics to another metrics format via the converter.
-func FromMetrics(md pmetric.Metrics, settings Settings, converter MetricsConverter) (errs error) {
+// convertMetrics converts pmetric.Metrics to another metrics format via the converter.
+func convertMetrics(md pmetric.Metrics, settings Settings, converter MetricsConverter) (errs error) {
 	resourceMetricsSlice := md.ResourceMetrics()
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
