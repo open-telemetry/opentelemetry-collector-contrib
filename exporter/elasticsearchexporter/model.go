@@ -17,6 +17,30 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
+// resourceAttrsConversionMap contains conversions for resource-level attributes
+// from their Semantic Conventions (SemConv) names to equivalent Elastic Common
+// Schema (ECS) names.
+var resourceAttrsConversionMap = map[string]string{
+	semconv.AttributeServiceInstanceID:     "service.node.name",
+	semconv.AttributeDeploymentEnvironment: "service.environment",
+	semconv.AttributeTelemetrySDKName:      "agent.name",
+	semconv.AttributeTelemetrySDKVersion:   "agent.version",
+	semconv.AttributeTelemetrySDKLanguage:  "service.language.name",
+	semconv.AttributeCloudPlatform:         "cloud.service.name",
+	semconv.AttributeContainerImageTags:    "container.image.tag",
+	semconv.AttributeHostName:              "host.hostname",
+	semconv.AttributeHostArch:              "host.architecture",
+	semconv.AttributeProcessExecutablePath: "process.executable",
+	semconv.AttributeProcessRuntimeName:    "service.runtime.name",
+	semconv.AttributeProcessRuntimeVersion: "service.runtime.version",
+	semconv.AttributeOSType:                "os.platform",
+	semconv.AttributeOSDescription:         "os.full",
+	"k8s.namespace.name":                   "kubernetes.namespace",
+	"k8s.node.name":                        "kubernetes.node.name",
+	"k8s.pod.name":                         "kubernetes.pod.name",
+	"k8s.pod.uid":                          "kubernetes.pod.uid",
+}
+
 type mappingModel interface {
 	encodeLog(pcommon.Resource, plog.LogRecord, pcommon.InstrumentationScope) ([]byte, error)
 	encodeSpan(pcommon.Resource, ptrace.Span, pcommon.InstrumentationScope) ([]byte, error)
@@ -137,26 +161,6 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 	var document objmodel.Document
 
 	// First, try to map resource-level attributes to ECS fields.
-	resourceAttrsConversionMap := map[string]string{
-		semconv.AttributeServiceInstanceID:     "service.node.name",
-		semconv.AttributeDeploymentEnvironment: "service.environment",
-		semconv.AttributeTelemetrySDKName:      "agent.name",
-		semconv.AttributeTelemetrySDKVersion:   "agent.version",
-		semconv.AttributeTelemetrySDKLanguage:  "service.language.name",
-		semconv.AttributeCloudPlatform:         "cloud.service.name",
-		semconv.AttributeContainerImageTags:    "container.image.tag",
-		semconv.AttributeHostName:              "host.hostname",
-		semconv.AttributeHostArch:              "host.architecture",
-		semconv.AttributeProcessExecutablePath: "process.executable",
-		semconv.AttributeProcessRuntimeName:    "service.runtime.name",
-		semconv.AttributeProcessRuntimeVersion: "service.runtime.version",
-		semconv.AttributeOSType:                "os.platform",
-		semconv.AttributeOSDescription:         "os.full",
-		"k8s.namespace.name":                   "kubernetes.namespace",
-		"k8s.node.name":                        "kubernetes.node.name",
-		"k8s.pod.name":                         "kubernetes.pod.name",
-		"k8s.pod.uid":                          "kubernetes.pod.uid",
-	}
 	encodeLogAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap)
 
 	// Then, try to map scope-level attributes to ECS fields.
