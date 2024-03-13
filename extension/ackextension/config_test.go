@@ -24,6 +24,6 @@ func TestValidateConfigWithValidConfig(t *testing.T) {
 	}
 	err := cfg.Validate()
 	require.Equal(t, err, nil)
-	require.Equal(t, cfg.MaxNumPendingAcksPerPartition, 3)
-	require.Equal(t, cfg.MaxNumPartition, 5)
+	require.Equal(t, cfg.MaxNumPendingAcksPerPartition, uint64(3))
+	require.Equal(t, cfg.MaxNumPartition, uint64(5))
 }
