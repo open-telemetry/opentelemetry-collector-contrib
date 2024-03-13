@@ -228,7 +228,7 @@ exporters:
     ##
     # read_buffer_size: 0
     # write_buffer_size: 0
-    # timeout: 0s
+    # timeout: 15s
     # max_idle_conns: 100
     # max_idle_conns_per_host: 0
     # max_conns_per_host: 0
