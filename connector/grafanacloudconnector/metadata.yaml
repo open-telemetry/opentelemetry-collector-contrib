@@ -7,7 +7,7 @@ status:
     development: [traces_to_metrics]
   distributions: [contrib, grafana]
   codeowners:
-    active: [rlankfo, jcreixell]
+    active: [jpkrohling, rlankfo, jcreixell]
     emeritus: []
     seeking_new: true
 
