@@ -1,4 +1,5 @@
 type: otlpjsonfile
+scope_name: otelcol/otlpjsonfilereceiver
 
 status:
   class: receiver

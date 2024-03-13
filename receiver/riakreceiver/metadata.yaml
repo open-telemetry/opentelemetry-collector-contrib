@@ -1,4 +1,5 @@
 type: riak
+scope_name: otelcol/riakreceiver
 
 status:
   class: receiver

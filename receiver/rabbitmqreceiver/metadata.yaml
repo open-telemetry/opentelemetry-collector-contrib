@@ -1,4 +1,5 @@
 type: rabbitmq
+scope_name: otelcol/rabbitmqreceiver
 
 status:
   class: receiver

@@ -1,4 +1,5 @@
 type: prometheus
+scope_name: otelcol/prometheus
 
 status:
   class: exporter
