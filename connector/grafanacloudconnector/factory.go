@@ -1,0 +1,40 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package grafanacloudconnector
+
+import (
+	"context"
+	"time"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/consumer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector/internal/metadata"
+)
+
+const (
+	typeStr = "grafanacloudconnector"
+)
+
+func NewFactory() connector.Factory {
+	return connector.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		connector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability),
+	)
+}
+
+func createDefaultConfig() component.Config {
+	return &Config{
+		HostIdentifiers:      []string{"host.id"},
+		MetricsFlushInterval: 60 * time.Second,
+	}
+}
+
+func createTracesToMetricsConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, next consumer.Metrics) (connector.Traces, error) {
+	c := newConnector(params.Logger, cfg)
+	c.metricsConsumer = next
+	return c, nil
+}
