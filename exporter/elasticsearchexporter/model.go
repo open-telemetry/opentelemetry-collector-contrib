@@ -148,6 +148,8 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 		semconv.AttributeHostName:              "host.hostname",
 		semconv.AttributeHostArch:              "host.architecture",
 		semconv.AttributeProcessExecutablePath: "process.executable",
+		semconv.AttributeProcessRuntimeName:    "service.runtime.name",
+		semconv.AttributeProcessRuntimeVersion: "service.runtime.version",
 		semconv.AttributeOSType:                "os.platform",
 		semconv.AttributeOSDescription:         "os.full",
 		"k8s.namespace.name":                   "kubernetes.namespace",
