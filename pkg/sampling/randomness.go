@@ -87,3 +87,8 @@ func (rnd Randomness) RValue() string {
 	//   strip the leading "1":           00aabbccddeeff
 	return strconv.FormatUint(numRandomnessValues+rnd.unsigned, hexBase)[1:]
 }
+
+// @@@
+func (rnd Randomness) Unsigned() uint64 {
+	return rnd.unsigned
+}

@@ -73,8 +73,8 @@ type Config struct {
 	StrictRandomness bool `mapstructure:"strict_randomness"`
 
 	// How many hex digits of th: value to use, max, from 1 up to
-	// 14.  Default is 5.
-	SamplingPrecision uint8 `mapstructure:"sampling_precision"`
+	// 14.  Default is 5.  0 is treated as full precision.
+	SamplingPrecision int `mapstructure:"sampling_precision"`
 
 	///////
 	// Logs only fields below.
