@@ -52,7 +52,7 @@ func createMetricsReceiver(
 	dockerConfig := config.(*Config)
 	dsr := newMetricsReceiver(params, dockerConfig)
 
-	scrp, err := scraperhelper.NewScraper(metadata.Type.String(), dsr.scrapeV2, scraperhelper.WithStart(dsr.start))
+	scrp, err := scraperhelper.NewScraper(metadata.Type.String(), dsr.scrapeV2, scraperhelper.WithStart(dsr.start), scraperhelper.WithShutdown(dsr.shutdown))
 	if err != nil {
 		return nil, err
 	}

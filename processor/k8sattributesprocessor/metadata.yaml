@@ -1,4 +1,5 @@
 type: k8sattributes
+scope_name: otelcol/k8sattributes
 
 status:
   class: processor

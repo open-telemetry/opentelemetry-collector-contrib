@@ -21,8 +21,12 @@ import (
 
 var result any
 
+func aggr() streams.Aggregator[data.Number] {
+	return streams.IntoAggregator(delta.New[data.Number]())
+}
+
 func BenchmarkAccumulator(b *testing.B) {
-	acc := delta.Numbers()
+	acc := aggr()
 	sum := random.Sum()
 
 	bench := func(b *testing.B, nstreams int) {
@@ -65,7 +69,7 @@ func BenchmarkAccumulator(b *testing.B) {
 
 // verify the distinction between streams and the accumulated value
 func TestAddition(t *testing.T) {
-	acc := delta.Numbers()
+	acc := aggr()
 	sum := random.Sum()
 
 	type Idx int
@@ -104,31 +108,46 @@ func TestAddition(t *testing.T) {
 
 // verify that start + last times are updated
 func TestTimes(t *testing.T) {
-	acc := delta.Numbers()
-	id, data := random.Sum().Stream()
+	acc := aggr()
+	id, base := random.Sum().Stream()
+	point := func(start, last pcommon.Timestamp) data.Number {
+		dp := base.Clone()
+		dp.SetStartTimestamp(start)
+		dp.SetTimestamp(last)
+		return dp
+	}
 
-	start := pcommon.Timestamp(1234)
-	ts1, ts2 := pcommon.Timestamp(1234), pcommon.Timestamp(1235)
+	// first sample: its the first ever, so take it as-is
+	{
+		dp := point(1000, 1000)
+		res, err := acc.Aggregate(id, dp)
 
-	// first sample: take timestamps of point
-	first := data.Clone()
-	first.SetStartTimestamp(start)
-	first.SetTimestamp(ts1)
+		require.NoError(t, err)
+		require.Equal(t, time(1000), res.StartTimestamp())
+		require.Equal(t, time(1000), res.Timestamp())
+	}
 
-	r1, err := acc.Aggregate(id, first)
-	require.NoError(t, err)
-	require.Equal(t, start, r1.StartTimestamp())
-	require.Equal(t, ts1, r1.Timestamp())
+	// second sample: its subsequent, so keep original startTime, but update lastSeen
+	{
+		dp := point(1000, 1100)
+		res, err := acc.Aggregate(id, dp)
 
-	// second sample: take last of point, keep start
-	second := data.Clone()
-	second.SetStartTimestamp(start)
-	second.SetTimestamp(ts2)
+		require.NoError(t, err)
+		require.Equal(t, time(1000), res.StartTimestamp())
+		require.Equal(t, time(1100), res.Timestamp())
+	}
 
-	r2, err := acc.Aggregate(id, second)
-	require.NoError(t, err)
-	require.Equal(t, start, r2.StartTimestamp())
-	require.Equal(t, ts2, r2.Timestamp())
+	// third sample: its subsequent, but has a more recent startTime, which is
+	// PERMITTED by the spec.
+	// still keep original startTime, but update lastSeen.
+	{
+		dp := point(1100, 1200)
+		res, err := acc.Aggregate(id, dp)
+
+		require.NoError(t, err)
+		require.Equal(t, time(1000), res.StartTimestamp())
+		require.Equal(t, time(1200), res.Timestamp())
+	}
 }
 
 func TestErrs(t *testing.T) {
@@ -159,7 +178,7 @@ func TestErrs(t *testing.T) {
 	for _, c := range cases {
 		c := c
 		t.Run(fmt.Sprintf("%T", c.Err), func(t *testing.T) {
-			acc := delta.Numbers()
+			acc := aggr()
 			id, data := random.Sum().Stream()
 
 			good := data.Clone()

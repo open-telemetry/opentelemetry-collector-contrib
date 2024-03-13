@@ -1,4 +1,5 @@
 type: purefa
+scope_name: otelcol/purefareceiver
 
 status:
   class: receiver
@@ -7,6 +8,3 @@ status:
   distributions: [contrib, sumo]
   codeowners:
     active: [jpkrohling, dgoscn, chrroberts-pure]
-
-tests:
-  config:
