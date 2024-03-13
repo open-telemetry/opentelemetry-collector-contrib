@@ -12,6 +12,8 @@ import (
 )
 
 // InMemoryAckExtension is the in-memory implementation of the AckExtension
+// When MaxNumPartition is reached, the acks associated with the least recently used partition are evicted.
+// When MaxNumPendingAcksPerPartition is reached, the least recently used ack is evicted
 type InMemoryAckExtension struct {
 	partitionMap                  *lru.Cache[string, *ackPartition]
 	maxNumPendingAcksPerPartition uint64
@@ -21,7 +23,7 @@ func newInMemoryAckExtension(conf *Config) *InMemoryAckExtension {
 	cache, _ := lru.New[string, *ackPartition](int(conf.MaxNumPartition))
 	return &InMemoryAckExtension{
 		partitionMap:                  cache,
-		maxNumPendingAcksPerPartition: defaultMaxNumPendingAcksPerPartition,
+		maxNumPendingAcksPerPartition: conf.MaxNumPendingAcksPerPartition,
 	}
 }
 
@@ -30,17 +32,11 @@ type ackPartition struct {
 	ackMap *lru.Cache[uint64, bool]
 }
 
-func newAckStatus(maxPendingAcks uint64) *ackPartition {
-	id := uint64(0)
-
+func newAckPartition(maxPendingAcks uint64) *ackPartition {
 	cache, _ := lru.New[uint64, bool](int(maxPendingAcks))
-	cache.Add(id, false)
-
-	as := ackPartition{
+	return &ackPartition{
 		ackMap: cache,
 	}
-	as.id.Store(id)
-	return &as
 }
 
 func (as *ackPartition) nextAck() uint64 {
@@ -85,8 +81,9 @@ func (i *InMemoryAckExtension) ProcessEvent(partitionID string) (ackID uint64) {
 		return val.nextAck()
 	}
 
-	i.partitionMap.Add(partitionID, newAckStatus(i.maxNumPendingAcksPerPartition))
-	return 0
+	i.partitionMap.ContainsOrAdd(partitionID, newAckPartition(i.maxNumPendingAcksPerPartition))
+	val, _ := i.partitionMap.Get(partitionID)
+	return val.nextAck()
 }
 
 // Ack acknowledges an event has been processed.

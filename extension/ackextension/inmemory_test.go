@@ -13,34 +13,31 @@ import (
 
 func TestAckPartitionNextAckConcurrency(t *testing.T) {
 	ackSize := 1_000_000
-	ap := newAckStatus(uint64(ackSize))
-	ackIDMap := sync.Map{}
+	ap := newAckPartition(uint64(ackSize))
+	map1 := map[uint64]struct{}{}
+	map2 := map[uint64]struct{}{}
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	go func() {
 		for i := 0; i < ackSize/2; i++ {
-			ackIDMap.Store(ap.nextAck(), struct {
-			}{})
+			map1[ap.nextAck()] = struct{}{}
 		}
 		wg.Done()
 	}()
 	go func() {
 		for i := 0; i < ackSize/2; i++ {
-			ackIDMap.Store(ap.nextAck(), struct {
-			}{})
+			map2[ap.nextAck()] = struct{}{}
 		}
 		wg.Done()
 	}()
 
 	wg.Wait()
 
-	var size int
-	ackIDMap.Range(func(_, _ any) bool {
-		size++
-		return true
-	})
+	for k, v := range map2 {
+		map1[k] = v
+	}
 
-	require.Equal(t, size, ackSize)
+	require.Equal(t, len(map1), ackSize)
 }
 
 func TestExtensionAck_ProcessEvents_EventsUnAcked(t *testing.T) {

@@ -22,12 +22,13 @@ type Config struct {
 	MaxNumPendingAcksPerPartition uint64 `mapstructure:"max_number_of_pending_acks_per_partition"`
 }
 
+// Validate checks that valid inputs are provided. Otherwise, assign default values.
 func (cfg *Config) Validate() error {
-	if cfg.MaxNumPartition <= 0 {
+	if cfg.MaxNumPartition == 0 {
 		cfg.MaxNumPartition = defaultMaxNumPartition
 	}
 
-	if cfg.MaxNumPendingAcksPerPartition <= 0 {
+	if cfg.MaxNumPendingAcksPerPartition == 0 {
 		cfg.MaxNumPendingAcksPerPartition = defaultMaxNumPendingAcksPerPartition
 	}
 
