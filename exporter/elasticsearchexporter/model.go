@@ -20,10 +20,13 @@ import (
 // resourceAttrsConversionMap contains conversions for resource-level attributes
 // from their Semantic Conventions (SemConv) names to equivalent Elastic Common
 // Schema (ECS) names.
+// If the ECS field name is specified as an empty string (""), the converter will
+// neither convert the SemConv key to the equivalent ECS name nor pass-through the
+// SemConv key as-is to become the ECS name.
 var resourceAttrsConversionMap = map[string]string{
 	semconv.AttributeServiceInstanceID:     "service.node.name",
 	semconv.AttributeDeploymentEnvironment: "service.environment",
-	semconv.AttributeTelemetrySDKName:      "agent.name",
+	semconv.AttributeTelemetrySDKName:      "",
 	semconv.AttributeTelemetrySDKVersion:   "agent.version",
 	semconv.AttributeTelemetrySDKLanguage:  "service.language.name",
 	semconv.AttributeCloudPlatform:         "cloud.service.name",
@@ -265,8 +268,13 @@ func encodeLogAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, 
 	}
 
 	attrs.Range(func(k string, v pcommon.Value) bool {
-		// If mapping to ECS key is found, use it.
+		// If ECS key is found for current k in conversion map, use it.
 		if ecsKey, exists := conversionMap[k]; exists {
+			if ecsKey == "" {
+				// Skip the conversion for this k.
+				return true
+			}
+
 			document.AddAttribute(ecsKey, v)
 			return true
 		}

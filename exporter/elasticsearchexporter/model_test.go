@@ -282,7 +282,6 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"service.name":            "foo.bar",
 		"service.version":         "1.1.0",
 		"service.node.name":       "i-103de39e0a",
-		"agent.name":              "perl-otel",
 		"agent.version":           "7.9.12",
 		"service.language.name":   "perl",
 		"cloud.provider":          "gcp",
