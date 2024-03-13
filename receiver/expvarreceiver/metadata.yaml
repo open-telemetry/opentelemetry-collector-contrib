@@ -1,4 +1,5 @@
 type: expvar
+scope_name: otelcol/expvarreceiver
 
 status:
   class: receiver

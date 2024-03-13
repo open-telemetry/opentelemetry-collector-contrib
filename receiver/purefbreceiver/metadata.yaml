@@ -1,4 +1,5 @@
 type: purefb
+scope_name: otelcol/purefbreceiver
 
 status:
   class: receiver

@@ -1,4 +1,5 @@
 type: carbon
+scope_name: otelcol/carbonreceiver
 
 status:
   class: receiver

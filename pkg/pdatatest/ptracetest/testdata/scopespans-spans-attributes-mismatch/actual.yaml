@@ -20,7 +20,7 @@ resourceSpans:
           - attributes:
               - key: key2
                 value:
-                  stringValue: value2
+                  stringValue: value3
             parentSpanId: ""
             spanId: ""
             status: {}

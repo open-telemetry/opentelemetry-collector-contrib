@@ -1,4 +1,5 @@
 type: collectd
+scope_name: otelcol/collectdreceiver
 
 status:
   class: receiver
