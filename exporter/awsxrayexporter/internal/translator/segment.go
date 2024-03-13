@@ -51,7 +51,7 @@ var (
 	remoteXrayExporterDotConverter = featuregate.GlobalRegistry().MustRegister(
 		"xray.exporter.dotconverter.disabled",
 		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("XRay used to convert . type annotation key to _ to fulfill backend requirement, but now backend compatiable with Otel . type input, so the converter is no longer needed"),
+		featuregate.WithRegisterDescription("X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled. "),
 	)
 )
 
