@@ -311,7 +311,6 @@ func TestEncodeLogECSMode(t *testing.T) {
 	expectedDoc := objmodel.Document{}
 	expectedDoc.AddAttributes("", expectedDocFields)
 	expectedDoc.AddTimestamp("@timestamp", observedTimestamp)
-	expectedDoc.Add("event.received", objmodel.TimestampValue(now))
 	expectedDoc.Add("container.image.tag", objmodel.ArrValue(objmodel.StringValue("v3.4.0")))
 
 	doc.Sort()
@@ -355,7 +354,6 @@ func TestEncodeLogECSModeRecordTimestamps(t *testing.T) {
 
 			expectedDoc := objmodel.Document{}
 			expectedDoc.AddTimestamp("@timestamp", pcommon.NewTimestampFromTime(test.expectedTimestamp))
-			expectedDoc.Add("event.received", objmodel.TimestampValue(now))
 
 			doc.Sort()
 			expectedDoc.Sort()
