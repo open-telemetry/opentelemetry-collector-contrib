@@ -1,4 +1,5 @@
 type: loki
+scope_name: otelcol/loki
 
 status:
   class: exporter
@@ -11,5 +12,4 @@ status:
     active: [gramidt, gouthamve, jpkrohling, mar4uk]
 
 tests:
-  config:
   expect_consumer_error: true

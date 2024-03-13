@@ -1,4 +1,5 @@
 type: datadog
+scope_name: otelcol/datadogreceiver
 
 status:
   class: receiver
@@ -7,6 +8,3 @@ status:
   distributions: [contrib, sumo]
   codeowners:
     active: [boostchicken, gouthamve, jpkrohling, MovieStoreGuy]
-
-tests:
-  config:

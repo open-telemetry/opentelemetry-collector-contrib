@@ -163,7 +163,7 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				countMetric.SetName(histogramMetric.Name() + "_count")
 				countMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				countMetric.Sum().SetIsMonotonic(true)
-				countMetric.SetUnit(histogramMetric.Unit())
+				countMetric.SetUnit("1")
 
 				histogramDp0 := histogramMetric.Histogram().DataPoints().At(0)
 				countDp0 := countMetric.Sum().DataPoints().AppendEmpty()

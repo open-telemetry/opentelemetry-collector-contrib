@@ -18,11 +18,12 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
 )
 
-func CreateCollectorObjects(t *testing.T, client *dynamic.DynamicClient, testID string) []*unstructured.Unstructured {
-	manifestsDir := filepath.Join(".", "testdata", "e2e", "collector")
+func CreateCollectorObjects(t *testing.T, client *K8sClient, testID string, manifestsDir string) []*unstructured.Unstructured {
+	if manifestsDir == "" {
+		manifestsDir = filepath.Join(".", "testdata", "e2e", "collector")
+	}
 	manifestFiles, err := os.ReadDir(manifestsDir)
 	require.NoErrorf(t, err, "failed to read collector manifests directory %s", manifestsDir)
 	host := HostEndpoint(t)
@@ -35,6 +36,7 @@ func CreateCollectorObjects(t *testing.T, client *dynamic.DynamicClient, testID 
 		require.NoError(t, tmpl.Execute(manifest, map[string]string{
 			"Name":         "otelcol-" + testID,
 			"HostEndpoint": host,
+			"TestID":       testID,
 		}))
 		obj, err := CreateObject(client, manifest.Bytes())
 		require.NoErrorf(t, err, "failed to create collector object from manifest %s", manifestFile.Name())
@@ -52,13 +54,13 @@ func CreateCollectorObjects(t *testing.T, client *dynamic.DynamicClient, testID 
 	return createdObjs
 }
 
-func WaitForCollectorToStart(t *testing.T, client *dynamic.DynamicClient, podNamespace string, podLabels map[string]any) {
+func WaitForCollectorToStart(t *testing.T, client *K8sClient, podNamespace string, podLabels map[string]any) {
 	podGVR := schema.GroupVersionResource{Version: "v1", Resource: "pods"}
 	listOptions := metav1.ListOptions{LabelSelector: SelectorFromMap(podLabels).String()}
 	podTimeoutMinutes := 3
 	t.Logf("waiting for collector pods to be ready")
 	require.Eventuallyf(t, func() bool {
-		list, err := client.Resource(podGVR).Namespace(podNamespace).List(context.Background(), listOptions)
+		list, err := client.DynamicClient.Resource(podGVR).Namespace(podNamespace).List(context.Background(), listOptions)
 		require.NoError(t, err, "failed to list collector pods")
 		podsNotReady := len(list.Items)
 		if podsNotReady == 0 {

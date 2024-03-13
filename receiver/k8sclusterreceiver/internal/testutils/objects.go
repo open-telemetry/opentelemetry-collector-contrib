@@ -279,6 +279,11 @@ func NewEvictedTerminatedPodStatusWithContainer(containerName, containerID strin
 				State: corev1.ContainerState{
 					Terminated: &corev1.ContainerStateTerminated{},
 				},
+				LastTerminationState: corev1.ContainerState{
+					Terminated: &corev1.ContainerStateTerminated{
+						Reason: "Evicted",
+					},
+				},
 			},
 		},
 	}
