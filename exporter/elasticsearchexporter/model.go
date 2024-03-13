@@ -114,7 +114,6 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 	encodeLogAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
 
 	// Handle special cases.
-	document.Add("event.received", objmodel.TimestampValue(now))
 	encodeLogTimestampECSMode(&document, record)
 
 	return document
