@@ -29,6 +29,12 @@ type logSamplerProcessor struct {
 // newLogsProcessor returns a processor.LogsProcessor that will perform head sampling according to the given
 // configuration.
 func newLogsProcessor(ctx context.Context, set processor.CreateSettings, nextConsumer consumer.Logs, cfg *Config) (processor.Logs, error) {
+	// README allows percents >100 to equal 100%, but t-value
+	// encoding does not.  Correct it here.
+	pct := float64(cfg.SamplingPercentage)
+	if pct > 100 {
+		pct = 100
+	}
 
 	lsp := &logSamplerProcessor{
 		hashScaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
@@ -54,7 +60,7 @@ func (lsp *logSamplerProcessor) processLogs(ctx context.Context, ld plog.Logs) (
 			ill.LogRecords().RemoveIf(func(l plog.LogRecord) bool {
 
 				tagPolicyValue := "always_sampling"
-				// pick the sampling source.
+				// Pick the sampling source.
 				var lidBytes []byte
 				if lsp.traceIDEnabled && !l.TraceID().IsEmpty() {
 					value := l.TraceID()

@@ -114,3 +114,8 @@ func ThresholdGreater(a, b Threshold) bool {
 func ThresholdLessThan(a, b Threshold) bool {
 	return a.unsigned < b.unsigned
 }
+
+// @@@
+func (th Threshold) Unsigned() uint64 {
+	return th.unsigned
+}

@@ -14,6 +14,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -57,11 +58,13 @@ var (
 )
 
 type samplingCarrier interface {
-	threshold() (sampling.Threshold, bool)
 	explicitRandomness() (sampling.Randomness, bool)
-	updateThreshold(sampling.Threshold, string) error
 	setExplicitRandomness(sampling.Randomness)
+
 	clearThreshold()
+	threshold() (sampling.Threshold, bool)
+	updateThreshold(sampling.Threshold, string) error
+
 	serialize(io.StringWriter) error
 }
 
@@ -74,7 +77,11 @@ type dataSampler interface {
 	// the result from decide().
 	update(should bool, carrier samplingCarrier)
 
+	// randomnessFromSpan extracts randomness and returns a carrier specific to traces data.
 	randomnessFromSpan(s ptrace.Span) (randomness sampling.Randomness, carrier samplingCarrier, err error)
+
+	// randomnessFromLogRecord extracts randomness and returns a carrier specific to logs data.
+	randomnessFromLogRecord(s plog.LogRecord) (randomness sampling.Randomness, carrier samplingCarrier, err error)
 }
 
 type traceProcessor struct {
@@ -91,8 +98,8 @@ type commonFields struct {
 	logger *zap.Logger
 }
 
-// traceHasher is the original hash-based implementation.
-type traceHasher struct {
+// hashingSampler is the original hash-based implementation.
+type hashingSampler struct {
 	// Hash-based calculation
 	hashScaledSamplerate uint32
 	hashSeed             uint32
@@ -118,13 +125,13 @@ type consistentTracestateCommon struct {
 	consistentCommon
 }
 
-// zeroProbability always decides false.
-type zeroProbability struct {
+// neverSampler always decides false.
+type neverSampler struct {
 	consistentTracestateCommon
 }
 
-// traceEqualizer adjusts thresholds absolutely.  Cannot be used with zero.
-type traceEqualizer struct {
+// equalizingSampler adjusts thresholds absolutely.  Cannot be used with zero.
+type equalizingSampler struct {
 	// TraceID-randomness-based calculation
 	tValueThreshold sampling.Threshold
 
@@ -134,8 +141,8 @@ type traceEqualizer struct {
 	consistentTracestateCommon
 }
 
-// traceEqualizer adjusts thresholds relatively.  Cannot be used with zero.
-type traceProportionalizer struct {
+// proportionalSampler adjusts thresholds relatively.  Cannot be used with zero.
+type proportionalSampler struct {
 	// ratio in the range [2**-56, 1]
 	ratio float64
 
@@ -153,14 +160,18 @@ func (*consistentCommon) update(should bool, wts samplingCarrier) {
 }
 
 // randomnessToHashed returns the original 14-bit hash value used by
-// this component.
+// this component, which is compared against an acceptance threshold.
 func randomnessToHashed(rnd sampling.Randomness) uint32 {
 	// By design, the least-significant bits of the unsigned value matches
 	// the original hash function.
 	return uint32(rnd.Unsigned() & bitMaskHashBuckets)
 }
 
-func (th *traceHasher) randomnessFromSpan(s ptrace.Span) (sampling.Randomness, samplingCarrier, error) {
+func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (sampling.Randomness, samplingCarrier, error) {
+	// TBD@@@
+}
+
+func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (sampling.Randomness, samplingCarrier, error) {
 	tid := s.TraceID()
 	hashed32 := computeHash(tid[:], th.hashSeed)
 	hashed := uint64(hashed32 & bitMaskHashBuckets)
@@ -232,6 +243,10 @@ func (th *traceHasher) randomnessFromSpan(s ptrace.Span) (sampling.Randomness, s
 	return rnd, tsc, nil
 }
 
+func (ctc *consistentTracestateCommon) randomnessFromLogRecord(l plog.LogRecord) (sampling.Randomness, samplingCarrier, error) {
+	// @@@
+}
+
 func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (randomness sampling.Randomness, carrier samplingCarrier, err error) {
 	rawts := s.TraceState().AsRaw()
 	tsc := &tracestateCarrier{}
@@ -275,81 +290,19 @@ func consistencyCheck(randomness sampling.Randomness, carrier samplingCarrier, c
 // perform intermediate span sampling according to the given
 // configuration.
 func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
-	// README allows percents >100 to equal 100%, but t-value
-	// encoding does not.  Correct it here.
-	pct := float64(cfg.SamplingPercentage)
-	if pct > 100 {
-		pct = 100
-	}
 
 	common := commonFields{
 		strict: cfg.StrictRandomness,
 		logger: set.Logger,
 	}
-	ccom := consistentCommon{
-		commonFields: common,
-	}
-	ctcom := consistentTracestateCommon{
-		consistentCommon: ccom,
-	}
 	tp := &traceProcessor{
 		commonFields: common,
 	}
 
-	// error ignored below b/c already checked once
-	if cfg.SamplerMode == modeUnset {
-		if cfg.HashSeed != 0 {
-			cfg.SamplerMode = HashSeed
-		} else {
-			cfg.SamplerMode = DefaultMode
-		}
-	}
-
-	if pct == 0 {
-		tp.sampler = &zeroProbability{
-			consistentTracestateCommon: ctcom,
-		}
+	if samp, err := makeSampler(cfg, common); err != nil {
+		return nil, err
 	} else {
-		ratio := pct / 100
-		switch cfg.SamplerMode {
-		case HashSeed:
-			ts := &traceHasher{
-				consistentCommon: ccom,
-			}
-
-			// Adjust sampling percentage on private so recalculations are avoided.
-			ts.hashScaledSamplerate = uint32(pct * percentageScaleFactor)
-			ts.hashSeed = cfg.HashSeed
-			ts.strict = cfg.StrictRandomness
-
-			if !ts.strict {
-				threshold, err := sampling.ProbabilityToThresholdWithPrecision(ratio, cfg.SamplingPrecision)
-				if err != nil {
-					return nil, err
-				}
-
-				ts.unstrictTValueEncoding = threshold.TValue()
-				ts.unstrictTValueThreshold = threshold
-			}
-			tp.sampler = ts
-		case Equalizing:
-			threshold, err := sampling.ProbabilityToThresholdWithPrecision(ratio, cfg.SamplingPrecision)
-			if err != nil {
-				return nil, err
-			}
-
-			tp.sampler = &traceEqualizer{
-				tValueEncoding:             threshold.TValue(),
-				tValueThreshold:            threshold,
-				consistentTracestateCommon: ctcom,
-			}
-		case Proportional:
-			tp.sampler = &traceProportionalizer{
-				ratio:                      ratio,
-				prec:                       cfg.SamplingPrecision,
-				consistentTracestateCommon: ctcom,
-			}
-		}
+		tp.sampler = samp
 	}
 
 	return processorhelper.NewTracesProcessor(
@@ -359,6 +312,82 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		nextConsumer,
 		tp.processTraces,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+}
+
+func makeSampler(cfg *Config, common commonFields) (dataSampler, error) {
+	// README allows percents >100 to equal 100%, but t-value
+	// encoding does not.  Correct it here.
+	pct := cfg.SamplingPercentage
+	if pct > 100 {
+		pct = 100
+	}
+	mode := cfg.SamplerMode
+	if mode == modeUnset {
+		if cfg.HashSeed != 0 {
+			mode = HashSeed
+		} else {
+			mode = DefaultMode
+		}
+	}
+
+	ccom := consistentCommon{
+		commonFields: common,
+	}
+	ctcom := consistentTracestateCommon{
+		consistentCommon: ccom,
+	}
+
+	if pct == 0 {
+		return &neverSampler{
+			consistentTracestateCommon: ctcom,
+		}, nil
+	}
+	ratio := float64(pct / 100)
+
+	switch mode {
+	case Equalizing:
+		threshold, err := sampling.ProbabilityToThresholdWithPrecision(ratio, cfg.SamplingPrecision)
+		if err != nil {
+			return nil, err
+		}
+
+		return &equalizingSampler{
+			tValueEncoding:             threshold.TValue(),
+			tValueThreshold:            threshold,
+			consistentTracestateCommon: ctcom,
+		}, nil
+
+	case Proportional:
+		return &proportionalSampler{
+			ratio:                      ratio,
+			prec:                       cfg.SamplingPrecision,
+			consistentTracestateCommon: ctcom,
+		}, nil
+
+	default: // i.e., HashSeed
+		ts := &hashingSampler{
+			consistentCommon:     ccom,
+			hashScaledSamplerate: uint32(pct * percentageScaleFactor),
+			hashSeed:             cfg.HashSeed,
+		}
+
+		if !common.strict {
+			// Note: the following operation rounds the probability to a nearby
+			// value with configurable precision.
+			threshold, err := sampling.ProbabilityToThresholdWithPrecision(ratio, cfg.SamplingPrecision)
+			if err != nil {
+				return nil, err
+			}
+
+			high14 := ((threshold.Unsigned() + 1<<41) >> 42)
+
+			// Hmmm. problem is that this can round down. @@@
+			ts.hashScaledSamplerate = high14
+			ts.unstrictTValueEncoding = threshold.TValue()
+			ts.unstrictTValueThreshold = threshold
+		}
+		return ts, nil
+	}
 }
 
 type tracestateCarrier struct {
@@ -391,17 +420,17 @@ func (tc *tracestateCarrier) serialize(w io.StringWriter) error {
 	return tc.W3CTraceState.Serialize(w)
 }
 
-func (*zeroProbability) decide(_ sampling.Randomness, _ samplingCarrier) (should bool, err error) {
+func (*neverSampler) decide(_ sampling.Randomness, _ samplingCarrier) (should bool, err error) {
 	return false, nil
 }
 
-func (th *traceHasher) decide(rnd sampling.Randomness, carrier samplingCarrier) (bool, error) {
+func (th *hashingSampler) decide(rnd sampling.Randomness, carrier samplingCarrier) (bool, error) {
 	hashed := randomnessToHashed(rnd)
 	should := hashed < th.hashScaledSamplerate
 	return should, nil
 }
 
-func (te *traceEqualizer) decide(rnd sampling.Randomness, carrier samplingCarrier) (bool, error) {
+func (te *equalizingSampler) decide(rnd sampling.Randomness, carrier samplingCarrier) (bool, error) {
 	should := te.tValueThreshold.ShouldSample(rnd)
 	if should {
 		err := carrier.updateThreshold(te.tValueThreshold, te.tValueEncoding)
@@ -413,7 +442,7 @@ func (te *traceEqualizer) decide(rnd sampling.Randomness, carrier samplingCarrie
 	return should, nil
 }
 
-func (tp *traceProportionalizer) decide(rnd sampling.Randomness, carrier samplingCarrier) (bool, error) {
+func (tp *proportionalSampler) decide(rnd sampling.Randomness, carrier samplingCarrier) (bool, error) {
 	incoming := 1.0
 	if tv, has := carrier.threshold(); has {
 		incoming = tv.Probability()
