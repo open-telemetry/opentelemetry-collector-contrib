@@ -13,11 +13,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
-
-	"go.opentelemetry.io/collector/featuregate"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -409,7 +408,8 @@ func TestFixSegmentName(t *testing.T) {
 }
 
 func TestFixAnnotationKey(t *testing.T) {
-	featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.Nil(t, err)
 
 	validKey := "Key_1"
 	fixedKey := fixAnnotationKey(validKey)
@@ -423,7 +423,8 @@ func TestFixAnnotationKey(t *testing.T) {
 }
 
 func TestFixAnnotationKeyWithAllowDot(t *testing.T) {
-	featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.Nil(t, err)
 
 	validKey := "Key_1"
 	fixedKey := fixAnnotationKey(validKey)
@@ -583,7 +584,8 @@ func TestSpanWithAttributesSegmentMetadata(t *testing.T) {
 }
 
 func TestResourceAttributesCanBeIndexed(t *testing.T) {
-	featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.Nil(t, err)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -615,7 +617,8 @@ func TestResourceAttributesCanBeIndexed(t *testing.T) {
 }
 
 func TestResourceAttributesCanBeIndexedWithAllowDot(t *testing.T) {
-	featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.Nil(t, err)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -668,7 +671,8 @@ func TestResourceAttributesNotIndexedIfSubsegment(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
-	featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.Nil(t, err)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -687,7 +691,8 @@ func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListedWithAllowDot(t *testing.T) {
-	featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.Nil(t, err)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -706,7 +711,8 @@ func TestSpanWithSpecialAttributesAsListedWithAllowDot(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
-	featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.Nil(t, err)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
@@ -724,7 +730,8 @@ func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListedAndIndexAllWithAllowDot(t *testing.T) {
-	featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.Nil(t, err)
 
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
