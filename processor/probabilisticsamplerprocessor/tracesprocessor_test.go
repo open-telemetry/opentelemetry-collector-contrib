@@ -416,7 +416,12 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 	// This hard-coded TraceID will sample at 50% and not at 49%.
 	// The equivalent randomness is 0x80000000000000.
-	defaultTID := mustParseTID("fefefefefefefefefe80000000000000")
+	var defaultTID = mustParseTID("fefefefefefefefefe80000000000000")
+
+	// improbableTraceID will sample at all supported probabilities.  In
+	// hex, the leading 18 digits do not matter, the trailing 14 are all `f`.
+	var improbableTraceID = mustParseTID("111111111111111111ffffffffffffff")
+
 	sid := idutils.UInt64ToSpanID(0xfefefefe)
 	tests := []struct {
 		name  string
@@ -478,14 +483,31 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "1 percent sampled with rvalue and precision",
+			// with precision 4, the 1% probability rounds down and the
+			// exact R-value here will sample.  see below, where the
+			// opposite is true.
+			name: "1 percent sampled with rvalue and precision 4",
+			cfg: &Config{
+				SamplingPercentage: 1,
+				SamplingPrecision:  4,
+			},
+			ts: "ot=rv:FD70A3D70A3D71",
+			sf: func(SamplerMode) (bool, float64, string) {
+				return true, 1 / 0.01, "ot=rv:FD70A3D70A3D71;th:fd70a"
+			},
+		},
+		{
+			// at precision 3, the 1% probability rounds
+			// up to fd71 and so this does not sample.
+			// see above, where the opposite is true.
+			name: "1 percent sampled with rvalue and precision 3",
 			cfg: &Config{
 				SamplingPercentage: 1,
 				SamplingPrecision:  3,
 			},
 			ts: "ot=rv:FD70A3D70A3D71",
 			sf: func(SamplerMode) (bool, float64, string) {
-				return true, 1 / 0.01, "ot=rv:FD70A3D70A3D71;th:fd7"
+				return false, 0, ""
 			},
 		},
 		{
@@ -525,7 +547,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			// 99/100 = .FD70A3D70A3D70A3D
 			ts: "",
 			sf: func(SamplerMode) (bool, float64, string) {
-				return true, 1 / 0.01, "ot=th:fd71"
+				return true, 1 / 0.01, "ot=th:fd70a"
 			},
 		},
 		{
@@ -687,35 +709,40 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
+			// tests the case where proportional sampling leads to a
+			// value less than the minimum probability.  to avoid triggering
+			// a warning message about "cannot raise existing sampling
+			// probability", this uses equal a percentage equal to the
+			// incoming probability.
 			name: "proportional underflow",
 			cfg: &Config{
-				SamplingPercentage: 0.1, // causes underflow
+				SamplingPercentage: 100 * 0x1p-29,
 			},
-			// this trace ID will sample at all probabilities
-			tid: mustParseTID("111111111111111111ffffffffffffff"),
-			ts:  "ot=th:fffffffffffff", // 2**-52 sampling
+			tid: improbableTraceID,
+			ts:  "ot=th:fffffff8", // 0x1p-29
 			sf: func(mode SamplerMode) (bool, float64, string) {
 				if mode == Equalizing {
-					return true, 1 << 52, "ot=th:fffffffffffff"
+					return true, 1 << 29, "ot=th:fffffff8"
 				}
 				return false, 0, ""
 			},
 		},
 		{
 			// Note this test tests a probability value very close
-			// to the limit expressible in a float32, which is how
-			// the SamplingPercentage field is declared.  We can't
-			name: "precision underflow",
+			// to the limit near 100.0% expressible in a float32,
+			// which is how the SamplingPercentage field is declared.
+			// it's impossible to have 10 significant figures at
+			// at this extreme.
+			name: "almost 100pct sampling",
 			cfg: &Config{
 				SamplingPercentage: (1 - 8e-7) * 100, // very close to 100%
 				SamplingPrecision:  10,               // 10 sig figs is impossible
 			},
-			// this trace ID will sample at all probabilities
-			tid: mustParseTID("111111111111111111ffffffffffffff"),
+			tid: improbableTraceID,
 			sf: func(mode SamplerMode) (bool, float64, string) {
-				// adjusted counts are sufficiently close to 1.0
-				// truncated t-value w/ only 8 figures.
-				return true, 1, "ot=th:00000cccccccd"
+				// The adjusted count is very close to 1.0.
+				// The threshold has 8 significant figures.
+				return true, 1 / (1 - 8e-7), "ot=th:00000cccccccd"
 			},
 		},
 	}

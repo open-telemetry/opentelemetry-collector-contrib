@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 
@@ -67,6 +68,7 @@ type samplingCarrier interface {
 	updateThreshold(sampling.Threshold, string) error
 	setExplicitRandomness(sampling.Randomness)
 	clearThreshold()
+	serialize(io.StringWriter) error
 }
 
 type dataSampler interface {
@@ -76,7 +78,7 @@ type dataSampler interface {
 	// update modifies the item when it will be sampled,
 	// probabilistically or otherwise.  The "should" parameter is
 	// the result from decide().
-	update(item dataItem, should bool, carrier samplingCarrier)
+	update(should bool, carrier samplingCarrier)
 }
 
 type traceProcessor struct {
@@ -141,17 +143,17 @@ type traceProportionalizer struct {
 	consistentCommon
 }
 
-func (*zeroProbability) update(_ dataItem, _ bool, _ samplingCarrier) {
+func (*zeroProbability) update(_ bool, _ samplingCarrier) {
 }
 
-func (*consistentCommon) update(tid dataItem, should bool, wts samplingCarrier) {
+func (*consistentCommon) update(should bool, wts samplingCarrier) {
 	// When this sampler decided not to sample, the t-value becomes zero.
 	if !should {
 		wts.clearThreshold()
 	}
 }
 
-func (tp *traceProcessor) randomnessFromSpan(s ptrace.Span) (randomness sampling.Randomness, carrier samplingCarrier, err error) {
+func randomnessFromSpan(s ptrace.Span, common commonFields) (randomness sampling.Randomness, carrier samplingCarrier, err error) {
 	state := s.TraceState()
 	raw := state.AsRaw()
 	tsc := &tracestateCarrier{}
@@ -162,7 +164,7 @@ func (tp *traceProcessor) randomnessFromSpan(s ptrace.Span) (randomness sampling
 		if rv, has := tsc.W3CTraceState.OTelValue().RValueRandomness(); has {
 			// When the tracestate is OK and has r-value, use it.
 			randomness = rv
-		} else if tp.strict && (s.Flags()&randomFlagValue) != randomFlagValue {
+		} else if common.strict && (s.Flags()&randomFlagValue) != randomFlagValue {
 			// If strict and the flag is missing
 			err = ErrMissingRandomness
 		} else {
@@ -376,6 +378,10 @@ func (tc *tracestateCarrier) clearThreshold() {
 	tc.W3CTraceState.OTelValue().ClearTValue()
 }
 
+func (tc *tracestateCarrier) serialize(w io.StringWriter) error {
+	return tc.W3CTraceState.Serialize(w)
+}
+
 func (te *traceEqualizer) decide(rnd sampling.Randomness, carrier samplingCarrier) (bool, error) {
 	should := te.tValueThreshold.ShouldSample(rnd)
 	if should {
@@ -445,7 +451,7 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 				// forceSample is the sampling.priority decision
 				forceSample := priority == mustSampleSpan
 
-				if rnd, carrier, err := tp.randomnessFromSpan(s); err != nil {
+				if rnd, carrier, err := randomnessFromSpan(s, tp.commonFields); err != nil {
 					tp.logger.Error("tracestate", zap.Error(err))
 				} else if err = consistencyCheck(rnd, carrier, tp.commonFields); err != nil {
 					tp.logger.Error("tracestate", zap.Error(err))
@@ -471,10 +477,11 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 				}
 
 				if sampled && toUpdate != nil {
-					tp.sampler.update(s, probShould, toUpdate)
+
+					tp.sampler.update(probShould, toUpdate)
 
 					var w strings.Builder
-					if err := wts.Serialize(&w); err != nil {
+					if err := toUpdate.serialize(&w); err != nil {
 						tp.logger.Debug("tracestate serialize", zap.Error(err))
 					}
 					s.TraceState().FromRaw(w.String())
