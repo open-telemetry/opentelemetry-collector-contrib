@@ -42,7 +42,7 @@ func parseXML[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 			return nil, err
 		}
 
-		parsedXML := anyXML{}
+		parsedXML := xmlElement{}
 
 		decoder := xml.NewDecoder(strings.NewReader(targetVal))
 		err = decoder.Decode(&parsedXML)
@@ -61,15 +61,15 @@ func parseXML[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	}
 }
 
-type anyXML struct {
+type xmlElement struct {
 	tag        string
 	attributes []xml.Attr
 	text       string
-	children   []anyXML
+	children   []xmlElement
 }
 
 // UnmarshalXML implements xml.Unmarshaler for anyXML
-func (a *anyXML) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+func (a *xmlElement) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	a.tag = start.Name.Local
 	a.attributes = start.Attr
 
@@ -81,7 +81,7 @@ func (a *anyXML) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 		switch t := tok.(type) {
 		case xml.StartElement:
-			child := anyXML{}
+			child := xmlElement{}
 			err := d.DecodeElement(&child, &t)
 			if err != nil {
 				return err
@@ -105,7 +105,7 @@ func (a *anyXML) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 }
 
 // intoMap converts and adds the anyXML into the provided pcommon.Map.
-func (a anyXML) intoMap(m pcommon.Map) {
+func (a xmlElement) intoMap(m pcommon.Map) {
 	m.EnsureCapacity(4)
 
 	m.PutStr("tag", a.tag)
