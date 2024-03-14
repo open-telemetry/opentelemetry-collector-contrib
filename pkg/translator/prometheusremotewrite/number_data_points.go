@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func (c *PrometheusConverter) AddGaugeNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
-	resource pcommon.Resource, settings Settings, name string) error {
+func (c *PrometheusConverter) addGaugeNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
+	resource pcommon.Resource, settings Settings, name string) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		labels := createAttributes(
@@ -39,13 +39,12 @@ func (c *PrometheusConverter) AddGaugeNumberDataPoints(dataPoints pmetric.Number
 		if pt.Flags().NoRecordedValue() {
 			sample.Value = math.Float64frombits(value.StaleNaN)
 		}
-		c.AddSample(sample, labels)
+		c.addSample(sample, labels)
 	}
-	return nil
 }
 
-func (c *PrometheusConverter) AddSumNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
-	resource pcommon.Resource, metric pmetric.Metric, settings Settings, name string) error {
+func (c *PrometheusConverter) addSumNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
+	resource pcommon.Resource, metric pmetric.Metric, settings Settings, name string) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		lbls := createAttributes(
@@ -70,7 +69,7 @@ func (c *PrometheusConverter) AddSumNumberDataPoints(dataPoints pmetric.NumberDa
 		if pt.Flags().NoRecordedValue() {
 			sample.Value = math.Float64frombits(value.StaleNaN)
 		}
-		ts := c.AddSample(sample, lbls)
+		ts := c.addSample(sample, lbls)
 		if ts != nil {
 			exemplars := getPromExemplars[pmetric.NumberDataPoint](pt)
 			ts.Exemplars = append(ts.Exemplars, exemplars...)
@@ -80,7 +79,7 @@ func (c *PrometheusConverter) AddSumNumberDataPoints(dataPoints pmetric.NumberDa
 		if settings.ExportCreatedMetric && metric.Sum().IsMonotonic() {
 			startTimestamp := pt.StartTimestamp()
 			if startTimestamp == 0 {
-				return nil
+				return
 			}
 
 			createdLabels := make([]prompb.Label, len(lbls))
@@ -94,5 +93,4 @@ func (c *PrometheusConverter) AddSumNumberDataPoints(dataPoints pmetric.NumberDa
 			c.addTimeSeriesIfNeeded(createdLabels, startTimestamp, pt.Timestamp())
 		}
 	}
-	return nil
 }

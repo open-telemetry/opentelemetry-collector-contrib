@@ -106,8 +106,8 @@ func Test_isValidAggregationTemporality(t *testing.T) {
 	}
 }
 
-// TestPrometheusConverter_AddSample verifies that PrometheusConverter.AddSample adds the sample to the correct time series.
-func TestPrometheusConverter_AddSample(t *testing.T) {
+// TestPrometheusConverter_addSample verifies that PrometheusConverter.addSample adds the sample to the correct time series.
+func TestPrometheusConverter_addSample(t *testing.T) {
 	type testCase struct {
 		metric pmetric.Metric
 		sample prompb.Sample
@@ -116,7 +116,7 @@ func TestPrometheusConverter_AddSample(t *testing.T) {
 
 	t.Run("empty_case", func(t *testing.T) {
 		converter := NewPrometheusConverter()
-		converter.AddSample(nil, nil)
+		converter.addSample(nil, nil)
 		assert.Empty(t, converter.unique)
 		assert.Empty(t, converter.conflicts)
 	})
@@ -160,8 +160,8 @@ func TestPrometheusConverter_AddSample(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			converter := NewPrometheusConverter()
-			converter.AddSample(&tt.testCase[0].sample, tt.testCase[0].labels)
-			converter.AddSample(&tt.testCase[1].sample, tt.testCase[1].labels)
+			converter.addSample(&tt.testCase[0].sample, tt.testCase[0].labels)
+			converter.addSample(&tt.testCase[1].sample, tt.testCase[1].labels)
 			assert.Exactly(t, tt.want, converter.unique)
 			assert.Empty(t, converter.conflicts)
 		})
@@ -369,8 +369,8 @@ func BenchmarkCreateAttributes(b *testing.B) {
 	}
 }
 
-// TestPrometheusConverter_AddExemplars verifies that PrometheusConverter.AddExemplars adds exemplars correctly given bucket bounds data.
-func TestPrometheusConverter_AddExemplars(t *testing.T) {
+// TestPrometheusConverter_addExemplars verifies that PrometheusConverter.addExemplars adds exemplars correctly given bucket bounds data.
+func TestPrometheusConverter_addExemplars(t *testing.T) {
 	ts1 := getTimeSeries(
 		getPromLabels(label11, value11, label12, value12),
 		getSample(float64(intVal1), msTime1),
@@ -429,7 +429,7 @@ func TestPrometheusConverter_AddExemplars(t *testing.T) {
 			converter := &PrometheusConverter{
 				unique: tt.orig,
 			}
-			converter.AddExemplars(tt.dataPoint, tt.bucketBounds)
+			converter.addExemplars(tt.dataPoint, tt.bucketBounds)
 			assert.Exactly(t, tt.want, converter.unique)
 		})
 	}
@@ -747,14 +747,14 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 			metric := tt.metric()
 			converter := NewPrometheusConverter()
 
-			require.NoError(t, converter.AddSummaryDataPoints(
+			converter.addSummaryDataPoints(
 				metric.Summary().DataPoints(),
 				pcommon.NewResource(),
 				Settings{
 					ExportCreatedMetric: true,
 				},
 				metric.Name(),
-			))
+			)
 
 			assert.Equal(t, tt.want(), converter.unique)
 			assert.Empty(t, converter.conflicts)
@@ -857,14 +857,14 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 			metric := tt.metric()
 			converter := NewPrometheusConverter()
 
-			require.NoError(t, converter.AddHistogramDataPoints(
+			converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
 				pcommon.NewResource(),
 				Settings{
 					ExportCreatedMetric: true,
 				},
 				metric.Name(),
-			))
+			)
 
 			assert.Equal(t, tt.want(), converter.unique)
 			assert.Empty(t, converter.conflicts)

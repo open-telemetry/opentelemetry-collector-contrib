@@ -10,12 +10,11 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func TestPrometheusConverter_AddGaugeNumberDataPoints(t *testing.T) {
+func TestPrometheusConverter_addGaugeNumberDataPoints(t *testing.T) {
 	ts := uint64(time.Now().UnixNano())
 	tests := []struct {
 		name   string
@@ -53,12 +52,12 @@ func TestPrometheusConverter_AddGaugeNumberDataPoints(t *testing.T) {
 			metric := tt.metric()
 			converter := NewPrometheusConverter()
 
-			require.NoError(t, converter.AddGaugeNumberDataPoints(
+			converter.addGaugeNumberDataPoints(
 				metric.Gauge().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
 				metric.Name(),
-			))
+			)
 
 			assert.Equal(t, tt.want(), converter.unique)
 			assert.Empty(t, converter.conflicts)
@@ -66,7 +65,7 @@ func TestPrometheusConverter_AddGaugeNumberDataPoints(t *testing.T) {
 	}
 }
 
-func TestPrometheusConverter_AddSumNumberDataPoints(t *testing.T) {
+func TestPrometheusConverter_addSumNumberDataPoints(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	tests := []struct {
 		name   string
@@ -227,13 +226,13 @@ func TestPrometheusConverter_AddSumNumberDataPoints(t *testing.T) {
 			metric := tt.metric()
 			converter := NewPrometheusConverter()
 
-			require.NoError(t, converter.AddSumNumberDataPoints(
+			converter.addSumNumberDataPoints(
 				metric.Sum().DataPoints(),
 				pcommon.NewResource(),
 				metric,
 				Settings{ExportCreatedMetric: true},
 				metric.Name(),
-			))
+			)
 
 			assert.Equal(t, tt.want(), converter.unique)
 			assert.Empty(t, converter.conflicts)
