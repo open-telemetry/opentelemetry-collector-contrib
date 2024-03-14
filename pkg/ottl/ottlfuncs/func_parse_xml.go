@@ -68,7 +68,7 @@ type xmlElement struct {
 	children   []xmlElement
 }
 
-// UnmarshalXML implements xml.Unmarshaler for anyXML
+// UnmarshalXML implements xml.Unmarshaler for xmlElement
 func (a *xmlElement) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	a.tag = start.Name.Local
 	a.attributes = start.Attr
@@ -104,7 +104,7 @@ func (a *xmlElement) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error 
 	}
 }
 
-// intoMap converts and adds the anyXML into the provided pcommon.Map.
+// intoMap converts and adds the xmlElement into the provided pcommon.Map.
 func (a xmlElement) intoMap(m pcommon.Map) {
 	m.EnsureCapacity(4)
 
