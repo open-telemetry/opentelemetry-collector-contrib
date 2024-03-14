@@ -388,14 +388,14 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	// Now we pretend that we have stopped collecting metrics, by unlocking seriesMutex
 	p.seriesMutex.Unlock()
 
-	// Make sure cleanupCache has finished
+	// Make sure cleanupCache has continued to the next mutex
 	time.Sleep(time.Millisecond)
 	p.seriesMutex.Lock()
 
 	// The expired series should have been removed. The metrics collector now won't look
 	// for dimensions from that series. It's important that it happens this way around,
-	// otherwise the metrics collector will try and fail to find dimensions for a series
-	// that is about to be removed.
+	// instead of deleting it from `keyToMetric`, otherwise the metrics collector will try
+	// and fail to find dimensions for a series that is about to be removed.
 	assert.Equal(t, 0, len(p.reqTotal))
 	assert.Equal(t, 1, len(p.keyToMetric))
 
