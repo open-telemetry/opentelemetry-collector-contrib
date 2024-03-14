@@ -69,7 +69,7 @@ func (c *connectorImp) ConsumeTraces(_ context.Context, td ptrace.Traces) error 
 
 // Start implements connector.Traces.
 func (c *connectorImp) Start(ctx context.Context, _ component.Host) error {
-	c.logger.Info("Starting host_info connector")
+	c.logger.Info("Starting Grafana Cloud connector")
 	c.started = true
 	ticker := time.NewTicker(c.config.MetricsFlushInterval)
 	go func() {
