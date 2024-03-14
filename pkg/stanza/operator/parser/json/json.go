@@ -64,6 +64,10 @@ func (j *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 
 // parse will parse a value as JSON.
 func (j *Parser) parse(value interface{}) (interface{}, error) {
+	fmt.Println(value)
+	if j.Flatten == true {
+		fmt.Println("Requested for flatten...!!")
+	}
 	var parsedValue map[string]interface{}
 	switch m := value.(type) {
 	case string:

@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -31,17 +32,15 @@ func Test_newPathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []ottl.Field
-		orig     interface{}
-		newVal   interface{}
+		path     ottl.Path[TransformContext]
+		orig     any
+		newVal   any
 		modified func(metric pmetric.Metric, cache pcommon.Map)
 	}{
 		{
 			name: "metric name",
-			path: []ottl.Field{
-				{
-					Name: "name",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "name",
 			},
 			orig:   "name",
 			newVal: "new name",
@@ -51,10 +50,8 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric description",
-			path: []ottl.Field{
-				{
-					Name: "description",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "description",
 			},
 			orig:   "description",
 			newVal: "new description",
@@ -64,10 +61,8 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric unit",
-			path: []ottl.Field{
-				{
-					Name: "unit",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "unit",
 			},
 			orig:   "unit",
 			newVal: "new unit",
@@ -77,10 +72,8 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric type",
-			path: []ottl.Field{
-				{
-					Name: "type",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "type",
 			},
 			orig:   int64(pmetric.MetricTypeSum),
 			newVal: int64(pmetric.MetricTypeSum),
@@ -89,10 +82,8 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric aggregation_temporality",
-			path: []ottl.Field{
-				{
-					Name: "aggregation_temporality",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "aggregation_temporality",
 			},
 			orig:   int64(2),
 			newVal: int64(1),
@@ -102,10 +93,8 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric is_monotonic",
-			path: []ottl.Field{
-				{
-					Name: "is_monotonic",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "is_monotonic",
 			},
 			orig:   true,
 			newVal: false,
@@ -115,10 +104,8 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric data points",
-			path: []ottl.Field{
-				{
-					Name: "data_points",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "data_points",
 			},
 			orig:   refMetric.Sum().DataPoints(),
 			newVal: newDataPoints,
@@ -128,10 +115,8 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "cache",
-			path: []ottl.Field{
-				{
-					Name: "cache",
-				},
+			path: &internal.TestPath[TransformContext]{
+				N: "cache",
 			},
 			orig:   pcommon.NewMap(),
 			newVal: newCache,
@@ -141,13 +126,11 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "cache access",
-			path: []ottl.Field{
-				{
-					Name: "cache",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("temp"),
-						},
+			path: &internal.TestPath[TransformContext]{
+				N: "cache",
+				KeySlice: []ottl.Key[TransformContext]{
+					&internal.TestKey[TransformContext]{
+						S: ottltest.Strp("temp"),
 					},
 				},
 			},
@@ -160,7 +143,8 @@ func Test_newPathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := newPathGetSetter(tt.path)
+			pep := pathExpressionParser{}
+			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
 			metric := createMetricTelemetry()
@@ -168,11 +152,11 @@ func Test_newPathGetSetter(t *testing.T) {
 			ctx := NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			got, err := accessor.Get(context.Background(), ctx)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), ctx, tt.newVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			exMetric := createMetricTelemetry()
 			exCache := pcommon.NewMap()

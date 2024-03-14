@@ -19,6 +19,7 @@ func NewParserConfig(operatorID, operatorType string) ParserConfig {
 		TransformerConfig: NewTransformerConfig(operatorID, operatorType),
 		ParseFrom:         entry.NewBodyField(),
 		ParseTo:           entry.RootableField{Field: entry.NewAttributeField()},
+		Flatten:           true,
 	}
 }
 
@@ -32,6 +33,7 @@ type ParserConfig struct {
 	SeverityConfig    *SeverityConfig     `mapstructure:"severity,omitempty"`
 	TraceParser       *TraceParser        `mapstructure:"trace,omitempty"`
 	ScopeNameParser   *ScopeNameParser    `mapstructure:"scope_name,omitempty"`
+	Flatten           bool                `mapstructure:"flatten"`
 }
 
 // Build will build a parser operator.
@@ -50,6 +52,7 @@ func (c ParserConfig) Build(logger *zap.SugaredLogger) (ParserOperator, error) {
 		ParseFrom:           c.ParseFrom,
 		ParseTo:             c.ParseTo.Field,
 		BodyField:           c.BodyField,
+		Flatten:             c.Flatten,
 	}
 
 	if c.TimeParser != nil {
@@ -91,6 +94,7 @@ type ParserOperator struct {
 	SeverityParser  *SeverityParser
 	TraceParser     *TraceParser
 	ScopeNameParser *ScopeNameParser
+	Flatten         bool
 }
 
 // ProcessWith will run ParseWith on the entry, then forward the entry on to the next operators.
