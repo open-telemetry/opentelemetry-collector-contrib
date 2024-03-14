@@ -35,6 +35,7 @@ extensions:
     role_arn: ""
     aws_endpoint: ""
     local_mode: false
+    service_name: "xray"
 ```
 
 ### endpoint (Optional)
@@ -66,3 +67,5 @@ The IAM role used by this proxy when communicating with the AWS service. If non-
 ### aws_endpoint (Optional)
 The AWS service endpoint which this proxy forwards requests to. If not set, will default to the AWS X-Ray endpoint.
 
+### service_name (Optional)
+The AWS service name which this proxy forwards requests to. If not set, will default to "xray"
