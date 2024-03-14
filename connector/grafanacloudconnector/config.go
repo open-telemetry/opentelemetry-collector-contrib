@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// Config defines the configuration options for the host_info connector.
+// Config defines the configuration options for the Grafana Cloud connector.
 type Config struct {
 	// HostIdentifiers defines the list of resource attributes used to derive
 	// a unique `grafana.host.id` value. In most cases, this should be [ "host.id" ]
