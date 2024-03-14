@@ -68,7 +68,7 @@ func Test_set(t *testing.T) {
 			name:         "set value existing - IGNORE",
 			initialValue: "some value",
 			setter:       target,
-			strategy:     ottl.NewTestingOptional[string](conflictIgnore),
+			strategy:     ottl.NewTestingOptional[string](setConflictIgnore),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
 				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
@@ -82,7 +82,7 @@ func Test_set(t *testing.T) {
 			name:         "set value existing - FAIL",
 			initialValue: "some value",
 			setter:       target,
-			strategy:     ottl.NewTestingOptional[string](conflictFail),
+			strategy:     ottl.NewTestingOptional[string](setConflictFail),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
 				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
@@ -94,7 +94,7 @@ func Test_set(t *testing.T) {
 			name:         "set value existing - REPLACE",
 			initialValue: "some value",
 			setter:       target,
-			strategy:     ottl.NewTestingOptional[string](conflictReplace),
+			strategy:     ottl.NewTestingOptional[string](setConflictReplace),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
 				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
@@ -108,7 +108,7 @@ func Test_set(t *testing.T) {
 			name:         "set value existing - UPDATE",
 			initialValue: "some value",
 			setter:       target,
-			strategy:     ottl.NewTestingOptional[string](conflictUpdate),
+			strategy:     ottl.NewTestingOptional[string](setConflictUpdate),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
 				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
@@ -122,7 +122,7 @@ func Test_set(t *testing.T) {
 		{
 			name:     "set value missing - UPDATE",
 			setter:   target,
-			strategy: ottl.NewTestingOptional[string](conflictUpdate),
+			strategy: ottl.NewTestingOptional[string](setConflictUpdate),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
 				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
