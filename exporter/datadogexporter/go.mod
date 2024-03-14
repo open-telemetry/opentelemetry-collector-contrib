@@ -18,6 +18,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0
 	github.com/aws/aws-sdk-go v1.50.27
 	github.com/cenkalti/backoff/v4 v4.2.1
+	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.96.0
@@ -35,9 +36,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.96.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/config/configauth v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/config/configcompression v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/config/confighttp v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/config/confignet v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/config/configretry v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/config/configtls v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/confmap v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/connector v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/consumer v0.96.1-0.20240306115632-b2693620eff6
@@ -129,7 +134,6 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
@@ -232,12 +236,8 @@ require (
 	github.com/zorkian/go-datadog-api v2.30.0+incompatible // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.96.1-0.20240306115632-b2693620eff6 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.96.1-0.20240306115632-b2693620eff6 // indirect
-	go.opentelemetry.io/collector/config/configcompression v0.96.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.96.1-0.20240306115632-b2693620eff6 // indirect
-	go.opentelemetry.io/collector/config/confighttp v0.96.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240306115632-b2693620eff6 // indirect
-	go.opentelemetry.io/collector/config/configtls v0.96.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/collector/config/internal v0.96.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.96.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v0.96.1-0.20240306115632-b2693620eff6 // indirect
