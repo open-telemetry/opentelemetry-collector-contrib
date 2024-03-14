@@ -1,4 +1,5 @@
 type: instana
+scope_name: otelcol/instana
 
 status:
   class: exporter
@@ -9,5 +10,4 @@ status:
     active: [jpkrohling, hickeyma]
 
 tests:
-  config:
   expect_consumer_error: true

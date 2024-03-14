@@ -1,4 +1,5 @@
 type: hostmetrics
+scope_name: otelcol/hostmetricsreceiver
 
 status:
   class: receiver

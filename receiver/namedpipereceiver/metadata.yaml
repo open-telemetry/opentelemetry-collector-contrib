@@ -1,4 +1,5 @@
 type: namedpipe
+scope_name: otelcol/namedpipereceiver
 
 status:
   class: receiver
@@ -6,4 +7,10 @@ status:
     alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski]
+    active: [sinkingpoint, djaglowski]
+  unsupported_platforms: [windows, darwin]
+
+tests:
+  config:
+    path: /tmp/pipe
+    mode: 0600

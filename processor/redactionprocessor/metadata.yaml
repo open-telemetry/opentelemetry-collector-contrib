@@ -1,4 +1,5 @@
 type: redaction
+scope_name: otelcol/redaction
 
 status:
   class: processor

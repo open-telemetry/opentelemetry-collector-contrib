@@ -348,7 +348,9 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 
 // Stop will stop generating logs.
 func (operator *Input) Stop() error {
-	operator.cancel()
+	if operator.cancel != nil {
+		operator.cancel()
+	}
 	operator.wg.Wait()
 	return nil
 }

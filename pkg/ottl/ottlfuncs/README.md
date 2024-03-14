@@ -246,7 +246,7 @@ Examples:
 
 ### replace_all_matches
 
-`replace_all_matches(target, pattern, replacement, Optional[function])`
+`replace_all_matches(target, pattern, replacement, Optional[function], Optional[replacementFormat])`
 
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
@@ -262,8 +262,7 @@ Examples:
 
 ### replace_all_patterns
 
-`replace_all_patterns(target, mode, regex, replacement, Optional[function])`
-`replace_all_patterns(target, mode, regex, replacement, function, replacementFormat)`
+`replace_all_patterns(target, mode, regex, replacement, Optional[function], Optional[replacementFormat])`
 
 The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
@@ -291,7 +290,7 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 ### replace_match
 
-`replace_match(target, pattern, replacement, Optional[function])`
+`replace_match(target, pattern, replacement, Optional[function], Optional[replacementFormat])`
 
 The `replace_match` function allows replacing entire strings if they match a glob pattern.
 
@@ -309,9 +308,7 @@ Examples:
 
 ### replace_pattern
 
-`replace_pattern(target, regex, replacement, Optional[function])`
-`replace_pattern(target, regex, replacement, function)`
-`replace_pattern(target, regex, replacement, function, replacementFormat)`
+`replace_pattern(target, regex, replacement, Optional[function], Optional[replacementFormat])`
 
 The `replace_pattern` function allows replacing all string sections that match a regex pattern with a new value.
 
@@ -391,6 +388,7 @@ Available Converters:
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
+- [IsInt](#isint)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
 - [IsString](#isstring)
@@ -631,6 +629,22 @@ Examples:
 - `IsDouble(body)`
 
 - `IsDouble(attributes["maybe a double"])`
+
+### IsInt
+
+`IsInt(value)`
+
+The `IsInt` Converter returns true if the given value is a int.
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+If `value` is a `int64` or a `pcommon.ValueTypeInt` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsInt(body)`
+
+- `IsInt(attributes["maybe a int"])`
 
 ### IsMap
 

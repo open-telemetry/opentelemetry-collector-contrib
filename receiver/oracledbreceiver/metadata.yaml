@@ -1,4 +1,5 @@
 type: oracledb
+scope_name: otelcol/oracledbreceiver
 
 status:
   class: receiver
@@ -252,6 +253,3 @@ metrics:
       value_type: int
       input_type: string
     unit: "{gets}"
-
-tests:
-  config:
