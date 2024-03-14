@@ -5,13 +5,14 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 var (
-	ErrValueAlreadyPresent = fmt.Errorf("value already present")
+	ErrValueAlreadyPresent = errors.New("value already present")
 )
 
 const (
