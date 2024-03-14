@@ -303,11 +303,11 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"process.executable":      "/usr/bin/ssh",
 		"service.runtime.name":    "OpenJDK Runtime Environment",
 		"service.runtime.version": "14.0.2",
-		"os.platform":             "darwin",
-		"os.full":                 "Mac OS Mojave",
-		"os.name":                 "Mac OS X",
-		"os.version":              "10.14.1",
-		"os.type":                 "macos",
+		"host.os.platform":        "darwin",
+		"host.os.full":            "Mac OS Mojave",
+		"host.os.name":            "Mac OS X",
+		"host.os.version":         "10.14.1",
+		"host.os.type":            "macos",
 		"device.id":               "00000000-54b3-e7c7-0000-000046bffd97",
 		"device.model.identifier": "SM-G920F",
 		"device.model.name":       "Samsung Galaxy S6",
@@ -419,73 +419,73 @@ func TestEncodeLogECSModeAgentName(t *testing.T) {
 	}
 }
 
-func TestEncodeLogECSModeOSType(t *testing.T) {
+func TestEncodeLogECSModeHostOSType(t *testing.T) {
 	tests := map[string]struct {
 		osType string
 		osName string
 
-		expectedOSName     string
-		expectedOSType     string
-		expectedOSPlatform string
+		expectedHostOsName     string
+		expectedHostOsType     string
+		expectedHostOsPlatform string
 	}{
 		"none_set": {
-			expectedOSName:     "", // should not be set
-			expectedOSType:     "", // should not be set
-			expectedOSPlatform: "", // should not be set
+			expectedHostOsName:     "", // should not be set
+			expectedHostOsType:     "", // should not be set
+			expectedHostOsPlatform: "", // should not be set
 		},
 		"type_windows": {
-			osType:             "windows",
-			expectedOSName:     "", // should not be set
-			expectedOSType:     "windows",
-			expectedOSPlatform: "windows",
+			osType:                 "windows",
+			expectedHostOsName:     "", // should not be set
+			expectedHostOsType:     "windows",
+			expectedHostOsPlatform: "windows",
 		},
 		"type_linux": {
-			osType:             "linux",
-			expectedOSName:     "", // should not be set
-			expectedOSType:     "linux",
-			expectedOSPlatform: "linux",
+			osType:                 "linux",
+			expectedHostOsName:     "", // should not be set
+			expectedHostOsType:     "linux",
+			expectedHostOsPlatform: "linux",
 		},
 		"type_darwin": {
-			osType:             "darwin",
-			expectedOSName:     "", // should not be set
-			expectedOSType:     "macos",
-			expectedOSPlatform: "darwin",
+			osType:                 "darwin",
+			expectedHostOsName:     "", // should not be set
+			expectedHostOsType:     "macos",
+			expectedHostOsPlatform: "darwin",
 		},
 		"type_aix": {
-			osType:             "aix",
-			expectedOSName:     "", // should not be set
-			expectedOSType:     "unix",
-			expectedOSPlatform: "aix",
+			osType:                 "aix",
+			expectedHostOsName:     "", // should not be set
+			expectedHostOsType:     "unix",
+			expectedHostOsPlatform: "aix",
 		},
 		"type_hpux": {
-			osType:             "hpux",
-			expectedOSName:     "", // should not be set
-			expectedOSType:     "unix",
-			expectedOSPlatform: "hpux",
+			osType:                 "hpux",
+			expectedHostOsName:     "", // should not be set
+			expectedHostOsType:     "unix",
+			expectedHostOsPlatform: "hpux",
 		},
 		"type_solaris": {
-			osType:             "solaris",
-			expectedOSName:     "", // should not be set
-			expectedOSType:     "unix",
-			expectedOSPlatform: "solaris",
+			osType:                 "solaris",
+			expectedHostOsName:     "", // should not be set
+			expectedHostOsType:     "unix",
+			expectedHostOsPlatform: "solaris",
 		},
 		"type_unknown": {
-			osType:             "unknown",
-			expectedOSName:     "", // should not be set
-			expectedOSType:     "", // should not be set
-			expectedOSPlatform: "unknown",
+			osType:                 "unknown",
+			expectedHostOsName:     "", // should not be set
+			expectedHostOsType:     "", // should not be set
+			expectedHostOsPlatform: "unknown",
 		},
 		"name_android": {
-			osName:             "Android",
-			expectedOSName:     "Android",
-			expectedOSType:     "android",
-			expectedOSPlatform: "", // should not be set
+			osName:                 "Android",
+			expectedHostOsName:     "Android",
+			expectedHostOsType:     "android",
+			expectedHostOsPlatform: "", // should not be set
 		},
 		"name_ios": {
-			osName:             "iOS",
-			expectedOSName:     "iOS",
-			expectedOSType:     "ios",
-			expectedOSPlatform: "", // should not be set
+			osName:                 "iOS",
+			expectedHostOsName:     "iOS",
+			expectedHostOsType:     "ios",
+			expectedHostOsPlatform: "", // should not be set
 		},
 	}
 
@@ -512,14 +512,14 @@ func TestEncodeLogECSModeOSType(t *testing.T) {
 			expectedDoc.AddTimestamp("@timestamp", timestamp)
 			expectedDoc.AddString("agent.name", "otlp")
 			expectedDoc.AddString("service.language.name", "unknown")
-			if test.expectedOSName != "" {
-				expectedDoc.AddString("os.name", test.expectedOSName)
+			if test.expectedHostOsName != "" {
+				expectedDoc.AddString("host.os.name", test.expectedHostOsName)
 			}
-			if test.expectedOSType != "" {
-				expectedDoc.AddString("os.type", test.expectedOSType)
+			if test.expectedHostOsType != "" {
+				expectedDoc.AddString("host.os.type", test.expectedHostOsType)
 			}
-			if test.expectedOSPlatform != "" {
-				expectedDoc.AddString("os.platform", test.expectedOSPlatform)
+			if test.expectedHostOsPlatform != "" {
+				expectedDoc.AddString("host.os.platform", test.expectedHostOsPlatform)
 			}
 
 			doc.Sort()

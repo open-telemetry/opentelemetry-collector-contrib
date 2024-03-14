@@ -38,8 +38,10 @@ var resourceAttrsConversionMap = map[string]string{
 	semconv.AttributeProcessExecutablePath: "process.executable",
 	semconv.AttributeProcessRuntimeName:    "service.runtime.name",
 	semconv.AttributeProcessRuntimeVersion: "service.runtime.version",
-	semconv.AttributeOSType:                "os.platform",
-	semconv.AttributeOSDescription:         "os.full",
+	semconv.AttributeOSName:                "host.os.name",
+	semconv.AttributeOSType:                "host.os.platform",
+	semconv.AttributeOSDescription:         "host.os.full",
+	semconv.AttributeOSVersion:             "host.os.version",
 	"k8s.namespace.name":                   "kubernetes.namespace",
 	"k8s.node.name":                        "kubernetes.node.name",
 	"k8s.pod.name":                         "kubernetes.pod.name",
@@ -182,7 +184,7 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 
 	// Handle special cases.
 	encodeLogAgentNameECSMode(&document, resource)
-	encodeLogOsTypeECSMode(&document, resource)
+	encodeLogHostOsTypeECSMode(&document, resource)
 	encodeLogTimestampECSMode(&document, record)
 
 	return document
@@ -327,37 +329,37 @@ func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Res
 	document.AddString("service.language.name", telemetrySdkLanguage)
 }
 
-func encodeLogOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {
+func encodeLogHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {
 	// https://www.elastic.co/guide/en/ecs/current/ecs-os.html#field-os-type:
 	//
 	// "One of these following values should be used (lowercase): linux, macos, unix, windows.
 	// If the OS you’re dealing with is not in the list, the field should not be populated."
 
-	var ecsOsType string
+	var ecsHostOsType string
 	if semConvOsType, exists := resource.Attributes().Get(semconv.AttributeOSType); exists {
 		switch semConvOsType.Str() {
 		case "windows", "linux":
-			ecsOsType = semConvOsType.Str()
+			ecsHostOsType = semConvOsType.Str()
 		case "darwin":
-			ecsOsType = "macos"
+			ecsHostOsType = "macos"
 		case "aix", "hpux", "solaris":
-			ecsOsType = "unix"
+			ecsHostOsType = "unix"
 		}
 	}
 
 	if semConvOsName, exists := resource.Attributes().Get(semconv.AttributeOSName); exists {
 		switch semConvOsName.Str() {
 		case "Android":
-			ecsOsType = "android"
+			ecsHostOsType = "android"
 		case "iOS":
-			ecsOsType = "ios"
+			ecsHostOsType = "ios"
 		}
 	}
 
-	if ecsOsType == "" {
+	if ecsHostOsType == "" {
 		return
 	}
-	document.AddString("os.type", ecsOsType)
+	document.AddString("host.os.type", ecsHostOsType)
 }
 
 func encodeLogTimestampECSMode(document *objmodel.Document, record plog.LogRecord) {
