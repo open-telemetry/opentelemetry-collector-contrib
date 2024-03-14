@@ -182,6 +182,7 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 
 	// Handle special cases.
 	encodeLogAgentNameECSMode(&document, resource)
+	encodeLogOsTypeECSMode(&document, resource)
 	encodeLogTimestampECSMode(&document, record)
 
 	return document
@@ -324,6 +325,39 @@ func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Res
 		telemetrySdkLanguage = "unknown"
 	}
 	document.AddString("service.language.name", telemetrySdkLanguage)
+}
+
+func encodeLogOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {
+	// https://www.elastic.co/guide/en/ecs/current/ecs-os.html#field-os-type:
+	//
+	// "One of these following values should be used (lowercase): linux, macos, unix, windows.
+	// If the OS you’re dealing with is not in the list, the field should not be populated."
+
+	var ecsOsType string
+	if semConvOsType, exists := resource.Attributes().Get(semconv.AttributeOSType); exists {
+		switch semConvOsType.Str() {
+		case "windows", "linux":
+			ecsOsType = semConvOsType.Str()
+		case "darwin":
+			ecsOsType = "macos"
+		case "aix", "hpux", "solaris":
+			ecsOsType = "unix"
+		}
+	}
+
+	if semConvOsName, exists := resource.Attributes().Get(semconv.AttributeOSName); exists {
+		switch semConvOsName.Str() {
+		case "Android":
+			ecsOsType = "android"
+		case "iOS":
+			ecsOsType = "ios"
+		}
+	}
+
+	if ecsOsType == "" {
+		return
+	}
+	document.AddString("os.type", ecsOsType)
 }
 
 func encodeLogTimestampECSMode(document *objmodel.Document, record plog.LogRecord) {

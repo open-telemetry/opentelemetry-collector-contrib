@@ -307,6 +307,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"os.full":                 "Mac OS Mojave",
 		"os.name":                 "Mac OS X",
 		"os.version":              "10.14.1",
+		"os.type":                 "macos",
 		"device.id":               "00000000-54b3-e7c7-0000-000046bffd97",
 		"device.model.identifier": "SM-G920F",
 		"device.model.name":       "Samsung Galaxy S6",
@@ -410,6 +411,116 @@ func TestEncodeLogECSModeAgentName(t *testing.T) {
 			expectedDoc.AddTimestamp("@timestamp", timestamp)
 			expectedDoc.AddString("agent.name", test.expectedAgentName)
 			expectedDoc.AddString("service.language.name", test.expectedServiceLanguageName)
+
+			doc.Sort()
+			expectedDoc.Sort()
+			require.Equal(t, expectedDoc, doc)
+		})
+	}
+}
+
+func TestEncodeLogECSModeOSType(t *testing.T) {
+	tests := map[string]struct {
+		osType string
+		osName string
+
+		expectedOSName     string
+		expectedOSType     string
+		expectedOSPlatform string
+	}{
+		"none_set": {
+			expectedOSName:     "", // should not be set
+			expectedOSType:     "", // should not be set
+			expectedOSPlatform: "", // should not be set
+		},
+		"type_windows": {
+			osType:             "windows",
+			expectedOSName:     "", // should not be set
+			expectedOSType:     "windows",
+			expectedOSPlatform: "windows",
+		},
+		"type_linux": {
+			osType:             "linux",
+			expectedOSName:     "", // should not be set
+			expectedOSType:     "linux",
+			expectedOSPlatform: "linux",
+		},
+		"type_darwin": {
+			osType:             "darwin",
+			expectedOSName:     "", // should not be set
+			expectedOSType:     "macos",
+			expectedOSPlatform: "darwin",
+		},
+		"type_aix": {
+			osType:             "aix",
+			expectedOSName:     "", // should not be set
+			expectedOSType:     "unix",
+			expectedOSPlatform: "aix",
+		},
+		"type_hpux": {
+			osType:             "hpux",
+			expectedOSName:     "", // should not be set
+			expectedOSType:     "unix",
+			expectedOSPlatform: "hpux",
+		},
+		"type_solaris": {
+			osType:             "solaris",
+			expectedOSName:     "", // should not be set
+			expectedOSType:     "unix",
+			expectedOSPlatform: "solaris",
+		},
+		"type_unknown": {
+			osType:             "unknown",
+			expectedOSName:     "", // should not be set
+			expectedOSType:     "", // should not be set
+			expectedOSPlatform: "unknown",
+		},
+		"name_android": {
+			osName:             "Android",
+			expectedOSName:     "Android",
+			expectedOSType:     "android",
+			expectedOSPlatform: "", // should not be set
+		},
+		"name_ios": {
+			osName:             "iOS",
+			expectedOSName:     "iOS",
+			expectedOSType:     "ios",
+			expectedOSPlatform: "", // should not be set
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			resource := pcommon.NewResource()
+			scope := pcommon.NewInstrumentationScope()
+			record := plog.NewLogRecord()
+
+			if test.osType != "" {
+				resource.Attributes().PutStr(semconv.AttributeOSType, test.osType)
+			}
+			if test.osName != "" {
+				resource.Attributes().PutStr(semconv.AttributeOSName, test.osName)
+			}
+
+			timestamp := pcommon.Timestamp(1710373859123456789)
+			record.SetTimestamp(timestamp)
+
+			m := encodeModel{}
+			doc := m.encodeLogECSMode(resource, record, scope)
+
+			expectedDoc := objmodel.Document{}
+			expectedDoc.AddTimestamp("@timestamp", timestamp)
+			expectedDoc.AddString("agent.name", "otlp")
+			expectedDoc.AddString("service.language.name", "unknown")
+			if test.expectedOSName != "" {
+				expectedDoc.AddString("os.name", test.expectedOSName)
+			}
+			if test.expectedOSType != "" {
+				expectedDoc.AddString("os.type", test.expectedOSType)
+			}
+			if test.expectedOSPlatform != "" {
+				expectedDoc.AddString("os.platform", test.expectedOSPlatform)
+			}
 
 			doc.Sort()
 			expectedDoc.Sort()
