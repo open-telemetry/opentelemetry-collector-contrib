@@ -10,4 +10,3 @@ status:
     active: [sumo-drosiek, djaglowski]
   unsupported_platforms: [darwin, windows]
 
-tests:
