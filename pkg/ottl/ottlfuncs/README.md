@@ -51,6 +51,7 @@ Available Editors:
 - [keep_keys](#keep_keys)
 - [limit](#limit)
 - [merge_maps](#merge_maps)
+- [rename](#rename)
 - [replace_all_matches](#replace_all_matches)
 - [replace_all_patterns](#replace_all_patterns)
 - [replace_match](#replace_match)
@@ -243,6 +244,35 @@ Examples:
 
 
 - `merge_maps(attributes, resource.attributes, "insert")`
+
+### rename
+
+`rename(map, field, targetField, Optional[ignore_missing], Optional[conflict_strategy] )`
+
+The `rename` function renames the `map` `field` to `targetField`.
+
+`map` is a path expression to a `pcommon.Map` type field. `field` is a string value of the `map` key that is being renamed. `targetField` is a string value that the `field` is renamed to.
+
+This combines what previously required two calls of `set` following with `delete_key` in one function call.
+
+How the ```rename``` function behaves is controlled by the optional `ignore_missing` and `conflict_strategy` arguments.
+
+`ignore_missing` is optional boolean argument, that specifies what happens when the `field` is missing from the `map`. It is set to `true` by default.
+- The `true` value results in no changes to the `map` if the `field` key doesn't exists in the map
+- The `false` value results in error if the `field` key doesn't exists in the map
+
+
+`conflict_strategy` is an optional string paramater that specifies the conflict resolution strategy for the `targetField`.
+Valid values are `replace`, `fail`, and `ignore`. By default, it is set to `replace`.
+- The `replace` overwrites the `targetField` if it is already present.
+- The `fail` returns an error if `targetField` is already present.
+- The `ignore` results in no changes to the `map` if `targetField` is already present.
+
+Examples:
+
+- `rename(attributes, "foo", "bar")`
+- `rename(attributes, "foo", "bar", false)`
+- `rename(attributes, "foo", "bar", true, "ignore")`
 
 ### replace_all_matches
 
