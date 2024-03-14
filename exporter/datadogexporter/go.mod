@@ -36,6 +36,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.96.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/config/configauth v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/config/configcompression v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/config/confighttp v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/config/confignet v0.96.1-0.20240306115632-b2693620eff6
@@ -235,7 +236,6 @@ require (
 	github.com/zorkian/go-datadog-api v2.30.0+incompatible // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.96.1-0.20240306115632-b2693620eff6 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.96.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.96.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240306115632-b2693620eff6 // indirect
 	go.opentelemetry.io/collector/config/internal v0.96.1-0.20240306115632-b2693620eff6 // indirect

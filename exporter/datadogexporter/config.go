@@ -438,6 +438,10 @@ var _ component.Config = (*Config)(nil)
 
 // Validate the configuration for errors. This is required by component.Config.
 func (c *Config) Validate() error {
+	if err := validateClientConfig(c.ClientConfig); err != nil {
+		return err
+	}
+
 	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
 		return errNoMetadata
 	}
@@ -475,6 +479,36 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	return nil
+}
+
+func validateClientConfig(cfg confighttp.ClientConfig) error {
+	var unsupported []string
+	if cfg.Auth != nil {
+		unsupported = append(unsupported, "auth")
+	}
+	if cfg.Endpoint != "" {
+		unsupported = append(unsupported, "endpoint")
+	}
+	if cfg.Compression != "" {
+		unsupported = append(unsupported, "compression")
+	}
+	if cfg.ProxyURL != "" {
+		unsupported = append(unsupported, "proxy_url")
+	}
+	if cfg.Headers != nil {
+		unsupported = append(unsupported, "headers")
+	}
+	if cfg.HTTP2ReadIdleTimeout != 0 {
+		unsupported = append(unsupported, "http2_read_idle_timeout")
+	}
+	if cfg.HTTP2PingTimeout != 0 {
+		unsupported = append(unsupported, "http2_ping_timeout")
+	}
+
+	if len(unsupported) > 0 {
+		return fmt.Errorf("these confighttp client configs are currently not respected by Datadog exporter: %s", strings.Join(unsupported, ", "))
+	}
 	return nil
 }
 

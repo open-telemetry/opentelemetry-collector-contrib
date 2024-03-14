@@ -8,7 +8,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -18,6 +21,9 @@ func TestValidate(t *testing.T) {
 	maxIdleConn := 300
 	maxIdleConnPerHost := 150
 	maxConnPerHost := 250
+	ty, err := component.NewType("ty")
+	assert.NoError(t, err)
+	auth := configauth.Authentication{AuthenticatorID: component.NewID(ty)}
 
 	tests := []struct {
 		name string
@@ -138,6 +144,23 @@ func TestValidate(t *testing.T) {
 					TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
 				},
 			},
+		},
+
+		{
+			name: "unsupported confighttp client configs",
+			cfg: &Config{
+				API: APIConfig{Key: "notnull"},
+				ClientConfig: confighttp.ClientConfig{
+					Endpoint:             "endpoint",
+					Compression:          "gzip",
+					ProxyURL:             "proxy",
+					Auth:                 &auth,
+					Headers:              map[string]configopaque.String{"key": "val"},
+					HTTP2ReadIdleTimeout: 250,
+					HTTP2PingTimeout:     200,
+				},
+			},
+			err: "these confighttp client configs are currently not respected by Datadog exporter: auth, endpoint, compression, proxy_url, headers, http2_read_idle_timeout, http2_ping_timeout",
 		},
 	}
 	for _, testInstance := range tests {
