@@ -66,6 +66,16 @@ func Test_Base64DecodeError(t *testing.T) {
 			value:         nil,
 			expectedError: "expected string but got nil",
 		},
+		{
+			name:          "not-base64-string",
+			value:         "!@#$%^&*()_+",
+			expectedError: "illegal base64 data at input byte",
+		},
+		{
+			name:          "missing-base64-padding",
+			value:         "cmVtb3ZlZCBwYWRkaW5nCg",
+			expectedError: "illegal base64 data at input byte",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
