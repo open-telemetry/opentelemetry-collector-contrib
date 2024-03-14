@@ -14,13 +14,14 @@ import (
 )
 
 func Test_set(t *testing.T) {
+	const missingValue = "<nil>"
 	target := &ottl.StandardGetSetter[pcommon.Value]{
 		Setter: func(ctx context.Context, tCtx pcommon.Value, val any) error {
 			tCtx.SetStr(val.(string))
 			return nil
 		},
 		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
-			if tCtx.Str() == "" {
+			if tCtx.Str() == missingValue {
 				return nil, nil
 			}
 			return tCtx.Str(), nil
@@ -120,16 +121,17 @@ func Test_set(t *testing.T) {
 		},
 
 		{
-			name:     "set value missing - UPDATE",
-			setter:   target,
-			strategy: ottl.NewTestingOptional[string](setConflictUpdate),
+			name:         "set value missing - UPDATE",
+			initialValue: missingValue,
+			setter:       target,
+			strategy:     ottl.NewTestingOptional[string](setConflictUpdate),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
 				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
 				},
 			},
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStr("")
+				expectedValue.SetStr(missingValue)
 			},
 		},
 		{
