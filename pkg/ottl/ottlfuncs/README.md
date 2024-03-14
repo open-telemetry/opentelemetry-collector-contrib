@@ -964,7 +964,7 @@ Examples:
 
 - `ParseXML(body)`
 
-- `ParseXML(attributes[""])`
+- `ParseXML(attributes["xml"])`
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
 
