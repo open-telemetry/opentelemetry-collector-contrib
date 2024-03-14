@@ -8,8 +8,5 @@ status:
   distributions: [contrib, splunk, observiq, sumo]
   codeowners:
     active: [sumo-drosiek, djaglowski]
+  unsupported_platforms: [darwin, windows]
 
-# TODO: Update the receiver to pass the tests
-tests:
-  skip_lifecycle: true
-  skip_shutdown: true

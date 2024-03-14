@@ -213,8 +213,8 @@ attributes:
       # It is supported to have more than one specified, but all of the specified
       # conditions must evaluate to true for a match to occur.
 
-      # match_type controls how items in "services" and "span_names" arrays are
-      # interpreted. Possible values are "regexp" or "strict".
+      # match_type controls how items in "services", "span_names", and "attributes"
+      # arrays are interpreted. Possible values are "regexp" or "strict".
       # This is a required field.
       match_type: {strict, regexp}
 
@@ -284,12 +284,12 @@ attributes:
       metric_names: [<item1>, ..., <itemN>]
 
       # Attributes specifies the list of attributes to match against.
-      # All of these attributes must match exactly for a match to occur.
+      # All of these attributes must match for a match to occur.
       # This is an optional field.
       attributes:
           # Key specifies the attribute to match against.
         - key: <key>
-          # Value specifies the exact value to match against.
+          # Value specifies the value to match against.
           # If not specified, a match occurs if the key is present in the attributes.
           value: {value}
 ```
