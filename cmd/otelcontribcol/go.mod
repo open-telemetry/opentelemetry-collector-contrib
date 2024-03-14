@@ -219,7 +219,7 @@ require (
 )
 
 require (
-	bitbucket.org/atlassian/go-asap/v2 v2.7.0 // indirect
+	bitbucket.org/atlassian/go-asap/v2 v2.8.0 // indirect
 	cloud.google.com/go v0.112.1 // indirect
 	cloud.google.com/go/compute v1.24.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.4-0.20230617002413-005d2dfb6b68 // indirect
