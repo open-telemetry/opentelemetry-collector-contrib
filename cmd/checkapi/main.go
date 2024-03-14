@@ -47,10 +47,11 @@ func run(folder string, allowlistFilePath string) error {
 	}
 	allowlist := strings.Split(string(allowlistData), "\n")
 	var errs []error
-	err = filepath.Walk(folder, func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(folder, func(path string, info fs.FileInfo, _ error) error {
 		if info.Name() == "go.mod" {
 			base := filepath.Dir(path)
-			relativeBase, err := filepath.Rel(folder, base)
+			var relativeBase string
+			relativeBase, err = filepath.Rel(folder, base)
 			if err != nil {
 				return err
 			}
@@ -67,7 +68,7 @@ func run(folder string, allowlistFilePath string) error {
 					return nil
 				}
 			}
-			if err := walkFolder(base, componentType); err != nil {
+			if err = walkFolder(base, componentType); err != nil {
 				errs = append(errs, err)
 			}
 		}
