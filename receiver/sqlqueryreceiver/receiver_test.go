@@ -45,6 +45,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 	require.NoError(t, err)
 	err = receiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
+	require.NoError(t, receiver.Shutdown(ctx))
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
@@ -75,6 +76,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	require.NoError(t, err)
 	err = receiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
+	require.NoError(t, receiver.Shutdown(ctx))
 }
 
 func fakeDBConnect(string, string) (*sql.DB, error) {
