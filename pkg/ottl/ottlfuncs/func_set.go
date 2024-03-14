@@ -15,9 +15,10 @@ var (
 )
 
 const (
-	REPLACE = "replace"
-	FAIL    = "fail"
-	IGNORE  = "ignore"
+	CONFLICT_REPLACE = "replace"
+	CONFLICT_FAIL    = "fail"
+	CONFLICT_IGNORE  = "ignore"
+	CONFLICT_UPDATE  = "update"
 )
 
 type SetArguments[K any] struct {
@@ -41,13 +42,16 @@ func createSetFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 }
 
 func set[K any](target ottl.GetSetter[K], value ottl.Getter[K], strategy ottl.Optional[string]) (ottl.ExprFunc[K], error) {
-	conflictStrategy := REPLACE
+	conflictStrategy := CONFLICT_REPLACE
 	if !strategy.IsEmpty() {
 		conflictStrategy = strategy.Get()
 	}
 
-	if conflictStrategy != REPLACE && conflictStrategy != FAIL && conflictStrategy != IGNORE {
-		return nil, fmt.Errorf("invalid value for conflict strategy, %v, must be %q, %q or %q", conflictStrategy, REPLACE, FAIL, IGNORE)
+	if conflictStrategy != CONFLICT_REPLACE &&
+		conflictStrategy != CONFLICT_UPDATE &&
+		conflictStrategy != CONFLICT_FAIL &&
+		conflictStrategy != CONFLICT_IGNORE {
+		return nil, fmt.Errorf("invalid value for conflict strategy, %v, must be %q, %q, %q or %q", conflictStrategy, CONFLICT_REPLACE, CONFLICT_UPDATE, CONFLICT_FAIL, CONFLICT_IGNORE)
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
@@ -63,16 +67,24 @@ func set[K any](target ottl.GetSetter[K], value ottl.Getter[K], strategy ottl.Op
 				return nil, err
 			}
 
-			if oldVal != val {
-				// there is value conflict
-				switch conflictStrategy {
-				case FAIL:
-					return nil, ErrValueAlreadyPresent
-				case IGNORE:
-					// do nothing
+			valueMissing := oldVal == nil
+			switch conflictStrategy {
+			case CONFLICT_REPLACE:
+				// overwrites if present or create when missing
+			case CONFLICT_UPDATE:
+				// update existing field with a new value. If the field does not exist, then no action will be taken
+				if valueMissing {
 					return nil, nil
-				case REPLACE:
-					// continue with set
+				}
+			case CONFLICT_FAIL:
+				// fail if target field present
+				if !valueMissing {
+					return nil, ErrValueAlreadyPresent
+				}
+			case CONFLICT_IGNORE:
+				// noop if target field present
+				if !valueMissing {
+					return nil, nil
 				}
 			}
 

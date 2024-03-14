@@ -14,14 +14,15 @@ import (
 )
 
 func Test_set(t *testing.T) {
-	input := pcommon.NewValueStr("original name")
-
 	target := &ottl.StandardGetSetter[pcommon.Value]{
 		Setter: func(ctx context.Context, tCtx pcommon.Value, val any) error {
 			tCtx.SetStr(val.(string))
 			return nil
 		},
 		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+			if tCtx.Str() == "" {
+				return nil, nil
+			}
 			return tCtx.Str(), nil
 		},
 	}
@@ -36,9 +37,10 @@ func Test_set(t *testing.T) {
 		expectedError error
 	}{
 		{
-			name:     "set name",
-			setter:   target,
-			strategy: ottl.Optional[string]{},
+			name:         "set name",
+			setter:       target,
+			initialValue: "original name",
+			strategy:     ottl.Optional[string]{},
 			getter: ottl.StandardGetSetter[pcommon.Value]{
 				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
@@ -49,9 +51,10 @@ func Test_set(t *testing.T) {
 			},
 		},
 		{
-			name:     "set nil value",
-			setter:   target,
-			strategy: ottl.Optional[string]{},
+			name:         "set nil value",
+			setter:       target,
+			initialValue: "original name",
+			strategy:     ottl.Optional[string]{},
 			getter: ottl.StandardGetSetter[pcommon.Value]{
 				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 					return nil, nil
@@ -65,7 +68,7 @@ func Test_set(t *testing.T) {
 			name:         "set value existing - IGNORE",
 			initialValue: "some value",
 			setter:       target,
-			strategy:     ottl.NewTestingOptional[string](IGNORE),
+			strategy:     ottl.NewTestingOptional[string](CONFLICT_IGNORE),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
 				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
@@ -79,14 +82,11 @@ func Test_set(t *testing.T) {
 			name:         "set value existing - FAIL",
 			initialValue: "some value",
 			setter:       target,
-			strategy:     ottl.NewTestingOptional[string](FAIL),
+			strategy:     ottl.NewTestingOptional[string](CONFLICT_FAIL),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
 				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
 				},
-			},
-			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStr("new name")
 			},
 			expectedError: ErrValueAlreadyPresent,
 		},
@@ -94,7 +94,7 @@ func Test_set(t *testing.T) {
 			name:         "set value existing - REPLACE",
 			initialValue: "some value",
 			setter:       target,
-			strategy:     ottl.NewTestingOptional[string](REPLACE),
+			strategy:     ottl.NewTestingOptional[string](CONFLICT_REPLACE),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
 				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
@@ -102,6 +102,34 @@ func Test_set(t *testing.T) {
 			},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("new name")
+			},
+		},
+		{
+			name:         "set value existing - UPDATE",
+			initialValue: "some value",
+			setter:       target,
+			strategy:     ottl.NewTestingOptional[string](CONFLICT_UPDATE),
+			getter: ottl.StandardGetSetter[pcommon.Value]{
+				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+					return "new name", nil
+				},
+			},
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("new name")
+			},
+		},
+
+		{
+			name:     "set value missing - UPDATE",
+			setter:   target,
+			strategy: ottl.NewTestingOptional[string](CONFLICT_UPDATE),
+			getter: ottl.StandardGetSetter[pcommon.Value]{
+				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+					return "new name", nil
+				},
+			},
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("")
 			},
 		},
 		{
@@ -121,17 +149,13 @@ func Test_set(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scenarioValue := pcommon.NewValueStr(input.Str())
-			if tt.initialValue != "" {
-				tt.setter.Set(context.TODO(), scenarioValue, tt.initialValue)
-			}
-
+			scenarioValue := pcommon.NewValueStr(tt.initialValue)
 			exprFunc, err := set(tt.setter, tt.getter, tt.strategy)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(nil, scenarioValue)
 			if tt.expectedError != nil {
-				assert.Equal(t, err, tt.expectedError)
+				assert.Equal(t, tt.expectedError, err)
 				return
 			}
 
