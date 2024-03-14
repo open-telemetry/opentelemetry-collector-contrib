@@ -6,6 +6,7 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -27,8 +28,9 @@ var resourceAttrsConversionMap = map[string]string{
 	semconv.AttributeServiceInstanceID:     "service.node.name",
 	semconv.AttributeDeploymentEnvironment: "service.environment",
 	semconv.AttributeTelemetrySDKName:      "",
+	semconv.AttributeTelemetryDistroName:   "",
+	semconv.AttributeTelemetrySDKLanguage:  "",
 	semconv.AttributeTelemetrySDKVersion:   "agent.version",
-	semconv.AttributeTelemetrySDKLanguage:  "service.language.name",
 	semconv.AttributeCloudPlatform:         "cloud.service.name",
 	semconv.AttributeContainerImageTags:    "container.image.tag",
 	semconv.AttributeHostName:              "host.hostname",
@@ -179,6 +181,7 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 	encodeLogAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
 
 	// Handle special cases.
+	encodeLogAgentNameECSMode(&document, resource)
 	encodeLogTimestampECSMode(&document, record)
 
 	return document
@@ -283,6 +286,44 @@ func encodeLogAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, 
 		document.AddAttribute(k, v)
 		return true
 	})
+}
+
+func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Resource) {
+	// Parse out telemetry SDK name, language, and distro name from resource
+	// attributes, setting defaults as needed.
+	telemetrySdkName := "otlp"
+	var telemetrySdkLanguage, telemetryDistroName string
+
+	attrs := resource.Attributes()
+	if v, exists := attrs.Get(semconv.AttributeTelemetrySDKName); exists {
+		telemetrySdkName = v.Str()
+	}
+	if v, exists := attrs.Get(semconv.AttributeTelemetrySDKLanguage); exists {
+		telemetrySdkLanguage = v.Str()
+	}
+	if v, exists := attrs.Get(semconv.AttributeTelemetryDistroName); exists {
+		telemetryDistroName = v.Str()
+		if telemetrySdkLanguage == "" {
+			telemetrySdkLanguage = "unknown"
+		}
+	}
+
+	// Construct agent name from telemetry SDK name, language, and distro name.
+	agentName := telemetrySdkName
+	if telemetryDistroName != "" {
+		agentName = fmt.Sprintf("%s/%s/%s", agentName, telemetrySdkLanguage, telemetryDistroName)
+	} else if telemetrySdkLanguage != "" {
+		agentName = fmt.Sprintf("%s/%s", agentName, telemetrySdkLanguage)
+	}
+
+	// Set agent name in document.
+	document.AddString("agent.name", agentName)
+
+	// Set service language name in document.
+	if telemetrySdkLanguage == "" {
+		telemetrySdkLanguage = "unknown"
+	}
+	document.AddString("service.language.name", telemetrySdkLanguage)
 }
 
 func encodeLogTimestampECSMode(document *objmodel.Document, record plog.LogRecord) {

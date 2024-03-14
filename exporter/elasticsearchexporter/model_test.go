@@ -224,7 +224,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		semconv.AttributeServiceName:           "foo.bar",
 		semconv.AttributeServiceVersion:        "1.1.0",
 		semconv.AttributeServiceInstanceID:     "i-103de39e0a",
-		semconv.AttributeTelemetrySDKName:      "perl-otel",
+		semconv.AttributeTelemetrySDKName:      "opentelemetry",
 		semconv.AttributeTelemetrySDKVersion:   "7.9.12",
 		semconv.AttributeTelemetrySDKLanguage:  "perl",
 		semconv.AttributeCloudProvider:         "gcp",
@@ -282,6 +282,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"service.name":            "foo.bar",
 		"service.version":         "1.1.0",
 		"service.node.name":       "i-103de39e0a",
+		"agent.name":              "opentelemetry/perl",
 		"agent.version":           "7.9.12",
 		"service.language.name":   "perl",
 		"cloud.provider":          "gcp",
@@ -328,7 +329,96 @@ func TestEncodeLogECSMode(t *testing.T) {
 	require.Equal(t, expectedDoc, doc)
 }
 
-func TestEncodeLogECSModeRecordTimestamps(t *testing.T) {
+func TestEncodeLogECSModeAgentName(t *testing.T) {
+	tests := map[string]struct {
+		telemetrySdkName     string
+		telemetrySdkLanguage string
+		telemetryDistroName  string
+
+		expectedAgentName           string
+		expectedServiceLanguageName string
+	}{
+		"none_set": {
+			expectedAgentName:           "otlp",
+			expectedServiceLanguageName: "unknown",
+		},
+		"name_set": {
+			telemetrySdkName:            "opentelemetry",
+			expectedAgentName:           "opentelemetry",
+			expectedServiceLanguageName: "unknown",
+		},
+		"language_set": {
+			telemetrySdkLanguage:        "java",
+			expectedAgentName:           "otlp/java",
+			expectedServiceLanguageName: "java",
+		},
+		"distro_set": {
+			telemetryDistroName:         "parts-unlimited-java",
+			expectedAgentName:           "otlp/unknown/parts-unlimited-java",
+			expectedServiceLanguageName: "unknown",
+		},
+		"name_language_set": {
+			telemetrySdkName:            "opentelemetry",
+			telemetrySdkLanguage:        "java",
+			expectedAgentName:           "opentelemetry/java",
+			expectedServiceLanguageName: "java",
+		},
+		"name_distro_set": {
+			telemetrySdkName:            "opentelemetry",
+			telemetryDistroName:         "parts-unlimited-java",
+			expectedAgentName:           "opentelemetry/unknown/parts-unlimited-java",
+			expectedServiceLanguageName: "unknown",
+		},
+		"language_distro_set": {
+			telemetrySdkLanguage:        "java",
+			telemetryDistroName:         "parts-unlimited-java",
+			expectedAgentName:           "otlp/java/parts-unlimited-java",
+			expectedServiceLanguageName: "java",
+		},
+		"name_language_distro_set": {
+			telemetrySdkName:            "opentelemetry",
+			telemetrySdkLanguage:        "java",
+			telemetryDistroName:         "parts-unlimited-java",
+			expectedAgentName:           "opentelemetry/java/parts-unlimited-java",
+			expectedServiceLanguageName: "java",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			resource := pcommon.NewResource()
+			scope := pcommon.NewInstrumentationScope()
+			record := plog.NewLogRecord()
+
+			if test.telemetrySdkName != "" {
+				resource.Attributes().PutStr(semconv.AttributeTelemetrySDKName, test.telemetrySdkName)
+			}
+			if test.telemetrySdkLanguage != "" {
+				resource.Attributes().PutStr(semconv.AttributeTelemetrySDKLanguage, test.telemetrySdkLanguage)
+			}
+			if test.telemetryDistroName != "" {
+				resource.Attributes().PutStr(semconv.AttributeTelemetryDistroName, test.telemetryDistroName)
+			}
+
+			timestamp := pcommon.Timestamp(1710373859123456789)
+			record.SetTimestamp(timestamp)
+
+			m := encodeModel{}
+			doc := m.encodeLogECSMode(resource, record, scope)
+
+			expectedDoc := objmodel.Document{}
+			expectedDoc.AddTimestamp("@timestamp", timestamp)
+			expectedDoc.AddString("agent.name", test.expectedAgentName)
+			expectedDoc.AddString("service.language.name", test.expectedServiceLanguageName)
+
+			doc.Sort()
+			expectedDoc.Sort()
+			require.Equal(t, expectedDoc, doc)
+		})
+	}
+}
+
+func TestEncodeLogECSModeTimestamps(t *testing.T) {
 	tests := map[string]struct {
 		timeUnixNano         int64
 		observedTimeUnixNano int64
@@ -363,6 +453,8 @@ func TestEncodeLogECSModeRecordTimestamps(t *testing.T) {
 
 			expectedDoc := objmodel.Document{}
 			expectedDoc.AddTimestamp("@timestamp", pcommon.NewTimestampFromTime(test.expectedTimestamp))
+			expectedDoc.AddString("agent.name", "otlp")
+			expectedDoc.AddString("service.language.name", "unknown")
 
 			doc.Sort()
 			expectedDoc.Sort()
