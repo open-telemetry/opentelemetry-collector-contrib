@@ -24,6 +24,7 @@ func Test_extractCountMetric(t *testing.T) {
 				histogramMetric := getTestHistogramMetric()
 				histogramMetric.CopyTo(metrics.AppendEmpty())
 				countMetric := metrics.AppendEmpty()
+				countMetric.SetUnit("1")
 				countMetric.SetEmptySum()
 				countMetric.Sum().SetAggregationTemporality(histogramMetric.Histogram().AggregationTemporality())
 				countMetric.Sum().SetIsMonotonic(false)
@@ -44,6 +45,7 @@ func Test_extractCountMetric(t *testing.T) {
 				histogramMetric := getTestHistogramMetric()
 				histogramMetric.CopyTo(metrics.AppendEmpty())
 				countMetric := metrics.AppendEmpty()
+				countMetric.SetUnit("1")
 				countMetric.SetEmptySum()
 				countMetric.Sum().SetAggregationTemporality(histogramMetric.Histogram().AggregationTemporality())
 				countMetric.Sum().SetIsMonotonic(true)
@@ -64,6 +66,7 @@ func Test_extractCountMetric(t *testing.T) {
 				expHistogramMetric := getTestExponentialHistogramMetric()
 				expHistogramMetric.CopyTo(metrics.AppendEmpty())
 				countMetric := metrics.AppendEmpty()
+				countMetric.SetUnit("1")
 				countMetric.SetEmptySum()
 				countMetric.Sum().SetAggregationTemporality(expHistogramMetric.ExponentialHistogram().AggregationTemporality())
 				countMetric.Sum().SetIsMonotonic(false)
@@ -85,6 +88,7 @@ func Test_extractCountMetric(t *testing.T) {
 				expHistogramMetric.CopyTo(metrics.AppendEmpty())
 				countMetric := metrics.AppendEmpty()
 				countMetric.SetEmptySum()
+				countMetric.SetUnit("1")
 				countMetric.Sum().SetAggregationTemporality(expHistogramMetric.ExponentialHistogram().AggregationTemporality())
 				countMetric.Sum().SetIsMonotonic(true)
 
@@ -105,6 +109,7 @@ func Test_extractCountMetric(t *testing.T) {
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				countMetric := metrics.AppendEmpty()
 				countMetric.SetEmptySum()
+				countMetric.SetUnit("1")
 				countMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				countMetric.Sum().SetIsMonotonic(false)
 
@@ -125,6 +130,7 @@ func Test_extractCountMetric(t *testing.T) {
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				countMetric := metrics.AppendEmpty()
 				countMetric.SetEmptySum()
+				countMetric.SetUnit("1")
 				countMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				countMetric.Sum().SetIsMonotonic(true)
 

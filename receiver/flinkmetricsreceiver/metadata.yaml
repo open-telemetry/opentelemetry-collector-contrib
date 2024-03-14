@@ -1,4 +1,5 @@
 type: flinkmetrics
+scope_name: otelcol/flinkmetricsreceiver
 
 status:
   class: receiver

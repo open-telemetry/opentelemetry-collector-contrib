@@ -44,6 +44,7 @@ func TestLoadConfig(t *testing.T) {
 					Region:      "us-west-1",
 					RoleARN:     "arn:aws:iam::123456789012:role/awesome_role",
 					AWSEndpoint: "https://another.aws.endpoint.com",
+					ServiceName: "es",
 				},
 			},
 		},

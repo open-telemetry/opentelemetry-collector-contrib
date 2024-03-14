@@ -1,4 +1,5 @@
 type: azureeventhub
+scope_name: otelcol/azureeventhubreceiver
 
 status:
   class: receiver

@@ -1,4 +1,5 @@
 type: nginx
+scope_name: otelcol/nginxreceiver
 
 status:
   class: receiver

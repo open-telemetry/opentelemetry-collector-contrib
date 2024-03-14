@@ -1,4 +1,5 @@
 type: k8s_cluster
+scope_name: otelcol/k8sclusterreceiver
 
 status:
   class: receiver
@@ -191,6 +192,11 @@ resource_attributes:
     description: The k8s ClusterResourceQuota name.
     type: string
     enabled: true
+
+  k8s.container.status.last_terminated_reason:
+    description: Last terminated reason of a container.
+    type: string
+    enabled: false
 
 attributes:
   k8s.namespace.name:

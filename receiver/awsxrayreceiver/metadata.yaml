@@ -1,4 +1,5 @@
 type: awsxray
+scope_name: otelcol/awsxrayreceiver
 
 status:
   class: receiver

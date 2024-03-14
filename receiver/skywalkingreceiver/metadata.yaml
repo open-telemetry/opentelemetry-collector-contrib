@@ -1,4 +1,5 @@
 type: skywalking
+scope_name: otelcol/skywalkingreceiver
 
 status:
   class: receiver
