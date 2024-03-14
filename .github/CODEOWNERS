@@ -75,7 +75,7 @@ exporter/sapmexporter/                                   @open-telemetry/collect
 exporter/sentryexporter/                                 @open-telemetry/collector-contrib-approvers @AbhiPrasad
 exporter/signalfxexporter/                               @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1
 exporter/splunkhecexporter/                              @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
-exporter/sumologicexporter/                              @open-telemetry/collector-contrib-approvers @sumo-drosiek
+exporter/sumologicexporter/                              @open-telemetry/collector-contrib-approvers @aboguszewski-sumo @astencel-sumo @kkujawa-sumo @mat-rumian @rnishtala-sumo @sumo-drosiek @swiatekm-sumo
 exporter/syslogexporter/                                 @open-telemetry/collector-contrib-approvers @kkujawa-sumo @rnishtala-sumo @astencel-sumo
 exporter/tencentcloudlogserviceexporter/                 @open-telemetry/collector-contrib-approvers @wgliang @yiyang5055
 exporter/zipkinexporter/                                 @open-telemetry/collector-contrib-approvers @MovieStoreGuy @astencel-sumo @crobert-1
@@ -111,7 +111,7 @@ extension/solarwindsapmsettingsextension/                @open-telemetry/collect
 extension/storage/                                       @open-telemetry/collector-contrib-approvers @dmitryax @atoulme @djaglowski
 extension/storage/dbstorage/                             @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
 extension/storage/filestorage/                           @open-telemetry/collector-contrib-approvers @djaglowski
-extension/sumologicextension/                            @open-telemetry/collector-contrib-approvers @astencel-sumo @sumo-drosiek @swiatekm-sumo
+extension/sumologicextension/                            @open-telemetry/collector-contrib-approvers @aboguszewski-sumo @astencel-sumo @kkujawa-sumo @mat-rumian @rnishtala-sumo @sumo-drosiek @swiatekm-sumo
 
 internal/aws/                                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 internal/collectd/                                       @open-telemetry/collector-contrib-approvers @atoulme
@@ -174,7 +174,7 @@ processor/resourceprocessor/                             @open-telemetry/collect
 processor/routingprocessor/                              @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/schemaprocessor/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 processor/spanprocessor/                                 @open-telemetry/collector-contrib-approvers @boostchicken
-processor/sumologicprocessor/                            @open-telemetry/collector-contrib-approvers @aboguszewski-sumo @astencel-sumo @sumo-drosiek
+processor/sumologicprocessor/                            @open-telemetry/collector-contrib-approvers @aboguszewski-sumo @astencel-sumo @kkujawa-sumo @mat-rumian @rnishtala-sumo @sumo-drosiek @swiatekm-sumo
 processor/tailsamplingprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/transformprocessor/                            @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
 

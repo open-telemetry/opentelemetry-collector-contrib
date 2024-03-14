@@ -10,6 +10,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.4
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/featuregate v1.3.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/pdata v1.3.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/otel v1.24.0
 	go.opentelemetry.io/otel/metric v1.24.0
@@ -45,6 +46,7 @@ require (
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/karrick/godirwalk v1.17.0 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect

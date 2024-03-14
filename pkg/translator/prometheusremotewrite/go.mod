@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.96.0
-	github.com/prometheus/common v0.48.0
+	github.com/prometheus/common v0.50.0
 	github.com/prometheus/prometheus v0.48.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/pdata v1.3.1-0.20240306115632-b2693620eff6
@@ -25,8 +25,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.3.1-0.20240306115632-b2693620eff6 // indirect
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
 	google.golang.org/grpc v1.62.1 // indirect

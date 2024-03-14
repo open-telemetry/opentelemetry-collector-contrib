@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
@@ -32,6 +33,10 @@ const (
 
 	// the type of compression codec
 	compressionZSTD = "zstd"
+
+	defaultMaxOpenFiles = 100
+
+	defaultResourceAttribute = "fileexporter.path_segment"
 )
 
 type FileExporter interface {
@@ -55,6 +60,10 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		FormatType: formatTypeJSON,
 		Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
+		GroupBy: &GroupBy{
+			ResourceAttribute: defaultResourceAttribute,
+			MaxOpenFiles:      defaultMaxOpenFiles,
+		},
 	}
 }
 
@@ -63,7 +72,7 @@ func createTracesExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	fe := getOrCreateFileExporter(cfg)
+	fe := getOrCreateFileExporter(cfg, set.Logger)
 	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
@@ -80,7 +89,7 @@ func createMetricsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	fe := getOrCreateFileExporter(cfg)
+	fe := getOrCreateFileExporter(cfg, set.Logger)
 	return exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
@@ -97,7 +106,7 @@ func createLogsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	fe := getOrCreateFileExporter(cfg)
+	fe := getOrCreateFileExporter(cfg, set.Logger)
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
@@ -113,20 +122,28 @@ func createLogsExporter(
 // or returns the already cached one. Caching is required because the factory is asked trace and
 // metric receivers separately when it gets CreateTracesReceiver() and CreateMetricsReceiver()
 // but they must not create separate objects, they must use one Exporter object per configuration.
-func getOrCreateFileExporter(cfg component.Config) FileExporter {
+func getOrCreateFileExporter(cfg component.Config, logger *zap.Logger) FileExporter {
 	conf := cfg.(*Config)
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return newFileExporter(conf)
+		return newFileExporter(conf, logger)
 	})
 
 	c := fe.Unwrap()
 	return c.(FileExporter)
 }
 
-func newFileExporter(conf *Config) FileExporter {
-	return &fileExporter{
-		conf: conf,
+func newFileExporter(conf *Config, logger *zap.Logger) FileExporter {
+	if conf.GroupBy == nil || !conf.GroupBy.Enabled {
+		return &fileExporter{
+			conf: conf,
+		}
 	}
+
+	return &groupingFileExporter{
+		conf:   conf,
+		logger: logger,
+	}
+
 }
 
 func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInterval time.Duration, export exportFunc) (*fileWriter, error) {
