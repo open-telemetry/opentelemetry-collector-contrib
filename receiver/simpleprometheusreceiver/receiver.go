@@ -129,9 +129,12 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 	}
 
 	scrapeConfig.HTTPClientConfig = httpConfig
-	out.PrometheusConfig = &prometheusreceiver.PromConfig{ScrapeConfigs: []*config.ScrapeConfig{
-		scrapeConfig,
-	}}
+	out.PrometheusConfig = &prometheusreceiver.PromConfig{
+		GlobalConfig: config.DefaultGlobalConfig,
+		ScrapeConfigs: []*config.ScrapeConfig{
+			scrapeConfig,
+		},
+	}
 
 	return out, nil
 }

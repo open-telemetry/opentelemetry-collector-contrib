@@ -18,6 +18,7 @@ import (
 
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
+	promconfig "github.com/prometheus/prometheus/config"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -217,7 +218,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				PrometheusConfig: &PromConfig{},
+				PrometheusConfig: &PromConfig{GlobalConfig: promconfig.DefaultGlobalConfig},
 				TargetAllocator: &TargetAllocator{
 					Interval:    10 * time.Second,
 					CollectorID: "collector-1",
@@ -311,7 +312,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				PrometheusConfig: &PromConfig{},
+				PrometheusConfig: &PromConfig{GlobalConfig: promconfig.DefaultGlobalConfig},
 				TargetAllocator: &TargetAllocator{
 					Interval:    10 * time.Second,
 					CollectorID: "collector-1",
@@ -423,7 +424,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				PrometheusConfig: &PromConfig{},
+				PrometheusConfig: &PromConfig{GlobalConfig: promconfig.DefaultGlobalConfig},
 				TargetAllocator: &TargetAllocator{
 					Interval:    10 * time.Second,
 					CollectorID: "collector-1",
@@ -465,7 +466,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				PrometheusConfig: &PromConfig{},
+				PrometheusConfig: &PromConfig{GlobalConfig: promconfig.DefaultGlobalConfig},
 				TargetAllocator: &TargetAllocator{
 					Interval:    50 * time.Millisecond,
 					CollectorID: "collector-1",
