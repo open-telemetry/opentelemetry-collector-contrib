@@ -91,7 +91,7 @@ func (c *connectorImp) Start(ctx context.Context, _ component.Host) error {
 // Shutdown implements connector.Traces.
 func (c *connectorImp) Shutdown(ctx context.Context) error {
 	c.shutdownOnce.Do(func() {
-		c.logger.Info("Stopping host_info connector")
+		c.logger.Info("Stopping Grafana Cloud connector")
 		if c.started {
 			// flush metrics on shutdown
 			if err := c.flush(ctx); err != nil {
