@@ -35,8 +35,9 @@ DCGM_FI_DEV_GPU_UTIL{gpu="0",UUID="uuid",device="nvidia0",modelName="NVIDIA A10G
 `
 
 const (
-	dummyInstanceID  = "i-0000000000"
-	dummyClusterName = "cluster-name"
+	dummyInstanceID   = "i-0000000000"
+	dummyClusterName  = "cluster-name"
+	dummyInstanceType = "instance-type"
 )
 
 type mockHostInfoProvider struct {
@@ -48,6 +49,10 @@ func (m mockHostInfoProvider) GetClusterName() string {
 
 func (m mockHostInfoProvider) GetInstanceID() string {
 	return dummyInstanceID
+}
+
+func (m mockHostInfoProvider) GetInstanceType() string {
+	return dummyInstanceType
 }
 
 type mockDecorator struct {
@@ -151,6 +156,7 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 				ci.AttributeK8sNamespace:  "kube-system",
 				ci.ClusterNameKey:         dummyClusterName,
 				ci.InstanceID:             dummyInstanceID,
+				ci.InstanceType:           dummyInstanceType,
 				ci.AttributeFullPodName:   "fullname-hash",
 				ci.AttributeK8sPodName:    "fullname-hash",
 				ci.AttributeContainerName: "main",
@@ -164,6 +170,7 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 				ci.AttributeK8sNamespace:  "kube-system",
 				ci.ClusterNameKey:         dummyClusterName,
 				ci.InstanceID:             dummyInstanceID,
+				ci.InstanceType:           dummyInstanceType,
 				ci.AttributeFullPodName:   "fullname-hash",
 				ci.AttributeK8sPodName:    "fullname-hash",
 				ci.AttributeContainerName: "main",

@@ -56,6 +56,7 @@ type DcgmScraperOpts struct {
 type hostInfoProvider interface {
 	GetClusterName() string
 	GetInstanceID() string
+	GetInstanceType() string
 }
 
 func NewDcgmScraper(opts DcgmScraperOpts) (*DcgmScraper, error) {
@@ -168,6 +169,13 @@ func getMetricRelabelConfig(hostInfoProvider hostInfoProvider) []*relabel.Config
 			TargetLabel:  ci.InstanceID,
 			Regex:        relabel.MustNewRegexp(".*"),
 			Replacement:  hostInfoProvider.GetInstanceID(),
+			Action:       relabel.Replace,
+		},
+		{
+			SourceLabels: model.LabelNames{"namespace"},
+			TargetLabel:  ci.InstanceType,
+			Regex:        relabel.MustNewRegexp(".*"),
+			Replacement:  hostInfoProvider.GetInstanceType(),
 			Action:       relabel.Replace,
 		},
 		{
