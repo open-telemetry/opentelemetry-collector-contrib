@@ -15,6 +15,7 @@ import (
 	"sync"
 
 	"github.com/cespare/xxhash/v2"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -71,11 +72,45 @@ type Converter struct {
 	// when Stop() is called.
 	wg sync.WaitGroup
 
-	logger *zap.Logger
+	logger      *zap.Logger
+	buildInfo   component.BuildInfo
+	packageName string
 }
 
 type converterOption interface {
 	apply(*Converter)
+}
+
+func withPackageName(name string) converterOption {
+	return packageNameOption{name}
+}
+
+type packageNameOption struct {
+	name string
+}
+
+func (o packageNameOption) apply(c *Converter) {
+	c.packageName = o.name
+}
+
+type packageNameProvider interface {
+	PackageName() string
+}
+
+func withBuildInfo(buildInfo component.BuildInfo) converterOption {
+	return buildInfoOption{buildInfo}
+}
+
+type buildInfoOption struct {
+	buildInfo component.BuildInfo
+}
+
+func (o buildInfoOption) apply(c *Converter) {
+	c.buildInfo = o.buildInfo
+}
+
+type useBuildInfo interface {
+	UseBuildInfo() bool
 }
 
 func withWorkerCount(workerCount int) converterOption {
@@ -162,6 +197,14 @@ func (c *Converter) workerLoop() {
 				} else {
 					sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(0)
 				}
+
+				if c.packageName != "" {
+					sl.Scope().SetName(c.packageName)
+				}
+				if c.buildInfo.Version != "" {
+					sl.Scope().SetVersion(c.buildInfo.Version)
+				}
+
 				convertInto(e, sl.LogRecords().AppendEmpty())
 			}
 

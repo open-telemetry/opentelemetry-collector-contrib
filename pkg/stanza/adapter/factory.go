@@ -62,6 +62,12 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 		}
 
 		converterOpts := []converterOption{}
+		if p, ok := logReceiverType.(packageNameProvider); ok {
+			converterOpts = append(converterOpts, withPackageName(p.PackageName()))
+		}
+		if p, ok := logReceiverType.(useBuildInfo); ok && p.UseBuildInfo() {
+			converterOpts = append(converterOpts, withBuildInfo(params.BuildInfo))
+		}
 		if baseCfg.numWorkers > 0 {
 			converterOpts = append(converterOpts, withWorkerCount(baseCfg.numWorkers))
 		}

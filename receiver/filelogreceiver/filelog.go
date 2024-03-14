@@ -28,6 +28,14 @@ func (f ReceiverType) Type() component.Type {
 	return metadata.Type
 }
 
+func (f ReceiverType) PackageName() string {
+	return "otelcol/filelogreceiver"
+}
+
+func (f ReceiverType) UseBuildInfo() bool {
+	return true
+}
+
 // CreateDefaultConfig creates a config with type and version
 func (f ReceiverType) CreateDefaultConfig() component.Config {
 	return createDefaultConfig()
