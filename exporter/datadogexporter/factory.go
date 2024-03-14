@@ -19,6 +19,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
@@ -170,8 +171,9 @@ func NewFactory() exporter.Factory {
 	return newFactoryWithRegistry(featuregate.GlobalRegistry())
 }
 
-func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
-	return exporterhelper.TimeoutSettings{
+func defaultClientConfig() confighttp.ClientConfig {
+	// do not use NewDefaultClientConfig for backwards-compatibility
+	return confighttp.ClientConfig{
 		Timeout: 15 * time.Second,
 	}
 }
@@ -179,9 +181,9 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 // createDefaultConfig creates the default exporter configuration
 func (f *factory) createDefaultConfig() component.Config {
 	return &Config{
-		TimeoutSettings: defaulttimeoutSettings(),
-		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		ClientConfig:  defaultClientConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
