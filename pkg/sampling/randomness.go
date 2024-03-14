@@ -92,3 +92,10 @@ func (rnd Randomness) RValue() string {
 func (rnd Randomness) Unsigned() uint64 {
 	return rnd.unsigned
 }
+
+func UnsignedToRandomness(x uint64) (Randomness, error) {
+	if x >= MaxAdjustedCount {
+		return Randomness{}, ErrRValueSize
+	}
+	return Randomness{unsigned: x}, nil
+}
