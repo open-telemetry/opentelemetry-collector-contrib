@@ -14,6 +14,11 @@ import (
 
 var defaultStorageType = (*component.ID)(nil)
 
+const (
+	defaultMaxNumPartition               uint64 = 1_000_000
+	defaultMaxNumPendingAcksPerPartition uint64 = 1_000_000
+)
+
 // NewFactory creates a factory for ack extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
@@ -26,7 +31,9 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		StorageID: defaultStorageType,
+		StorageID:                     defaultStorageType,
+		MaxNumPartition:               defaultMaxNumPartition,
+		MaxNumPendingAcksPerPartition: defaultMaxNumPendingAcksPerPartition,
 	}
 }
 

@@ -6,11 +6,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-const (
-	defaultMaxNumPartition               uint64 = 1_000_000
-	defaultMaxNumPendingAcksPerPartition uint64 = 1_000_000
-)
-
 // Config defines configuration for ack extension
 type Config struct {
 	// StorageID defines the storage type of the extension. In-memory type is set by default (if not provided). Future consideration is disk type.
