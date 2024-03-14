@@ -48,8 +48,9 @@ func (rs *ReqSender) Send(req *http.Request) {
 			go rs.processRequests()
 		}
 
-		// Block until we can get through a request, until context is cancelled, as the request processor
-		// also shuts down when the context has been cancelled.
+		// Block until we can get the request through, or until the context is cancelled. The request processor
+		// shuts down when the context has been cancelled, so there's no value added to keep blocking. Blocking
+		// forever results in Shutdown never completing.
 		select {
 		case <-rs.ctx.Done():
 			return
