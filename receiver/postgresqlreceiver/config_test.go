@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/multierr"
@@ -135,7 +136,7 @@ func TestLoadConfig(t *testing.T) {
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"
-		expected.AddrConfig.Transport = "tcp"
+		expected.AddrConfig.Transport = confignet.TransportTypeTCP
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.ConnectionPool = ConnectionPool{
@@ -153,7 +154,7 @@ func TestLoadConfig(t *testing.T) {
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"
-		expected.AddrConfig.Transport = "tcp"
+		expected.AddrConfig.Transport = confignet.TransportTypeTCP
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.Databases = []string{"otel"}
