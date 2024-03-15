@@ -6,7 +6,6 @@ package probabilisticsamplerprocessor
 import (
 	"fmt"
 	"io"
-	"math"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -329,18 +328,19 @@ func makeSampler(cfg *Config, common commonFields) (dataSampler, error) {
 			consistentCommon: ccom,
 
 			// Note: the original hash function used in this code
-			// was:
+			// is preserved to ensure consistency across updates.
 			//
 			//   uint32(pct * percentageScaleFactor)
 			//
-			// which (a) carried out the multiplication in 32-bit
-			// precision, (b) rounded to zero instead of nearest.
-			//
-			// The max(1,) term is similar to rounding very small
-			// probabilities above up to the smallest representable
-			// non-zero sampler.
-			scaledSamplerate: max(1, uint32(math.Round(float64(pct)*percentageScaleFactor))),
+			// (a) carried out the multiplication in 32-bit precision
+			// (b) rounded to zero instead of nearest.
+			scaledSamplerate: uint32(pct * percentageScaleFactor),
 			hashSeed:         cfg.HashSeed,
+		}
+
+		if ts.scaledSamplerate == 0 {
+			ts.logger.Warn("probability rounded to zero", zap.Float32("percent", pct))
+			return never, nil
 		}
 
 		// Express scaledSamplerate as the equivalent rejection Threshold.

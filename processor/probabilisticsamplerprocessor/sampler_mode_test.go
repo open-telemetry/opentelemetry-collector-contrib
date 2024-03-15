@@ -4,11 +4,13 @@
 package probabilisticsamplerprocessor
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestUnmarshalText(t *testing.T) {
@@ -47,16 +49,15 @@ func TestUnmarshalText(t *testing.T) {
 	}
 }
 
-func TestStrictRoundingDown(t *testing.T) {
+func TestHashSeedRoundingDown(t *testing.T) {
 	// The original hash function rounded thresholds down, in the
-	// direction of zero.  The OTel hash function rounds
-	// thresholds to the nearest value.  This slight difference is
-	// controlled by the strict variable.
+	// direction of zero.
 
 	// pct is approximately 75% of the minimum 14-bit probability, so it
-	// will round up to 0x1p-14 unless strict, in which case it rounds
-	// down to 0.
+	// would round up, but it does not.
 	const pct = 0x3p-16 * 100
+
+	require.Equal(t, 1.0, math.Round((pct/100)*numHashBuckets))
 
 	for _, strict := range []bool{false, true} {
 		cfg := Config{
@@ -65,15 +66,19 @@ func TestStrictRoundingDown(t *testing.T) {
 			HashSeed:           defaultHashSeed,
 		}
 
-		// Rounds up in this case to the nearest/smallest 14-bit threshold.
+		logger, observed := observer.New(zap.DebugLevel)
+
 		com := commonFields{
 			strict: strict,
-			logger: zaptest.NewLogger(t),
+			logger: zap.New(logger),
 		}
-		nostrictSamp, err := makeSampler(&cfg, com)
+		samp, err := makeSampler(&cfg, com)
 		require.NoError(t, err)
-		hasher, ok := nostrictSamp.(*hashingSampler)
-		require.True(t, ok, "is non-zero")
-		require.Equal(t, uint32(1), hasher.scaledSamplerate)
+
+		_, ok := samp.(*neverSampler)
+		require.True(t, ok, "is neverSampler")
+
+		require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+		require.Equal(t, observed.All()[0].Message, "probability rounded to zero")
 	}
 }
