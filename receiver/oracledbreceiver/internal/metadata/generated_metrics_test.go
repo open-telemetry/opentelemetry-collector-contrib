@@ -67,11 +67,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbDmlLocksLimitDataPoint(ts, "1")
+			mb.RecordOracledbDmlLocksLimitDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbDmlLocksUsageDataPoint(ts, "1")
+			mb.RecordOracledbDmlLocksUsageDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -79,19 +79,19 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbEnqueueLocksLimitDataPoint(ts, "1")
+			mb.RecordOracledbEnqueueLocksLimitDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbEnqueueLocksUsageDataPoint(ts, "1")
+			mb.RecordOracledbEnqueueLocksUsageDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbEnqueueResourcesLimitDataPoint(ts, "1")
+			mb.RecordOracledbEnqueueResourcesLimitDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbEnqueueResourcesUsageDataPoint(ts, "1")
+			mb.RecordOracledbEnqueueResourcesUsageDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -123,19 +123,19 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbProcessesLimitDataPoint(ts, "1")
+			mb.RecordOracledbProcessesLimitDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbProcessesUsageDataPoint(ts, "1")
+			mb.RecordOracledbProcessesUsageDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbSessionsLimitDataPoint(ts, "1")
+			mb.RecordOracledbSessionsLimitDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbSessionsUsageDataPoint(ts, "1", "session_type-val", "session_status-val")
+			mb.RecordOracledbSessionsUsageDataPoint(ts, 1, "session_type-val", "session_status-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -143,15 +143,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, "1", "tablespace_name-val")
+			mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, 1, "tablespace_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbTransactionsLimitDataPoint(ts, "1")
+			mb.RecordOracledbTransactionsLimitDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbTransactionsUsageDataPoint(ts, "1")
+			mb.RecordOracledbTransactionsUsageDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++

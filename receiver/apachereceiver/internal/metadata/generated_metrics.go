@@ -912,13 +912,8 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 }
 
 // RecordApacheCPULoadDataPoint adds a data point to apache.cpu.load metric.
-func (mb *MetricsBuilder) RecordApacheCPULoadDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseFloat(inputVal, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse float64 for ApacheCPULoad, value was %s: %w", inputVal, err)
-	}
+func (mb *MetricsBuilder) RecordApacheCPULoadDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricApacheCPULoad.recordDataPoint(mb.startTime, ts, val)
-	return nil
 }
 
 // RecordApacheCPUTimeDataPoint adds a data point to apache.cpu.time metric.
@@ -942,33 +937,18 @@ func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pcommon.Tim
 }
 
 // RecordApacheLoad1DataPoint adds a data point to apache.load.1 metric.
-func (mb *MetricsBuilder) RecordApacheLoad1DataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseFloat(inputVal, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse float64 for ApacheLoad1, value was %s: %w", inputVal, err)
-	}
+func (mb *MetricsBuilder) RecordApacheLoad1DataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricApacheLoad1.recordDataPoint(mb.startTime, ts, val)
-	return nil
 }
 
 // RecordApacheLoad15DataPoint adds a data point to apache.load.15 metric.
-func (mb *MetricsBuilder) RecordApacheLoad15DataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseFloat(inputVal, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse float64 for ApacheLoad15, value was %s: %w", inputVal, err)
-	}
+func (mb *MetricsBuilder) RecordApacheLoad15DataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricApacheLoad15.recordDataPoint(mb.startTime, ts, val)
-	return nil
 }
 
 // RecordApacheLoad5DataPoint adds a data point to apache.load.5 metric.
-func (mb *MetricsBuilder) RecordApacheLoad5DataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseFloat(inputVal, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse float64 for ApacheLoad5, value was %s: %w", inputVal, err)
-	}
+func (mb *MetricsBuilder) RecordApacheLoad5DataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricApacheLoad5.recordDataPoint(mb.startTime, ts, val)
-	return nil
 }
 
 // RecordApacheRequestTimeDataPoint adds a data point to apache.request.time metric.

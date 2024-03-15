@@ -1816,13 +1816,8 @@ func (mb *MetricsBuilder) RecordFlinkJobLastCheckpointSizeDataPoint(ts pcommon.T
 }
 
 // RecordFlinkJobLastCheckpointTimeDataPoint adds a data point to flink.job.last_checkpoint.time metric.
-func (mb *MetricsBuilder) RecordFlinkJobLastCheckpointTimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for FlinkJobLastCheckpointTime, value was %s: %w", inputVal, err)
-	}
+func (mb *MetricsBuilder) RecordFlinkJobLastCheckpointTimeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricFlinkJobLastCheckpointTime.recordDataPoint(mb.startTime, ts, val)
-	return nil
 }
 
 // RecordFlinkJobRestartCountDataPoint adds a data point to flink.job.restart.count metric.
@@ -1846,13 +1841,8 @@ func (mb *MetricsBuilder) RecordFlinkJvmClassLoaderClassesLoadedDataPoint(ts pco
 }
 
 // RecordFlinkJvmCPULoadDataPoint adds a data point to flink.jvm.cpu.load metric.
-func (mb *MetricsBuilder) RecordFlinkJvmCPULoadDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseFloat(inputVal, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse float64 for FlinkJvmCPULoad, value was %s: %w", inputVal, err)
-	}
+func (mb *MetricsBuilder) RecordFlinkJvmCPULoadDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricFlinkJvmCPULoad.recordDataPoint(mb.startTime, ts, val)
-	return nil
 }
 
 // RecordFlinkJvmCPUTimeDataPoint adds a data point to flink.jvm.cpu.time metric.

@@ -69,7 +69,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFlinkJobLastCheckpointTimeDataPoint(ts, "1")
+			mb.RecordFlinkJobLastCheckpointTimeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -81,7 +81,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFlinkJvmCPULoadDataPoint(ts, "1")
+			mb.RecordFlinkJvmCPULoadDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
