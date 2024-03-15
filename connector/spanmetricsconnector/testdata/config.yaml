@@ -78,3 +78,20 @@ spanmetrics/resource_metrics_key_attributes:
     - service.name
     - telemetry.sdk.language
     - telemetry.sdk.name
+
+spanmetrics/custom_delta_timestamp_cache_size:
+  aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
+  delta_temporality:
+    metric_timestamp_cache_size: 123
+
+spanmetrics/invalid_delta_timestamp_cache_size:
+  aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
+  delta_temporality:
+    metric_timestamp_cache_size: 0
+
+spanmetrics/default_delta_timestamp_cache_size:
+  aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
+
+spanmetrics/default_delta_timestamp_cache_size2:
+  aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
+  delta_temporality:
