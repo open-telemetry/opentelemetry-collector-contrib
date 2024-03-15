@@ -6,10 +6,10 @@ package spanmetricsconnector // import "github.com/open-telemetry/opentelemetry-
 import (
 	"bytes"
 	"context"
-	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"sync"
 	"time"
 
+	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"github.com/lightstep/go-expohisto/structure"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/component"
