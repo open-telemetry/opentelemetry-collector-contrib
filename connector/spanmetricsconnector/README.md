@@ -120,6 +120,8 @@ The following settings can be optionally configured:
   - `enabled`: (default: `false`): enabling will add the events metric.
   - `dimensions`: (mandatory if `enabled`) the list of the span's event attributes to add as dimensions to the events metric, which will be included _on top of_ the common and configured `dimensions` for span and resource attributes.
 - `resource_metrics_key_attributes`: Filter the resource attributes used to produce the resource metrics key map hash. Use this in case changing resource attributes (e.g. process id) are breaking counter metrics.
+- `delta_temporality`: Configuration exclusive to generating delta temporality span metrics
+  - `metric_timestamp_cache_size` (default `10000`): Size of the cache used to keep track of a metric's TimestampUnixNano the last time it was flushed. When a metric is evicted from the cache, its next data point will indicate a "reset" in the series. Downstream components converting from delta to cumulative, like `prometheusexporter`, may handle these resets by setting cumulative counters back to 0.
 
 ## Examples
 

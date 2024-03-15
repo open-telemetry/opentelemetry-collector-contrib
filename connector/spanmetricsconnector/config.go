@@ -23,6 +23,8 @@ var defaultHistogramBucketsMs = []float64{
 	2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
 }
 
+var defaultDeltaTimestampCacheSize = 10000
+
 // Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
 type Dimension struct {
 	Name    string  `mapstructure:"name"`
@@ -79,6 +81,9 @@ type Config struct {
 
 	// Events defines the configuration for events section of spans.
 	Events EventsConfig `mapstructure:"events"`
+
+	// DeltaTemporalityConfig is configuration that's exclusive to generating delta span metrics
+	DeltaTemporalityConfig *DeltaTemporalityConfig `mapstructure:"delta_temporality"`
 }
 
 type HistogramConfig struct {
@@ -107,6 +112,11 @@ type EventsConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 	// Dimensions defines the list of dimensions to add to the events metric.
 	Dimensions []Dimension `mapstructure:"dimensions"`
+}
+
+type DeltaTemporalityConfig struct {
+	// TimestampCacheSize controls the size of the cache used to keep track of a metric's TimestampUnixNano the last time it was flushed
+	TimestampCacheSize *int `mapstructure:"metric_timestamp_cache_size"`
 }
 
 var _ component.ConfigValidator = (*Config)(nil)
@@ -139,6 +149,13 @@ func (c Config) Validate() error {
 		return fmt.Errorf("invalid metrics_expiration: %v, the duration should be positive", c.MetricsExpiration)
 	}
 
+	if c.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta && c.GetDeltaTimestampCacheSize() <= 0 {
+		return fmt.Errorf(
+			"invalid delta timestamp cache size: %v, the maximum number of the items in the cache should be positive",
+			c.GetDeltaTimestampCacheSize(),
+		)
+	}
+
 	return nil
 }
 
@@ -149,6 +166,13 @@ func (c Config) GetAggregationTemporality() pmetric.AggregationTemporality {
 		return pmetric.AggregationTemporalityDelta
 	}
 	return pmetric.AggregationTemporalityCumulative
+}
+
+func (c Config) GetDeltaTimestampCacheSize() int {
+	if c.DeltaTemporalityConfig != nil && c.DeltaTemporalityConfig.TimestampCacheSize != nil {
+		return *c.DeltaTemporalityConfig.TimestampCacheSize
+	}
+	return defaultDeltaTimestampCacheSize
 }
 
 // validateDimensions checks duplicates for reserved dimensions and additional dimensions.
