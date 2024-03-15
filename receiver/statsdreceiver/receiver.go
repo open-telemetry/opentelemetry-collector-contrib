@@ -16,8 +16,10 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport"
 )
@@ -31,6 +33,7 @@ type statsdReceiver struct {
 
 	server       transport.Server
 	reporter     transport.Reporter
+	obsrecv      *receiverhelper.ObsReport
 	parser       protocol.Parser
 	nextConsumer consumer.Metrics
 	cancel       context.CancelFunc
@@ -52,10 +55,19 @@ func newReceiver(
 		return nil, err
 	}
 
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             set.ID,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	r := &statsdReceiver{
 		settings:     set,
 		config:       &config,
 		nextConsumer: nextConsumer,
+		obsrecv:      obsrecv,
 		reporter:     rep,
 		parser: &protocol.StatsDParser{
 			BuildInfo: set.BuildInfo,
@@ -110,10 +122,13 @@ func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 				batchMetrics := r.parser.GetMetrics()
 				for _, batch := range batchMetrics {
 					batchCtx := client.NewContext(ctx, batch.Info)
-
-					if err := r.Flush(batchCtx, batch.Metrics, r.nextConsumer); err != nil {
+					numPoints := batch.Metrics.DataPointCount()
+					flushCtx := r.obsrecv.StartMetricsOp(batchCtx)
+					err := r.Flush(flushCtx, batch.Metrics, r.nextConsumer)
+					if err != nil {
 						r.reporter.OnDebugf("Error flushing metrics", zap.Error(err))
 					}
+					r.obsrecv.EndMetricsOp(flushCtx, metadata.Type.String(), numPoints, err)
 				}
 			case metric := <-transferChan:
 				if err := r.parser.Aggregate(metric.Raw, metric.Addr); err != nil {
