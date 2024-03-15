@@ -241,7 +241,7 @@ func TestCanCreateTransport(t *testing.T) {
 }
 
 func TestGetServiceEndpointInvalidAWSConfig(t *testing.T) {
-	_, err := getServiceEndpoint(&aws.Config{})
+	_, err := getServiceEndpoint(&aws.Config{}, "")
 	assert.EqualError(t, err, "unable to generate endpoint from region with nil value")
 }
 

@@ -4,6 +4,7 @@
 package probabilisticsamplerprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
 
 import (
+	"encoding/binary"
 	"hash/fnv"
 )
 
@@ -19,8 +20,6 @@ func computeHash(b []byte, seed uint32) uint32 {
 // i32tob converts a seed to a byte array to be used as part of fnv.Write()
 func i32tob(val uint32) []byte {
 	r := make([]byte, 4)
-	for i := uint32(0); i < 4; i++ {
-		r[i] = byte((val >> (8 * i)) & 0xff)
-	}
+	binary.LittleEndian.PutUint32(r, val)
 	return r
 }

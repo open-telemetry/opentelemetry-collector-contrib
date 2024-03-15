@@ -5,43 +5,51 @@ package k8stest // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
-	"strings"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/client-go/dynamic"
 )
 
-func CreateObject(client *dynamic.DynamicClient, manifest []byte) (*unstructured.Unstructured, error) {
+func CreateObject(client *K8sClient, manifest []byte) (*unstructured.Unstructured, error) {
 	decoder := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 	obj := &unstructured.Unstructured{}
 	_, gvk, err := decoder.Decode(manifest, nil, obj)
 	if err != nil {
 		return nil, err
 	}
-	gvr := schema.GroupVersionResource{
-		Group:    gvk.Group,
-		Version:  gvk.Version,
-		Resource: strings.ToLower(gvk.Kind + "s"),
+	gvr, err := client.Mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return nil, err
 	}
-	return client.Resource(gvr).Namespace(obj.GetNamespace()).Create(context.Background(), obj, metav1.CreateOptions{})
+	var resource dynamic.ResourceInterface
+	if gvr.Scope.Name() == meta.RESTScopeNameNamespace {
+		resource = client.DynamicClient.Resource(gvr.Resource).Namespace(obj.GetNamespace())
+	} else {
+		// cluster-scoped resources
+		resource = client.DynamicClient.Resource(gvr.Resource)
+	}
+
+	return resource.Create(context.Background(), obj, metav1.CreateOptions{})
 }
 
-func DeleteObject(client *dynamic.DynamicClient, obj *unstructured.Unstructured) error {
+func DeleteObject(client *K8sClient, obj *unstructured.Unstructured) error {
 	gvk := obj.GroupVersionKind()
-	gvr := schema.GroupVersionResource{
-		Group:    gvk.Group,
-		Version:  gvk.Version,
-		Resource: strings.ToLower(gvk.Kind + "s"),
+	gvr, err := client.Mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return err
 	}
-
-	options := metav1.DeleteOptions{}
-	policy := metav1.DeletePropagationBackground
-	if gvk.Kind == "Job" {
-		options.PropagationPolicy = &policy
+	var resource dynamic.ResourceInterface
+	if gvr.Scope.Name() == meta.RESTScopeNameNamespace {
+		resource = client.DynamicClient.Resource(gvr.Resource).Namespace(obj.GetNamespace())
+	} else {
+		// cluster-scoped resources
+		resource = client.DynamicClient.Resource(gvr.Resource)
 	}
-
-	return client.Resource(gvr).Namespace(obj.GetNamespace()).Delete(context.Background(), obj.GetName(), options)
+	deletePolicy := metav1.DeletePropagationForeground
+	return resource.Delete(context.Background(), obj.GetName(), metav1.DeleteOptions{
+		PropagationPolicy: &deletePolicy,
+	})
 }
