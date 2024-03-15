@@ -121,5 +121,5 @@ func TestUnmarshalConfigInvalidProtocol(t *testing.T) {
 
 func TestUnmarshalConfigNoProtocols(t *testing.T) {
 	cfg := Config{}
-	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.Error(t, component.ValidateConfig(cfg))
 }
