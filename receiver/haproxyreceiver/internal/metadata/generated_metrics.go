@@ -1639,8 +1639,13 @@ func (mb *MetricsBuilder) RecordHaproxyConnectionsErrorsDataPoint(ts pcommon.Tim
 }
 
 // RecordHaproxyConnectionsRateDataPoint adds a data point to haproxy.connections.rate metric.
-func (mb *MetricsBuilder) RecordHaproxyConnectionsRateDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordHaproxyConnectionsRateDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for HaproxyConnectionsRate, value was %s: %w", inputVal, err)
+	}
 	mb.metricHaproxyConnectionsRate.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordHaproxyConnectionsRetriesDataPoint adds a data point to haproxy.connections.retries metric.
@@ -1714,8 +1719,13 @@ func (mb *MetricsBuilder) RecordHaproxyRequestsQueuedDataPoint(ts pcommon.Timest
 }
 
 // RecordHaproxyRequestsRateDataPoint adds a data point to haproxy.requests.rate metric.
-func (mb *MetricsBuilder) RecordHaproxyRequestsRateDataPoint(ts pcommon.Timestamp, val float64) {
+func (mb *MetricsBuilder) RecordHaproxyRequestsRateDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseFloat(inputVal, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for HaproxyRequestsRate, value was %s: %w", inputVal, err)
+	}
 	mb.metricHaproxyRequestsRate.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordHaproxyRequestsRedispatchedDataPoint adds a data point to haproxy.requests.redispatched metric.
@@ -1764,18 +1774,33 @@ func (mb *MetricsBuilder) RecordHaproxyServerSelectedTotalDataPoint(ts pcommon.T
 }
 
 // RecordHaproxySessionsAverageDataPoint adds a data point to haproxy.sessions.average metric.
-func (mb *MetricsBuilder) RecordHaproxySessionsAverageDataPoint(ts pcommon.Timestamp, val float64) {
+func (mb *MetricsBuilder) RecordHaproxySessionsAverageDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseFloat(inputVal, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for HaproxySessionsAverage, value was %s: %w", inputVal, err)
+	}
 	mb.metricHaproxySessionsAverage.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordHaproxySessionsCountDataPoint adds a data point to haproxy.sessions.count metric.
-func (mb *MetricsBuilder) RecordHaproxySessionsCountDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordHaproxySessionsCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for HaproxySessionsCount, value was %s: %w", inputVal, err)
+	}
 	mb.metricHaproxySessionsCount.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordHaproxySessionsRateDataPoint adds a data point to haproxy.sessions.rate metric.
-func (mb *MetricsBuilder) RecordHaproxySessionsRateDataPoint(ts pcommon.Timestamp, val float64) {
+func (mb *MetricsBuilder) RecordHaproxySessionsRateDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseFloat(inputVal, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for HaproxySessionsRate, value was %s: %w", inputVal, err)
+	}
 	mb.metricHaproxySessionsRate.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordHaproxySessionsTotalDataPoint adds a data point to haproxy.sessions.total metric.

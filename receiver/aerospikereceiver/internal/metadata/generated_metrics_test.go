@@ -57,7 +57,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceDiskAvailableDataPoint(ts, 1)
+			mb.RecordAerospikeNamespaceDiskAvailableDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -77,7 +77,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceMemoryFreeDataPoint(ts, 1)
+			mb.RecordAerospikeNamespaceMemoryFreeDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -105,7 +105,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNodeMemoryFreeDataPoint(ts, 1)
+			mb.RecordAerospikeNodeMemoryFreeDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++

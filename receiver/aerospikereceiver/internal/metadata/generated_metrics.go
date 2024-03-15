@@ -1220,8 +1220,13 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 }
 
 // RecordAerospikeNamespaceDiskAvailableDataPoint adds a data point to aerospike.namespace.disk.available metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceDiskAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordAerospikeNamespaceDiskAvailableDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceDiskAvailable, value was %s: %w", inputVal, err)
+	}
 	mb.metricAerospikeNamespaceDiskAvailable.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordAerospikeNamespaceGeojsonRegionQueryCellsDataPoint adds a data point to aerospike.namespace.geojson.region_query_cells metric.
@@ -1265,8 +1270,13 @@ func (mb *MetricsBuilder) RecordAerospikeNamespaceGeojsonRegionQueryRequestsData
 }
 
 // RecordAerospikeNamespaceMemoryFreeDataPoint adds a data point to aerospike.namespace.memory.free metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceMemoryFreeDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordAerospikeNamespaceMemoryFreeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceMemoryFree, value was %s: %w", inputVal, err)
+	}
 	mb.metricAerospikeNamespaceMemoryFree.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordAerospikeNamespaceMemoryUsageDataPoint adds a data point to aerospike.namespace.memory.usage metric.
@@ -1330,8 +1340,13 @@ func (mb *MetricsBuilder) RecordAerospikeNodeConnectionOpenDataPoint(ts pcommon.
 }
 
 // RecordAerospikeNodeMemoryFreeDataPoint adds a data point to aerospike.node.memory.free metric.
-func (mb *MetricsBuilder) RecordAerospikeNodeMemoryFreeDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordAerospikeNodeMemoryFreeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNodeMemoryFree, value was %s: %w", inputVal, err)
+	}
 	mb.metricAerospikeNodeMemoryFree.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordAerospikeNodeQueryTrackedDataPoint adds a data point to aerospike.node.query.tracked metric.

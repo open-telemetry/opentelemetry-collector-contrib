@@ -3171,8 +3171,13 @@ func (mb *MetricsBuilder) RecordSaphanaAlertCountDataPoint(ts pcommon.Timestamp,
 }
 
 // RecordSaphanaBackupLatestDataPoint adds a data point to saphana.backup.latest metric.
-func (mb *MetricsBuilder) RecordSaphanaBackupLatestDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordSaphanaBackupLatestDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for SaphanaBackupLatest, value was %s: %w", inputVal, err)
+	}
 	mb.metricSaphanaBackupLatest.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordSaphanaColumnMemoryUsedDataPoint adds a data point to saphana.column.memory.used metric.
@@ -3286,8 +3291,13 @@ func (mb *MetricsBuilder) RecordSaphanaInstanceMemoryUsedPeakDataPoint(ts pcommo
 }
 
 // RecordSaphanaLicenseExpirationTimeDataPoint adds a data point to saphana.license.expiration.time metric.
-func (mb *MetricsBuilder) RecordSaphanaLicenseExpirationTimeDataPoint(ts pcommon.Timestamp, val int64, systemAttributeValue string, productAttributeValue string) {
+func (mb *MetricsBuilder) RecordSaphanaLicenseExpirationTimeDataPoint(ts pcommon.Timestamp, inputVal string, systemAttributeValue string, productAttributeValue string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for SaphanaLicenseExpirationTime, value was %s: %w", inputVal, err)
+	}
 	mb.metricSaphanaLicenseExpirationTime.recordDataPoint(mb.startTime, ts, val, systemAttributeValue, productAttributeValue)
+	return nil
 }
 
 // RecordSaphanaLicenseLimitDataPoint adds a data point to saphana.license.limit metric.
@@ -3311,8 +3321,13 @@ func (mb *MetricsBuilder) RecordSaphanaLicensePeakDataPoint(ts pcommon.Timestamp
 }
 
 // RecordSaphanaNetworkRequestAverageTimeDataPoint adds a data point to saphana.network.request.average_time metric.
-func (mb *MetricsBuilder) RecordSaphanaNetworkRequestAverageTimeDataPoint(ts pcommon.Timestamp, val float64) {
+func (mb *MetricsBuilder) RecordSaphanaNetworkRequestAverageTimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseFloat(inputVal, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for SaphanaNetworkRequestAverageTime, value was %s: %w", inputVal, err)
+	}
 	mb.metricSaphanaNetworkRequestAverageTime.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordSaphanaNetworkRequestCountDataPoint adds a data point to saphana.network.request.count metric.
@@ -3336,8 +3351,13 @@ func (mb *MetricsBuilder) RecordSaphanaNetworkRequestFinishedCountDataPoint(ts p
 }
 
 // RecordSaphanaReplicationAverageTimeDataPoint adds a data point to saphana.replication.average_time metric.
-func (mb *MetricsBuilder) RecordSaphanaReplicationAverageTimeDataPoint(ts pcommon.Timestamp, val float64, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) {
+func (mb *MetricsBuilder) RecordSaphanaReplicationAverageTimeDataPoint(ts pcommon.Timestamp, inputVal string, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) error {
+	val, err := strconv.ParseFloat(inputVal, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for SaphanaReplicationAverageTime, value was %s: %w", inputVal, err)
+	}
 	mb.metricSaphanaReplicationAverageTime.recordDataPoint(mb.startTime, ts, val, primaryHostAttributeValue, secondaryHostAttributeValue, portAttributeValue, replicationModeAttributeValue)
+	return nil
 }
 
 // RecordSaphanaReplicationBacklogSizeDataPoint adds a data point to saphana.replication.backlog.size metric.

@@ -61,7 +61,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaBackupLatestDataPoint(ts, 1)
+			mb.RecordSaphanaBackupLatestDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -109,7 +109,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaLicenseExpirationTimeDataPoint(ts, 1, "system-val", "product-val")
+			mb.RecordSaphanaLicenseExpirationTimeDataPoint(ts, "1", "system-val", "product-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -121,7 +121,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaNetworkRequestAverageTimeDataPoint(ts, 1)
+			mb.RecordSaphanaNetworkRequestAverageTimeDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -133,7 +133,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaReplicationAverageTimeDataPoint(ts, 1, "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
+			mb.RecordSaphanaReplicationAverageTimeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
 
 			defaultMetricsCount++
 			allMetricsCount++

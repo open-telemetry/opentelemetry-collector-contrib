@@ -84,7 +84,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordHaproxyConnectionsRateDataPoint(ts, 1)
+			mb.RecordHaproxyConnectionsRateDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -113,7 +113,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordHaproxyRequestsRateDataPoint(ts, 1)
+			mb.RecordHaproxyRequestsRateDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -137,15 +137,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordHaproxySessionsAverageDataPoint(ts, 1)
+			mb.RecordHaproxySessionsAverageDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordHaproxySessionsCountDataPoint(ts, 1)
+			mb.RecordHaproxySessionsCountDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordHaproxySessionsRateDataPoint(ts, 1)
+			mb.RecordHaproxySessionsRateDataPoint(ts, "1")
 
 			allMetricsCount++
 			mb.RecordHaproxySessionsTotalDataPoint(ts, "1")
