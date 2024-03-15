@@ -34,6 +34,13 @@ type samplingCarrier interface {
 	serialize(io.StringWriter) error
 }
 
+// @@@ TODO: The discovery in logsprocessor.go, that sampling_priority
+// is treated as a not a bypass, but an alternate "self-imposed"
+// threshold, means that we are composing samplers.  The default
+// sampler decision will be configured and the alternate behavior will
+// be a variable-equalizing sampler scaled to 1/100 in logs, and not
+// scaled in traces.
+
 type dataSampler interface {
 	// decide reports the result based on a probabilistic decision.
 	decide(rnd sampling.Randomness, carrier samplingCarrier) (should bool, err error)
@@ -239,8 +246,17 @@ func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (random
 		} else if ctc.strict && (s.Flags()&randomFlagValue) != randomFlagValue {
 			// If strict and the flag is missing
 			err = ErrMissingRandomness
+		} else if ctc.strict && !s.TraceID().IsValid() {
+			// If strict and the TraceID() is all zeros,
+			// which W3C calls an invalid TraceID.
+			err = ErrMissingRandomness
 		} else {
 			// Whether !strict or the random flag is correctly set.
+			//
+			// Note: We do not check TraceID().IsValid() in this case,
+			// the outcome is:
+			//  - R-value equals "00000000000000"
+			//  - Sampled at 100% otherwise not sampled
 			randomness = sampling.TraceIDToRandomness(s.TraceID())
 		}
 	}
@@ -265,9 +281,14 @@ func consistencyCheck(randomness sampling.Randomness, carrier samplingCarrier, c
 	return nil
 }
 
-func makeSampler(cfg *Config, common commonFields) (dataSampler, error) {
-	// README allows percents >100 to equal 100%, but t-value
-	// encoding does not.  Correct it here.
+// makeSample constructs a sampler. There are no errors, as the only
+// potential error, out-of-range probability, is corrected automatically
+// according to the README, which allows percents >100 to equal 100%.
+//
+// Extending this logic, we round very small probabilities up to the
+// minimum supported value(s) which varies according to sampler mode.
+func makeSampler(cfg *Config, common commonFields) dataSampler {
+	// README allows percents >100 to equal 100%.
 	pct := cfg.SamplingPercentage
 	if pct > 100 {
 		pct = 100
@@ -292,7 +313,7 @@ func makeSampler(cfg *Config, common commonFields) (dataSampler, error) {
 	}
 
 	if pct == 0 {
-		return never, nil
+		return never
 	}
 	// Note: Convert to float64 before dividing by 100, otherwise loss of precision.
 	// If the probability is too small, round it up to the minimum.
@@ -305,23 +326,22 @@ func makeSampler(cfg *Config, common commonFields) (dataSampler, error) {
 
 	switch mode {
 	case Equalizing:
-		threshold, err := sampling.ProbabilityToThresholdWithPrecision(ratio, cfg.SamplingPrecision)
-		if err != nil {
-			return nil, err
-		}
+		// The error case below is ignored, we have rounded the probability so
+		// that it is in-range
+		threshold, _ := sampling.ProbabilityToThresholdWithPrecision(ratio, cfg.SamplingPrecision)
 
 		return &equalizingSampler{
 			tValueEncoding:             threshold.TValue(),
 			tValueThreshold:            threshold,
 			consistentTracestateCommon: ctcom,
-		}, nil
+		}
 
 	case Proportional:
 		return &proportionalSampler{
 			ratio:                      ratio,
 			prec:                       cfg.SamplingPrecision,
 			consistentTracestateCommon: ctcom,
-		}, nil
+		}
 
 	default: // i.e., HashSeed
 		ts := &hashingSampler{
@@ -340,7 +360,7 @@ func makeSampler(cfg *Config, common commonFields) (dataSampler, error) {
 
 		if ts.scaledSamplerate == 0 {
 			ts.logger.Warn("probability rounded to zero", zap.Float32("percent", pct))
-			return never, nil
+			return never
 		}
 
 		// Express scaledSamplerate as the equivalent rejection Threshold.
@@ -353,7 +373,7 @@ func makeSampler(cfg *Config, common commonFields) (dataSampler, error) {
 			ts.unstrictTValueEncoding = ts.unstrictTValueThreshold.TValue()
 		}
 
-		return ts, nil
+		return ts
 	}
 }
 

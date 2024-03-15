@@ -72,11 +72,7 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		commonFields: common,
 	}
 
-	if samp, err := makeSampler(cfg, common); err != nil {
-		return nil, err
-	} else {
-		tp.sampler = samp
-	}
+	tp.sampler = makeSampler(cfg, common)
 
 	return processorhelper.NewTracesProcessor(
 		ctx,

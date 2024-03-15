@@ -14,35 +14,29 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.uber.org/zap"
 )
 
 type logSamplerProcessor struct {
-	hashScaledSamplingRate uint32
-	hashSeed               uint32
-	traceIDEnabled         bool
-	samplingSource         string
-	samplingPriority       string
-	logger                 *zap.Logger
+	sampler          dataSampler
+	traceIDEnabled   bool
+	samplingSource   string
+	samplingPriority string
+	commonFields
 }
 
 // newLogsProcessor returns a processor.LogsProcessor that will perform head sampling according to the given
 // configuration.
 func newLogsProcessor(ctx context.Context, set processor.CreateSettings, nextConsumer consumer.Logs, cfg *Config) (processor.Logs, error) {
-	// README allows percents >100 to equal 100%, but t-value
-	// encoding does not.  Correct it here.
-	pct := float64(cfg.SamplingPercentage)
-	if pct > 100 {
-		pct = 100
+	common := commonFields{
+		strict: cfg.StrictRandomness,
+		logger: set.Logger,
 	}
 
 	lsp := &logSamplerProcessor{
-		hashScaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
-		hashSeed:               cfg.HashSeed,
-		traceIDEnabled:         cfg.AttributeSource == traceIDAttributeSource,
-		samplingPriority:       cfg.SamplingPriority,
-		samplingSource:         cfg.FromAttribute,
-		logger:                 set.Logger,
+		traceIDEnabled:   cfg.AttributeSource == traceIDAttributeSource,
+		samplingPriority: cfg.SamplingPriority,
+		samplingSource:   cfg.FromAttribute,
+		commonFields:     common,
 	}
 
 	return processorhelper.NewLogsProcessor(
@@ -73,6 +67,8 @@ func (lsp *logSamplerProcessor) processLogs(ctx context.Context, ld plog.Logs) (
 						lidBytes = getBytesFromValue(value)
 					}
 				}
+				// Note: in logs, unlike traces, the sampling priority
+				// attribute is interpreted as a request to be sampled.
 				priority := lsp.hashScaledSamplingRate
 				if lsp.samplingPriority != "" {
 					if localPriority, ok := l.Attributes().Get(lsp.samplingPriority); ok {

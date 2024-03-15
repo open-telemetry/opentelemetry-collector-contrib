@@ -72,10 +72,8 @@ func TestHashSeedRoundingDown(t *testing.T) {
 			strict: strict,
 			logger: zap.New(logger),
 		}
-		samp, err := makeSampler(&cfg, com)
-		require.NoError(t, err)
 
-		_, ok := samp.(*neverSampler)
+		_, ok := makeSampler(&cfg, com).(*neverSampler)
 		require.True(t, ok, "is neverSampler")
 
 		require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
