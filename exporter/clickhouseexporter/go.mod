@@ -7,13 +7,13 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.96.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.96.1-0.20240315132530-eb5d2b9fbd12
+	go.opentelemetry.io/collector/component v0.96.1-0.20240315165441-06f177a66b26
 	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240315165441-06f177a66b26
-	go.opentelemetry.io/collector/config/configretry v0.96.1-0.20240315132530-eb5d2b9fbd12
-	go.opentelemetry.io/collector/confmap v0.96.1-0.20240315132530-eb5d2b9fbd12
-	go.opentelemetry.io/collector/exporter v0.96.1-0.20240315132530-eb5d2b9fbd12
+	go.opentelemetry.io/collector/config/configretry v0.96.1-0.20240315165441-06f177a66b26
+	go.opentelemetry.io/collector/confmap v0.96.1-0.20240315165441-06f177a66b26
+	go.opentelemetry.io/collector/exporter v0.96.1-0.20240315165441-06f177a66b26
 	go.opentelemetry.io/collector/pdata v1.3.1-0.20240315165441-06f177a66b26
-	go.opentelemetry.io/collector/semconv v0.96.1-0.20240315132530-eb5d2b9fbd12
+	go.opentelemetry.io/collector/semconv v0.96.1-0.20240315165441-06f177a66b26
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
 	go.uber.org/goleak v1.3.0
@@ -53,11 +53,11 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
-	go.opentelemetry.io/collector v0.96.1-0.20240315132530-eb5d2b9fbd12 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240315132530-eb5d2b9fbd12 // indirect
-	go.opentelemetry.io/collector/consumer v0.96.1-0.20240315132530-eb5d2b9fbd12 // indirect
-	go.opentelemetry.io/collector/extension v0.96.1-0.20240315132530-eb5d2b9fbd12 // indirect
-	go.opentelemetry.io/collector/receiver v0.96.1-0.20240315132530-eb5d2b9fbd12 // indirect
+	go.opentelemetry.io/collector v0.96.1-0.20240315165441-06f177a66b26 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240315165441-06f177a66b26 // indirect
+	go.opentelemetry.io/collector/consumer v0.96.1-0.20240315165441-06f177a66b26 // indirect
+	go.opentelemetry.io/collector/extension v0.96.1-0.20240315165441-06f177a66b26 // indirect
+	go.opentelemetry.io/collector/receiver v0.96.1-0.20240315165441-06f177a66b26 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
