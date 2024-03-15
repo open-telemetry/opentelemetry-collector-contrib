@@ -132,7 +132,7 @@ func Test_ParseXML(t *testing.T) {
 			},
 		},
 		{
-			name: "Multiple lines of contend",
+			name: "Multiple lines of content",
 			oArgs: &ParseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(_ context.Context, _ any) (any, error) {
