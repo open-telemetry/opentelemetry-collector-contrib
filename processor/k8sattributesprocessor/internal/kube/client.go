@@ -171,7 +171,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		}
 	}
 
-	if c.extractNodeLabelsAnnotations() {
+	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
 		c.nodeInformer = newNodeSharedInformer(c.kc, c.Filters.Node)
 	}
 
@@ -928,6 +928,10 @@ func (c *WatchClient) extractNodeLabelsAnnotations() bool {
 	}
 
 	return false
+}
+
+func (c *WatchClient) extractNodeUID() bool {
+	return c.Rules.NodeUID
 }
 
 func (c *WatchClient) addOrUpdateNode(node *api_v1.Node) {

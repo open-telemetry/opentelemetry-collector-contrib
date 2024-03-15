@@ -51,6 +51,7 @@ func TestLoadConfig(t *testing.T) {
 					Region:      "",
 					RoleARN:     "",
 					AWSEndpoint: "",
+					ServiceName: "xray",
 				},
 			},
 		},
@@ -74,6 +75,7 @@ func TestLoadConfig(t *testing.T) {
 					RoleARN:     "arn:aws:iam::123456789012:role/awesome_role",
 					AWSEndpoint: "https://another.aws.endpoint.com",
 					LocalMode:   true,
+					ServiceName: "xray",
 				},
 			}},
 	}

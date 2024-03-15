@@ -153,7 +153,7 @@ receivers:
 
 connectors:
   servicegraph:
-    latency_histogram_buckets: [1,2,3,4,5]
+    latency_histogram_buckets: [100ms, 250ms, 1s, 5s, 10s]
     dimensions:
       - dimension-1
       - dimension-2
