@@ -174,13 +174,13 @@ func (receiver *logsReceiver) Shutdown(ctx context.Context) error {
 		return nil
 	}
 
+	var errors error
 	receiver.settings.Logger.Debug("stopping...")
 	receiver.stopCollecting()
 	for _, queryReceiver := range receiver.queryReceivers {
-		queryReceiver.shutdown(ctx)
+		errors = multierr.Append(errors, queryReceiver.shutdown(ctx))
 	}
 
-	var errors error
 	if receiver.storageClient != nil {
 		errors = multierr.Append(errors, receiver.storageClient.Close(ctx))
 	}
@@ -319,5 +319,10 @@ func rowToLog(row sqlquery.StringMap, config sqlquery.LogsCfg, logRecord plog.Lo
 	logRecord.Body().SetStr(row[config.BodyColumn])
 }
 
-func (queryReceiver *logsQueryReceiver) shutdown(_ context.Context) {
+func (queryReceiver *logsQueryReceiver) shutdown(_ context.Context) error {
+	if queryReceiver.db == nil {
+		return nil
+	}
+
+	return queryReceiver.db.Close()
 }
