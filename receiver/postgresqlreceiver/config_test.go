@@ -68,7 +68,7 @@ func TestValidate(t *testing.T) {
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Username = "otel"
 				cfg.Password = "otel"
-				cfg.Transport = "teacup"
+				cfg.Transport = "udp"
 			},
 			expected: multierr.Combine(
 				errors.New(ErrTransportsSupported),
