@@ -298,7 +298,7 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 			}
 		}
 	}
-	return logs, nil
+	return logs, errors.Join(errs...)
 }
 
 func (queryReceiver *logsQueryReceiver) storeTrackingValue(ctx context.Context, row sqlquery.StringMap) error {
