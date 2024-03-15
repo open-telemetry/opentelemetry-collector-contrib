@@ -108,14 +108,11 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 		for i := 0; i < len(logs); i++ {
 			log := logs[i]
+			lr := logRecords.AppendEmpty()
 			nanos, err := getTimestamp(log)
 			if err != nil {
 				r.Logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", log.Time))
-			}
-
-			lr := logRecords.AppendEmpty()
-			// only set timestamp if the record sent included a valid value
-			if err == nil {
+			} else {
 				lr.SetTimestamp(nanos)
 			}
 			// always set observed timestamp to time observed by Collector
