@@ -174,6 +174,7 @@ go.opentelemetry.io/collector/config/confignet v0.96.0 h1:ZUwziVVxWgcRMqukfKfdEj
 go.opentelemetry.io/collector/config/confignet v0.96.0/go.mod h1:BVw5xkQ7TH2wH75cbph+dtOoxq1baWLuhdSYIAvuVu0=
 go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240315165441-06f177a66b26 h1:VGetjithpVXyMJMNpB6NDSXTuA1Uj+ZGIhIQ6XM5m6A=
 go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240315165441-06f177a66b26/go.mod h1:xhwF+gytUht4rqIeu60TA+WH7QExqCau9dI5FE6ZaDw=
+go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240315172937-3b5aee0c7a16/go.mod h1:xhwF+gytUht4rqIeu60TA+WH7QExqCau9dI5FE6ZaDw=
 go.opentelemetry.io/collector/config/configretry v0.96.0 h1:rdZqq/ddPCjZCYYuqDGxrC93uHzQWhX5MQ9tt5uMSpM=
 go.opentelemetry.io/collector/config/configretry v0.96.0/go.mod h1:Nq7hp4nk+zeH0LYYsx348NHl02O89FnV45hcCCmqdtg=
 go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240315165441-06f177a66b26 h1:Q99T+22F8C8phD543hhS3HciNf+tgMgsYlZx24n2nOo=
@@ -210,10 +211,12 @@ go.opentelemetry.io/collector/extension/zpagesextension v0.96.0 h1:eSjSBqWIN+OiE
 go.opentelemetry.io/collector/extension/zpagesextension v0.96.0/go.mod h1:wWBmrP4H/gEInjtCiwZHlDj5+MuWI8bLybCSIrNXoNE=
 go.opentelemetry.io/collector/featuregate v1.3.1-0.20240315165441-06f177a66b26 h1:Fj2Khxf6Tx5TVA/A6nEaLr8xZ6PmEY9QJDMyB+Dw2zU=
 go.opentelemetry.io/collector/featuregate v1.3.1-0.20240315165441-06f177a66b26/go.mod h1:w7nUODKxEi3FLf1HslCiE6YWtMtOOrMnSwsDam8Mg9w=
+go.opentelemetry.io/collector/featuregate v1.3.1-0.20240315172937-3b5aee0c7a16/go.mod h1:w7nUODKxEi3FLf1HslCiE6YWtMtOOrMnSwsDam8Mg9w=
 go.opentelemetry.io/collector/otelcol v0.96.1-0.20240315165441-06f177a66b26 h1:07MCxHU5QpGT5H3bwM5gsREge+B6FIJ/X6JYnDUFpvw=
 go.opentelemetry.io/collector/otelcol v0.96.1-0.20240315165441-06f177a66b26/go.mod h1:vEiWq4kffDjGrQVSnXAMKJTVOvULicKq+nI0yIyBcGs=
 go.opentelemetry.io/collector/pdata v1.3.1-0.20240315165441-06f177a66b26 h1:PVqCmGyjNoajhHHaEmqm6raKKHSiujkmYMmG7XhZJUs=
 go.opentelemetry.io/collector/pdata v1.3.1-0.20240315165441-06f177a66b26/go.mod h1:0Ttp4wQinhV5oJTd9MjyvUegmZBO9O0nrlh/+EDLw+Q=
+go.opentelemetry.io/collector/pdata v1.3.1-0.20240315172937-3b5aee0c7a16/go.mod h1:0Ttp4wQinhV5oJTd9MjyvUegmZBO9O0nrlh/+EDLw+Q=
 go.opentelemetry.io/collector/processor v0.96.1-0.20240315165441-06f177a66b26 h1:/zuzajRXf3HgCLd3XRZw7ejvhvCZ+ohsJX02vzcdYi8=
 go.opentelemetry.io/collector/processor v0.96.1-0.20240315165441-06f177a66b26/go.mod h1:U4KPG6ifuuuD0HJDRyxEIOQHV5ylLMTcA8corNGETXI=
 go.opentelemetry.io/collector/receiver v0.96.1-0.20240315165441-06f177a66b26 h1:yp3ExXdH+d6R4HSliEs5nI54xx8K0gq21kiTLIi7f+E=

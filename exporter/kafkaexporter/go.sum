@@ -141,6 +141,7 @@ go.opentelemetry.io/collector/component v0.96.1-0.20240315165441-06f177a66b26 h1
 go.opentelemetry.io/collector/component v0.96.1-0.20240315165441-06f177a66b26/go.mod h1:0evn//YPgN/5VmbbD4JS0yH3ikWxwROQN1MKEOM/U3M=
 go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240315165441-06f177a66b26 h1:VGetjithpVXyMJMNpB6NDSXTuA1Uj+ZGIhIQ6XM5m6A=
 go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240315165441-06f177a66b26/go.mod h1:xhwF+gytUht4rqIeu60TA+WH7QExqCau9dI5FE6ZaDw=
+go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240315172937-3b5aee0c7a16/go.mod h1:xhwF+gytUht4rqIeu60TA+WH7QExqCau9dI5FE6ZaDw=
 go.opentelemetry.io/collector/config/configretry v0.96.1-0.20240315165441-06f177a66b26 h1:W7XXmgv6cPJablcUyub9IdhgC27YzgvOFXpU8+obABw=
 go.opentelemetry.io/collector/config/configretry v0.96.1-0.20240315165441-06f177a66b26/go.mod h1:s7A6ZGxK8bxqidFzwbr2pITzbsB2qf+aeHEDQDcanV8=
 go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240315165441-06f177a66b26 h1:Q99T+22F8C8phD543hhS3HciNf+tgMgsYlZx24n2nOo=
@@ -157,6 +158,7 @@ go.opentelemetry.io/collector/extension v0.96.1-0.20240315165441-06f177a66b26 h1
 go.opentelemetry.io/collector/extension v0.96.1-0.20240315165441-06f177a66b26/go.mod h1:H0IqtDdwT5WcXlikiaEB7rJTg3s9o04wNmyqRuG45PQ=
 go.opentelemetry.io/collector/pdata v1.3.1-0.20240315165441-06f177a66b26 h1:PVqCmGyjNoajhHHaEmqm6raKKHSiujkmYMmG7XhZJUs=
 go.opentelemetry.io/collector/pdata v1.3.1-0.20240315165441-06f177a66b26/go.mod h1:0Ttp4wQinhV5oJTd9MjyvUegmZBO9O0nrlh/+EDLw+Q=
+go.opentelemetry.io/collector/pdata v1.3.1-0.20240315172937-3b5aee0c7a16/go.mod h1:0Ttp4wQinhV5oJTd9MjyvUegmZBO9O0nrlh/+EDLw+Q=
 go.opentelemetry.io/collector/receiver v0.96.1-0.20240315165441-06f177a66b26 h1:yp3ExXdH+d6R4HSliEs5nI54xx8K0gq21kiTLIi7f+E=
 go.opentelemetry.io/collector/receiver v0.96.1-0.20240315165441-06f177a66b26/go.mod h1:+dCEmp1XV0a42CnBV6RcdPA5Ns6t4YCtSQsEwyLmef8=
 go.opentelemetry.io/collector/semconv v0.96.1-0.20240315165441-06f177a66b26 h1:J19tPe8/mywG8p9VbvGHKpBx/5Q58QJQzG8AdoeD9oM=

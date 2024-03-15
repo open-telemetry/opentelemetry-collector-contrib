@@ -76,6 +76,7 @@ go.opentelemetry.io/collector/consumer v0.96.1-0.20240315165441-06f177a66b26 h1:
 go.opentelemetry.io/collector/consumer v0.96.1-0.20240315165441-06f177a66b26/go.mod h1:pF9K1Oty2E3Z/crgyIg55DIy7S8QXYMrcyHvARUyGIY=
 go.opentelemetry.io/collector/pdata v1.3.1-0.20240315165441-06f177a66b26 h1:PVqCmGyjNoajhHHaEmqm6raKKHSiujkmYMmG7XhZJUs=
 go.opentelemetry.io/collector/pdata v1.3.1-0.20240315165441-06f177a66b26/go.mod h1:0Ttp4wQinhV5oJTd9MjyvUegmZBO9O0nrlh/+EDLw+Q=
+go.opentelemetry.io/collector/pdata v1.3.1-0.20240315172937-3b5aee0c7a16/go.mod h1:0Ttp4wQinhV5oJTd9MjyvUegmZBO9O0nrlh/+EDLw+Q=
 go.opentelemetry.io/collector/processor v0.96.1-0.20240315165441-06f177a66b26 h1:/zuzajRXf3HgCLd3XRZw7ejvhvCZ+ohsJX02vzcdYi8=
 go.opentelemetry.io/collector/processor v0.96.1-0.20240315165441-06f177a66b26/go.mod h1:U4KPG6ifuuuD0HJDRyxEIOQHV5ylLMTcA8corNGETXI=
 go.opentelemetry.io/otel v1.24.0 h1:0LAOdjNmQeSTzGBzduGe/rU4tZhMwL5rWgtp9Ku5Jfo=
