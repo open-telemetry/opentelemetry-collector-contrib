@@ -21,7 +21,7 @@ func TestComponentLifecycle(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub("tests::config")
 	require.NoError(t, err)
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 	t.Run("shutdown", func(t *testing.T) {
 		e, err := factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
 		require.NoError(t, err)
