@@ -403,6 +403,7 @@ Available Converters:
 - [ParseCSV](#parsecsv)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
+- [ParseXML](#parsexml)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
@@ -911,6 +912,78 @@ Examples:
 - `ParseKeyValue("k1=v1 k2=v2 k3=v3")`
 - `ParseKeyValue("k1!v1_k2!v2_k3!v3", "!", "_")`
 - `ParseKeyValue(attributes["pairs"])`
+
+
+### ParseXML
+
+`ParseXML(target)`
+
+The `ParseXML` Converter returns a `pcommon.Map` struct that is the result of parsing the target string as an XML document.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or cannot be parsed as XML, `ParseXML` will return an error.
+
+Unmarshalling XML is done using the following rules:
+1. All character data for an XML element is trimmed, joined, and placed into the `content` field.
+2. The tag for an XML element is trimmed, and placed into the `tag` field.
+3. The attributes for an XML element is placed as a `pcommon.Map` into the `attribute` field.
+4. Processing instructions, directives, and comments are ignored and not represented in the resultant map.
+5. All child elements are parsed as above, and placed in a `pcommon.Slice`, which is then placed into the `children` field.
+
+For example, the following XML document:
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<Log>
+  <User>
+    <ID>00001</ID>
+    <Name type="first">Joe</Name>
+    <Email>joe.smith@example.com</Email>
+  </User>
+  <Text>User fired alert A</Text>
+</Log>
+```
+
+will be parsed as:
+```json
+{
+  "tag": "Log",
+  "children": [
+    {
+      "tag": "User",
+      "children": [
+        {
+          "tag": "ID",
+          "content": "00001"
+        },
+        {
+          "tag": "Name",
+          "content": "Joe",
+          "attributes": {
+            "type": "first"
+          }
+        },
+        {
+          "tag": "Email",
+          "content": "joe.smith@example.com"
+        }
+      ]
+    },
+    {
+      "tag": "Text",
+      "content": "User fired alert A"
+    }
+  ]
+}
+```
+
+Examples:
+
+- `ParseXML(body)`
+
+- `ParseXML(attributes["xml"])`
+
+- `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
+
 
 
 ### Seconds
