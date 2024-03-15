@@ -4,6 +4,6 @@ status:
   class: receiver
   stability:
     development: [traces]
-  distributions: [contrib]
+  distributions: []
   codeowners:
     active: [atoulme, adcharre]
