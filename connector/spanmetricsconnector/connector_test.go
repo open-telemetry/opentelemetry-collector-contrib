@@ -1580,6 +1580,7 @@ func TestTimestampsForUninterruptedStream(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.temporality, func(t *testing.T) {
 			p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, nil)
+			require.NoError(t, err)
 			p.metricsConsumer = &consumertest.MetricsSink{}
 
 			// Test
@@ -1592,7 +1593,7 @@ func TestTimestampsForUninterruptedStream(t *testing.T) {
 			metrics1 := p.metricsConsumer.(*consumertest.MetricsSink).AllMetrics()[0]
 			startTimestamp1, timestamp1 := verifyAndCollectCommonTimestamps(t, metrics1)
 
-			//Send an unrelated batch of spans for a different resource
+			// Send an unrelated batch of spans for a different resource
 			unrelatedTraces := ptrace.NewTraces()
 			initServiceSpans(
 				serviceSpans{
@@ -1611,7 +1612,7 @@ func TestTimestampsForUninterruptedStream(t *testing.T) {
 			require.NoError(t, err)
 			p.exportMetrics(ctx)
 
-			//Send another set of spans that are the same as the first batch
+			// Send another set of spans that are the same as the first batch
 			err = p.ConsumeTraces(ctx, buildSampleTrace())
 			require.NoError(t, err)
 			p.exportMetrics(ctx)
