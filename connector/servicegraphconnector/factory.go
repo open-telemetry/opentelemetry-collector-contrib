@@ -31,7 +31,7 @@ func init() {
 	virtualNodeFeatureGate = featuregate.GlobalRegistry().MustRegister(
 		virtualNodeFeatureGateID,
 		featuregate.StageBeta,
-		featuregate.WithRegisterDescription("When enabled, when the edge expires, processor checks if it has peer attributes(`db.name, net.sock.peer.addr, net.peer.name, rpc.service, http.url, http.target`), and then aggregate the metrics with virtual node."),
+		featuregate.WithRegisterDescription("When enabled, when the edge expires, processor checks if it has peer attributes(`peer.service, db.name, db.system`), and then aggregate the metrics with virtual node."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17196"),
 	)
 	// TODO: Remove this feature gate when the legacy metric names are removed.
