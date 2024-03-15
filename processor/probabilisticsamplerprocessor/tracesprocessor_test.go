@@ -709,22 +709,17 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			// tests the case where proportional sampling leads to a
-			// value less than the minimum probability.  to avoid triggering
-			// a warning message about "cannot raise existing sampling
-			// probability", this uses equal a percentage equal to the
-			// incoming probability.
-			name: "proportional underflow",
+			name: "tiny probability rounding",
 			cfg: &Config{
-				SamplingPercentage: 100 * 0x1p-29,
+				SamplingPercentage: 100 * 0x1p-14,
 			},
 			tid: improbableTraceID,
-			ts:  "ot=th:fffffff8", // 0x1p-29
+			ts:  "ot=th:fffc",
 			sf: func(mode SamplerMode) (bool, float64, string) {
 				if mode == Equalizing {
-					return true, 1 << 29, "ot=th:fffffff8"
+					return true, 1 << 14, "ot=th:fffc"
 				}
-				return false, 0, ""
+				return true, 1 << 28, "ot=th:fffffff"
 			},
 		},
 		{
@@ -983,7 +978,11 @@ func Test_tracesamplerprocessor_HashSeedTraceState(t *testing.T) {
 		},
 		{
 			pct:   10,
-			tvout: "e666",
+			tvout: "e668", // 14-bit rounding means e668 vs e666.
+		},
+		{
+			pct:   100.0 / 3,
+			tvout: "aaac", // 14-bit rounding means aaac, vs aaab.
 		},
 	}
 	for _, tt := range tests {
@@ -1025,8 +1024,7 @@ func Test_tracesamplerprocessor_HashSeedTraceState(t *testing.T) {
 				require.True(t, hasT)
 				require.Equal(t, tt.tvout, spanTs.OTelValue().TValue())
 				rnd, hasR := spanTs.OTelValue().RValueRandomness()
-				require.Equal(t, true, hasR)
-
+				require.True(t, hasR)
 				require.True(t, threshold.ShouldSample(rnd))
 
 				if found++; find == found {

@@ -115,7 +115,15 @@ func ThresholdLessThan(a, b Threshold) bool {
 	return a.unsigned < b.unsigned
 }
 
-// @@@
+// Unsigned expresses the number of Randomness values (out of
+// MaxAdjustedCount) that are rejected or not sampled.  0 means 100%
+// sampling.
 func (th Threshold) Unsigned() uint64 {
 	return th.unsigned
+}
+
+// ThresholdFromUnsigned constructs a threshold expressed in terms
+// defined by Unsigned(), the number of rejections.
+func ThresholdFromUnsigned(unsigned uint64) Threshold {
+	return Threshold{unsigned: unsigned}
 }

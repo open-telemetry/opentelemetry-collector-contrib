@@ -6,6 +6,7 @@ package probabilisticsamplerprocessor
 import (
 	"fmt"
 	"io"
+	"math"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -73,11 +74,12 @@ type commonFields struct {
 	logger *zap.Logger
 }
 
-// hashingSampler is the original hash-based implementation.
+// hashingSampler is the original hash-based calculation.
 type hashingSampler struct {
-	// Hash-based calculation
-	hashScaledSamplerate uint32
-	hashSeed             uint32
+	// scaledSampleRate is an "accept threshold". Items are sampled
+	// when random14BitValue < scaledSampleRate.
+	scaledSamplerate uint32
+	hashSeed         uint32
 
 	// When not strict, this sampler inserts T-value and R-value
 	// to convey consistent sampling probability.
@@ -154,7 +156,7 @@ func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (sampling.Randomness
 	hashed := uint64(hashed32 & bitMaskHashBuckets)
 
 	// Ordinarily, hashed is compared against an acceptance
-	// threshold i.e., sampled when hashed < hashScaledSamplerate,
+	// threshold i.e., sampled when hashed < scaledSamplerate,
 	// which has the form R < T with T in [1, 2^14] and
 	// R in [0, 2^14-1].
 	//
@@ -294,7 +296,13 @@ func makeSampler(cfg *Config, common commonFields) (dataSampler, error) {
 		return never, nil
 	}
 	// Note: Convert to float64 before dividing by 100, otherwise loss of precision.
+	// If the probability is too small, round it up to the minimum.
 	ratio := float64(pct) / 100
+	// Like the pct > 100 test above, but for values too small to
+	// express in 14 bits of precision.
+	if ratio < sampling.MinSamplingProbability {
+		ratio = sampling.MinSamplingProbability
+	}
 
 	switch mode {
 	case Equalizing:
@@ -320,39 +328,29 @@ func makeSampler(cfg *Config, common commonFields) (dataSampler, error) {
 		ts := &hashingSampler{
 			consistentCommon: ccom,
 
-			// This is the original hash function used in this
-			// code.  Unless strict mode is selected, a different
-			// calculation is out below.
-			hashScaledSamplerate: uint32(pct * percentageScaleFactor),
-			hashSeed:             cfg.HashSeed,
+			// Note: the original hash function used in this code
+			// was:
+			//
+			//   uint32(pct * percentageScaleFactor)
+			//
+			// which (a) carried out the multiplication in 32-bit
+			// precision, (b) rounded to zero instead of nearest.
+			//
+			// The max(1,) term is similar to rounding very small
+			// probabilities above up to the smallest representable
+			// non-zero sampler.
+			scaledSamplerate: max(1, uint32(math.Round(float64(pct)*percentageScaleFactor))),
+			hashSeed:         cfg.HashSeed,
 		}
 
-		// When strict is set, use the original behavior of this component
-		// exactly.  Otherwise, recalculate hashScaledSamplerate using a more
-		// correct formula.
+		// Express scaledSamplerate as the equivalent rejection Threshold.
 		if !common.strict {
-			// Note: precision is not configurable here.  4 digits of precision
-			// is enough to exactly represent a 14-bit decision.  The strict
-			// formula above for hashScaledSamplerate rounds to zero, whereas
-			// the OTel spec rounds to the nearest threshold value.
-			threshold, err := sampling.ProbabilityToThresholdWithPrecision(ratio, 4)
-			if err != nil {
-				return nil, err
-			}
+			// Convert the accept threshold to a reject threshold.
+			reject := numHashBuckets - ts.scaledSamplerate
+			reject56 := uint64(reject) << 42
 
-			// Convert the (rejection) threshold to an accept threshold.
-			accept := sampling.MaxAdjustedCount - threshold.Unsigned()
-			high14 := (accept + 1<<41) >> 42
-
-			ts.hashScaledSamplerate = uint32(high14)
-			ts.unstrictTValueEncoding = threshold.TValue()
-			ts.unstrictTValueThreshold = threshold
-		}
-
-		// In both cases, there is a possible 0, which can be simplified.
-		if ts.hashScaledSamplerate == 0 {
-			common.logger.Warn("sampling percentage rounded to zero", zap.Float32("percent", pct))
-			return never, nil
+			ts.unstrictTValueThreshold = sampling.ThresholdFromUnsigned(reject56)
+			ts.unstrictTValueEncoding = ts.unstrictTValueThreshold.TValue()
 		}
 
 		return ts, nil
@@ -395,7 +393,7 @@ func (*neverSampler) decide(_ sampling.Randomness, _ samplingCarrier) (should bo
 
 func (th *hashingSampler) decide(rnd sampling.Randomness, carrier samplingCarrier) (bool, error) {
 	hashed := randomnessToHashed(rnd)
-	should := hashed < th.hashScaledSamplerate
+	should := hashed < th.scaledSamplerate
 	return should, nil
 }
 

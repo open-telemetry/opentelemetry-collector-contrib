@@ -27,7 +27,7 @@ func ProbabilityToThreshold(prob float64) (Threshold, error) {
 }
 
 // ProbabilityToThresholdWithPrecision is like ProbabilityToThreshold
-// with support for reduced precision.  The `prec` argument determines
+// with support for reduced precision.  The `precision` argument determines
 // how many significant hex digits will be used to encode the exact
 // probability.
 func ProbabilityToThresholdWithPrecision(fraction float64, precision int) (Threshold, error) {

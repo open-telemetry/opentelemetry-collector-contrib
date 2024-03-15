@@ -58,31 +58,22 @@ func TestStrictRoundingDown(t *testing.T) {
 	// down to 0.
 	const pct = 0x3p-16 * 100
 
-	cfg := Config{
-		SamplerMode:        HashSeed,
-		SamplingPercentage: pct,
-		HashSeed:           defaultHashSeed,
-	}
-	nostrict := commonFields{
-		strict: false,
-		logger: zaptest.NewLogger(t),
-	}
-	strict := commonFields{
-		strict: true,
-		logger: nostrict.logger,
-	}
+	for _, strict := range []bool{false, true} {
+		cfg := Config{
+			SamplerMode:        HashSeed,
+			SamplingPercentage: pct,
+			HashSeed:           defaultHashSeed,
+		}
 
-	// Rounds up in this case to the nearest/smallest 14-bit threshold.
-	nostrictSamp, err := makeSampler(&cfg, nostrict)
-	require.NoError(t, err)
-	hasher, ok := nostrictSamp.(*hashingSampler)
-	require.True(t, ok, "is non-zero")
-	require.Equal(t, uint32(1), hasher.hashScaledSamplerate)
-
-	// The strict behvaior rounds down in this case; makeSampler
-	// returns a neverSampler.
-	strictSamp, err := makeSampler(&cfg, strict)
-	require.NoError(t, err)
-	_, ok = strictSamp.(*neverSampler)
-	require.True(t, ok, "is zero")
+		// Rounds up in this case to the nearest/smallest 14-bit threshold.
+		com := commonFields{
+			strict: strict,
+			logger: zaptest.NewLogger(t),
+		}
+		nostrictSamp, err := makeSampler(&cfg, com)
+		require.NoError(t, err)
+		hasher, ok := nostrictSamp.(*hashingSampler)
+		require.True(t, ok, "is non-zero")
+		require.Equal(t, uint32(1), hasher.scaledSamplerate)
+	}
 }
