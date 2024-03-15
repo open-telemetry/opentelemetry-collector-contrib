@@ -1680,7 +1680,7 @@ func TestDeltaTimestampCacheExpiry(t *testing.T) {
 	deltaConfig := &DeltaTemporalityConfig{
 		TimestampCacheSize: &timestampCacheSize,
 	}
-	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, delta, 0, []string{}, deltaConfig)
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), exponentialHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, delta, 0, []string{}, deltaConfig)
 	require.NoError(t, err)
 	p.metricsConsumer = &consumertest.MetricsSink{}
 
