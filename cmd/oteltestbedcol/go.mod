@@ -35,25 +35,25 @@ require (
 	go.opentelemetry.io/collector/component v0.96.1-0.20240315132530-eb5d2b9fbd12
 	go.opentelemetry.io/collector/connector v0.96.1-0.20240315132530-eb5d2b9fbd12
 	go.opentelemetry.io/collector/exporter v0.96.1-0.20240315132530-eb5d2b9fbd12
-	go.opentelemetry.io/collector/exporter/debugexporter v0.96.1-0.20240315132530-eb5d2b9fbd12
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.96.1-0.20240315132530-eb5d2b9fbd12
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.96.1-0.20240315132530-eb5d2b9fbd12
+	go.opentelemetry.io/collector/exporter/debugexporter v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/extension v0.96.1-0.20240315132530-eb5d2b9fbd12
-	go.opentelemetry.io/collector/extension/ballastextension v0.96.1-0.20240315132530-eb5d2b9fbd12
-	go.opentelemetry.io/collector/extension/zpagesextension v0.96.1-0.20240315132530-eb5d2b9fbd12
+	go.opentelemetry.io/collector/extension/ballastextension v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/extension/zpagesextension v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/otelcol v0.96.1-0.20240315132530-eb5d2b9fbd12
 	go.opentelemetry.io/collector/processor v0.96.1-0.20240315132530-eb5d2b9fbd12
 	go.opentelemetry.io/collector/processor/batchprocessor v0.96.1-0.20240315132530-eb5d2b9fbd12
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.96.1-0.20240315132530-eb5d2b9fbd12
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/receiver v0.96.1-0.20240315132530-eb5d2b9fbd12
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.96.1-0.20240315132530-eb5d2b9fbd12
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.96.1-0.20240306115632-b2693620eff6
 	go.uber.org/goleak v1.3.0
 	golang.org/x/sys v0.18.0
 )
 
 require (
 	cloud.google.com/go/compute v1.24.0 // indirect
-	cloud.google.com/go/compute/metadata v0.2.4-0.20230617002413-005d2dfb6b68 // indirect
+	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.8.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.4.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect

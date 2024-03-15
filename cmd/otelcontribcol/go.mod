@@ -199,15 +199,15 @@ require (
 	go.opentelemetry.io/collector/confmap v0.96.1-0.20240315132530-eb5d2b9fbd12
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.96.1-0.20240315132530-eb5d2b9fbd12
 	go.opentelemetry.io/collector/connector v0.96.1-0.20240315132530-eb5d2b9fbd12
-	go.opentelemetry.io/collector/connector/forwardconnector v0.96.1-0.20240315132530-eb5d2b9fbd12
+	go.opentelemetry.io/collector/connector/forwardconnector v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/consumer v0.96.1-0.20240315132530-eb5d2b9fbd12
 	go.opentelemetry.io/collector/exporter v0.96.1-0.20240315132530-eb5d2b9fbd12
 	go.opentelemetry.io/collector/exporter/debugexporter v0.96.1-0.20240315132530-eb5d2b9fbd12
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.96.1-0.20240315132530-eb5d2b9fbd12
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.96.1-0.20240315132530-eb5d2b9fbd12
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/extension v0.96.1-0.20240315132530-eb5d2b9fbd12
-	go.opentelemetry.io/collector/extension/ballastextension v0.96.1-0.20240315132530-eb5d2b9fbd12
-	go.opentelemetry.io/collector/extension/zpagesextension v0.96.1-0.20240315132530-eb5d2b9fbd12
+	go.opentelemetry.io/collector/extension/ballastextension v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/extension/zpagesextension v0.96.1-0.20240306115632-b2693620eff6
 	go.opentelemetry.io/collector/otelcol v0.96.1-0.20240315132530-eb5d2b9fbd12
 	go.opentelemetry.io/collector/pdata v1.3.1-0.20240315132530-eb5d2b9fbd12
 	go.opentelemetry.io/collector/processor v0.96.1-0.20240315132530-eb5d2b9fbd12
