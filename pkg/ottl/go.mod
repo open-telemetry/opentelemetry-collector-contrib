@@ -12,7 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.96.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.1-0.20240315132530-eb5d2b9fbd12
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240315132530-eb5d2b9fbd12
+	go.opentelemetry.io/collector/pdata v1.3.1-0.20240315165441-06f177a66b26
 	go.opentelemetry.io/otel/trace v1.24.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0

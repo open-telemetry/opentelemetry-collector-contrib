@@ -36,7 +36,7 @@ require (
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240315132530-eb5d2b9fbd12 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240315165441-06f177a66b26 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/oauth2 v0.14.0 // indirect
