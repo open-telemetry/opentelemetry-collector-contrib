@@ -39,7 +39,7 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
           key: prometheus-${{ runner.os }}-go-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - run: make otelcontribcol
+      - run: make genotelcontribcol otelcontribcol
         working-directory: opentelemetry-collector-contrib
       - name: Checkout compliance repo
         uses: actions/checkout@v4

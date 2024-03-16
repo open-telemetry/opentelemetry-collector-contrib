@@ -7,7 +7,6 @@ OTEL_STABLE_VERSION=main
 
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 
-COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
 GROUP ?= all
@@ -294,13 +293,14 @@ chlog-update: $(CHLOGGEN)
 
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
-	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol
-	$(MAKE) --no-print-directory -C cmd/otelcontribcol fmt
+	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol/_build
+	echo "include ../../../Makefile.Common" > cmd/otelcontribcol/_build/Makefile
+	$(MAKE) -C cmd/otelcontribcol/_build fmt
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:
-	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
+	cd ./cmd/otelcontribcol/_build && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
 .PHONY: genoteltestbedcol
@@ -357,16 +357,6 @@ build-examples:
 	GOOS=linux GOARCH=$(ARCH) $(MAKE) otelcontribcol
 	docker build -t otelcontribcol-fpm internal/buildscripts/packaging/fpm
 	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcontribcol-fpm
-
-# Verify existence of READMEs for components specified as default components in the collector.
-.PHONY: checkdoc
-checkdoc: $(CHECKFILE)
-	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
-
-# Verify existence of metadata.yaml for components specified as default components in the collector.
-.PHONY: checkmetadata
-checkmetadata: $(CHECKFILE)
-	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "metadata.yaml"
 
 .PHONY: checkapi
 checkapi:
