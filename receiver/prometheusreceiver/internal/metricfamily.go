@@ -411,13 +411,17 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			}
 			mg.complexValue = append(mg.complexValue, &dataPoint{value: v, boundary: boundary})
 		}
+	case pmetric.MetricTypeExponentialHistogram:
+		if metricName == mf.metadata.Metric+metricSuffixCreated {
+			mg.created = v
+		}
 	case pmetric.MetricTypeSum:
 		if metricName == mf.metadata.Metric+metricSuffixCreated {
 			mg.created = v
 		} else {
 			mg.value = v
 		}
-	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram:
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge:
 		fallthrough
 	default:
 		mg.value = v
