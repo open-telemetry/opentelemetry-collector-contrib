@@ -1496,6 +1496,7 @@ func TestMetricBuilderNativeHistogram(t *testing.T) {
 				pt0.SetTimestamp(tsNanos)
 				pt0.SetCount(0)
 				pt0.SetSum(0)
+				pt0.SetZeroThreshold(0.001)
 				pt0.SetScale(1)
 
 				return []pmetric.Metrics{md0}
@@ -1524,6 +1525,7 @@ func TestMetricBuilderNativeHistogram(t *testing.T) {
 				pt0.SetCount(12)
 				pt0.SetSum(18.4)
 				pt0.SetScale(1)
+				pt0.SetZeroThreshold(0.001)
 				pt0.SetZeroCount(2)
 				pt0.Positive().SetOffset(-1)
 				pt0.Positive().BucketCounts().Append(1)

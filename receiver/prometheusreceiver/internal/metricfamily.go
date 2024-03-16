@@ -184,6 +184,7 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 			// native histograms in the database.
 			point.SetCount(uint64(fh.Count))
 			point.SetSum(fh.Sum)
+			point.SetZeroThreshold(fh.ZeroThreshold)
 			point.SetZeroCount(uint64(fh.ZeroCount))
 
 			if len(fh.PositiveSpans) > 0 {
@@ -206,6 +207,7 @@ func (mg *metricGroup) toExponentialHistogramDataPoints(dest pmetric.Exponential
 			point.SetScale(h.Schema)
 			point.SetCount(h.Count)
 			point.SetSum(h.Sum)
+			point.SetZeroThreshold(h.ZeroThreshold)
 			point.SetZeroCount(h.ZeroCount)
 
 			if len(h.PositiveSpans) > 0 {
