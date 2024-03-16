@@ -70,7 +70,6 @@ The key will be deleted from the map.
 
 Examples:
 
-
 - `delete_key(attributes, "http.request.header.authorization")`
 
 - `delete_key(resource.attributes, "http.request.header.authorization")`
@@ -87,7 +86,6 @@ All keys that match the pattern will be deleted from the map.
 
 Examples:
 
-
 - `delete_matching_keys(attributes, "(?i).*password.*")`
 
 - `delete_matching_keys(resource.attributes, "(?i).*password.*")`
@@ -96,7 +94,7 @@ Examples:
 
 `flatten(target, Optional[prefix], Optional[depth])`
 
-The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root. 
+The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root.
 
 `target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int.
 
@@ -113,15 +111,15 @@ For example, the following map
 }
 ```
 
-is converted to 
+is converted to
 
 ```json
 {
-    "name": "test",
-    "address.street": "first",
-    "address.house": 1234,
-    "occupants.0": "user 1",
-    "occupants.1": "user 2"
+  "name": "test",
+  "address.street": "first",
+  "address.house": 1234,
+  "occupants.0": "user 1",
+  "occupants.1": "user 2"
 }
 ```
 
@@ -129,11 +127,11 @@ If `prefix` is supplied, it will be appended to the start of the new keys. This 
 
 ```json
 {
-    "app.name": "test",
-    "app.address.street": "first",
-    "app.address.house": 1234,
-    "app.occupants.0": "user 1",
-    "app.occupants.1": "user 2"
+  "app.name": "test",
+  "app.address.street": "first",
+  "app.address.house": 1234,
+  "app.occupants.0": "user 1",
+  "app.occupants.1": "user 2"
 }
 ```
 
@@ -171,12 +169,9 @@ Examples:
 
 - `flatten(attributes)`
 
-
 - `flatten(cache, "k8s", 4)`
 
-
 - `flatten(body, depth=2)`
-
 
 ### keep_keys
 
@@ -191,7 +186,6 @@ The map will be changed to only contain the keys specified by the list of string
 Examples:
 
 - `keep_keys(attributes, ["http.method"])`
-
 
 - `keep_keys(resource.attributes, ["http.method", "http.route", "http.url"])`
 
@@ -215,7 +209,6 @@ Examples:
 
 - `limit(attributes, 100, [])`
 
-
 - `limit(resource.attributes, 50, ["http.host", "http.method"])`
 
 ### merge_maps
@@ -238,9 +231,7 @@ Examples:
 
 - `merge_maps(attributes, ParseJSON(body), "upsert")`
 
-
 - `merge_maps(attributes, ParseJSON(attributes["kubernetes"]), "update")`
-
 
 - `merge_maps(attributes, resource.attributes, "insert")`
 
@@ -344,12 +335,9 @@ Examples:
 
 - `set(attributes["http.path"], "/foo")`
 
-
 - `set(name, attributes["http.route"])`
 
-
 - `set(trace_state["svc"], "example")`
-
 
 - `set(attributes["source"], trace_state["source"])`
 
@@ -366,7 +354,6 @@ The map will be mutated such that the number of characters in all string values 
 Examples:
 
 - `truncate_all(attributes, 100)`
-
 
 - `truncate_all(resource.attributes, 50)`
 
@@ -409,6 +396,7 @@ Available Converters:
 - [SHA256](#sha256)
 - [SpanID](#spanid)
 - [Split](#split)
+- [String](#string)
 - [Substring](#substring)
 - [Time](#time)
 - [TraceID](#traceid)
@@ -431,7 +419,6 @@ Examples:
 
 - `Base64Decode("aGVsbG8gd29ybGQ=")`
 
-
 - `Base64Decode(attributes["encoded field"])`
 
 ### Concat
@@ -448,9 +435,7 @@ Examples:
 
 - `Concat([attributes["http.method"], attributes["http.path"]], ": ")`
 
-
 - `Concat([name, 1], " ")`
-
 
 - `Concat(["HTTP method is: ", attributes["http.method"]], "")`
 
@@ -484,10 +469,11 @@ The `Double` Converter converts an inputted `value` into a double.
 The returned type is float64.
 
 The input `value` types:
-* float64. returns the `value` without changes.
-* string. Tries to parse a double from string. If it fails then nil will be returned.
-* bool. If `value` is true, then the function will return 1 otherwise 0.
-* int64. The function converts the integer to a double.
+
+- float64. returns the `value` without changes.
+- string. Tries to parse a double from string. If it fails then nil will be returned.
+- bool. If `value` is true, then the function will return 1 otherwise 0.
+- int64. The function converts the integer to a double.
 
 If `value` is another type or parsing failed nil is always returned.
 
@@ -496,7 +482,6 @@ The `value` is either a path expression to a telemetry field to retrieve or a li
 Examples:
 
 - `Double(attributes["http.status_code"])`
-
 
 - `Double("2.0")`
 
@@ -548,14 +533,13 @@ Examples:
 
 - `FNV(attributes["device.name"])`
 
-
 - `FNV("name")`
 
 ### Hour
 
 `Hour(value)`
 
-The `Hour` Converter returns the hour from the specified time.  The Converter [uses the `time.Hour` function](https://pkg.go.dev/time#Time.Hour).
+The `Hour` Converter returns the hour from the specified time. The Converter [uses the `time.Hour` function](https://pkg.go.dev/time#Time.Hour).
 
 `value` is a `time.Time`. If `value` is another type an error is returned.
 
@@ -602,7 +586,6 @@ Examples:
 
 - `Int(attributes["http.status_code"])`
 
-
 - `Int("2.0")`
 
 ### IsBool
@@ -622,12 +605,9 @@ Examples:
 
 - `IsBool(false)`
 
-
 - `IsBool(pcommon.NewValueBool(false))`
 
-
 - `IsBool(42)`
-
 
 - `IsBool(attributes["any key"])`
 
@@ -677,7 +657,6 @@ Examples:
 
 - `IsMap(body)`
 
-
 - `IsMap(attributes["maybe a map"])`
 
 ### IsMatch
@@ -702,7 +681,6 @@ If target is nil, false is always returned.
 Examples:
 
 - `IsMatch(attributes["http.path"], "foo")`
-
 
 - `IsMatch("string", ".*ring")`
 
@@ -758,7 +736,6 @@ If target is nil an error is returned.
 Examples:
 
 - `Log(attributes["duration_ms"])`
-
 
 - `Int(Log(attributes["duration_ms"])`
 
@@ -846,6 +823,7 @@ The `ParseCSV` Converter returns a `pcommon.Map` struct that contains the result
 `headerDelimiter` is an optional string parameter that specified the delimiter used to split `headers` into fields. By default, it is set to the value of `delimiter`.
 
 `mode` is an optional string paramater that specifies the parsing mode. Valid values are `strict`, `lazyQuotes`, and `ignoreQuotes`. By default, it is set to `strict`.
+
 - The `strict` mode provides typical CSV parsing.
 - The `lazyQotes` mode provides a relaxed version of CSV parsing where a quote may appear in the middle of a unquoted field.
 - The `ignoreQuotes` mode completely ignores any quoting rules for CSV and just splits the row on the delimiter.
@@ -854,12 +832,9 @@ Examples:
 
 - `ParseCSV("999-999-9999,Joe Smith,joe.smith@example.com", "phone,name,email")`
 
-
 - `ParseCSV(body, "phone|name|email", delimiter="|")`
 
-
 - `ParseCSV(attributes["csv_line"], attributes["csv_headers"], delimiter="|", headerDelimiter=",", mode="lazyQuotes")`
-
 
 - `ParseCSV("\"555-555-5556,Joe Smith\",joe.smith@example.com", "phone,name,email", mode="ignoreQuotes")`
 
@@ -888,9 +863,7 @@ Examples:
 
 - `ParseJSON("{\"attr\":true}")`
 
-
 - `ParseJSON(attributes["kubernetes"])`
-
 
 - `ParseJSON(body)`
 
@@ -903,6 +876,7 @@ The `ParseKeyValue` Converter returns a `pcommon.Map` that is a result of parsin
 `target` is a Getter that returns a string. If the returned string is empty, an error will be returned. `delimiter` is an optional string that is used to split the key and value in a pair, the default is `=`. `pair_delimiter` is an optional string that is used to split key value pairs, the default is a single space (` `).
 
 For example, the following target `"k1=v1 k2=v2 k3=v3"` will use default delimiters and be parsed into the following map:
+
 ```
 { "k1": "v1", "k2": "v2", "k3": "v3" }
 ```
@@ -912,7 +886,6 @@ Examples:
 - `ParseKeyValue("k1=v1 k2=v2 k3=v3")`
 - `ParseKeyValue("k1!v1_k2!v2_k3!v3", "!", "_")`
 - `ParseKeyValue(attributes["pairs"])`
-
 
 ### ParseXML
 
@@ -924,6 +897,7 @@ The `ParseXML` Converter returns a `pcommon.Map` struct that is the result of pa
 If `target` is not a string, nil, or cannot be parsed as XML, `ParseXML` will return an error.
 
 Unmarshalling XML is done using the following rules:
+
 1. All character data for an XML element is trimmed, joined, and placed into the `content` field.
 2. The tag for an XML element is trimmed, and placed into the `tag` field.
 3. The attributes for an XML element is placed as a `pcommon.Map` into the `attribute` field.
@@ -931,6 +905,7 @@ Unmarshalling XML is done using the following rules:
 5. All child elements are parsed as above, and placed in a `pcommon.Slice`, which is then placed into the `children` field.
 
 For example, the following XML document:
+
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
 <Log>
@@ -944,6 +919,7 @@ For example, the following XML document:
 ```
 
 will be parsed as:
+
 ```json
 {
   "tag": "Log",
@@ -984,8 +960,6 @@ Examples:
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
 
-
-
 ### Seconds
 
 `Seconds(value)`
@@ -1016,7 +990,6 @@ Examples:
 
 - `SHA1(attributes["device.name"])`
 
-
 - `SHA1("name")`
 
 **Note:** According to the National Institute of Standards and Technology (NIST), SHA1 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
@@ -1037,7 +1010,6 @@ Examples:
 
 - `SHA256(attributes["device.name"])`
 
-
 - `SHA256("name")`
 
 **Note:** According to the National Institute of Standards and Technology (NIST), SHA256 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
@@ -1056,7 +1028,7 @@ Examples:
 
 ### Split
 
-```Split(target, delimiter)```
+`Split(target, delimiter)`
 
 The `Split` Converter separates a string by the delimiter, and returns an array of substrings.
 
@@ -1067,6 +1039,32 @@ If the `target` is not a string or does not exist, the `Split` Converter will re
 Examples:
 
 - `Split("A|B|C", "|")`
+
+### String
+
+`String(value)`
+
+The `String` Converter converts the `value` to string type.
+
+The returned type is `string`.
+
+- float64. The function returns the `value` as a string type.
+- string. The function returns the `value`, even if it's empty.
+- bool. The function returns true/false as "true"/"false".
+- int64. The function returns the `value` as a string type.
+- struct. The function returns an empty struct as "{}"
+
+If value is empty, another type or parsing failed, nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+Examples:
+
+- `String(2.7)`
+- `String("")`
+- `String(false)`
+- `String(13)`
+- `String(attributes["http.status_code"])`
 
 ### Substring
 
