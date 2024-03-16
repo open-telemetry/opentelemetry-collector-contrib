@@ -33,6 +33,14 @@ type Client struct {
 	logRetention int64
 	tags         map[string]*string
 	logger       *zap.Logger
+	kmsKeyId     *string
+}
+
+// WithEncryptionAtRestUsingKmsKey enables the creation of a CloudWatch LogGroup with encryption at rest using KmsKey.
+func WithEncryptionAtRestUsingKmsKey(kmsKeyID *string) func(cloudwatch *Client) {
+	return func(cloudWatchClient *Client) {
+		cloudWatchClient.kmsKeyId = kmsKeyID
+	}
 }
 
 // Create a log client based on the actual cloudwatch logs client.
@@ -45,11 +53,15 @@ func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetent
 }
 
 // NewClient create Client
-func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, tags map[string]*string, sess *session.Session, componentName string) *Client {
+func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, tags map[string]*string, sess *session.Session, componentName string, opts ...func(client *Client)) *Client {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
 	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName, componentName))
-	return newCloudWatchLogClient(client, logRetention, tags, logger)
+	cloudWatchLogClient := newCloudWatchLogClient(client, logRetention, tags, logger)
+	for _, opt := range opts {
+		opt(cloudWatchLogClient)
+	}
+	return cloudWatchLogClient
 }
 
 // PutLogEvents mainly handles different possible error could be returned from server side, and retries them
@@ -140,6 +152,7 @@ func (client *Client) CreateStream(logGroup, streamName *string) error {
 			// Create Log Group with tags if they exist and were specified in the config
 			_, err = client.svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
 				LogGroupName: logGroup,
+				KmsKeyId:     client.kmsKeyId,
 				Tags:         client.tags,
 			})
 			if err == nil {
