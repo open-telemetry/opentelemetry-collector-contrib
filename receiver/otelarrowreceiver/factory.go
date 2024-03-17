@@ -67,9 +67,7 @@ func createTraces(
 		return nil, err
 	}
 
-	if err = r.Unwrap().(*otelArrowReceiver).registerTraceConsumer(nextConsumer); err != nil {
-		return nil, err
-	}
+	r.Unwrap().(*otelArrowReceiver).registerTraceConsumer(nextConsumer)
 	return r, nil
 }
 
@@ -89,9 +87,7 @@ func createMetrics(
 		return nil, err
 	}
 
-	if err = r.Unwrap().(*otelArrowReceiver).registerMetricsConsumer(consumer); err != nil {
-		return nil, err
-	}
+	r.Unwrap().(*otelArrowReceiver).registerMetricsConsumer(consumer)
 	return r, nil
 }
 
@@ -111,9 +107,7 @@ func createLog(
 		return nil, err
 	}
 
-	if err = r.Unwrap().(*otelArrowReceiver).registerLogsConsumer(consumer); err != nil {
-		return nil, err
-	}
+	r.Unwrap().(*otelArrowReceiver).registerLogsConsumer(consumer)
 	return r, nil
 }
 

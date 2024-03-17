@@ -170,19 +170,16 @@ func (r *otelArrowReceiver) Shutdown(_ context.Context) error {
 	return err
 }
 
-func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) error {
+func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) {
 	r.tracesReceiver = trace.New(tc, r.obsrepGRPC)
-	return nil
 }
 
-func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
+func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) {
 	r.metricsReceiver = metrics.New(mc, r.obsrepGRPC)
-	return nil
 }
 
-func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) error {
+func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) {
 	r.logsReceiver = logs.New(lc, r.obsrepGRPC)
-	return nil
 }
 
 var _ arrow.Consumers = &otelArrowReceiver{}
