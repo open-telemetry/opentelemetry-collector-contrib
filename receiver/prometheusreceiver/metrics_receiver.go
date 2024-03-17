@@ -260,6 +260,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		r.cfg.UseStartTimeMetric,
 		startTimeMetricRegex,
 		useCreatedMetricGate.IsEnabled(),
+		enableNativeHistogramsGate.IsEnabled(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.cfg.TrimMetricSuffixes,
 	)

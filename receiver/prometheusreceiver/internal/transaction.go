@@ -35,19 +35,20 @@ const (
 )
 
 type transaction struct {
-	isNew           bool
-	trimSuffixes    bool
-	ctx             context.Context
-	families        map[scopeID]map[string]*metricFamily
-	mc              scrape.MetricMetadataStore
-	sink            consumer.Metrics
-	externalLabels  labels.Labels
-	nodeResource    pcommon.Resource
-	scopeAttributes map[scopeID]pcommon.Map
-	logger          *zap.Logger
-	buildInfo       component.BuildInfo
-	metricAdjuster  MetricsAdjuster
-	obsrecv         *receiverhelper.ObsReport
+	isNew                  bool
+	trimSuffixes           bool
+	enableNativeHistograms bool
+	ctx                    context.Context
+	families               map[scopeID]map[string]*metricFamily
+	mc                     scrape.MetricMetadataStore
+	sink                   consumer.Metrics
+	externalLabels         labels.Labels
+	nodeResource           pcommon.Resource
+	scopeAttributes        map[scopeID]pcommon.Map
+	logger                 *zap.Logger
+	buildInfo              component.BuildInfo
+	metricAdjuster         MetricsAdjuster
+	obsrecv                *receiverhelper.ObsReport
 	// Used as buffer to calculate series ref hash.
 	bufBytes []byte
 }
@@ -66,20 +67,22 @@ func newTransaction(
 	externalLabels labels.Labels,
 	settings receiver.CreateSettings,
 	obsrecv *receiverhelper.ObsReport,
-	trimSuffixes bool) *transaction {
+	trimSuffixes bool,
+	enableNativeHistograms bool) *transaction {
 	return &transaction{
-		ctx:             ctx,
-		families:        make(map[scopeID]map[string]*metricFamily),
-		isNew:           true,
-		trimSuffixes:    trimSuffixes,
-		sink:            sink,
-		metricAdjuster:  metricAdjuster,
-		externalLabels:  externalLabels,
-		logger:          settings.Logger,
-		buildInfo:       settings.BuildInfo,
-		obsrecv:         obsrecv,
-		bufBytes:        make([]byte, 0, 1024),
-		scopeAttributes: make(map[scopeID]pcommon.Map),
+		ctx:                    ctx,
+		families:               make(map[scopeID]map[string]*metricFamily),
+		isNew:                  true,
+		trimSuffixes:           trimSuffixes,
+		enableNativeHistograms: enableNativeHistograms,
+		sink:                   sink,
+		metricAdjuster:         metricAdjuster,
+		externalLabels:         externalLabels,
+		logger:                 settings.Logger,
+		buildInfo:              settings.BuildInfo,
+		obsrecv:                obsrecv,
+		bufBytes:               make([]byte, 0, 1024),
+		scopeAttributes:        make(map[scopeID]pcommon.Map),
 	}
 }
 
@@ -145,7 +148,7 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 
 	curMF, existing := t.getOrCreateMetricFamily(getScopeID(ls), metricName)
 
-	if curMF.mtype == pmetric.MetricTypeExponentialHistogram {
+	if t.enableNativeHistograms && curMF.mtype == pmetric.MetricTypeExponentialHistogram {
 		curMF.mtype = pmetric.MetricTypeHistogram
 	}
 
@@ -156,7 +159,7 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 		// histogram. This is similar to how Prometheus handles it, but we
 		// don't have access to the previous value so we're applying some
 		// heuristics to figure out if this is native histogram or not.
-		if errors.Is(err, errEmptyLeLabel) && !existing && value.IsStaleNaN(val) && curMF.mtype == pmetric.MetricTypeHistogram {
+		if t.enableNativeHistograms && errors.Is(err, errEmptyLeLabel) && !existing && value.IsStaleNaN(val) && curMF.mtype == pmetric.MetricTypeHistogram {
 			mg := curMF.loadMetricGroupOrCreate(seriesRef, ls, atMs)
 			curMF.mtype = pmetric.MetricTypeExponentialHistogram
 			mg.mtype = pmetric.MetricTypeExponentialHistogram
@@ -225,6 +228,10 @@ func (t *transaction) AppendExemplar(_ storage.SeriesRef, l labels.Labels, e exe
 }
 
 func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atMs int64, h *histogram.Histogram, fh *histogram.FloatHistogram) (storage.SeriesRef, error) {
+	if !t.enableNativeHistograms {
+		return 0, nil
+	}
+
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted

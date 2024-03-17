@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	dto "github.com/prometheus/prometheus/prompb/io/prometheus/client"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -257,10 +259,12 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 	prometheusMetricFamilyToProtoBuf(t, buffer, nativeHistogram)
 
 	testCases := map[string]struct {
-		mutCfg   func(*PromConfig)
-		expected []testExpectation
+		mutCfg                 func(*PromConfig)
+		enableNativeHistograms bool
+		expected               []testExpectation
 	}{
-		"native only": {
+		"feature enabled scrape classic off": {
+			enableNativeHistograms: true,
 			expected: []testExpectation{
 				assertMetricPresent( // Scrape classic only histograms as is.
 					"test_classic_histogram",
@@ -294,12 +298,32 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 				),
 			},
 		},
-		"classic only": {
+		"feature disabled scrape classic off": {
+			enableNativeHistograms: false,
+			expected: []testExpectation{
+				assertMetricPresent( // Scrape classic only histograms as is.
+					"test_classic_histogram",
+					compareMetricType(pmetric.MetricTypeHistogram),
+					compareMetricUnit(""),
+					[]dataPointExpectation{{
+						histogramPointComparator: []histogramPointComparator{
+							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
+						},
+					}},
+				),
+				// When the native histograms feature is off and classic histograms are not scraped for mixed histograms, no metric is scraped.
+				assertMetricAbsent("test_mixed_histogram"),
+				// When the native histograms feature is off, no native histograms are scraped.
+				assertMetricAbsent("test_native_histogram"),
+			},
+		},
+		"feature enabled scrape classic on": {
 			mutCfg: func(cfg *PromConfig) {
 				for _, scrapeConfig := range cfg.ScrapeConfigs {
 					scrapeConfig.ScrapeClassicHistograms = true
 				}
 			},
+			enableNativeHistograms: true,
 			expected: []testExpectation{
 				assertMetricPresent( // Scrape classic only histograms as is.
 					"test_classic_histogram",
@@ -333,10 +357,49 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 				),
 			},
 		},
+		"feature disable scrape classic on": {
+			mutCfg: func(cfg *PromConfig) {
+				for _, scrapeConfig := range cfg.ScrapeConfigs {
+					scrapeConfig.ScrapeClassicHistograms = true
+				}
+			},
+			enableNativeHistograms: false,
+			expected: []testExpectation{
+				assertMetricPresent( // Scrape classic only histograms as is.
+					"test_classic_histogram",
+					compareMetricType(pmetric.MetricTypeHistogram),
+					compareMetricUnit(""),
+					[]dataPointExpectation{{
+						histogramPointComparator: []histogramPointComparator{
+							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
+						},
+					}},
+				),
+				assertMetricPresent( // Only scrape classic buckets from mixed histograms.
+					"test_mixed_histogram",
+					compareMetricType(pmetric.MetricTypeHistogram),
+					compareMetricUnit(""),
+					[]dataPointExpectation{{
+						histogramPointComparator: []histogramPointComparator{
+							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
+						},
+					}},
+				),
+				// When the native histograms feature is off, no native histograms are scraped.
+				assertMetricAbsent("test_native_histogram"),
+			},
+		},
 	}
+
+	defer func() {
+		featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
+	}()
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
+			err := featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", tc.enableNativeHistograms)
+			require.NoError(t, err)
+
 			targets := []*testData{
 				{
 					name: "target1",
@@ -466,7 +529,11 @@ func TestStaleExponentialHistogram(t *testing.T) {
 			},
 		},
 	}
-
+	err := featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", true)
+	require.NoError(t, err)
+	defer func() {
+		featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
+	}()
 	testComponent(t, targets, func(c *Config) {
 		c.EnableProtobufNegotiation = true
 	})
@@ -526,6 +593,11 @@ func TestFloatCounterHistogram(t *testing.T) {
 			},
 		},
 	}
+	err := featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", true)
+	require.NoError(t, err)
+	defer func() {
+		featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
+	}()
 	testComponent(t, targets, func(c *Config) {
 		c.EnableProtobufNegotiation = true
 	})

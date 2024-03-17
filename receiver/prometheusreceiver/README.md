@@ -134,10 +134,10 @@ receivers:
 ## Prometheus native histograms
 
 Native histograms is an experimental [feature](https://prometheus.io/docs/prometheus/latest/feature_flags/#native-histograms) of Prometheus.
-To enable scraping native histograms, set the top level option `enable_protobuf_negotiation` to `true`.
+To enable scraping native histograms, set the top level option `enable_protobuf_negotiation` to `true` and enable the feature gate
+`receiver.prometheusreceiver.EnableNativeHistograms`.
 Prometheus native histograms are mapped to OpenTelemetry exponential histograms. This applies to the most common integer counter histograms,
-gauge histograms are dropped. Currently the zero threshold of the exponential histogram is always set to the default, not to what's in the
-native histogram.
+gauge histograms are dropped.
 In case a metric has both the conventional (aka classic) buckets and also native histogram buckets, only the native histogram buckets will be
 taken into account to create the corresponding exponential histogram. To scrape the classic buckets instead use the
 [scrape option](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config) `scrape_classic_histograms`.
