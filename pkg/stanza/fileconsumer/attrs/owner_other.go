@@ -1,6 +1,9 @@
-//go:build linux || solaris
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
-package attrs
+//go:build !windows
+
+package attrs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 
 import (
 	"fmt"
@@ -23,12 +26,12 @@ func (r *Resolver) addOwnerInfo(file *os.File, attributes map[string]any) (err e
 		}
 		attributes[LogFileOwnerName] = fileOwner.Username
 	}
-	if r.IncludeFileGroupName {
+	if r.IncludeFileOwnerGroupName {
 		var fileGroup, errFileGroup = user.LookupGroupId(fmt.Sprint(fileStat.Gid))
 		if errFileGroup != nil {
 			return fmt.Errorf("resolve file group name: %w", errFileGroup)
 		}
-		attributes[LogFileGroupName] = fileGroup.Name
+		attributes[LogFileOwnerGroupName] = fileGroup.Name
 	}
 	return nil
 }

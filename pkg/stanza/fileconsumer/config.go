@@ -146,9 +146,6 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 	if err != nil {
 		return nil, err
 	}
-	if (runtime.GOOS != "linux" && runtime.GOOS != "solaris") && (c.Resolver.IncludeFileOwnerName || c.Resolver.IncludeFileGroupName) {
-		return nil, fmt.Errorf("include_file_owner_name or include_file_group_name it's only supported for linux or solaris: %w", err)
-	}
 
 	readerFactory := reader.Factory{
 		SugaredLogger:     logger.With("component", "fileconsumer"),
@@ -227,6 +224,10 @@ func (c Config) validate() error {
 		if _, err := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc); err != nil {
 			return fmt.Errorf("invalid config for 'header': %w", err)
 		}
+	}
+
+	if runtime.GOOS == "windows" && (c.Resolver.IncludeFileOwnerName || c.Resolver.IncludeFileOwnerGroupName) {
+		return fmt.Errorf("include_file_owner_name or include_file_owner_group_name it's not supported for windows: %w", err)
 	}
 
 	return nil

@@ -7,7 +7,7 @@ change_type: enhancement
 component: filelogreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: When reading a file on filelogreceiver on linux or solaris, if include_file_owner_name is true, it will add the file owner name as the attribute `log.file.owner.name` and if include_file_group_name is true, it will add the file group name as the attribute `log.file.group.name`.
+note: When reading a file on filelogreceiver not on windows, if include_file_owner_name is true, it will add the file owner name as the attribute `log.file.owner.name` and if include_file_owner_group_name is true, it will add the file owner group name as the attribute `log.file.owner.group.name`.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [30775]

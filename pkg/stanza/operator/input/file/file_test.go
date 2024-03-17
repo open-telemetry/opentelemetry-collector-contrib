@@ -31,8 +31,8 @@ func TestAddFileResolvedFields(t *testing.T) {
 		cfg.IncludeFilePath = true
 		cfg.IncludeFileNameResolved = true
 		cfg.IncludeFilePathResolved = true
-		cfg.IncludeFileOwnerName = (runtime.GOOS == "linux" || runtime.GOOS == "solaris")
-		cfg.IncludeFileGroupName = (runtime.GOOS == "linux" || runtime.GOOS == "solaris")
+		cfg.IncludeFileOwnerName = runtime.GOOS != "windows"
+		cfg.IncludeFileOwnerGroupName = runtime.GOOS != "windows"
 	})
 
 	// Create temp dir with log file
@@ -73,7 +73,7 @@ func TestAddFileResolvedFields(t *testing.T) {
 	var fileOwner, _ = user.LookupId(fmt.Sprint(fileStat.Uid))
 	require.Equal(t, fileOwner.Username, e.Attributes["log.file.owner.name"])
 	var fileGroup, _ = user.LookupGroupId(fmt.Sprint(fileStat.Gid))
-	require.Equal(t, fileGroup.Name, e.Attributes["log.file.group.name"])
+	require.Equal(t, fileGroup.Name, e.Attributes["log.file.owner.group.name"])
 }
 
 // ReadExistingLogs tests that, when starting from beginning, we

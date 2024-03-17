@@ -11,21 +11,21 @@ import (
 )
 
 const (
-	LogFileName         = "log.file.name"
-	LogFilePath         = "log.file.path"
-	LogFileNameResolved = "log.file.name_resolved"
-	LogFilePathResolved = "log.file.path_resolved"
-	LogFileOwnerName    = "log.file.owner.name"
-	LogFileGroupName    = "log.file.group.name"
+	LogFileName           = "log.file.name"
+	LogFilePath           = "log.file.path"
+	LogFileNameResolved   = "log.file.name_resolved"
+	LogFilePathResolved   = "log.file.path_resolved"
+	LogFileOwnerName      = "log.file.owner.name"
+	LogFileOwnerGroupName = "log.file.owner.group.name"
 )
 
 type Resolver struct {
-	IncludeFileName         bool `mapstructure:"include_file_name,omitempty"`
-	IncludeFilePath         bool `mapstructure:"include_file_path,omitempty"`
-	IncludeFileNameResolved bool `mapstructure:"include_file_name_resolved,omitempty"`
-	IncludeFilePathResolved bool `mapstructure:"include_file_path_resolved,omitempty"`
-	IncludeFileOwnerName    bool `mapstructure:"include_file_owner_name,omitempty"`
-	IncludeFileGroupName    bool `mapstructure:"include_file_group_name,omitempty"`
+	IncludeFileName           bool `mapstructure:"include_file_name,omitempty"`
+	IncludeFilePath           bool `mapstructure:"include_file_path,omitempty"`
+	IncludeFileNameResolved   bool `mapstructure:"include_file_name_resolved,omitempty"`
+	IncludeFilePathResolved   bool `mapstructure:"include_file_path_resolved,omitempty"`
+	IncludeFileOwnerName      bool `mapstructure:"include_file_owner_name,omitempty"`
+	IncludeFileOwnerGroupName bool `mapstructure:"include_file_owner_group_name,omitempty"`
 }
 
 func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error) {
@@ -38,7 +38,7 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 	if r.IncludeFilePath {
 		attributes[LogFilePath] = path
 	}
-	if r.IncludeFileOwnerName || r.IncludeFileGroupName {
+	if r.IncludeFileOwnerName || r.IncludeFileOwnerGroupName {
 		err = r.addOwnerInfo(file, attributes)
 		if err != nil {
 			return nil, err

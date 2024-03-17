@@ -24,12 +24,12 @@ func TestResolver(t *testing.T) {
 
 		// Create a resolver with a config that matches the bit pattern of i
 		r := Resolver{
-			IncludeFileName:         bitString[0] == '1',
-			IncludeFilePath:         bitString[1] == '1',
-			IncludeFileNameResolved: bitString[2] == '1',
-			IncludeFilePathResolved: bitString[3] == '1',
-			IncludeFileOwnerName:    bitString[4] == '1',
-			IncludeFileGroupName:    bitString[5] == '1',
+			IncludeFileName:           bitString[0] == '1',
+			IncludeFilePath:           bitString[1] == '1',
+			IncludeFileNameResolved:   bitString[2] == '1',
+			IncludeFilePathResolved:   bitString[3] == '1',
+			IncludeFileOwnerName:      bitString[4] == '1',
+			IncludeFileOwnerGroupName: bitString[5] == '1',
 		}
 
 		t.Run(bitString, func(t *testing.T) {
@@ -70,7 +70,7 @@ func TestResolver(t *testing.T) {
 			} else {
 				assert.Empty(t, attributes[LogFilePathResolved])
 			}
-			if (runtime.GOOS == "linux" || runtime.GOOS == "solaris") && r.IncludeFileOwnerName {
+			if runtime.GOOS != "windows" && r.IncludeFileOwnerName {
 				expectLen++
 				assert.NotNil(t, attributes[LogFileOwnerName])
 				assert.IsType(t, "", attributes[LogFileOwnerName])
@@ -78,13 +78,13 @@ func TestResolver(t *testing.T) {
 				assert.Empty(t, attributes[LogFileOwnerName])
 				assert.Empty(t, attributes[LogFileOwnerName])
 			}
-			if (runtime.GOOS == "linux" || runtime.GOOS == "solaris") && r.IncludeFileGroupName {
+			if runtime.GOOS != "windows" && r.IncludeFileOwnerGroupName {
 				expectLen++
-				assert.NotNil(t, attributes[LogFileGroupName])
-				assert.IsType(t, "", attributes[LogFileGroupName])
+				assert.NotNil(t, attributes[LogFileOwnerGroupName])
+				assert.IsType(t, "", attributes[LogFileOwnerGroupName])
 			} else {
-				assert.Empty(t, attributes[LogFileGroupName])
-				assert.Empty(t, attributes[LogFileGroupName])
+				assert.Empty(t, attributes[LogFileOwnerGroupName])
+				assert.Empty(t, attributes[LogFileOwnerGroupName])
 			}
 			assert.Equal(t, expectLen, len(attributes))
 		})
