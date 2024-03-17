@@ -117,13 +117,18 @@ func TestContainerTags(t *testing.T) {
 	defer connector.Shutdown(context.Background())
 
 	assert.True(t, ok) // checks if the created connector implements the connectorImp struct
-	trace := GenerateTrace()
+	trace1 := GenerateTrace()
 
-	err = connector.ConsumeTraces(context.Background(), trace)
+	err = connector.ConsumeTraces(context.Background(), trace1)
 	assert.NoError(t, err)
 
+	// Send two traces to ensure unique container tags are added to the cache
+	trace2 := GenerateTrace()
+	err = connector.ConsumeTraces(context.Background(), trace2)
+	assert.NoError(t, err)
 	// check if the container tags are added to the cache
 	assert.Equal(t, 1, len(connector.containerTagCache.Items()))
+	assert.Equal(t, 2, len(connector.containerTagCache.Items()["my-container-id"].Object.(map[string]struct{})))
 
 	for {
 		if len(metricsSink.AllMetrics()) > 0 {
@@ -148,7 +153,7 @@ func TestContainerTags(t *testing.T) {
 
 	tags := sp.Stats[0].Tags
 	assert.Equal(t, 2, len(tags))
-	assert.Equal(t, []string{"zone:my-zone", "region:my-region"}, tags)
+	assert.ElementsMatch(t, []string{"region:my-region", "zone:my-zone"}, tags)
 }
 
 func newTranslatorWithStatsChannel(t *testing.T, logger *zap.Logger, ch chan []byte) *otlpmetrics.Translator {
