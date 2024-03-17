@@ -442,15 +442,16 @@ func TestMetricGroupData_toExponentialDistributionUnitTest(t *testing.T) {
 				}
 
 				var err error
-				if tv.integerHistogram != nil {
+				switch {
+				case tv.integerHistogram != nil:
 					mp.mtype = pmetric.MetricTypeExponentialHistogram
 					sRef, _ := getSeriesRef(nil, lbls, mp.mtype)
 					err = mp.addExponentialHistogramSeries(sRef, tv.metric, lbls, tv.at, tv.integerHistogram, nil)
-				} else if tv.floatHistogram != nil {
+				case tv.floatHistogram != nil:
 					mp.mtype = pmetric.MetricTypeExponentialHistogram
 					sRef, _ := getSeriesRef(nil, lbls, mp.mtype)
 					err = mp.addExponentialHistogramSeries(sRef, tv.metric, lbls, tv.at, nil, tv.floatHistogram)
-				} else {
+				default:
 					sRef, _ := getSeriesRef(nil, lbls, mp.mtype)
 					err = mp.addSeries(sRef, tv.metric, lbls, tv.at, tv.value)
 				}

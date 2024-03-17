@@ -392,7 +392,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 	}
 
 	defer func() {
-		featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
+		_ = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
 	}()
 
 	for name, tc := range testCases {
@@ -532,7 +532,7 @@ func TestStaleExponentialHistogram(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", true)
 	require.NoError(t, err)
 	defer func() {
-		featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
+		_ = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
 	}()
 	testComponent(t, targets, func(c *Config) {
 		c.EnableProtobufNegotiation = true
@@ -596,7 +596,7 @@ func TestFloatCounterHistogram(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", true)
 	require.NoError(t, err)
 	defer func() {
-		featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
+		_ = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
 	}()
 	testComponent(t, targets, func(c *Config) {
 		c.EnableProtobufNegotiation = true
