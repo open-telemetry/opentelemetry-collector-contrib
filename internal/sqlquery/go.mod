@@ -7,7 +7,7 @@ require (
 	github.com/go-sql-driver/mysql v1.8.0
 	github.com/lib/pq v1.10.9
 	github.com/microsoft/go-mssqldb v1.7.0
-	github.com/sijms/go-ora/v2 v2.8.8
+	github.com/sijms/go-ora/v2 v2.8.9
 	github.com/snowflakedb/gosnowflake v1.8.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.1-0.20240306115632-b2693620eff6
