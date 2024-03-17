@@ -58,6 +58,9 @@ spanmetrics/invalid_histogram_unit:
   histogram:
     unit: "h"
 
+spanmetrics/invalid_metrics_expiration:
+  metrics_expiration: -20s
+
 # exemplars enabled 
 spanmetrics/exemplars_enabled:
   exemplars:

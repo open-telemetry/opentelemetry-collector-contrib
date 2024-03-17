@@ -210,6 +210,7 @@ type ExtractionRules struct {
 	StatefulSetUID     bool
 	StatefulSetName    bool
 	Node               bool
+	NodeUID            bool
 	StartTime          bool
 	ContainerName      bool
 	ContainerID        bool

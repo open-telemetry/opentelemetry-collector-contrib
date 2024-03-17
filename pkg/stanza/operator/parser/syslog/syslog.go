@@ -8,14 +8,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
-	sl "github.com/haimrubinstein/go-syslog/v3"
-	"github.com/haimrubinstein/go-syslog/v3/nontransparent"
-	"github.com/haimrubinstein/go-syslog/v3/octetcounting"
-	"github.com/haimrubinstein/go-syslog/v3/rfc3164"
-	"github.com/haimrubinstein/go-syslog/v3/rfc5424"
+	sl "github.com/influxdata/go-syslog/v3"
+	"github.com/influxdata/go-syslog/v3/nontransparent"
+	"github.com/influxdata/go-syslog/v3/octetcounting"
+	"github.com/influxdata/go-syslog/v3/rfc3164"
+	"github.com/influxdata/go-syslog/v3/rfc5424"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -32,6 +33,8 @@ const (
 	NULTrailer = "NUL"
 	LFTrailer  = "LF"
 )
+
+var priRegex = regexp.MustCompile(`\<\d{1,3}\>`)
 
 func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
@@ -122,11 +125,10 @@ func (s *Parser) buildParseFunc() (parseFunc, error) {
 	switch s.protocol {
 	case RFC3164:
 		return func(input []byte) (sl.Message, error) {
-			parserOptions := []sl.MachineOption{rfc3164.WithLocaleTimezone(s.location)}
-			if s.allowSkipPriHeader {
-				parserOptions = append(parserOptions, rfc3164.WithAllowSkipPri())
+			if s.allowSkipPriHeader && !priRegex.Match(input) {
+				input = append([]byte("<0>"), input...)
 			}
-			return rfc3164.NewMachine(parserOptions...).Parse(input)
+			return rfc3164.NewMachine(rfc3164.WithLocaleTimezone(s.location)).Parse(input)
 		}, nil
 	case RFC5424:
 		switch {
@@ -141,11 +143,10 @@ func (s *Parser) buildParseFunc() (parseFunc, error) {
 		// Raw RFC5424 parsing
 		default:
 			return func(input []byte) (sl.Message, error) {
-				parserOptions := []sl.MachineOption{}
-				if s.allowSkipPriHeader {
-					parserOptions = append(parserOptions, rfc5424.WithAllowSkipPri())
+				if s.allowSkipPriHeader && !priRegex.Match(input) {
+					input = append([]byte("<0>"), input...)
 				}
-				return rfc5424.NewMachine(parserOptions...).Parse(input)
+				return rfc5424.NewMachine().Parse(input)
 			}, nil
 		}
 

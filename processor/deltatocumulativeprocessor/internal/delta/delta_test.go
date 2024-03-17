@@ -21,8 +21,12 @@ import (
 
 var result any
 
+func aggr() streams.Aggregator[data.Number] {
+	return streams.IntoAggregator(delta.New[data.Number]())
+}
+
 func BenchmarkAccumulator(b *testing.B) {
-	acc := delta.Numbers()
+	acc := aggr()
 	sum := random.Sum()
 
 	bench := func(b *testing.B, nstreams int) {
@@ -65,7 +69,7 @@ func BenchmarkAccumulator(b *testing.B) {
 
 // verify the distinction between streams and the accumulated value
 func TestAddition(t *testing.T) {
-	acc := delta.Numbers()
+	acc := aggr()
 	sum := random.Sum()
 
 	type Idx int
@@ -104,7 +108,7 @@ func TestAddition(t *testing.T) {
 
 // verify that start + last times are updated
 func TestTimes(t *testing.T) {
-	acc := delta.Numbers()
+	acc := aggr()
 	id, base := random.Sum().Stream()
 	point := func(start, last pcommon.Timestamp) data.Number {
 		dp := base.Clone()
@@ -174,7 +178,7 @@ func TestErrs(t *testing.T) {
 	for _, c := range cases {
 		c := c
 		t.Run(fmt.Sprintf("%T", c.Err), func(t *testing.T) {
-			acc := delta.Numbers()
+			acc := aggr()
 			id, data := random.Sum().Stream()
 
 			good := data.Clone()

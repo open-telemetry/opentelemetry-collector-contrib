@@ -19,6 +19,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
@@ -142,7 +143,7 @@ func (f *factory) StopReporter() {
 }
 
 func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
-	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, datadog.InitializeMetricClient(params.MeterProvider), attrsTranslator)
+	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, datadog.InitializeMetricClient(params.MeterProvider, datadog.ExporterSourceTag), attrsTranslator)
 	if err != nil {
 		return nil, err
 	}
@@ -170,8 +171,9 @@ func NewFactory() exporter.Factory {
 	return newFactoryWithRegistry(featuregate.GlobalRegistry())
 }
 
-func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
-	return exporterhelper.TimeoutSettings{
+func defaultClientConfig() confighttp.ClientConfig {
+	// do not use NewDefaultClientConfig for backwards-compatibility
+	return confighttp.ClientConfig{
 		Timeout: 15 * time.Second,
 	}
 }
@@ -179,9 +181,9 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 // createDefaultConfig creates the default exporter configuration
 func (f *factory) createDefaultConfig() component.Config {
 	return &Config{
-		TimeoutSettings: defaulttimeoutSettings(),
-		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		ClientConfig:  defaultClientConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
@@ -299,7 +301,7 @@ func (f *factory) createMetricsExporter(
 		return nil, err
 	}
 	statsToAgent := make(chan *pb.StatsPayload)
-	metricsClient := datadog.InitializeMetricClient(set.MeterProvider)
+	metricsClient := datadog.InitializeMetricClient(set.MeterProvider, datadog.ExporterSourceTag)
 	timingReporter := timing.New(metricsClient)
 	statsWriter := writer.NewStatsWriter(acfg, statsToAgent, telemetry.NewNoopCollector(), metricsClient, timingReporter)
 

@@ -159,7 +159,9 @@ k8sattributes/2:
 
 ## Role-based access control
 
-The k8sattributesprocessor needs `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.uid` or `k8s.deployment.name` the processor also needs `get`, `watch` and `list` permissions for `replicasets` resources. When extracting metadatas from `node`, the processor needs `get`, `watch` and `list` permissions for `nodes` resources.
+## Cluster-scoped RBAC
+
+If you'd like to set up the k8sattributesprocessor to receive telemetry from across namespaces, it will need `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters. Additionally, when using `k8s.deployment.uid` or `k8s.deployment.name` the processor also needs `get`, `watch` and `list` permissions for `replicasets` resources. When using `k8s.node.uid` or extracting metadata from `node`, the processor needs `get`, `watch` and `list` permissions for `nodes` resources.
 
 Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods, nodes, and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
 
@@ -195,6 +197,51 @@ subjects:
   namespace: <OTEL_COL_NAMESPACE>
 roleRef:
   kind: ClusterRole
+  name: otel-collector
+  apiGroup: rbac.authorization.k8s.io
+```
+
+### Namespace-scoped RBAC
+When running the k8sattributesprocessor to receive telemetry traffic from pods in a specific namespace, you can use a k8s `Role` and `Rolebinding` to provide collector access to query pods and replicasets in the namespace. This would require setting the `filter::namespace` config as shown below.
+```yaml
+k8sattributes:
+  filter:
+    namespace: <WORKLOAD_NAMESPACE>
+```
+With the namespace filter set, the processor will only look up pods and replicasets in the selected namespace. Note that with just a role binding, the processor can not query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor can not set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
+
+Example `Role` and `RoleBinding` to create in the namespace being watched.
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector
+  namespace: <OTEL_COL_NAMESPACE>
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: otel-collector
+  namespace: <WORKLOAD_NAMESPACE>
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["apps"]
+  resources: ["replicasets"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: otel-collector
+  namespace: <WORKLOAD_NAMESPACE>
+subjects:
+- kind: ServiceAccount
+  name: otel-collector
+  namespace: <OTEL_COL_NAMESPACE>
+roleRef:
+  kind: Role
   name: otel-collector
   apiGroup: rbac.authorization.k8s.io
 ```

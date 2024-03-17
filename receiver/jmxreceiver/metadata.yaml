@@ -1,4 +1,5 @@
 type: jmx
+scope_name: otelcol/jmxreceiver
 
 status:
   class: receiver

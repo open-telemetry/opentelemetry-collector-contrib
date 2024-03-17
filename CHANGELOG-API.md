@@ -7,6 +7,13 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.96.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/mdatagen`: Use enum for stability levels in the Metadata struct (#31530)
+- `httpforwarder`: Remove extension named httpforwarder, use httpforwarderextension instead. (#24171)
+
 ## v0.95.0
 
 ### 🛑 Breaking changes 🛑

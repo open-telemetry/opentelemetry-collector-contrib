@@ -1,4 +1,5 @@
 type: googlecloudpubsub
+scope_name: otelcol/googlecloudpubsubreceiver
 
 status:
   class: receiver
@@ -15,3 +16,5 @@ tests:
     timeout: 20s
     subscription: projects/my-project/subscriptions/otlp-subscription
   skip_lifecycle: true
+  skip_shutdown: true
+

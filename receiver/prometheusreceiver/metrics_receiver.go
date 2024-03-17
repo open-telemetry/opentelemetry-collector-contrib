@@ -50,6 +50,7 @@ type pReceiver struct {
 	settings         receiver.CreateSettings
 	scrapeManager    *scrape.Manager
 	discoveryManager *discovery.Manager
+	httpClient       *http.Client
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -66,7 +67,7 @@ func newPrometheusReceiver(set receiver.CreateSettings, cfg *Config, next consum
 
 // Start is the method that starts Prometheus scraping. It
 // is controlled by having previously defined a Configuration using perhaps New.
-func (r *pReceiver) Start(_ context.Context, _ component.Host) error {
+func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	discoveryCtx, cancel := context.WithCancel(context.Background())
 	r.cancelFunc = cancel
 
@@ -89,6 +90,11 @@ func (r *pReceiver) Start(_ context.Context, _ component.Host) error {
 
 	allocConf := r.cfg.TargetAllocator
 	if allocConf != nil {
+		r.httpClient, err = r.cfg.TargetAllocator.ToClient(host, r.settings.TelemetrySettings)
+		if err != nil {
+			r.settings.Logger.Error("Failed to create http client", zap.Error(err))
+			return err
+		}
 		err = r.startTargetAllocator(allocConf, baseCfg)
 		if err != nil {
 			return err
@@ -197,7 +203,7 @@ func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config
 		return nil, err
 	}
 
-	resp, err := http.Get(scrapeConfigsURL) //nolint
+	resp, err := r.httpClient.Get(scrapeConfigsURL)
 	if err != nil {
 		return nil, err
 	}

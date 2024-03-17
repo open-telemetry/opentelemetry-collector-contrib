@@ -1,4 +1,5 @@
 type: vcenter
+scope_name: otelcol/vcenterreceiver
 
 status:
   class: receiver
@@ -422,6 +423,3 @@ metrics:
     gauge:
       value_type: double
     attributes: []
-
-tests:
-  config:
