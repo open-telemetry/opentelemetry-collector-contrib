@@ -114,7 +114,9 @@ func TestContainerTags(t *testing.T) {
 		t.Errorf("Error starting connector: %v", err)
 		return
 	}
-	defer connector.Shutdown(context.Background())
+	defer func() {
+		_ = connector.Shutdown(context.Background())
+	}()
 
 	assert.True(t, ok) // checks if the created connector implements the connectorImp struct
 	trace1 := GenerateTrace()
