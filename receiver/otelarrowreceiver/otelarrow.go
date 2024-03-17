@@ -171,25 +171,16 @@ func (r *otelArrowReceiver) Shutdown(_ context.Context) error {
 }
 
 func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) error {
-	if tc == nil {
-		return component.ErrNilNextConsumer
-	}
 	r.tracesReceiver = trace.New(tc, r.obsrepGRPC)
 	return nil
 }
 
 func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
-	if mc == nil {
-		return component.ErrNilNextConsumer
-	}
 	r.metricsReceiver = metrics.New(mc, r.obsrepGRPC)
 	return nil
 }
 
 func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) error {
-	if lc == nil {
-		return component.ErrNilNextConsumer
-	}
 	r.logsReceiver = logs.New(lc, r.obsrepGRPC)
 	return nil
 }

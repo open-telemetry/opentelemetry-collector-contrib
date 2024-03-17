@@ -29,9 +29,6 @@ type receiverCreator struct {
 
 // newLogsReceiverCreator creates the receiver_creator with the given parameters.
 func newLogsReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Logs) (receiver.Logs, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 
 	r := &receiverCreator{
 		params:           params,
@@ -43,9 +40,6 @@ func newLogsReceiverCreator(params receiver.CreateSettings, cfg *Config, nextCon
 
 // newMetricsReceiverCreator creates the receiver_creator with the given parameters.
 func newMetricsReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 
 	r := &receiverCreator{
 		params:              params,
@@ -57,9 +51,6 @@ func newMetricsReceiverCreator(params receiver.CreateSettings, cfg *Config, next
 
 // newTracesReceiverCreator creates the receiver_creator with the given parameters.
 func newTracesReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (receiver.Traces, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 
 	r := &receiverCreator{
 		params:             params,
