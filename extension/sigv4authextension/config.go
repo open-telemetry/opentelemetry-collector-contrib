@@ -30,7 +30,7 @@ var _ component.Config = (*Config)(nil)
 
 // SetCredProvider sets customized credential provider to the config.
 // Mostly for mocking by downstream users
-func (cfg *Config) SetCredProvider(credsProvider *aws.CredentialsProvider) {
+func (cfg *Config) SetCredsProvider(credsProvider *aws.CredentialsProvider) {
 	cfg.credsProvider = credsProvider
 }
 

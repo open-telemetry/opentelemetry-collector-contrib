@@ -26,7 +26,7 @@ func TestNewSigv4Extension(t *testing.T) {
 }
 
 func TestRoundTripper(t *testing.T) {
-	awsCredsProvider := mockCredentials()
+	awsCredsProvider := mockCredentials("", "", "")
 
 	base := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
 	awsSDKInfo := "awsSDKInfo"
@@ -133,12 +133,25 @@ func TestCloneRequest(t *testing.T) {
 	}
 }
 
-func mockCredentials() *aws.CredentialsProvider {
+func mockCredentials(accessKey string, secretAccessKey string, token string) *aws.CredentialsProvider {
+	mockAccessKey := "MOCK_AWS_ACCESS_KEY"
+	if accessKey != "" {
+		mockAccessKey = accessKey
+	}
+	mockSecretAccessKey := "MOCK_AWS_SECRET_ACCESS_KEY"
+	if secretAccessKey != "" {
+		mockSecretAccessKey = secretAccessKey
+	}
+	mockToken := "MOCK_TOKEN"
+	if token != "" {
+		mockToken = token
+	}
+
 	awscfg, _ := awsconfig.LoadDefaultConfig(context.Background())
 	provider := credentials.NewStaticCredentialsProvider(
-		"MOCK_AWS_ACCESS_KEY",
-		"MOCK_AWS_SECRET_ACCESS_KEY",
-		"MOCK_TOKEN",
+		mockAccessKey,
+		mockSecretAccessKey,
+		mockToken,
 	)
 
 	awscfg.Credentials = aws.NewCredentialsCache(provider)

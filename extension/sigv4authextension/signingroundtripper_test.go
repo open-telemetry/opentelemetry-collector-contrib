@@ -24,7 +24,7 @@ func (ert *errorRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error)
 }
 
 func TestRoundTrip(t *testing.T) {
-	awsCredsProvider := mockCredentials()
+	awsCredsProvider := mockCredentials("", "", "")
 
 	defaultRoundTripper := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
 	errorRoundTripper := &errorRoundTripper{}
