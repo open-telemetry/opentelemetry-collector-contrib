@@ -27,37 +27,11 @@ type receiverCreator struct {
 	observables         []observer.Observable
 }
 
-// newLogsReceiverCreator creates the receiver_creator with the given parameters.
-func newLogsReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Logs) (receiver.Logs, error) {
-
-	r := &receiverCreator{
-		params:           params,
-		cfg:              cfg,
-		nextLogsConsumer: nextConsumer,
+func newReceiverCreator(params receiver.CreateSettings, cfg *Config) receiver.Metrics {
+	return &receiverCreator{
+		params: params,
+		cfg:    cfg,
 	}
-	return r, nil
-}
-
-// newMetricsReceiverCreator creates the receiver_creator with the given parameters.
-func newMetricsReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-
-	r := &receiverCreator{
-		params:              params,
-		cfg:                 cfg,
-		nextMetricsConsumer: nextConsumer,
-	}
-	return r, nil
-}
-
-// newTracesReceiverCreator creates the receiver_creator with the given parameters.
-func newTracesReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (receiver.Traces, error) {
-
-	r := &receiverCreator{
-		params:             params,
-		cfg:                cfg,
-		nextTracesConsumer: nextConsumer,
-	}
-	return r, nil
 }
 
 // Start receiver_creator.
