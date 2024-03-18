@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:9090",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
 				},
@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
 					Keepalive: &configgrpc.KeepaliveServerConfig{
@@ -72,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					MaxRecvMsgSizeMiB:    32,
 					MaxConcurrentStreams: 16,
@@ -92,7 +92,7 @@ func TestLoadConfig(t *testing.T) {
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
 					TLSSetting: &configtls.TLSServerSetting{
@@ -110,7 +110,7 @@ func TestLoadConfig(t *testing.T) {
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
 				},
@@ -123,7 +123,7 @@ func TestLoadConfig(t *testing.T) {
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "/tmp/opencensus.sock",
-						Transport: "unix",
+						Transport: confignet.TransportTypeUnix,
 					},
 					ReadBufferSize: 512 * 1024,
 				},

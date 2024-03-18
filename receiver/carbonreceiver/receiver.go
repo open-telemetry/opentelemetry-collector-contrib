@@ -80,14 +80,14 @@ func newMetricsReceiver(
 }
 
 func buildTransportServer(config Config) (transport.Server, error) {
-	switch strings.ToLower(config.Transport) {
+	switch strings.ToLower(string(config.Transport)) {
 	case "", "tcp":
 		return transport.NewTCPServer(config.Endpoint, config.TCPIdleTimeout)
 	case "udp":
 		return transport.NewUDPServer(config.Endpoint)
 	}
 
-	return nil, fmt.Errorf("unsupported transport %q", config.Transport)
+	return nil, fmt.Errorf("unsupported transport %q", string(config.Transport))
 }
 
 // Start tells the receiver to start its processing.

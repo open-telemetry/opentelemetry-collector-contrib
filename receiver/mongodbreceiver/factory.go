@@ -31,7 +31,8 @@ func createDefaultConfig() component.Config {
 		Timeout:                   time.Minute,
 		Hosts: []confignet.AddrConfig{
 			{
-				Endpoint: "localhost:27017",
+				Endpoint:  "localhost:27017",
+				Transport: confignet.TransportTypeTCP,
 			},
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
