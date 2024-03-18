@@ -6,6 +6,7 @@ package datadogconnector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"fmt"
+	"time"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
@@ -51,6 +52,13 @@ type traceToMetricConnector struct {
 
 var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
 
+// cacheExpiration is the time after which a container tag cache entry will expire
+// and be removed from the cache.
+var cacheExpiration = time.Minute * 5
+
+// cacheCleanupInterval is the time after which the cache will be cleaned up.
+var cacheCleanupInterval = time.Minute
+
 // function to create a new connector
 func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics, metricsClient statsd.ClientInterface, timingReporter timing.Reporter) (*traceToMetricConnector, error) {
 	set.Logger.Info("Building datadog connector for traces to metrics")
@@ -79,7 +87,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 		in:                in,
 		metricsConsumer:   metricsConsumer,
 		resourceAttrs:     ddtags,
-		containerTagCache: cache.New(cache.DefaultExpiration, cache.DefaultExpiration),
+		containerTagCache: cache.New(cacheExpiration, cacheCleanupInterval),
 		exit:              make(chan struct{}),
 	}, nil
 }
@@ -95,6 +103,7 @@ func getTraceAgentCfg(cfg TracesConfig, attributesTranslator *attributes.Transla
 	acfg.PeerTags = cfg.PeerTags
 	if len(cfg.ResourceAttributesAsContainerTags) > 0 {
 		acfg.Features["enable_cid_stats"] = struct{}{}
+		delete(acfg.Features, "disable_cid_stats")
 	}
 	if v := cfg.TraceBuffer; v > 0 {
 		acfg.TraceBuffer = v
