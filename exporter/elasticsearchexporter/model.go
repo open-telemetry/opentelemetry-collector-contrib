@@ -321,12 +321,6 @@ func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Res
 
 	// Set agent name in document.
 	document.AddString("agent.name", agentName)
-
-	// Set service language name in document.
-	if telemetrySdkLanguage == "" {
-		telemetrySdkLanguage = "unknown"
-	}
-	document.AddString("service.language.name", telemetrySdkLanguage)
 }
 
 func encodeLogHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {

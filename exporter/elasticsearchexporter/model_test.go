@@ -284,7 +284,6 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"service.node.name":       "i-103de39e0a",
 		"agent.name":              "opentelemetry/perl",
 		"agent.version":           "7.9.12",
-		"service.language.name":   "perl",
 		"cloud.provider":          "gcp",
 		"cloud.account.id":        "19347013",
 		"cloud.region":            "us-west-1",
@@ -410,7 +409,6 @@ func TestEncodeLogECSModeAgentName(t *testing.T) {
 			expectedDoc := objmodel.Document{}
 			expectedDoc.AddTimestamp("@timestamp", timestamp)
 			expectedDoc.AddString("agent.name", test.expectedAgentName)
-			expectedDoc.AddString("service.language.name", test.expectedServiceLanguageName)
 
 			doc.Sort()
 			expectedDoc.Sort()
@@ -511,7 +509,6 @@ func TestEncodeLogECSModeHostOSType(t *testing.T) {
 			expectedDoc := objmodel.Document{}
 			expectedDoc.AddTimestamp("@timestamp", timestamp)
 			expectedDoc.AddString("agent.name", "otlp")
-			expectedDoc.AddString("service.language.name", "unknown")
 			if test.expectedHostOsName != "" {
 				expectedDoc.AddString("host.os.name", test.expectedHostOsName)
 			}
@@ -565,7 +562,6 @@ func TestEncodeLogECSModeTimestamps(t *testing.T) {
 			expectedDoc := objmodel.Document{}
 			expectedDoc.AddTimestamp("@timestamp", pcommon.NewTimestampFromTime(test.expectedTimestamp))
 			expectedDoc.AddString("agent.name", "otlp")
-			expectedDoc.AddString("service.language.name", "unknown")
 
 			doc.Sort()
 			expectedDoc.Sort()
