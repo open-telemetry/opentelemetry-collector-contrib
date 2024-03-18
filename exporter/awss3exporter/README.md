@@ -31,6 +31,7 @@ The following exporter configuration parameters are supported.
 | `role_arn`            | the Role ARN to be assumed                                                                                                                 |             |
 | `file_prefix`         | file prefix defined by user                                                                                                                |             |
 | `marshaler`           | marshaler used to produce output data                                                                                                      | `otlp_json` |
+| `encoding`            | Encoding extension to use to marshal data. Overrides the `marshaler` configuration option if set.                                          |             |
 | `endpoint`            | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                       |             |
 | `s3_force_path_style` | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       |
 | `disable_ssl`         | set this to `true` to disable SSL when sending requests                                                                                    | false       |
@@ -46,6 +47,12 @@ Marshaler determines the format of data sent to AWS S3. Currently, the following
   **This format is supported only for logs.**
 - `body`: export the log body as string.
   **This format is supported only for logs.**
+
+### Encoding
+
+Encoding overrides marshaler if present and sets to use an encoding extension defined in the collector configuration.
+
+See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding.
 
 ### Compression
 - `none` (default): No compression will be applied
