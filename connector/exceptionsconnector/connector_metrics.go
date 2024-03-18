@@ -172,7 +172,7 @@ func (c *metricsConnector) addExemplar(exc *exception, traceID pcommon.TraceID, 
 	e := exc.exemplars.AppendEmpty()
 	e.SetTraceID(traceID)
 	e.SetSpanID(spanID)
-	e.SetIntValue(int64(exc.count))
+	e.SetDoubleValue(float64(exc.count))
 }
 
 func buildDimensionKVs(dimensions []dimension, serviceName string, span ptrace.Span, eventAttrs pcommon.Map) pcommon.Map {
