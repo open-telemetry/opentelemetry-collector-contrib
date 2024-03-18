@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -106,9 +105,6 @@ func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname
 
 func (f *factory) AttributesTranslator(set component.TelemetrySettings) (*attributes.Translator, error) {
 	f.onceAttributesTranslator.Do(func() {
-		// disable metrics for the translator
-		// Metrics are disabled until we figure out the details on how do we want to report the metric.
-		set.MeterProvider = noop.NewMeterProvider()
 		f.attributesTranslator, f.attributesErr = attributes.NewTranslator(set)
 	})
 	return f.attributesTranslator, f.attributesErr
