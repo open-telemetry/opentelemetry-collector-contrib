@@ -14,6 +14,7 @@ import (
 	// SQLite driver
 	_ "github.com/mattn/go-sqlite3"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.uber.org/multierr"
 )
 
 const (
