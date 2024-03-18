@@ -25,27 +25,28 @@ import (
 // neither convert the SemConv key to the equivalent ECS name nor pass-through the
 // SemConv key as-is to become the ECS name.
 var resourceAttrsConversionMap = map[string]string{
-	semconv.AttributeServiceInstanceID:     "service.node.name",
-	semconv.AttributeDeploymentEnvironment: "service.environment",
-	semconv.AttributeTelemetrySDKName:      "",
-	semconv.AttributeTelemetryDistroName:   "",
-	semconv.AttributeTelemetrySDKLanguage:  "",
-	semconv.AttributeTelemetrySDKVersion:   "agent.version",
-	semconv.AttributeCloudPlatform:         "cloud.service.name",
-	semconv.AttributeContainerImageTags:    "container.image.tag",
-	semconv.AttributeHostName:              "host.hostname",
-	semconv.AttributeHostArch:              "host.architecture",
-	semconv.AttributeProcessExecutablePath: "process.executable",
-	semconv.AttributeProcessRuntimeName:    "service.runtime.name",
-	semconv.AttributeProcessRuntimeVersion: "service.runtime.version",
-	semconv.AttributeOSName:                "host.os.name",
-	semconv.AttributeOSType:                "host.os.platform",
-	semconv.AttributeOSDescription:         "host.os.full",
-	semconv.AttributeOSVersion:             "host.os.version",
-	"k8s.namespace.name":                   "kubernetes.namespace",
-	"k8s.node.name":                        "kubernetes.node.name",
-	"k8s.pod.name":                         "kubernetes.pod.name",
-	"k8s.pod.uid":                          "kubernetes.pod.uid",
+	semconv.AttributeServiceInstanceID:      "service.node.name",
+	semconv.AttributeDeploymentEnvironment:  "service.environment",
+	semconv.AttributeTelemetrySDKName:       "",
+	semconv.AttributeTelemetrySDKLanguage:   "",
+	semconv.AttributeTelemetrySDKVersion:    "",
+	semconv.AttributeTelemetryDistroName:    "",
+	semconv.AttributeTelemetryDistroVersion: "",
+	semconv.AttributeCloudPlatform:          "cloud.service.name",
+	semconv.AttributeContainerImageTags:     "container.image.tag",
+	semconv.AttributeHostName:               "host.hostname",
+	semconv.AttributeHostArch:               "host.architecture",
+	semconv.AttributeProcessExecutablePath:  "process.executable",
+	semconv.AttributeProcessRuntimeName:     "service.runtime.name",
+	semconv.AttributeProcessRuntimeVersion:  "service.runtime.version",
+	semconv.AttributeOSName:                 "host.os.name",
+	semconv.AttributeOSType:                 "host.os.platform",
+	semconv.AttributeOSDescription:          "host.os.full",
+	semconv.AttributeOSVersion:              "host.os.version",
+	"k8s.namespace.name":                    "kubernetes.namespace",
+	"k8s.node.name":                         "kubernetes.node.name",
+	"k8s.pod.name":                          "kubernetes.pod.name",
+	"k8s.pod.uid":                           "kubernetes.pod.uid",
 }
 
 type mappingModel interface {
@@ -132,6 +133,7 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 
 	// Handle special cases.
 	encodeLogAgentNameECSMode(&document, resource)
+	encodeLogAgentVersionECSMode(&document, resource)
 	encodeLogHostOsTypeECSMode(&document, resource)
 	encodeLogTimestampECSMode(&document, record)
 
@@ -269,6 +271,20 @@ func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Res
 
 	// Set agent name in document.
 	document.AddString("agent.name", agentName)
+}
+
+func encodeLogAgentVersionECSMode(document *objmodel.Document, resource pcommon.Resource) {
+	attrs := resource.Attributes()
+
+	if telemetryDistroVersion, exists := attrs.Get(semconv.AttributeTelemetryDistroVersion); exists {
+		document.AddString("agent.version", telemetryDistroVersion.Str())
+		return
+	}
+
+	if telemetrySdkVersion, exists := attrs.Get(semconv.AttributeTelemetrySDKVersion); exists {
+		document.AddString("agent.version", telemetrySdkVersion.Str())
+		return
+	}
 }
 
 func encodeLogHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {
