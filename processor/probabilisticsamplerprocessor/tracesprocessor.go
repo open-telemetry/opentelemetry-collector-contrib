@@ -5,10 +5,10 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/consumer"
@@ -48,11 +48,6 @@ const (
 	randomFlagValue = 0x2
 )
 
-var (
-	ErrInconsistentArrivingTValue = fmt.Errorf("inconsistent arriving t-value: span should not have been sampled")
-	ErrMissingRandomness          = fmt.Errorf("missing randomness; trace flag not set")
-)
-
 type traceProcessor struct {
 	sampler dataSampler
 
@@ -63,16 +58,14 @@ type traceProcessor struct {
 // perform intermediate span sampling according to the given
 // configuration.
 func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
-
 	common := commonFields{
 		strict: cfg.StrictRandomness,
 		logger: set.Logger,
 	}
 	tp := &traceProcessor{
 		commonFields: common,
+		sampler:      makeSampler(cfg, common),
 	}
-
-	tp.sampler = makeSampler(cfg, common)
 
 	return processorhelper.NewTracesProcessor(
 		ctx,
@@ -99,25 +92,40 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 					)
 					return true
 				}
-				// probShould is the probabilistic decision
-				var probShould bool
-				var toUpdate samplingCarrier
 
-				// forceSample is the sampling.priority decision
-				forceSample := priority == mustSampleSpan
-
-				if rnd, carrier, err := tp.sampler.randomnessFromSpan(s); err != nil {
-					tp.logger.Error("tracestate", zap.Error(err))
-				} else if err = consistencyCheck(rnd, carrier, tp.commonFields); err != nil {
-					tp.logger.Error("tracestate", zap.Error(err))
-				} else if probShould, err = tp.sampler.decide(rnd, carrier); err != nil {
-					tp.logger.Error("tracestate", zap.Error(err))
-				} else {
-					toUpdate = carrier
+				// If either of the error cases below happens, we use
+				// the threshold calculated by the priority.
+				threshold := sampling.NeverSampleThreshold
+				if priority == mustSampleSpan {
+					threshold = sampling.AlwaysSampleThreshold
 				}
-				sampled := forceSample || probShould
 
-				if forceSample {
+				randomness, carrier, err := tp.sampler.randomnessFromSpan(s)
+
+				if err != nil {
+					tp.logger.Error("tracestate", zap.Error(err))
+				} else if err = consistencyCheck(randomness, carrier, tp.commonFields); err != nil {
+					tp.logger.Error("tracestate", zap.Error(err))
+
+				} else if priority == deferDecision {
+					threshold = tp.sampler.decide(randomness, carrier)
+				}
+
+				sampled := threshold.ShouldSample(randomness)
+
+				if sampled && carrier != nil {
+					err := carrier.updateThreshold(threshold, threshold.TValue())
+					if err != nil {
+						tp.logger.Warn("tracestate", zap.Error(err))
+					}
+					var w strings.Builder
+					if err := carrier.serialize(&w); err != nil {
+						tp.logger.Debug("tracestate serialize", zap.Error(err))
+					}
+					s.TraceState().FromRaw(w.String())
+				}
+
+				if priority == mustSampleSpan {
 					_ = stats.RecordWithTags(
 						ctx,
 						[]tag.Mutator{tag.Upsert(tagPolicyKey, "sampling_priority"), tag.Upsert(tagSampledKey, "true")},
@@ -129,17 +137,6 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 						[]tag.Mutator{tag.Upsert(tagPolicyKey, "trace_id_hash"), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
 						statCountTracesSampled.M(int64(1)),
 					)
-				}
-
-				if sampled && toUpdate != nil {
-
-					tp.sampler.update(probShould, toUpdate)
-
-					var w strings.Builder
-					if err := toUpdate.serialize(&w); err != nil {
-						tp.logger.Debug("tracestate serialize", zap.Error(err))
-					}
-					s.TraceState().FromRaw(w.String())
 				}
 
 				return !sampled

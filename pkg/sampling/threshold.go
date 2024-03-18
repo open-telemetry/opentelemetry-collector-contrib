@@ -51,6 +51,10 @@ var (
 
 	// AlwaysSampleThreshold represents 100% sampling.
 	AlwaysSampleThreshold = Threshold{unsigned: 0}
+
+	// NeverSampledThreshold is a threshold value that will always not sample.
+	// The TValue() corresponding with this threshold is an empty string.
+	NeverSampleThreshold = Threshold{unsigned: MaxAdjustedCount}
 )
 
 // TValueToThreshold returns a Threshold.  Because TValue strings
@@ -85,8 +89,11 @@ func TValueToThreshold(s string) (Threshold, error) {
 func (th Threshold) TValue() string {
 	// Always-sample is a special case because TrimRight() below
 	// will trim it to the empty string, which represents no t-value.
-	if th == AlwaysSampleThreshold {
+	switch th {
+	case AlwaysSampleThreshold:
 		return "0"
+	case NeverSampleThreshold:
+		return ""
 	}
 	// For thresholds other than the extremes, format a full-width
 	// (14 digit) unsigned value with leading zeros, then, remove
@@ -124,6 +131,9 @@ func (th Threshold) Unsigned() uint64 {
 
 // ThresholdFromUnsigned constructs a threshold expressed in terms
 // defined by Unsigned(), the number of rejections.
-func ThresholdFromUnsigned(unsigned uint64) Threshold {
-	return Threshold{unsigned: unsigned}
+func ThresholdFromUnsigned(unsigned uint64) (Threshold, error) {
+	if unsigned >= MaxAdjustedCount {
+		return NeverSampleThreshold, ErrTValueSize
+	}
+	return Threshold{unsigned: unsigned}, nil
 }

@@ -34,21 +34,9 @@ type samplingCarrier interface {
 	serialize(io.StringWriter) error
 }
 
-// @@@ TODO: The discovery in logsprocessor.go, that sampling_priority
-// is treated as a not a bypass, but an alternate "self-imposed"
-// threshold, means that we are composing samplers.  The default
-// sampler decision will be configured and the alternate behavior will
-// be a variable-equalizing sampler scaled to 1/100 in logs, and not
-// scaled in traces.
-
 type dataSampler interface {
 	// decide reports the result based on a probabilistic decision.
-	decide(rnd sampling.Randomness, carrier samplingCarrier) (should bool, err error)
-
-	// update modifies the item when it will be sampled,
-	// probabilistically or otherwise.  The "should" parameter is
-	// the result from decide().
-	update(should bool, carrier samplingCarrier)
+	decide(rnd sampling.Randomness, carrier samplingCarrier) sampling.Threshold
 
 	// randomnessFromSpan extracts randomness and returns a carrier specific to traces data.
 	randomnessFromSpan(s ptrace.Span) (randomness sampling.Randomness, carrier samplingCarrier, err error)
@@ -56,6 +44,11 @@ type dataSampler interface {
 	// randomnessFromLogRecord extracts randomness and returns a carrier specific to logs data.
 	randomnessFromLogRecord(s plog.LogRecord) (randomness sampling.Randomness, carrier samplingCarrier, err error)
 }
+
+var (
+	ErrInconsistentArrivingTValue = fmt.Errorf("inconsistent arriving t-value: span should not have been sampled")
+	ErrMissingRandomness          = fmt.Errorf("missing randomness; trace flag not set")
+)
 
 var AllModes = []SamplerMode{HashSeed, Equalizing, Proportional}
 
@@ -80,18 +73,13 @@ type commonFields struct {
 	logger *zap.Logger
 }
 
-// hashingSampler is the original hash-based calculation.
+// hashingSampler is the original hash-based calculation.  It is an
+// equalizing sampler with randomness calculation that matches the
+// original implementation.  This hash-based implementation is limited
+// to 14 bits of precision.
 type hashingSampler struct {
-	// scaledSampleRate is an "accept threshold". Items are sampled
-	// when random14BitValue < scaledSampleRate.
-	scaledSamplerate uint32
-	hashSeed         uint32
-
-	// When not strict, this sampler inserts T-value and R-value
-	// to convey consistent sampling probability.
-	strict                  bool
-	unstrictTValueThreshold sampling.Threshold
-	unstrictTValueEncoding  string
+	hashSeed        uint32
+	tvalueThreshold sampling.Threshold
 
 	consistentCommon
 }
@@ -116,10 +104,7 @@ type neverSampler struct {
 // equalizingSampler adjusts thresholds absolutely.  Cannot be used with zero.
 type equalizingSampler struct {
 	// TraceID-randomness-based calculation
-	tValueThreshold sampling.Threshold
-
-	// tValueEncoding is the encoded string T-value representation.
-	tValueEncoding string
+	tvalueThreshold sampling.Threshold
 
 	consistentTracestateCommon
 }
@@ -133,21 +118,6 @@ type proportionalSampler struct {
 	prec int
 
 	consistentTracestateCommon
-}
-
-func (*consistentCommon) update(should bool, wts samplingCarrier) {
-	// When this sampler decided not to sample, the t-value becomes zero.
-	if !should {
-		wts.clearThreshold()
-	}
-}
-
-// randomnessToHashed returns the original 14-bit hash value used by
-// this component, which is compared against an acceptance threshold.
-func randomnessToHashed(rnd sampling.Randomness) uint32 {
-	// By design, the least-significant bits of the unsigned value matches
-	// the original hash function.
-	return uint32(rnd.Unsigned() & bitMaskHashBuckets)
 }
 
 func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (sampling.Randomness, samplingCarrier, error) {
@@ -218,11 +188,8 @@ func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (sampling.Randomness
 	} else if _, has := tsc.threshold(); has {
 		th.logger.Warn("tracestate has t-value, equalizing or proportional mode recommended")
 	} else {
-		// When no sampling information is present, add an R-value
-		// and T-value to convey a sampling probability.  There is no
-		// error possibility, since no existing T-value.
-		_ = tsc.updateThreshold(th.unstrictTValueThreshold, th.unstrictTValueEncoding)
-
+		// When no sampling information is present, add an R-value.  The threshold
+		// will be added following the decision.
 		tsc.setExplicitRandomness(rnd)
 	}
 	return rnd, tsc, nil
@@ -246,7 +213,7 @@ func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (random
 		} else if ctc.strict && (s.Flags()&randomFlagValue) != randomFlagValue {
 			// If strict and the flag is missing
 			err = ErrMissingRandomness
-		} else if ctc.strict && !s.TraceID().IsValid() {
+		} else if ctc.strict && s.TraceID().IsEmpty() {
 			// If strict and the TraceID() is all zeros,
 			// which W3C calls an invalid TraceID.
 			err = ErrMissingRandomness
@@ -331,8 +298,7 @@ func makeSampler(cfg *Config, common commonFields) dataSampler {
 		threshold, _ := sampling.ProbabilityToThresholdWithPrecision(ratio, cfg.SamplingPrecision)
 
 		return &equalizingSampler{
-			tValueEncoding:             threshold.TValue(),
-			tValueThreshold:            threshold,
+			tvalueThreshold:            threshold,
 			consistentTracestateCommon: ctcom,
 		}
 
@@ -344,33 +310,31 @@ func makeSampler(cfg *Config, common commonFields) dataSampler {
 		}
 
 	default: // i.e., HashSeed
-		ts := &hashingSampler{
-			consistentCommon: ccom,
 
-			// Note: the original hash function used in this code
-			// is preserved to ensure consistency across updates.
-			//
-			//   uint32(pct * percentageScaleFactor)
-			//
-			// (a) carried out the multiplication in 32-bit precision
-			// (b) rounded to zero instead of nearest.
-			scaledSamplerate: uint32(pct * percentageScaleFactor),
-			hashSeed:         cfg.HashSeed,
-		}
+		// Note: the original hash function used in this code
+		// is preserved to ensure consistency across updates.
+		//
+		//   uint32(pct * percentageScaleFactor)
+		//
+		// (a) carried out the multiplication in 32-bit precision
+		// (b) rounded to zero instead of nearest.
+		scaledSamplerate := uint32(pct * percentageScaleFactor)
 
-		if ts.scaledSamplerate == 0 {
-			ts.logger.Warn("probability rounded to zero", zap.Float32("percent", pct))
+		if scaledSamplerate == 0 {
+			ccom.logger.Warn("probability rounded to zero", zap.Float32("percent", pct))
 			return never
 		}
 
-		// Express scaledSamplerate as the equivalent rejection Threshold.
-		if !common.strict {
-			// Convert the accept threshold to a reject threshold.
-			reject := numHashBuckets - ts.scaledSamplerate
-			reject56 := uint64(reject) << 42
+		// Convert the accept threshold to a reject threshold,
+		// then shift it into 56-bit value.
+		reject := numHashBuckets - scaledSamplerate
+		reject56 := uint64(reject) << 42
 
-			ts.unstrictTValueThreshold = sampling.ThresholdFromUnsigned(reject56)
-			ts.unstrictTValueEncoding = ts.unstrictTValueThreshold.TValue()
+		threshold, _ := sampling.ThresholdFromUnsigned(reject56)
+
+		ts := &hashingSampler{
+			consistentCommon: ccom,
+			tvalueThreshold:  threshold,
 		}
 
 		return ts
@@ -392,6 +356,7 @@ func (tc *tracestateCarrier) explicitRandomness() (sampling.Randomness, bool) {
 }
 
 func (tc *tracestateCarrier) updateThreshold(th sampling.Threshold, tv string) error {
+	// return should, nil
 	return tc.W3CTraceState.OTelValue().UpdateTValueWithSampling(th, tv)
 }
 
@@ -407,29 +372,19 @@ func (tc *tracestateCarrier) serialize(w io.StringWriter) error {
 	return tc.W3CTraceState.Serialize(w)
 }
 
-func (*neverSampler) decide(_ sampling.Randomness, _ samplingCarrier) (should bool, err error) {
-	return false, nil
+func (*neverSampler) decide(_ sampling.Randomness, _ samplingCarrier) sampling.Threshold {
+	return sampling.NeverSampleThreshold
 }
 
-func (th *hashingSampler) decide(rnd sampling.Randomness, carrier samplingCarrier) (bool, error) {
-	hashed := randomnessToHashed(rnd)
-	should := hashed < th.scaledSamplerate
-	return should, nil
+func (th *hashingSampler) decide(rnd sampling.Randomness, carrier samplingCarrier) sampling.Threshold {
+	return th.tvalueThreshold
 }
 
-func (te *equalizingSampler) decide(rnd sampling.Randomness, carrier samplingCarrier) (bool, error) {
-	should := te.tValueThreshold.ShouldSample(rnd)
-	if should {
-		err := carrier.updateThreshold(te.tValueThreshold, te.tValueEncoding)
-		if err != nil {
-			te.logger.Warn("tracestate", zap.Error(err))
-		}
-	}
-
-	return should, nil
+func (te *equalizingSampler) decide(rnd sampling.Randomness, carrier samplingCarrier) sampling.Threshold {
+	return te.tvalueThreshold
 }
 
-func (tp *proportionalSampler) decide(rnd sampling.Randomness, carrier samplingCarrier) (bool, error) {
+func (tp *proportionalSampler) decide(rnd sampling.Randomness, carrier samplingCarrier) sampling.Threshold {
 	incoming := 1.0
 	if tv, has := carrier.threshold(); has {
 		incoming = tv.Probability()
@@ -439,22 +394,42 @@ func (tp *proportionalSampler) decide(rnd sampling.Randomness, carrier samplingC
 	// underflow, which is checked here.
 	threshold, err := sampling.ProbabilityToThresholdWithPrecision(incoming*tp.ratio, tp.prec)
 
+	// Check the only known error condition.
 	if err == sampling.ErrProbabilityRange {
 		// Considered valid, a case where the sampling probability
 		// has fallen below the minimum supported value and simply
 		// becomes unsampled.
-		return false, nil
+		return sampling.NeverSampleThreshold
 	}
-	if err != nil {
-		return false, err
-	}
-
-	should := threshold.ShouldSample(rnd)
-	if should {
-		// Note: an unchecked error here, because the threshold is
-		// larger by construction via `incoming*tp.ratio`, which was
-		// already range-checked above.
-		_ = carrier.updateThreshold(threshold, threshold.TValue())
-	}
-	return should, err
+	return threshold
 }
+
+// if err != nil {
+// 	return threshold, err
+// }
+
+// return
+// should := threshold.ShouldSample(rnd)
+// if should {
+// 	// Note: an unchecked error here, because the threshold is
+// 	// larger by construction via `incoming*tp.ratio`, which was
+// 	// already range-checked above.
+// 	_ = carrier.updateThreshold(threshold, threshold.TValue())
+// }
+// return should, err
+
+// @@@
+// should := te.tvalueThreshold.ShouldSample(rnd)
+// if should {
+// 	err := carrier.updateThreshold(te.tvalueThreshold, te.tValueEncoding)
+// 	if err != nil {
+// 		te.logger.Warn("tracestate", zap.Error(err))
+// 	}
+// }
+
+// func (*consistentCommon) update(should bool, wts samplingCarrier) {
+// 	// When this sampler decided not to sample, the t-value becomes zero.
+// 	if !should {
+// 		wts.clearThreshold()
+// 	}
+// }

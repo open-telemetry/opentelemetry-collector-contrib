@@ -37,6 +37,7 @@ func newLogsProcessor(ctx context.Context, set processor.CreateSettings, nextCon
 		samplingPriority: cfg.SamplingPriority,
 		samplingSource:   cfg.FromAttribute,
 		commonFields:     common,
+		sampler:          makeSampler(cfg, common),
 	}
 
 	return processorhelper.NewLogsProcessor(
