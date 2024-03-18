@@ -57,7 +57,8 @@ exporters:
       
   otlp/withauth:
     endpoint: 0.0.0.0:5000
-    ca_file: /tmp/certs/ca.pem
+    tls:
+      ca_file: /tmp/certs/ca.pem
     auth:
       authenticator: oauth2client
 
