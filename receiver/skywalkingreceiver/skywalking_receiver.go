@@ -160,7 +160,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 
 	if sr.collectorGRPCEnabled() {
 		var err error
-		sr.grpc, err = sr.config.CollectorGRPCServerSettings.ToServer(host, sr.settings.TelemetrySettings)
+		sr.grpc, err = sr.config.CollectorGRPCServerSettings.ToServerContext(context.Background(), host, sr.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Skywalking gRPC Collector: %w", err)
 		}
