@@ -1,4 +1,4 @@
-package resourceutil
+package resourceutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/resourceutil"
 
 import (
 	"crypto/sha256"
