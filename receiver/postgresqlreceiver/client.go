@@ -114,7 +114,7 @@ func (c postgreSQLConfig) ConnectionString() (string, error) {
 		return "", err
 	}
 
-	if c.address.Transport == "unix" {
+	if c.address.Transport == confignet.TransportTypeUnix {
 		// lib/pg expects a unix socket host to start with a "/" and appends the appropriate .s.PGSQL.port internally
 		host = fmt.Sprintf("/%s", host)
 	}
