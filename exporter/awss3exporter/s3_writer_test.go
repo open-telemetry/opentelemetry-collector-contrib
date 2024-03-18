@@ -36,7 +36,21 @@ func TestS3Key(t *testing.T) {
 	require.NotNil(t, tm)
 
 	re := regexp.MustCompile(`keyprefix/year=2022/month=06/day=05/hour=00/minute=00/fileprefixlogs_([0-9]+).json`)
-	s3Key := getS3Key(tm, "keyprefix", "minute", "fileprefix", "logs", "json")
+	s3Key := getS3Key(tm, "keyprefix", "minute", "fileprefix", "logs", "json", "")
+	matched := re.MatchString(s3Key)
+	assert.Equal(t, true, matched)
+}
+
+func TestS3KeyOfCompressedFile(t *testing.T) {
+	const layout = "2006-01-02"
+
+	tm, err := time.Parse(layout, "2022-06-05")
+
+	assert.NoError(t, err)
+	require.NotNil(t, tm)
+
+	re := regexp.MustCompile(`keyprefix/year=2022/month=06/day=05/hour=00/minute=00/fileprefixlogs_([0-9]+).json.gz`)
+	s3Key := getS3Key(tm, "keyprefix", "minute", "fileprefix", "logs", "json", "gzip")
 	matched := re.MatchString(s3Key)
 	assert.Equal(t, true, matched)
 }

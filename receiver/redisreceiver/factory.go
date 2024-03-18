@@ -29,8 +29,8 @@ func createDefaultConfig() component.Config {
 	scs := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
 	scs.CollectionInterval = 10 * time.Second
 	return &Config{
-		NetAddr: confignet.NetAddr{
-			Transport: "tcp",
+		AddrConfig: confignet.AddrConfig{
+			Transport: confignet.TransportTypeTCP,
 		},
 		TLS: configtls.TLSClientSetting{
 			Insecure: true,

@@ -79,7 +79,7 @@ func newOTelArrowReceiver(cfg *Config, set receiver.CreateSettings) (*otelArrowR
 func (r *otelArrowReceiver) startGRPCServer(cfg configgrpc.ServerConfig, _ component.Host) error {
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", cfg.NetAddr.Endpoint))
 
-	gln, err := cfg.ToListenerContext(context.Background())
+	gln, err := cfg.NetAddr.Listen(context.Background())
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (r *otelArrowReceiver) startProtocolServers(host component.Host) error {
 	if r.netReporter != nil {
 		serverOpts = append(serverOpts, grpc.StatsHandler(r.netReporter.Handler()))
 	}
-	r.serverGRPC, err = r.cfg.GRPC.ToServer(host, r.settings.TelemetrySettings, serverOpts...)
+	r.serverGRPC, err = r.cfg.GRPC.ToServerContext(context.Background(), host, r.settings.TelemetrySettings, serverOpts...)
 	if err != nil {
 		return err
 	}

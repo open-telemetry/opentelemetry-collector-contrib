@@ -31,9 +31,9 @@ func TestConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&Config{
-			NetAddr: confignet.NetAddr{
+			AddrConfig: confignet.AddrConfig{
 				Endpoint:  "localhost:6379",
-				Transport: "tcp",
+				Transport: confignet.TransportTypeTCP,
 			},
 			TLS: configtls.TLSClientSetting{
 				Insecure: true,

@@ -1,4 +1,5 @@
 type: journald
+scope_name: otelcol/journaldreceiver
 
 status:
   class: receiver
@@ -7,3 +8,5 @@ status:
   distributions: [contrib, splunk, observiq, sumo]
   codeowners:
     active: [sumo-drosiek, djaglowski]
+  unsupported_platforms: [darwin, windows]
+

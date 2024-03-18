@@ -73,7 +73,7 @@ func Start(cfg *Config) error {
 		defer func() {
 			logger.Info("stop the batch span processor")
 			if tempError := ssp.Shutdown(context.Background()); tempError != nil {
-				logger.Error("failed to stop the batch span processor", zap.Error(err))
+				logger.Error("failed to stop the batch span processor", zap.Error(tempError))
 			}
 		}()
 	}

@@ -32,6 +32,10 @@ func (p *TestPath[K]) Keys() []ottl.Key[K] {
 	return p.KeySlice
 }
 
+func (p *TestPath[K]) String() string {
+	return p.N
+}
+
 var _ ottl.Key[any] = &TestKey[any]{}
 
 type TestKey[K any] struct {

@@ -142,9 +142,9 @@ func TestGRPCReception(t *testing.T) {
 	// prepare
 	config := &configuration{
 		GRPCServerConfig: configgrpc.ServerConfig{
-			NetAddr: confignet.NetAddr{
+			NetAddr: confignet.AddrConfig{
 				Endpoint:  testutil.GetAvailableLocalAddress(t),
-				Transport: "tcp",
+				Transport: confignet.TransportTypeTCP,
 			},
 		},
 	}
@@ -196,9 +196,9 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	}
 
 	grpcServerSettings := configgrpc.ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 		TLSSetting: tlsCreds,
 	}
@@ -337,9 +337,9 @@ func grpcFixture(t *testing.T, t1 time.Time, d1, d2 time.Duration) *api_v2.PostS
 
 func TestSampling(t *testing.T) {
 	config := &configuration{
-		GRPCServerConfig: configgrpc.ServerConfig{NetAddr: confignet.NetAddr{
+		GRPCServerConfig: configgrpc.ServerConfig{NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		}},
 	}
 	sink := new(consumertest.TracesSink)

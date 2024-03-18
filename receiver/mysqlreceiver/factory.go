@@ -30,9 +30,9 @@ func createDefaultConfig() component.Config {
 		ScraperControllerSettings: cfg,
 		AllowNativePasswords:      true,
 		Username:                  "root",
-		NetAddr: confignet.NetAddr{
+		AddrConfig: confignet.AddrConfig{
 			Endpoint:  "localhost:3306",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		StatementEvents: StatementEventsConfig{

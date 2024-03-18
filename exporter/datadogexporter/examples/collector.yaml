@@ -171,8 +171,12 @@ exporters:
   # The Datadog exporter is necessary for exporting telemetry signals to Datadog.
   datadog:
     ## @param hostname - string - optional
-    ## A custom hostname.
-    ## If unset, this will be determined automatically if possible.
+    ## The fallback hostname used for payloads without hostname-identifying attributes.
+    ## This option will NOT change the hostname applied to your metrics, traces and logs if they already have hostname-identifying attributes.
+    ## If unset, the hostname will be determined automatically. See https://docs.datadoghq.com/opentelemetry/schema_semantics/hostname/?tab=datadogexporter#fallback-hostname-logic for details.
+    ## 
+    ## Prefer using the `datadog.host.name` resource attribute over using this setting.
+    ## See https://docs.datadoghq.com/opentelemetry/schema_semantics/hostname/?tab=datadogexporter#general-hostname-semantic-conventions for details.
     #
     # hostname: customhostname
 
@@ -209,6 +213,27 @@ exporters:
     # tls:
       ## @param tls - boolean - optional - default: false
       # insecure_skip_verify: false
+
+    ## @param read_buffer_size - integer - optional
+    ## @param write_buffer_size - integer - optional
+    ## @param timeout - duration - optional
+    ## @param max_idle_conns - integer - optional
+    ## @param max_idle_conns_per_host - integer - optional
+    ## @param max_conns_per_host - integer - optional
+    ## @param idle_conn_timeout - duration - optional
+    ## @param disable_keep_alives - boolean - optional
+    ##
+    ## Below are a subset of configs in confighttp that are respected by Datadog exporter.
+    ## See https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp for details on these configs.
+    ##
+    # read_buffer_size: 0
+    # write_buffer_size: 0
+    # timeout: 15s
+    # max_idle_conns: 100
+    # max_idle_conns_per_host: 0
+    # max_conns_per_host: 0
+    # idle_conn_timeout: 0s
+    # disable_keep_alives: false
 
     ## @param metrics - custom object - optional
     ## Metric exporter specific configuration.
@@ -373,8 +398,9 @@ exporters:
     ## Host metadata specific configuration.
     ## Host metadata is the information used for populating the infrastructure list, the host map and providing host tags functionality within the Datadog app.
     ##
-    ## The exporter will only send host metadata for a single host, whose name is chosen
+    ## By default, the exporter will only send host metadata for a single host, whose name is chosen
     ## according to `host_metadata::hostname_source`.
+    ## See https://docs.datadoghq.com/opentelemetry/schema_semantics/host_metadata/ to send host metadata about more hosts.
     #
     # host_metadata:
       ## @param enabled - boolean - optional - default: true
@@ -384,10 +410,14 @@ exporters:
 
       ## @param hostname_source - enum - optional - default: config_or_system
       ## Source for the hostname of host metadata.
+      ## This hostname is used for identifying the infrastructure list, host map and host tag information related to the host where the Datadog exporter is running.
+      ## Changing this setting will not change the host used to tag your metrics, traces and logs in any way.
+      ## For remote hosts, see https://docs.datadoghq.com/opentelemetry/schema_semantics/host_metadata/.
+      ##
       ## Valid values are 'first_resource' and 'config_or_system':
       ## - 'first_resource' picks the host metadata hostname from the resource attributes on the first OTLP payload that gets to the exporter.
       ##    If the first payload lacks hostname-like attributes, it will fallback to 'config_or_system' behavior.
-      ##    Do not use this hostname source if receiving data from multiple hosts.
+      ##    **Do not use this hostname source if receiving data from multiple hosts**.
       ##
       ## - 'config_or_system' picks the host metadata hostname from the 'hostname' setting, falling back to system and cloud provider APIs.
       ##

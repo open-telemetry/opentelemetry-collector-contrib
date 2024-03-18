@@ -30,9 +30,9 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ScraperControllerSettings: cfg,
-		NetAddr: confignet.NetAddr{
+		AddrConfig: confignet.AddrConfig{
 			Endpoint:  "localhost:5432",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 		TLSClientSetting: configtls.TLSClientSetting{
 			Insecure:           false,
@@ -50,8 +50,15 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 
-	ns := newPostgreSQLScraper(params, cfg, &defaultClientFactory{})
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ns.scrape)
+	var clientFactory postgreSQLClientFactory
+	if connectionPoolGate.IsEnabled() {
+		clientFactory = newPoolClientFactory(cfg)
+	} else {
+		clientFactory = newDefaultClientFactory(cfg)
+	}
+
+	ns := newPostgreSQLScraper(params, cfg, clientFactory)
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ns.scrape, scraperhelper.WithShutdown(ns.shutdown))
 	if err != nil {
 		return nil, err
 	}

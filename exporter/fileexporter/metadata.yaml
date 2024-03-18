@@ -1,4 +1,5 @@
 type: file
+scope_name: otelcol/file
 
 status:
   class: exporter
@@ -7,3 +8,8 @@ status:
   distributions: [core, contrib, observiq, splunk, sumo, aws]
   codeowners:
     active: [atingchen]
+
+tests:
+  config:
+    path: testdata/log.json
+  expect_consumer_error: true

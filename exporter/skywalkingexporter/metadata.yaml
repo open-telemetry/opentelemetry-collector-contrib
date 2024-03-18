@@ -1,4 +1,5 @@
 type: skywalking
+scope_name: otelcol/skywalking
 
 status:
   class: exporter
@@ -10,5 +11,4 @@ status:
     emeritus: [liqiangz]
 
 tests:
-  config:
   skip_lifecycle: true

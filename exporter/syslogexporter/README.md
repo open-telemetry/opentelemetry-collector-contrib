@@ -28,7 +28,7 @@ This means that syslog messages received via the Syslog receiver and exported vi
   - `rfc5424` - Expects the syslog messages to be rfc5424 compliant
   - `rfc3164` - Expects the syslog messages to be rfc3164 compliant
 - `enable_octet_counting` (default = `false`) - Whether or not to enable rfc6587 octet counting
-- `tls` - configuration for TLS/mTLS
+- `tls` - configuration for TLS/mTLS (applied only when `network` is set to `tcp`)
   - `insecure` (default = `false`) whether to enable client transport security, by default, TLS is enabled.
   - `cert_file` - Path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is set to `false`.
   - `key_file` - Path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to `false`.
