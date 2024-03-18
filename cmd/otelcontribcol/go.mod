@@ -106,6 +106,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.96.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachedruidreceiver v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver v0.96.0
@@ -834,6 +835,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/head
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter => ../../exporter/googlemanagedprometheusexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver => ../../receiver/aerospikereceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachedruidreceiver => ../../receiver/apachedruidreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor => ../../processor/cumulativetodeltaprocessor
 
