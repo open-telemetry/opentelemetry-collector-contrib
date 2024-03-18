@@ -21,7 +21,7 @@ func (c *Config) Validate() error {
 	if c.MaxStale <= 0 {
 		return fmt.Errorf("max_stale must be a positive duration (got %s)", c.MaxStale)
 	}
-	if c.MaxStreams <= 0 {
+	if c.MaxStreams < 0 {
 		return fmt.Errorf("max_streams must be a positive number (got %d)", c.MaxStreams)
 	}
 	return nil

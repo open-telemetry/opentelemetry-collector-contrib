@@ -55,3 +55,31 @@ file/flush_interval_500ms:
 file/flush_interval_negative_value:
   path: ./flushed
   flush_interval: "-1s"
+
+file/group_by:
+  path: ./group_by/*.json
+  group_by:
+    enabled: true
+    resource_attribute: dummy
+    max_open_files: 10
+
+file/group_by_defaults:
+  path: ./group_by/*.json
+  group_by:
+    enabled: true
+
+file/group_by_invalid_path:
+  path: ./group_by_no_star
+  group_by:
+    enabled: true
+
+file/group_by_invalid_path2:
+  path: '*/./group_by'
+  group_by:
+    enabled: true
+
+file/group_by_empty_resource_attribute:
+  path: ./group_by/*.json
+  group_by:
+    enabled: true
+    resource_attribute: ""

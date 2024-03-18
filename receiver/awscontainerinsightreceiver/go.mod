@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/aws/aws-sdk-go v1.50.27
-	github.com/google/cadvisor v0.48.1
+	github.com/google/cadvisor v0.49.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.96.0
@@ -26,7 +26,7 @@ require (
 	k8s.io/api v0.29.2
 	k8s.io/apimachinery v0.29.2
 	k8s.io/client-go v0.29.2
-	k8s.io/klog/v2 v2.110.1
+	k8s.io/klog/v2 v2.120.1
 )
 
 require (
