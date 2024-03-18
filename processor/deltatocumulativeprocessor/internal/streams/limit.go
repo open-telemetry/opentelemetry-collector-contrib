@@ -23,7 +23,7 @@ type LimitMap[T any] struct {
 }
 
 func (m LimitMap[T]) Store(id identity.Stream, v T) error {
-	if m.Map.Len() < m.Max {
+	if m.Map.Len() <= m.Max {
 		return m.Map.Store(id, v)
 	}
 

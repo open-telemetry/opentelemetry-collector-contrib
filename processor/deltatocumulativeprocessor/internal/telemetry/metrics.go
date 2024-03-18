@@ -16,6 +16,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 )
 
+type Telemetry struct {
+	Metrics
+}
+
+func New(meter metric.Meter) Telemetry {
+	return Telemetry{
+		Metrics: metrics(meter),
+	}
+}
+
 type Streams struct {
 	tracked metric.Int64UpDownCounter
 	limit   metric.Int64ObservableGauge
@@ -84,24 +94,48 @@ func (m Metrics) WithLimit(meter metric.Meter, max int64) {
 	}
 }
 
-func Observe[T any](items streams.Map[T], meter metric.Meter) *Map[T] {
-	return &Map[T]{
+func ObserveItems[T any](items streams.Map[T], metrics *Metrics) Items[T] {
+	return Items[T]{
 		Map:     items,
-		Metrics: metrics(meter),
+		Metrics: metrics,
 	}
 }
 
-var _ streams.Map[any] = (*Map[any])(nil)
-
-type Map[T any] struct {
-	streams.Map[T]
-	Metrics
+func ObserveNonFatal[T any](items streams.Map[T], metrics *Metrics) Faults[T] {
+	return Faults[T]{
+		Map:     items,
+		Metrics: metrics,
+	}
 }
 
-func (m *Map[T]) Store(id streams.Ident, v T) error {
-	inc(m.dps.total)
-	_, old := m.Load(id)
+type Items[T any] struct {
+	streams.Map[T]
+	*Metrics
+}
 
+func (i Items[T]) Store(id streams.Ident, v T) error {
+	inc(i.dps.total)
+
+	_, old := i.Map.Load(id)
+	err := i.Map.Store(id, v)
+	if err == nil && !old {
+		inc(i.streams.tracked)
+	}
+
+	return err
+}
+
+func (i Items[T]) Delete(id streams.Ident) {
+	dec(i.streams.tracked)
+	i.Map.Delete(id)
+}
+
+type Faults[T any] struct {
+	streams.Map[T]
+	*Metrics
+}
+
+func (f Faults[T]) Store(id streams.Ident, v T) error {
 	var (
 		olderStart delta.ErrOlderStart
 		outOfOrder delta.ErrOutOfOrder
@@ -110,44 +144,32 @@ func (m *Map[T]) Store(id streams.Ident, v T) error {
 		evict      streams.ErrEvicted
 	)
 
-	err := m.Map.Store(id, v)
+	err := f.Map.Store(id, v)
 	switch {
-	case err == nil:
-		// all good
+	default:
+		return err
 	case errors.As(err, &olderStart):
-		// non fatal. record but ignore
-		inc(m.dps.dropped, reason("older-start"))
-		err = nil
+		inc(f.dps.dropped, reason("older-start"))
 	case errors.As(err, &outOfOrder):
-		// non fatal. record but ignore
-		inc(m.dps.dropped, reason("out-of-order"))
-		err = nil
-	case errors.As(err, &evict):
-		inc(m.streams.evicted)
-		err = nil
+		inc(f.dps.dropped, reason("out-of-order"))
 	case errors.As(err, &limit):
-		inc(m.dps.dropped, reason("stream-limit"))
-		err = nil
+		inc(f.dps.dropped, reason("stream-limit"))
+	case errors.As(err, &evict):
+		inc(f.streams.evicted)
 	case errors.As(err, &gap):
-		// a gap occurred. record its length, but ignore
 		from := gap.From.AsTime()
 		to := gap.To.AsTime()
 		lost := to.Sub(from).Seconds()
-		m.gaps.Add(context.TODO(), int64(lost))
-		err = nil
+		f.gaps.Add(context.TODO(), int64(lost))
 	}
 
-	// not dropped and not seen before => new stream
-	if err == nil && !old {
-		inc(m.streams.tracked)
-	}
-	return err
+	return nil
 }
 
-func (m *Map[T]) Delete(id streams.Ident) {
-	dec(m.streams.tracked)
-	m.Map.Delete(id)
-}
+var (
+	_ streams.Map[any] = (*Items[any])(nil)
+	_ streams.Map[any] = (*Faults[any])(nil)
+)
 
 type addable[Opts any] interface {
 	Add(context.Context, int64, ...Opts)

@@ -50,8 +50,11 @@ func newProcessor(cfg *Config, log *zap.Logger, meter metric.Meter, next consume
 		next:   next,
 	}
 
+	tel := telemetry.New(meter)
+
 	var dps streams.Map[data.Number]
 	dps = delta.New[data.Number]()
+	dps = telemetry.ObserveItems(dps, &tel.Metrics)
 
 	if cfg.MaxStale > 0 {
 		stale := maybe.Some(staleness.NewStaleness(cfg.MaxStale, dps))
@@ -59,6 +62,7 @@ func newProcessor(cfg *Config, log *zap.Logger, meter metric.Meter, next consume
 		dps, _ = stale.Try()
 	}
 	if cfg.MaxStreams > 0 {
+		tel.WithLimit(meter, int64(cfg.MaxStreams))
 		lim := streams.Limit(dps, cfg.MaxStreams)
 		if stale, ok := proc.stale.Try(); ok {
 			lim.Evictor = stale
@@ -66,9 +70,7 @@ func newProcessor(cfg *Config, log *zap.Logger, meter metric.Meter, next consume
 		dps = lim
 	}
 
-	tel := telemetry.Observe(dps, meter)
-	tel.WithLimit(meter, int64(cfg.MaxStreams))
-	dps = tel
+	dps = telemetry.ObserveNonFatal(dps, &tel.Metrics)
 
 	proc.aggr = streams.IntoAggregator(dps)
 	return &proc
