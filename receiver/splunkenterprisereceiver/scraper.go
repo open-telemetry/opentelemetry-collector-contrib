@@ -81,7 +81,6 @@ func errorListener(ctx context.Context, eQueue <-chan error, eOut chan<- *scrape
 // The big one: Describes how all scraping tasks should be performed. Part of the scraper interface
 func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var wg sync.WaitGroup
-	errChan := make(chan error, 9)
 	errOut := make(chan *scrapererror.ScrapeErrors)
 	var errs *scrapererror.ScrapeErrors
 	now := pcommon.NewTimestampFromTime(time.Now())
@@ -107,6 +106,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeSchedulerRunTimeByHost,
 		s.scrapeIndexerAvgRate,
 	}
+	errChan := make(chan error, len(metricScrapes))
 
 	go func() {
 		errorListener(ctx, errChan, errOut)
