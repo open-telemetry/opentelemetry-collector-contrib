@@ -26,7 +26,6 @@ var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 type kafkaTracesProducer struct {
 	cfg       Config
 	producer  sarama.SyncProducer
-	topic     string
 	marshaler TracesMarshaler
 	logger    *zap.Logger
 }
@@ -41,7 +40,12 @@ func (ke kafkaErrors) Error() string {
 }
 
 func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) error {
-	messages, err := e.marshaler.Marshal(td, e.topic)
+	topic, err := e.cfg.getTopic(td)
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+
+	messages, err := e.marshaler.Marshal(td, topic)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -78,13 +82,17 @@ func (e *kafkaTracesProducer) start(_ context.Context, _ component.Host) error {
 type kafkaMetricsProducer struct {
 	cfg       Config
 	producer  sarama.SyncProducer
-	topic     string
 	marshaler MetricsMarshaler
 	logger    *zap.Logger
 }
 
 func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pmetric.Metrics) error {
-	messages, err := e.marshaler.Marshal(md, e.topic)
+	topic, err := e.cfg.getTopic(md)
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+
+	messages, err := e.marshaler.Marshal(md, topic)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -121,13 +129,16 @@ func (e *kafkaMetricsProducer) start(_ context.Context, _ component.Host) error 
 type kafkaLogsProducer struct {
 	cfg       Config
 	producer  sarama.SyncProducer
-	topic     string
 	marshaler LogsMarshaler
 	logger    *zap.Logger
 }
 
 func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld plog.Logs) error {
-	messages, err := e.marshaler.Marshal(ld, e.topic)
+	topic, err := e.cfg.getTopic(ld)
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+	messages, err := e.marshaler.Marshal(ld, topic)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -213,7 +224,6 @@ func newMetricsExporter(config Config, set exporter.CreateSettings, marshalers m
 	}
 	return &kafkaMetricsProducer{
 		cfg:       config,
-		topic:     config.Topic,
 		marshaler: marshaler,
 		logger:    set.Logger,
 	}, nil
@@ -234,7 +244,6 @@ func newTracesExporter(config Config, set exporter.CreateSettings, marshalers ma
 
 	return &kafkaTracesProducer{
 		cfg:       config,
-		topic:     config.Topic,
 		marshaler: marshaler,
 		logger:    set.Logger,
 	}, nil
@@ -248,7 +257,6 @@ func newLogsExporter(config Config, set exporter.CreateSettings, marshalers map[
 
 	return &kafkaLogsProducer{
 		cfg:       config,
-		topic:     config.Topic,
 		marshaler: marshaler,
 		logger:    set.Logger,
 	}, nil

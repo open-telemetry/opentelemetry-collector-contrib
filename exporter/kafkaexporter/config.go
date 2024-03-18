@@ -11,6 +11,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
@@ -39,6 +43,9 @@ type Config struct {
 
 	// The name of the kafka topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
 	Topic string `mapstructure:"topic"`
+
+	// TopicFromAttribute is the name of the attribute to use as the topic name.
+	TopicFromAttribute string `mapstructure:"topic_from_attribute"`
 
 	// Encoding of messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
@@ -121,6 +128,32 @@ func (cfg *Config) Validate() error {
 	}
 
 	return validateSASLConfig(cfg.Authentication.SASL)
+}
+
+func (cfg *Config) getTopic(r any) (string, error) {
+	var rv pcommon.Value
+	var ok bool
+	if cfg.TopicFromAttribute != "" {
+		switch v := r.(type) {
+		case pmetric.Metrics:
+			rv, ok = v.ResourceMetrics().At(0).Resource().Attributes().Get(cfg.TopicFromAttribute)
+		case ptrace.Traces:
+			rv, ok = v.ResourceSpans().At(0).Resource().Attributes().Get(cfg.TopicFromAttribute)
+		case plog.Logs:
+			rv, ok = v.ResourceLogs().At(0).Resource().Attributes().Get(cfg.TopicFromAttribute)
+		default:
+			return "", fmt.Errorf("unsupported data type %T", r)
+		}
+	}
+	if ok {
+		topic := rv.Str()
+		if topic == "" {
+			return "", fmt.Errorf("attribute %s is empty", cfg.TopicFromAttribute)
+		}
+		return topic, nil
+	}
+
+	return cfg.Topic, nil
 }
 
 func validateSASLConfig(c *kafka.SASLConfig) error {

@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
@@ -331,6 +332,93 @@ func Test_saramaProducerCompressionCodec(t *testing.T) {
 			c, err := saramaProducerCompressionCodec(test.compression)
 			assert.Equal(t, c, test.expectedCompression)
 			assert.Equal(t, err, test.expectedError)
+		})
+	}
+}
+
+func TestConfig_GetTopic(t *testing.T) {
+	tests := []struct {
+		name       string
+		cfg        Config
+		resource   any
+		wantTopic  string
+		wantErr    bool
+		errMessage string
+	}{
+		{
+			name: "Valid metric attribute, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "resource-attr",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateMetricsOneMetric(),
+			wantTopic: "resource-attr-val-1",
+			wantErr:   false,
+		},
+		{
+			name: "Valid trace attribute, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "resource-attr",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateTracesOneSpan(),
+			wantTopic: "resource-attr-val-1",
+			wantErr:   false,
+		},
+		{
+			name: "Valid log attribute, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "resource-attr",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateLogsOneLogRecord(),
+			wantTopic: "resource-attr-val-1",
+			wantErr:   false,
+		},
+
+		{
+			name: "Attribute not found",
+			cfg: Config{
+				TopicFromAttribute: "nonexistent_attribute",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateMetricsOneMetricNoAttributes(),
+			wantTopic: "defaultTopic",
+			wantErr:   false,
+		},
+		{
+			name: "Unsupported data type",
+			cfg: Config{
+				TopicFromAttribute: "valid_attribute",
+				Topic:              "defaultTopic",
+			},
+			resource:   struct{}{},
+			wantTopic:  "",
+			wantErr:    true,
+			errMessage: "unsupported data type",
+		},
+		{
+			name: "TopicFromAttribute not set, return default topic",
+			cfg: Config{
+				Topic: "defaultTopic",
+			},
+			resource:   testdata.GenerateMetricsOneMetric(),
+			wantTopic:  "defaultTopic",
+			wantErr:    false,
+			errMessage: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			topic, err := tt.cfg.getTopic(tt.resource)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errMessage)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantTopic, topic)
+			}
 		})
 	}
 }
