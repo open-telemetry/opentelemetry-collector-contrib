@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -340,7 +341,7 @@ func TestConfig_GetTopic(t *testing.T) {
 	tests := []struct {
 		name       string
 		cfg        Config
-		resource   any
+		resource   pcommon.Map
 		wantTopic  string
 		wantErr    bool
 		errMessage string
@@ -351,7 +352,7 @@ func TestConfig_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
-			resource:  testdata.GenerateMetricsOneMetric(),
+			resource:  testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).Resource().Attributes(),
 			wantTopic: "resource-attr-val-1",
 			wantErr:   false,
 		},
@@ -361,7 +362,7 @@ func TestConfig_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
-			resource:  testdata.GenerateTracesOneSpan(),
+			resource:  testdata.GenerateTracesOneSpan().ResourceSpans().At(0).Resource().Attributes(),
 			wantTopic: "resource-attr-val-1",
 			wantErr:   false,
 		},
@@ -371,38 +372,26 @@ func TestConfig_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
-			resource:  testdata.GenerateLogsOneLogRecord(),
+			resource:  testdata.GenerateLogsOneLogRecord().ResourceLogs().At(0).Resource().Attributes(),
 			wantTopic: "resource-attr-val-1",
 			wantErr:   false,
 		},
-
 		{
 			name: "Attribute not found",
 			cfg: Config{
 				TopicFromAttribute: "nonexistent_attribute",
 				Topic:              "defaultTopic",
 			},
-			resource:  testdata.GenerateMetricsOneMetricNoAttributes(),
+			resource:  testdata.GenerateMetricsOneMetricNoAttributes().ResourceMetrics().At(0).Resource().Attributes(),
 			wantTopic: "defaultTopic",
 			wantErr:   false,
-		},
-		{
-			name: "Unsupported data type",
-			cfg: Config{
-				TopicFromAttribute: "valid_attribute",
-				Topic:              "defaultTopic",
-			},
-			resource:   struct{}{},
-			wantTopic:  "",
-			wantErr:    true,
-			errMessage: "unsupported data type",
 		},
 		{
 			name: "TopicFromAttribute not set, return default topic",
 			cfg: Config{
 				Topic: "defaultTopic",
 			},
-			resource:   testdata.GenerateMetricsOneMetric(),
+			resource:   testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).Resource().Attributes(),
 			wantTopic:  "defaultTopic",
 			wantErr:    false,
 			errMessage: "",

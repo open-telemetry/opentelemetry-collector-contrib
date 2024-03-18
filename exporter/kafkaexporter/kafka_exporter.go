@@ -40,7 +40,7 @@ func (ke kafkaErrors) Error() string {
 }
 
 func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) error {
-	topic, err := e.cfg.getTopic(td)
+	topic, err := e.cfg.getTopic(td.ResourceSpans().At(0).Resource().Attributes())
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -87,7 +87,7 @@ type kafkaMetricsProducer struct {
 }
 
 func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pmetric.Metrics) error {
-	topic, err := e.cfg.getTopic(md)
+	topic, err := e.cfg.getTopic(md.ResourceMetrics().At(0).Resource().Attributes())
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -134,7 +134,7 @@ type kafkaLogsProducer struct {
 }
 
 func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld plog.Logs) error {
-	topic, err := e.cfg.getTopic(ld)
+	topic, err := e.cfg.getTopic(ld.ResourceLogs().At(0).Resource().Attributes())
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
