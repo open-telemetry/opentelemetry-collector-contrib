@@ -79,9 +79,9 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 
 func TestConfig_Unmarshal(t *testing.T) {
 	type fields struct {
-		ScraperControllerSettings scraperhelper.ControllerConfig
-		Scrapers                  map[string]internal.Config
-		MetricsBuilderConfig      metadata.MetricsBuilderConfig
+		ControllerConfig     scraperhelper.ControllerConfig
+		Scrapers             map[string]internal.Config
+		MetricsBuilderConfig metadata.MetricsBuilderConfig
 	}
 
 	type args struct {
