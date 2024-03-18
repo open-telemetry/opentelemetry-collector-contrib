@@ -33,7 +33,7 @@ func TestConfig(t *testing.T) {
 		&Config{
 			AddrConfig: confignet.AddrConfig{
 				Endpoint:  "localhost:6379",
-				Transport: "tcp",
+				Transport: confignet.TransportTypeTCP,
 			},
 			TLS: configtls.TLSClientSetting{
 				Insecure: true,

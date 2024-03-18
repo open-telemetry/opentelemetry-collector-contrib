@@ -80,7 +80,8 @@ func TestValidate(t *testing.T) {
 
 			for _, ep := range tc.endpoints {
 				hosts = append(hosts, confignet.AddrConfig{
-					Endpoint: ep,
+					Endpoint:  ep,
+					Transport: confignet.TransportTypeTCP,
 				})
 			}
 
@@ -136,7 +137,8 @@ func TestBadTLSConfigs(t *testing.T) {
 				Password: "pword",
 				Hosts: []confignet.AddrConfig{
 					{
-						Endpoint: "localhost:27017",
+						Endpoint:  "localhost:27017",
+						Transport: confignet.TransportTypeTCP,
 					},
 				},
 				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
