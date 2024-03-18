@@ -102,7 +102,7 @@ func (c *dbStorageClient) Batch(ctx context.Context, ops ...storage.Operation) e
 		}
 
 		if err != nil {
-			_ = tx.Rollback()
+			err = multierr.Append(err, tx.Rollback())
 			return err
 		}
 	}
