@@ -160,10 +160,10 @@ func TestLoadConfig(t *testing.T) {
 		expected.Databases = []string{"otel"}
 		expected.ExcludeDatabases = []string{"template0"}
 		expected.CollectionInterval = 10 * time.Second
-		expected.TLSClientSetting = configtls.TLSClientSetting{
+		expected.ClientConfig = configtls.ClientConfig{
 			Insecure:           false,
 			InsecureSkipVerify: false,
-			TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.Config{
 				CAFile:   "/home/otel/authorities.crt",
 				CertFile: "/home/otel/mypostgrescert.crt",
 				KeyFile:  "/home/otel/mypostgreskey.key",

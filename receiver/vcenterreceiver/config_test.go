@@ -53,7 +53,7 @@ func TestConfigValidation(t *testing.T) {
 			desc: "unparseable URL",
 			cfg: Config{
 				Endpoint:                  "h" + string(rune(0x7f)),
-				TLSClientSetting:          configtls.TLSClientSetting{},
+				ClientConfig:              configtls.ClientConfig{},
 				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: errors.New("unable to parse url"),

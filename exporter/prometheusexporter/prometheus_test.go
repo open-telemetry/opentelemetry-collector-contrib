@@ -98,8 +98,8 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		},
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:7777",
-			TLSSetting: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: &configtls.ServerConfig{
+				TLSSetting: configtls.Config{
 					CertFile: "./testdata/certs/server.crt",
 					KeyFile:  "./testdata/certs/server.key",
 					CAFile:   "./testdata/certs/ca.crt",
@@ -117,8 +117,8 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 
-	tlscs := configtls.TLSClientSetting{
-		TLSSetting: configtls.TLSSetting{
+	tlscs := configtls.ClientConfig{
+		TLSSetting: configtls.Config{
 			CAFile:   "./testdata/certs/ca.crt",
 			CertFile: "./testdata/certs/client.crt",
 			KeyFile:  "./testdata/certs/client.key",
