@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
@@ -48,7 +49,8 @@ func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 	}()
 
 	// Start the SQL Query receiver.
-	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort)
+	receiverCreateSettings := receivertest.NewNopCreateSettings()
+	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
 	config.CollectionInterval = time.Second
 	config.Queries = []sqlquery.Query{
 		{
@@ -84,7 +86,7 @@ func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 	require.NoError(t, err)
 
 	// Start new SQL Query receiver with the same configuration.
-	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort)
+	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
 	config.CollectionInterval = time.Second
 	config.Queries = []sqlquery.Query{
 		{
@@ -134,7 +136,8 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 	storageExtension := storagetest.NewFileBackedStorageExtension("test", storageDir)
 
 	// create SQL Query receiver configured with the File Storage extension
-	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort)
+	receiverCreateSettings := receivertest.NewNopCreateSettings()
+	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
 	config.CollectionInterval = time.Second
 	config.StorageID = &storageExtension.ID
 	config.Queries = []sqlquery.Query{
@@ -176,7 +179,7 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 	testAllSimpleLogs(t, consumer.AllLogs())
 
 	// start the SQL Query receiver again
-	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort)
+	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
 	config.CollectionInterval = time.Second
 	config.StorageID = &storageExtension.ID
 	config.Queries = []sqlquery.Query{
@@ -209,7 +212,7 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 	insertPostgresSimpleLogs(t, dbContainer, initialLogCount, newLogCount)
 
 	// start the SQL Query receiver again
-	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort)
+	receiver, config, consumer = createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
 	config.CollectionInterval = time.Second
 	config.StorageID = &storageExtension.ID
 	config.Queries = []sqlquery.Query{
@@ -276,7 +279,7 @@ func startPostgresDbContainer(t *testing.T, externalPort string) testcontainers.
 	return container
 }
 
-func createTestLogsReceiverForPostgres(t *testing.T, externalPort string) (*logsReceiver, *Config, *consumertest.LogsSink) {
+func createTestLogsReceiverForPostgres(t *testing.T, externalPort string, receiverCreateSettings receiver.CreateSettings) (*logsReceiver, *Config, *consumertest.LogsSink) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
 	config.CollectionInterval = time.Second
@@ -284,7 +287,6 @@ func createTestLogsReceiverForPostgres(t *testing.T, externalPort string) (*logs
 	config.DataSource = fmt.Sprintf("host=localhost port=%s user=otel password=otel sslmode=disable", externalPort)
 
 	consumer := &consumertest.LogsSink{}
-	receiverCreateSettings := receivertest.NewNopCreateSettings()
 	receiverCreateSettings.Logger = zap.NewExample()
 	receiver, err := factory.CreateLogsReceiver(
 		context.Background(),
