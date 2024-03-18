@@ -22,6 +22,7 @@ type worker struct {
 	numLogs        int                 // how many logs the worker has to generate (only when duration==0)
 	body           string              // the body of the log
 	severityNumber plog.SeverityNumber // the severityNumber of the log
+	severityText   string              // the severityText of the log
 	totalDuration  time.Duration       // how long to run the test for (overrides `numLogs`)
 	limitPerSecond rate.Limit          // how many logs per second to generate
 	wg             *sync.WaitGroup     // notify when done
@@ -45,7 +46,7 @@ func (w worker) simulateLogs(res *resource.Resource, exporter exporter, telemetr
 		log.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		log.SetDroppedAttributesCount(1)
 		log.SetSeverityNumber(w.severityNumber)
-		log.SetSeverityText(w.severityNumber.String())
+		log.SetSeverityText(w.severityText)
 		log.Attributes()
 		lattrs := log.Attributes()
 		lattrs.PutStr("app", "server")
