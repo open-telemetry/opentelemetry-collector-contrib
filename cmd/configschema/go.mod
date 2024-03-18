@@ -1151,3 +1151,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/stor
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage => ../../extension/storage/dbstorage
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension => ../../extension/encoding/otlpencodingextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../../extension/encoding
