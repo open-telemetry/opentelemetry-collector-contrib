@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package maybe
 
 // Ptr is a pointer that points to something that is not guaranteed to exist.
