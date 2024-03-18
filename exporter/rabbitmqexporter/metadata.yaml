@@ -10,7 +10,6 @@ status:
     active: [swar8080]
 
 tests:
-  config: # {} by default, specific testing configuration for lifecycle tests.
   skip_lifecycle: true
   skip_shutdown: false
   expect_consumer_error: true
