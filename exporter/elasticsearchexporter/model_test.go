@@ -417,6 +417,61 @@ func TestEncodeLogECSModeAgentName(t *testing.T) {
 	}
 }
 
+func TestEncodeLogECSModeAgentVersion(t *testing.T) {
+	tests := map[string]struct {
+		telemetryDistroVersion string
+		telemetrySdkVersion    string
+		expectedAgentVersion   string
+	}{
+		"none_set": {
+			expectedAgentVersion: "",
+		},
+		"distro_version_set": {
+			telemetryDistroVersion: "7.9.2",
+			expectedAgentVersion:   "7.9.2",
+		},
+		"sdk_version_set": {
+			telemetrySdkVersion:  "8.10.3",
+			expectedAgentVersion: "8.10.3",
+		},
+		"both_set": {
+			telemetryDistroVersion: "7.9.2",
+			telemetrySdkVersion:    "8.10.3",
+			expectedAgentVersion:   "7.9.2",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			resource := pcommon.NewResource()
+			scope := pcommon.NewInstrumentationScope()
+			record := plog.NewLogRecord()
+
+			if test.telemetryDistroVersion != "" {
+				resource.Attributes().PutStr(semconv.AttributeTelemetryDistroVersion, test.telemetryDistroVersion)
+			}
+			if test.telemetrySdkVersion != "" {
+				resource.Attributes().PutStr(semconv.AttributeTelemetrySDKVersion, test.telemetrySdkVersion)
+			}
+
+			timestamp := pcommon.Timestamp(1710373859123456789)
+			record.SetTimestamp(timestamp)
+
+			m := encodeModel{}
+			doc := m.encodeLogECSMode(resource, record, scope)
+
+			expectedDoc := objmodel.Document{}
+			expectedDoc.AddTimestamp("@timestamp", timestamp)
+			expectedDoc.AddString("agent.name", "otlp")
+			expectedDoc.AddString("agent.version", test.expectedAgentVersion)
+
+			doc.Sort()
+			expectedDoc.Sort()
+			require.Equal(t, expectedDoc, doc)
+		})
+	}
+}
+
 func TestEncodeLogECSModeHostOSType(t *testing.T) {
 	tests := map[string]struct {
 		osType string
