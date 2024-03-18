@@ -37,7 +37,7 @@ func createDefaultConfig() component.Config {
 		GRPCServerConfig: &configgrpc.ServerConfig{
 			NetAddr: confignet.AddrConfig{
 				Endpoint:  localhostgate.EndpointForPort(14250),
-				Transport: "tcp",
+				Transport: confignet.TransportTypeTCP,
 			},
 		},
 		Source: Source{},

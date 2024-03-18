@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -84,17 +83,17 @@ func (s *Scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	sms := rm.ScopeMetrics()
 	sm := sms.AppendEmpty()
 	ms := sm.Metrics()
-	var errs error
+	var errs []error
 	for _, metricCfg := range s.Query.Metrics {
 		for i, row := range rows {
 			if err = rowToMetric(row, metricCfg, ms.AppendEmpty(), s.StartTime, ts, s.ScrapeCfg); err != nil {
 				err = fmt.Errorf("row %d: %w", i, err)
-				errs = multierr.Append(errs, err)
+				errs = append(errs, err)
 			}
 		}
 	}
 	if errs != nil {
-		return out, scrapererror.NewPartialScrapeError(errs, len(multierr.Errors(errs)))
+		return out, scrapererror.NewPartialScrapeError(errors.Join(errs...), len(errs))
 	}
 	return out, nil
 }
