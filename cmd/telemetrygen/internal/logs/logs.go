@@ -113,7 +113,6 @@ func parseSeverity(severityText string, severityNumber int32) (string, plog.Seve
 		if !(severityNumber >= 13 && severityNumber <= 16) {
 			sn = plog.SeverityNumberWarn
 		}
-		sn = plog.SeverityNumberWarn
 	case plog.SeverityNumberError.String():
 		if !(severityNumber >= 17 && severityNumber <= 20) {
 			sn = plog.SeverityNumberError
