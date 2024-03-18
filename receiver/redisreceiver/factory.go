@@ -30,7 +30,7 @@ func createDefaultConfig() component.Config {
 	scs.CollectionInterval = 10 * time.Second
 	return &Config{
 		AddrConfig: confignet.AddrConfig{
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 		TLS: configtls.TLSClientSetting{
 			Insecure: true,

@@ -32,7 +32,7 @@ func createDefaultConfig() component.Config {
 		Username:                  "root",
 		AddrConfig: confignet.AddrConfig{
 			Endpoint:  "localhost:3306",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		StatementEvents: StatementEventsConfig{
