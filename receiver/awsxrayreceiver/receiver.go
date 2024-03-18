@@ -49,7 +49,7 @@ func newReceiver(config *Config,
 	set.Logger.Info("Going to listen on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
 	poller, err := udppoller.New(&udppoller.Config{
-		Transport:          config.Transport,
+		Transport:          string(config.Transport),
 		Endpoint:           config.Endpoint,
 		NumOfPollerToStart: maxPollerCount,
 	}, set)

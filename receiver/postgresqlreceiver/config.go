@@ -67,7 +67,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	switch cfg.Transport {
-	case "tcp", "unix":
+	case confignet.TransportTypeTCP, confignet.TransportTypeUnix:
 		_, _, endpointErr := net.SplitHostPort(cfg.Endpoint)
 		if endpointErr != nil {
 			err = multierr.Append(err, errors.New(ErrHostPort))
