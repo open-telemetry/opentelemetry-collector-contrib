@@ -127,19 +127,18 @@ func (cfg *Config) Validate() error {
 	return validateSASLConfig(cfg.Authentication.SASL)
 }
 
-func (cfg *Config) getTopic(attrs pcommon.Map) (string, error) {
+func (cfg *Config) getTopic(attrs pcommon.Map) string {
 	if cfg.TopicFromAttribute != "" {
 		rv, ok := attrs.Get(cfg.TopicFromAttribute)
 		if ok {
 			topic := rv.Str()
-			if topic == "" {
-				return "", fmt.Errorf("attribute %s is empty", cfg.TopicFromAttribute)
+			if topic != "" {
+				return topic
 			}
-			return topic, nil
 		}
 	}
 
-	return cfg.Topic, nil
+	return cfg.Topic
 }
 
 func validateSASLConfig(c *kafka.SASLConfig) error {

@@ -339,12 +339,10 @@ func Test_saramaProducerCompressionCodec(t *testing.T) {
 
 func TestConfig_GetTopic(t *testing.T) {
 	tests := []struct {
-		name       string
-		cfg        Config
-		resource   pcommon.Map
-		wantTopic  string
-		wantErr    bool
-		errMessage string
+		name      string
+		cfg       Config
+		resource  pcommon.Map
+		wantTopic string
 	}{
 		{
 			name: "Valid metric attribute, return topic name",
@@ -354,7 +352,6 @@ func TestConfig_GetTopic(t *testing.T) {
 			},
 			resource:  testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).Resource().Attributes(),
 			wantTopic: "resource-attr-val-1",
-			wantErr:   false,
 		},
 		{
 			name: "Valid trace attribute, return topic name",
@@ -364,7 +361,6 @@ func TestConfig_GetTopic(t *testing.T) {
 			},
 			resource:  testdata.GenerateTracesOneSpan().ResourceSpans().At(0).Resource().Attributes(),
 			wantTopic: "resource-attr-val-1",
-			wantErr:   false,
 		},
 		{
 			name: "Valid log attribute, return topic name",
@@ -374,7 +370,6 @@ func TestConfig_GetTopic(t *testing.T) {
 			},
 			resource:  testdata.GenerateLogsOneLogRecord().ResourceLogs().At(0).Resource().Attributes(),
 			wantTopic: "resource-attr-val-1",
-			wantErr:   false,
 		},
 		{
 			name: "Attribute not found",
@@ -384,30 +379,21 @@ func TestConfig_GetTopic(t *testing.T) {
 			},
 			resource:  testdata.GenerateMetricsOneMetricNoAttributes().ResourceMetrics().At(0).Resource().Attributes(),
 			wantTopic: "defaultTopic",
-			wantErr:   false,
 		},
 		{
 			name: "TopicFromAttribute not set, return default topic",
 			cfg: Config{
 				Topic: "defaultTopic",
 			},
-			resource:   testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).Resource().Attributes(),
-			wantTopic:  "defaultTopic",
-			wantErr:    false,
-			errMessage: "",
+			resource:  testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).Resource().Attributes(),
+			wantTopic: "defaultTopic",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			topic, err := tt.cfg.getTopic(tt.resource)
-			if tt.wantErr {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errMessage)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.wantTopic, topic)
-			}
+			topic := tt.cfg.getTopic(tt.resource)
+			assert.Equal(t, tt.wantTopic, topic)
 		})
 	}
 }
