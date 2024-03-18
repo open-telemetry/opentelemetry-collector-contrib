@@ -59,7 +59,7 @@ var (
 	spanEndTimestamp   = pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC))
 )
 
-func GenerateTrace() ptrace.Traces {
+func generateTrace() ptrace.Traces {
 	td := ptrace.NewTraces()
 	res := td.ResourceSpans().AppendEmpty().Resource()
 	res.Attributes().EnsureCapacity(3)
@@ -119,13 +119,13 @@ func TestContainerTags(t *testing.T) {
 	}()
 
 	assert.True(t, ok) // checks if the created connector implements the connectorImp struct
-	trace1 := GenerateTrace()
+	trace1 := generateTrace()
 
 	err = connector.ConsumeTraces(context.Background(), trace1)
 	assert.NoError(t, err)
 
 	// Send two traces to ensure unique container tags are added to the cache
-	trace2 := GenerateTrace()
+	trace2 := generateTrace()
 	err = connector.ConsumeTraces(context.Background(), trace2)
 	assert.NoError(t, err)
 	// check if the container tags are added to the cache
