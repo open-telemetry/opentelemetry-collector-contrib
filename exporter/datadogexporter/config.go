@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -390,24 +391,11 @@ type HostMetadataConfig struct {
 	Tags []string `mapstructure:"tags"`
 }
 
-// LimitedTLSClientSetting is a subset of TLSClientSetting, see LimitedClientConfig for more details
-type LimitedTLSClientSettings struct {
-	// InsecureSkipVerify controls whether a client verifies the server's
-	// certificate chain and host name.
-	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
-}
-
-type LimitedClientConfig struct {
-	TLSSetting LimitedTLSClientSettings `mapstructure:"tls,omitempty"`
-}
-
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
-
-	LimitedClientConfig `mapstructure:",squash"`
+	confighttp.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
 	TagsConfig `mapstructure:",squash"`
 
@@ -450,6 +438,10 @@ var _ component.Config = (*Config)(nil)
 
 // Validate the configuration for errors. This is required by component.Config.
 func (c *Config) Validate() error {
+	if err := validateClientConfig(c.ClientConfig); err != nil {
+		return err
+	}
+
 	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
 		return errNoMetadata
 	}
@@ -487,6 +479,36 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	return nil
+}
+
+func validateClientConfig(cfg confighttp.ClientConfig) error {
+	var unsupported []string
+	if cfg.Auth != nil {
+		unsupported = append(unsupported, "auth")
+	}
+	if cfg.Endpoint != "" {
+		unsupported = append(unsupported, "endpoint")
+	}
+	if cfg.Compression != "" {
+		unsupported = append(unsupported, "compression")
+	}
+	if cfg.ProxyURL != "" {
+		unsupported = append(unsupported, "proxy_url")
+	}
+	if cfg.Headers != nil {
+		unsupported = append(unsupported, "headers")
+	}
+	if cfg.HTTP2ReadIdleTimeout != 0 {
+		unsupported = append(unsupported, "http2_read_idle_timeout")
+	}
+	if cfg.HTTP2PingTimeout != 0 {
+		unsupported = append(unsupported, "http2_ping_timeout")
+	}
+
+	if len(unsupported) > 0 {
+		return fmt.Errorf("these confighttp client configs are currently not respected by Datadog exporter: %s", strings.Join(unsupported, ", "))
+	}
 	return nil
 }
 

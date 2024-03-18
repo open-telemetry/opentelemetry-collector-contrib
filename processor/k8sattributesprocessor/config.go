@@ -84,12 +84,17 @@ func (cfg *Config) Validate() error {
 	for _, field := range cfg.Extract.Metadata {
 		switch field {
 		case conventions.AttributeK8SNamespaceName, conventions.AttributeK8SPodName, conventions.AttributeK8SPodUID,
-			specPodHostName, metadataPodStartTime, conventions.AttributeK8SDeploymentName, conventions.AttributeK8SDeploymentUID,
-			conventions.AttributeK8SReplicaSetName, conventions.AttributeK8SReplicaSetUID, conventions.AttributeK8SDaemonSetName,
-			conventions.AttributeK8SDaemonSetUID, conventions.AttributeK8SStatefulSetName, conventions.AttributeK8SStatefulSetUID,
-			conventions.AttributeK8SContainerName, conventions.AttributeK8SJobName, conventions.AttributeK8SJobUID,
-			conventions.AttributeK8SCronJobName, conventions.AttributeK8SNodeName, conventions.AttributeContainerID,
-			conventions.AttributeContainerImageName, conventions.AttributeContainerImageTag, clusterUID:
+			specPodHostName, metadataPodStartTime,
+			conventions.AttributeK8SDeploymentName, conventions.AttributeK8SDeploymentUID,
+			conventions.AttributeK8SReplicaSetName, conventions.AttributeK8SReplicaSetUID,
+			conventions.AttributeK8SDaemonSetName, conventions.AttributeK8SDaemonSetUID,
+			conventions.AttributeK8SStatefulSetName, conventions.AttributeK8SStatefulSetUID,
+			conventions.AttributeK8SJobName, conventions.AttributeK8SJobUID,
+			conventions.AttributeK8SCronJobName,
+			conventions.AttributeK8SNodeName, conventions.AttributeK8SNodeUID,
+			conventions.AttributeK8SContainerName, conventions.AttributeContainerID,
+			conventions.AttributeContainerImageName, conventions.AttributeContainerImageTag,
+			clusterUID:
 		default:
 			return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 		}
