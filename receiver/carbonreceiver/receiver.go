@@ -42,10 +42,6 @@ func newMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
 	if config.Endpoint == "" {
 		return nil, errEmptyEndpoint
 	}
