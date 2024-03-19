@@ -12,8 +12,8 @@ import (
 )
 
 type hostMetrics struct {
-	hosts map[string]struct{}
 	mutex sync.RWMutex
+	hosts map[string]struct{}
 }
 
 func newHostMetrics() *hostMetrics {
