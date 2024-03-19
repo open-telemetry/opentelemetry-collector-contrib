@@ -14,6 +14,7 @@ import (
 
 type ResourceContext interface {
 	GetResource() pcommon.Resource
+	GetResourceSchemaURLItem() SchemaURLItem
 }
 
 func ResourcePathGetSetter[K ResourceContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
@@ -80,6 +81,20 @@ func accessResourceDroppedAttributesCount[K ResourceContext]() ottl.StandardGetS
 		Setter: func(ctx context.Context, tCtx K, val any) error {
 			if i, ok := val.(int64); ok {
 				tCtx.GetResource().SetDroppedAttributesCount(uint32(i))
+			}
+			return nil
+		},
+	}
+}
+
+func accessResourceSchemaURLItem[K ResourceContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(ctx context.Context, tCtx K) (any, error) {
+			return tCtx.GetResourceSchemaURLItem().SchemaUrl(), nil
+		},
+		Setter: func(ctx context.Context, tCtx K, val any) error {
+			if schemaURL, ok := val.(string); ok {
+				tCtx.GetResourceSchemaURLItem().SetSchemaUrl(schemaURL)
 			}
 			return nil
 		},

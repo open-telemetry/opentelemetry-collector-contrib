@@ -21,18 +21,6 @@ import (
 var _ internal.ResourceContext = TransformContext{}
 var _ internal.InstrumentationScopeContext = TransformContext{}
 
-type LogScopeSchemaURLItem struct {
-	scopeLogs plog.ScopeLogs
-}
-
-func (schema LogScopeSchemaURLItem) SchemaURL() string {
-	return schema.SchemaURL()
-}
-
-func (schema LogScopeSchemaURLItem) SetSchemaURL(v string) {
-	schema.SetSchemaURL(v)
-}
-
 type TransformContext struct {
 	logRecord            plog.LogRecord
 	instrumentationScope pcommon.InstrumentationScope
@@ -40,7 +28,6 @@ type TransformContext struct {
 	cache                pcommon.Map
 	scopeLogs            plog.ScopeLogs
 	resourceLogs         plog.ResourceLogs
-	logSchemaURLItem     internal.SchemaURLItem
 }
 
 type Option func(*ottl.Parser[TransformContext])
@@ -53,7 +40,6 @@ func NewTransformContext(logRecord plog.LogRecord, instrumentationScope pcommon.
 		cache:                pcommon.NewMap(),
 		scopeLogs:            scopeLogs,
 		resourceLogs:         resourceLogs,
-		logSchemaURLItem:     LogScopeSchemaURLItem{scopeLogs: scopeLogs},
 	}
 }
 
@@ -73,20 +59,12 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-func (tCtx TransformContext) getScopeLogs() plog.ScopeLogs {
+func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
 	return tCtx.scopeLogs
 }
 
-func (tCtx TransformContext) getResourceLogs() plog.ResourceLogs {
+func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
 	return tCtx.resourceLogs
-}
-
-func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
-	return tCtx.logSchemaURLItem
-}
-
-func (tCtx TransformContext) SetScopeSchemaURLItem(schema internal.SchemaURLItem) {
-	tCtx.logSchemaURLItem = schema
 }
 
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
@@ -242,18 +220,7 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 		} else {
 			return accessSpanID(), nil
 		}
-	case "schema_url":
-		if path.Name() == "resource" && path.Next() != nil {
-			if path.Next().Name() == "schema_url" {
-				return accessResourceSchemaURL(), nil
-			}
-		} else if path.Name() == "scope" && path.Next() != nil {
-			if path.Next().Name() == "schema_url" {
-				return accessScopeSchemaURL(), nil
-			}
-		}
 	}
-
 	return nil, fmt.Errorf("invalid path expression %v", path)
 }
 
@@ -531,34 +498,6 @@ func accessStringSpanID() ottl.StandardGetSetter[TransformContext] {
 					return err
 				}
 				tCtx.GetLogRecord().SetSpanID(id)
-			}
-			return nil
-		},
-	}
-}
-
-func accessResourceSchemaURL() ottl.StandardGetSetter[TransformContext] {
-	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
-			return tCtx.getResourceLogs().SchemaUrl(), nil
-		},
-		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
-			if schemaURL, ok := val.(string); ok {
-				tCtx.getResourceLogs().SetSchemaUrl(schemaURL)
-			}
-			return nil
-		},
-	}
-}
-
-func accessScopeSchemaURL() ottl.StandardGetSetter[TransformContext] {
-	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
-			return tCtx.getScopeLogs().SchemaUrl(), nil
-		},
-		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
-			if schemaURL, ok := val.(string); ok {
-				tCtx.getScopeLogs().SetSchemaUrl(schemaURL)
 			}
 			return nil
 		},
