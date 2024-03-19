@@ -4,6 +4,7 @@
 package logs
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -145,6 +146,13 @@ func TestLogsWithOneTelemetryAttributes(t *testing.T) {
 		for i := 0; i < rlogs.Len(); i++ {
 			attrs := rlogs.At(i).ScopeLogs().At(0).LogRecords().At(0).Attributes()
 			assert.Equal(t, 2, attrs.Len(), "shouldn't have less than 2 attributes")
+
+			val, ok := attrs.Get(telemetryAttrKeyOne)
+			assert.True(t, ok, fmt.Sprintf("there should be an attribute with key %s", telemetryAttrKeyOne))
+			if ok {
+				assert.EqualValues(t, val.AsString(), telemetryAttrValueOne)
+			}
+
 		}
 	}
 }
