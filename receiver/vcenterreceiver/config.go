@@ -19,11 +19,11 @@ import (
 // Config is the configuration of the receiver
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	configtls.ClientConfig                  `mapstructure:"tls,omitempty"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	Endpoint                                string              `mapstructure:"endpoint"`
-	Username                                string              `mapstructure:"username"`
-	Password                                configopaque.String `mapstructure:"password"`
+	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	Endpoint                       string              `mapstructure:"endpoint"`
+	Username                       string              `mapstructure:"username"`
+	Password                       configopaque.String `mapstructure:"password"`
 }
 
 // Validate checks to see if the supplied config will work for the receiver

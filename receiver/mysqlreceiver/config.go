@@ -23,14 +23,14 @@ const (
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Username                                string              `mapstructure:"username,omitempty"`
-	Password                                configopaque.String `mapstructure:"password,omitempty"`
-	Database                                string              `mapstructure:"database,omitempty"`
-	AllowNativePasswords                    bool                `mapstructure:"allow_native_passwords,omitempty"`
-	confignet.AddrConfig                    `mapstructure:",squash"`
-	TLS                                     configtls.ClientConfig        `mapstructure:"tls,omitempty"`
-	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	StatementEvents                         StatementEventsConfig         `mapstructure:"statement_events"`
+	Username                       string              `mapstructure:"username,omitempty"`
+	Password                       configopaque.String `mapstructure:"password,omitempty"`
+	Database                       string              `mapstructure:"database,omitempty"`
+	AllowNativePasswords           bool                `mapstructure:"allow_native_passwords,omitempty"`
+	confignet.AddrConfig           `mapstructure:",squash"`
+	TLS                            configtls.ClientConfig        `mapstructure:"tls,omitempty"`
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	StatementEvents                StatementEventsConfig         `mapstructure:"statement_events"`
 }
 
 type StatementEventsConfig struct {

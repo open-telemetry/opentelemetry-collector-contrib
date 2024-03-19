@@ -142,7 +142,7 @@ func TestBadTLSConfigs(t *testing.T) {
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-				ClientConfig:              tc.tlsConfig,
+				ClientConfig:     tc.tlsConfig,
 			}
 			err := component.ValidateConfig(cfg)
 			if tc.expectError {
