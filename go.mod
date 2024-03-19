@@ -230,7 +230,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.1 // indirect
 	github.com/ClickHouse/ch-go v0.61.5 // indirect
-	github.com/ClickHouse/clickhouse-go/v2 v2.21.1 // indirect
+	github.com/ClickHouse/clickhouse-go/v2 v2.22.2 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.104 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.51.1-0.20240301173728-334e775e420a // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel // indirect
