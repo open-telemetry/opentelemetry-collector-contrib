@@ -35,7 +35,6 @@ type connectorImp struct {
 }
 
 func newConnector(logger *zap.Logger, config component.Config) *connectorImp {
-	logger.Info("Building host_info connector")
 	cfg := config.(*Config)
 	return &connectorImp{
 		config:      *cfg,
