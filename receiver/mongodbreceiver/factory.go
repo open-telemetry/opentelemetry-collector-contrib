@@ -27,8 +27,8 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-		Timeout:                   time.Minute,
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		Timeout:          time.Minute,
 		Hosts: []confignet.AddrConfig{
 			{
 				Endpoint:  "localhost:27017",
@@ -57,7 +57,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings, params, consumer,
+		&cfg.ControllerConfig, params, consumer,
 		scraperhelper.AddScraper(scraper),
 	)
 }

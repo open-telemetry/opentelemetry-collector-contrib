@@ -14,7 +14,7 @@ import (
 var _ component.Config = (*Config)(nil)
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	// The URL of the podman server.  Default is "unix:///run/podman/podman.sock"
 	Endpoint string `mapstructure:"endpoint"`

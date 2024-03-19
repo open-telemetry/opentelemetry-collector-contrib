@@ -57,7 +57,7 @@ func integrationTest(cfgMod func(*Config)) func(*testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, aerospikePort))
-				rCfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
+				rCfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
 				cfgMod(rCfg)
 			}),
 		scraperinttest.WithCompareOptions(
