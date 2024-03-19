@@ -69,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 					APIConfig: k8sconfig.APIConfig{
 						AuthType: "tls",
 					},
-					TLSSetting: configtls.TLSSetting{
+					Config: configtls.Config{
 						CAFile:   "/path/to/ca.crt",
 						CertFile: "/path/to/apiserver.crt",
 						KeyFile:  "/path/to/apiserver.key",

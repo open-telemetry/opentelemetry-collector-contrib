@@ -250,6 +250,12 @@ func Test_e2e_converters(t *testing.T) {
 		want      func(tCtx ottllog.TransformContext)
 	}{
 		{
+			statement: `set(attributes["test"], Base64Decode("cGFzcw=="))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Concat(["A","B"], ":"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "A:B")
@@ -477,6 +483,22 @@ func Test_e2e_converters(t *testing.T) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
 				m.PutStr("k1", "v1")
 				m.PutStr("k2", "v2__!__v2")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseXML("<Log id=\"1\"><Message>This is a log message!</Message></Log>"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				log := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				log.PutStr("tag", "Log")
+
+				attrs := log.PutEmptyMap("attributes")
+				attrs.PutStr("id", "1")
+
+				logChildren := log.PutEmptySlice("children")
+
+				message := logChildren.AppendEmpty().SetEmptyMap()
+				message.PutStr("tag", "Message")
+				message.PutStr("content", "This is a log message!")
 			},
 		},
 		{

@@ -34,7 +34,7 @@ type Config struct {
 	Databases                               []string                       `mapstructure:"databases"`
 	ExcludeDatabases                        []string                       `mapstructure:"exclude_databases"`
 	confignet.AddrConfig                    `mapstructure:",squash"`       // provides Endpoint and Transport
-	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"` // provides SSL details
+	configtls.ClientConfig                  `mapstructure:"tls,omitempty"` // provides SSL details
 	ConnectionPool                          `mapstructure:"connection_pool,omitempty"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 }
@@ -67,7 +67,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	switch cfg.Transport {
-	case "tcp", "unix":
+	case confignet.TransportTypeTCP, confignet.TransportTypeUnix:
 		_, _, endpointErr := net.SplitHostPort(cfg.Endpoint)
 		if endpointErr != nil {
 			err = multierr.Append(err, errors.New(ErrHostPort))

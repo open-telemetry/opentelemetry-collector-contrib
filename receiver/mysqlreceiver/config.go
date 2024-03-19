@@ -28,7 +28,7 @@ type Config struct {
 	Database                                string              `mapstructure:"database,omitempty"`
 	AllowNativePasswords                    bool                `mapstructure:"allow_native_passwords,omitempty"`
 	confignet.AddrConfig                    `mapstructure:",squash"`
-	TLS                                     configtls.TLSClientSetting    `mapstructure:"tls,omitempty"`
+	TLS                                     configtls.ClientConfig        `mapstructure:"tls,omitempty"`
 	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	StatementEvents                         StatementEventsConfig         `mapstructure:"statement_events"`
 }
@@ -48,7 +48,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	// Change the default to Insecure = true as we don't want to break
 	// existing deployments which does not use TLS by default.
 	if !componentParser.IsSet("tls") {
-		cfg.TLS = configtls.TLSClientSetting{}
+		cfg.TLS = configtls.ClientConfig{}
 		cfg.TLS.Insecure = true
 	}
 

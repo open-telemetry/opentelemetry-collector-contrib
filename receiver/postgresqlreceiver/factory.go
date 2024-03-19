@@ -32,9 +32,9 @@ func createDefaultConfig() component.Config {
 		ScraperControllerSettings: cfg,
 		AddrConfig: confignet.AddrConfig{
 			Endpoint:  "localhost:5432",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
-		TLSClientSetting: configtls.TLSClientSetting{
+		ClientConfig: configtls.ClientConfig{
 			Insecure:           false,
 			InsecureSkipVerify: true,
 		},
