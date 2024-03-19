@@ -157,6 +157,16 @@ func (lsp *logsProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.L
 
 				sampled := threshold.ShouldSample(randomness)
 
+				if sampled {
+					if err := carrier.updateThreshold(threshold, threshold.TValue()); err != nil {
+						lsp.logger.Error("log sampling", zap.Error(err))
+					}
+
+					if err := carrier.reserialize(); err != nil {
+						lsp.logger.Error("log sampling", zap.Error(err))
+					}
+				}
+
 				if err := stats.RecordWithTags(
 					ctx,
 					[]tag.Mutator{tag.Upsert(tagPolicyKey, string(policy)), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
