@@ -29,14 +29,14 @@ const (
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Username                       string                         `mapstructure:"username"`
-	Password                       configopaque.String            `mapstructure:"password"`
-	Databases                      []string                       `mapstructure:"databases"`
-	ExcludeDatabases               []string                       `mapstructure:"exclude_databases"`
-	confignet.AddrConfig           `mapstructure:",squash"`       // provides Endpoint and Transport
-	configtls.TLSClientSetting     `mapstructure:"tls,omitempty"` // provides SSL details
-	ConnectionPool                 `mapstructure:"connection_pool,omitempty"`
-	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	Username                                string                         `mapstructure:"username"`
+	Password                                configopaque.String            `mapstructure:"password"`
+	Databases                               []string                       `mapstructure:"databases"`
+	ExcludeDatabases                        []string                       `mapstructure:"exclude_databases"`
+	confignet.AddrConfig                    `mapstructure:",squash"`       // provides Endpoint and Transport
+	configtls.ClientConfig                  `mapstructure:"tls,omitempty"` // provides SSL details
+	ConnectionPool                          `mapstructure:"connection_pool,omitempty"`
+	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 }
 
 type ConnectionPool struct {

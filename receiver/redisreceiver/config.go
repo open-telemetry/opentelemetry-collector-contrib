@@ -33,7 +33,7 @@ type Config struct {
 	// to a Redis 6.0 instance, or greater, that is using the Redis ACL system.
 	Password configopaque.String `mapstructure:"password"`
 
-	TLS configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
 	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }

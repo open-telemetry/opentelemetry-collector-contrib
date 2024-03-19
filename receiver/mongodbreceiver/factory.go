@@ -36,7 +36,7 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		TLSClientSetting:     configtls.TLSClientSetting{},
+		ClientConfig:         configtls.ClientConfig{},
 	}
 }
 

@@ -37,11 +37,11 @@ type Config struct {
 }
 
 type AlertConfig struct {
-	Enabled  bool                        `mapstructure:"enabled"`
-	Endpoint string                      `mapstructure:"endpoint"`
-	Secret   configopaque.String         `mapstructure:"secret"`
-	TLS      *configtls.TLSServerSetting `mapstructure:"tls"`
-	Mode     string                      `mapstructure:"mode"`
+	Enabled  bool                    `mapstructure:"enabled"`
+	Endpoint string                  `mapstructure:"endpoint"`
+	Secret   configopaque.String     `mapstructure:"secret"`
+	TLS      *configtls.ServerConfig `mapstructure:"tls"`
+	Mode     string                  `mapstructure:"mode"`
 
 	// these parameters are only relevant in retrieval mode
 	Projects     []*ProjectConfig `mapstructure:"projects"`

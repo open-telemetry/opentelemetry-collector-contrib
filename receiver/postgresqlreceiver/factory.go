@@ -34,7 +34,7 @@ func createDefaultConfig() component.Config {
 			Endpoint:  "localhost:5432",
 			Transport: confignet.TransportTypeTCP,
 		},
-		TLSClientSetting: configtls.TLSClientSetting{
+		ClientConfig: configtls.ClientConfig{
 			Insecure:           false,
 			InsecureSkipVerify: true,
 		},

@@ -31,9 +31,9 @@ func createDefaultConfig() component.Config {
 	cfg.CollectionInterval = 2 * time.Minute
 
 	return &Config{
-		ControllerConfig:     cfg,
-		TLSClientSetting:     configtls.TLSClientSetting{},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		ControllerConfig: cfg,
+		ClientConfig:              configtls.ClientConfig{},
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

@@ -88,8 +88,8 @@ func TestValidate(t *testing.T) {
 					Endpoint: "0.0.0.0:7706",
 					Secret:   "some_secret",
 					Mode:     alertModeListen,
-					TLS: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLS: &configtls.ServerConfig{
+						TLSSetting: configtls.Config{
 							CertFile: "some_cert_file",
 						},
 					},
@@ -106,8 +106,8 @@ func TestValidate(t *testing.T) {
 					Endpoint: "0.0.0.0:7706",
 					Secret:   "some_secret",
 					Mode:     alertModeListen,
-					TLS: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLS: &configtls.ServerConfig{
+						TLSSetting: configtls.Config{
 							KeyFile: "some_key_file",
 						},
 					},

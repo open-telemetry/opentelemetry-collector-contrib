@@ -121,7 +121,7 @@ func tlsConfig() *Config {
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",
 			},
-			TLSSetting: configtls.TLSSetting{
+			Config: configtls.Config{
 				CAFile:   "testdata/testcert.crt",
 				CertFile: "testdata/testcert.crt",
 				KeyFile:  "testdata/testkey.key",
