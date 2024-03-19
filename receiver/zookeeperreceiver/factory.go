@@ -32,12 +32,12 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = defaultCollectionInterval
 	cfg.Timeout = defaultTimeout
 
 	return &Config{
-		ScraperControllerSettings: cfg,
+		ControllerConfig: cfg,
 		TCPAddrConfig: confignet.TCPAddrConfig{
 			Endpoint: localhostgate.EndpointForPort(defaultPort),
 		},
@@ -68,7 +68,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&rConfig.ScraperControllerSettings,
+		&rConfig.ControllerConfig,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scrp),

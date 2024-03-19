@@ -26,7 +26,7 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	scs := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	scs := scraperhelper.NewDefaultControllerConfig()
 	scs.CollectionInterval = 10 * time.Second
 	return &Config{
 		AddrConfig: confignet.AddrConfig{
@@ -35,8 +35,8 @@ func createDefaultConfig() component.Config {
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		ScraperControllerSettings: scs,
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		ControllerConfig:     scs,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -53,5 +53,5 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&oCfg.ScraperControllerSettings, set, consumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewScraperControllerReceiver(&oCfg.ControllerConfig, set, consumer, scraperhelper.AddScraper(scrp))
 }
