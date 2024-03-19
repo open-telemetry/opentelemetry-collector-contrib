@@ -36,22 +36,57 @@ const (
 	// equal zero and it is NOT going to be sampled, ie.: it won't be forwarded
 	// by the collector.
 	doNotSampleSpan
-
-	// Hashing method: The constants below help translate user friendly percentages
-	// to numbers direct used in sampling.
-	numHashBucketsLg2     = 14
-	numHashBuckets        = 0x4000 // Using a power of 2 to avoid division.
-	bitMaskHashBuckets    = numHashBuckets - 1
-	percentageScaleFactor = numHashBuckets / 100.0
-
-	// randomFlagValue is defined in W3C Trace Context Level 2.
-	randomFlagValue = 0x2
 )
 
 type traceProcessor struct {
 	sampler dataSampler
 
 	commonFields
+}
+
+type tracestateCarrier struct {
+	span ptrace.Span
+	sampling.W3CTraceState
+	policy policy
+}
+
+var _ samplingCarrier = &tracestateCarrier{}
+
+func (tc *tracestateCarrier) getPolicy() policy {
+	return tc.policy
+}
+
+func (tc *tracestateCarrier) setPolicy(p policy) {
+	tc.policy = p
+}
+
+func (tc *tracestateCarrier) threshold() (sampling.Threshold, bool) {
+	return tc.W3CTraceState.OTelValue().TValueThreshold()
+}
+
+func (tc *tracestateCarrier) explicitRandomness() (sampling.Randomness, bool) {
+	return tc.W3CTraceState.OTelValue().RValueRandomness()
+}
+
+func (tc *tracestateCarrier) updateThreshold(th sampling.Threshold, tv string) error {
+	return tc.W3CTraceState.OTelValue().UpdateTValueWithSampling(th, tv)
+}
+
+func (tc *tracestateCarrier) setExplicitRandomness(rnd sampling.Randomness) {
+	tc.W3CTraceState.OTelValue().SetRValue(rnd)
+}
+
+func (tc *tracestateCarrier) clearThreshold() {
+	tc.W3CTraceState.OTelValue().ClearTValue()
+}
+
+func (tc *tracestateCarrier) reserialize() error {
+	var w strings.Builder
+	err := tc.W3CTraceState.Serialize(&w)
+	if err == nil {
+		tc.span.TraceState().FromRaw(w.String())
+	}
+	return err
 }
 
 // newTracesProcessor returns a processor.TracesProcessor that will
@@ -64,7 +99,7 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 	}
 	tp := &traceProcessor{
 		commonFields: common,
-		sampler:      makeSampler(cfg, common),
+		sampler:      makeSampler(cfg, common, false),
 	}
 
 	return processorhelper.NewTracesProcessor(
@@ -108,21 +143,18 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 					tp.logger.Error("tracestate", zap.Error(err))
 
 				} else if priority == deferDecision {
-					threshold = tp.sampler.decide(randomness, carrier)
+					threshold = tp.sampler.decide(carrier)
 				}
 
 				sampled := threshold.ShouldSample(randomness)
 
 				if sampled && carrier != nil {
-					err := carrier.updateThreshold(threshold, threshold.TValue())
-					if err != nil {
+					if err := carrier.updateThreshold(threshold, threshold.TValue()); err != nil {
 						tp.logger.Warn("tracestate", zap.Error(err))
 					}
-					var w strings.Builder
-					if err := carrier.serialize(&w); err != nil {
+					if err := carrier.reserialize(); err != nil {
 						tp.logger.Debug("tracestate serialize", zap.Error(err))
 					}
-					s.TraceState().FromRaw(w.String())
 				}
 
 				if priority == mustSampleSpan {

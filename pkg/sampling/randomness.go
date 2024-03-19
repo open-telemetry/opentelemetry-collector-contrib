@@ -30,6 +30,9 @@ var ErrRValueSize = errors.New("r-value must have 14 hex digits")
 // the TraceID, as specified in https://www.w3.org/TR/trace-context-2/#randomness-of-trace-id
 const leastHalfTraceIDThresholdMask = MaxAdjustedCount - 1
 
+// AllProbabilitiesRandomness is sampled at all probabilities.
+var AllProbabilitiesRandomness = Randomness{unsigned: numRandomnessValues - 1}
+
 // Randomness may be derived from R-value or TraceID.
 //
 // Randomness contains 56 bits of randomness, derived in one of two ways, see:
@@ -85,6 +88,12 @@ func (rnd Randomness) RValue() string {
 	//   numRandomnessValues is 2^56:    100000000000000
 	//   randomness+numRandomnessValues: 100aabbccddeeff
 	//   strip the leading "1":           00aabbccddeeff
+	//
+	// If the value is out-of-range, the empty string will be
+	// returned.
+	if rnd.unsigned >= numRandomnessValues {
+		return ""
+	}
 	return strconv.FormatUint(numRandomnessValues+rnd.unsigned, hexBase)[1:]
 }
 
@@ -95,7 +104,7 @@ func (rnd Randomness) Unsigned() uint64 {
 
 func UnsignedToRandomness(x uint64) (Randomness, error) {
 	if x >= MaxAdjustedCount {
-		return Randomness{}, ErrRValueSize
+		return AllProbabilitiesRandomness, ErrRValueSize
 	}
 	return Randomness{unsigned: x}, nil
 }

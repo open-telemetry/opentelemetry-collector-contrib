@@ -5,12 +5,23 @@ package probabilisticsamplerprocessor
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+)
+
+const (
+	// Hashing method: The constants below help translate user friendly percentages
+	// to numbers direct used in sampling.
+	numHashBucketsLg2     = 14
+	numHashBuckets        = 0x4000 // Using a power of 2 to avoid division.
+	bitMaskHashBuckets    = numHashBuckets - 1
+	percentageScaleFactor = numHashBuckets / 100.0
+
+	// randomFlagValue is defined in W3C Trace Context Level 2.
+	randomFlagValue = 0x2
 )
 
 type SamplerMode string
@@ -23,7 +34,23 @@ const (
 	modeUnset    SamplerMode = ""
 )
 
+var (
+	ErrRandomnessInUse = fmt.Errorf("log record has sampling randomness, equalizing or proportional mode recommended")
+	ErrThresholdInUse  = fmt.Errorf("log record has sampling threshold, equalizing or proportional mode recommended")
+)
+
+type policy string
+
+const (
+	AlwaysSampling     policy = "always_sampling"
+	TraceIDHashing     policy = "trace_id_hash"
+	TraceIDW3CSpec     policy = "trace_id_w3c"
+	SamplingRandomness policy = "sampling_randomness"
+)
+
 type samplingCarrier interface {
+	getPolicy() policy
+
 	explicitRandomness() (sampling.Randomness, bool)
 	setExplicitRandomness(sampling.Randomness)
 
@@ -31,12 +58,12 @@ type samplingCarrier interface {
 	threshold() (sampling.Threshold, bool)
 	updateThreshold(sampling.Threshold, string) error
 
-	serialize(io.StringWriter) error
+	reserialize() error
 }
 
 type dataSampler interface {
 	// decide reports the result based on a probabilistic decision.
-	decide(rnd sampling.Randomness, carrier samplingCarrier) sampling.Threshold
+	decide(carrier samplingCarrier) sampling.Threshold
 
 	// randomnessFromSpan extracts randomness and returns a carrier specific to traces data.
 	randomnessFromSpan(s ptrace.Span) (randomness sampling.Randomness, carrier samplingCarrier, err error)
@@ -81,6 +108,12 @@ type hashingSampler struct {
 	hashSeed        uint32
 	tvalueThreshold sampling.Threshold
 
+	// Logs only: name of attribute to obtain randomness
+	logsRandomnessSourceAttribute string
+
+	// Logs only: name of attribute to obtain randomness
+	logsTraceIDEnabled bool
+
 	consistentCommon
 }
 
@@ -93,6 +126,11 @@ type consistentCommon struct {
 // consistentTracestateCommon includes all except the legacy hash-based
 // method, which overrides randomnessFromX.
 type consistentTracestateCommon struct {
+	// logsRandomnessSourceAttribute is used in non-strict mode
+	// for logs data when no trace ID is available.
+	logsRandomnessSourceAttribute string
+	logsRandomnessHashSeed        uint32
+
 	consistentCommon
 }
 
@@ -120,15 +158,96 @@ type proportionalSampler struct {
 	consistentTracestateCommon
 }
 
+// randomnessFromLogRecord (hashingSampler) uses a hash function over
+// the TraceID
 func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (sampling.Randomness, samplingCarrier, error) {
-	// TBD@@@
-	panic("nope")
-	//return sampling.Randomness{}, nil, nil
+	// when no randomness is present, we set AllProbabilitiesRandomness
+	how := AlwaysSampling
+	rnd := sampling.AllProbabilitiesRandomness
+
+	var lidBytes []byte
+	if th.logsTraceIDEnabled && !l.TraceID().IsEmpty() {
+		value := l.TraceID()
+		how = TraceIDHashing
+		lidBytes = value[:]
+	}
+	if lidBytes == nil && th.logsRandomnessSourceAttribute != "" {
+		if value, ok := l.Attributes().Get(th.logsRandomnessSourceAttribute); ok {
+			how = policy(th.logsRandomnessSourceAttribute)
+			lidBytes = getBytesFromValue(value)
+		}
+	}
+	lrc := newLogRecordCarrier(l, how)
+
+	// If the log record contains a proper R-value or T-value, we
+	// have to leave it alone.  The user should not be using this
+	// sampler mode if they are using specified forms of consistent
+	// sampling in OTel.
+
+	var err error
+
+	if len(lidBytes) != 0 {
+		return rnd, lrc, ErrMissingRandomness
+	}
+
+	rnd = randomnessFromBytes(lidBytes, th.hashSeed)
+
+	// When no sampling information is present, add an R-value.  The threshold
+	// will be added following the decision.
+	if !th.strict {
+		lrc.setExplicitRandomness(rnd)
+	}
+	if _, has := lrc.explicitRandomness(); has {
+		err = ErrRandomnessInUse
+	} else if _, has := lrc.threshold(); has {
+		err = ErrThresholdInUse
+	}
+
+	return rnd, lrc, err
 }
 
-func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (sampling.Randomness, samplingCarrier, error) {
-	tid := s.TraceID()
-	hashed32 := computeHash(tid[:], th.hashSeed)
+func (ctc *consistentTracestateCommon) randomnessFromLogRecord(l plog.LogRecord) (sampling.Randomness, samplingCarrier, error) {
+	tid := l.TraceID()
+
+	lrc := newLogRecordCarrier(l, AlwaysSampling)
+	rnd := sampling.AllProbabilitiesRandomness
+
+	var err error
+	if rv, has := lrc.explicitRandomness(); has {
+		rnd = rv
+		lrc.policy = SamplingRandomness
+	} else if !tid.IsEmpty() {
+		if ctc.strict && (l.Flags()&randomFlagValue) != randomFlagValue {
+			err = ErrMissingRandomness
+		}
+		lrc.policy = TraceIDW3CSpec
+		rnd = sampling.TraceIDToRandomness(tid)
+	} else if ctc.strict {
+		err = ErrMissingRandomness
+	} else {
+		// The case of no TraceID and non-strict mode remains.  Use the
+		// configured attribute.
+
+		var lidBytes []byte
+		if ctc.logsRandomnessSourceAttribute == "" {
+			err = ErrMissingRandomness
+		} else if value, ok := l.Attributes().Get(ctc.logsRandomnessSourceAttribute); ok {
+			lidBytes = getBytesFromValue(value)
+		}
+
+		if len(lidBytes) == 0 {
+			err = ErrMissingRandomness
+		} else {
+			lrc.policy = policy(ctc.logsRandomnessSourceAttribute)
+			rnd = randomnessFromBytes(lidBytes, ctc.logsRandomnessHashSeed)
+		}
+	}
+
+	return rnd, lrc, err
+}
+
+func randomnessFromBytes(b []byte, hashSeed uint32) sampling.Randomness {
+	hashed32 := computeHash(b, hashSeed)
 	hashed := uint64(hashed32 & bitMaskHashBuckets)
 
 	// Ordinarily, hashed is compared against an acceptance
@@ -162,12 +281,21 @@ func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (sampling.Randomness
 	// - only 14 out of 56 bits are used in the sampling decision,
 	// - there are only 32 actual random bits.
 	rnd, _ := sampling.UnsignedToRandomness(rnd56)
+	return rnd
+}
+
+func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (sampling.Randomness, samplingCarrier, error) {
+	tid := s.TraceID()
+	rnd := randomnessFromBytes(tid[:], th.hashSeed)
 	if th.strict {
 		// In strict mode, we never parse the TraceState and let
 		// it pass through untouched.
 		return rnd, nil, nil
 	}
-	tsc := &tracestateCarrier{}
+	tsc := &tracestateCarrier{
+		span:   s,
+		policy: TraceIDHashing,
+	}
 
 	var err error
 	tsc.W3CTraceState, err = sampling.NewW3CTraceState(s.TraceState().AsRaw())
@@ -184,25 +312,23 @@ func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (sampling.Randomness
 	// sampler mode if they are using specified forms of consistent
 	// sampling in OTel.
 	if _, has := tsc.explicitRandomness(); has {
-		th.logger.Warn("tracestate has r-value, equalizing or proportional mode recommended")
+		err = ErrRandomnessInUse
 	} else if _, has := tsc.threshold(); has {
-		th.logger.Warn("tracestate has t-value, equalizing or proportional mode recommended")
+		err = ErrThresholdInUse
 	} else {
-		// When no sampling information is present, add an R-value.  The threshold
-		// will be added following the decision.
+		// When no sampling information is present, add a
+		// Randomness value.
 		tsc.setExplicitRandomness(rnd)
 	}
 	return rnd, tsc, nil
 }
 
-func (ctc *consistentTracestateCommon) randomnessFromLogRecord(l plog.LogRecord) (sampling.Randomness, samplingCarrier, error) {
-	// @@@
-	panic("nope")
-}
-
 func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (randomness sampling.Randomness, carrier samplingCarrier, err error) {
 	rawts := s.TraceState().AsRaw()
-	tsc := &tracestateCarrier{}
+	tsc := &tracestateCarrier{
+		span:   s,
+		policy: "trace_id_w3c",
+	}
 
 	// Parse the arriving TraceState.
 	tsc.W3CTraceState, err = sampling.NewW3CTraceState(rawts)
@@ -254,7 +380,7 @@ func consistencyCheck(randomness sampling.Randomness, carrier samplingCarrier, c
 //
 // Extending this logic, we round very small probabilities up to the
 // minimum supported value(s) which varies according to sampler mode.
-func makeSampler(cfg *Config, common commonFields) dataSampler {
+func makeSampler(cfg *Config, common commonFields, isLogs bool) dataSampler {
 	// README allows percents >100 to equal 100%.
 	pct := cfg.SamplingPercentage
 	if pct > 100 {
@@ -262,7 +388,10 @@ func makeSampler(cfg *Config, common commonFields) dataSampler {
 	}
 	mode := cfg.SamplerMode
 	if mode == modeUnset {
-		if cfg.HashSeed != 0 {
+		// Reasons to choose the legacy behavior include:
+		// (a) having set the hash seed
+		// (b) logs signal w/o trace ID source
+		if cfg.HashSeed != 0 || (isLogs && cfg.AttributeSource != traceIDAttributeSource) {
 			mode = HashSeed
 		} else {
 			mode = DefaultMode
@@ -273,7 +402,9 @@ func makeSampler(cfg *Config, common commonFields) dataSampler {
 		commonFields: common,
 	}
 	ctcom := consistentTracestateCommon{
-		consistentCommon: ccom,
+		logsRandomnessSourceAttribute: cfg.FromAttribute,
+		logsRandomnessHashSeed:        cfg.HashSeed,
+		consistentCommon:              ccom,
 	}
 	never := &neverSampler{
 		consistentTracestateCommon: ctcom,
@@ -298,14 +429,16 @@ func makeSampler(cfg *Config, common commonFields) dataSampler {
 		threshold, _ := sampling.ProbabilityToThresholdWithPrecision(ratio, cfg.SamplingPrecision)
 
 		return &equalizingSampler{
-			tvalueThreshold:            threshold,
+			tvalueThreshold: threshold,
+
 			consistentTracestateCommon: ctcom,
 		}
 
 	case Proportional:
 		return &proportionalSampler{
-			ratio:                      ratio,
-			prec:                       cfg.SamplingPrecision,
+			ratio: ratio,
+			prec:  cfg.SamplingPrecision,
+
 			consistentTracestateCommon: ctcom,
 		}
 
@@ -332,59 +465,30 @@ func makeSampler(cfg *Config, common commonFields) dataSampler {
 
 		threshold, _ := sampling.ThresholdFromUnsigned(reject56)
 
-		ts := &hashingSampler{
+		return &hashingSampler{
 			consistentCommon: ccom,
 			tvalueThreshold:  threshold,
-		}
 
-		return ts
+			// Logs specific:
+			logsTraceIDEnabled:            cfg.AttributeSource == traceIDAttributeSource,
+			logsRandomnessSourceAttribute: cfg.FromAttribute,
+		}
 	}
 }
 
-type tracestateCarrier struct {
-	sampling.W3CTraceState
-}
-
-var _ samplingCarrier = &tracestateCarrier{}
-
-func (tc *tracestateCarrier) threshold() (sampling.Threshold, bool) {
-	return tc.W3CTraceState.OTelValue().TValueThreshold()
-}
-
-func (tc *tracestateCarrier) explicitRandomness() (sampling.Randomness, bool) {
-	return tc.W3CTraceState.OTelValue().RValueRandomness()
-}
-
-func (tc *tracestateCarrier) updateThreshold(th sampling.Threshold, tv string) error {
-	// return should, nil
-	return tc.W3CTraceState.OTelValue().UpdateTValueWithSampling(th, tv)
-}
-
-func (tc *tracestateCarrier) setExplicitRandomness(rnd sampling.Randomness) {
-	tc.W3CTraceState.OTelValue().SetRValue(rnd)
-}
-
-func (tc *tracestateCarrier) clearThreshold() {
-	tc.W3CTraceState.OTelValue().ClearTValue()
-}
-
-func (tc *tracestateCarrier) serialize(w io.StringWriter) error {
-	return tc.W3CTraceState.Serialize(w)
-}
-
-func (*neverSampler) decide(_ sampling.Randomness, _ samplingCarrier) sampling.Threshold {
+func (*neverSampler) decide(_ samplingCarrier) sampling.Threshold {
 	return sampling.NeverSampleThreshold
 }
 
-func (th *hashingSampler) decide(rnd sampling.Randomness, carrier samplingCarrier) sampling.Threshold {
+func (th *hashingSampler) decide(carrier samplingCarrier) sampling.Threshold {
 	return th.tvalueThreshold
 }
 
-func (te *equalizingSampler) decide(rnd sampling.Randomness, carrier samplingCarrier) sampling.Threshold {
+func (te *equalizingSampler) decide(carrier samplingCarrier) sampling.Threshold {
 	return te.tvalueThreshold
 }
 
-func (tp *proportionalSampler) decide(rnd sampling.Randomness, carrier samplingCarrier) sampling.Threshold {
+func (tp *proportionalSampler) decide(carrier samplingCarrier) sampling.Threshold {
 	incoming := 1.0
 	if tv, has := carrier.threshold(); has {
 		incoming = tv.Probability()
@@ -403,33 +507,3 @@ func (tp *proportionalSampler) decide(rnd sampling.Randomness, carrier samplingC
 	}
 	return threshold
 }
-
-// if err != nil {
-// 	return threshold, err
-// }
-
-// return
-// should := threshold.ShouldSample(rnd)
-// if should {
-// 	// Note: an unchecked error here, because the threshold is
-// 	// larger by construction via `incoming*tp.ratio`, which was
-// 	// already range-checked above.
-// 	_ = carrier.updateThreshold(threshold, threshold.TValue())
-// }
-// return should, err
-
-// @@@
-// should := te.tvalueThreshold.ShouldSample(rnd)
-// if should {
-// 	err := carrier.updateThreshold(te.tvalueThreshold, te.tValueEncoding)
-// 	if err != nil {
-// 		te.logger.Warn("tracestate", zap.Error(err))
-// 	}
-// }
-
-// func (*consistentCommon) update(should bool, wts samplingCarrier) {
-// 	// When this sampler decided not to sample, the t-value becomes zero.
-// 	if !should {
-// 		wts.clearThreshold()
-// 	}
-// }

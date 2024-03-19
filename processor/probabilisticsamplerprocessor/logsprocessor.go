@@ -7,6 +7,7 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/consumer"
@@ -14,14 +15,85 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/zap"
 )
 
-type logSamplerProcessor struct {
-	sampler          dataSampler
-	traceIDEnabled   bool
-	samplingSource   string
+type logsProcessor struct {
+	sampler dataSampler
+
 	samplingPriority string
+	precision        int
 	commonFields
+}
+
+type recordCarrier struct {
+	record plog.LogRecord
+	policy policy
+}
+
+var _ samplingCarrier = &recordCarrier{}
+
+func newLogRecordCarrier(l plog.LogRecord, policy policy) *recordCarrier {
+	return &recordCarrier{
+		record: l,
+		policy: policy,
+	}
+}
+
+func (rc *recordCarrier) getPolicy() policy {
+	return rc.policy
+}
+
+func (rc *recordCarrier) threshold() (th sampling.Threshold, _ bool) {
+	th = sampling.AlwaysSampleThreshold
+	val, ok := rc.record.Attributes().Get("sampling.threshold")
+	if !ok {
+		return th, false
+	}
+	if val.Type() != pcommon.ValueTypeStr {
+		return th, false
+	}
+	th, err := sampling.TValueToThreshold(val.Str())
+	return th, err != nil
+}
+
+func (rc *recordCarrier) explicitRandomness() (rnd sampling.Randomness, _ bool) {
+	rnd = sampling.AllProbabilitiesRandomness
+	val, ok := rc.record.Attributes().Get("sampling.randomness")
+	if !ok {
+		return rnd, false
+	}
+	if val.Type() != pcommon.ValueTypeStr {
+		return rnd, false
+	}
+	rnd, err := sampling.RValueToRandomness(val.Str())
+	return rnd, err != nil
+}
+
+func (rc *recordCarrier) updateThreshold(th sampling.Threshold, tv string) error {
+	if tv == "" {
+		rc.clearThreshold()
+		return nil
+	}
+	exist, has := rc.threshold()
+	if has && sampling.ThresholdLessThan(th, exist) {
+		return sampling.ErrInconsistentSampling
+	}
+
+	rc.record.Attributes().PutStr("sampling.threshold", tv)
+	return nil
+}
+
+func (rc *recordCarrier) setExplicitRandomness(rnd sampling.Randomness) {
+	rc.record.Attributes().PutStr("sampling.randomness", rnd.RValue())
+}
+
+func (rc *recordCarrier) clearThreshold() {
+	rc.record.Attributes().Remove("sampling.threshold")
+}
+
+func (rc *recordCarrier) reserialize() error {
+	return nil
 }
 
 // newLogsProcessor returns a processor.LogsProcessor that will perform head sampling according to the given
@@ -32,13 +104,13 @@ func newLogsProcessor(ctx context.Context, set processor.CreateSettings, nextCon
 		logger: set.Logger,
 	}
 
-	lsp := &logSamplerProcessor{
-		traceIDEnabled:   cfg.AttributeSource == traceIDAttributeSource,
+	lsp := &logsProcessor{
 		samplingPriority: cfg.SamplingPriority,
-		samplingSource:   cfg.FromAttribute,
+		precision:        cfg.SamplingPrecision,
 		commonFields:     common,
-		sampler:          makeSampler(cfg, common),
 	}
+
+	lsp.sampler = makeSampler(cfg, common, true)
 
 	return processorhelper.NewLogsProcessor(
 		ctx,
@@ -49,46 +121,47 @@ func newLogsProcessor(ctx context.Context, set processor.CreateSettings, nextCon
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-func (lsp *logSamplerProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+func (lsp *logsProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
 		rl.ScopeLogs().RemoveIf(func(ill plog.ScopeLogs) bool {
 			ill.LogRecords().RemoveIf(func(l plog.LogRecord) bool {
 
-				tagPolicyValue := "always_sampling"
-				// Pick the sampling source.
-				var lidBytes []byte
-				if lsp.traceIDEnabled && !l.TraceID().IsEmpty() {
-					value := l.TraceID()
-					tagPolicyValue = "trace_id_hash"
-					lidBytes = value[:]
+				randomness, carrier, err := lsp.sampler.randomnessFromLogRecord(l)
+				if err != nil {
+					lsp.logger.Error("log sampling", zap.Error(err))
+					return true
 				}
-				if lidBytes == nil && lsp.samplingSource != "" {
-					if value, ok := l.Attributes().Get(lsp.samplingSource); ok {
-						tagPolicyValue = lsp.samplingSource
-						lidBytes = getBytesFromValue(value)
-					}
+
+				policy := carrier.getPolicy()
+
+				if err := consistencyCheck(randomness, carrier, lsp.commonFields); err != nil {
+					// the consistency check resets the arriving
+					// threshold if it is inconsistent with the
+					// sampling decision.
+					lsp.logger.Error("log sampling", zap.Error(err))
 				}
+				threshold := lsp.sampler.decide(carrier)
+
 				// Note: in logs, unlike traces, the sampling priority
 				// attribute is interpreted as a request to be sampled.
-				priority := lsp.hashScaledSamplingRate
 				if lsp.samplingPriority != "" {
-					if localPriority, ok := l.Attributes().Get(lsp.samplingPriority); ok {
-						switch localPriority.Type() {
-						case pcommon.ValueTypeDouble:
-							priority = uint32(localPriority.Double() * percentageScaleFactor)
-						case pcommon.ValueTypeInt:
-							priority = uint32(float64(localPriority.Int()) * percentageScaleFactor)
-						}
+					priorityThreshold := lsp.logRecordToPriorityThreshold(l)
+
+					if sampling.ThresholdLessThan(priorityThreshold, threshold) {
+						// Note: there is no effort to install
+						// "sampling_priority" as the policy name,
+						// which the traces processor will do.
+						threshold = priorityThreshold
 					}
 				}
 
-				sampled := computeHash(lidBytes, lsp.hashSeed)&bitMaskHashBuckets < priority
-				var err error = stats.RecordWithTags(
+				sampled := threshold.ShouldSample(randomness)
+
+				if err := stats.RecordWithTags(
 					ctx,
-					[]tag.Mutator{tag.Upsert(tagPolicyKey, tagPolicyValue), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
+					[]tag.Mutator{tag.Upsert(tagPolicyKey, string(policy)), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
 					statCountLogsSampled.M(int64(1)),
-				)
-				if err != nil {
+				); err != nil {
 					lsp.logger.Error(err.Error())
 				}
 
@@ -111,4 +184,25 @@ func getBytesFromValue(value pcommon.Value) []byte {
 		return value.Bytes().AsRaw()
 	}
 	return []byte(value.AsString())
+}
+
+func (lsp *logsProcessor) logRecordToPriorityThreshold(l plog.LogRecord) sampling.Threshold {
+	if localPriority, ok := l.Attributes().Get(lsp.samplingPriority); ok {
+		// Potentially raise the sampling probability to minProb
+		minProb := 0.0
+		switch localPriority.Type() {
+		case pcommon.ValueTypeDouble:
+			minProb = localPriority.Double() / 100.0
+		case pcommon.ValueTypeInt:
+			minProb = float64(localPriority.Int()) / 100.0
+		}
+		if minProb != 0 {
+			if th, err := sampling.ProbabilityToThresholdWithPrecision(localPriority.Double()/100.0, lsp.precision); err != nil {
+				// The record has supplied a valid alternative sampling proabability
+				return th
+			}
+
+		}
+	}
+	return sampling.NeverSampleThreshold
 }
