@@ -80,7 +80,7 @@ func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJo
 		setSpanTimes(span, steps[0].StartedAt, steps[len(steps)-1].CompletedAt)
 	} else {
 		logger.Warn("No steps found, defaulting to job times")
-		setSpanTimes(span, job.CreatedAt, job.CompletedAt)
+		setSpanTimes(span, job.StartedAt, job.CompletedAt)
 	}
 
 	allSuccessful := true
