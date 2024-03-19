@@ -37,7 +37,7 @@ func createDefaultConfig() component.Config {
 		TCPAddrConfig: confignet.TCPAddrConfig{
 			Endpoint: defaultEndpoint,
 		},
-		TLSClientSetting: configtls.TLSClientSetting{
+		ClientConfig: configtls.ClientConfig{
 			Insecure: true,
 		},
 		ScraperControllerSettings: scs,

@@ -68,14 +68,14 @@ type Config struct {
 
 // BaseConfig is the detailed configuration of a tcp input operator.
 type BaseConfig struct {
-	MaxLogSize       helper.ByteSize             `mapstructure:"max_log_size,omitempty"`
-	ListenAddress    string                      `mapstructure:"listen_address,omitempty"`
-	TLS              *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
-	AddAttributes    bool                        `mapstructure:"add_attributes,omitempty"`
-	OneLogPerPacket  bool                        `mapstructure:"one_log_per_packet,omitempty"`
-	Encoding         string                      `mapstructure:"encoding,omitempty"`
-	SplitConfig      split.Config                `mapstructure:"multiline,omitempty"`
-	TrimConfig       trim.Config                 `mapstructure:",squash"`
+	MaxLogSize       helper.ByteSize         `mapstructure:"max_log_size,omitempty"`
+	ListenAddress    string                  `mapstructure:"listen_address,omitempty"`
+	TLS              *configtls.ServerConfig `mapstructure:"tls,omitempty"`
+	AddAttributes    bool                    `mapstructure:"add_attributes,omitempty"`
+	OneLogPerPacket  bool                    `mapstructure:"one_log_per_packet,omitempty"`
+	Encoding         string                  `mapstructure:"encoding,omitempty"`
+	SplitConfig      split.Config            `mapstructure:"multiline,omitempty"`
+	TrimConfig       trim.Config             `mapstructure:",squash"`
 	SplitFuncBuilder SplitFuncBuilder
 }
 

@@ -42,6 +42,9 @@ type traceToMetricConnector struct {
 
 	// exit specifies the exit channel, which will be closed upon shutdown.
 	exit chan struct{}
+
+	// isStarted tracks whether Start() has been called.
+	isStarted bool
 }
 
 var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
@@ -91,11 +94,17 @@ func (c *traceToMetricConnector) Start(_ context.Context, _ component.Host) erro
 	c.logger.Info("Starting datadogconnector")
 	c.agent.Start()
 	go c.run()
+	c.isStarted = true
 	return nil
 }
 
 // Shutdown implements the component.Component interface.
 func (c *traceToMetricConnector) Shutdown(context.Context) error {
+	if !c.isStarted {
+		// Note: it is not necessary to manually close c.exit, c.in and c.agent.(*datadog.TraceAgent).exit channels as these are unused.
+		c.logger.Info("Requested shutdown, but not started, ignoring.")
+		return nil
+	}
 	c.logger.Info("Shutting down datadog connector")
 	c.logger.Info("Stopping datadog agent")
 	// stop the agent and wait for the run loop to exit

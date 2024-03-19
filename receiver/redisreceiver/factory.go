@@ -32,7 +32,7 @@ func createDefaultConfig() component.Config {
 		AddrConfig: confignet.AddrConfig{
 			Transport: confignet.TransportTypeTCP,
 		},
-		TLS: configtls.TLSClientSetting{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 		ScraperControllerSettings: scs,
