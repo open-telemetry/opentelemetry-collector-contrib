@@ -30,7 +30,7 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig creates a config for Big-IP with as many default values as possible
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
 		},
 		ClientConfig: confighttp.ClientConfig{
@@ -54,5 +54,5 @@ func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rC
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(scraper))
+	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(scraper))
 }

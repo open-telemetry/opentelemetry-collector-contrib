@@ -15,7 +15,6 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/configssh"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/metadata"
 )
 
 // check that OTel Collector patterns are implemented
@@ -41,7 +40,7 @@ func TestValidate(t *testing.T) {
 					Username: "otelu",
 					Endpoint: "goodhost:2222",
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: multierr.Combine(errMissingPasswordAndKeyFile),
 		},
@@ -52,7 +51,7 @@ func TestValidate(t *testing.T) {
 					Endpoint: "goodhost:2222",
 					KeyFile:  "/home/.ssh/id_rsa",
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: multierr.Combine(
 				errMissingUsername,
@@ -66,7 +65,7 @@ func TestValidate(t *testing.T) {
 					Username: "otelu",
 					Password: "otelp",
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: multierr.Combine(
 				errInvalidEndpoint,
@@ -80,7 +79,7 @@ func TestValidate(t *testing.T) {
 					Username: "otelu",
 					Password: "otelp",
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: error(nil),
 		},
@@ -92,7 +91,7 @@ func TestValidate(t *testing.T) {
 					Username: "otelu",
 					KeyFile:  "/possibly/a_path",
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: error(nil),
 		},
@@ -126,7 +125,7 @@ func TestLoadConfig(t *testing.T) {
 	expectedConfig, ok := NewFactory().CreateDefaultConfig().(*Config)
 	require.True(t, ok)
 
-	expectedConfig.ScraperControllerSettings = scraperhelper.ScraperControllerSettings{
+	expectedConfig.ControllerConfig = scraperhelper.ControllerConfig{
 		InitialDelay:       time.Second,
 		CollectionInterval: 10 * time.Second,
 	}

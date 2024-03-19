@@ -40,7 +40,7 @@ func TestConfig(t *testing.T) {
 			},
 			Username: "test",
 			Password: "test",
-			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: 10 * time.Second,
 				InitialDelay:       time.Second,
 			},
