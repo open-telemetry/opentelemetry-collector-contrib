@@ -136,34 +136,53 @@ func (c *traceToMetricConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (c *traceToMetricConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
-	if len(c.resourceAttrs) > 0 {
-		for i := 0; i < traces.ResourceSpans().Len(); i++ {
-			rs := traces.ResourceSpans().At(i)
-			attrs := rs.Resource().Attributes()
-			containerID, ok := attrs.Get(semconv.AttributeContainerID)
-			if !ok {
-				continue
-			}
-			ddContainerTags := attributes.ContainerTagsFromResourceAttributes(attrs)
-			for attr := range c.resourceAttrs {
-				if val, ok := ddContainerTags[attr]; ok {
-					var cacheVal map[string]struct{}
-					if v, ok := c.containerTagCache.Get(containerID.AsString()); ok {
-						cacheVal = v.(map[string]struct{})
-						cacheVal[fmt.Sprintf("%s:%s", attr, val)] = struct{}{}
-					} else {
-						cacheVal = make(map[string]struct{})
-						cacheVal[fmt.Sprintf("%s:%s", attr, val)] = struct{}{}
-						c.containerTagCache.Set(containerID.AsString(), cacheVal, cache.DefaultExpiration)
-					}
+func (c *traceToMetricConnector) populateContainerTagsCache(traces ptrace.Traces) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		attrs := rs.Resource().Attributes()
+		containerID, ok := attrs.Get(semconv.AttributeContainerID)
+		if !ok {
+			continue
+		}
+		ddContainerTags := attributes.ContainerTagsFromResourceAttributes(attrs)
+		for attr := range c.resourceAttrs {
+			if val, ok := ddContainerTags[attr]; ok {
+				var cacheVal map[string]struct{}
+				if v, ok := c.containerTagCache.Get(containerID.AsString()); ok {
+					cacheVal = v.(map[string]struct{})
+					cacheVal[fmt.Sprintf("%s:%s", attr, val)] = struct{}{}
+				} else {
+					cacheVal = make(map[string]struct{})
+					cacheVal[fmt.Sprintf("%s:%s", attr, val)] = struct{}{}
+					c.containerTagCache.Set(containerID.AsString(), cacheVal, cache.DefaultExpiration)
+				}
 
+			}
+		}
+	}
+}
+
+func (c *traceToMetricConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
+	c.populateContainerTagsCache(traces)
+	c.agent.Ingest(ctx, traces)
+	return nil
+}
+
+func (c *traceToMetricConnector) enrichStatsPayload(stats *pb.StatsPayload) {
+	for _, stat := range stats.Stats {
+		if stat.ContainerID != "" {
+			if tags, ok := c.containerTagCache.Get(stat.ContainerID); ok {
+				tagList := tags.(map[string]struct{})
+				for _, tag := range stat.Tags {
+					tagList[tag] = struct{}{}
+				}
+				stat.Tags = make([]string, 0, len(tagList))
+				for tag := range tagList {
+					stat.Tags = append(stat.Tags, tag)
 				}
 			}
 		}
 	}
-	c.agent.Ingest(ctx, traces)
-	return nil
 }
 
 // run awaits incoming stats resulting from the agent's ingestion, converts them
@@ -180,21 +199,7 @@ func (c *traceToMetricConnector) run() {
 			var err error
 			// Enrich the stats with container tags
 			if len(c.resourceAttrs) > 0 {
-				for _, stat := range stats.Stats {
-					if stat.ContainerID != "" {
-						if tags, ok := c.containerTagCache.Get(stat.ContainerID); ok {
-							tagList := tags.(map[string]struct{})
-							// Add unique tags to the stats
-							for _, tag := range stat.Tags {
-								tagList[tag] = struct{}{}
-							}
-							stat.Tags = make([]string, 0, len(tagList))
-							for tag := range tagList {
-								stat.Tags = append(stat.Tags, tag)
-							}
-						}
-					}
-				}
+				c.enrichStatsPayload(stats)
 			}
 
 			c.logger.Debug("Received stats payload", zap.Any("stats", stats))
