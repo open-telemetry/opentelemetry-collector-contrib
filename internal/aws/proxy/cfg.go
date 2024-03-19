@@ -23,7 +23,7 @@ type Config struct {
 
 	// TLSSetting struct exposes TLS client configuration when forwarding
 	// calls to the AWS X-Ray backend.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
 	// Region is the AWS region the local TCP server forwards requests to.
 	Region string `mapstructure:"region"`
@@ -52,7 +52,7 @@ func DefaultConfig() *Config {
 			Endpoint: localhostgate.EndpointForPort(2000),
 		},
 		ProxyAddress: "",
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure:   false,
 			ServerName: "",
 		},

@@ -39,7 +39,7 @@ type Config struct {
 	CollectClusterMetrics                   bool                          `mapstructure:"collect_cluster_metrics"`
 	Timeout                                 time.Duration                 `mapstructure:"timeout"`
 	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	TLS                                     *configtls.TLSClientSetting   `mapstructure:"tls,omitempty"`
+	TLS                                     *configtls.ClientConfig       `mapstructure:"tls,omitempty"`
 }
 
 // Validate validates the values of the given Config, and returns an error if validation fails
