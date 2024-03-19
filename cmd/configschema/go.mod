@@ -703,12 +703,12 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0 // indirect
-	k8s.io/api v0.29.2 // indirect
-	k8s.io/apimachinery v0.29.2 // indirect
-	k8s.io/client-go v0.29.2 // indirect
+	k8s.io/api v0.29.3 // indirect
+	k8s.io/apimachinery v0.29.3 // indirect
+	k8s.io/client-go v0.29.3 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
-	k8s.io/kubelet v0.29.2 // indirect
+	k8s.io/kubelet v0.29.3 // indirect
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e // indirect
 	sigs.k8s.io/controller-runtime v0.17.2 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
