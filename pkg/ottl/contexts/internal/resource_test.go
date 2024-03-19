@@ -371,11 +371,16 @@ func createResource() pcommon.Resource {
 }
 
 type resourceContext struct {
-	resource pcommon.Resource
+	resource      pcommon.Resource
+	schemaURLItem SchemaURLItem
 }
 
 func (r *resourceContext) GetResource() pcommon.Resource {
 	return r.resource
+}
+
+func (r *resourceContext) GetResourceSchemaURLItem() SchemaURLItem {
+	return r.schemaURLItem
 }
 
 func newResourceContext(resource pcommon.Resource) *resourceContext {
