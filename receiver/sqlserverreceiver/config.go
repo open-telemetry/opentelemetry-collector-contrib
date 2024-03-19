@@ -13,10 +13,10 @@ import (
 
 // Config defines configuration for a sqlserver receiver.
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	InstanceName                            string `mapstructure:"instance_name"`
-	ComputerName                            string `mapstructure:"computer_name"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	InstanceName                   string `mapstructure:"instance_name"`
+	ComputerName                   string `mapstructure:"computer_name"`
 }
 
 func (cfg *Config) Validate() error {

@@ -63,7 +63,7 @@ type alertsReceiver struct {
 	secret      string
 	server      *http.Server
 	mode        string
-	tlsSettings *configtls.TLSServerSetting
+	tlsSettings *configtls.ServerConfig
 	consumer    consumer.Logs
 	wg          *sync.WaitGroup
 

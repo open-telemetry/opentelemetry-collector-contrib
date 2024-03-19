@@ -49,7 +49,7 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 // Create the default config based on the const(s) defined above.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 		// TODO: metrics builder configuration may need to be in each sub scraper,
 		// TODO: for right now setting here because the metrics in this receiver will apply to all
 		// TODO: scrapers defined as a common set of gitprovider
@@ -80,7 +80,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&conf.ScraperControllerSettings,
+		&conf.ControllerConfig,
 		params,
 		consumer,
 		addScraperOpts...,
