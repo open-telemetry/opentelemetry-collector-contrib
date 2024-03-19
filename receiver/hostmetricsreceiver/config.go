@@ -21,8 +21,8 @@ const (
 
 // Config defines configuration for HostMetrics receiver.
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Scrapers                                map[string]internal.Config `mapstructure:"-"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	Scrapers                       map[string]internal.Config `mapstructure:"-"`
 	// RootPath is the host's root directory (linux only).
 	RootPath string `mapstructure:"root_path"`
 }
