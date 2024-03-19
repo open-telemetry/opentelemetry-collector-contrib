@@ -16,6 +16,7 @@ import (
 	promconfig "github.com/prometheus/prometheus/config"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/discovery/kubernetes"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 	"gopkg.in/yaml.v2"
 )
@@ -52,10 +53,10 @@ func (cfg *Config) Validate() error {
 }
 
 type TargetAllocator struct {
-	Endpoint     string            `mapstructure:"endpoint"`
-	Interval     time.Duration     `mapstructure:"interval"`
-	CollectorID  string            `mapstructure:"collector_id"`
-	HTTPSDConfig *PromHTTPSDConfig `mapstructure:"http_sd_config"`
+	confighttp.ClientConfig `mapstructure:",squash"`
+	Interval                time.Duration     `mapstructure:"interval"`
+	CollectorID             string            `mapstructure:"collector_id"`
+	HTTPSDConfig            *PromHTTPSDConfig `mapstructure:"http_sd_config"`
 }
 
 func (cfg *TargetAllocator) Validate() error {

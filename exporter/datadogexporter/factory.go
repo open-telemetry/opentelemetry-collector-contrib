@@ -19,6 +19,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
@@ -29,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -105,9 +105,6 @@ func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname
 
 func (f *factory) AttributesTranslator(set component.TelemetrySettings) (*attributes.Translator, error) {
 	f.onceAttributesTranslator.Do(func() {
-		// disable metrics for the translator
-		// Metrics are disabled until we figure out the details on how do we want to report the metric.
-		set.MeterProvider = noop.NewMeterProvider()
 		f.attributesTranslator, f.attributesErr = attributes.NewTranslator(set)
 	})
 	return f.attributesTranslator, f.attributesErr
@@ -170,8 +167,9 @@ func NewFactory() exporter.Factory {
 	return newFactoryWithRegistry(featuregate.GlobalRegistry())
 }
 
-func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
-	return exporterhelper.TimeoutSettings{
+func defaultClientConfig() confighttp.ClientConfig {
+	// do not use NewDefaultClientConfig for backwards-compatibility
+	return confighttp.ClientConfig{
 		Timeout: 15 * time.Second,
 	}
 }
@@ -179,9 +177,9 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 // createDefaultConfig creates the default exporter configuration
 func (f *factory) createDefaultConfig() component.Config {
 	return &Config{
-		TimeoutSettings: defaulttimeoutSettings(),
-		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		ClientConfig:  defaultClientConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",

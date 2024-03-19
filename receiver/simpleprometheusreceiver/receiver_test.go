@@ -77,7 +77,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 			config: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "localhost:1234",
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure: true,
 					},
 				},
@@ -115,8 +115,8 @@ func TestGetPrometheusConfig(t *testing.T) {
 			config: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "localhost:1234",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						TLSSetting: configtls.Config{
 							CAFile: "./testdata/test_cert.pem",
 						},
 						InsecureSkipVerify: true,
@@ -221,7 +221,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 				},
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure: true,
 					},
 				},
@@ -268,7 +268,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 				},
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure: true,
 					},
 				},
@@ -309,7 +309,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 				},
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure: false,
 					},
 				},
@@ -350,9 +350,9 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 				},
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure: false,
-						TLSSetting: configtls.TLSSetting{
+						TLSSetting: configtls.Config{
 							CAFile: "./testdata/test_cert.pem",
 						},
 					},

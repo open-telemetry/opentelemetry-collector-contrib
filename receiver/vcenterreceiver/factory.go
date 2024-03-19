@@ -32,7 +32,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ScraperControllerSettings: cfg,
-		TLSClientSetting:          configtls.TLSClientSetting{},
+		ClientConfig:              configtls.ClientConfig{},
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }
