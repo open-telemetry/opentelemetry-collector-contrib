@@ -19,7 +19,7 @@ import (
 // Config is the configuration of the receiver
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
+	configtls.ClientConfig                  `mapstructure:"tls,omitempty"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 	Endpoint                                string              `mapstructure:"endpoint"`
 	Username                                string              `mapstructure:"username"`

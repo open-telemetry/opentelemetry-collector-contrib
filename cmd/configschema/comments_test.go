@@ -35,7 +35,7 @@ func TestExternalType(t *testing.T) {
 }
 
 func TestSubPackage(t *testing.T) {
-	s := configtls.TLSClientSetting{}
+	s := configtls.ClientConfig{}
 	v := reflect.ValueOf(s)
 	_, err := commentsForStruct(v, testDR())
 	require.NoError(t, err)

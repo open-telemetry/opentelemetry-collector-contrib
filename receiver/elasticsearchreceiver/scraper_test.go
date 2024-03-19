@@ -211,8 +211,8 @@ func TestScraperFailedStart(t *testing.T) {
 
 	conf.ClientConfig = confighttp.ClientConfig{
 		Endpoint: "localhost:9200",
-		TLSSetting: configtls.TLSClientSetting{
-			TLSSetting: configtls.TLSSetting{
+		TLSSetting: configtls.ClientConfig{
+			TLSSetting: configtls.Config{
 				CAFile: "/non/existent",
 			},
 		},

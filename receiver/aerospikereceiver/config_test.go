@@ -104,9 +104,9 @@ func TestValidate(t *testing.T) {
 			config: &Config{
 				Endpoint: "localhost:3000",
 				TLSName:  "tls1",
-				TLS: &configtls.TLSClientSetting{
+				TLS: &configtls.ClientConfig{
 					Insecure: false,
-					TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.Config{
 						CAFile: "BADCAFILE",
 					},
 				},
@@ -119,9 +119,9 @@ func TestValidate(t *testing.T) {
 			config: &Config{
 				Endpoint: "localhost:3000",
 				TLSName:  "",
-				TLS: &configtls.TLSClientSetting{
+				TLS: &configtls.ClientConfig{
 					Insecure:   false,
-					TLSSetting: configtls.TLSSetting{},
+					TLSSetting: configtls.Config{},
 				},
 				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},

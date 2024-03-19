@@ -73,7 +73,7 @@ func TestSessionReestablish(t *testing.T) {
 				Username: simulator.DefaultLogin.Username(),
 				Password: configopaque.String(pw),
 				Endpoint: fmt.Sprintf("%s://%s", c.URL().Scheme, c.URL().Host),
-				TLSClientSetting: configtls.TLSClientSetting{
+				ClientConfig: configtls.ClientConfig{
 					Insecure: true,
 				},
 			},

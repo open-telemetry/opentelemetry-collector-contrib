@@ -70,9 +70,6 @@ func newSkywalkingReceiver(
 
 // registerTraceConsumer register a TracesReceiver that receives trace
 func (sr *swReceiver) registerTraceConsumer(tc consumer.Traces) error {
-	if tc == nil {
-		return component.ErrNilNextConsumer
-	}
 	var err error
 	sr.traceReceiver, err = trace.NewReceiver(tc, sr.settings)
 	if err != nil {
@@ -83,9 +80,6 @@ func (sr *swReceiver) registerTraceConsumer(tc consumer.Traces) error {
 
 // registerTraceConsumer register a TracesReceiver that receives trace
 func (sr *swReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
-	if mc == nil {
-		return component.ErrNilNextConsumer
-	}
 	var err error
 	sr.metricsReceiver, err = metrics.NewReceiver(mc, sr.settings)
 	if err != nil {

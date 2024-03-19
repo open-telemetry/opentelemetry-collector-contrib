@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/google/go-cmp v0.6.0
-	github.com/sijms/go-ora/v2 v2.8.9
+	github.com/sijms/go-ora/v2 v2.8.10
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.1-0.20240315172937-3b5aee0c7a16
 	go.opentelemetry.io/collector/confmap v0.96.1-0.20240315172937-3b5aee0c7a16
