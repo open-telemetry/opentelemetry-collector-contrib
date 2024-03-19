@@ -79,6 +79,7 @@ func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJo
 	if len(steps) > 0 {
 		setSpanTimes(span, steps[0].StartedAt, steps[len(steps)-1].CompletedAt)
 	} else {
+		// Invoked when status skipped or cancelled
 		logger.Warn("No steps found, defaulting to job times")
 		setSpanTimes(span, job.StartedAt, job.CompletedAt)
 	}
