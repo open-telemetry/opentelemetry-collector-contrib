@@ -16,18 +16,11 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
-	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/grpc"
 )
 
 var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -71,30 +64,9 @@ func initProvider() func() {
 	)
 	otel.SetMeterProvider(meterProvider)
 
-	traceClient := otlptracegrpc.NewClient(
-		otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithEndpoint(otelAgentAddr),
-		otlptracegrpc.WithDialOption(grpc.WithBlock()))
-	traceExp, err := otlptrace.New(ctx, traceClient)
-	handleErr(err, "Failed to create the collector trace exporter")
-
-	bsp := sdktrace.NewBatchSpanProcessor(traceExp)
-	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
-		sdktrace.WithResource(res),
-		sdktrace.WithSpanProcessor(bsp),
-	)
-
-	// set global propagator to tracecontext (the default is no-op).
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-	otel.SetTracerProvider(tracerProvider)
-
 	return func() {
 		cxt, cancel := context.WithTimeout(ctx, time.Second)
 		defer cancel()
-		if err := traceExp.Shutdown(cxt); err != nil {
-			otel.Handle(err)
-		}
 		// pushes any last exports to the receiver
 		if err := meterProvider.Shutdown(cxt); err != nil {
 			otel.Handle(err)
@@ -140,15 +112,6 @@ func main() {
 		time.Sleep(time.Duration(sleep) * time.Millisecond)
 		ctx := req.Context()
 		requestCount.Add(ctx, 1, metric.WithAttributes(commonLabels...))
-		span := trace.SpanFromContext(ctx)
-		bag := baggage.FromContext(ctx)
-
-		var baggageAttributes []attribute.KeyValue
-		baggageAttributes = append(baggageAttributes, serverAttribute)
-		for _, member := range bag.Members() {
-			baggageAttributes = append(baggageAttributes, attribute.String("baggage key:"+member.Key(), member.Value()))
-		}
-		span.SetAttributes(baggageAttributes...)
 
 		if _, err := w.Write([]byte("Hello World")); err != nil {
 			http.Error(w, "write operation failed.", http.StatusInternalServerError)
