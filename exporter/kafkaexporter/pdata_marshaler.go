@@ -5,9 +5,9 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"github.com/IBM/sarama"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/resourceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -67,7 +67,7 @@ func (p pdataMetricsMarshaler) Marshal(ld pmetric.Metrics, topic string) ([]*sar
 
 		for i := 0; i < metrics.Len(); i++ {
 			resourceMetrics := metrics.At(i)
-			hash := resourceutil.CalculateResourceAttributesHash(resourceMetrics.Resource())
+			var hash = pdatautil.MapHash(resourceMetrics.Resource().Attributes())
 
 			newMetrics := pmetric.NewMetrics()
 			resourceMetrics.MoveTo(newMetrics.ResourceMetrics().AppendEmpty())
@@ -79,7 +79,7 @@ func (p pdataMetricsMarshaler) Marshal(ld pmetric.Metrics, topic string) ([]*sar
 			msgs = append(msgs, &sarama.ProducerMessage{
 				Topic: topic,
 				Value: sarama.ByteEncoder(bts),
-				Key:   sarama.ByteEncoder(hash),
+				Key:   sarama.ByteEncoder(hash[:]),
 			})
 		}
 	} else {

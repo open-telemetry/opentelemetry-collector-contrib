@@ -93,8 +93,8 @@ func TestOTLPMetricsJsonMarshaling(t *testing.T) {
 	m.Gauge().DataPoints().At(0).SetDoubleValue(1.0)
 
 	r1 := pcommon.NewResource()
-	r1.Attributes().PutStr("service.name", "my_service_name")
 	r1.Attributes().PutStr("service.instance.id", "kek_x_2")
+	r1.Attributes().PutStr("service.name", "my_service_name")
 	r1.CopyTo(metric.ResourceMetrics().AppendEmpty().Resource())
 
 	standardMarshaler := metricsMarshalers()["otlp_json"]
@@ -111,8 +111,8 @@ func TestOTLPMetricsJsonMarshaling(t *testing.T) {
 	require.NoError(t, err, "Must have marshaled the data without error")
 	require.Len(t, msgs, 2, "Expected number of messages in the message")
 
-	require.Equal(t, sarama.ByteEncoder("90e74a8334a89993bd3f6ad05f9ca02438032a78d4399fb6fecf6c94fcdb13ef"), msgs[0].Key)
-	require.Equal(t, sarama.ByteEncoder("55e1113a2eace57b91ef58911d811c28e936365f03ac068e8ce23090d9ea748f"), msgs[1].Key)
+	require.Equal(t, sarama.ByteEncoder{0x62, 0x7f, 0x20, 0x34, 0x85, 0x49, 0x55, 0x2e, 0xfa, 0x93, 0xae, 0xd7, 0xde, 0x91, 0xd7, 0x16}, msgs[0].Key)
+	require.Equal(t, sarama.ByteEncoder{0x75, 0x6b, 0xb4, 0xd6, 0xff, 0xeb, 0x92, 0x22, 0xa, 0x68, 0x65, 0x48, 0xe0, 0xd3, 0x94, 0x44}, msgs[1].Key)
 }
 
 func TestOTLPTracesJsonMarshaling(t *testing.T) {
