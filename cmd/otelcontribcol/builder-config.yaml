@@ -30,6 +30,7 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension v0.96.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage v0.96.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.96.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension v0.96.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.96.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension v0.96.0
@@ -442,6 +443,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension => ../../extension/remotetapextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension => ../../extension/opampextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension => ../../extension/solarwindsapmsettingsextension
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension => ../../extension/sumologicextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver => ../../receiver/namedpipereceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery => ../../internal/sqlquery
 
