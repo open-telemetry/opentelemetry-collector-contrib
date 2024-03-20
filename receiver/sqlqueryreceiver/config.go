@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/metadata"
 )
 
 type Config struct {
@@ -18,11 +17,11 @@ type Config struct {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = 10 * time.Second
 	return &Config{
 		Config: sqlquery.Config{
-			ScraperControllerSettings: cfg,
+			ControllerConfig: cfg,
 		},
 	}
 }

@@ -95,9 +95,9 @@ func newScraper(conf *Config, settings receiver.CreateSettings) *azureScraper {
 type azureScraper struct {
 	cred azcore.TokenCredential
 
-	clientResources          ArmClient
-	clientMetricsDefinitions MetricsDefinitionsClientInterface
-	clientMetricsValues      MetricsValuesClient
+	clientResources          armClient
+	clientMetricsDefinitions metricsDefinitionsClientInterface
+	clientMetricsValues      metricsValuesClient
 
 	cfg                             *Config
 	settings                        component.TelemetrySettings
@@ -113,7 +113,7 @@ type azureScraper struct {
 	mutex                           *sync.Mutex
 }
 
-type ArmClient interface {
+type armClient interface {
 	NewListPager(options *armresources.ClientListOptions) *runtime.Pager[armresources.ClientListResponse]
 }
 
@@ -134,27 +134,27 @@ func (s *azureScraper) getArmClientOptions() *arm.ClientOptions {
 	return &options
 }
 
-func (s *azureScraper) getArmClient() ArmClient {
+func (s *azureScraper) getArmClient() armClient {
 	client, _ := s.armClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
 	return client
 }
 
-type MetricsDefinitionsClientInterface interface {
+type metricsDefinitionsClientInterface interface {
 	NewListPager(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) *runtime.Pager[armmonitor.MetricDefinitionsClientListResponse]
 }
 
-func (s *azureScraper) getMetricsDefinitionsClient() MetricsDefinitionsClientInterface {
+func (s *azureScraper) getMetricsDefinitionsClient() metricsDefinitionsClientInterface {
 	client, _ := s.armMonitorDefinitionsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
 	return client
 }
 
-type MetricsValuesClient interface {
+type metricsValuesClient interface {
 	List(ctx context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (
 		armmonitor.MetricsClientListResponse, error,
 	)
 }
 
-func (s *azureScraper) GetMetricsValuesClient() MetricsValuesClient {
+func (s *azureScraper) GetMetricsValuesClient() metricsValuesClient {
 	client, _ := s.armMonitorMetricsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
 	return client
 }

@@ -70,7 +70,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 				config: Config{
 					AddrConfig: confignet.AddrConfig{
 						Endpoint:  "localhost:2003",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					Parser: &protocol.Config{
 						Type: "regex",
@@ -173,7 +173,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			name: "default_config_udp",
 			configFn: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Transport = "udp"
+				cfg.Transport = confignet.TransportTypeUDP
 				return cfg
 			},
 			clientFn: func(t *testing.T) func(client.Metric) error {
