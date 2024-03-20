@@ -311,8 +311,16 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 						},
 					}},
 				),
-				// When the native histograms feature is off and classic histograms are not scraped for mixed histograms, no metric is scraped.
-				assertMetricAbsent("test_mixed_histogram"),
+				assertMetricPresent( // Fallback to scraping classic histograms if feature is off.
+					"test_mixed_histogram",
+					compareMetricType(pmetric.MetricTypeHistogram),
+					compareMetricUnit(""),
+					[]dataPointExpectation{{
+						histogramPointComparator: []histogramPointComparator{
+							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
+						},
+					}},
+				),
 				// When the native histograms feature is off, no native histograms are scraped.
 				assertMetricAbsent("test_native_histogram"),
 			},

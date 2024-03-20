@@ -227,6 +227,13 @@ func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config
 }
 
 func (r *pReceiver) applyCfg(cfg *PromConfig) error {
+	if !enableNativeHistogramsGate.IsEnabled() {
+		// Enforce scraping classic histograms to avoid dropping them.
+		for _, scrapeConfig := range cfg.ScrapeConfigs {
+			scrapeConfig.ScrapeClassicHistograms = true
+		}
+	}
+
 	if err := r.scrapeManager.ApplyConfig((*config.Config)(cfg)); err != nil {
 		return err
 	}
