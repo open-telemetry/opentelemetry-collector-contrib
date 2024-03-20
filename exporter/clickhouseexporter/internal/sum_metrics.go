@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS %s_sum (
 ) ENGINE MergeTree()
 %s
 PARTITION BY toDate(TimeUnix)
-ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
+ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
