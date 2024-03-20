@@ -6,6 +6,7 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/multierr"
 )
@@ -40,6 +41,8 @@ type Config struct {
 	MarshalerName MarshalerType    `mapstructure:"marshaler"`
 
 	FileFormat string `mapstructure:"file_format"`
+	// Encoding to apply. If present, overrides the marshaler configuration option.
+	Encoding *component.ID `mapstructure:"encoding"`
 }
 
 func (c *Config) Validate() error {

@@ -34,7 +34,7 @@ func TestDefaultConfig(t *testing.T) {
 		IdxEndpoint: cfg,
 		SHEndpoint:  cfg,
 		CMEndpoint:  cfg,
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Minute,
 			InitialDelay:       1 * time.Second,
 			Timeout:            60 * time.Second,
