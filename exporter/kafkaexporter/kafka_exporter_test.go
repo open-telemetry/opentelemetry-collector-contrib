@@ -12,6 +12,7 @@ import (
 	"github.com/IBM/sarama/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -26,8 +27,9 @@ import (
 func TestNewExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
 	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
+	require.NoError(t, err)
+	err = texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
-	assert.Nil(t, texp)
 }
 
 func TestNewExporter_err_encoding(t *testing.T) {
@@ -40,8 +42,9 @@ func TestNewExporter_err_encoding(t *testing.T) {
 func TestNewMetricsExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
 	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
+	require.NoError(t, err)
+	err = mexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
-	assert.Nil(t, mexp)
 }
 
 func TestNewMetricsExporter_err_encoding(t *testing.T) {
@@ -60,9 +63,10 @@ func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
 
 func TestNewLogsExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	mexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
+	lexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
+	require.NoError(t, err)
+	err = lexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
-	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_encoding(t *testing.T) {
@@ -83,8 +87,8 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 	c := Config{
 		ProtocolVersion: "2.0.0",
 		Authentication: kafka.Authentication{
-			TLS: &configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLS: &configtls.ClientConfig{
+				TLSSetting: configtls.Config{
 					CAFile: "/doesnotexist",
 				},
 			},
@@ -98,17 +102,20 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 		},
 	}
 	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
+	require.NoError(t, err)
+	err = texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
-	assert.Nil(t, texp)
 	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
+	require.NoError(t, err)
+	err = mexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
-	assert.Nil(t, mexp)
 	lexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
+	require.NoError(t, err)
+	err = lexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
-	assert.Nil(t, lexp)
 
 }
 
@@ -120,9 +127,10 @@ func TestNewExporter_err_compression(t *testing.T) {
 		},
 	}
 	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
+	require.NoError(t, err)
+	err = texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
-	assert.Nil(t, texp)
 }
 
 func TestTracesPusher(t *testing.T) {

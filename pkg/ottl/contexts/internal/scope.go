@@ -5,7 +5,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -37,7 +36,7 @@ func ScopePathGetSetter[K InstrumentationScopeContext](path ottl.Path[K]) (ottl.
 	case "schema_url":
 		return accessInstrumentationScopeSchemaURLItem[K](), nil
 	default:
-		return nil, fmt.Errorf("invalid scope path expression %v", path)
+		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Instrumentation Scope", InstrumentationScopeRef)
 	}
 }
 

@@ -25,7 +25,7 @@ func Test_TruncateTime(t *testing.T) {
 			name: "truncate to 1s",
 			time: &ottl.StandardTimeGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (any, error) {
-					return time.Date(2022, 1, 1, 1, 1, 1, 999999999, time.Local), nil
+					return time.Date(2022, 1, 1, 1, 1, 1, 999999999, time.UTC), nil
 				},
 			},
 			duration: &ottl.StandardDurationGetter[any]{
@@ -34,13 +34,13 @@ func Test_TruncateTime(t *testing.T) {
 					return d, nil
 				},
 			},
-			expected: time.Date(2022, 1, 1, 1, 1, 1, 0, time.Local),
+			expected: time.Date(2022, 1, 1, 1, 1, 1, 0, time.UTC),
 		},
 		{
 			name: "truncate to 1ms",
 			time: &ottl.StandardTimeGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (any, error) {
-					return time.Date(2022, 1, 1, 1, 1, 1, 999999999, time.Local), nil
+					return time.Date(2022, 1, 1, 1, 1, 1, 999999999, time.UTC), nil
 				},
 			},
 			duration: &ottl.StandardDurationGetter[any]{
@@ -49,13 +49,13 @@ func Test_TruncateTime(t *testing.T) {
 					return d, nil
 				},
 			},
-			expected: time.Date(2022, 1, 1, 1, 1, 1, 999000000, time.Local),
+			expected: time.Date(2022, 1, 1, 1, 1, 1, 999000000, time.UTC),
 		},
 		{
 			name: "truncate old time",
 			time: &ottl.StandardTimeGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (any, error) {
-					return time.Date(1980, 9, 9, 9, 59, 59, 999999999, time.Local), nil
+					return time.Date(1980, 9, 9, 9, 59, 59, 999999999, time.UTC), nil
 				},
 			},
 			duration: &ottl.StandardDurationGetter[any]{
@@ -64,7 +64,7 @@ func Test_TruncateTime(t *testing.T) {
 					return d, nil
 				},
 			},
-			expected: time.Date(1980, 9, 9, 9, 0, 0, 0, time.Local),
+			expected: time.Date(1980, 9, 9, 9, 0, 0, 0, time.UTC),
 		},
 	}
 	for _, tt := range tests {

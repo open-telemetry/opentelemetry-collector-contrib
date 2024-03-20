@@ -152,9 +152,10 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 		return accessSpanEventAttributesKey(path.Keys()), nil
 	case "dropped_attributes_count":
 		return accessSpanEventDroppedAttributeCount(), nil
+	default:
+		return nil, internal.FormatDefaultErrorMessage(path.Name(), path.String(), "Span Event", internal.SpanEventRef)
 	}
 
-	return nil, fmt.Errorf("invalid scope path expression %v", path)
 }
 func accessCache() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{

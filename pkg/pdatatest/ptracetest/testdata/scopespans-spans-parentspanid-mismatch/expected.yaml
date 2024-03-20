@@ -13,7 +13,7 @@ resourceSpans:
               - key: key1
                 value:
                   stringValue: value1
-            parentSpanId: 310fbcff497b5a47
+            parentSpanId: bcff497b5a47310f
             spanId: fd0da883bb27cd6b
             status: {}
             traceId: 8c8b1765a7b0acf0b66aa4623fcb7bd5

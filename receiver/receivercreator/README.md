@@ -157,89 +157,89 @@ targeting it will have different variables available.
 
 ### Pod
 
-| Variable    | Description                       |
-|-------------|-----------------------------------|
-| type        | `"pod"`                           |
-| id          | ID of source endpoint             |
-| name        | name of the pod                   |
-| namespace   | namespace of the pod              |
-| uid         | unique id of the pod              |
-| labels      | map of labels set on the pod      |
-| annotations | map of annotations set on the pod |
+| Variable    | Description                       | Data Type                     |
+|-------------|-----------------------------------|-------------------------------|
+| type        | `"pod"`                           | String                        |
+| id          | ID of source endpoint             | String                        |
+| name        | name of the pod                   | String                        |
+| namespace   | namespace of the pod              | String                        |
+| uid         | unique id of the pod              | String                        |
+| labels      | map of labels set on the pod      | Map with String key and value |
+| annotations | map of annotations set on the pod | Map with String key and value |
 
 ### Port
 
-| Variable        | Description                             |
-|-----------------|-----------------------------------------|
-| type            | `"port"`                                |
-| id              | ID of source endpoint                   |
-| name            | container port name                     |
-| port            | port number                             |
-| protocol        | The transport protocol ("TCP" or "UDP") |
-| pod.name        | name of the owning pod                  |
-| pod.namespace   | namespace of the pod                    |
-| pod.uid         | unique id of the pod                    |
-| pod.labels      | map of labels of the owning pod         |
-| pod.annotations | map of annotations of the owning pod    |
+| Variable        | Description                             | Data Type                     |
+|-----------------|-----------------------------------------|-------------------------------|
+| type            | `"port"`                                | String                        |
+| id              | ID of source endpoint                   | String                        |
+| name            | container port name                     | String                        |
+| port            | port number                             | Integer                       |
+| protocol        | The transport protocol ("TCP" or "UDP") | String                        |
+| pod.name        | name of the owning pod                  | String                        |
+| pod.namespace   | namespace of the pod                    | String                        |
+| pod.uid         | unique id of the pod                    | String                        |
+| pod.labels      | map of labels of the owning pod         | Map with String key and value |
+| pod.annotations | map of annotations of the owning pod    | Map with String key and value |
 
 ### Host Port
 
-| Variable      | Description                                      |
-|---------------|--------------------------------------------------|
-| type          | `"hostport"`                                     |
-| id            | ID of source endpoint                            |
-| process_name  | Name of the process                              |
-| command       | Command line with the used to invoke the process |
-| is_ipv6       | true if endpoint is IPv6, otherwise false        |
-| port          | Port number                                      |
-| transport     | The transport protocol ("TCP" or "UDP")          |
+| Variable      | Description                                      | Data Type                     |
+|---------------|--------------------------------------------------|-------------------------------|
+| type          | `"hostport"`                                     | String                        |
+| id            | ID of source endpoint                            | String                        |
+| process_name  | Name of the process                              | String                        |
+| command       | Command line with the used to invoke the process | String                        |
+| is_ipv6       | true if endpoint is IPv6, otherwise false        | Boolean                       |
+| port          | Port number                                      | Integer                       |
+| transport     | The transport protocol ("TCP" or "UDP")          | String                        |
 
 ### Container
 
-| Variable       | Description                                                       |
-|----------------|-------------------------------------------------------------------|
-| type           | `"container"`                                                     |
-| id             | ID of source endpoint                                             |
-| name           | Primary name of the container                                     |
-| image          | Name of the container image                                       |
-| port           | Exposed port of the container                                     |
-| alternate_port | Exposed port accessed through redirection, such as a mapped port  |
-| command        | The command used to invoke the process of the container           |
-| container_id   | ID of the container                                               |
-| host           | Hostname or IP of the underlying host the container is running on |
-| transport      | Transport protocol used by the endpoint (TCP or UDP)              |
-| labels         | User-specified metadata labels on the container                   |
+| Variable       | Description                                                       | Data Type                     |
+|----------------|-------------------------------------------------------------------|-------------------------------|
+| type           | `"container"`                                                     | String                        |
+| id             | ID of source endpoint                                             | String                        |
+| name           | Primary name of the container                                     | String                        |
+| image          | Name of the container image                                       | String                        |
+| port           | Exposed port of the container                                     | Integer                       |
+| alternate_port | Exposed port accessed through redirection, such as a mapped port  | Integer                       |
+| command        | The command used to invoke the process of the container           | String                        |
+| container_id   | ID of the container                                               | String                        |
+| host           | Hostname or IP of the underlying host the container is running on | String                        |
+| transport      | Transport protocol used by the endpoint (TCP or UDP)              | String                        |
+| labels         | User-specified metadata labels on the container                   | Map with String key and value |
 
 ### Kubernetes Service
 
-| Variable       | Description                                                       |
-|----------------|-------------------------------------------------------------------|
-| type                  | `"k8s.service"`                                                                                                        |
-| id                    | ID of source endpoint                                                                                                  |
-| name                  | The name of the Kubernetes service                                                                                     |
-| namespace             | The namespace of the service                                                                                           |
-| uid                   | The unique ID for the service                                                                                          |
-| labels                | The map of labels set on the service                                                                                   |
-| annotations           | The map of annotations set on the service                                                                              |
-| service_type          | The type of the kubernetes service: ClusterIP, NodePort, LoadBalancer, ExternalName                                    |
-| cluster_ip            | The cluster IP assigned to the service                                                                                 |
+| Variable       | Description                                                                           | Data Type                     |
+|----------------|---------------------------------------------------------------------------------------|-------------------------------|
+| type           | `"k8s.service"`                                                                       | String                        |
+| id             | ID of source endpoint                                                                 | String                        |
+| name           | The name of the Kubernetes service                                                    | String                        |
+| namespace      | The namespace of the service                                                          | String                        |
+| uid            | The unique ID for the service                                                         | String                        |
+| labels         | The map of labels set on the service                                                  | Map with String key and value |
+| annotations    | The map of annotations set on the service                                             | Map with String key and value |
+| service_type   | The type of the kubernetes service: ClusterIP, NodePort, LoadBalancer, ExternalName   | String                        |
+| cluster_ip     | The cluster IP assigned to the service                                                | String                        |
 
 ### Kubernetes Node
 
-| Variable       | Description                                                       |
-|----------------|-------------------------------------------------------------------|
-| type                  | `"k8s.node"`                                                                                                           |
-| id                    | ID of source endpoint                                                                                                  |
-| name                  | The name of the Kubernetes node                                                                                        |
-| uid                   | The unique ID for the node                                                                                             |
-| hostname              | The node's hostname as reported by its Status object                                                                   |
-| external_ip           | The node's external IP address as reported by its Status object                                                        |
-| internal_ip           | The node's internal IP address as reported by its Status object                                                        |
-| external_dns          | The node's external DNS record as reported by its Status object                                                        |
-| internal_dns          | The node's internal DNS record as reported by its Status object                                                        |
-| annotations           | A key-value map of non-identifying, user-specified node metadata                                                       |
-| labels                | A key-value map of user-specified node metadata                                                                        |
-| kubelet_endpoint_port | The node Status object's DaemonEndpoints.KubeletEndpoint.Port value                                                    |
+| Variable              | Description                                                          | Data Type                     |
+|-----------------------|----------------------------------------------------------------------|-------------------------------|
+| type                  | `"k8s.node"`                                                         | String                        |
+| id                    | ID of source endpoint                                                | String                        |
+| name                  | The name of the Kubernetes node                                      | String                        |
+| uid                   | The unique ID for the node                                           | String                        |
+| hostname              | The node's hostname as reported by its Status object                 | String                        |
+| external_ip           | The node's external IP address as reported by its Status object      | String                        |
+| internal_ip           | The node's internal IP address as reported by its Status object      | String                        |
+| external_dns          | The node's external DNS record as reported by its Status object      | String                        |
+| internal_dns          | The node's internal DNS record as reported by its Status object      | String                        |
+| annotations           | A key-value map of non-identifying, user-specified node metadata     | Map with String key and value |
+| labels                | A key-value map of user-specified node metadata                      | Map with String key and value |
+| kubelet_endpoint_port | The node Status object's DaemonEndpoints.KubeletEndpoint.Port value  | Integer                       |
 
 ## Examples
 
