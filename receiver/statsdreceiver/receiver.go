@@ -112,7 +112,7 @@ func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 					batchCtx := client.NewContext(ctx, batch.Info)
 
 					err := r.Flush(batchCtx, batch.Metrics, r.nextConsumer)
-					r.reporter.RecordFlushedMetrics(int64(batch.Metrics.MetricCount()), err)
+					r.reporter.RecordFlushedMetrics(int64(batch.Metrics.DataPointCount()), err)
 					if err != nil {
 						r.reporter.OnDebugf("Error flushing metrics", zap.Error(err))
 					}
