@@ -5,7 +5,7 @@ status:
   class: exporter
   stability:
     development: [traces, metrics, logs]
-  distributions: [contrib]
+  distributions: []
   codeowners:
     active: [swar8080]
 
