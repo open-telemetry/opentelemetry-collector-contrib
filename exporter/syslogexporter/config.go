@@ -38,7 +38,7 @@ type Config struct {
 	EnableOctetCounting bool `mapstructure:"enable_octet_counting"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
+	TLSSetting configtls.ClientConfig `mapstructure:"tls"`
 
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`

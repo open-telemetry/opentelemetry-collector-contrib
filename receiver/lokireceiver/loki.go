@@ -69,10 +69,6 @@ func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver
 		return nil, err
 	}
 
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
 	if conf.HTTP != nil {
 		r.httpMux = http.NewServeMux()
 		r.httpMux.HandleFunc("/loki/api/v1/push", func(resp http.ResponseWriter, req *http.Request) {

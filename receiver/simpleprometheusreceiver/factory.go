@@ -36,7 +36,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: defaultEndpoint,
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: configtls.ClientConfig{
 				Insecure: true,
 			},
 		},
