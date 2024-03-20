@@ -355,7 +355,8 @@ func (f *factory) createMetricsExporter(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
-			cancel()
+			cancel()    // first cancel context
+			f.wg.Wait() // then wait for shutdown
 			f.StopReporter()
 			statsWriter.Stop()
 			if statsIn != nil {

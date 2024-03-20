@@ -70,10 +70,10 @@ type postgreSQLConfig struct {
 	password string
 	database string
 	address  confignet.AddrConfig
-	tls      configtls.TLSClientSetting
+	tls      configtls.ClientConfig
 }
 
-func sslConnectionString(tls configtls.TLSClientSetting) string {
+func sslConnectionString(tls configtls.ClientConfig) string {
 	if tls.Insecure {
 		return "sslmode='disable'"
 	}

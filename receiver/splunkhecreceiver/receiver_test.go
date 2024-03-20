@@ -442,8 +442,8 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
-	cfg.TLSSetting = &configtls.TLSServerSetting{
-		TLSSetting: configtls.TLSSetting{
+	cfg.TLSSetting = &configtls.ServerConfig{
+		TLSSetting: configtls.Config{
 			CertFile: "./testdata/server.crt",
 			KeyFile:  "./testdata/server.key",
 		},
@@ -494,8 +494,8 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	req, err := http.NewRequestWithContext(context.Background(), "POST", url, bytes.NewReader(body))
 	require.NoErrorf(t, err, "should have no errors with new request: %v", err)
 
-	tlscs := configtls.TLSClientSetting{
-		TLSSetting: configtls.TLSSetting{
+	tlscs := configtls.ClientConfig{
+		TLSSetting: configtls.Config{
 			CAFile:   "./testdata/ca.crt",
 			CertFile: "./testdata/client.crt",
 			KeyFile:  "./testdata/client.key",

@@ -66,20 +66,10 @@ func createLogsReceiver(
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
-	var err error
-	var recv receiver.Logs
-	rCfg := cfg.(*Config)
 	r := receivers.GetOrAdd(cfg, func() component.Component {
-		recv, err = newLogsReceiverCreator(params, rCfg, consumer)
-		return recv
+		return newReceiverCreator(params, cfg.(*Config))
 	})
-	rcvr := r.Component.(*receiverCreator)
-	if rcvr.nextLogsConsumer == nil {
-		rcvr.nextLogsConsumer = consumer
-	}
-	if err != nil {
-		return nil, err
-	}
+	r.Component.(*receiverCreator).nextLogsConsumer = consumer
 	return r, nil
 }
 
@@ -89,20 +79,10 @@ func createMetricsReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	var err error
-	var recv receiver.Logs
-	rCfg := cfg.(*Config)
 	r := receivers.GetOrAdd(cfg, func() component.Component {
-		recv, err = newMetricsReceiverCreator(params, rCfg, consumer)
-		return recv
+		return newReceiverCreator(params, cfg.(*Config))
 	})
-	rcvr := r.Component.(*receiverCreator)
-	if rcvr.nextMetricsConsumer == nil {
-		rcvr.nextMetricsConsumer = consumer
-	}
-	if err != nil {
-		return nil, err
-	}
+	r.Component.(*receiverCreator).nextMetricsConsumer = consumer
 	return r, nil
 }
 
@@ -112,19 +92,9 @@ func createTracesReceiver(
 	cfg component.Config,
 	consumer consumer.Traces,
 ) (receiver.Traces, error) {
-	var err error
-	var recv receiver.Logs
-	rCfg := cfg.(*Config)
 	r := receivers.GetOrAdd(cfg, func() component.Component {
-		recv, err = newTracesReceiverCreator(params, rCfg, consumer)
-		return recv
+		return newReceiverCreator(params, cfg.(*Config))
 	})
-	rcvr := r.Component.(*receiverCreator)
-	if rcvr.nextTracesConsumer == nil {
-		rcvr.nextTracesConsumer = consumer
-	}
-	if err != nil {
-		return nil, err
-	}
+	r.Component.(*receiverCreator).nextTracesConsumer = consumer
 	return r, nil
 }
