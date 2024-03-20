@@ -1,4 +1,5 @@
 type: hostmetricsreceiver/load
+scope_name: otelcol/hostmetricsreceiver/load
 
 parent: hostmetrics
 

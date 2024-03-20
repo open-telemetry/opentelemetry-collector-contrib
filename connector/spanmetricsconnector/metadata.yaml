@@ -1,4 +1,5 @@
 type: spanmetrics
+scope_name: otelcol/spanmetrics
 
 status:
   class: connector
@@ -8,6 +9,7 @@ status:
   codeowners:
     active: [portertech]
     emeritus: [albertteoh]
+    seeking_new: true
 
 tests:
   config:

@@ -112,7 +112,6 @@ import (
 	resourcedetectionprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	resourceprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	routingprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
-	spanmetricsprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
 	spanprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 	sumologicprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicprocessor"
 	tailsamplingprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
@@ -408,7 +407,6 @@ func components() (otelcol.Factories, error) {
 		resourcedetectionprocessor.NewFactory(),
 		resourceprocessor.NewFactory(),
 		routingprocessor.NewFactory(),
-		spanmetricsprocessor.NewFactory(),
 		sumologicprocessor.NewFactory(),
 		spanprocessor.NewFactory(),
 		tailsamplingprocessor.NewFactory(),

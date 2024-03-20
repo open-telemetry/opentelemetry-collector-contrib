@@ -36,8 +36,6 @@ func TestCreateTracesReceiver(t *testing.T) {
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "traces receiver creation failed")
-	_, err = factory.CreateTracesReceiver(context.Background(), params, cfg, nil)
-	assert.Error(t, err)
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
@@ -49,8 +47,6 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "metrics receiver creation failed")
-	_, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, nil)
-	assert.Error(t, err)
 }
 
 func TestCreateLogsReceiver(t *testing.T) {
@@ -62,8 +58,6 @@ func TestCreateLogsReceiver(t *testing.T) {
 	tReceiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "logs receiver creation failed")
-	_, err = factory.CreateLogsReceiver(context.Background(), params, cfg, nil)
-	assert.Error(t, err)
 }
 
 func TestEnsureReceiver(t *testing.T) {

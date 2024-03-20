@@ -9,6 +9,8 @@ import (
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/timing"
+	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/component"
@@ -40,12 +42,15 @@ type traceToMetricConnector struct {
 
 	// exit specifies the exit channel, which will be closed upon shutdown.
 	exit chan struct{}
+
+	// isStarted tracks whether Start() has been called.
+	isStarted bool
 }
 
 var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
 
 // function to create a new connector
-func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics) (*traceToMetricConnector, error) {
+func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics, metricsClient statsd.ClientInterface, timingReporter timing.Reporter) (*traceToMetricConnector, error) {
 	set.Logger.Info("Building datadog connector for traces to metrics")
 	in := make(chan *pb.StatsPayload, 100)
 	set.MeterProvider = noop.NewMeterProvider() // disable metrics for the connector
@@ -61,7 +66,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 	ctx := context.Background()
 	return &traceToMetricConnector{
 		logger:          set.Logger,
-		agent:           datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(cfg.(*Config).Traces), in),
+		agent:           datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(cfg.(*Config).Traces, attributesTranslator), in, metricsClient, timingReporter),
 		translator:      trans,
 		in:              in,
 		metricsConsumer: metricsConsumer,
@@ -69,8 +74,9 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 	}, nil
 }
 
-func getTraceAgentCfg(cfg TracesConfig) *traceconfig.AgentConfig {
+func getTraceAgentCfg(cfg TracesConfig, attributesTranslator *attributes.Translator) *traceconfig.AgentConfig {
 	acfg := traceconfig.New()
+	acfg.OTLPReceiver.AttributesTranslator = attributesTranslator
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.SpanNameRemappings
 	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.SpanNameAsResourceName
 	acfg.Ignore["resource"] = cfg.IgnoreResources
@@ -88,11 +94,17 @@ func (c *traceToMetricConnector) Start(_ context.Context, _ component.Host) erro
 	c.logger.Info("Starting datadogconnector")
 	c.agent.Start()
 	go c.run()
+	c.isStarted = true
 	return nil
 }
 
 // Shutdown implements the component.Component interface.
 func (c *traceToMetricConnector) Shutdown(context.Context) error {
+	if !c.isStarted {
+		// Note: it is not necessary to manually close c.exit, c.in and c.agent.(*datadog.TraceAgent).exit channels as these are unused.
+		c.logger.Info("Requested shutdown, but not started, ignoring.")
+		return nil
+	}
 	c.logger.Info("Shutting down datadog connector")
 	c.logger.Info("Stopping datadog agent")
 	// stop the agent and wait for the run loop to exit
@@ -125,15 +137,11 @@ func (c *traceToMetricConnector) run() {
 			}
 			var mx pmetric.Metrics
 			var err error
-			if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
-				c.logger.Debug("Received stats payload", zap.Any("stats", stats))
-				mx, err = c.translator.StatsToMetrics(stats)
-				if err != nil {
-					c.logger.Error("Failed to convert stats to metrics", zap.Error(err))
-					continue
-				}
-			} else {
-				mx = c.translator.StatsPayloadToMetrics(stats)
+			c.logger.Debug("Received stats payload", zap.Any("stats", stats))
+			mx, err = c.translator.StatsToMetrics(stats)
+			if err != nil {
+				c.logger.Error("Failed to convert stats to metrics", zap.Error(err))
+				continue
 			}
 			// APM stats as metrics
 			ctx := context.TODO()

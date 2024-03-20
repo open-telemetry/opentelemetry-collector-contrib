@@ -61,7 +61,7 @@ func TestIntegration(t *testing.T) {
 					rCfg.Endpoint = fmt.Sprintf("%s://%s", c.URL().Scheme, c.URL().Host)
 					rCfg.Username = simulator.DefaultLogin.Username()
 					rCfg.Password = configopaque.String(pw)
-					rCfg.TLSClientSetting = configtls.TLSClientSetting{
+					rCfg.ClientConfig = configtls.ClientConfig{
 						Insecure: true,
 					}
 				}),

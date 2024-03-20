@@ -48,7 +48,7 @@ type TimeParser struct {
 // Unmarshal starting from default settings
 func (t *TimeParser) Unmarshal(component *confmap.Conf) error {
 	cfg := NewTimeParser()
-	err := component.Unmarshal(&cfg)
+	err := component.Unmarshal(&cfg, confmap.WithIgnoreUnused())
 	if err != nil {
 		return err
 	}

@@ -16,7 +16,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
 )
 
 type TelemetrygenObjInfo struct {
@@ -26,26 +25,33 @@ type TelemetrygenObjInfo struct {
 	Workload          string
 }
 
-func CreateTelemetryGenObjects(t *testing.T, client *dynamic.DynamicClient, testID string) ([]*unstructured.Unstructured, []*TelemetrygenObjInfo) {
+type TelemetrygenCreateOpts struct {
+	TestID       string
+	ManifestsDir string
+	OtlpEndpoint string
+	DataTypes    []string
+}
+
+func CreateTelemetryGenObjects(t *testing.T, client *K8sClient, createOpts *TelemetrygenCreateOpts) ([]*unstructured.Unstructured, []*TelemetrygenObjInfo) {
 	telemetrygenObjInfos := make([]*TelemetrygenObjInfo, 0)
-	manifestsDir := filepath.Join(".", "testdata", "e2e", "telemetrygen")
-	manifestFiles, err := os.ReadDir(manifestsDir)
-	require.NoErrorf(t, err, "failed to read telemetrygen manifests directory %s", manifestsDir)
+	manifestFiles, err := os.ReadDir(createOpts.ManifestsDir)
+	require.NoErrorf(t, err, "failed to read telemetrygen manifests directory %s", createOpts.ManifestsDir)
 	createdObjs := make([]*unstructured.Unstructured, 0, len(manifestFiles))
 	for _, manifestFile := range manifestFiles {
-		tmpl := template.Must(template.New(manifestFile.Name()).ParseFiles(filepath.Join(manifestsDir, manifestFile.Name())))
-		for _, dataType := range []string{"metrics", "logs", "traces"} {
+		tmpl := template.Must(template.New(manifestFile.Name()).ParseFiles(filepath.Join(createOpts.ManifestsDir, manifestFile.Name())))
+		for _, dataType := range createOpts.DataTypes {
 			manifest := &bytes.Buffer{}
 			require.NoError(t, tmpl.Execute(manifest, map[string]string{
-				"Name":         "telemetrygen-" + testID,
+				"Name":         "telemetrygen-" + createOpts.TestID,
 				"DataType":     dataType,
-				"OTLPEndpoint": "otelcol-" + testID + ":4317",
+				"OTLPEndpoint": createOpts.OtlpEndpoint,
+				"TestID":       createOpts.TestID,
 			}))
 			obj, err := CreateObject(client, manifest.Bytes())
 			require.NoErrorf(t, err, "failed to create telemetrygen object from manifest %s", manifestFile.Name())
 			selector := obj.Object["spec"].(map[string]any)["selector"]
 			telemetrygenObjInfos = append(telemetrygenObjInfos, &TelemetrygenObjInfo{
-				Namespace:         "default",
+				Namespace:         obj.GetNamespace(),
 				PodLabelSelectors: selector.(map[string]any)["matchLabels"].(map[string]any),
 				DataType:          dataType,
 				Workload:          obj.GetKind(),
@@ -56,13 +62,13 @@ func CreateTelemetryGenObjects(t *testing.T, client *dynamic.DynamicClient, test
 	return createdObjs, telemetrygenObjInfos
 }
 
-func WaitForTelemetryGenToStart(t *testing.T, client *dynamic.DynamicClient, podNamespace string, podLabels map[string]any, workload, dataType string) {
+func WaitForTelemetryGenToStart(t *testing.T, client *K8sClient, podNamespace string, podLabels map[string]any, workload, dataType string) {
 	podGVR := schema.GroupVersionResource{Version: "v1", Resource: "pods"}
 	listOptions := metav1.ListOptions{LabelSelector: SelectorFromMap(podLabels).String()}
 	podTimeoutMinutes := 3
 	var podPhase string
 	require.Eventually(t, func() bool {
-		list, err := client.Resource(podGVR).Namespace(podNamespace).List(context.Background(), listOptions)
+		list, err := client.DynamicClient.Resource(podGVR).Namespace(podNamespace).List(context.Background(), listOptions)
 		require.NoError(t, err, "failed to list collector pods")
 		if len(list.Items) == 0 {
 			return false
