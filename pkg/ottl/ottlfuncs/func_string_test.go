@@ -65,10 +65,19 @@ func Test_String(t *testing.T) {
 			expected: nil,
 		},
 		{
-			name:     "some struct",
-			value:    struct{}{},
-			expected: "{}",
-			err:      false,
+			name:     "byte",
+			value:    []byte{123},
+			expected: string("7b"),
+		},
+		{
+			name:     "map",
+			value:    map[int]bool{1: true, 2: false},
+			expected: string("{\"1\":true,\"2\":false}"),
+		},
+		{
+			name:     "slice",
+			value:    []int{1, 2, 3},
+			expected: string("[1,2,3]"),
 		},
 	}
 	for _, tt := range tests {

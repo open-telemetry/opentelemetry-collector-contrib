@@ -1077,23 +1077,24 @@ The `String` Converter converts the `value` to string type.
 
 The returned type is `string`.
 
-- float64. The function returns the `value` as a string type.
-- string. The function returns the `value`, even if it's empty.
-- bool. The function returns true/false as "true"/"false".
-- int64. The function returns the `value` as a string type.
-- struct. The function returns an empty struct as "{}"
+- string. The function returns the `value` without changes.
+- []byte. The function returns the `value` as a string encoded in hexadecimal.
+- map. The function returns the `value` as a key-value-pair of type string.
+- slice. The function returns the `value` as a list formatted string.
+- pcommon.Value. The function returns the `value` as a string type.
 
-If value is empty, another type or parsing failed, nil is always returned.
+If `value` is of another type it gets marshalled to string type.
+If `value` is empty, or parsing failed, nil is always returned.
 
 The `value` is either a path expression to a telemetry field to retrieve, or a literal.
 
 Examples:
 
-- `String(2.7)`
-- `String("")`
+- `String("test")`
+- `String(attributes["http.method"])`
+- `String(span_id)`
+- `String([1,2,3])`
 - `String(false)`
-- `String(13)`
-- `String(attributes["http.status_code"])`
 
 ### Substring
 
