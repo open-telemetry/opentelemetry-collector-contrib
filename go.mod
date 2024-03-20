@@ -1152,3 +1152,7 @@ replace (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery => ./internal/sqlquery
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ./extension/encoding
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension => ./extension/encoding/otlpencodingextension
