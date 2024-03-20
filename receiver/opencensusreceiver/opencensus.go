@@ -163,7 +163,7 @@ func (ocr *ocReceiver) grpcServer(host component.Host) (*grpc.Server, error) {
 
 	if ocr.serverGRPC == nil {
 		var err error
-		ocr.serverGRPC, err = ocr.grpcServerSettings.ToServer(host, ocr.settings.TelemetrySettings)
+		ocr.serverGRPC, err = ocr.grpcServerSettings.ToServerContext(context.Background(), host, ocr.settings.TelemetrySettings)
 		if err != nil {
 			return nil, err
 		}

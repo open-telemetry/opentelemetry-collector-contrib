@@ -31,7 +31,7 @@ func TestValidate(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost :5984",
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: multierr.Combine(
 				errMissingUsername,
@@ -45,8 +45,8 @@ func TestValidate(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost :5984",
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-				Username:                  "otelu",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Username:         "otelu",
 			},
 			expectedErr: multierr.Combine(
 				errMissingPassword,
@@ -59,8 +59,8 @@ func TestValidate(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost :5984",
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-				Password:                  "otelp",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Password:         "otelp",
 			},
 			expectedErr: multierr.Combine(
 				errMissingUsername,
@@ -75,7 +75,7 @@ func TestValidate(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost :5984",
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: fmt.Errorf(errInvalidEndpoint.Error(), "parse \"http://localhost :5984\": invalid character \" \" in host name"),
 		},
@@ -87,7 +87,7 @@ func TestValidate(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost:5984",
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: nil,
 		},

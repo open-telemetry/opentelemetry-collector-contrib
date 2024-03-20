@@ -96,6 +96,7 @@ import (
 	solarwindsapmsettingsextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension"
 	dbstorage "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	filestorage "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
+	sumologicextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension"
 	attributesprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	cumulativetodeltaprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 	deltatorateprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
@@ -233,6 +234,7 @@ func components() (otelcol.Factories, error) {
 		solarwindsapmsettingsextension.NewFactory(),
 		dbstorage.NewFactory(),
 		filestorage.NewFactory(),
+		sumologicextension.NewFactory(),
 		otlpencodingextension.NewFactory(),
 		jaegerencodingextension.NewFactory(),
 		jsonlogencodingextension.NewFactory(),

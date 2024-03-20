@@ -32,11 +32,11 @@ func NewFactory() receiver.Factory {
 
 // createDefaultConfig creates the default elasticsearchreceiver config.
 func createDefaultConfig() component.Config {
-	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = defaultCollectionInterval
 
 	return &Config{
-		ScraperControllerSettings: cfg,
+		ControllerConfig: cfg,
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: defaultEndpoint,
 			Timeout:  defaultHTTPClientTimeout,
@@ -68,7 +68,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&c.ScraperControllerSettings,
+		&c.ControllerConfig,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scraper),
