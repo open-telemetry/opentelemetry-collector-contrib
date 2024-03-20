@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     development: [metrics, logs]
-  distributions: [contrib, observiq, sumo]
+  distributions: []
   codeowners:
     active: [yuanlihan]
 
