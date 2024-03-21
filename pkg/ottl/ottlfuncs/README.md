@@ -1035,12 +1035,12 @@ Examples:
 
 ### Unix
 
-`Unix(seconds, nanoseconds)`
+`Unix(seconds, Optional[nanoseconds])`
 
 The `Unix` Converter returns an epoch timestamp as a Unix time. Similar to [Golang's Unix function](https://pkg.go.dev/time#Unix).
 
 `seconds` is `int64`. If `seconds` is another type an error is returned.
-`nanoseconds` is `int64`. If `nanoseconds` is another type an error is returned.
+`nanoseconds` is `int64`. It is optional an its default value is 0. If `nanoseconds` is another type an error is returned.
 
 The returned type is `time.Time`.
 
