@@ -59,12 +59,12 @@ type scraper struct {
 	logger                     *zap.Logger
 	id                         component.ID
 	instanceName               string
-	scrapeCfg                  scraperhelper.ScraperControllerSettings
+	scrapeCfg                  scraperhelper.ControllerConfig
 	startTime                  pcommon.Timestamp
 	metricsBuilderConfig       metadata.MetricsBuilderConfig
 }
 
-func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ScraperControllerSettings, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string) (scraperhelper.Scraper, error) {
+func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string) (scraperhelper.Scraper, error) {
 	s := &scraper{
 		mb:                   metricsBuilder,
 		metricsBuilderConfig: metricsBuilderConfig,

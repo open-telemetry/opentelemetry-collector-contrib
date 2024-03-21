@@ -79,8 +79,8 @@ func TestLoadConfig(t *testing.T) {
 				Timeout:         30 * time.Second,
 				Headers:         map[string]configopaque.String{},
 				WriteBufferSize: 512 * 1024,
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "ca.crt",
 					},
 				},

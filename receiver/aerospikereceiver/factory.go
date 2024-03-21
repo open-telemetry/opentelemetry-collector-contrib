@@ -54,17 +54,17 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings, params, consumer,
+		&cfg.ControllerConfig, params, consumer,
 		scraperhelper.AddScraper(scraper),
 	)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-		Endpoint:                  defaultEndpoint,
-		Timeout:                   defaultTimeout,
-		CollectClusterMetrics:     defaultCollectClusterMetrics,
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		ControllerConfig:      scraperhelper.NewDefaultControllerConfig(),
+		Endpoint:              defaultEndpoint,
+		Timeout:               defaultTimeout,
+		CollectClusterMetrics: defaultCollectClusterMetrics,
+		MetricsBuilderConfig:  metadata.DefaultMetricsBuilderConfig(),
 	}
 }
