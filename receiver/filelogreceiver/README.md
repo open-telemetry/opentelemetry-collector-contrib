@@ -257,8 +257,12 @@ Take a closer look at the changes, we can infer a few things about the contents 
 `/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file:
 * The number after `file_input.knownFiles` reflects the number of log files being tracked.
 * If this number is `N`, the subsequent `N` lines contain details of each log file being tracked. Each line is JSON-formatted. 
-* The details contain the fingerprint of the log file, how much of the log file's contents the `filelog` receiver has consumed, 
+  * The details contain the fingerprint of the log file, how much of the log file's contents the `filelog` receiver has consumed, 
   the file name, and some other details.
+  * The fingerprint of the log file, stored in the `.Fingerprint.first_bytes` JSON field, is a base64-encoding of the first
+    `B` bytes of the log file, where `B` corresponds to the value specified by the `fingerprint_size` configuration setting of
+    the `filelog` receiver. If the log file has fewer bytes than `B`, the fingerprint is calculated from the available bytes
+    and is re-calculated when the file grows, until it reaches `B` bytes.
 
 When another log entry is added to the same log file, the contents of the `/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file
 change to reflect this new state. Note that the offset has been incremented by the size of the new entry, in bytes.
@@ -302,6 +306,5 @@ file_input.knownFiles2
 ```
 
 #### TODO
-* Document why and how the signature changes when more data is added to the file.
 * Document why there are three copies of the tracking information.
 * Document contents of tracking file with compaction enabled.
