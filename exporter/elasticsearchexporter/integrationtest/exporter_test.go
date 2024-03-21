@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v8/esutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
@@ -24,7 +26,10 @@ import (
 
 func TestExporter(t *testing.T) {
 	for _, tc := range []struct {
-		name             string
+		name string
+		// restartCollector restarts the OTEL collector. Restarting
+		// the collector allows durability testing of the ES exporter
+		// based on the OTEL config used for testing.
 		restartCollector bool
 		mockESFailure    bool
 	}{
@@ -61,17 +66,18 @@ func runner(t *testing.T, restartCollector, mockESFailure bool) {
 			// If restartCollector is not set then recover ES service
 			// after a few failed bulk requests otherwise ensure that
 			// both collector and ES are unavailable for the same
-			// duration considering worst case scenario. We use a
-			// multiple of flush interval to determine the downtime for
-			// ES. Using a multiple greater than 1 ensures that there
-			// is enough downtime to make flush/bulk reqests to ES.
-			time.AfterFunc(10*flushIvl, func() {
-				mockES.SetReturnStatusCode(http.StatusOK)
+			// duration considering worst case scenario. ES recovers
+			// after a certain number of bulk requests have happened.
+			var bulkCalls atomic.Int32
+			mockES.SetOnBulkRequest(func(_ esutil.BulkIndexerResponse) {
+				if count := bulkCalls.Add(1); count == 10 {
+					mockES.SetReturnStatusCode(http.StatusOK)
+				}
 			})
 		}
 	}
 
-	count := sendLogs(t, cfg.GRPCEndpoint, "batch_1", 250, 10) // total=logs*agents
+	count := sendLogs(t, cfg.GRPCEndpoint, "batch_1", 500, 10) // total=logs*agents
 
 	if restartCollector {
 		// Restart the collector after all data is sent to the collector.
@@ -87,7 +93,7 @@ func runner(t *testing.T, restartCollector, mockESFailure bool) {
 		mockES.SetReturnStatusCode(http.StatusOK)
 	}
 
-	count += sendLogs(t, cfg.GRPCEndpoint, "batch_2", 250, 10) // total=logs*agents
+	count += sendLogs(t, cfg.GRPCEndpoint, "batch_2", 500, 10) // total=logs*agents
 
 	assert.Eventually(
 		t, func() bool {

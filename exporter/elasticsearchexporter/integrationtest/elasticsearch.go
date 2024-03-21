@@ -16,6 +16,7 @@ import (
 
 	"github.com/elastic/go-docappender/docappendertest"
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/esutil"
 )
 
 // mockES mocks a few Elasticsearch APIs as required by the
@@ -29,6 +30,7 @@ type mockES struct {
 	mu             sync.RWMutex
 	countsMap      map[string]int
 	mockStatusCode int
+	onBulkRequest  func(esutil.BulkIndexerResponse)
 }
 
 func newMockESClient(t testing.TB, debug bool) *mockES {
@@ -48,13 +50,8 @@ func newMockESClient(t testing.TB, debug bool) *mockES {
 		mockStatusCode: http.StatusOK,
 		debug:          debug,
 	}
-	countRouter := r.Path("/{index}/_count").Subrouter()
-	countRouter.Use(es.mockStatusCodeMiddleware(t))
-	countRouter.Handle("", es.countHandler(t))
-
-	bulkRouter := r.Path("/_bulk").Subrouter()
-	bulkRouter.Use(es.mockStatusCodeMiddleware(t))
-	bulkRouter.Handle("", es.bulkHandler(t))
+	r.Handle("/{index}/_count", es.countHandler(t))
+	r.Handle("/_bulk", es.bulkHandler(t))
 
 	esURL := httptest.NewServer(r).URL
 	client, err := elasticsearch.NewClient(elasticsearch.Config{
@@ -67,6 +64,14 @@ func newMockESClient(t testing.TB, debug bool) *mockES {
 	return es
 }
 
+// SetOnBulkRequest sets the callback for to be called for every bulk request.
+func (m *mockES) SetOnBulkRequest(f func(esutil.BulkIndexerResponse)) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.onBulkRequest = f
+}
+
 // SetReturnStatusCode simulates a failing Elasticsearch. Note that this does
 // not have any impact on the info (/) request.
 func (m *mockES) SetReturnStatusCode(code int) {
@@ -74,25 +79,6 @@ func (m *mockES) SetReturnStatusCode(code int) {
 	defer m.mu.Unlock()
 
 	m.mockStatusCode = code
-}
-
-func (m *mockES) mockStatusCodeMiddleware(t testing.TB) mux.MiddlewareFunc {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			m.debugLog(t, "status code middleware called with request URI: %s", r.RequestURI)
-
-			m.mu.RLock()
-			code := m.mockStatusCode
-			m.mu.RUnlock()
-
-			if code/100 == 2 {
-				next.ServeHTTP(w, r)
-			} else {
-				m.debugLog(t, "failing request as orchestrated by the test with status code: %d", code)
-				http.Error(w, "orchestrated failure", code)
-			}
-		})
-	}
 }
 
 func (m *mockES) countHandler(t testing.TB) http.HandlerFunc {
@@ -104,7 +90,7 @@ func (m *mockES) countHandler(t testing.TB) http.HandlerFunc {
 		count := m.countsMap[idx]
 		m.mu.RUnlock()
 
-		json.NewEncoder(w).Encode(map[string]int{"count": count})
+		m.handleMockStatusCode(t, w, map[string]int{"count": count})
 	}
 }
 
@@ -113,6 +99,21 @@ func (m *mockES) bulkHandler(t testing.TB) http.HandlerFunc {
 		m.debugLog(t, "bulk handler called with request URI: %s", r.RequestURI)
 		_, response := docappendertest.DecodeBulkRequest(r)
 
+		m.mu.RLock()
+		callback := m.onBulkRequest
+		m.mu.RUnlock()
+
+		// callback must be called outside any lock to prevent contention
+		// in case the callback calls other methods on mockES.
+		if callback != nil {
+			callback(response)
+		}
+
+		// do not update the counts map if bulk indexer returns non 2xx response
+		if m.handleMockStatusCode(t, w, response) {
+			return
+		}
+
 		m.mu.Lock()
 		defer m.mu.Unlock()
 		for _, itemMap := range response.Items {
@@ -120,8 +121,6 @@ func (m *mockES) bulkHandler(t testing.TB) http.HandlerFunc {
 				m.countsMap[item.Index] += 1
 			}
 		}
-
-		json.NewEncoder(w).Encode(response)
 	}
 }
 
@@ -129,4 +128,19 @@ func (m *mockES) debugLog(t testing.TB, format string, args ...any) {
 	if m.debug {
 		t.Logf(format, args...)
 	}
+}
+
+func (m *mockES) handleMockStatusCode(t testing.TB, w http.ResponseWriter, data any) bool {
+	m.mu.RLock()
+	code := m.mockStatusCode
+	m.mu.RUnlock()
+
+	if code/100 == 2 {
+		json.NewEncoder(w).Encode(data)
+		return true
+	}
+
+	m.debugLog(t, "failing request as orchestrated by the test with status code: %d", code)
+	http.Error(w, "orchestrated failure", code)
+	return false
 }
