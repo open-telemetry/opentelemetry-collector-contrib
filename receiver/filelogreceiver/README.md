@@ -184,10 +184,12 @@ While the storage parameter can ensure that log files are consumed accurately, i
 logs are dropped while moving downstream through other components in the collector.
 For additional resiliency, see [Fault tolerant log collection example](../../examples/fault-tolerant-logs-collection/README.md)
 
-### Debugging
+### File storage
 
-Sometimes, it's useful to take a peek at the `storage` file in which offsets are stored. At the moment,
-the simplest way to do this is by printing out the contents of this file using the `strings` utility.
+A common storage extension that's used for tracking log file offsets is the
+[`filestorage` extension](../../extension/storage/filestorage). Sometimes, typically for debugging reasons, it's useful
+to take a peek at the file in which offsets are stored. At the moment, the simplest way to do this is by printing out
+the contents of this file using the `strings` utility.
 
 Consider a collector pipeline that's using the `filelog` receiver with the `storage` extension as shown
 below. Note that [compaction](../../extension/storage/filestorage/README.md#compaction) is not being used.
