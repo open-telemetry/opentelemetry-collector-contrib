@@ -66,14 +66,19 @@ type Config struct {
 	//   probability of each span by `SamplingProbability`.
 	SamplerMode SamplerMode `mapstructure:"mode"`
 
-	// StrictRandomness indicates whether input is expected to
-	// check the W3C Trace Context Level 2 Random flag before
-	// consistent probability sampling.  It is unlikely this will
-	// be useful until support for the flag is widely deployed,
-	StrictRandomness bool `mapstructure:"strict_randomness"`
+	// FailClosed indicates to not sample data (the processor will
+	// fail "closed") in case of error, such as failure to parse
+	// the tracestate field or missing the randomness attribute.
+	//
+	// By default, failure cases are sampled (the processor is
+	// fails "open").  Sampling priority-based decisions are made after
+	// FailClosed is processed, making it possible to sample
+	// despite errors using priority.
+	FailClosed bool `mapstructure:"fail_closed"`
 
-	// How many hex digits of th: value to use, max, from 1 up to
-	// 14.  Default is 5.  0 is treated as full precision.
+	// SamplingPrecision is how many hex digits of sampling
+	// threshold will be encoded, from 1 up to 14.  Default is 4.
+	// 0 is treated as full precision.
 	SamplingPrecision int `mapstructure:"sampling_precision"`
 
 	///////

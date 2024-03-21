@@ -24,6 +24,7 @@ type logsProcessor struct {
 
 	samplingPriority string
 	precision        int
+	failClosed       bool
 	commonFields
 }
 
@@ -111,13 +112,13 @@ func (rc *recordCarrier) reserialize() error {
 // configuration.
 func newLogsProcessor(ctx context.Context, set processor.CreateSettings, nextConsumer consumer.Logs, cfg *Config) (processor.Logs, error) {
 	common := commonFields{
-		strict: cfg.StrictRandomness,
 		logger: set.Logger,
 	}
 
 	lsp := &logsProcessor{
 		samplingPriority: cfg.SamplingPriority,
 		precision:        cfg.SamplingPrecision,
+		failClosed:       cfg.FailClosed,
 		commonFields:     common,
 	}
 
@@ -138,16 +139,25 @@ func (lsp *logsProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.L
 			ill.LogRecords().RemoveIf(func(l plog.LogRecord) bool {
 
 				rnd, carrier, err := lsp.sampler.randomnessFromLogRecord(l)
-				if err != nil {
-					lsp.logger.Error("log sampling", zap.Error(err))
-				} else if err := consistencyCheck(rnd, carrier, lsp.commonFields); err != nil {
-					// the consistency check resets the arriving
-					// threshold if it is inconsistent with the
-					// sampling decision.
-					lsp.logger.Error("log sampling", zap.Error(err))
+				if err == nil {
+					err = consistencyCheck(rnd, carrier, lsp.commonFields)
 				}
+				var threshold sampling.Threshold
 
-				threshold := lsp.sampler.decide(carrier)
+				if err != nil {
+					if _, is := err.(samplerError); is {
+						lsp.logger.Info(err.Error())
+					} else {
+						lsp.logger.Error("logs sampler", zap.Error(err))
+					}
+					if lsp.failClosed {
+						threshold = sampling.NeverSampleThreshold
+					} else {
+						threshold = sampling.AlwaysSampleThreshold
+					}
+				} else {
+					threshold = lsp.sampler.decide(carrier)
+				}
 
 				// Note: in logs, unlike traces, the sampling priority
 				// attribute is interpreted as a request to be sampled.

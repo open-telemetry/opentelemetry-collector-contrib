@@ -60,25 +60,22 @@ func TestHashSeedRoundingDown(t *testing.T) {
 	require.Equal(t, 1.0, math.Round((pct/100)*numHashBuckets))
 
 	for _, isLogs := range []bool{false, true} {
-		for _, strict := range []bool{false, true} {
-			cfg := Config{
-				SamplerMode:        HashSeed,
-				SamplingPercentage: pct,
-				HashSeed:           defaultHashSeed,
-			}
-
-			logger, observed := observer.New(zap.DebugLevel)
-
-			com := commonFields{
-				strict: strict,
-				logger: zap.New(logger),
-			}
-
-			_, ok := makeSampler(&cfg, com, isLogs).(*neverSampler)
-			require.True(t, ok, "is neverSampler")
-
-			require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
-			require.Equal(t, observed.All()[0].Message, "probability rounded to zero")
+		cfg := Config{
+			SamplerMode:        HashSeed,
+			SamplingPercentage: pct,
+			HashSeed:           defaultHashSeed,
 		}
+
+		logger, observed := observer.New(zap.DebugLevel)
+
+		com := commonFields{
+			logger: zap.New(logger),
+		}
+
+		_, ok := makeSampler(&cfg, com, isLogs).(*neverSampler)
+		require.True(t, ok, "is neverSampler")
+
+		require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+		require.Equal(t, observed.All()[0].Message, "probability rounded to zero")
 	}
 }

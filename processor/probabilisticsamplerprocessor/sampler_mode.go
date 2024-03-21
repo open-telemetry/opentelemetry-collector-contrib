@@ -13,6 +13,16 @@ import (
 )
 
 const (
+	// These four can happen at runtime and be returned by
+	// randomnessFromXXX()
+
+	ErrInconsistentArrivingTValue samplerError = "inconsistent arriving t-value: span should not have been sampled"
+	ErrMissingRandomness          samplerError = "missing randomness"
+	ErrRandomnessInUse            samplerError = "log record has sampling randomness, equalizing or proportional mode recommended"
+	ErrThresholdInUse             samplerError = "log record has sampling threshold, equalizing or proportional mode recommended"
+)
+
+const (
 	// Hashing method: The constants below help translate user friendly percentages
 	// to numbers direct used in sampling.
 	numHashBucketsLg2     = 14
@@ -20,6 +30,16 @@ const (
 	bitMaskHashBuckets    = numHashBuckets - 1
 	percentageScaleFactor = numHashBuckets / 100.0
 )
+
+// samplerErrors are conditions reported by the sampler that are somewhat
+// ordinary and should log as info-level.
+type samplerError string
+
+var _ error = samplerError("")
+
+func (s samplerError) Error() string {
+	return string(s)
+}
 
 type SamplerMode string
 
@@ -29,11 +49,6 @@ const (
 	Proportional SamplerMode = "proportional"
 	DefaultMode  SamplerMode = Proportional
 	modeUnset    SamplerMode = ""
-)
-
-var (
-	ErrRandomnessInUse = fmt.Errorf("log record has sampling randomness, equalizing or proportional mode recommended")
-	ErrThresholdInUse  = fmt.Errorf("log record has sampling threshold, equalizing or proportional mode recommended")
 )
 
 type randomnessNamer interface {
@@ -132,11 +147,6 @@ type dataSampler interface {
 	randomnessFromLogRecord(s plog.LogRecord) (randomness randomnessNamer, carrier samplingCarrier, err error)
 }
 
-var (
-	ErrInconsistentArrivingTValue = fmt.Errorf("inconsistent arriving t-value: span should not have been sampled")
-	ErrMissingRandomness          = fmt.Errorf("missing randomness; trace flag not set")
-)
-
 var AllModes = []SamplerMode{HashSeed, Equalizing, Proportional}
 
 func (sm *SamplerMode) UnmarshalText(in []byte) error {
@@ -154,9 +164,6 @@ func (sm *SamplerMode) UnmarshalText(in []byte) error {
 
 // commonFields includes fields used in all sampler modes.
 type commonFields struct {
-	// strict detetrmines how strongly randomness is enforced
-	strict bool
-
 	logger *zap.Logger
 }
 
@@ -245,12 +252,6 @@ func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (randomnessN
 		}
 	}
 
-	if th.strict {
-		// In strict mode, we never parse the TraceState and let
-		// it pass through untouched.
-		return rnd, lrc, err
-	}
-
 	if err != nil {
 		// The sampling.randomness or sampling.threshold attributes
 		// had a parse error, in this case.
@@ -281,14 +282,11 @@ func (ctc *consistentTracestateCommon) randomnessFromLogRecord(l plog.LogRecord)
 		rnd = rv
 	} else if tid := l.TraceID(); !tid.IsEmpty() {
 		rnd = newTraceIDW3CSpecMethod(sampling.TraceIDToRandomness(tid))
-	} else if ctc.strict {
-		err = ErrMissingRandomness
 	} else {
-		// The case of no TraceID and non-strict mode remains.  Use the
-		// configured attribute.
+		// The case of no TraceID remains.  Use the configured attribute.
 
 		if ctc.logsRandomnessSourceAttribute == "" {
-			err = ErrMissingRandomness
+			// rnd continues to be missing
 		} else if value, ok := l.Attributes().Get(ctc.logsRandomnessSourceAttribute); ok {
 			rnd = newAttributeHashingMethod(
 				ctc.logsRandomnessSourceAttribute,
@@ -352,12 +350,6 @@ func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (randomnessNamer, sa
 		return rnd, nil, err
 	}
 
-	if th.strict {
-		// In strict mode, we never parse the TraceState and let
-		// it pass through untouched.
-		return rnd, nil, nil
-	}
-
 	// If the tracestate contains a proper R-value or T-value, we
 	// have to leave it alone.  The user should not be using this
 	// sampler mode if they are using specified forms of consistent
@@ -391,7 +383,7 @@ func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (random
 		rnd = newSamplingRandomnessMethod(rv)
 	} else if s.TraceID().IsEmpty() {
 		// If the TraceID() is all zeros, which W3C calls an invalid TraceID.
-		err = ErrMissingRandomness
+		// rnd continues to be missing.
 	} else {
 		rnd = newTraceIDW3CSpecMethod(sampling.TraceIDToRandomness(s.TraceID()))
 	}
@@ -400,16 +392,18 @@ func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (random
 }
 
 func consistencyCheck(rnd randomnessNamer, carrier samplingCarrier, common commonFields) error {
+	// Without randomness, do not check the threshold.
+	if isMissing(rnd) {
+		return ErrMissingRandomness
+	}
 	// Consistency check: if the TraceID is out of range, the
 	// TValue is a lie.  If inconsistent, clear it and return an error.
 	if tv, has := carrier.threshold(); has {
 		if !tv.ShouldSample(rnd.randomness()) {
-			if common.strict {
-				return ErrInconsistentArrivingTValue
-			} else {
-				common.logger.Warn("tracestate", zap.Error(ErrInconsistentArrivingTValue))
-				carrier.clearThreshold()
-			}
+			// In case we fail open, the threshold is cleared as
+			// recommended in the OTel spec.
+			carrier.clearThreshold()
+			return ErrInconsistentArrivingTValue
 		}
 	}
 

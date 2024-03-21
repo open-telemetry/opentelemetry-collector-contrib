@@ -895,7 +895,6 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 				if tt.cfg != nil {
 					*cfg = *tt.cfg
 				}
-				cfg.StrictRandomness = true
 				cfg.SamplerMode = mode
 
 				set := processortest.NewNopCreateSettings()

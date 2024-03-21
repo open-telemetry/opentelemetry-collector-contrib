@@ -94,7 +94,6 @@ func (tc *tracestateCarrier) reserialize() error {
 // configuration.
 func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
 	common := commonFields{
-		strict: cfg.StrictRandomness,
 		logger: set.Logger,
 	}
 	tp := &traceProcessor{

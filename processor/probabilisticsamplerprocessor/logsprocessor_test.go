@@ -71,6 +71,7 @@ func TestLogsSampling(t *testing.T) {
 			name: "nothing",
 			cfg: &Config{
 				SamplingPercentage: 0,
+				FailClosed:         true,
 			},
 			received: 0,
 		},
@@ -108,6 +109,11 @@ func TestLogsSampling(t *testing.T) {
 				SamplingPercentage: 50,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",
+
+				// FailClosed: true means not to
+				// sample when the attribute is
+				// missing.
+				FailClosed: true,
 			},
 			received: 23,
 		},
@@ -117,6 +123,11 @@ func TestLogsSampling(t *testing.T) {
 				SamplingPercentage: 50,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "bar",
+
+				// FailClosed: true means not to
+				// sample when the attribute is
+				// missing.
+				FailClosed: true,
 			},
 			received: 29, // probabilistic... doesn't yield the same results as foo
 		},
