@@ -18,16 +18,17 @@ var (
 )
 
 const (
-	renameConflictReplace = "replace"
-	renameConflictFail    = "fail"
-	renameConflictIgnore  = "ignore"
+	renameConflictInsert = "insert"
+	renameConflictUpsert = "upsert"
+	renameConflictFail   = "fail"
 )
 
-// rename(map, field, target_field, [Optional] ignore_missing = true, [Optional] conflict_strategy = replace)
+// rename(target, source_map, source_key, [Optional] ignore_missing = true, [Optional] conflict_strategy = upsert)
 type RenameArguments[K any] struct {
-	Map              ottl.PMapGetter[K]
-	Field            string
-	TargetField      string
+	Target    ottl.GetSetter[K]
+	SourceMap ottl.PMapGetter[K]
+	SourceKey string
+
 	IgnoreMissing    ottl.Optional[bool]
 	ConflictStrategy ottl.Optional[string]
 }
@@ -43,23 +44,24 @@ func createRenameFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 		return nil, fmt.Errorf("RenameFactory args must be of type *RenameArguments[K]")
 	}
 
-	return rename(args.Map, args.Field, args.TargetField, args.IgnoreMissing, args.ConflictStrategy)
+	return rename(args.Target, args.SourceMap, args.SourceKey, args.IgnoreMissing, args.ConflictStrategy)
 }
 
-func rename[K any](mg ottl.PMapGetter[K], f string, tf string, im ottl.Optional[bool], cs ottl.Optional[string]) (ottl.ExprFunc[K], error) {
-	conflictStrategy := renameConflictReplace
+func rename[K any](target ottl.GetSetter[K], sm ottl.PMapGetter[K], sourceKey string,
+	im ottl.Optional[bool], cs ottl.Optional[string]) (ottl.ExprFunc[K], error) {
+	conflictStrategy := renameConflictUpsert
 	if !cs.IsEmpty() {
 		conflictStrategy = cs.Get()
 	}
 
-	if conflictStrategy != renameConflictReplace &&
-		conflictStrategy != renameConflictFail &&
-		conflictStrategy != renameConflictIgnore {
-		return nil, fmt.Errorf("%v %w, must be %q, %q or %q", conflictStrategy, ErrRenameInvalidConflictStrategy, renameConflictReplace, renameConflictFail, renameConflictIgnore)
+	if conflictStrategy != renameConflictInsert &&
+		conflictStrategy != renameConflictUpsert &&
+		conflictStrategy != renameConflictFail {
+		return nil, fmt.Errorf("%v %w, must be %q, %q or %q", conflictStrategy, ErrRenameInvalidConflictStrategy, renameConflictInsert, renameConflictFail, renameConflictUpsert)
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
-		m, err := mg.Get(ctx, tCtx)
+		sourceMap, err := sm.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -70,45 +72,50 @@ func rename[K any](mg ottl.PMapGetter[K], f string, tf string, im ottl.Optional[
 			ignoreMissing = im.Get()
 		}
 
-		val, exists := m.Get(f)
+		// Get value from source_map
+		sourceVal, sourceExists := sourceMap.Get(sourceKey)
 
 		// Apply ignore_missing to the source
-		if !exists {
+		if !sourceExists {
 			if ignoreMissing {
-				// If ignore missing return
+				// If ignore_missing is true, return
 				return nil, nil
 			}
-			return nil, fmt.Errorf("%v %w, while ignore_missing is false", f, ErrRenameKeyIsMissing)
+			return nil, fmt.Errorf("%v %w, while ignore_missing is false", sourceKey, ErrRenameKeyIsMissing)
 		}
 
 		// Apply conflict_strategy to the target
-		_, oldExists := m.Get(tf)
+		oldVal, err := target.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+
+		oldExists := (oldVal != nil)
 
 		switch conflictStrategy {
-		case renameConflictReplace:
+		case renameConflictInsert:
+			// Noop if target field present
+			if oldExists {
+				return nil, nil
+			}
+		case renameConflictUpsert:
 			// Overwrite if present or create when missing
 		case renameConflictFail:
 			// Fail if target field present
 			if oldExists {
 				return nil, ErrRenameKeyAlreadyExists
 			}
-		case renameConflictIgnore:
-			// Noop if target field present
-			if oldExists {
-				return nil, nil
-			}
 		}
 
-		// If field and targetField are the same
-		if f == tf {
-			return nil, nil
-		}
+		// Save raw value, since the sourceVal gets modified when the key is removed
+		rawVal := sourceVal.AsRaw()
 
-		// Copy field value to targetField
-		val.CopyTo(m.PutEmpty(tf))
+		// Remove field from source
+		sourceMap.Remove(sourceKey)
 
-		// Remove field from map
-		m.Remove(f)
+		// Set value to target
+		target.Set(ctx, tCtx, rawVal)
+
 		return nil, nil
 	}, nil
 }

@@ -14,187 +14,211 @@ import (
 )
 
 func Test_rename(t *testing.T) {
-	input := pcommon.NewMap()
-	input.PutStr("test", "hello world")
-	input.PutInt("test2", 3)
-	input.PutEmpty("empty")
+	inputMap := map[string]any{
+		"test":  "hello world",
+		"test2": int64(3),
+		"empty": nil,
+	}
 
-	mg := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(ctx context.Context, tCtx pcommon.Map) (any, error) {
+	input := pcommon.NewMap()
+	err := input.FromRaw(inputMap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	target := func(key string) *ottl.StandardGetSetter[pcommon.Value] {
+		return &ottl.StandardGetSetter[pcommon.Value]{
+			Setter: func(ctx context.Context, tCtx pcommon.Value, val any) error {
+				if val == nil {
+					tCtx.Map().PutEmpty(key)
+					return nil
+				}
+				switch v := val.(type) {
+				case int64:
+					tCtx.Map().PutInt(key, v)
+				case string:
+					tCtx.Map().PutStr(key, v)
+				default:
+					t.Fatal("unexpected type")
+				}
+				return nil
+			},
+			Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				return tCtx, nil
+			},
+		}
+	}
+
+	sourceMap := ottl.StandardPMapGetter[pcommon.Value]{
+		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 			return tCtx, nil
 		},
 	}
 
 	tests := []struct {
 		name             string
-		mg               ottl.PMapGetter[pcommon.Map]
-		field            string
-		targetField      string
+		target           ottl.GetSetter[pcommon.Value]
+		sourceMap        ottl.PMapGetter[pcommon.Value]
+		sourceKey        string
 		ignoreMissing    ottl.Optional[bool]
 		conflictStrategy ottl.Optional[string]
-		want             func(pcommon.Map)
+		want             map[string]any
 		wantErr          error
 	}{
 		{
-			name:        "rename test",
-			mg:          mg,
-			field:       "test",
-			targetField: "test3",
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutStr("test3", "hello world")
-				expectedMap.PutInt("test2", 3)
-				expectedMap.PutEmpty("empty")
+			name:      "rename test",
+			target:    target("test3"),
+			sourceMap: sourceMap,
+			sourceKey: "test",
+			want: map[string]any{
+				"test2": int64(3),
+				"test3": "hello world",
+				"empty": nil,
 			},
 		},
 		{
-			name:        "rename empty",
-			mg:          mg,
-			field:       "empty",
-			targetField: "empty3",
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutStr("test", "hello world")
-				expectedMap.PutInt("test2", 3)
-				expectedMap.PutEmpty("empty3")
+			name:      "rename empty",
+			target:    target("empty3"),
+			sourceMap: sourceMap,
+			sourceKey: "empty",
+			want: map[string]any{
+				"test":   "hello world",
+				"test2":  int64(3),
+				"empty3": nil,
 			},
 		},
 		{
-			name:        "rename ignore missing default",
-			mg:          mg,
-			field:       "test5",
-			targetField: "test3",
-			want: func(expectedMap pcommon.Map) {
-				input.CopyTo(expectedMap)
-			},
+			name:      "rename ignore missing default",
+			target:    target("test3"),
+			sourceMap: sourceMap,
+			sourceKey: "test5",
+			want:      inputMap,
 		},
 		{
 			name:          "rename ignore missing true",
-			mg:            mg,
-			field:         "test5",
-			targetField:   "test3",
+			target:        target("test3"),
+			sourceMap:     sourceMap,
+			sourceKey:     "test5",
 			ignoreMissing: ottl.NewTestingOptional[bool](true),
-			want: func(expectedMap pcommon.Map) {
-				input.CopyTo(expectedMap)
-			},
+			want:          inputMap,
 		},
 		{
 			name:          "rename ignore missing false",
-			mg:            mg,
-			field:         "test5",
-			targetField:   "test3",
+			target:        target("test3"),
+			sourceMap:     sourceMap,
+			sourceKey:     "test5",
 			ignoreMissing: ottl.NewTestingOptional[bool](false),
 			wantErr:       ErrRenameKeyIsMissing,
 		},
 		{
-			name:        "rename with default strategy",
-			mg:          mg,
-			field:       "test",
-			targetField: "test2",
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutEmpty("empty")
-				expectedMap.PutStr("test2", "hello world")
+			name:      "rename with default strategy",
+			target:    target("test2"),
+			sourceMap: sourceMap,
+			sourceKey: "test",
+			want: map[string]any{
+				"test2": "hello world",
+				"empty": nil,
 			},
 		},
 		{
-			name:             "rename with replace strategy",
-			mg:               mg,
-			field:            "test",
-			targetField:      "test2",
-			conflictStrategy: ottl.NewTestingOptional[string]("replace"),
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutEmpty("empty")
-				expectedMap.PutStr("test2", "hello world")
+			name:             "rename with upsert strategy",
+			target:           target("test2"),
+			sourceMap:        sourceMap,
+			sourceKey:        "test",
+			conflictStrategy: ottl.NewTestingOptional[string](renameConflictUpsert),
+			want: map[string]any{
+				"test2": "hello world",
+				"empty": nil,
 			},
 		},
 		{
 			name:             "rename with fail strategy",
-			mg:               mg,
-			field:            "test",
-			targetField:      "test2",
-			conflictStrategy: ottl.NewTestingOptional[string]("fail"),
+			target:           target("test2"),
+			sourceMap:        sourceMap,
+			sourceKey:        "test",
+			conflictStrategy: ottl.NewTestingOptional[string](renameConflictFail),
 			wantErr:          ErrRenameKeyAlreadyExists,
 		},
 		{
-			name:             "rename with ignore strategy",
-			mg:               mg,
-			field:            "test",
-			targetField:      "test2",
-			conflictStrategy: ottl.NewTestingOptional[string]("ignore"),
-			want: func(expectedMap pcommon.Map) {
-				input.CopyTo(expectedMap)
-			},
+			name:             "rename with insert strategy",
+			target:           target("test2"),
+			sourceMap:        sourceMap,
+			sourceKey:        "test",
+			conflictStrategy: ottl.NewTestingOptional[string](renameConflictInsert),
+			want:             inputMap,
 		},
 		{
-			name:        "rename same key with default strategy",
-			mg:          mg,
-			field:       "test",
-			targetField: "test",
-			want: func(expectedMap pcommon.Map) {
-				input.CopyTo(expectedMap)
-			},
+			name:      "rename same key with default strategy",
+			target:    target("test"),
+			sourceMap: sourceMap,
+			sourceKey: "test",
+			want:      inputMap,
 		},
 		{
-			name:             "rename same key with replace strategy",
-			mg:               mg,
-			field:            "test",
-			targetField:      "test",
-			conflictStrategy: ottl.NewTestingOptional[string]("replace"),
-			want: func(expectedMap pcommon.Map) {
-				input.CopyTo(expectedMap)
-			},
+			name:             "rename same key with upsert strategy",
+			target:           target("test"),
+			sourceMap:        sourceMap,
+			sourceKey:        "test",
+			conflictStrategy: ottl.NewTestingOptional[string](renameConflictUpsert),
+			want:             inputMap,
 		},
 		{
 			name:             "rename same key with fail strategy",
-			mg:               mg,
-			field:            "test",
-			targetField:      "test",
-			conflictStrategy: ottl.NewTestingOptional[string]("fail"),
+			target:           target("test"),
+			sourceMap:        sourceMap,
+			sourceKey:        "test",
+			conflictStrategy: ottl.NewTestingOptional[string](renameConflictFail),
 			wantErr:          ErrRenameKeyAlreadyExists,
 		},
 		{
-			name:             "rename same key with ignore strategy",
-			mg:               mg,
-			field:            "test",
-			targetField:      "test",
-			conflictStrategy: ottl.NewTestingOptional[string]("ignore"),
-			want: func(expectedMap pcommon.Map) {
-				input.CopyTo(expectedMap)
-			},
+			name:             "rename same key with insert strategy",
+			target:           target("test"),
+			sourceMap:        sourceMap,
+			sourceKey:        "test",
+			conflictStrategy: ottl.NewTestingOptional[string](renameConflictInsert),
+			want:             inputMap,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			scenarioMap := pcommon.NewMap()
-			input.CopyTo(scenarioMap)
+			scenarioValue := pcommon.NewValueMap()
+			input.CopyTo(scenarioValue.Map())
 
-			exprFunc, err := rename(tt.mg, tt.field, tt.targetField, tt.ignoreMissing, tt.conflictStrategy)
+			exprFunc, err := rename(tt.target, tt.sourceMap, tt.sourceKey, tt.ignoreMissing, tt.conflictStrategy)
 			assert.NoError(t, err)
 
-			_, err = exprFunc(nil, scenarioMap)
+			_, err = exprFunc(nil, scenarioValue)
 			assert.ErrorIs(t, err, tt.wantErr)
 			if err != nil {
 				return
 			}
-
-			expected := pcommon.NewMap()
-			tt.want(expected)
-
-			assert.Equal(t, expected, scenarioMap)
+			assert.Equal(t, tt.want, scenarioValue.Map().AsRaw())
 		})
 	}
 }
 
 func Test_rename_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+
+	target := &ottl.StandardGetSetter[pcommon.Value]{
+		Setter: func(ctx context.Context, tCtx pcommon.Value, val any) error {
+			return nil
+		},
+		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+			return tCtx, nil
+		},
+	}
+
+	sourceMap := ottl.StandardPMapGetter[pcommon.Value]{
+		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 			return tCtx, nil
 		},
 	}
 
 	key := "anything"
 
-	exprFunc, err := rename[any](target, key, key, ottl.Optional[bool]{}, ottl.Optional[string]{})
+	exprFunc, err := rename(target, sourceMap, key, ottl.Optional[bool]{}, ottl.Optional[string]{})
 	assert.NoError(t, err)
 
 	_, err = exprFunc(nil, input)
@@ -202,30 +226,48 @@ func Test_rename_bad_input(t *testing.T) {
 }
 
 func Test_rename_bad_conflict_strategy(t *testing.T) {
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+	target := &ottl.StandardGetSetter[pcommon.Value]{
+		Setter: func(ctx context.Context, tCtx pcommon.Value, val any) error {
+			return nil
+		},
+		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+			return tCtx, nil
+		},
+	}
+
+	sourceMap := ottl.StandardPMapGetter[pcommon.Value]{
+		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 			return tCtx, nil
 		},
 	}
 
 	key := "anything"
 
-	_, err := rename[any](target, key, key, ottl.Optional[bool]{}, ottl.NewTestingOptional[string]("unsupported"))
+	_, err := rename(target, sourceMap, key, ottl.Optional[bool]{}, ottl.NewTestingOptional[string]("unsupported"))
 	assert.ErrorIs(t, err, ErrRenameInvalidConflictStrategy)
 }
 
 func Test_rename_get_nil(t *testing.T) {
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+	target := &ottl.StandardGetSetter[pcommon.Value]{
+		Setter: func(ctx context.Context, tCtx pcommon.Value, val any) error {
+			return nil
+		},
+		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+			return tCtx, nil
+		},
+	}
+
+	sourceMap := ottl.StandardPMapGetter[pcommon.Value]{
+		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
 			return tCtx, nil
 		},
 	}
 
 	key := "anything"
 
-	exprFunc, err := rename[any](target, key, key, ottl.Optional[bool]{}, ottl.Optional[string]{})
+	exprFunc, err := rename(target, sourceMap, key, ottl.Optional[bool]{}, ottl.Optional[string]{})
 	assert.NoError(t, err)
 
-	_, err = exprFunc(nil, nil)
+	_, err = exprFunc(nil, pcommon.NewValueEmpty())
 	assert.Error(t, err)
 }
