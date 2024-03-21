@@ -183,3 +183,125 @@ Exception in thread 2 "main" java.lang.NullPointerException
 While the storage parameter can ensure that log files are consumed accurately, it is possible that
 logs are dropped while moving downstream through other components in the collector.
 For additional resiliency, see [Fault tolerant log collection example](../../examples/fault-tolerant-logs-collection/README.md)
+
+### Debugging
+
+Sometimes, it's useful to take a peek at the `storage` file in which offsets are stored. At the moment,
+the simplest way to do this is by printing out the contents of this file using the `strings` utility.
+
+Consider a collector pipeline that's using the `filelog` receiver with the `storage` extension as shown
+below. Note that [compaction](../../extension/storage/filestorage/README.md#compaction) is not being used.
+
+```yaml
+receivers:
+  filelog:
+    include: /tmp/*.log
+    storage: file_storage/filelogreceiver
+
+exporters:
+  ...
+
+extensions:
+  file_storage/filelogreceiver:
+    directory: /tmp/otelcol/file_storage/filelogreceiver
+
+service:
+  extensions: [file_storage/filelogreceiver]
+  pipelines:
+    logs:
+      receivers: [filelog]
+      exporters: [...]
+```
+
+Assume there are no log files matching `/tmp/*.log` when the above collector pipeline starts executing. In this
+scenario, the `/tmp/otelcol/file_storage/filelogreceiver` directory contains one file:
+
+```
+$ ls /tmp/otelcol/file_storage/filelogreceiver
+receiver_filelog_
+```
+
+This is a binary file, so we can read its contents using the `strings` utility.
+
+```
+$ strings /tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_
+default
+file_input.knownFiles0
+default
+file_input.knownFiles0
+default
+file_input.knownFiles0
+```
+
+When a new log file is created with a single entry in it, and the `filelog` receiver in the collector
+pipeline has ingested this entry, the contents of the `/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file 
+change to reflect this new state.
+
+```
+$ echo "$RANDOM" >> /tmp/1.log
+$ cat /tmp/1.log
+31079
+$ strings /tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_
+default
+file_input.knownFiles1
+{"Fingerprint":{"first_bytes":"MzEwNzkK"},"Offset":6,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:15:54.763711-07:00","LastDataLength":0}}
+default
+file_input.knownFiles1
+{"Fingerprint":{"first_bytes":"MzEwNzkK"},"Offset":6,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:15:54.763711-07:00","LastDataLength":0}}
+default
+file_input.knownFiles1
+{"Fingerprint":{"first_bytes":"MzEwNzkK"},"Offset":6,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:15:54.763711-07:00","LastDataLength":0}}
+```
+
+Take a closer look at the changes, we can infer a few things about the contents of the 
+`/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file:
+* The number after `file_input.knownFiles` reflects the number of log files being tracked.
+* If this number is `N`, the subsequent `N` lines contain details of each log file being tracked. Each line is JSON-formatted. 
+* The details contain the fingerprint of the log file, how much of the log file's contents the `filelog` receiver has consumed, 
+  the file name, and some other details.
+
+When another log entry is added to the same log file, the contents of the `/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file
+change to reflect this new state. Note that the offset has been incremented by the size of the new entry, in bytes.
+
+```
+$ echo "$RANDOM" >> /tmp/1.log
+$ cat /tmp/1.log
+31079
+219
+$ strings /tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_
+default
+file_input.knownFiles1
+{"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
+default
+file_input.knownFiles1
+{"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
+default
+file_input.knownFiles1
+{"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
+```
+
+When a new log file is created, it also gets tracked in the `/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file.
+
+```
+$ echo "$RANDOM" >> 2.log
+$ cat /tmp/2.log
+24403
+$ strings otelcol/file_storage/filelogreceiver/receiver_filelog_
+default
+file_input.knownFiles2
+{"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
+{"Fingerprint":{"first_bytes":"MjQ0MDMK"},"Offset":6,"FileAttributes":{"log.file.name":"2.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:39.96429-07:00","LastDataLength":0}}
+default
+file_input.knownFiles2
+{"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
+{"Fingerprint":{"first_bytes":"MjQ0MDMK"},"Offset":6,"FileAttributes":{"log.file.name":"2.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:39.96429-07:00","LastDataLength":0}}
+default
+file_input.knownFiles2
+{"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
+{"Fingerprint":{"first_bytes":"MjQ0MDMK"},"Offset":6,"FileAttributes":{"log.file.name":"2.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:39.96429-07:00","LastDataLength":0}}
+```
+
+#### TODO
+* Document why and how the signature changes when more data is added to the file.
+* Document why there are three copies of the tracking information.
+* Document contents of tracking file with compaction enabled.
