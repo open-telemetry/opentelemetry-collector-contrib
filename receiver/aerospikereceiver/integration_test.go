@@ -27,7 +27,6 @@ import (
 var aerospikePort = "3000"
 
 func TestIntegration(t *testing.T) {
-	t.Skip("Container image results in error '/entrypoint.sh: line 35: FEATURE_KEY_FILE: unbound variable'")
 	t.Run("6.2", integrationTest(func(*Config) {}))
 	t.Run("6.2-cluster", integrationTest(func(cfg *Config) {
 		cfg.CollectClusterMetrics = true
@@ -39,7 +38,7 @@ func integrationTest(cfgMod func(*Config)) func(*testing.T) {
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
-				Image:        "aerospike:ce-6.2.0.2",
+				Image:        "aerospike:ce-6.2.0.7_1",
 				ExposedPorts: []string{aerospikePort},
 				WaitingFor:   waitStrategy{},
 				LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
