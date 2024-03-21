@@ -4,6 +4,7 @@
 package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -29,4 +30,8 @@ type Config struct {
 	HealthPath string `mapstructure:"health_path"`
 	// HecToOtelAttrs creates a mapping from HEC metadata to attributes.
 	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_metadata_to_otel_attrs"`
+	// AckExtension defines the extension to use for acking of events
+	AckExtension *component.ID `mapstructure:"ack_extension"`
+	// AckPath for Ack API, default is '/services/collector/ack'
+	AckPath string `mapstructure:"ack_path"`
 }

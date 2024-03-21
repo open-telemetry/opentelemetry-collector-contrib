@@ -6,6 +6,7 @@ package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -25,6 +26,9 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
+	"github.com/google/uuid"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
@@ -32,9 +36,12 @@ import (
 const (
 	defaultServerTimeout = 20 * time.Second
 
+	ackResponse                       = `{"acks": %s}`
 	responseOK                        = `{"text": "Success", "code": 0}`
+	responseOKWithAckID               = `{"text": "Success", "code": 0, "ackId": %d}`
 	responseHecHealthy                = `{"text": "HEC is healthy", "code": 17}`
-	responseInvalidMethod             = `"Only \"POST\" method is supported"`
+	responseInvalidMethodPostOnly     = `"Only \"POST\" method is supported"`
+	responseInvalidMethodGetOnly      = `"Only \"GET\" method is supported"`
 	responseInvalidEncoding           = `"\"Content-Encoding\" must be \"gzip\" or empty"`
 	responseInvalidDataFormat         = `{"text":"Invalid data format","code":6}`
 	responseErrEventRequired          = `{"text":"Event field is required","code":12}`
@@ -45,6 +52,8 @@ const (
 	responseErrUnsupportedMetricEvent = `"Unsupported metric event"`
 	responseErrUnsupportedLogEvent    = `"Unsupported log event"`
 	responseErrHandlingIndexedFields  = `{"text":"Error in handling indexed fields","code":15,"invalid-event-number":%d}`
+	responseErrDataChannelMissing     = `{"text": "Data channel is missing","code":10}`
+	responseErrInvalidDataChannel     = `{"text": "Invalid data channel", "code": 11}`
 	responseNoData                    = `{"text":"No data","code":5}`
 	// Centralizing some HTTP and related string constants.
 	gzipEncoding              = "gzip"
@@ -59,19 +68,23 @@ var (
 	errEmptyEndpoint          = errors.New("empty endpoint")
 	errInvalidMethod          = errors.New("invalid http method")
 	errInvalidEncoding        = errors.New("invalid encoding")
+	errExtensionMissing       = errors.New("ack extension not found")
 
-	okRespBody                = []byte(responseOK)
-	eventRequiredRespBody     = []byte(responseErrEventRequired)
-	eventBlankRespBody        = []byte(responseErrEventBlank)
-	invalidEncodingRespBody   = []byte(responseInvalidEncoding)
-	invalidFormatRespBody     = []byte(responseInvalidDataFormat)
-	invalidMethodRespBody     = []byte(responseInvalidMethod)
-	errGzipReaderRespBody     = []byte(responseErrGzipReader)
-	errUnmarshalBodyRespBody  = []byte(responseErrUnmarshalBody)
-	errInternalServerError    = []byte(responseErrInternalServerError)
-	errUnsupportedMetricEvent = []byte(responseErrUnsupportedMetricEvent)
-	errUnsupportedLogEvent    = []byte(responseErrUnsupportedLogEvent)
-	noDataRespBody            = []byte(responseNoData)
+	okRespBody                    = []byte(responseOK)
+	eventRequiredRespBody         = []byte(responseErrEventRequired)
+	eventBlankRespBody            = []byte(responseErrEventBlank)
+	requiredDataChannelHeader     = []byte(responseErrDataChannelMissing)
+	invalidDataChannelHeader      = []byte(responseErrInvalidDataChannel)
+	invalidEncodingRespBody       = []byte(responseInvalidEncoding)
+	invalidFormatRespBody         = []byte(responseInvalidDataFormat)
+	invalidMethodRespBodyPostOnly = []byte(responseInvalidMethodPostOnly)
+	invalidMethodRespBodyGetOnly  = []byte(responseInvalidMethodGetOnly)
+	errGzipReaderRespBody         = []byte(responseErrGzipReader)
+	errUnmarshalBodyRespBody      = []byte(responseErrUnmarshalBody)
+	errInternalServerError        = []byte(responseErrInternalServerError)
+	errUnsupportedMetricEvent     = []byte(responseErrUnsupportedMetricEvent)
+	errUnsupportedLogEvent        = []byte(responseErrUnsupportedLogEvent)
+	noDataRespBody                = []byte(responseNoData)
 )
 
 // splunkReceiver implements the receiver.Metrics for Splunk HEC metric protocol.
@@ -84,6 +97,7 @@ type splunkReceiver struct {
 	shutdownWG      sync.WaitGroup
 	obsrecv         *receiverhelper.ObsReport
 	gzipReaderPool  *sync.Pool
+	ackExt          ackextension.AckExtension
 }
 
 var _ receiver.Metrics = (*splunkReceiver)(nil)
@@ -213,6 +227,17 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	r.server.WriteTimeout = defaultServerTimeout
 
 	r.shutdownWG.Add(1)
+
+	// set up the ack API handler if the ack extension is present
+	if storageID := r.config.AckExtension; storageID != nil {
+		if ext, found := host.GetExtensions()[*storageID]; found {
+			r.ackExt = ext.(ackextension.AckExtension)
+			mx.NewRoute().Path(r.config.AckPath).HandlerFunc(r.handleAck)
+		} else {
+			return fmt.Errorf("specified ack extension with id '%q' could not be found", *storageID)
+		}
+	}
+
 	go func() {
 		defer r.shutdownWG.Done()
 		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
@@ -231,12 +256,65 @@ func (r *splunkReceiver) Shutdown(context.Context) error {
 	return err
 }
 
-func (r *splunkReceiver) writeSuccessResponse(ctx context.Context, resp http.ResponseWriter, eventCount int) {
+func (r *splunkReceiver) writeSuccessResponseWithAck(ctx context.Context, resp http.ResponseWriter, eventCount int, ackID uint64) {
+	r.writeSuccessResponse(ctx, resp, eventCount, []byte(fmt.Sprintf(responseOKWithAckID, ackID)))
+}
+
+func (r *splunkReceiver) writeSuccessResponseWithoutAck(ctx context.Context, resp http.ResponseWriter, eventCount int) {
+	r.writeSuccessResponse(ctx, resp, eventCount, okRespBody)
+}
+
+func (r *splunkReceiver) writeSuccessAckResponse(ctx context.Context, resp http.ResponseWriter, acks map[uint64]bool) {
+	ackString, _ := json.Marshal(acks)
+	r.writeSuccessResponse(ctx, resp, 0, []byte(fmt.Sprintf(ackResponse, ackString)))
+}
+
+func (r *splunkReceiver) writeSuccessResponse(ctx context.Context, resp http.ResponseWriter, eventCount int, bodyContent []byte) {
 	resp.Header().Set(httpContentTypeHeader, httpJSONTypeHeader)
 	resp.WriteHeader(http.StatusOK)
-	if _, err := resp.Write(okRespBody); err != nil {
+	if _, err := resp.Write(bodyContent); err != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, eventCount, err)
 	}
+}
+
+func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	if req.Method != http.MethodPost {
+		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBodyPostOnly, 0, errInvalidMethod)
+		return
+	}
+
+	// shouldn't run into this case since we only enable this handler IF ackExt exists. But we have this check just in case
+	if r.ackExt == nil {
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, 0, errExtensionMissing)
+		return
+	}
+
+	// check that the channel exists
+	partitionID := req.Header.Get(splunk.HttpSplunkChannelHeader)
+	if len(partitionID) <= 0 {
+		r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
+		return
+	}
+
+	// check validity of channel
+	_, err := uuid.Parse(partitionID)
+	if err != nil {
+		r.failRequest(ctx, resp, http.StatusBadRequest, invalidDataChannelHeader, 0, err)
+		return
+	}
+
+	dec := json.NewDecoder(req.Body)
+	var ackRequest splunk.AckRequest
+
+	err = dec.Decode(&ackRequest)
+	if err != nil {
+		r.failRequest(ctx, resp, http.StatusBadRequest, invalidFormatRespBody, 0, err)
+		return
+	}
+
+	queriedAcks := r.ackExt.QueryAcks(partitionID, ackRequest.Acks)
+	r.writeSuccessAckResponse(req.Context(), resp, queriedAcks)
 }
 
 func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Request) {
@@ -244,7 +322,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	ctx = r.obsrecv.StartLogsOp(ctx)
 
 	if req.Method != http.MethodPost {
-		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBody, 0, errInvalidMethod)
+		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBodyPostOnly, 0, errInvalidMethod)
 		return
 	}
 
@@ -252,6 +330,22 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	if encoding != "" && encoding != gzipEncoding {
 		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidEncodingRespBody, 0, errInvalidEncoding)
 		return
+	}
+
+	var partitionID string
+	if r.ackExt != nil {
+		// check channel header exists
+		partitionID = req.Header.Get(splunk.HttpSplunkChannelHeader)
+		if len(partitionID) <= 0 {
+			r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
+			return
+		}
+		// check validity of channel
+		_, err := uuid.Parse(partitionID)
+		if err != nil {
+			r.failRequest(ctx, resp, http.StatusBadRequest, invalidDataChannelHeader, 0, err)
+			return
+		}
 	}
 
 	if req.ContentLength == 0 {
@@ -295,14 +389,27 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, err)
 		return
 	}
+
+	var ackID uint64
+	if r.ackExt != nil {
+		ackID = r.ackExt.ProcessEvent(partitionID)
+	}
+
 	consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
+	if r.ackExt != nil {
+		r.ackExt.Ack(partitionID, ackID)
+	}
 	_ = bodyReader.Close()
 
 	if consumerErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, consumerErr)
 	} else {
-		r.writeSuccessResponse(ctx, resp, ld.LogRecordCount())
+		if r.ackExt != nil {
+			r.writeSuccessResponseWithAck(ctx, resp, ld.LogRecordCount(), ackID)
+		} else {
+			r.writeSuccessResponseWithoutAck(ctx, resp, ld.LogRecordCount())
+		}
 		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), slLen, nil)
 	}
 }
@@ -317,7 +424,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 
 	if req.Method != http.MethodPost {
-		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBody, 0, errInvalidMethod)
+		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBodyPostOnly, 0, errInvalidMethod)
 		return
 	}
 
@@ -325,6 +432,22 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	if encoding != "" && encoding != gzipEncoding {
 		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidEncodingRespBody, 0, errInvalidEncoding)
 		return
+	}
+
+	var partitionID string
+	if r.ackExt != nil {
+		// check channel header exists
+		partitionID = req.Header.Get(splunk.HttpSplunkChannelHeader)
+		if len(partitionID) <= 0 {
+			r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
+			return
+		}
+		// check validity of channel
+		_, err := uuid.Parse(partitionID)
+		if err != nil {
+			r.failRequest(ctx, resp, http.StatusBadRequest, invalidDataChannelHeader, 0, err)
+			return
+		}
 	}
 
 	bodyReader := req.Body
@@ -389,6 +512,12 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 	}
 	resourceCustomizer := r.createResourceCustomizer(req)
+
+	var ackID uint64
+	if r.ackExt != nil {
+		ackID = r.ackExt.ProcessEvent(partitionID)
+	}
+
 	if r.logsConsumer != nil && len(events) > 0 {
 		ld, err := splunkHecToLogData(r.settings.Logger, events, resourceCustomizer, r.config)
 		if err != nil {
@@ -396,17 +525,22 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			return
 		}
 		decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
+		if r.ackExt != nil {
+			r.ackExt.Ack(partitionID, ackID)
+		}
 		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), len(events), decodeErr)
 		if decodeErr != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
 			return
 		}
-
 	}
 	if r.metricsConsumer != nil && len(metricEvents) > 0 {
 		md, _ := splunkHecToMetricsData(r.settings.Logger, metricEvents, resourceCustomizer, r.config)
 
 		decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
+		if r.ackExt != nil {
+			r.ackExt.Ack(partitionID, ackID)
+		}
 		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(metricEvents), decodeErr)
 		if decodeErr != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(metricEvents), decodeErr)
@@ -414,7 +548,11 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		}
 	}
 
-	r.writeSuccessResponse(ctx, resp, len(events)+len(metricEvents))
+	if r.ackExt != nil {
+		r.writeSuccessResponseWithAck(ctx, resp, len(events)+len(metricEvents), ackID)
+	} else {
+		r.writeSuccessResponseWithoutAck(ctx, resp, len(events)+len(metricEvents))
+	}
 }
 
 func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pcommon.Resource) {
