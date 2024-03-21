@@ -90,7 +90,7 @@ func (s *SamplingGRPCServer) Shutdown(ctx context.Context) error {
 		return errGRPCServerNotRunning
 	}
 
-	ch := make(chan struct{})
+	ch := make(chan struct{}, 1)
 	go func() {
 		s.grpcServer.GracefulStop()
 		ch <- struct{}{}
