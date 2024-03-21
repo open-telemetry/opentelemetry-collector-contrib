@@ -20,7 +20,7 @@ type Config struct {
 	// The Subscription that receiver will be consuming messages from (default "otlp_subscription")
 	Subscription string `mapstructure:"subscription"`
 	// Encoding of the messages (default "otlp_proto")
-	EncodingID *component.ID `mapstructure:"encoding"`
+	EncodingExtension *component.ID `mapstructure:"encoding_extension"`
 	// Name specifies the consumer name.
 	ConsumerName string `mapstructure:"consumer_name"`
 	// Set the path to the trusted TLS certificate file
