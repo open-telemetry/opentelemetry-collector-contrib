@@ -179,7 +179,7 @@ Exception in thread 2 "main" java.lang.NullPointerException
 
 ## Offset tracking
 
-`storage` setting allows to define the proper storage extension to be used for storing file offsets. 
+`storage` setting allows to define the proper storage extension to be used for storing file offsets.
 While the storage parameter can ensure that log files are consumed accurately, it is possible that
 logs are dropped while moving downstream through other components in the collector.
 For additional resiliency, see [Fault tolerant log collection example](../../examples/fault-tolerant-logs-collection/README.md)
@@ -234,7 +234,7 @@ file_input.knownFiles0
 ```
 
 When a new log file is created with a single entry in it, and the `filelog` receiver in the collector
-pipeline has ingested this entry, the contents of the `/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file 
+pipeline has ingested this entry, the contents of the `/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file
 change to reflect this new state.
 
 ```
@@ -253,12 +253,12 @@ file_input.knownFiles1
 {"Fingerprint":{"first_bytes":"MzEwNzkK"},"Offset":6,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:15:54.763711-07:00","LastDataLength":0}}
 ```
 
-Take a closer look at the changes, we can infer a few things about the contents of the 
-`/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file:
+Take a closer look at the changes, we can infer a few things about the contents of the
+ `/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file:
 * The number after `file_input.knownFiles` reflects the number of log files being tracked.
-* If this number is `N`, the subsequent `N` lines contain details of each log file being tracked. Each line is JSON-formatted. 
-  * The details contain the fingerprint of the log file, how much of the log file's contents the `filelog` receiver has consumed, 
-  the file name, and some other details.
+* If this number is `N`, the subsequent `N` lines contain details of each log file being tracked. Each line is JSON-formatted.
+  * The details contain the fingerprint of the log file, how much of the log file's contents the `filelog` receiver has consumed,
+    the file name, and some other details.
   * The fingerprint of the log file, stored in the `.Fingerprint.first_bytes` JSON field, is a base64-encoding of the first
     `B` bytes of the log file, where `B` corresponds to the value specified by the `fingerprint_size` configuration setting of
     the `filelog` receiver. If the log file has fewer bytes than `B`, the fingerprint is calculated from the available bytes
