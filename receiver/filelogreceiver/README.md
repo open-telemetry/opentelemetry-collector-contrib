@@ -306,7 +306,3 @@ file_input.knownFiles2
 {"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
 {"Fingerprint":{"first_bytes":"MjQ0MDMK"},"Offset":6,"FileAttributes":{"log.file.name":"2.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:39.96429-07:00","LastDataLength":0}}
 ```
-
-#### TODO
-* Document why there are three copies of the tracking information.
-* Document contents of tracking file with compaction enabled.
