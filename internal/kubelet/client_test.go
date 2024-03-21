@@ -55,7 +55,7 @@ func TestNewTLSClientProvider(t *testing.T) {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeTLS,
 		},
-		TLSSetting: configtls.TLSSetting{
+		Config: configtls.Config{
 			CAFile:   certPath,
 			CertFile: certPath,
 			KeyFile:  keyFile,
@@ -278,7 +278,7 @@ func TestTLSMissingCertFile(t *testing.T) {
 	p := tlsClientProvider{
 		endpoint: "",
 		cfg: &ClientConfig{
-			TLSSetting: configtls.TLSSetting{
+			Config: configtls.Config{
 				CAFile: certPath,
 			},
 		},

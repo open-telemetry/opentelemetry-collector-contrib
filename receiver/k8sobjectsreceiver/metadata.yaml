@@ -1,4 +1,5 @@
 type: k8sobjects
+scope_name: otelcol/k8sobjectsreceiver
 
 status:
   class: receiver

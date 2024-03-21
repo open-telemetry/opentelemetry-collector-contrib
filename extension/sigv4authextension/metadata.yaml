@@ -1,4 +1,5 @@
 type: sigv4auth
+scope_name: otelcol/sigv4auth
 
 status:
   class: extension

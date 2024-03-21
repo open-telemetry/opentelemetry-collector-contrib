@@ -1,4 +1,5 @@
 type: redis
+scope_name: otelcol/redisreceiver
 
 status:
   class: receiver
@@ -351,6 +352,7 @@ metrics:
     unit: "By"
     gauge:
       value_type: int
+
 tests:
   config:
     endpoint: localhost:6379

@@ -29,14 +29,14 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-		Brokers:                   []string{"10.10.10.10:9092"},
-		ProtocolVersion:           "2.0.0",
-		TopicMatch:                "test_\\w+",
-		GroupMatch:                "test_\\w+",
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		Brokers:          []string{"10.10.10.10:9092"},
+		ProtocolVersion:  "2.0.0",
+		TopicMatch:       "test_\\w+",
+		GroupMatch:       "test_\\w+",
 		Authentication: kafka.Authentication{
-			TLS: &configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLS: &configtls.ClientConfig{
+				TLSSetting: configtls.Config{
 					CAFile:   "ca.pem",
 					CertFile: "cert.pem",
 					KeyFile:  "key.pem",

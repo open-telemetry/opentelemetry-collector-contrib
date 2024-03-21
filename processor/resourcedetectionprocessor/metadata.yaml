@@ -1,4 +1,5 @@
 type: resourcedetection
+scope_name: otelcol/resourcedetection
 
 status:
   class: processor
@@ -7,6 +8,3 @@ status:
   distributions: [contrib, splunk, observiq, sumo, aws, redhat, liatrio, grafana]
   codeowners:
     active: [Aneurysm9, dashpole]
-
-tests:
-  config:

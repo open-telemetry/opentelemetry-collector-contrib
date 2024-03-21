@@ -37,13 +37,14 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: "0.0.0.0:1234",
 					},
 					ProxyAddress: "https://proxy.proxy.com",
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure:   true,
 						ServerName: "something",
 					},
 					Region:      "us-west-1",
 					RoleARN:     "arn:aws:iam::123456789012:role/awesome_role",
 					AWSEndpoint: "https://another.aws.endpoint.com",
+					ServiceName: "es",
 				},
 			},
 		},

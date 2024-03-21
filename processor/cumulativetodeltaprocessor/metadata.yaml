@@ -1,4 +1,5 @@
 type: cumulativetodelta
+scope_name: otelcol/cumulativetodelta
 
 status:
   class: processor

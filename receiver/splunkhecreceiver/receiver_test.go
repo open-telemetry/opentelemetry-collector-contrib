@@ -447,8 +447,8 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
-	cfg.TLSSetting = &configtls.TLSServerSetting{
-		TLSSetting: configtls.TLSSetting{
+	cfg.TLSSetting = &configtls.ServerConfig{
+		TLSSetting: configtls.Config{
 			CertFile: "./testdata/server.crt",
 			KeyFile:  "./testdata/server.key",
 		},
@@ -466,6 +466,9 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "should not have failed to start log reception")
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "should not fail to start log on second Start call")
+	defer func() {
+		require.NoError(t, r.Shutdown(context.Background()))
+	}()
 
 	// If there are errors reported through ReportStatus this will retrieve it.
 	<-time.After(500 * time.Millisecond)
@@ -496,8 +499,8 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	req, err := http.NewRequestWithContext(context.Background(), "POST", url, bytes.NewReader(body))
 	require.NoErrorf(t, err, "should have no errors with new request: %v", err)
 
-	tlscs := configtls.TLSClientSetting{
-		TLSSetting: configtls.TLSSetting{
+	tlscs := configtls.ClientConfig{
+		TLSSetting: configtls.Config{
 			CAFile:   "./testdata/ca.crt",
 			CertFile: "./testdata/client.crt",
 			KeyFile:  "./testdata/client.key",
@@ -632,6 +635,9 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			if tt.metric {
 				exporter, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), exporterConfig)
 				assert.NoError(t, exporter.Start(context.Background(), nil))
+				defer func() {
+					require.NoError(t, exporter.Shutdown(context.Background()))
+				}()
 				assert.NoError(t, err)
 				rcv, err := newMetricsReceiver(receivertest.NewNopCreateSettings(), *config, exporter)
 				assert.NoError(t, err)
@@ -645,6 +651,9 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			} else {
 				exporter, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), exporterConfig)
 				assert.NoError(t, exporter.Start(context.Background(), nil))
+				defer func() {
+					require.NoError(t, exporter.Shutdown(context.Background()))
+				}()
 				assert.NoError(t, err)
 				rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, exporter)
 				assert.NoError(t, err)
@@ -712,6 +721,9 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporter, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), exporterConfig)
 			assert.NoError(t, exporter.Start(context.Background(), nil))
 			assert.NoError(t, err)
+			defer func() {
+				require.NoError(t, exporter.Shutdown(context.Background()))
+			}()
 			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *cfg, exporter)
 			assert.NoError(t, err)
 
@@ -809,6 +821,9 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 
 			exporter, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), exporterConfig)
 			assert.NoError(t, exporter.Start(context.Background(), nil))
+			defer func() {
+				require.NoError(t, exporter.Shutdown(context.Background()))
+			}()
 			assert.NoError(t, err)
 			rcv, err := newMetricsReceiver(receivertest.NewNopCreateSettings(), *cfg, exporter)
 			assert.NoError(t, err)

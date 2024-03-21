@@ -124,7 +124,7 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 	})
 }
 
-func setup(t *testing.T) (CorrelationClient, *httptest.Server, chan *request, *atomic.Value, *atomic.Value, context.CancelFunc, context.Context) {
+func setup(t *testing.T) (CorrelationClient, chan *request, *atomic.Value, *atomic.Value, context.CancelFunc) {
 	serverCh := make(chan *request, 100)
 
 	var forcedRespCode atomic.Value
@@ -132,6 +132,10 @@ func setup(t *testing.T) (CorrelationClient, *httptest.Server, chan *request, *a
 	server := httptest.NewServer(makeHandler(t, serverCh, &forcedRespCode, &forcedRespPayload))
 
 	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		<-ctx.Done()
+		server.Close()
+	}()
 
 	serverURL, err := url.Parse(server.URL)
 	if err != nil {
@@ -172,20 +176,13 @@ func setup(t *testing.T) (CorrelationClient, *httptest.Server, chan *request, *a
 	}
 	client.Start()
 
-	return client, server, serverCh, &forcedRespCode, &forcedRespPayload, cancel, ctx
-}
-
-func teardown(ctx context.Context, client CorrelationClient, server *httptest.Server, serverCh chan *request, cancel context.CancelFunc) {
-	close(serverCh)
-	cancel()
-	<-ctx.Done()
-	client.Shutdown()
-	server.Close()
+	return client, serverCh, &forcedRespCode, &forcedRespPayload, cancel
 }
 
 func TestCorrelationClient(t *testing.T) {
-	client, server, serverCh, forcedRespCode, forcedRespPayload, cancel, ctx := setup(t)
-	defer teardown(ctx, client, server, serverCh, cancel)
+	client, serverCh, forcedRespCode, forcedRespPayload, cancel := setup(t)
+	defer close(serverCh)
+	defer cancel()
 
 	for _, correlationType := range []Type{Service, Environment} {
 		for _, op := range []string{http.MethodPut, http.MethodDelete} {
@@ -245,7 +242,7 @@ func TestCorrelationClient(t *testing.T) {
 		client.Correlate(testData, CorrelateCB(func(_ *Correlation, _ error) {}))
 		// sending the testData twice tests deduplication, since the 500 status
 		// will trigger retries, and the requests should be deduped and the
-		// TotalRetriedUpdates should still only be 5
+		// TotalRertriedUpdates should still only be 5
 		client.Correlate(testData, CorrelateCB(func(_ *Correlation, _ error) {}))
 
 		cors := waitForCors(serverCh, 1, 4)
