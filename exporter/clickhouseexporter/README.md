@@ -342,3 +342,7 @@ service:
       processors: [ batch ]
       exporters: [ clickhouse ]
 ```
+
+## Developer tips
+
+- Make sure integration tests pass after any change of sql

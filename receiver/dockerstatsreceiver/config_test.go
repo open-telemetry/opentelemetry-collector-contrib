@@ -33,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 2 * time.Second,
 					InitialDelay:       time.Second,
 					Timeout:            20 * time.Second,
@@ -91,20 +91,20 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestValidateErrors(t *testing.T) {
-	cfg := &Config{ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)}
+	cfg := &Config{ControllerConfig: scraperhelper.NewDefaultControllerConfig()}
 	assert.Equal(t, "endpoint must be specified", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{
-		DockerAPIVersion:          "1.21",
-		Endpoint:                  "someEndpoint",
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: 1 * time.Second},
+		DockerAPIVersion: "1.21",
+		Endpoint:         "someEndpoint",
+		ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 1 * time.Second},
 	}
 	assert.Equal(t, `"api_version" 1.21 must be at least 1.25`, component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{
-		Endpoint:                  "someEndpoint",
-		DockerAPIVersion:          "1.25",
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{},
+		Endpoint:         "someEndpoint",
+		DockerAPIVersion: "1.25",
+		ControllerConfig: scraperhelper.ControllerConfig{},
 	}
 	assert.Equal(t, `"collection_interval": requires positive value`, component.ValidateConfig(cfg).Error())
 }
