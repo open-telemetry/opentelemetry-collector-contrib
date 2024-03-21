@@ -39,8 +39,8 @@ func TestUnmarshal(t *testing.T) {
 					cfg.TCP.Encoding = "utf-16"
 					cfg.TCP.SplitConfig.LineStartPattern = "ABC"
 					cfg.TCP.SplitConfig.LineEndPattern = ""
-					cfg.TCP.TLS = &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					cfg.TCP.TLS = &configtls.ServerConfig{
+						TLSSetting: configtls.Config{
 							CertFile: "foo",
 							KeyFile:  "foo2",
 							CAFile:   "foo3",

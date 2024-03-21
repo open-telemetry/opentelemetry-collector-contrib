@@ -85,8 +85,8 @@ func TestScraperFailedStart(t *testing.T) {
 	sc := newNginxScraper(receivertest.NewNopCreateSettings(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "localhost:8080",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.ClientConfig{
+				TLSSetting: configtls.Config{
 					CAFile: "/non/existent",
 				},
 			},

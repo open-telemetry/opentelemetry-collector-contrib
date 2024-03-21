@@ -107,7 +107,7 @@ func (c *sapHanaClient) Connect(ctx context.Context) error {
 		return fmt.Errorf("error generating DSN for SAP HANA connection: %w", err)
 	}
 
-	tls, err := c.receiverConfig.TLSClientSetting.LoadTLSConfig()
+	tls, err := c.receiverConfig.ClientConfig.LoadTLSConfig()
 	if err != nil {
 		return fmt.Errorf("error generating TLS config for SAP HANA connection: %w", err)
 	}

@@ -46,7 +46,7 @@ func TestAuthentication(t *testing.T) {
 
 	saramaTLSCfg := &sarama.Config{}
 	saramaTLSCfg.Net.TLS.Enable = true
-	tlsClient := configtls.TLSClientSetting{}
+	tlsClient := configtls.ClientConfig{}
 	tlscfg, err := tlsClient.LoadTLSConfig()
 	require.NoError(t, err)
 	saramaTLSCfg.Net.TLS.Config = tlscfg
@@ -73,12 +73,12 @@ func TestAuthentication(t *testing.T) {
 			saramaConfig: saramaPlaintext,
 		},
 		{
-			auth:         Authentication{TLS: &configtls.TLSClientSetting{}},
+			auth:         Authentication{TLS: &configtls.ClientConfig{}},
 			saramaConfig: saramaTLSCfg,
 		},
 		{
-			auth: Authentication{TLS: &configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{CAFile: "/doesnotexists"},
+			auth: Authentication{TLS: &configtls.ClientConfig{
+				TLSSetting: configtls.Config{CAFile: "/doesnotexists"},
 			}},
 			saramaConfig: saramaTLSCfg,
 			err:          "failed to load TLS config",
