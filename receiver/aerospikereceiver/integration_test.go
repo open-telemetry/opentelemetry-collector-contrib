@@ -27,7 +27,7 @@ import (
 var aerospikePort = "3000"
 
 func TestIntegration(t *testing.T) {
-    t.Skip("Container image results in error '/entrypoint.sh: line 35: FEATURE_KEY_FILE: unbound variable'")
+	t.Skip("Container image results in error '/entrypoint.sh: line 35: FEATURE_KEY_FILE: unbound variable'")
 	t.Run("6.2", integrationTest(func(*Config) {}))
 	t.Run("6.2-cluster", integrationTest(func(cfg *Config) {
 		cfg.CollectClusterMetrics = true
