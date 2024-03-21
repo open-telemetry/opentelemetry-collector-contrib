@@ -42,7 +42,7 @@ func TestCreateReceiver(t *testing.T) {
 func TestCreateTracesReceiver(t *testing.T) {
 	defaultNetAddr := confignet.AddrConfig{
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
-		Transport: "tcp",
+		Transport: confignet.TransportTypeTCP,
 	}
 	defaultGRPCSettings := configgrpc.ServerConfig{
 		NetAddr: defaultNetAddr,
@@ -64,7 +64,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "localhost:112233",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 				},
 			},
@@ -99,7 +99,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 func TestCreateMetricsReceiver(t *testing.T) {
 	defaultNetAddr := confignet.AddrConfig{
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
-		Transport: "tcp",
+		Transport: confignet.TransportTypeTCP,
 	}
 	defaultGRPCSettings := configgrpc.ServerConfig{
 		NetAddr: defaultNetAddr,
@@ -122,7 +122,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "327.0.0.1:1122",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 				},
 			},

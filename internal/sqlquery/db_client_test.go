@@ -11,7 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -90,11 +89,16 @@ func TestDBSQLClient_Nulls_MultiRow(t *testing.T) {
 	}
 	rows, err := cl.QueryRows(context.Background())
 	assert.Error(t, err)
-	errs := multierr.Errors(err)
-	for _, err := range errs {
-		assert.True(t, errors.Is(err, errNullValueWarning))
+
+	var e interface{ Unwrap() []error }
+	if errors.As(err, &e) {
+		uw := e.Unwrap()
+		assert.Len(t, uw, 2)
+
+		for _, err := range uw {
+			assert.True(t, errors.Is(err, errNullValueWarning))
+		}
 	}
-	assert.Len(t, errs, 2)
 	assert.Len(t, rows, 2)
 	assert.EqualValues(t, map[string]string{
 		"col_0": "42",

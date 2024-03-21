@@ -113,7 +113,7 @@ func (ocr *ocReceiver) Start(ctx context.Context, host component.Host) error {
 	if !hasConsumer {
 		return errors.New("cannot start receiver: no consumers were specified")
 	}
-	ocr.ln, err = net.Listen(ocr.cfg.NetAddr.Transport, ocr.cfg.NetAddr.Endpoint)
+	ocr.ln, err = net.Listen(string(ocr.cfg.NetAddr.Transport), ocr.cfg.NetAddr.Endpoint)
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %q: %w", ocr.cfg.NetAddr.Endpoint, err)
 	}
@@ -169,6 +169,14 @@ func (ocr *ocReceiver) Start(ctx context.Context, host component.Host) error {
 
 	if err := agentmetricspb.RegisterMetricsServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts); err != nil {
 		return err
+	}
+
+	if ocr.serverGRPC == nil {
+		var err error
+		ocr.serverGRPC, err = ocr.grpcServerSettings.ToServerContext(context.Background(), host, ocr.settings.TelemetrySettings)
+		if err != nil {
+			return err
+		}
 	}
 
 	// At this point we've successfully started all the services/receivers.

@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -28,7 +27,7 @@ type ClientProviderFunc func(Db, string, *zap.Logger, TelemetryConfig) DbClient
 type Scraper struct {
 	id                 component.ID
 	Query              Query
-	ScrapeCfg          scraperhelper.ScraperControllerSettings
+	ScrapeCfg          scraperhelper.ControllerConfig
 	StartTime          pcommon.Timestamp
 	ClientProviderFunc ClientProviderFunc
 	DbProviderFunc     DbProviderFunc
@@ -40,7 +39,7 @@ type Scraper struct {
 
 var _ scraperhelper.Scraper = (*Scraper)(nil)
 
-func NewScraper(id component.ID, query Query, scrapeCfg scraperhelper.ScraperControllerSettings, logger *zap.Logger, telemetry TelemetryConfig, dbProviderFunc DbProviderFunc, clientProviderFunc ClientProviderFunc) *Scraper {
+func NewScraper(id component.ID, query Query, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, telemetry TelemetryConfig, dbProviderFunc DbProviderFunc, clientProviderFunc ClientProviderFunc) *Scraper {
 	return &Scraper{
 		id:                 id,
 		Query:              query,
@@ -84,17 +83,17 @@ func (s *Scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	sms := rm.ScopeMetrics()
 	sm := sms.AppendEmpty()
 	ms := sm.Metrics()
-	var errs error
+	var errs []error
 	for _, metricCfg := range s.Query.Metrics {
 		for i, row := range rows {
 			if err = rowToMetric(row, metricCfg, ms.AppendEmpty(), s.StartTime, ts, s.ScrapeCfg); err != nil {
 				err = fmt.Errorf("row %d: %w", i, err)
-				errs = multierr.Append(errs, err)
+				errs = append(errs, err)
 			}
 		}
 	}
 	if errs != nil {
-		return out, scrapererror.NewPartialScrapeError(errs, len(multierr.Errors(errs)))
+		return out, scrapererror.NewPartialScrapeError(errors.Join(errs...), len(errs))
 	}
 	return out, nil
 }

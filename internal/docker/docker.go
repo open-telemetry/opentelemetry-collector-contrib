@@ -236,16 +236,16 @@ EVENT_LOOP:
 			case event := <-eventCh:
 				switch event.Action {
 				case "destroy":
-					dc.logger.Debug("Docker container was destroyed:", zap.String("id", event.ID))
-					dc.RemoveContainer(event.ID)
+					dc.logger.Debug("Docker container was destroyed:", zap.String("id", event.Actor.ID))
+					dc.RemoveContainer(event.Actor.ID)
 				default:
 					dc.logger.Debug(
 						"Docker container update:",
-						zap.String("id", event.ID),
-						zap.String("action", event.Action),
+						zap.String("id", event.Actor.ID),
+						zap.Any("action", event.Action),
 					)
 
-					dc.InspectAndPersistContainer(ctx, event.ID)
+					dc.InspectAndPersistContainer(ctx, event.Actor.ID)
 				}
 
 				if event.TimeNano > lastTime.UnixNano() {
