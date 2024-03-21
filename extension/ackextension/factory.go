@@ -38,5 +38,9 @@ func createDefaultConfig() component.Config {
 }
 
 func createExtension(_ context.Context, _ extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
-	return newInMemoryAckExtension(cfg.(*Config)), nil
+	if cfg.(*Config).StorageID == nil {
+		return newInMemoryAckExtension(cfg.(*Config)), nil
+	}
+
+	return nil, nil
 }

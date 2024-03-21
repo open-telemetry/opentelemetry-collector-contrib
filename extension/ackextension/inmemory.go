@@ -11,17 +11,17 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// InMemoryAckExtension is the in-memory implementation of the AckExtension
+// inMemoryAckExtension is the in-memory implementation of the AckExtension
 // When MaxNumPartition is reached, the acks associated with the least recently used partition are evicted.
 // When MaxNumPendingAcksPerPartition is reached, the least recently used ack is evicted
-type InMemoryAckExtension struct {
+type inMemoryAckExtension struct {
 	partitionMap                  *lru.Cache[string, *ackPartition]
 	maxNumPendingAcksPerPartition uint64
 }
 
-func newInMemoryAckExtension(conf *Config) *InMemoryAckExtension {
+func newInMemoryAckExtension(conf *Config) *inMemoryAckExtension {
 	cache, _ := lru.New[string, *ackPartition](int(conf.MaxNumPartition))
-	return &InMemoryAckExtension{
+	return &inMemoryAckExtension{
 		partitionMap:                  cache,
 		maxNumPendingAcksPerPartition: conf.MaxNumPendingAcksPerPartition,
 	}
@@ -65,18 +65,18 @@ func (as *ackPartition) computeAcks(ackIDs []uint64) map[uint64]bool {
 	return result
 }
 
-// Start of InMemoryAckExtension does nothing and returns nil
-func (i *InMemoryAckExtension) Start(_ context.Context, _ component.Host) error {
+// Start of inMemoryAckExtension does nothing and returns nil
+func (i *inMemoryAckExtension) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-// Shutdown of InMemoryAckExtension does nothing and returns nil
-func (i *InMemoryAckExtension) Shutdown(_ context.Context) error {
+// Shutdown of inMemoryAckExtension does nothing and returns nil
+func (i *inMemoryAckExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
 // ProcessEvent marks the beginning of processing an event. It generates an ack ID for the associated partition ID.
-func (i *InMemoryAckExtension) ProcessEvent(partitionID string) (ackID uint64) {
+func (i *inMemoryAckExtension) ProcessEvent(partitionID string) (ackID uint64) {
 	if val, ok := i.partitionMap.Get(partitionID); ok {
 		return val.nextAck()
 	}
@@ -87,14 +87,15 @@ func (i *InMemoryAckExtension) ProcessEvent(partitionID string) (ackID uint64) {
 }
 
 // Ack acknowledges an event has been processed.
-func (i *InMemoryAckExtension) Ack(partitionID string, ackID uint64) {
+func (i *inMemoryAckExtension) Ack(partitionID string, ackID uint64) {
 	if val, ok := i.partitionMap.Get(partitionID); ok {
 		val.ack(ackID)
 	}
 }
 
 // QueryAcks checks the statuses of given ackIDs for a partition.
-func (i *InMemoryAckExtension) QueryAcks(partitionID string, ackIDs []uint64) map[uint64]bool {
+// ackIDs that are not generated from ProcessEvent or have been removed as a result of previous calls to QueryAcks will return false.
+func (i *inMemoryAckExtension) QueryAcks(partitionID string, ackIDs []uint64) map[uint64]bool {
 	if val, ok := i.partitionMap.Get(partitionID); ok {
 		return val.computeAcks(ackIDs)
 	}

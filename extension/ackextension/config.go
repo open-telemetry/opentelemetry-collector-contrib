@@ -16,16 +16,3 @@ type Config struct {
 	// MaxNumPendingAcksPerPartition Specifies the maximum number of ackIDs and their corresponding status information that are waiting to be queried in each partition.
 	MaxNumPendingAcksPerPartition uint64 `mapstructure:"max_number_of_pending_acks_per_partition"`
 }
-
-// Validate checks that valid inputs are provided. Otherwise, assign default values.
-func (cfg *Config) Validate() error {
-	if cfg.MaxNumPartition == 0 {
-		cfg.MaxNumPartition = defaultMaxNumPartition
-	}
-
-	if cfg.MaxNumPendingAcksPerPartition == 0 {
-		cfg.MaxNumPendingAcksPerPartition = defaultMaxNumPendingAcksPerPartition
-	}
-
-	return nil
-}

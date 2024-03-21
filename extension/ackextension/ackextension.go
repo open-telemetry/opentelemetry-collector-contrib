@@ -14,6 +14,6 @@ type AckExtension interface {
 	Ack(partitionID string, ackID uint64)
 
 	// QueryAcks checks the statuses of given ackIDs for a partition.
-	// ackIDs that are not generated from ProcessEvent or have been removed as a result of previous calls to QueryAcks will return false
+	// ackIDs that are not generated from ProcessEvent or have been removed as a result of previous calls to QueryAcks will return false.
 	QueryAcks(partitionID string, ackIDs []uint64) map[uint64]bool
 }
