@@ -282,6 +282,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	containerInsightMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsKubeAPIServerScraper")
 	gpuMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
 	gpuMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsDCGMExporterScraper")
+	neuronMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
+	neuronMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsNeuronMonitorScraper")
 
 	counterSumMetrics := map[string]*metricInfo{
 		"spanCounter": {
@@ -388,6 +390,20 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 				"spanName":          "testSpan",
 			},
 			"myServiceNS/containerInsightsDCGMExporterScraper",
+			containerInsightsReceiver,
+		},
+		{
+			"neuron monitor receiver",
+			neuronMetric,
+			map[string]string{
+				"isItAnError": "false",
+				"spanName":    "testSpan",
+			},
+			map[string]string{
+				oTellibDimensionKey: "cloudwatch-lib",
+				"spanName":          "testSpan",
+			},
+			"myServiceNS/containerInsightsNeuronMonitorScraper",
 			containerInsightsReceiver,
 		},
 	}

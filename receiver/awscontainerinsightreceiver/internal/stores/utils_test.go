@@ -176,6 +176,7 @@ func TestUtils_TagMetricSource(t *testing.T) {
 		ci.TypeContainerFS,
 		ci.TypeContainerDiskIO,
 		ci.TypeGpuContainer,
+		ci.TypeNeuronContainer,
 	}
 
 	expectedSources := []string{
@@ -190,6 +191,7 @@ func TestUtils_TagMetricSource(t *testing.T) {
 		"[\"cadvisor\",\"calculated\"]",
 		"[\"cadvisor\"]",
 		"[\"dcgm\",\"pod\",\"calculated\"]",
+		"[\"neuron\",\"pod\",\"calculated\"]",
 	}
 	for i, mtype := range types {
 		tags := map[string]string{
