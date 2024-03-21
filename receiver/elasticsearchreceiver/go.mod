@@ -116,9 +116,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24240
-replace github.com/docker/docker v24.0.4+incompatible => github.com/docker/docker v24.0.5-0.20230719162248-f022632503d1+incompatible
-
 retract (
 	v0.76.2
 	v0.76.1
