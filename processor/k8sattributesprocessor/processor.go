@@ -43,7 +43,7 @@ func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kub
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(logger, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil)
+		kc, err := kubeClient(logger, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil, false)
 		if err != nil {
 			return err
 		}
@@ -70,9 +70,11 @@ func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error 
 			return nil
 		}
 	}
-	if !kp.passthroughMode {
+
+	if kp.kc != nil {
 		go kp.kc.Start()
 	}
+
 	return nil
 }
 
@@ -80,9 +82,9 @@ func (kp *kubernetesprocessor) Shutdown(context.Context) error {
 	if kp.kc == nil {
 		return nil
 	}
-	if !kp.passthroughMode {
-		kp.kc.Stop()
-	}
+
+	kp.kc.Stop()
+
 	return nil
 }
 
