@@ -246,7 +246,7 @@ Examples:
 
 ### replace_all_matches
 
-`replace_all_matches(target, pattern, replacement, Optional[function])`
+`replace_all_matches(target, pattern, replacement, Optional[function], Optional[replacementFormat])`
 
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
@@ -262,8 +262,7 @@ Examples:
 
 ### replace_all_patterns
 
-`replace_all_patterns(target, mode, regex, replacement, Optional[function])`
-`replace_all_patterns(target, mode, regex, replacement, function, replacementFormat)`
+`replace_all_patterns(target, mode, regex, replacement, Optional[function], Optional[replacementFormat])`
 
 The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
@@ -291,7 +290,7 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 ### replace_match
 
-`replace_match(target, pattern, replacement, Optional[function])`
+`replace_match(target, pattern, replacement, Optional[function], Optional[replacementFormat])`
 
 The `replace_match` function allows replacing entire strings if they match a glob pattern.
 
@@ -309,9 +308,7 @@ Examples:
 
 ### replace_pattern
 
-`replace_pattern(target, regex, replacement, Optional[function])`
-`replace_pattern(target, regex, replacement, function)`
-`replace_pattern(target, regex, replacement, function, replacementFormat)`
+`replace_pattern(target, regex, replacement, Optional[function], Optional[replacementFormat])`
 
 The `replace_pattern` function allows replacing all string sections that match a regex pattern with a new value.
 
@@ -380,6 +377,7 @@ Unlike functions, they do not modify any input telemetry and always return a val
 
 Available Converters:
 
+- [Base64Decode](#base64decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [ExtractPatterns](#extractpatterns)
@@ -391,6 +389,7 @@ Available Converters:
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
+- [IsInt](#isint)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
 - [IsString](#isstring)
@@ -404,6 +403,7 @@ Available Converters:
 - [ParseCSV](#parsecsv)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
+- [ParseXML](#parsexml)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
@@ -418,6 +418,21 @@ Available Converters:
 - [UnixNano](#unixnano)
 - [UnixSeconds](#unixseconds)
 - [UUID](#UUID)
+
+### Base64Decode
+
+`Base64Decode(value)`
+
+The `Base64Decode` Converter takes a base64 encoded string and returns the decoded string.
+
+`value` is a valid base64 encoded string.
+
+Examples:
+
+- `Base64Decode("aGVsbG8gd29ybGQ=")`
+
+
+- `Base64Decode(attributes["encoded field"])`
 
 ### Concat
 
@@ -631,6 +646,22 @@ Examples:
 - `IsDouble(body)`
 
 - `IsDouble(attributes["maybe a double"])`
+
+### IsInt
+
+`IsInt(value)`
+
+The `IsInt` Converter returns true if the given value is a int.
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+If `value` is a `int64` or a `pcommon.ValueTypeInt` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsInt(body)`
+
+- `IsInt(attributes["maybe a int"])`
 
 ### IsMap
 
@@ -881,6 +912,78 @@ Examples:
 - `ParseKeyValue("k1=v1 k2=v2 k3=v3")`
 - `ParseKeyValue("k1!v1_k2!v2_k3!v3", "!", "_")`
 - `ParseKeyValue(attributes["pairs"])`
+
+
+### ParseXML
+
+`ParseXML(target)`
+
+The `ParseXML` Converter returns a `pcommon.Map` struct that is the result of parsing the target string as an XML document.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or cannot be parsed as XML, `ParseXML` will return an error.
+
+Unmarshalling XML is done using the following rules:
+1. All character data for an XML element is trimmed, joined, and placed into the `content` field.
+2. The tag for an XML element is trimmed, and placed into the `tag` field.
+3. The attributes for an XML element is placed as a `pcommon.Map` into the `attribute` field.
+4. Processing instructions, directives, and comments are ignored and not represented in the resultant map.
+5. All child elements are parsed as above, and placed in a `pcommon.Slice`, which is then placed into the `children` field.
+
+For example, the following XML document:
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<Log>
+  <User>
+    <ID>00001</ID>
+    <Name type="first">Joe</Name>
+    <Email>joe.smith@example.com</Email>
+  </User>
+  <Text>User fired alert A</Text>
+</Log>
+```
+
+will be parsed as:
+```json
+{
+  "tag": "Log",
+  "children": [
+    {
+      "tag": "User",
+      "children": [
+        {
+          "tag": "ID",
+          "content": "00001"
+        },
+        {
+          "tag": "Name",
+          "content": "Joe",
+          "attributes": {
+            "type": "first"
+          }
+        },
+        {
+          "tag": "Email",
+          "content": "joe.smith@example.com"
+        }
+      ]
+    },
+    {
+      "tag": "Text",
+      "content": "User fired alert A"
+    }
+  ]
+}
+```
+
+Examples:
+
+- `ParseXML(body)`
+
+- `ParseXML(attributes["xml"])`
+
+- `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
+
 
 
 ### Seconds

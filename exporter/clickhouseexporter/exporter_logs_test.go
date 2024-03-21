@@ -121,6 +121,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 	})
 }
 
+// nolint:unparam // not need to check this func
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
 	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
@@ -151,10 +152,18 @@ func simpleLogs(count int) plog.Logs {
 	sl.Scope().SetName("io.opentelemetry.contrib.clickhouse")
 	sl.Scope().SetVersion("1.0.0")
 	sl.Scope().Attributes().PutStr("lib", "clickhouse")
+	timestamp := time.Unix(1703498029, 0)
 	for i := 0; i < count; i++ {
 		r := sl.LogRecords().AppendEmpty()
-		r.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		r.Attributes().PutStr(conventions.AttributeServiceName, "v")
+		r.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
+		r.SetObservedTimestamp(pcommon.NewTimestampFromTime(timestamp))
+		r.SetSeverityNumber(plog.SeverityNumberError2)
+		r.SetSeverityText("error")
+		r.Body().SetStr("error message")
+		r.Attributes().PutStr(conventions.AttributeServiceNamespace, "default")
+		r.SetFlags(plog.DefaultLogRecordFlags)
+		r.SetTraceID([16]byte{1, 2, 3, byte(i)})
+		r.SetSpanID([8]byte{1, 2, 3, byte(i)})
 	}
 	return logs
 }

@@ -24,7 +24,7 @@ func TestUnsuccessfulScrape(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "fake:11111"
 
-	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &defaultClientFactory{})
+	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, newDefaultClientFactory(cfg))
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.Error(t, err)
@@ -347,15 +347,20 @@ func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
 	return args.Get(0).([]string), args.Error(1)
 }
 
-func (m *mockClientFactory) getClient(_ *Config, database string) (client, error) {
+func (m *mockClientFactory) getClient(database string) (client, error) {
 	args := m.Called(database)
 	return args.Get(0).(client), args.Error(1)
 }
 
+func (m *mockClientFactory) close() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 func (m *mockClientFactory) initMocks(databases []string) {
 	listClient := new(mockClient)
-	listClient.initMocks("", "public", databases, 0)
-	m.On("getClient", "").Return(listClient, nil)
+	listClient.initMocks(defaultPostgreSQLDatabase, "public", databases, 0)
+	m.On("getClient", defaultPostgreSQLDatabase).Return(listClient, nil)
 
 	for index, db := range databases {
 		client := new(mockClient)
@@ -367,7 +372,7 @@ func (m *mockClientFactory) initMocks(databases []string) {
 func (m *mockClient) initMocks(database string, schema string, databases []string, index int) {
 	m.On("Close").Return(nil)
 
-	if database == "" {
+	if database == defaultPostgreSQLDatabase {
 		m.On("listDatabases").Return(databases, nil)
 
 		dbStats := map[databaseName]databaseStats{}

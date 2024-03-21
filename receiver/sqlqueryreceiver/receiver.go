@@ -45,13 +45,13 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 			dbProviderFunc := func() (*sql.DB, error) {
 				return sqlOpenerFunc(sqlCfg.Driver, sqlCfg.DataSource)
 			}
-			mp := sqlquery.NewScraper(id, query, sqlCfg.ScraperControllerSettings, settings.TelemetrySettings.Logger, sqlCfg.Config.Telemetry, dbProviderFunc, clientProviderFunc)
+			mp := sqlquery.NewScraper(id, query, sqlCfg.ControllerConfig, settings.TelemetrySettings.Logger, sqlCfg.Config.Telemetry, dbProviderFunc, clientProviderFunc)
 
 			opt := scraperhelper.AddScraper(mp)
 			opts = append(opts, opt)
 		}
 		return scraperhelper.NewScraperControllerReceiver(
-			&sqlCfg.ScraperControllerSettings,
+			&sqlCfg.ControllerConfig,
 			settings,
 			consumer,
 			opts...,

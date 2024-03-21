@@ -1,4 +1,5 @@
 type: iis
+scope_name: otelcol/iisreceiver
 
 status:
   class: receiver
@@ -7,6 +8,8 @@ status:
   distributions: [contrib, observiq, sumo]
   codeowners:
     active: [Mrod1598, djaglowski]
+    seeking_new: true
+  unsupported_platforms: [linux, darwin]
 
 resource_attributes:
   iis.site:

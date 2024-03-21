@@ -69,10 +69,6 @@ func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver
 		return nil, err
 	}
 
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
 	if conf.HTTP != nil {
 		r.httpMux = http.NewServeMux()
 		r.httpMux.HandleFunc("/loki/api/v1/push", func(resp http.ResponseWriter, req *http.Request) {
@@ -106,7 +102,7 @@ func (r *lokiReceiver) startProtocolsServers(ctx context.Context, host component
 	}
 
 	if r.conf.GRPC != nil {
-		r.serverGRPC, err = r.conf.GRPC.ToServer(host, r.settings.TelemetrySettings)
+		r.serverGRPC, err = r.conf.GRPC.ToServerContext(ctx, host, r.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed create grpc server error: %w", err)
 		}
@@ -141,7 +137,7 @@ func (r *lokiReceiver) startHTTPServer() error {
 
 func (r *lokiReceiver) startGRPCServer(ctx context.Context) error {
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.conf.GRPC.NetAddr.Endpoint))
-	listener, err := r.conf.GRPC.ToListenerContext(ctx)
+	listener, err := r.conf.GRPC.NetAddr.Listen(ctx)
 	if err != nil {
 		return err
 	}

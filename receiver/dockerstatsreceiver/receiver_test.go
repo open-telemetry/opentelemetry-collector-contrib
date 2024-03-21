@@ -119,7 +119,7 @@ var (
 
 func TestNewReceiver(t *testing.T) {
 	cfg := &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 1 * time.Second,
 		},
 		Endpoint:         "unix:///run/some.sock",
@@ -132,7 +132,7 @@ func TestNewReceiver(t *testing.T) {
 func TestErrorsInStart(t *testing.T) {
 	unreachable := "unix:///not/a/thing.sock"
 	cfg := &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 1 * time.Second,
 		},
 		Endpoint:         unreachable,
@@ -301,6 +301,7 @@ func TestScrapeV2(t *testing.T) {
 				receivertest.NewNopCreateSettings(), tc.cfgBuilder.withEndpoint(mockDockerEngine.URL).build())
 			err := receiver.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
+			defer func() { require.NoError(t, receiver.shutdown(context.Background())) }()
 
 			actualMetrics, err := receiver.scrapeV2(context.Background())
 			require.NoError(t, err)

@@ -73,7 +73,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver"
@@ -98,7 +97,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
@@ -204,7 +202,6 @@ func Components() (otelcol.Factories, error) {
 		headerssetterextension.NewFactory(),
 		healthcheckextension.NewFactory(),
 		hostobserver.NewFactory(),
-		httpforwarder.NewFactory(),
 		jaegerremotesampling.NewFactory(),
 		k8sobserver.NewFactory(),
 		pprofextension.NewFactory(),
@@ -376,7 +373,6 @@ func Components() (otelcol.Factories, error) {
 		resourceprocessor.NewFactory(),
 		routingprocessor.NewFactory(),
 		tailsamplingprocessor.NewFactory(),
-		spanmetricsprocessor.NewFactory(),
 		spanprocessor.NewFactory(),
 		cumulativetodeltaprocessor.NewFactory(),
 		deltatorateprocessor.NewFactory(),

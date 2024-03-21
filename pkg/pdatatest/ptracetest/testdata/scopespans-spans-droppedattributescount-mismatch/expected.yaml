@@ -13,7 +13,6 @@ resourceSpans:
               - key: key1
                 value:
                   stringValue: value1
-            droppedAttributesCount: 1
             name: span1
             parentSpanId: ""
             spanId: fd0da883bb27cd6b

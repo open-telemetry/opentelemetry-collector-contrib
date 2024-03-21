@@ -1,4 +1,5 @@
 type: tcplog
+scope_name: otelcol/tcplogreceiver
 
 status:
   class: receiver

@@ -161,11 +161,9 @@ func TestJaegerHTTP(t *testing.T) {
 
 	resp, err := http.Get(fmt.Sprintf("http://%s/sampling?service=test", endpoint))
 	assert.NoError(t, err, "should not have failed to make request")
-	if resp != nil {
-		assert.Equal(t, 500, resp.StatusCode, "should have returned 200")
-		return
-	}
-	t.Fail()
+	assert.NotNil(t, resp)
+	defer resp.Body.Close()
+	assert.Equal(t, 500, resp.StatusCode, "should have returned 200")
 }
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configuration) {
