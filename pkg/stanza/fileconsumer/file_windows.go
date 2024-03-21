@@ -11,10 +11,3 @@ import (
 
 func (m *Manager) preConsume(ctx context.Context) {
 }
-
-// On windows, we close files immediately after reading because they cannot be moved while open.
-func (m *Manager) postConsume() {
-	// m.currentPollFiles -> m.previousPollFiles
-	m.previousPollFiles = m.currentPollFiles
-	m.closePreviousFiles()
-}
