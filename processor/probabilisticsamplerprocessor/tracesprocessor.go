@@ -39,9 +39,9 @@ const (
 )
 
 type traceProcessor struct {
-	sampler dataSampler
-
-	commonFields
+	sampler    dataSampler
+	failClosed bool
+	logger     *zap.Logger
 }
 
 type tracestateCarrier struct {
@@ -93,12 +93,10 @@ func (tc *tracestateCarrier) reserialize() error {
 // perform intermediate span sampling according to the given
 // configuration.
 func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
-	common := commonFields{
-		logger: set.Logger,
-	}
 	tp := &traceProcessor{
-		commonFields: common,
-		sampler:      makeSampler(cfg, common, false),
+		sampler:    makeSampler(cfg, false),
+		failClosed: cfg.FailClosed,
+		logger:     set.Logger,
 	}
 
 	return processorhelper.NewTracesProcessor(
@@ -114,35 +112,41 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		rs.ScopeSpans().RemoveIf(func(ils ptrace.ScopeSpans) bool {
 			ils.Spans().RemoveIf(func(s ptrace.Span) bool {
-				priority := parseSpanSamplingPriority(s)
-				if priority == doNotSampleSpan {
+				rnd, carrier, err := tp.sampler.randomnessFromSpan(s)
+
+				if err == nil {
+					err = consistencyCheck(rnd, carrier)
+				}
+				var threshold sampling.Threshold
+				if err != nil {
+					if _, is := err.(samplerError); is {
+						tp.logger.Info(err.Error())
+					} else {
+						tp.logger.Error("trace sampler", zap.Error(err))
+					}
+					if tp.failClosed {
+						threshold = sampling.NeverSampleThreshold
+					} else {
+						threshold = sampling.AlwaysSampleThreshold
+					}
+				} else {
+					threshold = tp.sampler.decide(carrier)
+				}
+
+				switch parseSpanSamplingPriority(s) {
+				case doNotSampleSpan:
 					// The OpenTelemetry mentions this as a "hint" we take a stronger
 					// approach and do not sample the span since some may use it to
 					// remove specific spans from traces.
-					_ = stats.RecordWithTags(
-						ctx,
-						[]tag.Mutator{tag.Upsert(tagPolicyKey, "sampling_priority"), tag.Upsert(tagSampledKey, "false")},
-						statCountTracesSampled.M(int64(1)),
-					)
-					return true
-				}
-
-				// If either of the error cases below happens, we use
-				// the threshold calculated by the priority.
-				threshold := sampling.NeverSampleThreshold
-				if priority == mustSampleSpan {
+					threshold = sampling.NeverSampleThreshold
+					rnd = newSamplingPriorityMethod(rnd.randomness()) // override policy name
+				case mustSampleSpan:
 					threshold = sampling.AlwaysSampleThreshold
-				}
-
-				rnd, carrier, err := tp.sampler.randomnessFromSpan(s)
-
-				if err != nil {
-					tp.logger.Error("tracestate", zap.Error(err))
-				} else if err = consistencyCheck(rnd, carrier, tp.commonFields); err != nil {
-					tp.logger.Error("tracestate", zap.Error(err))
-
-				} else if priority == deferDecision {
-					threshold = tp.sampler.decide(carrier)
+					rnd = newSamplingPriorityMethod(rnd.randomness()) // override policy name
+				case deferDecision:
+					// Note that the logs processor has very different logic here,
+					// but that in tracing the priority can only force to never or
+					// always.
 				}
 
 				sampled := threshold.ShouldSample(rnd.randomness())
@@ -156,19 +160,11 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 					}
 				}
 
-				if priority == mustSampleSpan {
-					_ = stats.RecordWithTags(
-						ctx,
-						[]tag.Mutator{tag.Upsert(tagPolicyKey, "sampling_priority"), tag.Upsert(tagSampledKey, "true")},
-						statCountTracesSampled.M(int64(1)),
-					)
-				} else {
-					_ = stats.RecordWithTags(
-						ctx,
-						[]tag.Mutator{tag.Upsert(tagPolicyKey, rnd.policyName()), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
-						statCountTracesSampled.M(int64(1)),
-					)
-				}
+				_ = stats.RecordWithTags(
+					ctx,
+					[]tag.Mutator{tag.Upsert(tagPolicyKey, rnd.policyName()), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
+					statCountTracesSampled.M(int64(1)),
+				)
 
 				return !sampled
 			})

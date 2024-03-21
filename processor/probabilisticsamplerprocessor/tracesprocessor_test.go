@@ -301,7 +301,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	}
 	for _, mode := range AllModes {
 		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
+			t.Run(fmt.Sprint(mode, "_", tt.name), func(t *testing.T) {
 
 				sink := new(consumertest.TracesSink)
 				cfg := &Config{}
@@ -635,6 +635,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			log:  "inconsistent arriving t-value",
 			cfg: &Config{
 				SamplingPercentage: 1,
+				FailClosed:         true,
 			},
 			ts: "ot=rv:40000000000000;th:8",
 			sf: func(SamplerMode) (bool, float64, string) {
@@ -804,8 +805,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					require.Equal(t, 0, len(observed.All()), "should not have logs: %v", observed.All())
 				} else {
 					require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
-					require.Equal(t, observed.All()[0].Message, "tracestate")
-					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), tt.log)
+					require.Contains(t, observed.All()[0].Message, tt.log)
 				}
 			})
 		}
@@ -814,7 +814,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 
 // Test_tracesamplerprocessor_StrictTraceState checks that when
 // strictness checking is enabled, certain spans do not pass, with
-// errors.
+// errors.  All set FailClosed.
 func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 	defaultTID := mustParseTID("fefefefefefefefefe80000000000000")
 	sid := idutils.UInt64ToSpanID(0xfefefefe)
@@ -830,7 +830,8 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 100,
 			},
-			ts: "",
+			ts:  "",
+			tid: pcommon.TraceID{},
 			sf: func(SamplerMode) string {
 				return "missing randomness"
 			},
@@ -840,7 +841,8 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 100,
 			},
-			ts: "ot=rv:abababababababab", // 16 digits is too many
+			tid: defaultTID,
+			ts:  "ot=rv:abababababababab", // 16 digits is too many
 			sf: func(SamplerMode) string {
 				return "r-value must have 14 hex digits"
 			},
@@ -850,7 +852,8 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 100,
 			},
-			ts: "ot=th:abababababababab", // 16 digits is too many
+			tid: defaultTID,
+			ts:  "ot=th:abababababababab", // 16 digits is too many
 			sf: func(SamplerMode) string {
 				return "t-value exceeds 14 hex digits"
 			},
@@ -860,7 +863,8 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 100,
 			},
-			ts: "ot=th:-1",
+			tid: defaultTID,
+			ts:  "ot=th:-1",
 			sf: func(SamplerMode) string {
 				return "invalid syntax"
 			},
@@ -881,7 +885,8 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 100,
 			},
-			ts: "ot=th:8;rv:70000000000000",
+			tid: defaultTID,
+			ts:  "ot=th:8;rv:70000000000000",
 			sf: func(SamplerMode) string {
 				return "inconsistent arriving t-value"
 			},
@@ -896,6 +901,7 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 					*cfg = *tt.cfg
 				}
 				cfg.SamplerMode = mode
+				cfg.FailClosed = true
 
 				set := processortest.NewNopCreateSettings()
 				logger, observed := observer.New(zap.DebugLevel)
@@ -908,19 +914,9 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 				}
 
 				tsp, err := newTracesProcessor(context.Background(), set, cfg, sink)
-				if err != nil {
-					// Sometimes the constructor fails.
-					require.Contains(t, err.Error(), expectMessage)
-					return
-				}
+				require.NoError(t, err)
 
-				tid := defaultTID
-
-				if !tt.tid.IsEmpty() {
-					tid = tt.tid
-				}
-
-				td := makeSingleSpanWithAttrib(tid, sid, tt.ts, "", pcommon.Value{})
+				td := makeSingleSpanWithAttrib(tt.tid, sid, tt.ts, "", pcommon.Value{})
 
 				err = tsp.ConsumeTraces(context.Background(), td)
 				require.NoError(t, err)
@@ -931,8 +927,11 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 				assert.Equal(t, 0, sink.SpanCount())
 
 				require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
-				require.Equal(t, observed.All()[0].Message, "tracestate")
-				require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), expectMessage)
+				if observed.All()[0].Message == "trace sampler" {
+					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), expectMessage)
+				} else {
+					require.Contains(t, observed.All()[0].Message, expectMessage)
+				}
 			})
 		}
 	}
@@ -1030,6 +1029,11 @@ func getSpanWithAttributes(key string, value pcommon.Value) ptrace.Span {
 func initSpanWithAttribute(key string, value pcommon.Value, dest ptrace.Span) {
 	dest.SetName("spanName")
 	value.CopyTo(dest.Attributes().PutEmpty(key))
+
+	// ensure a non-empty trace ID with a deterministic value, one that has
+	// all zero bits for the w3c randomness portion.  this value, if sampled
+	// with the OTel specification, has R-value 0 and sampled only at 100%.
+	dest.SetTraceID(pcommon.TraceID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 }
 
 // genRandomTestData generates a slice of ptrace.Traces with the numBatches elements which one with

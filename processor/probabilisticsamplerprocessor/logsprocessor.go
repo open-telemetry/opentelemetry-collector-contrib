@@ -25,7 +25,7 @@ type logsProcessor struct {
 	samplingPriority string
 	precision        int
 	failClosed       bool
-	commonFields
+	logger           *zap.Logger
 }
 
 type recordCarrier struct {
@@ -111,18 +111,14 @@ func (rc *recordCarrier) reserialize() error {
 // newLogsProcessor returns a processor.LogsProcessor that will perform head sampling according to the given
 // configuration.
 func newLogsProcessor(ctx context.Context, set processor.CreateSettings, nextConsumer consumer.Logs, cfg *Config) (processor.Logs, error) {
-	common := commonFields{
-		logger: set.Logger,
-	}
-
 	lsp := &logsProcessor{
 		samplingPriority: cfg.SamplingPriority,
 		precision:        cfg.SamplingPrecision,
 		failClosed:       cfg.FailClosed,
-		commonFields:     common,
+		logger:           set.Logger,
 	}
 
-	lsp.sampler = makeSampler(cfg, common, true)
+	lsp.sampler = makeSampler(cfg, true)
 
 	return processorhelper.NewLogsProcessor(
 		ctx,
@@ -140,7 +136,7 @@ func (lsp *logsProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.L
 
 				rnd, carrier, err := lsp.sampler.randomnessFromLogRecord(l)
 				if err == nil {
-					err = consistencyCheck(rnd, carrier, lsp.commonFields)
+					err = consistencyCheck(rnd, carrier)
 				}
 				var threshold sampling.Threshold
 
@@ -164,11 +160,12 @@ func (lsp *logsProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.L
 				if lsp.samplingPriority != "" {
 					priorityThreshold := lsp.logRecordToPriorityThreshold(l)
 
-					if sampling.ThresholdLessThan(priorityThreshold, threshold) {
-						// Note: there is no effort to install
-						// "sampling_priority" as the policy name,
-						// which the traces processor will do.
+					if priorityThreshold == sampling.NeverSampleThreshold {
 						threshold = priorityThreshold
+						rnd = newSamplingPriorityMethod(rnd.randomness()) // override policy name
+					} else if sampling.ThresholdLessThan(priorityThreshold, threshold) {
+						threshold = priorityThreshold
+						rnd = newSamplingPriorityMethod(rnd.randomness()) // override policy name
 					}
 				}
 

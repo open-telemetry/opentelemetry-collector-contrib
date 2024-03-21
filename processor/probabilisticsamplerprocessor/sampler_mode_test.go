@@ -9,8 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestUnmarshalText(t *testing.T) {
@@ -66,16 +64,7 @@ func TestHashSeedRoundingDown(t *testing.T) {
 			HashSeed:           defaultHashSeed,
 		}
 
-		logger, observed := observer.New(zap.DebugLevel)
-
-		com := commonFields{
-			logger: zap.New(logger),
-		}
-
-		_, ok := makeSampler(&cfg, com, isLogs).(*neverSampler)
+		_, ok := makeSampler(&cfg, isLogs).(*neverSampler)
 		require.True(t, ok, "is neverSampler")
-
-		require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
-		require.Equal(t, observed.All()[0].Message, "probability rounded to zero")
 	}
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 )
 
 const (
@@ -65,6 +64,7 @@ func (rm randomnessMethod) randomness() sampling.Randomness {
 type traceIDHashingMethod struct{ randomnessMethod }
 type traceIDW3CSpecMethod struct{ randomnessMethod }
 type samplingRandomnessMethod struct{ randomnessMethod }
+type samplingPriorityMethod struct{ randomnessMethod }
 
 type missingRandomnessMethod struct{}
 
@@ -97,10 +97,15 @@ func (traceIDW3CSpecMethod) policyName() string {
 	return "trace_id_w3c"
 }
 
+func (samplingPriorityMethod) policyName() string {
+	return "sampling_priority"
+}
+
 var _ randomnessNamer = missingRandomnessMethod{}
 var _ randomnessNamer = traceIDHashingMethod{}
 var _ randomnessNamer = traceIDW3CSpecMethod{}
 var _ randomnessNamer = samplingRandomnessMethod{}
+var _ randomnessNamer = samplingPriorityMethod{}
 
 func newMissingRandomnessMethod() randomnessNamer {
 	return missingRandomnessMethod{}
@@ -116,6 +121,10 @@ func newTraceIDW3CSpecMethod(rnd sampling.Randomness) randomnessNamer {
 
 func newTraceIDHashingMethod(rnd sampling.Randomness) randomnessNamer {
 	return traceIDHashingMethod{randomnessMethod(rnd)}
+}
+
+func newSamplingPriorityMethod(rnd sampling.Randomness) randomnessNamer {
+	return samplingPriorityMethod{randomnessMethod(rnd)}
 }
 
 func newAttributeHashingMethod(attribute string, rnd sampling.Randomness) randomnessNamer {
@@ -162,11 +171,6 @@ func (sm *SamplerMode) UnmarshalText(in []byte) error {
 	}
 }
 
-// commonFields includes fields used in all sampler modes.
-type commonFields struct {
-	logger *zap.Logger
-}
-
 // hashingSampler is the original hash-based calculation.  It is an
 // equalizing sampler with randomness calculation that matches the
 // original implementation.  This hash-based implementation is limited
@@ -180,14 +184,6 @@ type hashingSampler struct {
 
 	// Logs only: name of attribute to obtain randomness
 	logsTraceIDEnabled bool
-
-	consistentCommon
-}
-
-// consistentCommon implements update() for all samplers, which clears
-// the sampling threshold when probability sampling decides false.
-type consistentCommon struct {
-	commonFields
 }
 
 // consistentTracestateCommon includes all except the legacy hash-based
@@ -197,8 +193,6 @@ type consistentTracestateCommon struct {
 	// for logs data when no trace ID is available.
 	logsRandomnessSourceAttribute string
 	logsRandomnessHashSeed        uint32
-
-	consistentCommon
 }
 
 // neverSampler always decides false.
@@ -391,7 +385,7 @@ func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (random
 	return rnd, tsc, err
 }
 
-func consistencyCheck(rnd randomnessNamer, carrier samplingCarrier, common commonFields) error {
+func consistencyCheck(rnd randomnessNamer, carrier samplingCarrier) error {
 	// Without randomness, do not check the threshold.
 	if isMissing(rnd) {
 		return ErrMissingRandomness
@@ -416,7 +410,7 @@ func consistencyCheck(rnd randomnessNamer, carrier samplingCarrier, common commo
 //
 // Extending this logic, we round very small probabilities up to the
 // minimum supported value(s) which varies according to sampler mode.
-func makeSampler(cfg *Config, common commonFields, isLogs bool) dataSampler {
+func makeSampler(cfg *Config, isLogs bool) dataSampler {
 	// README allows percents >100 to equal 100%.
 	pct := cfg.SamplingPercentage
 	if pct > 100 {
@@ -434,13 +428,9 @@ func makeSampler(cfg *Config, common commonFields, isLogs bool) dataSampler {
 		}
 	}
 
-	ccom := consistentCommon{
-		commonFields: common,
-	}
 	ctcom := consistentTracestateCommon{
 		logsRandomnessSourceAttribute: cfg.FromAttribute,
 		logsRandomnessHashSeed:        cfg.HashSeed,
-		consistentCommon:              ccom,
 	}
 	never := &neverSampler{
 		consistentTracestateCommon: ctcom,
@@ -490,7 +480,6 @@ func makeSampler(cfg *Config, common commonFields, isLogs bool) dataSampler {
 		scaledSamplerate := uint32(pct * percentageScaleFactor)
 
 		if scaledSamplerate == 0 {
-			ccom.logger.Warn("probability rounded to zero", zap.Float32("percent", pct))
 			return never
 		}
 
@@ -502,8 +491,7 @@ func makeSampler(cfg *Config, common commonFields, isLogs bool) dataSampler {
 		threshold, _ := sampling.ThresholdFromUnsigned(reject56)
 
 		return &hashingSampler{
-			consistentCommon: ccom,
-			tvalueThreshold:  threshold,
+			tvalueThreshold: threshold,
 
 			// Logs specific:
 			logsTraceIDEnabled:            cfg.AttributeSource == traceIDAttributeSource,
