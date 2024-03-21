@@ -168,6 +168,11 @@ connectors:
         ## https://github.com/DataDog/datadog-agent/blob/505170c4ac8c3cbff1a61cf5f84b28d835c91058/pkg/trace/stats/concentrator.go#L55.
         #
         # peer_tags: ["tag"]
+
+        ## @param resource_attributes_as_container_tags - enables the use of resource attributes as container tags - Optional
+        ## A list of resource attributes that should be used as container tags.
+        #
+        # resource_attributes_as_container_tags: ["could.availability_zone", "could.region"]
 ```
 
 **NOTE**: `compute_stats_by_span_kind` and `peer_tags_aggregation` only work when the feature gate `connector.datadogconnector.performance` is enabled. See below for details on this feature gate.

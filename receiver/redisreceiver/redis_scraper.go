@@ -38,7 +38,7 @@ func newRedisScraper(cfg *Config, settings receiver.CreateSettings) (scraperhelp
 		Addr:     cfg.Endpoint,
 		Username: cfg.Username,
 		Password: string(cfg.Password),
-		Network:  cfg.Transport,
+		Network:  string(cfg.Transport),
 	}
 
 	var err error

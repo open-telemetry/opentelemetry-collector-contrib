@@ -27,7 +27,7 @@ func TestStartAndStopGRPC(t *testing.T) {
 	srvSettings := configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "127.0.0.1:0",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	s, err := NewGRPC(componenttest.NewNopTelemetrySettings(), srvSettings, &mockCfgMgr{})

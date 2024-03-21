@@ -29,8 +29,8 @@ func TestConfigValidate(t *testing.T) {
 
 	t.Run("Valid configuration with ca_file", func(t *testing.T) {
 		c := &Config{Endpoint: "https://example.com/", AgentKey: "key1", ClientConfig: confighttp.ClientConfig{
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.ClientConfig{
+				TLSSetting: configtls.Config{
 					CAFile: "ca.crt",
 				},
 			},

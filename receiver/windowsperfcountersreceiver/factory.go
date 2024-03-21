@@ -24,6 +24,6 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 	}
 }
