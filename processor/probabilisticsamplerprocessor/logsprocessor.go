@@ -149,27 +149,20 @@ func (lsp *logsProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.L
 
 				threshold := lsp.sampler.decide(carrier)
 
-				//fmt.Printf("Sampler threshold %x %T %v %f\n", threshold, rnd, rnd, threshold.Probability())
-
 				// Note: in logs, unlike traces, the sampling priority
 				// attribute is interpreted as a request to be sampled.
 				if lsp.samplingPriority != "" {
 					priorityThreshold := lsp.logRecordToPriorityThreshold(l)
 
-					//fmt.Printf("PRIORITY T %x %f\n", priorityThreshold, priorityThreshold.Probability())
-
 					if sampling.ThresholdLessThan(priorityThreshold, threshold) {
 						// Note: there is no effort to install
 						// "sampling_priority" as the policy name,
 						// which the traces processor will do.
-						//fmt.Printf("UPDATE!! %x -> %x\n", priorityThreshold, threshold)
 						threshold = priorityThreshold
 					}
 				}
 
 				sampled := threshold.ShouldSample(rnd.randomness())
-
-				//fmt.Printf("Sampled? %x <= %x == %v\n", threshold, rnd.randomness(), sampled)
 
 				if sampled && carrier != nil {
 					if err := carrier.updateThreshold(threshold); err != nil {
