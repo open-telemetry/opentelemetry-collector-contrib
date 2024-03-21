@@ -6,7 +6,7 @@ status:
     development: [metrics, logs]
   distributions: []
   codeowners:
-    active: [yuanlihan, atoulme]
+    active: [atoulme, yuanlihan]
 
 resource_attributes:
   apachedruid.cluster.name:

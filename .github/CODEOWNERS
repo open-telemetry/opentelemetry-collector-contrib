@@ -180,6 +180,7 @@ processor/transformprocessor/                            @open-telemetry/collect
 
 receiver/activedirectorydsreceiver/                      @open-telemetry/collector-contrib-approvers @djaglowski @BinaryFissionGames
 receiver/aerospikereceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski @antonblock
+receiver/apachedruidreceiver/                            @open-telemetry/collector-contrib-approvers @atoulme @yuanlihan
 receiver/apachereceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/apachesparkreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski @Caleb-Hurshman @mrsillydog
 receiver/awscloudwatchmetricsreceiver/                   @open-telemetry/collector-contrib-approvers @jpkrohling
