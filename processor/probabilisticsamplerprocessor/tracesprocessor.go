@@ -47,33 +47,33 @@ type traceProcessor struct {
 type tracestateCarrier struct {
 	span ptrace.Span
 	sampling.W3CTraceState
-	policy policy
 }
 
 var _ samplingCarrier = &tracestateCarrier{}
-
-func (tc *tracestateCarrier) getPolicy() policy {
-	return tc.policy
-}
-
-func (tc *tracestateCarrier) setPolicy(p policy) {
-	tc.policy = p
-}
 
 func (tc *tracestateCarrier) threshold() (sampling.Threshold, bool) {
 	return tc.W3CTraceState.OTelValue().TValueThreshold()
 }
 
-func (tc *tracestateCarrier) explicitRandomness() (sampling.Randomness, bool) {
-	return tc.W3CTraceState.OTelValue().RValueRandomness()
+func (tc *tracestateCarrier) explicitRandomness() (randomnessNamer, bool) {
+	rnd, ok := tc.W3CTraceState.OTelValue().RValueRandomness()
+	if !ok {
+		return newMissingRandomnessMethod(), false
+	}
+	return newSamplingRandomnessMethod(rnd), true
 }
 
-func (tc *tracestateCarrier) updateThreshold(th sampling.Threshold, tv string) error {
+func (tc *tracestateCarrier) updateThreshold(th sampling.Threshold) error {
+	tv := th.TValue()
+	if tv == "" {
+		tc.clearThreshold()
+		return nil
+	}
 	return tc.W3CTraceState.OTelValue().UpdateTValueWithSampling(th, tv)
 }
 
-func (tc *tracestateCarrier) setExplicitRandomness(rnd sampling.Randomness) {
-	tc.W3CTraceState.OTelValue().SetRValue(rnd)
+func (tc *tracestateCarrier) setExplicitRandomness(rnd randomnessNamer) {
+	tc.W3CTraceState.OTelValue().SetRValue(rnd.randomness())
 }
 
 func (tc *tracestateCarrier) clearThreshold() {
@@ -135,21 +135,21 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 					threshold = sampling.AlwaysSampleThreshold
 				}
 
-				randomness, carrier, err := tp.sampler.randomnessFromSpan(s)
+				rnd, carrier, err := tp.sampler.randomnessFromSpan(s)
 
 				if err != nil {
 					tp.logger.Error("tracestate", zap.Error(err))
-				} else if err = consistencyCheck(randomness, carrier, tp.commonFields); err != nil {
+				} else if err = consistencyCheck(rnd, carrier, tp.commonFields); err != nil {
 					tp.logger.Error("tracestate", zap.Error(err))
 
 				} else if priority == deferDecision {
 					threshold = tp.sampler.decide(carrier)
 				}
 
-				sampled := threshold.ShouldSample(randomness)
+				sampled := threshold.ShouldSample(rnd.randomness())
 
 				if sampled && carrier != nil {
-					if err := carrier.updateThreshold(threshold, threshold.TValue()); err != nil {
+					if err := carrier.updateThreshold(threshold); err != nil {
 						tp.logger.Warn("tracestate", zap.Error(err))
 					}
 					if err := carrier.reserialize(); err != nil {
@@ -166,7 +166,7 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 				} else {
 					_ = stats.RecordWithTags(
 						ctx,
-						[]tag.Mutator{tag.Upsert(tagPolicyKey, "trace_id_hash"), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
+						[]tag.Mutator{tag.Upsert(tagPolicyKey, rnd.policyName()), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
 						statCountTracesSampled.M(int64(1)),
 					)
 				}

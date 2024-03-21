@@ -19,9 +19,6 @@ const (
 	numHashBuckets        = 0x4000 // Using a power of 2 to avoid division.
 	bitMaskHashBuckets    = numHashBuckets - 1
 	percentageScaleFactor = numHashBuckets / 100.0
-
-	// randomFlagValue is defined in W3C Trace Context Level 2.
-	randomFlagValue = 0x2
 )
 
 type SamplerMode string
@@ -39,24 +36,87 @@ var (
 	ErrThresholdInUse  = fmt.Errorf("log record has sampling threshold, equalizing or proportional mode recommended")
 )
 
-type policy string
+type randomnessNamer interface {
+	randomness() sampling.Randomness
+	policyName() string
+}
 
-const (
-	AlwaysSampling     policy = "always_sampling"
-	TraceIDHashing     policy = "trace_id_hash"
-	TraceIDW3CSpec     policy = "trace_id_w3c"
-	SamplingRandomness policy = "sampling_randomness"
-)
+type randomnessMethod sampling.Randomness
+
+func (rm randomnessMethod) randomness() sampling.Randomness {
+	return sampling.Randomness(rm)
+}
+
+type traceIDHashingMethod struct{ randomnessMethod }
+type traceIDW3CSpecMethod struct{ randomnessMethod }
+type samplingRandomnessMethod struct{ randomnessMethod }
+
+type missingRandomnessMethod struct{}
+
+func (rm missingRandomnessMethod) randomness() sampling.Randomness {
+	return sampling.AllProbabilitiesRandomness
+}
+
+func (missingRandomnessMethod) policyName() string {
+	return "missing_randomness"
+}
+
+type attributeHashingMethod struct {
+	randomnessMethod
+	attribute string
+}
+
+func (am attributeHashingMethod) policyName() string {
+	return am.attribute
+}
+
+func (traceIDHashingMethod) policyName() string {
+	return "trace_id_hash"
+}
+
+func (samplingRandomnessMethod) policyName() string {
+	return "sampling_randomness"
+}
+
+func (traceIDW3CSpecMethod) policyName() string {
+	return "trace_id_w3c"
+}
+
+var _ randomnessNamer = missingRandomnessMethod{}
+var _ randomnessNamer = traceIDHashingMethod{}
+var _ randomnessNamer = traceIDW3CSpecMethod{}
+var _ randomnessNamer = samplingRandomnessMethod{}
+
+func newMissingRandomnessMethod() randomnessNamer {
+	return missingRandomnessMethod{}
+}
+
+func newSamplingRandomnessMethod(rnd sampling.Randomness) randomnessNamer {
+	return samplingRandomnessMethod{randomnessMethod(rnd)}
+}
+
+func newTraceIDW3CSpecMethod(rnd sampling.Randomness) randomnessNamer {
+	return traceIDW3CSpecMethod{randomnessMethod(rnd)}
+}
+
+func newTraceIDHashingMethod(rnd sampling.Randomness) randomnessNamer {
+	return traceIDHashingMethod{randomnessMethod(rnd)}
+}
+
+func newAttributeHashingMethod(attribute string, rnd sampling.Randomness) randomnessNamer {
+	return attributeHashingMethod{
+		randomnessMethod: randomnessMethod(rnd),
+		attribute:        attribute,
+	}
+}
 
 type samplingCarrier interface {
-	getPolicy() policy
-
-	explicitRandomness() (sampling.Randomness, bool)
-	setExplicitRandomness(sampling.Randomness)
+	explicitRandomness() (randomnessNamer, bool)
+	setExplicitRandomness(randomnessNamer)
 
 	clearThreshold()
 	threshold() (sampling.Threshold, bool)
-	updateThreshold(sampling.Threshold, string) error
+	updateThreshold(sampling.Threshold) error
 
 	reserialize() error
 }
@@ -66,10 +126,10 @@ type dataSampler interface {
 	decide(carrier samplingCarrier) sampling.Threshold
 
 	// randomnessFromSpan extracts randomness and returns a carrier specific to traces data.
-	randomnessFromSpan(s ptrace.Span) (randomness sampling.Randomness, carrier samplingCarrier, err error)
+	randomnessFromSpan(s ptrace.Span) (randomness randomnessNamer, carrier samplingCarrier, err error)
 
 	// randomnessFromLogRecord extracts randomness and returns a carrier specific to logs data.
-	randomnessFromLogRecord(s plog.LogRecord) (randomness sampling.Randomness, carrier samplingCarrier, err error)
+	randomnessFromLogRecord(s plog.LogRecord) (randomness randomnessNamer, carrier samplingCarrier, err error)
 }
 
 var (
@@ -158,88 +218,82 @@ type proportionalSampler struct {
 	consistentTracestateCommon
 }
 
+func isMissing(rnd randomnessNamer) bool {
+	_, ok := rnd.(missingRandomnessMethod)
+	return ok
+}
+
 // randomnessFromLogRecord (hashingSampler) uses a hash function over
 // the TraceID
-func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (sampling.Randomness, samplingCarrier, error) {
-	// when no randomness is present, we set AllProbabilitiesRandomness
-	how := AlwaysSampling
-	rnd := sampling.AllProbabilitiesRandomness
+func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
+	rnd := newMissingRandomnessMethod()
+	lrc, err := newLogRecordCarrier(l)
 
-	var lidBytes []byte
-	if th.logsTraceIDEnabled && !l.TraceID().IsEmpty() {
+	if th.logsTraceIDEnabled {
 		value := l.TraceID()
-		how = TraceIDHashing
-		lidBytes = value[:]
+		// Note: this admits empty TraceIDs.
+		rnd = newTraceIDHashingMethod(randomnessFromBytes(value[:], th.hashSeed))
 	}
-	if lidBytes == nil && th.logsRandomnessSourceAttribute != "" {
+
+	if isMissing(rnd) && th.logsRandomnessSourceAttribute != "" {
 		if value, ok := l.Attributes().Get(th.logsRandomnessSourceAttribute); ok {
-			how = policy(th.logsRandomnessSourceAttribute)
-			lidBytes = getBytesFromValue(value)
+			// Note: this admits zero-byte values.
+			rnd = newAttributeHashingMethod(
+				th.logsRandomnessSourceAttribute,
+				randomnessFromBytes(getBytesFromValue(value), th.hashSeed),
+			)
 		}
 	}
-	lrc := newLogRecordCarrier(l, how)
 
-	// If the log record contains a proper R-value or T-value, we
-	// have to leave it alone.  The user should not be using this
-	// sampler mode if they are using specified forms of consistent
-	// sampling in OTel.
-
-	var err error
-
-	if len(lidBytes) != 0 {
-		return rnd, lrc, ErrMissingRandomness
+	if th.strict {
+		// In strict mode, we never parse the TraceState and let
+		// it pass through untouched.
+		return rnd, lrc, err
 	}
 
-	rnd = randomnessFromBytes(lidBytes, th.hashSeed)
-
-	// When no sampling information is present, add an R-value.  The threshold
-	// will be added following the decision.
-	if !th.strict {
-		lrc.setExplicitRandomness(rnd)
-	}
-	if _, has := lrc.explicitRandomness(); has {
+	if err != nil {
+		// The sampling.randomness or sampling.threshold attributes
+		// had a parse error, in this case.
+		lrc = nil
+	} else if _, hasRnd := lrc.explicitRandomness(); hasRnd {
+		// If the log record contains a randomness value, do not set.
 		err = ErrRandomnessInUse
-	} else if _, has := lrc.threshold(); has {
+	} else if _, hasTh := lrc.threshold(); hasTh {
+		// If the log record contains a threshold value, do not set.
 		err = ErrThresholdInUse
+	} else if !isMissing(rnd) {
+		// When no sampling information is already present and we have
+		// calculated new randomness, add it to the record.
+		lrc.setExplicitRandomness(rnd)
 	}
 
 	return rnd, lrc, err
 }
 
-func (ctc *consistentTracestateCommon) randomnessFromLogRecord(l plog.LogRecord) (sampling.Randomness, samplingCarrier, error) {
-	tid := l.TraceID()
+func (ctc *consistentTracestateCommon) randomnessFromLogRecord(l plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
+	lrc, err := newLogRecordCarrier(l)
+	rnd := newMissingRandomnessMethod()
 
-	lrc := newLogRecordCarrier(l, AlwaysSampling)
-	rnd := sampling.AllProbabilitiesRandomness
-
-	var err error
-	if rv, has := lrc.explicitRandomness(); has {
+	if err != nil {
+		// Parse error in sampling.randomness or sampling.thresholdnil
+		lrc = nil
+	} else if rv, hasRnd := lrc.explicitRandomness(); hasRnd {
 		rnd = rv
-		lrc.policy = SamplingRandomness
-	} else if !tid.IsEmpty() {
-		if ctc.strict && (l.Flags()&randomFlagValue) != randomFlagValue {
-			err = ErrMissingRandomness
-		}
-		lrc.policy = TraceIDW3CSpec
-		rnd = sampling.TraceIDToRandomness(tid)
+	} else if tid := l.TraceID(); !tid.IsEmpty() {
+		rnd = newTraceIDW3CSpecMethod(sampling.TraceIDToRandomness(tid))
 	} else if ctc.strict {
 		err = ErrMissingRandomness
 	} else {
 		// The case of no TraceID and non-strict mode remains.  Use the
 		// configured attribute.
 
-		var lidBytes []byte
 		if ctc.logsRandomnessSourceAttribute == "" {
 			err = ErrMissingRandomness
 		} else if value, ok := l.Attributes().Get(ctc.logsRandomnessSourceAttribute); ok {
-			lidBytes = getBytesFromValue(value)
-		}
-
-		if len(lidBytes) == 0 {
-			err = ErrMissingRandomness
-		} else {
-			lrc.policy = policy(ctc.logsRandomnessSourceAttribute)
-			rnd = randomnessFromBytes(lidBytes, ctc.logsRandomnessHashSeed)
+			rnd = newAttributeHashingMethod(
+				ctc.logsRandomnessSourceAttribute,
+				randomnessFromBytes(getBytesFromValue(value), ctc.logsRandomnessHashSeed),
+			)
 		}
 	}
 
@@ -284,26 +338,23 @@ func randomnessFromBytes(b []byte, hashSeed uint32) sampling.Randomness {
 	return rnd
 }
 
-func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (sampling.Randomness, samplingCarrier, error) {
+func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {
 	tid := s.TraceID()
-	rnd := randomnessFromBytes(tid[:], th.hashSeed)
-	if th.strict {
-		// In strict mode, we never parse the TraceState and let
-		// it pass through untouched.
-		return rnd, nil, nil
-	}
+	// Note: this admits empty TraceIDs.
+	rnd := newTraceIDHashingMethod(randomnessFromBytes(tid[:], th.hashSeed))
 	tsc := &tracestateCarrier{
-		span:   s,
-		policy: TraceIDHashing,
+		span: s,
 	}
 
 	var err error
 	tsc.W3CTraceState, err = sampling.NewW3CTraceState(s.TraceState().AsRaw())
 	if err != nil {
-		// This failure is logged but not fatal, since the legacy
-		// behavior of this sampler disregarded TraceState and
-		// because we are already not strict.
-		th.logger.Debug("invalid tracestate in hash_seed sampler, ignoring", zap.Error(err))
+		return rnd, nil, err
+	}
+
+	if th.strict {
+		// In strict mode, we never parse the TraceState and let
+		// it pass through untouched.
 		return rnd, nil, nil
 	}
 
@@ -320,48 +371,39 @@ func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (sampling.Randomness
 		// Randomness value.
 		tsc.setExplicitRandomness(rnd)
 	}
-	return rnd, tsc, nil
+	return rnd, tsc, err
 }
 
-func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (randomness sampling.Randomness, carrier samplingCarrier, err error) {
+func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {
 	rawts := s.TraceState().AsRaw()
+	rnd := newMissingRandomnessMethod()
 	tsc := &tracestateCarrier{
-		span:   s,
-		policy: "trace_id_w3c",
+		span: s,
 	}
 
 	// Parse the arriving TraceState.
+	var err error
 	tsc.W3CTraceState, err = sampling.NewW3CTraceState(rawts)
-	if err == nil {
-		if rv, has := tsc.W3CTraceState.OTelValue().RValueRandomness(); has {
-			// When the tracestate is OK and has r-value, use it.
-			randomness = rv
-		} else if ctc.strict && (s.Flags()&randomFlagValue) != randomFlagValue {
-			// If strict and the flag is missing
-			err = ErrMissingRandomness
-		} else if ctc.strict && s.TraceID().IsEmpty() {
-			// If strict and the TraceID() is all zeros,
-			// which W3C calls an invalid TraceID.
-			err = ErrMissingRandomness
-		} else {
-			// Whether !strict or the random flag is correctly set.
-			//
-			// Note: We do not check TraceID().IsValid() in this case,
-			// the outcome is:
-			//  - R-value equals "00000000000000"
-			//  - Sampled at 100% otherwise not sampled
-			randomness = sampling.TraceIDToRandomness(s.TraceID())
-		}
+	if err != nil {
+		tsc = nil
+	} else if rv, has := tsc.W3CTraceState.OTelValue().RValueRandomness(); has {
+		// When the tracestate is OK and has r-value, use it.
+		rnd = newSamplingRandomnessMethod(rv)
+	} else if s.TraceID().IsEmpty() {
+		// If the TraceID() is all zeros, which W3C calls an invalid TraceID.
+		err = ErrMissingRandomness
+	} else {
+		rnd = newTraceIDW3CSpecMethod(sampling.TraceIDToRandomness(s.TraceID()))
 	}
 
-	return randomness, tsc, err
+	return rnd, tsc, err
 }
 
-func consistencyCheck(randomness sampling.Randomness, carrier samplingCarrier, common commonFields) error {
+func consistencyCheck(rnd randomnessNamer, carrier samplingCarrier, common commonFields) error {
 	// Consistency check: if the TraceID is out of range, the
 	// TValue is a lie.  If inconsistent, clear it and return an error.
 	if tv, has := carrier.threshold(); has {
-		if !tv.ShouldSample(randomness) {
+		if !tv.ShouldSample(rnd.randomness()) {
 			if common.strict {
 				return ErrInconsistentArrivingTValue
 			} else {

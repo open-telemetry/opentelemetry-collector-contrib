@@ -79,6 +79,7 @@ func TestLogsSampling(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 50,
 				AttributeSource:    traceIDAttributeSource,
+				SamplerMode:        HashSeed,
 			},
 			received: 45,
 		},
@@ -89,6 +90,7 @@ func TestLogsSampling(t *testing.T) {
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",
 			},
+
 			received: 0,
 		},
 		{

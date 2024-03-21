@@ -428,7 +428,6 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 		tid   pcommon.TraceID
 		cfg   *Config
 		ts    string
-		tf    uint32
 		key   string
 		value pcommon.Value
 		log   string
@@ -558,7 +557,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			ts:    "",
 			key:   "sampling.priority",
 			value: pcommon.NewValueInt(2),
-			sf:    func(SamplerMode) (bool, float64, string) { return true, 0, "" },
+			sf:    func(SamplerMode) (bool, float64, string) { return true, 1, "ot=th:0" },
 		},
 		{
 			name: "not sampled by priority",
@@ -766,7 +765,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					tid = tt.tid
 				}
 
-				td := makeSingleSpanWithAttrib(tid, sid, tt.ts, tt.tf, tt.key, tt.value)
+				td := makeSingleSpanWithAttrib(tid, sid, tt.ts, tt.key, tt.value)
 
 				err = tsp.ConsumeTraces(context.Background(), td)
 				require.NoError(t, err)
@@ -823,19 +822,17 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 		name string
 		tid  pcommon.TraceID
 		cfg  *Config
-		tf   uint32
 		ts   string
-		sf   func(SamplerMode) (bool, string)
+		sf   func(SamplerMode) string
 	}{
 		{
 			name: "missing randomness",
 			cfg: &Config{
 				SamplingPercentage: 100,
 			},
-			tf: 0, // (i.e., not randomFlagValue)
 			ts: "",
-			sf: func(SamplerMode) (bool, string) {
-				return false, "missing randomness"
+			sf: func(SamplerMode) string {
+				return "missing randomness"
 			},
 		},
 		{
@@ -844,8 +841,8 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 				SamplingPercentage: 100,
 			},
 			ts: "ot=rv:abababababababab", // 16 digits is too many
-			sf: func(SamplerMode) (bool, string) {
-				return false, "r-value must have 14 hex digits"
+			sf: func(SamplerMode) string {
+				return "r-value must have 14 hex digits"
 			},
 		},
 		{
@@ -853,10 +850,9 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 100,
 			},
-			tf: randomFlagValue,
 			ts: "ot=th:abababababababab", // 16 digits is too many
-			sf: func(SamplerMode) (bool, string) {
-				return false, "t-value exceeds 14 hex digits"
+			sf: func(SamplerMode) string {
+				return "t-value exceeds 14 hex digits"
 			},
 		},
 		{
@@ -864,10 +860,9 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 100,
 			},
-			tf: randomFlagValue,
 			ts: "ot=th:-1",
-			sf: func(SamplerMode) (bool, string) {
-				return false, "invalid syntax"
+			sf: func(SamplerMode) string {
+				return "invalid syntax"
 			},
 		},
 		{
@@ -875,11 +870,10 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 100,
 			},
-			tf:  randomFlagValue,
 			tid: mustParseTID("ffffffffffffffffff70000000000000"),
 			ts:  "ot=th:8",
-			sf: func(SamplerMode) (bool, string) {
-				return false, "inconsistent arriving t-value"
+			sf: func(SamplerMode) string {
+				return "inconsistent arriving t-value"
 			},
 		},
 		{
@@ -887,10 +881,9 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 100,
 			},
-			tf: randomFlagValue,
 			ts: "ot=th:8;rv:70000000000000",
-			sf: func(SamplerMode) (bool, string) {
-				return false, "inconsistent arriving t-value"
+			sf: func(SamplerMode) string {
+				return "inconsistent arriving t-value"
 			},
 		},
 	}
@@ -909,10 +902,9 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 				logger, observed := observer.New(zap.DebugLevel)
 				set.Logger = zap.New(logger)
 
-				expectSampled := false
 				expectMessage := ""
 				if tt.sf != nil {
-					expectSampled, expectMessage = tt.sf(mode)
+					expectMessage = tt.sf(mode)
 
 				}
 
@@ -929,18 +921,13 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 					tid = tt.tid
 				}
 
-				td := makeSingleSpanWithAttrib(tid, sid, tt.ts, tt.tf, "", pcommon.Value{})
+				td := makeSingleSpanWithAttrib(tid, sid, tt.ts, "", pcommon.Value{})
 
 				err = tsp.ConsumeTraces(context.Background(), td)
 				require.NoError(t, err)
 
 				sampledData := sink.AllTraces()
 
-				if expectSampled {
-					require.Equal(t, 1, len(sampledData))
-					assert.Equal(t, 1, sink.SpanCount())
-					return
-				}
 				require.Equal(t, 0, len(sampledData))
 				assert.Equal(t, 0, sink.SpanCount())
 
@@ -1004,7 +991,7 @@ func Test_tracesamplerprocessor_HashSeedTraceState(t *testing.T) {
 			for {
 				sink.Reset()
 				tid := idutils.UInt64ToTraceID(rand.Uint64(), rand.Uint64())
-				td := makeSingleSpanWithAttrib(tid, sid, "", 0, "", pcommon.Value{})
+				td := makeSingleSpanWithAttrib(tid, sid, "", "", pcommon.Value{})
 
 				err = tsp.ConsumeTraces(context.Background(), td)
 				require.NoError(t, err)
@@ -1123,13 +1110,12 @@ func mustParseTID(in string) pcommon.TraceID {
 
 // makeSingleSpanWithAttrib is used to construct test data with
 // a specific TraceID and a single attribute.
-func makeSingleSpanWithAttrib(tid pcommon.TraceID, sid pcommon.SpanID, ts string, tf uint32, key string, attribValue pcommon.Value) ptrace.Traces {
+func makeSingleSpanWithAttrib(tid pcommon.TraceID, sid pcommon.SpanID, ts string, key string, attribValue pcommon.Value) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.TraceState().FromRaw(ts)
 	span.SetTraceID(tid)
 	span.SetSpanID(sid)
-	span.SetFlags(tf)
 	if key != "" {
 		attribValue.CopyTo(span.Attributes().PutEmpty(key))
 	}
