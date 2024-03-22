@@ -8,13 +8,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector/internal/metadata"
 )
 
 const (
@@ -64,6 +65,9 @@ func newConnector(logger *zap.Logger, set component.TelemetrySettings, config co
 		metric.WithDescription("Number of datapoints sent to Grafana Cloud"),
 		metric.WithUnit("1"),
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	cfg := config.(*Config)
 	return &connectorImp{
@@ -150,6 +154,7 @@ func (c *connectorImp) flush(ctx context.Context) error {
 		c.metricDatapointCount.Add(ctx, int64(metrics.DataPointCount()))
 		err = c.metricsConsumer.ConsumeMetrics(ctx, *metrics)
 	}
+
 	c.metricFlushCount.Add(ctx, int64(1))
 	return err
 }
