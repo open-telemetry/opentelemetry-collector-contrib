@@ -186,10 +186,7 @@ For additional resiliency, see [Fault tolerant log collection example](../../exa
 
 ### File storage
 
-A common storage extension that's used for tracking log file offsets is the
-[`filestorage` extension](../../extension/storage/filestorage). Sometimes, typically for debugging reasons, it's useful
-to take a peek at the file in which offsets are stored. At the moment, the simplest way to do this is by printing out
-the contents of this file using the `strings` utility.
+The [`filestorage` extension](../../extension/storage/filestorage) is a common storage extension that's used for tracking log file offsets. Sometimes, typically for debugging reasons, it's useful to view the file in which offsets are stored. The simplest way to do this is by printing out the contents of this file using the `strings` utility.
 
 Consider a collector pipeline that's using the `filelog` receiver with the `storage` extension as shown
 below. Note that [compaction](../../extension/storage/filestorage/README.md#compaction) is not being used.
