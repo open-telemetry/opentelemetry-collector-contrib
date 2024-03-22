@@ -148,7 +148,7 @@ func TestLogsWithOneTelemetryAttributes(t *testing.T) {
 			assert.Equal(t, 2, attrs.Len(), "shouldn't have less than 2 attributes")
 
 			val, ok := attrs.Get(telemetryAttrKeyOne)
-			assert.True(t, ok, fmt.Sprintf("there should be an attribute with key %s", telemetryAttrKeyOne))
+			assert.Truef(t, ok, "there should be an attribute with key %s", telemetryAttrKeyOne)
 			if ok {
 				assert.EqualValues(t, val.AsString(), telemetryAttrValueOne)
 			}
