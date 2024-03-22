@@ -36,17 +36,23 @@ type connectorImp struct {
 	metricsConsumer consumer.Metrics
 	hostMetrics     *hostMetrics
 
-	metricHostCount      metric.Int64UpDownCounter
+	metricHostCount      metric.Int64ObservableGauge
 	metricFlushCount     metric.Int64Counter
 	metricDatapointCount metric.Int64Counter
 }
 
 func newConnector(logger *zap.Logger, set component.TelemetrySettings, config component.Config) (*connectorImp, error) {
-	mHostCount, err := metadata.Meter(set).Int64UpDownCounter(
+	hm := newHostMetrics()
+	mHostCount, err := metadata.Meter(set).Int64ObservableGauge(
 		"grafanacloud_host_count",
-		metric.WithDescription("Number of unique hosts since last metrics flush"),
+		metric.WithDescription("Number of unique hosts at last metrics flush"),
 		metric.WithUnit("1"),
+		metric.WithInt64Callback(func(ctx context.Context, result metric.Int64Observer) error {
+			result.Observe(int64(hm.count()))
+			return nil
+		}),
 	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +80,7 @@ func newConnector(logger *zap.Logger, set component.TelemetrySettings, config co
 		config:               *cfg,
 		logger:               logger,
 		done:                 make(chan struct{}),
-		hostMetrics:          newHostMetrics(),
+		hostMetrics:          hm,
 		metricHostCount:      mHostCount,
 		metricFlushCount:     mFlushCount,
 		metricDatapointCount: mDatapointCount,
@@ -97,7 +103,6 @@ func (c *connectorImp) ConsumeTraces(_ context.Context, td ptrace.Traces) error 
 			if val, ok := mapping[attrName]; ok {
 				if v, ok := val.(string); ok {
 					c.hostMetrics.add(v)
-					c.metricHostCount.Add(context.Background(), int64(1))
 				}
 				break
 			}
@@ -150,11 +155,9 @@ func (c *connectorImp) flush(ctx context.Context) error {
 	if count > 0 {
 		c.hostMetrics.reset()
 		c.logger.Debug("Flushing metrics", zap.Int("count", count))
-		c.metricHostCount.Add(ctx, int64(-count))
 		c.metricDatapointCount.Add(ctx, int64(metrics.DataPointCount()))
 		err = c.metricsConsumer.ConsumeMetrics(ctx, *metrics)
 	}
-
 	c.metricFlushCount.Add(ctx, int64(1))
 	return err
 }

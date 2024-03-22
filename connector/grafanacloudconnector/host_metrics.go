@@ -34,6 +34,12 @@ func (h *hostMetrics) add(hostName string) {
 	}
 }
 
+func (h *hostMetrics) count() int {
+	h.mutex.RLock()
+	defer h.mutex.RUnlock()
+	return len(h.hosts)
+}
+
 func (h *hostMetrics) metrics() (*pmetric.Metrics, int) {
 	h.mutex.RLock()
 	defer h.mutex.RUnlock()
