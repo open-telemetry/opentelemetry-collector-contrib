@@ -84,7 +84,8 @@ func TValueToThreshold(s string) (Threshold, error) {
 }
 
 // UnsignedToThreshold constructs a threshold expressed in terms
-// defined by Unsigned(), the number of rejections.
+// defined by number of rejections out of MaxAdjustedCount, which
+// equals the number of randomness values.
 func UnsignedToThreshold(unsigned uint64) (Threshold, error) {
 	if unsigned >= MaxAdjustedCount {
 		return NeverSampleThreshold, ErrTValueSize
@@ -114,9 +115,10 @@ func (th Threshold) TValue() string {
 }
 
 // ShouldSample returns true when the span passes this sampler's
-// consistent sampling decision.
+// consistent sampling decision.  The sampling decision can be
+// expressed as a T <= R.
 func (th Threshold) ShouldSample(rnd Randomness) bool {
-	return rnd.unsigned >= th.unsigned
+	return th.unsigned <= rnd.unsigned
 }
 
 // Unsigned expresses the number of Randomness values (out of
