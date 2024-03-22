@@ -95,16 +95,17 @@ attribute (only logs).  The hashed value, presumed to be random, is
 compared against a threshold value that corresponds with the sampling
 percentage.
 
-Hash seed mode is used for log records when there is no TraceID available.
-
 This mode requires configuring the `hash_seed` field.  This mode is
-enabled when the `hash_seed` field is not zero.
+enabled when the `hash_seed` field is not zero, or when log records
+are sampled with `attribute_source` is set to `record`.
 
 In order for hashing to work, all collectors for a given tier
 (e.g. behind the same load balancer) must have the same
 `hash_seed`. It is also possible to leverage a different `hash_seed`
 at different collector tiers to support additional sampling
 requirements.
+
+This mode uses 14 bits of sampling precision.
 
 ### Proportional
 
@@ -119,7 +120,11 @@ proportionally, according to the sampling probability.  In this mode,
 items are selected for sampling without considering how much they were
 already sampled by preceding samplers.
 
-This mode is selected when the `hash_seed` field is set to zero.
+This mode is selected when `mode` field is unset and the `hash_seed`
+field is not set and for logs records when the `attribute_source` is
+`traceID`.
+
+This mode uses 56 bits of sampling precision.
 
 ### Equalizing
 
@@ -129,13 +134,43 @@ sampled by preceding samplers.  This mode can be used to lower
 sampling probability to a minimum value across a whole pipeline, which
 has the effect of increasing trace completeness.
 
+This mode uses 56 bits of sampling precision.
+
+## Sampling threshold information
+
+In all modes, information about the effective sampling probability is
+added into the item of telemetry along with (optionally) the random
+variable that was used.
+
+For traces, threshold and randomness information are encoded in the
+W3C Trace Context `tracestate` field, in the OpenTelemetry section.
+For example, 25% sampling is encoded as:
+
+```
+tracestate: ot=th:c
+```
+
+For log records, threshold and randomness information are encoded in
+the W3C Trace Context `tracestate` field, in the OpenTelemetry
+section, for example, 25% sampling with an explicit randomness value
+is encoded as:
+
+```
+sampling.threshold: c
+sampling.randomness: fe72cd9a44c2be
+```
+
 ## Configuration
 
 The following configuration options can be modified:
-- `sampling_percentage` (required): Percentage at which logs are sampled; >= 100 samples all logs, 0 rejects all logs.
+
+- `sampling_percentage` (required): Percentage at which items are sampled; >= 100 samples all items, 0 rejects all items.
 - `mode` (default = "", optional): The optional sampling mode.  One of "hash_seed", "equalizing", and "propotional".
 - `hash_seed` (no default, optional): An integer used to compute the hash algorithm. Note that all collectors for a given tier (e.g. behind the same load balancer) should have the same hash_seed.
-- `sampling_precision` (default = 4, optional): The number of digits of precision used to encode thesampling probability.
+- `sampling_precision` (default = 4, optional): The number of digits of precision used to encode the sampling probability.
+- `fail_closed` (default = false, optional): Whether to reject items with sampling-related errors.
+
+### Logs-specific configuration
 
 - `attribute_source` (default = traceID, optional): defines where to look for the attribute in from_attribute. The allowed values are `traceID` or `record`.
 - `from_attribute` (default = null, optional): The optional name of a log record attribute used for sampling purposes, such as a unique log record ID. The value of the attribute is only used if the trace ID is absent or if `attribute_source` is set to `record`.
@@ -143,14 +178,12 @@ The following configuration options can be modified:
 
 Examples:
 
-@@@
-
-Sample 15% of log records
+Sample 15% of log records according to trace ID using the OpenTelemetry
+specification.
 
 ```yaml
 processors:
   probabilistic_sampler:
-    mode: hash_seed
     sampling_percentage: 15
 ```
 
@@ -159,7 +192,6 @@ Sample logs according to their logID attribute:
 ```yaml
 processors:
   probabilistic_sampler:
-    mode: hash_seed
     sampling_percentage: 15
     attribute_source: record # possible values: one of record or traceID
     from_attribute: logID # value is required if the source is not traceID
@@ -170,22 +202,11 @@ Sample logs according to the attribute `priority`:
 ```yaml
 processors:
   probabilistic_sampler:
-    mode: hash_seed
     sampling_percentage: 15
     sampling_priority: priority
 ```
 
-For example, to configure the proportional sampler, simply omit the
-`hash_seed` field:
-
-```
-processors:
-  probabilistic_sampler:
-	# no hash_seed is set, uses proportional consistent by default
-    sampling_percentage: 10
-```
-
-For example, to configure an equalizing sampler, set the mode explicitly:
+To configure an equalizing sampler, set the mode explicitly:
 
 ```
 processors:
@@ -196,11 +217,11 @@ processors:
 
 The optional `sampling_precision` field determines how many
 hexadecimal digits are used to express the sampling rejection
-threshold.  By default, 5 hex digits are used.  For example, 60%
-sampling is approximated as "66666" with precision 3, because the
-rejection threshold of 40% is approximated by `0x66666` out of
-`0x100000`, indicating a sampling probability of precisely
-60.000038147%
+threshold.  By default, 4 hex digits are used.  For example, 60%
+sampling is approximated as "6666" with precision 4, because the
+rejection threshold of 40% is approximated by `0x6666` out of
+`0x10000`, indicating a sampling probability of precisely
+60.000038147%.
 
 ## Detailed examples
 
