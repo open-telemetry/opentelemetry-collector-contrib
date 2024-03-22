@@ -190,7 +190,7 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 
 				switch parseSpanSamplingPriority(s) {
 				case doNotSampleSpan:
-					// The OpenTelemetry mentions this as a "hint" we take a stronger
+					// OpenTracing mentions this as a "hint". We take a stronger
 					// approach and do not sample the span since some may use it to
 					// remove specific spans from traces.
 					threshold = sampling.NeverSampleThreshold
