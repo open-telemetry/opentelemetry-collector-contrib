@@ -242,11 +242,13 @@ func TestMTimeFilter(t *testing.T) {
 }
 
 func TestExcludeOlderThanFilter(t *testing.T) {
-	epoch := time.Unix(0, 0)
+	twoHoursAgo := time.Now().Add(-2 * time.Hour)
+	threeHoursAgo := twoHoursAgo.Add(-1 * time.Hour)
+
 	cases := map[string]struct {
 		files            []string
 		fileMTimes       []time.Time
-		excludeOlderThan time.Time
+		excludeOlderThan time.Duration
 
 		expect      []string
 		expectedErr string
@@ -254,39 +256,39 @@ func TestExcludeOlderThanFilter(t *testing.T) {
 		"no_files": {
 			files:            []string{},
 			fileMTimes:       []time.Time{},
-			excludeOlderThan: epoch.Add(-2 * time.Hour),
+			excludeOlderThan: 2 * time.Hour,
 
 			expect:      []string{},
 			expectedErr: "",
 		},
 		"exclude_no_files": {
 			files:            []string{"a.log", "b.log"},
-			fileMTimes:       []time.Time{epoch, epoch},
-			excludeOlderThan: epoch.Add(-2 * time.Hour),
+			fileMTimes:       []time.Time{twoHoursAgo, twoHoursAgo},
+			excludeOlderThan: 3 * time.Hour,
 
 			expect:      []string{"a.log", "b.log"},
 			expectedErr: "",
 		},
 		"exclude_some_files": {
 			files:            []string{"a.log", "b.log"},
-			fileMTimes:       []time.Time{epoch, epoch.Add(-3 * time.Hour)},
-			excludeOlderThan: epoch.Add(-2 * time.Hour),
+			fileMTimes:       []time.Time{twoHoursAgo, threeHoursAgo},
+			excludeOlderThan: 3 * time.Hour,
 
 			expect:      []string{"a.log"},
 			expectedErr: "",
 		},
 		"exclude_all_files": {
 			files:            []string{"a.log", "b.log"},
-			fileMTimes:       []time.Time{epoch, epoch},
-			excludeOlderThan: epoch.Add(2 * time.Hour),
+			fileMTimes:       []time.Time{twoHoursAgo, threeHoursAgo},
+			excludeOlderThan: 90 * time.Minute,
 
 			expect:      []string{},
 			expectedErr: "",
 		},
 		"file_not_present": {
 			files:            []string{"a.log", "b.log"},
-			fileMTimes:       []time.Time{epoch, time.Time{}},
-			excludeOlderThan: epoch.Add(-2 * time.Hour),
+			fileMTimes:       []time.Time{twoHoursAgo, time.Time{}},
+			excludeOlderThan: 3 * time.Hour,
 
 			expect:      []string{"a.log"},
 			expectedErr: "b.log: no such file or directory",
@@ -307,7 +309,7 @@ func TestExcludeOlderThanFilter(t *testing.T) {
 					f, err := os.Create(fullPath)
 					require.NoError(t, err)
 					require.NoError(t, f.Close())
-					require.NoError(t, os.Chtimes(fullPath, epoch, mtime))
+					require.NoError(t, os.Chtimes(fullPath, twoHoursAgo, mtime))
 				}
 
 				it, err := newItem(fullPath, nil)

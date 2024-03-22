@@ -37,9 +37,9 @@ type Criteria struct {
 	Include []string `mapstructure:"include,omitempty"`
 	Exclude []string `mapstructure:"exclude,omitempty"`
 
-	// ExcludeOlderThan allows excluding files whose modification time was older
-	// than the specified time.
-	ExcludeOlderThan time.Time        `mapstructure:"exclude_older_than"`
+	// ExcludeOlderThan allows excluding files whose modification time is older
+	// than the specified age.
+	ExcludeOlderThan time.Duration    `mapstructure:"exclude_older_than"`
 	OrderingCriteria OrderingCriteria `mapstructure:"ordering_criteria,omitempty"`
 }
 
@@ -77,7 +77,7 @@ func New(c Criteria) (*Matcher, error) {
 	}
 
 	var filterOpts []filter.Option
-	if !c.ExcludeOlderThan.IsZero() {
+	if c.ExcludeOlderThan != 0 {
 		f := filter.ExcludeOlderThan(c.ExcludeOlderThan)
 		filterOpts = append(filterOpts, f)
 

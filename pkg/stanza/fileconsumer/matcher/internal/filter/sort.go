@@ -198,8 +198,8 @@ func (eot excludeOlderThanOption) apply(items []*item) ([]*item, error) {
 	return filteredItems, errs
 }
 
-// ExcludeOlderThan keeps only those files whose modification time is
-// equal to or newer than the specified minMTime.
-func ExcludeOlderThan(minMtime time.Time) Option {
+// ExcludeOlderThan excludes files whose modification time is older than the specified age.
+func ExcludeOlderThan(age time.Duration) Option {
+	minMtime := time.Now().Add(-age)
 	return excludeOlderThanOption{minMtime: minMtime}
 }
