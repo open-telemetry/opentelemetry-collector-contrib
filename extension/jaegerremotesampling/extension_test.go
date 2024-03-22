@@ -94,6 +94,7 @@ func TestRemote(t *testing.T) {
 				err = server.Serve(lis)
 				require.NoError(t, err)
 			}()
+			defer func() { server.Stop() }()
 
 			// create the config, pointing to the mock server
 			cfg := testConfig()
@@ -101,7 +102,7 @@ func TestRemote(t *testing.T) {
 			cfg.Source.ReloadInterval = tc.reloadInterval
 			cfg.Source.Remote = &configgrpc.ClientConfig{
 				Endpoint: fmt.Sprintf("127.0.0.1:%d", lis.Addr().(*net.TCPAddr).Port),
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.ClientConfig{
 					Insecure: true, // test only
 				},
 				WaitForReady: true,
@@ -120,6 +121,7 @@ func TestRemote(t *testing.T) {
 				resp, err := http.Get("http://127.0.0.1:5778/sampling?service=foo")
 				assert.NoError(t, err)
 				assert.Equal(t, 200, resp.StatusCode)
+				assert.NoError(t, resp.Body.Close())
 			}
 
 			// shut down the server

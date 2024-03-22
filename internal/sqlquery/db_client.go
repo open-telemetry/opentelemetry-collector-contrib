@@ -5,6 +5,7 @@ package sqlquery // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"errors"
 
 	// register Db drivers
 	_ "github.com/SAP/go-hdb/driver"
@@ -14,7 +15,6 @@ import (
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
 	_ "github.com/sijms/go-ora/v2"
 	_ "github.com/snowflakedb/gosnowflake"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -52,7 +52,7 @@ func (cl DbSQLClient) QueryRows(ctx context.Context, args ...any) ([]StringMap, 
 		return nil, err
 	}
 	scanner := newRowScanner(colTypes)
-	var warnings error
+	var warnings []error
 	for sqlRows.Next() {
 		err = scanner.scan(sqlRows)
 		if err != nil {
@@ -60,11 +60,11 @@ func (cl DbSQLClient) QueryRows(ctx context.Context, args ...any) ([]StringMap, 
 		}
 		sm, scanErr := scanner.toStringMap()
 		if scanErr != nil {
-			warnings = multierr.Append(warnings, scanErr)
+			warnings = append(warnings, scanErr)
 		}
 		out = append(out, sm)
 	}
-	return out, warnings
+	return out, errors.Join(warnings...)
 }
 
 func (cl DbSQLClient) prepareQueryFields(sql string, args []any) []zap.Field {

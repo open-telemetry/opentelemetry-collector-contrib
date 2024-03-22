@@ -1,4 +1,5 @@
 type: azureeventhub
+scope_name: otelcol/azureeventhubreceiver
 
 status:
   class: receiver
@@ -6,7 +7,8 @@ status:
     alpha: [metrics, logs]
   distributions: [contrib, splunk, observiq, sumo]
   codeowners:
-    active: [atoulme, djaglowski]
+    active: [atoulme, djaglowski, cparkins]
+    seeking_new: true
 
 tests:
   config:

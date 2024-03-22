@@ -74,6 +74,36 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
 
+## Connection pool feature
+
+The feature gate `receiver.postgresql.connectionPool` allows to enable the creation & reuse of a pool per database for the connections instead of creating & closing on each scrape.
+This is generally a useful optimization but also alleviates the volume of generated audit logs when the PostgreSQL instance is configured with `log_connections=on` and/or `log_disconnections=on`.
+
+When this feature gate is enabled, the following optional settings are available nested under `connection_pool` to help configure the connection pools:
+
+- `max_idle_time`: The maximum amount of time a connection may be idle before being closed.
+- `max_lifetime`: The maximum amount of time a connection may be reused.
+- `max_idle`: The maximum number of connections in the idle connection pool.
+- `max_open`: The maximum number of open connections to the database.
+
+Those settings and their defaults are further documented in the `sql/database` package [here](https://pkg.go.dev/database/sql#DB).
+
+### Example Configuration
+
+```yaml
+receivers:
+  postgresql:
+    endpoint: localhost:5432
+    transport: tcp
+    username: otel
+    password: ${env:POSTGRESQL_PASSWORD}
+    connection_pool:
+      max_idle_time: 10m
+      max_lifetime: 0
+      max_idle: 2
+      max_open: 5
+```
+
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)

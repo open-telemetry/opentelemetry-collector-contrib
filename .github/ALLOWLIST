@@ -22,7 +22,6 @@
 internal/common
 
 ## DEPRECATED components
-processor/spanmetricsprocessor/
 
 ## UNMAINTAINED components
 exporter/alibabacloudlogserviceexporter/

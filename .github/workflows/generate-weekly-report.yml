@@ -11,6 +11,7 @@ on:
 jobs:
   get_issues:
     runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'open-telemetry' }}
     steps:
       - uses: actions/checkout@v4
       - run: npm install js-yaml

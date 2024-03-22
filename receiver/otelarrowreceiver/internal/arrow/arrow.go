@@ -41,7 +41,7 @@ type Receiver struct {
 	telemetry   component.TelemetrySettings
 	tracer      trace.Tracer
 	obsrecv     *receiverhelper.ObsReport
-	gsettings   configgrpc.GRPCServerSettings
+	gsettings   configgrpc.ServerConfig
 	authServer  auth.Server
 	newConsumer func() arrowRecord.ConsumerAPI
 	netReporter netstats.Interface
@@ -52,7 +52,7 @@ func New(
 	cs Consumers,
 	set receiver.CreateSettings,
 	obsrecv *receiverhelper.ObsReport,
-	gsettings configgrpc.GRPCServerSettings,
+	gsettings configgrpc.ServerConfig,
 	authServer auth.Server,
 	newConsumer func() arrowRecord.ConsumerAPI,
 	netReporter netstats.Interface,

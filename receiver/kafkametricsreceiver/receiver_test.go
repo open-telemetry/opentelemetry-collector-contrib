@@ -46,8 +46,8 @@ func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 func TestNewReceiver_invalid_auth_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Authentication = kafka.Authentication{
-		TLS: &configtls.TLSClientSetting{
-			TLSSetting: configtls.TLSSetting{
+		TLS: &configtls.ClientConfig{
+			TLSSetting: configtls.Config{
 				CAFile: "/invalid",
 			},
 		},
@@ -62,7 +62,7 @@ func TestNewReceiver(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
 	mockScraper := func(context.Context, Config, *sarama.Config, receiver.CreateSettings) (scraperhelper.Scraper, error) {
-		return scraperhelper.NewScraper("brokers", func(ctx context.Context) (pmetric.Metrics, error) {
+		return scraperhelper.NewScraper("brokers", func(context.Context) (pmetric.Metrics, error) {
 			return pmetric.Metrics{}, nil
 		})
 	}

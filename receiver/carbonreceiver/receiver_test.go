@@ -12,7 +12,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
@@ -48,7 +47,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "zero_value_parser",
 			args: args{
 				config: Config{
-					NetAddr: confignet.NetAddr{
+					AddrConfig: confignet.AddrConfig{
 						Endpoint:  defaultConfig.Endpoint,
 						Transport: defaultConfig.Transport,
 					},
@@ -56,13 +55,6 @@ func Test_carbonreceiver_New(t *testing.T) {
 				},
 				nextConsumer: consumertest.NewNop(),
 			},
-		},
-		{
-			name: "nil_nextConsumer",
-			args: args{
-				config: *defaultConfig,
-			},
-			wantErr: component.ErrNilNextConsumer,
 		},
 		{
 			name: "empty_endpoint",
@@ -76,9 +68,9 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "regex_parser",
 			args: args{
 				config: Config{
-					NetAddr: confignet.NetAddr{
+					AddrConfig: confignet.AddrConfig{
 						Endpoint:  "localhost:2003",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					Parser: &protocol.Config{
 						Type: "regex",
@@ -123,7 +115,7 @@ func Test_carbonreceiver_Start(t *testing.T) {
 			name: "invalid_transport",
 			args: args{
 				config: Config{
-					NetAddr: confignet.NetAddr{
+					AddrConfig: confignet.AddrConfig{
 						Endpoint:  "localhost:2003",
 						Transport: "unknown_transp",
 					},
@@ -181,7 +173,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			name: "default_config_udp",
 			configFn: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Transport = "udp"
+				cfg.Transport = confignet.TransportTypeUDP
 				return cfg
 			},
 			clientFn: func(t *testing.T) func(client.Metric) error {

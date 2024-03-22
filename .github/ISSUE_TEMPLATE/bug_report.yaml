@@ -20,12 +20,12 @@ body:
       # Start Collector components list
       - cmd/configschema
       - cmd/githubgen
-      - cmd/mdatagen
       - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
       - confmap/provider/s3provider
+      - confmap/provider/secretsmanagerprovider
       - connector/count
       - connector/datadog
       - connector/exceptions
@@ -51,7 +51,6 @@ body:
       - exporter/dataset
       - exporter/dynatrace
       - exporter/elasticsearch
-      - exporter/f5cloud
       - exporter/file
       - exporter/googlecloud
       - exporter/googlecloudpubsub
@@ -81,6 +80,7 @@ body:
       - exporter/syslog
       - exporter/tencentcloudlogservice
       - exporter/zipkin
+      - extension/ack
       - extension/asapauth
       - extension/awsproxy
       - extension/basicauth
@@ -117,6 +117,7 @@ body:
       - internal/core
       - internal/datadog
       - internal/docker
+      - internal/exp/metrics
       - internal/filter
       - internal/k8sconfig
       - internal/k8stest
@@ -170,7 +171,6 @@ body:
       - processor/routing
       - processor/schema
       - processor/span
-      - processor/spanmetrics
       - processor/sumologic
       - processor/tailsampling
       - processor/transform

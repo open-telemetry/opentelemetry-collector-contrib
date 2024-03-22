@@ -1,4 +1,5 @@
 type: deltatocumulative
+scope_name: otelcol/deltatocumulative
 
 status:
   class: processor
@@ -7,4 +8,4 @@ status:
   distributions: []
   warnings: [Statefulness]
   codeowners:
-    active: [sh0rez]
+    active: [sh0rez, RichieSams]

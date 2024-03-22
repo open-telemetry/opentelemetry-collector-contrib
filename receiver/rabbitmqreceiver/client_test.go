@@ -41,8 +41,8 @@ func TestNewClient(t *testing.T) {
 			cfg: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						TLSSetting: configtls.Config{
 							CAFile: "/non/existent",
 						},
 					},
@@ -57,7 +57,7 @@ func TestNewClient(t *testing.T) {
 			desc: "Valid Configuration",
 			cfg: &Config{
 				ClientConfig: confighttp.ClientConfig{
-					TLSSetting: configtls.TLSClientSetting{},
+					TLSSetting: configtls.ClientConfig{},
 					Endpoint:   defaultEndpoint,
 				},
 			},
@@ -99,7 +99,7 @@ func TestGetQueuesDetails(t *testing.T) {
 			desc: "Non-200 Response",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusUnauthorized)
 				}))
 				defer ts.Close()
@@ -115,7 +115,7 @@ func TestGetQueuesDetails(t *testing.T) {
 			desc: "Bad payload returned",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{}"))
 					require.NoError(t, err)
 				}))
@@ -134,7 +134,7 @@ func TestGetQueuesDetails(t *testing.T) {
 				data := loadAPIResponseData(t, queuesAPIResponseFile)
 
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write(data)
 					require.NoError(t, err)
 				}))

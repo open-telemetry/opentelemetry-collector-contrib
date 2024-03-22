@@ -63,8 +63,8 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:  10 * time.Second,
 					Endpoint: "https://splunk:8088/services/collector",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						TLSSetting: configtls.Config{
 							CAFile:   "",
 							CertFile: "",
 							KeyFile:  "",
@@ -208,11 +208,23 @@ func TestConfig_Validate(t *testing.T) {
 			}(),
 			wantErr: "requires \"max_event_size\" <= 838860800",
 		},
+		{
+			name: "negative queue size",
+			cfg: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.ClientConfig.Endpoint = "http://foo_bar.com"
+				cfg.QueueSettings.Enabled = true
+				cfg.QueueSettings.QueueSize = -5
+				cfg.Token = "foo"
+				return cfg
+			}(),
+			wantErr: "queue size must be positive",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.cfg.Validate()
+			err := component.ValidateConfig(tt.cfg)
 			if tt.wantErr == "" {
 				require.NoError(t, err)
 			} else {

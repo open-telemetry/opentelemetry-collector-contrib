@@ -42,10 +42,10 @@ func TestCreateReceiver(t *testing.T) {
 
 func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
-	defaultGRPCSettings := configgrpc.GRPCServerSettings{
-		NetAddr: confignet.NetAddr{
+	defaultGRPCSettings := configgrpc.ServerConfig{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 
@@ -66,10 +66,10 @@ func TestCreateTracesReceiver(t *testing.T) {
 			name: "invalid_grpc_port",
 			cfg: &Config{
 				Protocols: Protocols{
-					GRPC: configgrpc.GRPCServerSettings{
-						NetAddr: confignet.NetAddr{
+					GRPC: configgrpc.ServerConfig{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:112233",
-							Transport: "tcp",
+							Transport: confignet.TransportTypeTCP,
 						},
 					},
 				},
@@ -98,10 +98,10 @@ func TestCreateTracesReceiver(t *testing.T) {
 
 func TestCreateMetricReceiver(t *testing.T) {
 	factory := NewFactory()
-	defaultGRPCSettings := configgrpc.GRPCServerSettings{
-		NetAddr: confignet.NetAddr{
+	defaultGRPCSettings := configgrpc.ServerConfig{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 
@@ -122,10 +122,10 @@ func TestCreateMetricReceiver(t *testing.T) {
 			name: "invalid_grpc_address",
 			cfg: &Config{
 				Protocols: Protocols{
-					GRPC: configgrpc.GRPCServerSettings{
-						NetAddr: confignet.NetAddr{
+					GRPC: configgrpc.ServerConfig{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  "327.0.0.1:1122",
-							Transport: "tcp",
+							Transport: confignet.TransportTypeTCP,
 						},
 					},
 				},
@@ -153,10 +153,10 @@ func TestCreateMetricReceiver(t *testing.T) {
 
 func TestCreateLogReceiver(t *testing.T) {
 	factory := NewFactory()
-	defaultGRPCSettings := configgrpc.GRPCServerSettings{
-		NetAddr: confignet.NetAddr{
+	defaultGRPCSettings := configgrpc.ServerConfig{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 
@@ -180,26 +180,16 @@ func TestCreateLogReceiver(t *testing.T) {
 			name: "invalid_grpc_address",
 			cfg: &Config{
 				Protocols: Protocols{
-					GRPC: configgrpc.GRPCServerSettings{
-						NetAddr: confignet.NetAddr{
+					GRPC: configgrpc.ServerConfig{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  "327.0.0.1:1122",
-							Transport: "tcp",
+							Transport: confignet.TransportTypeTCP,
 						},
 					},
 				},
 			},
 			wantStartErr: true,
 			sink:         new(consumertest.LogsSink),
-		},
-		{
-			name: "no_next_consumer",
-			cfg: &Config{
-				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-				},
-			},
-			wantErr: true,
-			sink:    nil,
 		},
 	}
 	ctx := context.Background()

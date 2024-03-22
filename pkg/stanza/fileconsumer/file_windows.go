@@ -9,5 +9,6 @@ import (
 	"context"
 )
 
-func (m *Manager) preConsume(ctx context.Context) {
+// Noop on windows because we close files immediately after reading.
+func (m *Manager) readLostFiles(ctx context.Context) {
 }

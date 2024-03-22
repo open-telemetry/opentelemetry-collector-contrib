@@ -155,6 +155,59 @@ func TestConsumeTraces(t *testing.T) {
 	assert.Nil(t, res)
 }
 
+// This test validates that exporter is can concurrently change the endpoints while consuming traces.
+func TestConsumeTraces_ConcurrentResolverChange(t *testing.T) {
+	consumeStarted := make(chan struct{})
+	consumeDone := make(chan struct{})
+
+	// imitate a slow exporter
+	te := &mockTracesExporter{Component: mockComponent{}}
+	te.ConsumeTracesFn = func(ctx context.Context, td ptrace.Traces) error {
+		close(consumeStarted)
+		time.Sleep(50 * time.Millisecond)
+		return te.consumeErr
+	}
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+		return te, nil
+	}
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+	assert.Equal(t, p.routingKey, traceIDRouting)
+
+	endpoints := []string{"endpoint-1"}
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(ctx context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	go func() {
+		assert.NoError(t, p.ConsumeTraces(context.Background(), simpleTraces()))
+		close(consumeDone)
+	}()
+
+	// update endpoint while consuming traces
+	<-consumeStarted
+	endpoints = []string{"endpoint-2"}
+	endpoint, err := lb.res.resolve(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, endpoints, endpoint)
+	<-consumeDone
+}
+
 func TestConsumeTracesServiceBased(t *testing.T) {
 	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
@@ -465,19 +518,17 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 
 	counter1 := &atomic.Int64{}
 	counter2 := &atomic.Int64{}
-	defaultExporters := map[string]component.Component{
-		"127.0.0.1:4317": newMockTracesExporter(func(ctx context.Context, td ptrace.Traces) error {
+	defaultExporters := map[string]*wrappedExporter{
+		"127.0.0.1:4317": newWrappedExporter(newMockTracesExporter(func(ctx context.Context, td ptrace.Traces) error {
 			counter1.Add(1)
 			// simulate an unreachable backend
 			time.Sleep(10 * time.Second)
 			return nil
-		},
-		),
-		"127.0.0.2:4317": newMockTracesExporter(func(ctx context.Context, td ptrace.Traces) error {
+		})),
+		"127.0.0.2:4317": newWrappedExporter(newMockTracesExporter(func(ctx context.Context, td ptrace.Traces) error {
 			counter2.Add(1)
 			return nil
-		},
-		),
+		})),
 	}
 
 	// test
@@ -532,6 +583,89 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	mu.Unlock()
 	require.Greater(t, counter1.Load(), int64(0))
 	require.Greater(t, counter2.Load(), int64(0))
+}
+
+func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
+	sink := new(consumertest.TracesSink)
+	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+		return newMockTracesExporter(sink.ConsumeTraces), nil
+	}
+
+	endpoints := []string{}
+	for i := 0; i < endpointsCount; i++ {
+		endpoints = append(endpoints, fmt.Sprintf("endpoint-%d", i))
+	}
+
+	config := &Config{
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{Hostnames: endpoints},
+		},
+	}
+
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), config, componentFactory)
+	require.NotNil(b, lb)
+	require.NoError(b, err)
+
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), config)
+	require.NotNil(b, p)
+	require.NoError(b, err)
+
+	p.loadBalancer = lb
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(b, err)
+
+	trace1 := ptrace.NewTraces()
+	trace2 := ptrace.NewTraces()
+	for i := 0; i < endpointsCount; i++ {
+		for j := 0; j < tracesCount/endpointsCount; j++ {
+			appendSimpleTraceWithID(trace2.ResourceSpans().AppendEmpty(), [16]byte{1, 2, 6, byte(i)})
+		}
+	}
+	td := mergeTraces(trace1, trace2)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		err = p.ConsumeTraces(context.Background(), td)
+		require.NoError(b, err)
+	}
+
+	b.StopTimer()
+	err = p.Shutdown(context.Background())
+	require.NoError(b, err)
+}
+
+func BenchmarkConsumeTraces_1E100T(b *testing.B) {
+	benchConsumeTraces(b, 1, 100)
+}
+
+func BenchmarkConsumeTraces_1E1000T(b *testing.B) {
+	benchConsumeTraces(b, 1, 1000)
+}
+
+func BenchmarkConsumeTraces_5E100T(b *testing.B) {
+	benchConsumeTraces(b, 5, 100)
+}
+
+func BenchmarkConsumeTraces_5E500T(b *testing.B) {
+	benchConsumeTraces(b, 5, 500)
+}
+
+func BenchmarkConsumeTraces_5E1000T(b *testing.B) {
+	benchConsumeTraces(b, 5, 1000)
+}
+
+func BenchmarkConsumeTraces_10E100T(b *testing.B) {
+	benchConsumeTraces(b, 10, 100)
+}
+
+func BenchmarkConsumeTraces_10E500T(b *testing.B) {
+	benchConsumeTraces(b, 10, 500)
+}
+
+func BenchmarkConsumeTraces_10E1000T(b *testing.B) {
+	benchConsumeTraces(b, 10, 1000)
 }
 
 func randomTraces() ptrace.Traces {
@@ -605,6 +739,7 @@ func serviceBasedRoutingConfig() *Config {
 type mockTracesExporter struct {
 	component.Component
 	ConsumeTracesFn func(ctx context.Context, td ptrace.Traces) error
+	consumeErr      error
 }
 
 func newMockTracesExporter(consumeTracesFn func(ctx context.Context, td ptrace.Traces) error) exporter.Traces {
@@ -615,12 +750,12 @@ func newMockTracesExporter(consumeTracesFn func(ctx context.Context, td ptrace.T
 }
 
 func newNopMockTracesExporter() exporter.Traces {
-	return &mockTracesExporter{
-		Component: mockComponent{},
-		ConsumeTracesFn: func(ctx context.Context, td ptrace.Traces) error {
-			return nil
-		},
-	}
+	return &mockTracesExporter{Component: mockComponent{}}
+}
+
+func (e *mockTracesExporter) Shutdown(context.Context) error {
+	e.consumeErr = errors.New("exporter is shut down")
+	return nil
 }
 
 func (e *mockTracesExporter) Capabilities() consumer.Capabilities {
@@ -629,7 +764,7 @@ func (e *mockTracesExporter) Capabilities() consumer.Capabilities {
 
 func (e *mockTracesExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	if e.ConsumeTracesFn == nil {
-		return nil
+		return e.consumeErr
 	}
 	return e.ConsumeTracesFn(ctx, td)
 }

@@ -31,17 +31,17 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	scs := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	scs := scraperhelper.NewDefaultControllerConfig()
 	scs.CollectionInterval = 10 * time.Second
 	return &Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddrConfig: confignet.TCPAddrConfig{
 			Endpoint: defaultEndpoint,
 		},
-		TLSClientSetting: configtls.TLSClientSetting{
+		ClientConfig: configtls.ClientConfig{
 			Insecure: true,
 		},
-		ScraperControllerSettings: scs,
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		ControllerConfig:     scs,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -62,5 +62,5 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&c.ScraperControllerSettings, set, consumer, scraperhelper.AddScraper(scraper))
+	return scraperhelper.NewScraperControllerReceiver(&c.ControllerConfig, set, consumer, scraperhelper.AddScraper(scraper))
 }

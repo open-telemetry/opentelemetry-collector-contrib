@@ -119,6 +119,7 @@ process:
   mute_process_exe_error: <true|false>
   mute_process_io_error: <true|false>
   mute_process_user_error: <true|false>
+  mute_process_cgroup_error: <true|false>
   scrape_process_delay: <time>
 ```
 
@@ -191,3 +192,18 @@ Currently, the hostmetrics receiver does not set any Resource attributes on the 
 export OTEL_RESOURCE_ATTRIBUTES="service.name=<the name of your service>,service.namespace=<the namespace of your service>,service.instance.id=<uuid of the instance>"
 ```
 
+## Feature Gates
+
+See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
+
+### `receiver.hostmetrics.normalizeProcessCPUUtilization`
+
+When enabled, normalizes the `process.cpu.utilization` metric onto the interval [0-1] by dividing the value by the number of logical processors. With this feature gate disabled, the value of the `process.cpu.utilization` metric may exceed 1.
+
+For example, if you have 4 logical cores on your system, and a process is occupying 2 logical cores for an entire scrape interval, with this feature gate disabled a `process.cpu.utilization` metric will be emitted with a value of 2.  if this feature gate is enabled in the same scenario, the value of the emitted metric will be 0.5.
+
+The schedule for this feature gate is:
+- Introduced in v0.97.0 (March 2024) as `alpha` - disabled by default.
+- Moved to `beta` in v0.99.0 (April 2024) - enabled by default.
+- Moved to `stable` in v0.101.0 (May 2024) - cannot be disabled.
+- Removed three releases after `stable`.

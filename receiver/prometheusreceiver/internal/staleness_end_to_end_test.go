@@ -50,7 +50,7 @@ func TestStalenessMarkersEndToEnd(t *testing.T) {
 
 	// 1. Setup the server that sends series that intermittently appear and disappear.
 	n := &atomic.Uint64{}
-	scrapeServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	scrapeServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		// Increment the scrape count atomically per scrape.
 		i := n.Add(1)
 
@@ -81,7 +81,7 @@ jvm_memory_pool_bytes_used{pool="CodeHeap 'non-nmethods'"} %.1f`, float64(i))
 
 	// 2. Set up the Prometheus RemoteWrite endpoint.
 	prweUploads := make(chan *prompb.WriteRequest)
-	prweServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	prweServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
 		// Snappy decode the uploads.
 		payload, rerr := io.ReadAll(req.Body)
 		require.NoError(t, rerr)
@@ -146,7 +146,7 @@ service:
 		Processors: processors,
 	}
 
-	fmp := fileprovider.New()
+	fmp := fileprovider.NewWithSettings(confmap.ProviderSettings{})
 	configProvider, err := otelcol.NewConfigProvider(
 		otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{

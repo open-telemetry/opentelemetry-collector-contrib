@@ -68,7 +68,7 @@ type Config struct {
 
 	// ingest_tls needs to be set if the exporter's IngestURL is pointing to a signalfx receiver
 	// with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
-	IngestTLSSettings configtls.TLSClientSetting `mapstructure:"ingest_tls,omitempty"`
+	IngestTLSSettings configtls.ClientConfig `mapstructure:"ingest_tls,omitempty"`
 
 	// APIURL is the destination to where SignalFx metadata will be sent. This
 	// value takes precedence over the value of Realm
@@ -76,7 +76,7 @@ type Config struct {
 
 	// api_tls needs to be set if the exporter's APIURL is pointing to a httforwarder extension
 	// with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
-	APITLSSettings configtls.TLSClientSetting `mapstructure:"api_tls,omitempty"`
+	APITLSSettings configtls.ClientConfig `mapstructure:"api_tls,omitempty"`
 
 	// Whether to log datapoints dispatched to Splunk Observability Cloud
 	LogDataPoints bool `mapstructure:"log_data_points"`
@@ -112,7 +112,7 @@ type Config struct {
 
 	// ExcludeMetrics defines dpfilter.MetricFilters that will determine metrics to be
 	// excluded from sending to SignalFx backend. If translations enabled with
-	// TranslationRules options, the exclusion will be applie on translated metrics.
+	// TranslationRules options, the exclusion will be applied on translated metrics.
 	ExcludeMetrics []dpfilters.MetricFilter `mapstructure:"exclude_metrics"`
 
 	// IncludeMetrics defines dpfilter.MetricFilters to override exclusion any of metric.
@@ -134,6 +134,10 @@ type Config struct {
 	// Whether to drop  histogram bucket metrics dispatched to Splunk Observability.
 	// Default value is set to false.
 	DropHistogramBuckets bool `mapstructure:"drop_histogram_buckets"`
+
+	// Whether to send histogram metrics in OTLP format to Splunk Observability.
+	// Default value is set to false.
+	SendOTLPHistograms bool `mapstructure:"send_otlp_histograms"`
 }
 
 type DimensionClientConfig struct {

@@ -35,7 +35,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&oCfg.ScraperControllerSettings,
+		&oCfg.ControllerConfig,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scrp),

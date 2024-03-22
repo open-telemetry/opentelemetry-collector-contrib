@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: duration,
 					InitialDelay:       time.Second,
 				},
@@ -58,18 +58,18 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "tls"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: duration,
 					InitialDelay:       time.Second,
 				},
-				TCPAddr: confignet.TCPAddr{
+				TCPAddrConfig: confignet.TCPAddrConfig{
 					Endpoint: "1.2.3.4:5555",
 				},
 				ClientConfig: kube.ClientConfig{
 					APIConfig: k8sconfig.APIConfig{
 						AuthType: "tls",
 					},
-					TLSSetting: configtls.TLSSetting{
+					Config: configtls.Config{
 						CAFile:   "/path/to/ca.crt",
 						CertFile: "/path/to/apiserver.crt",
 						KeyFile:  "/path/to/apiserver.key",
@@ -87,7 +87,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "sa"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: duration,
 					InitialDelay:       time.Second,
 				},
@@ -108,7 +108,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "metadata"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: duration,
 					InitialDelay:       time.Second,
 				},
@@ -132,7 +132,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "metric_groups"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 20 * time.Second,
 					InitialDelay:       time.Second,
 				},
@@ -152,7 +152,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "metadata_with_k8s_api"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: duration,
 					InitialDelay:       time.Second,
 				},
@@ -256,7 +256,7 @@ func TestGetReceiverOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 10 * time.Second,
 					InitialDelay:       time.Second,
 				},

@@ -21,7 +21,7 @@ import (
 
 func TestPerformanceProfilerExtensionUsage(t *testing.T) {
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		BlockProfileFraction: 3,
@@ -57,7 +57,7 @@ func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
 	defer ln.Close()
 
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: endpoint,
 		},
 	}
@@ -71,7 +71,7 @@ func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
 
 func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
@@ -90,7 +90,7 @@ func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 
 func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
@@ -107,7 +107,7 @@ func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
 
 func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
@@ -128,7 +128,7 @@ func TestPerformanceProfilerLifecycleWithFile(t *testing.T) {
 	require.NoError(t, tmpFile.Close())
 
 	config := Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddr: confignet.TCPAddrConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		SaveToFile: tmpFile.Name(),

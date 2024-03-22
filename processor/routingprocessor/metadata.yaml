@@ -1,4 +1,5 @@
 type: routing
+scope_name: otelcol/routing
 
 status:
   class: processor
