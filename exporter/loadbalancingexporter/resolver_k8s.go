@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -48,6 +49,9 @@ type k8sResolver struct {
 	epsListWatcher cache.ListerWatcher
 	endpointsStore *sync.Map
 
+	resInterval time.Duration
+	resTimeout  time.Duration
+
 	endpoints         []string
 	onChangeCallbacks []func([]string)
 
@@ -60,7 +64,7 @@ type k8sResolver struct {
 func newK8sResolver(clt kubernetes.Interface,
 	logger *zap.Logger,
 	service string,
-	ports []int32) (*k8sResolver, error) {
+	ports []int32, interval time.Duration, timeout time.Duration) (*k8sResolver, error) {
 
 	if len(service) == 0 {
 		return nil, errNoSvc
