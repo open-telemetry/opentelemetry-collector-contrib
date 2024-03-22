@@ -67,7 +67,7 @@ func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
 }
 
 func (m *marshaller) marshalTraces(td ptrace.Traces) ([]byte, error) {
-	if m.metricsMarshaler == nil {
+	if m.tracesMarshaler == nil {
 		return nil, errors.New("traces are not supported by encoding")
 	}
 	buf, err := m.tracesMarshaler.MarshalTraces(td)
@@ -91,7 +91,7 @@ func (m *marshaller) marshalMetrics(md pmetric.Metrics) ([]byte, error) {
 }
 
 func (m *marshaller) marshalLogs(ld plog.Logs) ([]byte, error) {
-	if m.metricsMarshaler == nil {
+	if m.logsMarshaler == nil {
 		return nil, errors.New("logs are not supported by encoding")
 	}
 	buf, err := m.logsMarshaler.MarshalLogs(ld)
