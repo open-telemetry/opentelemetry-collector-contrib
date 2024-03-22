@@ -211,7 +211,7 @@ service:
       exporters: [...]
 ```
 
-Assume there are no log files matching `/tmp/*.log` when the above collector pipeline starts executing. In this
+Assume there are no log files matching `/tmp/*.log` when the previous collector pipeline starts executing. In this
 scenario, the `/tmp/otelcol/file_storage/filelogreceiver` directory contains one file:
 
 ```
