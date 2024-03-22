@@ -4,7 +4,6 @@
 package logs
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
