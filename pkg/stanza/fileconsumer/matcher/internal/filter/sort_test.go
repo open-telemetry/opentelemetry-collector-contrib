@@ -287,7 +287,7 @@ func TestExcludeOlderThanFilter(t *testing.T) {
 		},
 		"file_not_present": {
 			files:            []string{"a.log", "b.log"},
-			fileMTimes:       []time.Time{twoHoursAgo, time.Time{}},
+			fileMTimes:       []time.Time{twoHoursAgo, {}},
 			excludeOlderThan: 3 * time.Hour,
 
 			expect:      []string{"a.log"},
