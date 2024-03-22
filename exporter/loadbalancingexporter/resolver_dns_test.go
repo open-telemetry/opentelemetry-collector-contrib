@@ -107,6 +107,7 @@ func TestCantResolve(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
+	assert.NoError(t, res.shutdown(context.Background()))
 }
 
 func TestOnChange(t *testing.T) {
