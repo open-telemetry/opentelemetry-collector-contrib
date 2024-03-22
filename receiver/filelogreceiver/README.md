@@ -179,7 +179,7 @@ Exception in thread 2 "main" java.lang.NullPointerException
 
 ## Offset tracking
 
-`storage` setting allows to define the proper storage extension to be used for storing file offsets.
+The `storage` setting allows you to define the proper storage extension for storing file offsets.
 While the storage parameter can ensure that log files are consumed accurately, it is possible that
 logs are dropped while moving downstream through other components in the collector.
 For additional resiliency, see [Fault tolerant log collection example](../../examples/fault-tolerant-logs-collection/README.md)
