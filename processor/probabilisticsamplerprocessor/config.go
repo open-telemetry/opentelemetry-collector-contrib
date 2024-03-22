@@ -39,7 +39,7 @@ type Config struct {
 	// that.
 	HashSeed uint32 `mapstructure:"hash_seed"`
 
-	// SamplerMode selects the sampling behavior. Supported values:
+	// Mode selects the sampling behavior. Supported values:
 	//
 	// - "hash_seed": the legacy behavior of this processor.
 	//   Using an FNV hash combined with the HashSeed value, this
@@ -64,7 +64,7 @@ type Config struct {
 	// - "proportional": Using an OTel-specified consistent sampling
 	//   mechanism, this sampler reduces the effective sampling
 	//   probability of each span by `SamplingProbability`.
-	SamplerMode SamplerMode `mapstructure:"mode"`
+	Mode SamplerMode `mapstructure:"mode"`
 
 	// FailClosed indicates to not sample data (the processor will
 	// fail "closed") in case of error, such as failure to parse

@@ -108,6 +108,61 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
+func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {
+	tid := s.TraceID()
+	// Note: this admits empty TraceIDs.
+	rnd := newTraceIDHashingMethod(randomnessFromBytes(tid[:], th.hashSeed))
+	tsc := &tracestateCarrier{
+		span: s,
+	}
+
+	var err error
+	tsc.W3CTraceState, err = sampling.NewW3CTraceState(s.TraceState().AsRaw())
+	if err != nil {
+		return rnd, nil, err
+	}
+
+	// If the tracestate contains a proper R-value or T-value, we
+	// have to leave it alone.  The user should not be using this
+	// sampler mode if they are using specified forms of consistent
+	// sampling in OTel.
+	if _, has := tsc.explicitRandomness(); has {
+		err = ErrRandomnessInUse
+	} else if _, has := tsc.threshold(); has {
+		err = ErrThresholdInUse
+	} else {
+		// When no sampling information is present, add a
+		// Randomness value.
+		tsc.setExplicitRandomness(rnd)
+	}
+	return rnd, tsc, err
+}
+
+func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {
+	rawts := s.TraceState().AsRaw()
+	rnd := newMissingRandomnessMethod()
+	tsc := &tracestateCarrier{
+		span: s,
+	}
+
+	// Parse the arriving TraceState.
+	var err error
+	tsc.W3CTraceState, err = sampling.NewW3CTraceState(rawts)
+	if err != nil {
+		tsc = nil
+	} else if rv, has := tsc.W3CTraceState.OTelValue().RValueRandomness(); has {
+		// When the tracestate is OK and has r-value, use it.
+		rnd = newSamplingRandomnessMethod(rv)
+	} else if s.TraceID().IsEmpty() {
+		// If the TraceID() is all zeros, which W3C calls an invalid TraceID.
+		// rnd continues to be missing.
+	} else {
+		rnd = newTraceIDW3CSpecMethod(sampling.TraceIDToRandomness(s.TraceID()))
+	}
+
+	return rnd, tsc, err
+}
+
 func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		rs.ScopeSpans().RemoveIf(func(ils ptrace.ScopeSpans) bool {

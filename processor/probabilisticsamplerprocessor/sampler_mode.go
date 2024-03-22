@@ -224,74 +224,6 @@ func isMissing(rnd randomnessNamer) bool {
 	return ok
 }
 
-// randomnessFromLogRecord (hashingSampler) uses a hash function over
-// the TraceID
-func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
-	rnd := newMissingRandomnessMethod()
-	lrc, err := newLogRecordCarrier(l)
-
-	if th.logsTraceIDEnabled {
-		value := l.TraceID()
-		// Note: this admits empty TraceIDs.
-		rnd = newTraceIDHashingMethod(randomnessFromBytes(value[:], th.hashSeed))
-	}
-
-	if isMissing(rnd) && th.logsRandomnessSourceAttribute != "" {
-		if value, ok := l.Attributes().Get(th.logsRandomnessSourceAttribute); ok {
-			// Note: this admits zero-byte values.
-			rnd = newAttributeHashingMethod(
-				th.logsRandomnessSourceAttribute,
-				randomnessFromBytes(getBytesFromValue(value), th.hashSeed),
-			)
-		}
-	}
-
-	if err != nil {
-		// The sampling.randomness or sampling.threshold attributes
-		// had a parse error, in this case.
-		lrc = nil
-	} else if _, hasRnd := lrc.explicitRandomness(); hasRnd {
-		// If the log record contains a randomness value, do not set.
-		err = ErrRandomnessInUse
-	} else if _, hasTh := lrc.threshold(); hasTh {
-		// If the log record contains a threshold value, do not set.
-		err = ErrThresholdInUse
-	} else if !isMissing(rnd) {
-		// When no sampling information is already present and we have
-		// calculated new randomness, add it to the record.
-		lrc.setExplicitRandomness(rnd)
-	}
-
-	return rnd, lrc, err
-}
-
-func (ctc *consistentTracestateCommon) randomnessFromLogRecord(l plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
-	lrc, err := newLogRecordCarrier(l)
-	rnd := newMissingRandomnessMethod()
-
-	if err != nil {
-		// Parse error in sampling.randomness or sampling.thresholdnil
-		lrc = nil
-	} else if rv, hasRnd := lrc.explicitRandomness(); hasRnd {
-		rnd = rv
-	} else if tid := l.TraceID(); !tid.IsEmpty() {
-		rnd = newTraceIDW3CSpecMethod(sampling.TraceIDToRandomness(tid))
-	} else {
-		// The case of no TraceID remains.  Use the configured attribute.
-
-		if ctc.logsRandomnessSourceAttribute == "" {
-			// rnd continues to be missing
-		} else if value, ok := l.Attributes().Get(ctc.logsRandomnessSourceAttribute); ok {
-			rnd = newAttributeHashingMethod(
-				ctc.logsRandomnessSourceAttribute,
-				randomnessFromBytes(getBytesFromValue(value), ctc.logsRandomnessHashSeed),
-			)
-		}
-	}
-
-	return rnd, lrc, err
-}
-
 func randomnessFromBytes(b []byte, hashSeed uint32) sampling.Randomness {
 	hashed32 := computeHash(b, hashSeed)
 	hashed := uint64(hashed32 & bitMaskHashBuckets)
@@ -328,61 +260,6 @@ func randomnessFromBytes(b []byte, hashSeed uint32) sampling.Randomness {
 	// - there are only 32 actual random bits.
 	rnd, _ := sampling.UnsignedToRandomness(rnd56)
 	return rnd
-}
-
-func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {
-	tid := s.TraceID()
-	// Note: this admits empty TraceIDs.
-	rnd := newTraceIDHashingMethod(randomnessFromBytes(tid[:], th.hashSeed))
-	tsc := &tracestateCarrier{
-		span: s,
-	}
-
-	var err error
-	tsc.W3CTraceState, err = sampling.NewW3CTraceState(s.TraceState().AsRaw())
-	if err != nil {
-		return rnd, nil, err
-	}
-
-	// If the tracestate contains a proper R-value or T-value, we
-	// have to leave it alone.  The user should not be using this
-	// sampler mode if they are using specified forms of consistent
-	// sampling in OTel.
-	if _, has := tsc.explicitRandomness(); has {
-		err = ErrRandomnessInUse
-	} else if _, has := tsc.threshold(); has {
-		err = ErrThresholdInUse
-	} else {
-		// When no sampling information is present, add a
-		// Randomness value.
-		tsc.setExplicitRandomness(rnd)
-	}
-	return rnd, tsc, err
-}
-
-func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {
-	rawts := s.TraceState().AsRaw()
-	rnd := newMissingRandomnessMethod()
-	tsc := &tracestateCarrier{
-		span: s,
-	}
-
-	// Parse the arriving TraceState.
-	var err error
-	tsc.W3CTraceState, err = sampling.NewW3CTraceState(rawts)
-	if err != nil {
-		tsc = nil
-	} else if rv, has := tsc.W3CTraceState.OTelValue().RValueRandomness(); has {
-		// When the tracestate is OK and has r-value, use it.
-		rnd = newSamplingRandomnessMethod(rv)
-	} else if s.TraceID().IsEmpty() {
-		// If the TraceID() is all zeros, which W3C calls an invalid TraceID.
-		// rnd continues to be missing.
-	} else {
-		rnd = newTraceIDW3CSpecMethod(sampling.TraceIDToRandomness(s.TraceID()))
-	}
-
-	return rnd, tsc, err
 }
 
 func consistencyCheck(rnd randomnessNamer, carrier samplingCarrier) error {

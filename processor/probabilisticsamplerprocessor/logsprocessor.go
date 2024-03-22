@@ -108,6 +108,74 @@ func (rc *recordCarrier) reserialize() error {
 	return nil
 }
 
+// randomnessFromLogRecord (hashingSampler) uses a hash function over
+// the TraceID
+func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
+	rnd := newMissingRandomnessMethod()
+	lrc, err := newLogRecordCarrier(l)
+
+	if th.logsTraceIDEnabled {
+		value := l.TraceID()
+		// Note: this admits empty TraceIDs.
+		rnd = newTraceIDHashingMethod(randomnessFromBytes(value[:], th.hashSeed))
+	}
+
+	if isMissing(rnd) && th.logsRandomnessSourceAttribute != "" {
+		if value, ok := l.Attributes().Get(th.logsRandomnessSourceAttribute); ok {
+			// Note: this admits zero-byte values.
+			rnd = newAttributeHashingMethod(
+				th.logsRandomnessSourceAttribute,
+				randomnessFromBytes(getBytesFromValue(value), th.hashSeed),
+			)
+		}
+	}
+
+	if err != nil {
+		// The sampling.randomness or sampling.threshold attributes
+		// had a parse error, in this case.
+		lrc = nil
+	} else if _, hasRnd := lrc.explicitRandomness(); hasRnd {
+		// If the log record contains a randomness value, do not set.
+		err = ErrRandomnessInUse
+	} else if _, hasTh := lrc.threshold(); hasTh {
+		// If the log record contains a threshold value, do not set.
+		err = ErrThresholdInUse
+	} else if !isMissing(rnd) {
+		// When no sampling information is already present and we have
+		// calculated new randomness, add it to the record.
+		lrc.setExplicitRandomness(rnd)
+	}
+
+	return rnd, lrc, err
+}
+
+func (ctc *consistentTracestateCommon) randomnessFromLogRecord(l plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
+	lrc, err := newLogRecordCarrier(l)
+	rnd := newMissingRandomnessMethod()
+
+	if err != nil {
+		// Parse error in sampling.randomness or sampling.thresholdnil
+		lrc = nil
+	} else if rv, hasRnd := lrc.explicitRandomness(); hasRnd {
+		rnd = rv
+	} else if tid := l.TraceID(); !tid.IsEmpty() {
+		rnd = newTraceIDW3CSpecMethod(sampling.TraceIDToRandomness(tid))
+	} else {
+		// The case of no TraceID remains.  Use the configured attribute.
+
+		if ctc.logsRandomnessSourceAttribute == "" {
+			// rnd continues to be missing
+		} else if value, ok := l.Attributes().Get(ctc.logsRandomnessSourceAttribute); ok {
+			rnd = newAttributeHashingMethod(
+				ctc.logsRandomnessSourceAttribute,
+				randomnessFromBytes(getBytesFromValue(value), ctc.logsRandomnessHashSeed),
+			)
+		}
+	}
+
+	return rnd, lrc, err
+}
+
 // newLogsProcessor returns a processor.LogsProcessor that will perform head sampling according to the given
 // configuration.
 func newLogsProcessor(ctx context.Context, set processor.CreateSettings, nextConsumer consumer.Logs, cfg *Config) (processor.Logs, error) {
