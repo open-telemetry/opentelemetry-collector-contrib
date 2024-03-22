@@ -19,12 +19,13 @@ if ack fails.
 ```yaml
 extensions:
   ack:
-    storage: 
+    storage:
+    max_number_of_partition: 1000000
+    max_number_of_pending_acks_per_partition: 1000000
 
 receivers:
   splunk_hec:
     ack_extension: ack
-
 
 service:
   extensions: [ack]

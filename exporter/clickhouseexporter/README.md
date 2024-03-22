@@ -343,6 +343,14 @@ service:
       exporters: [ clickhouse ]
 ```
 
-## Developer tips
+## Contributing
 
-- Make sure integration tests pass after any change of sql
+Before contributing, review the contribution guidelines in [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md).
+
+#### Integration tests
+
+Integration tests can be run with the following command:
+```sh
+go test -tags integration -run=TestIntegration
+```
+*Note: Make sure integration tests pass after making changes to SQL.*

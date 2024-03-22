@@ -13,7 +13,7 @@ var (
 )
 
 const (
-	ExtensionStability = component.StabilityLevelDevelopment
+	ExtensionStability = component.StabilityLevelAlpha
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {

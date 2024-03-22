@@ -27,6 +27,10 @@ func TestIntegration(t *testing.T) {
 		image string
 	}{
 		{
+			name:  "test clickhouse 24-alpine",
+			image: "clickhouse/clickhouse-server:24-alpine",
+		},
+		{
 			name:  "test clickhouse 23-alpine",
 			image: "clickhouse/clickhouse-server:23-alpine",
 		},

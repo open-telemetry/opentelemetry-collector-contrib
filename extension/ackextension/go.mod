@@ -3,11 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackex
 go 1.21
 
 require (
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.1-0.20240315172937-3b5aee0c7a16
 	go.opentelemetry.io/collector/extension v0.96.1-0.20240315172937-3b5aee0c7a16
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
+	go.uber.org/goleak v1.3.0
 )
 
 require (
