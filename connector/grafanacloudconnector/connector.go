@@ -8,10 +8,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
 
@@ -32,16 +34,47 @@ type connectorImp struct {
 
 	metricsConsumer consumer.Metrics
 	hostMetrics     *hostMetrics
+
+	metricHostCount      metric.Int64UpDownCounter
+	metricFlushCount     metric.Int64Counter
+	metricDatapointCount metric.Int64Counter
 }
 
-func newConnector(logger *zap.Logger, config component.Config) *connectorImp {
+func newConnector(logger *zap.Logger, set component.TelemetrySettings, config component.Config) (*connectorImp, error) {
+	mHostCount, err := metadata.Meter(set).Int64UpDownCounter(
+		"grafanacloud_host_count",
+		metric.WithDescription("Number of unique hosts since last metrics flush"),
+		metric.WithUnit("1"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	mFlushCount, err := metadata.Meter(set).Int64Counter(
+		"grafanacloud_flush_count",
+		metric.WithDescription("Number of metrics flushes"),
+		metric.WithUnit("1"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	mDatapointCount, err := metadata.Meter(set).Int64Counter(
+		"grafanacloud_datapoint_count",
+		metric.WithDescription("Number of datapoints sent to Grafana Cloud"),
+		metric.WithUnit("1"),
+	)
+
 	cfg := config.(*Config)
 	return &connectorImp{
-		config:      *cfg,
-		logger:      logger,
-		done:        make(chan struct{}),
-		hostMetrics: newHostMetrics(),
-	}
+		config:               *cfg,
+		logger:               logger,
+		done:                 make(chan struct{}),
+		hostMetrics:          newHostMetrics(),
+		metricHostCount:      mHostCount,
+		metricFlushCount:     mFlushCount,
+		metricDatapointCount: mDatapointCount,
+	}, nil
 }
 
 // Capabilities implements connector.Traces.
@@ -58,7 +91,10 @@ func (c *connectorImp) ConsumeTraces(_ context.Context, td ptrace.Traces) error 
 
 		for _, attrName := range c.config.HostIdentifiers {
 			if val, ok := mapping[attrName]; ok {
-				c.hostMetrics.add(val.(string))
+				if v, ok := val.(string); ok {
+					c.hostMetrics.add(v)
+					c.metricHostCount.Add(context.Background(), int64(1))
+				}
 				break
 			}
 		}
@@ -110,7 +146,10 @@ func (c *connectorImp) flush(ctx context.Context) error {
 	if count > 0 {
 		c.hostMetrics.reset()
 		c.logger.Debug("Flushing metrics", zap.Int("count", count))
+		c.metricHostCount.Add(ctx, int64(-count))
+		c.metricDatapointCount.Add(ctx, int64(metrics.DataPointCount()))
 		err = c.metricsConsumer.ConsumeMetrics(ctx, *metrics)
 	}
+	c.metricFlushCount.Add(ctx, int64(1))
 	return err
 }
