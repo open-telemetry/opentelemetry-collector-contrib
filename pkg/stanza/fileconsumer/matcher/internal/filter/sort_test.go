@@ -229,7 +229,7 @@ func TestMTimeFilter(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			var relativeResult []string
+			relativeResult := []string{}
 			for _, r := range result {
 				rel, err := filepath.Rel(tmpDir, r.value)
 				require.NoError(t, err)
