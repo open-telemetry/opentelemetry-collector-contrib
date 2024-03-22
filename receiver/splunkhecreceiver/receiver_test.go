@@ -1121,20 +1121,11 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 }
 
 func Test_splunkhecReceiver_Start(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name          string
 		getConfig     func() *Config
 		errorExpected bool
 	}{
-		{
-			name: "no_ack_extension_configured",
-			getConfig: func() *Config {
-				return createDefaultConfig().(*Config)
-			},
-			errorExpected: false,
-		},
 		{
 			name: "ack_extension_does_not_exist",
 			getConfig: func() *Config {
@@ -1143,6 +1134,13 @@ func Test_splunkhecReceiver_Start(t *testing.T) {
 				return config
 			},
 			errorExpected: true,
+		},
+		{
+			name: "no_ack_extension_configured",
+			getConfig: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+			errorExpected: false,
 		},
 	}
 
@@ -1158,9 +1156,12 @@ func Test_splunkhecReceiver_Start(t *testing.T) {
 			} else {
 				assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 			}
+
+			defer func() {
+				assert.NoError(t, r.Shutdown(context.Background()))
+			}()
 		})
 	}
-
 }
 
 func Test_splunkhecReceiver_handleAck(t *testing.T) {
@@ -1512,7 +1513,6 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-
 			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
 			assert.NoError(t, err)
 
@@ -1524,6 +1524,9 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			}}
 
 			assert.NoError(t, r.Start(context.Background(), mockHost))
+			defer func() {
+				assert.NoError(t, r.Shutdown(context.Background()))
+			}()
 			r.handleReq(w, tt.req)
 
 			resp := w.Result()

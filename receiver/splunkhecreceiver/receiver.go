@@ -201,13 +201,6 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 		return nil
 	}
 
-	var ln net.Listener
-	// set up the listener
-	ln, err := r.config.ServerConfig.ToListener()
-	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
-	}
-
 	mx := mux.NewRouter()
 	mx.NewRoute().Path(r.config.HealthPath).HandlerFunc(r.handleHealthReq)
 	mx.NewRoute().Path(r.config.HealthPath + "/1.0").HandlerFunc(r.handleHealthReq).Methods("GET")
@@ -215,6 +208,23 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 		mx.NewRoute().Path(r.config.RawPath).HandlerFunc(r.handleRawReq)
 	}
 	mx.NewRoute().HandlerFunc(r.handleReq)
+
+	// set up the ack API handler if the ack extension is present
+	if storageID := r.config.AckExtension; storageID != nil {
+		if ext, found := host.GetExtensions()[*storageID]; found {
+			r.ackExt = ext.(ackextension.AckExtension)
+			mx.NewRoute().Path(r.config.AckPath).HandlerFunc(r.handleAck)
+		} else {
+			return fmt.Errorf("specified ack extension with id '%q' could not be found", *storageID)
+		}
+	}
+
+	var ln net.Listener
+	// set up the listener
+	ln, err := r.config.ServerConfig.ToListener()
+	if err != nil {
+		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
+	}
 
 	r.server, err = r.config.ServerConfig.ToServer(host, r.settings.TelemetrySettings, mx)
 	if err != nil {
@@ -227,16 +237,6 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	r.server.WriteTimeout = defaultServerTimeout
 
 	r.shutdownWG.Add(1)
-
-	// set up the ack API handler if the ack extension is present
-	if storageID := r.config.AckExtension; storageID != nil {
-		if ext, found := host.GetExtensions()[*storageID]; found {
-			r.ackExt = ext.(ackextension.AckExtension)
-			mx.NewRoute().Path(r.config.AckPath).HandlerFunc(r.handleAck)
-		} else {
-			return fmt.Errorf("specified ack extension with id '%q' could not be found", *storageID)
-		}
-	}
 
 	go func() {
 		defer r.shutdownWG.Done()
