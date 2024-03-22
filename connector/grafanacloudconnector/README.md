@@ -24,7 +24,8 @@
 
 ## Overview
 
-The Grafana Cloud Connector (grafanacloudconnector) is a connector component that can analyze telemetry in pipelines to generate usage metrics for certain Grafana Cloud products.
+The Grafana Cloud Connector (grafanacloudconnector) is a connector component that can analyze telemetry in pipelines to generate usage metrics for the following Grafana Cloud products:
+* Application Observability
 
 #### Example configuration for the component
 
@@ -34,3 +35,5 @@ connectors:
     host_identifiers: ["host.id"]
     metrics_flush_interval: 60s
 ```
+
+This connector will generate a host info metric based on the first "host_identifiers" resource attribute found on spans. The rest are skipped. Valid flush intervals are between 15s and 5m.

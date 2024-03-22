@@ -27,7 +27,7 @@ func (c Config) Validate() error {
 	}
 
 	if c.MetricsFlushInterval > 5*time.Minute || c.MetricsFlushInterval < 15*time.Second {
-		return fmt.Errorf("%q is not a valid flush interval", c.MetricsFlushInterval)
+		return fmt.Errorf("%q is not a valid flush interval between 15s and 5m", c.MetricsFlushInterval)
 	}
 
 	return nil
