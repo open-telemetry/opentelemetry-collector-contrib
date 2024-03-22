@@ -251,7 +251,7 @@ file_input.knownFiles1
 {"Fingerprint":{"first_bytes":"MzEwNzkK"},"Offset":6,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:15:54.763711-07:00","LastDataLength":0}}
 ```
 
-Take a closer look at the changes, we can infer a few things about the contents of the
+Taking a closer look at the changes, we can infer a few things about the contents of the
  `/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file:
 * The number after `file_input.knownFiles` reflects the number of log files being tracked.
 * If this number is `N`, the subsequent `N` lines contain details of each log file being tracked. Each line is JSON-formatted.
