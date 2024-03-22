@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/google/uuid"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -291,7 +292,7 @@ func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) 
 	}
 
 	// check that the channel exists
-	partitionID := req.Header.Get(splunk.HttpSplunkChannelHeader)
+	partitionID := req.Header.Get(splunk.HTTPSplunkChannelHeader)
 	if len(partitionID) <= 0 {
 		r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
 		return
@@ -335,7 +336,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	var partitionID string
 	if r.ackExt != nil {
 		// check channel header exists
-		partitionID = req.Header.Get(splunk.HttpSplunkChannelHeader)
+		partitionID = req.Header.Get(splunk.HTTPSplunkChannelHeader)
 		if len(partitionID) <= 0 {
 			r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
 			return
@@ -437,7 +438,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	var partitionID string
 	if r.ackExt != nil {
 		// check channel header exists
-		partitionID = req.Header.Get(splunk.HttpSplunkChannelHeader)
+		partitionID = req.Header.Get(splunk.HTTPSplunkChannelHeader)
 		if len(partitionID) <= 0 {
 			r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
 			return
