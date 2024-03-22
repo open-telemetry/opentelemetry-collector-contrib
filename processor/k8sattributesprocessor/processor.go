@@ -166,6 +166,12 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 				resource.Attributes().PutStr(key, val)
 			}
 		}
+		nodeUID := kp.getUIDForPodsNode(nodeName)
+		if nodeUID != "" {
+			if _, found := resource.Attributes().Get(conventions.AttributeK8SNodeUID); !found {
+				resource.Attributes().PutStr(conventions.AttributeK8SNodeUID, nodeUID)
+			}
+		}
 	}
 }
 
@@ -261,6 +267,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsNode(nodeName string) map[str
 		return nil
 	}
 	return node.Attributes
+}
+
+func (kp *kubernetesprocessor) getUIDForPodsNode(nodeName string) string {
+	node, ok := kp.kc.GetNode(nodeName)
+	if !ok {
+		return ""
+	}
+	return node.NodeUID
 }
 
 // intFromAttribute extracts int value from an attribute stored as string or int

@@ -44,7 +44,7 @@ func (r *metricsReceiver) Start(ctx context.Context, host component.Host) error 
 	carbonCfg := &carbonreceiver.Config{
 		AddrConfig: confignet.AddrConfig{
 			Endpoint:  r.cfg.Endpoint,
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 		TCPIdleTimeout: r.cfg.TCPIdleTimeout,
 		Parser: &protocol.Config{

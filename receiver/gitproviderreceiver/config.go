@@ -21,9 +21,9 @@ const (
 
 // Config that is exposed to this github receiver through the OTEL config.yaml
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Scrapers                                map[string]internal.Config `mapstructure:"scrapers"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	Scrapers                       map[string]internal.Config `mapstructure:"scrapers"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 }
 
 var _ component.Config = (*Config)(nil)

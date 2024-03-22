@@ -8,7 +8,6 @@ import (
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
@@ -18,9 +17,6 @@ import (
 func grpcExporterOptions(cfg *Config) ([]otlptracegrpc.Option, error) {
 	grpcExpOpt := []otlptracegrpc.Option{
 		otlptracegrpc.WithEndpoint(cfg.Endpoint()),
-		otlptracegrpc.WithDialOption(
-			grpc.WithBlock(),
-		),
 	}
 
 	if cfg.Insecure {

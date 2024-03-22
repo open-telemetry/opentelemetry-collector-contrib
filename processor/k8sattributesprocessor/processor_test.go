@@ -880,6 +880,72 @@ func TestAddNodeLabels(t *testing.T) {
 	})
 }
 
+func TestAddNodeUID(t *testing.T) {
+	nodeUID := "asdfasdf-asdfasdf-asdf"
+	m := newMultiTest(
+		t,
+		func() component.Config {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Extract.Metadata = []string{"k8s.node.uid"}
+			cfg.Extract.Labels = []FieldExtractConfig{}
+			return cfg
+		}(),
+		nil,
+	)
+
+	podIP := "1.1.1.1"
+	nodes := map[string]map[string]string{
+		"node-1": {
+			"nodelabel": "1",
+		},
+	}
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.podAssociations = []kube.Association{
+			{
+				Sources: []kube.AssociationSource{
+					{
+						From: "connection",
+					},
+				},
+			},
+		}
+	})
+
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		pi := kube.PodIdentifier{
+			kube.PodIdentifierAttributeFromConnection(podIP),
+		}
+		kp.kc.(*fakeClient).Pods[pi] = &kube.Pod{Name: "test-2323", NodeName: "node-1"}
+		kp.kc.(*fakeClient).Nodes = make(map[string]*kube.Node)
+		for ns, labels := range nodes {
+			kp.kc.(*fakeClient).Nodes[ns] = &kube.Node{Attributes: labels, NodeUID: nodeUID}
+		}
+	})
+
+	ctx := client.NewContext(context.Background(), client.Info{
+		Addr: &net.IPAddr{
+			IP: net.ParseIP(podIP),
+		},
+	})
+	m.testConsume(
+		ctx,
+		generateTraces(),
+		generateMetrics(),
+		generateLogs(),
+		func(err error) {
+			assert.NoError(t, err)
+		})
+
+	m.assertBatchesLen(1)
+	m.assertResourceObjectLen(0)
+	m.assertResource(0, func(res pcommon.Resource) {
+		assert.Equal(t, 3, res.Attributes().Len())
+		assertResourceHasStringAttribute(t, res, "k8s.pod.ip", podIP)
+		assertResourceHasStringAttribute(t, res, "k8s.node.uid", nodeUID)
+		assertResourceHasStringAttribute(t, res, "nodelabel", "1")
+	})
+}
+
 func TestProcessorAddContainerAttributes(t *testing.T) {
 	tests := []struct {
 		name         string

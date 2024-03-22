@@ -36,7 +36,7 @@ func createDefaultConfig() component.Config {
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: localhostgate.EndpointForPort(defaultPort),
 			},
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: configtls.ClientConfig{
 				Insecure: false,
 			},
 		},
