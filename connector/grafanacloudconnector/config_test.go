@@ -71,7 +71,7 @@ func TestValidate(t *testing.T) {
 				HostIdentifiers:      []string{"host.id"},
 				MetricsFlushInterval: time.Hour,
 			},
-			errMsg: "\"1h0m0s\" is not a valid flush interval",
+			errMsg: "\"1h0m0s\" is not a valid flush interval between 15s and 5m",
 		},
 	}
 
