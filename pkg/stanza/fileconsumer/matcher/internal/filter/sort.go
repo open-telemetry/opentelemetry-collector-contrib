@@ -174,3 +174,32 @@ func (m mtimeSortOption) apply(items []*item) ([]*item, error) {
 func SortMtime() Option {
 	return mtimeSortOption{}
 }
+
+type excludeOlderThanOption struct {
+	minMtime time.Time
+}
+
+func (eot excludeOlderThanOption) apply(items []*item) ([]*item, error) {
+	filteredItems := make([]*item, 0, len(items))
+	var errs error
+	for _, item := range items {
+		path := item.value
+		fi, err := os.Stat(path)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+
+		if !fi.ModTime().Before(eot.minMtime) {
+			filteredItems = append(filteredItems, item)
+		}
+	}
+
+	return filteredItems, errs
+}
+
+// ExcludeOlderThan keeps only those files whose modification time is
+// equal to or newer than the specified minMTime.
+func ExcludeOlderThan(minMtime time.Time) Option {
+	return excludeOlderThanOption{minMtime: minMtime}
+}
