@@ -229,7 +229,102 @@ func TestMTimeFilter(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			relativeResult := []string{}
+			var relativeResult []string
+			for _, r := range result {
+				rel, err := filepath.Rel(tmpDir, r.value)
+				require.NoError(t, err)
+				relativeResult = append(relativeResult, rel)
+			}
+
+			require.Equal(t, tc.expect, relativeResult)
+		})
+	}
+}
+
+func TestExcludeOlderThanFilter(t *testing.T) {
+	epoch := time.Unix(0, 0)
+	cases := map[string]struct {
+		files            []string
+		fileMTimes       []time.Time
+		excludeOlderThan time.Time
+
+		expect      []string
+		expectedErr string
+	}{
+		"no_files": {
+			files:            []string{},
+			fileMTimes:       []time.Time{},
+			excludeOlderThan: epoch.Add(-2 * time.Hour),
+
+			expect:      []string{},
+			expectedErr: "",
+		},
+		"exclude_no_files": {
+			files:            []string{"a.log", "b.log"},
+			fileMTimes:       []time.Time{epoch, epoch},
+			excludeOlderThan: epoch.Add(-2 * time.Hour),
+
+			expect:      []string{"a.log", "b.log"},
+			expectedErr: "",
+		},
+		"exclude_some_files": {
+			files:            []string{"a.log", "b.log"},
+			fileMTimes:       []time.Time{epoch, epoch.Add(-3 * time.Hour)},
+			excludeOlderThan: epoch.Add(-2 * time.Hour),
+
+			expect:      []string{"a.log"},
+			expectedErr: "",
+		},
+		"exclude_all_files": {
+			files:            []string{"a.log", "b.log"},
+			fileMTimes:       []time.Time{epoch, epoch},
+			excludeOlderThan: epoch.Add(2 * time.Hour),
+
+			expect:      []string{},
+			expectedErr: "",
+		},
+		"file_not_present": {
+			files:            []string{"a.log", "b.log"},
+			fileMTimes:       []time.Time{epoch, time.Time{}},
+			excludeOlderThan: epoch.Add(-2 * time.Hour),
+
+			expect:      []string{"a.log"},
+			expectedErr: "b.log: no such file or directory",
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			var items []*item
+			// Create files with specified mtime
+			for i, file := range tc.files {
+				mtime := tc.fileMTimes[i]
+				fullPath := filepath.Join(tmpDir, file)
+
+				// Only create file if mtime is specified
+				if !mtime.IsZero() {
+					f, err := os.Create(fullPath)
+					require.NoError(t, err)
+					require.NoError(t, f.Close())
+					require.NoError(t, os.Chtimes(fullPath, epoch, mtime))
+				}
+
+				it, err := newItem(fullPath, nil)
+				require.NoError(t, err)
+
+				items = append(items, it)
+			}
+
+			f := ExcludeOlderThan(tc.excludeOlderThan)
+			result, err := f.apply(items)
+			if tc.expectedErr != "" {
+				require.ErrorContains(t, err, tc.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+
+			relativeResult := make([]string, 0, len(result))
 			for _, r := range result {
 				rel, err := filepath.Rel(tmpDir, r.value)
 				require.NoError(t, err)

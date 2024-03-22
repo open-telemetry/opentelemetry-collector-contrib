@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"time"
 
 	"go.opentelemetry.io/collector/featuregate"
 
@@ -33,8 +34,12 @@ var mtimeSortTypeFeatureGate = featuregate.GlobalRegistry().MustRegister(
 )
 
 type Criteria struct {
-	Include          []string         `mapstructure:"include,omitempty"`
-	Exclude          []string         `mapstructure:"exclude,omitempty"`
+	Include []string `mapstructure:"include,omitempty"`
+	Exclude []string `mapstructure:"exclude,omitempty"`
+
+	// ExcludeOlderThan allows excluding files whose modification time was older
+	// than the specified time.
+	ExcludeOlderThan time.Time        `mapstructure:"exclude_older_than"`
 	OrderingCriteria OrderingCriteria `mapstructure:"ordering_criteria,omitempty"`
 }
 
@@ -66,11 +71,21 @@ func New(c Criteria) (*Matcher, error) {
 		return nil, fmt.Errorf("exclude: %w", err)
 	}
 
+	matcher := &Matcher{
+		include: c.Include,
+		exclude: c.Exclude,
+	}
+
+	var filterOpts []filter.Option
+	if !c.ExcludeOlderThan.IsZero() {
+		f := filter.ExcludeOlderThan(c.ExcludeOlderThan)
+		filterOpts = append(filterOpts, f)
+
+		matcher.filterOpts = filterOpts
+	}
+
 	if len(c.OrderingCriteria.SortBy) == 0 {
-		return &Matcher{
-			include: c.Include,
-			exclude: c.Exclude,
-		}, nil
+		return matcher, nil
 	}
 
 	if c.OrderingCriteria.TopN < 0 {
@@ -94,7 +109,6 @@ func New(c Criteria) (*Matcher, error) {
 		}
 	}
 
-	var filterOpts []filter.Option
 	for _, sc := range c.OrderingCriteria.SortBy {
 		switch sc.SortType {
 		case sortTypeNumeric:
