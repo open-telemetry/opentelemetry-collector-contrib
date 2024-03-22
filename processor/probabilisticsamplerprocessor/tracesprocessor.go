@@ -9,8 +9,6 @@ import (
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -51,6 +49,15 @@ type tracestateCarrier struct {
 
 var _ samplingCarrier = &tracestateCarrier{}
 
+func newTracestateCarrier(s ptrace.Span) (samplingCarrier, error) {
+	var err error
+	tsc := &tracestateCarrier{
+		span: s,
+	}
+	tsc.W3CTraceState, err = sampling.NewW3CTraceState(s.TraceState().AsRaw())
+	return tsc, err
+}
+
 func (tc *tracestateCarrier) threshold() (sampling.Threshold, bool) {
 	return tc.W3CTraceState.OTelValue().TValueThreshold()
 }
@@ -64,12 +71,7 @@ func (tc *tracestateCarrier) explicitRandomness() (randomnessNamer, bool) {
 }
 
 func (tc *tracestateCarrier) updateThreshold(th sampling.Threshold) error {
-	tv := th.TValue()
-	if tv == "" {
-		tc.clearThreshold()
-		return nil
-	}
-	return tc.W3CTraceState.OTelValue().UpdateTValueWithSampling(th, tv)
+	return tc.W3CTraceState.OTelValue().UpdateTValueWithSampling(th)
 }
 
 func (tc *tracestateCarrier) setExplicitRandomness(rnd randomnessNamer) {
@@ -112,24 +114,20 @@ func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (randomnessNamer, sa
 	tid := s.TraceID()
 	// Note: this admits empty TraceIDs.
 	rnd := newTraceIDHashingMethod(randomnessFromBytes(tid[:], th.hashSeed))
-	tsc := &tracestateCarrier{
-		span: s,
-	}
-
-	var err error
-	tsc.W3CTraceState, err = sampling.NewW3CTraceState(s.TraceState().AsRaw())
-	if err != nil {
-		return rnd, nil, err
-	}
+	tsc, err := newTracestateCarrier(s)
 
 	// If the tracestate contains a proper R-value or T-value, we
 	// have to leave it alone.  The user should not be using this
 	// sampler mode if they are using specified forms of consistent
 	// sampling in OTel.
-	if _, has := tsc.explicitRandomness(); has {
+	if err != nil {
+		return rnd, nil, err
+	} else if _, has := tsc.explicitRandomness(); has {
 		err = ErrRandomnessInUse
+		tsc = nil
 	} else if _, has := tsc.threshold(); has {
 		err = ErrThresholdInUse
+		tsc = nil
 	} else {
 		// When no sampling information is present, add a
 		// Randomness value.
@@ -139,20 +137,13 @@ func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (randomnessNamer, sa
 }
 
 func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {
-	rawts := s.TraceState().AsRaw()
 	rnd := newMissingRandomnessMethod()
-	tsc := &tracestateCarrier{
-		span: s,
-	}
-
-	// Parse the arriving TraceState.
-	var err error
-	tsc.W3CTraceState, err = sampling.NewW3CTraceState(rawts)
+	tsc, err := newTracestateCarrier(s)
 	if err != nil {
 		tsc = nil
-	} else if rv, has := tsc.W3CTraceState.OTelValue().RValueRandomness(); has {
+	} else if rv, has := tsc.explicitRandomness(); has {
 		// When the tracestate is OK and has r-value, use it.
-		rnd = newSamplingRandomnessMethod(rv)
+		rnd = rv
 	} else if s.TraceID().IsEmpty() {
 		// If the TraceID() is all zeros, which W3C calls an invalid TraceID.
 		// rnd continues to be missing.
@@ -167,61 +158,16 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		rs.ScopeSpans().RemoveIf(func(ils ptrace.ScopeSpans) bool {
 			ils.Spans().RemoveIf(func(s ptrace.Span) bool {
-				rnd, carrier, err := tp.sampler.randomnessFromSpan(s)
-
-				if err == nil {
-					err = consistencyCheck(rnd, carrier)
-				}
-				var threshold sampling.Threshold
-				if err != nil {
-					if _, is := err.(samplerError); is {
-						tp.logger.Info(err.Error())
-					} else {
-						tp.logger.Error("trace sampler", zap.Error(err))
-					}
-					if tp.failClosed {
-						threshold = sampling.NeverSampleThreshold
-					} else {
-						threshold = sampling.AlwaysSampleThreshold
-					}
-				} else {
-					threshold = tp.sampler.decide(carrier)
-				}
-
-				switch parseSpanSamplingPriority(s) {
-				case doNotSampleSpan:
-					// OpenTracing mentions this as a "hint". We take a stronger
-					// approach and do not sample the span since some may use it to
-					// remove specific spans from traces.
-					threshold = sampling.NeverSampleThreshold
-					rnd = newSamplingPriorityMethod(rnd.randomness()) // override policy name
-				case mustSampleSpan:
-					threshold = sampling.AlwaysSampleThreshold
-					rnd = newSamplingPriorityMethod(rnd.randomness()) // override policy name
-				case deferDecision:
-					// Note that the logs processor has very different logic here,
-					// but that in tracing the priority can only force to never or
-					// always.
-				}
-
-				sampled := threshold.ShouldSample(rnd.randomness())
-
-				if sampled && carrier != nil {
-					if err := carrier.updateThreshold(threshold); err != nil {
-						tp.logger.Warn("tracestate", zap.Error(err))
-					}
-					if err := carrier.reserialize(); err != nil {
-						tp.logger.Debug("tracestate serialize", zap.Error(err))
-					}
-				}
-
-				_ = stats.RecordWithTags(
+				return commonSamplingLogic(
 					ctx,
-					[]tag.Mutator{tag.Upsert(tagPolicyKey, rnd.policyName()), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
-					statCountTracesSampled.M(int64(1)),
+					s,
+					tp.sampler,
+					tp.failClosed,
+					tp.sampler.randomnessFromSpan,
+					tp.priorityFunc,
+					"traces sampler",
+					tp.logger,
 				)
-
-				return !sampled
 			})
 			// Filter out empty ScopeMetrics
 			return ils.Spans().Len() == 0
@@ -233,6 +179,25 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 		return td, processorhelper.ErrSkipProcessingData
 	}
 	return td, nil
+}
+
+func (tp *traceProcessor) priorityFunc(s ptrace.Span, rnd randomnessNamer, threshold sampling.Threshold) (randomnessNamer, sampling.Threshold) {
+	switch parseSpanSamplingPriority(s) {
+	case doNotSampleSpan:
+		// OpenTracing mentions this as a "hint". We take a stronger
+		// approach and do not sample the span since some may use it to
+		// remove specific spans from traces.
+		threshold = sampling.NeverSampleThreshold
+		rnd = newSamplingPriorityMethod(rnd.randomness()) // override policy name
+	case mustSampleSpan:
+		threshold = sampling.AlwaysSampleThreshold
+		rnd = newSamplingPriorityMethod(rnd.randomness()) // override policy name
+	case deferDecision:
+		// Note that the logs processor has very different logic here,
+		// but that in tracing the priority can only force to never or
+		// always.
+	}
+	return rnd, threshold
 }
 
 // parseSpanSamplingPriority checks if the span has the "sampling.priority" tag to

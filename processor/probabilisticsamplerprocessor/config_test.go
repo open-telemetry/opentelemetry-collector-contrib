@@ -27,7 +27,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				SamplingPercentage: 15.3,
 				SamplingPrecision:  4,
-				SamplerMode:        "proportional",
+				Mode:               "proportional",
 				AttributeSource:    "traceID",
 			},
 		},
@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 				SamplingPercentage: 15.3,
 				SamplingPrecision:  defaultPrecision,
 				HashSeed:           22,
-				SamplerMode:        "",
+				Mode:               "",
 				AttributeSource:    "record",
 				FromAttribute:      "foo",
 				SamplingPriority:   "bar",

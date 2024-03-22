@@ -308,7 +308,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 				if tt.cfg != nil {
 					*cfg = *tt.cfg
 				}
-				cfg.SamplerMode = mode
+				cfg.Mode = mode
 				cfg.HashSeed = defaultHashSeed
 				tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
 				require.NoError(t, err)
@@ -620,8 +620,8 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "inconsistent arriving t-value",
-			log:  "inconsistent arriving t-value",
+			name: "inconsistent arriving threshold",
+			log:  "inconsistent arriving threshold",
 			cfg: &Config{
 				SamplingPercentage: 100,
 			},
@@ -631,8 +631,8 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 		},
 		{
-			name: "inconsistent arriving t-value not sampled",
-			log:  "inconsistent arriving t-value",
+			name: "inconsistent arriving threshold not sampled",
+			log:  "inconsistent arriving threshold",
 			cfg: &Config{
 				SamplingPercentage: 1,
 				FailClosed:         true,
@@ -750,7 +750,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				if tt.cfg != nil {
 					*cfg = *tt.cfg
 				}
-				cfg.SamplerMode = mode
+				cfg.Mode = mode
 				cfg.HashSeed = defaultHashSeed
 
 				set := processortest.NewNopCreateSettings()
@@ -805,17 +805,17 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					require.Equal(t, 0, len(observed.All()), "should not have logs: %v", observed.All())
 				} else {
 					require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
-					require.Contains(t, observed.All()[0].Message, tt.log)
+					require.Contains(t, observed.All()[0].Message, "traces sampler")
+					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), tt.log)
 				}
 			})
 		}
 	}
 }
 
-// Test_tracesamplerprocessor_StrictTraceState checks that when
-// strictness checking is enabled, certain spans do not pass, with
-// errors.  All set FailClosed.
-func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
+// Test_tracesamplerprocessor_TraceStateErrors checks that when
+// FailClosed is true, certain spans do not pass, with errors.
+func Test_tracesamplerprocessor_TraceStateErrors(t *testing.T) {
 	defaultTID := mustParseTID("fefefefefefefefefe80000000000000")
 	sid := idutils.UInt64ToSpanID(0xfefefefe)
 	tests := []struct {
@@ -877,7 +877,7 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 			tid: mustParseTID("ffffffffffffffffff70000000000000"),
 			ts:  "ot=th:8",
 			sf: func(SamplerMode) string {
-				return "inconsistent arriving t-value"
+				return "inconsistent arriving threshold"
 			},
 		},
 		{
@@ -888,7 +888,7 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 			tid: defaultTID,
 			ts:  "ot=th:8;rv:70000000000000",
 			sf: func(SamplerMode) string {
-				return "inconsistent arriving t-value"
+				return "inconsistent arriving threshold"
 			},
 		},
 	}
@@ -900,7 +900,7 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 				if tt.cfg != nil {
 					*cfg = *tt.cfg
 				}
-				cfg.SamplerMode = mode
+				cfg.Mode = mode
 				cfg.FailClosed = true
 
 				set := processortest.NewNopCreateSettings()
@@ -930,7 +930,8 @@ func Test_tracesamplerprocessor_StrictTraceState(t *testing.T) {
 				if observed.All()[0].Message == "trace sampler" {
 					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), expectMessage)
 				} else {
-					require.Contains(t, observed.All()[0].Message, expectMessage)
+					require.Contains(t, observed.All()[0].Message, "traces sampler")
+					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), expectMessage)
 				}
 			})
 		}
@@ -975,7 +976,7 @@ func Test_tracesamplerprocessor_HashSeedTraceState(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			cfg := &Config{}
 			cfg.SamplingPercentage = tt.pct
-			cfg.SamplerMode = HashSeed
+			cfg.Mode = HashSeed
 			cfg.HashSeed = defaultHashSeed
 			cfg.SamplingPrecision = 4
 

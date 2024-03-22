@@ -4,21 +4,27 @@
 package probabilisticsamplerprocessor
 
 import (
+	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 )
 
 const (
 	// These four can happen at runtime and be returned by
 	// randomnessFromXXX()
 
-	ErrInconsistentArrivingTValue samplerError = "inconsistent arriving t-value: span should not have been sampled"
+	ErrInconsistentArrivingTValue samplerError = "inconsistent arriving threshold: item should not have been sampled"
 	ErrMissingRandomness          samplerError = "missing randomness"
-	ErrRandomnessInUse            samplerError = "log record has sampling randomness, equalizing or proportional mode recommended"
-	ErrThresholdInUse             samplerError = "log record has sampling threshold, equalizing or proportional mode recommended"
+	ErrRandomnessInUse            samplerError = "item has sampling randomness, equalizing or proportional mode recommended"
+	ErrThresholdInUse             samplerError = "item has sampling threshold, equalizing or proportional mode recommended"
 )
 
 const (
@@ -111,6 +117,11 @@ func newMissingRandomnessMethod() randomnessNamer {
 	return missingRandomnessMethod{}
 }
 
+func isMissing(rnd randomnessNamer) bool {
+	_, ok := rnd.(missingRandomnessMethod)
+	return ok
+}
+
 func newSamplingRandomnessMethod(rnd sampling.Randomness) randomnessNamer {
 	return samplingRandomnessMethod{randomnessMethod(rnd)}
 }
@@ -186,6 +197,10 @@ type hashingSampler struct {
 	logsTraceIDEnabled bool
 }
 
+func (th *hashingSampler) decide(carrier samplingCarrier) sampling.Threshold {
+	return th.tvalueThreshold
+}
+
 // consistentTracestateCommon includes all except the legacy hash-based
 // method, which overrides randomnessFromX.
 type consistentTracestateCommon struct {
@@ -200,12 +215,20 @@ type neverSampler struct {
 	consistentTracestateCommon
 }
 
+func (*neverSampler) decide(_ samplingCarrier) sampling.Threshold {
+	return sampling.NeverSampleThreshold
+}
+
 // equalizingSampler adjusts thresholds absolutely.  Cannot be used with zero.
 type equalizingSampler struct {
 	// TraceID-randomness-based calculation
 	tvalueThreshold sampling.Threshold
 
 	consistentTracestateCommon
+}
+
+func (te *equalizingSampler) decide(carrier samplingCarrier) sampling.Threshold {
+	return te.tvalueThreshold
 }
 
 // proportionalSampler adjusts thresholds relatively.  Cannot be used with zero.
@@ -219,9 +242,31 @@ type proportionalSampler struct {
 	consistentTracestateCommon
 }
 
-func isMissing(rnd randomnessNamer) bool {
-	_, ok := rnd.(missingRandomnessMethod)
-	return ok
+func (tp *proportionalSampler) decide(carrier samplingCarrier) sampling.Threshold {
+	incoming := 1.0
+	if tv, has := carrier.threshold(); has {
+		incoming = tv.Probability()
+	}
+
+	// There is a potential here for the product probability to
+	// underflow, which is checked here.
+	threshold, err := sampling.ProbabilityToThresholdWithPrecision(incoming*tp.ratio, tp.prec)
+
+	// Check the only known error condition.
+	if err == sampling.ErrProbabilityRange {
+		// Considered valid, a case where the sampling probability
+		// has fallen below the minimum supported value and simply
+		// becomes unsampled.
+		return sampling.NeverSampleThreshold
+	}
+	return threshold
+}
+
+func getBytesFromValue(value pcommon.Value) []byte {
+	if value.Type() == pcommon.ValueTypeBytes {
+		return value.Bytes().AsRaw()
+	}
+	return []byte(value.AsString())
 }
 
 func randomnessFromBytes(b []byte, hashSeed uint32) sampling.Randomness {
@@ -293,7 +338,7 @@ func makeSampler(cfg *Config, isLogs bool) dataSampler {
 	if pct > 100 {
 		pct = 100
 	}
-	mode := cfg.SamplerMode
+	mode := cfg.Mode
 	if mode == modeUnset {
 		// Reasons to choose the legacy behavior include:
 		// (a) having set the hash seed
@@ -365,10 +410,11 @@ func makeSampler(cfg *Config, isLogs bool) dataSampler {
 		reject := numHashBuckets - scaledSamplerate
 		reject56 := uint64(reject) << 42
 
-		threshold, _ := sampling.ThresholdFromUnsigned(reject56)
+		threshold, _ := sampling.UnsignedToThreshold(reject56)
 
 		return &hashingSampler{
 			tvalueThreshold: threshold,
+			hashSeed:        cfg.HashSeed,
 
 			// Logs specific:
 			logsTraceIDEnabled:            cfg.AttributeSource == traceIDAttributeSource,
@@ -377,34 +423,73 @@ func makeSampler(cfg *Config, isLogs bool) dataSampler {
 	}
 }
 
-func (*neverSampler) decide(_ samplingCarrier) sampling.Threshold {
-	return sampling.NeverSampleThreshold
-}
+// randFunc returns randomness (w/ named policy), a carrier, and the error.
+type randFunc[T any] func(T) (randomnessNamer, samplingCarrier, error)
 
-func (th *hashingSampler) decide(carrier samplingCarrier) sampling.Threshold {
-	return th.tvalueThreshold
-}
+// priorityFunc makes changes resulting from sampling priority.
+type priorityFunc[T any] func(T, randomnessNamer, sampling.Threshold) (randomnessNamer, sampling.Threshold)
 
-func (te *equalizingSampler) decide(carrier samplingCarrier) sampling.Threshold {
-	return te.tvalueThreshold
-}
+// commonSamplingLogic implements sampling on a per-item basis
+// independent of the signal type, as embodied in the functional
+// parameters:
+func commonSamplingLogic[T any](
+	ctx context.Context,
+	item T,
+	sampler dataSampler,
+	failClosed bool,
+	randFunc randFunc[T],
+	priorityFunc priorityFunc[T],
+	description string,
+	logger *zap.Logger,
+) bool {
+	rnd, carrier, err := randFunc(item)
 
-func (tp *proportionalSampler) decide(carrier samplingCarrier) sampling.Threshold {
-	incoming := 1.0
-	if tv, has := carrier.threshold(); has {
-		incoming = tv.Probability()
+	if err == nil {
+		err = consistencyCheck(rnd, carrier)
+	}
+	var threshold sampling.Threshold
+	if err != nil {
+		if _, is := err.(samplerError); is {
+			logger.Info(description, zap.Error(err))
+		} else {
+			logger.Error(description, zap.Error(err))
+		}
+		if failClosed {
+			threshold = sampling.NeverSampleThreshold
+		} else {
+			threshold = sampling.AlwaysSampleThreshold
+		}
+	} else {
+		threshold = sampler.decide(carrier)
 	}
 
-	// There is a potential here for the product probability to
-	// underflow, which is checked here.
-	threshold, err := sampling.ProbabilityToThresholdWithPrecision(incoming*tp.ratio, tp.prec)
+	rnd, threshold = priorityFunc(item, rnd, threshold)
 
-	// Check the only known error condition.
-	if err == sampling.ErrProbabilityRange {
-		// Considered valid, a case where the sampling probability
-		// has fallen below the minimum supported value and simply
-		// becomes unsampled.
-		return sampling.NeverSampleThreshold
+	sampled := threshold.ShouldSample(rnd.randomness())
+
+	if sampled && carrier != nil {
+		// Note: updateThreshold limits loss of adjusted count, by
+		// preventing the threshold from being lowered, only allowing
+		// probability to fall and never to rise.
+		if err := carrier.updateThreshold(threshold); err != nil {
+			if err == sampling.ErrInconsistentSampling {
+				// This is working-as-intended.  You can't lower
+				// the threshold, it's illogical.
+				logger.Debug(description, zap.Error(err))
+			} else {
+				logger.Warn(description, zap.Error(err))
+			}
+		}
+		if err := carrier.reserialize(); err != nil {
+			logger.Info(description, zap.Error(err))
+		}
 	}
-	return threshold
+
+	_ = stats.RecordWithTags(
+		ctx,
+		[]tag.Mutator{tag.Upsert(tagPolicyKey, rnd.policyName()), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
+		statCountTracesSampled.M(int64(1)),
+	)
+
+	return !sampled
 }

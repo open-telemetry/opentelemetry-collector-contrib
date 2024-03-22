@@ -83,6 +83,15 @@ func TValueToThreshold(s string) (Threshold, error) {
 	}, nil
 }
 
+// UnsignedToThreshold constructs a threshold expressed in terms
+// defined by Unsigned(), the number of rejections.
+func UnsignedToThreshold(unsigned uint64) (Threshold, error) {
+	if unsigned >= MaxAdjustedCount {
+		return NeverSampleThreshold, ErrTValueSize
+	}
+	return Threshold{unsigned: unsigned}, nil
+}
+
 // TValue encodes a threshold, which is a variable-length hex string
 // up to 14 characters.  The empty string is returned for 100%
 // sampling.
@@ -110,6 +119,22 @@ func (th Threshold) ShouldSample(rnd Randomness) bool {
 	return rnd.unsigned >= th.unsigned
 }
 
+// Unsigned expresses the number of Randomness values (out of
+// MaxAdjustedCount) that are rejected or not sampled.  0 means 100%
+// sampling.
+func (th Threshold) Unsigned() uint64 {
+	return th.unsigned
+}
+
+// AdjustedCount returns the effective count for this item, considering
+// the sampling probability.
+func (th Threshold) AdjustedCount() float64 {
+	if th == NeverSampleThreshold {
+		return 0
+	}
+	return 1.0 / th.Probability()
+}
+
 // ThresholdGreater allows direct comparison of Threshold values.
 // Greater thresholds equate with smaller sampling probabilities.
 func ThresholdGreater(a, b Threshold) bool {
@@ -120,20 +145,4 @@ func ThresholdGreater(a, b Threshold) bool {
 // Smaller thresholds equate with greater sampling probabilities.
 func ThresholdLessThan(a, b Threshold) bool {
 	return a.unsigned < b.unsigned
-}
-
-// Unsigned expresses the number of Randomness values (out of
-// MaxAdjustedCount) that are rejected or not sampled.  0 means 100%
-// sampling.
-func (th Threshold) Unsigned() uint64 {
-	return th.unsigned
-}
-
-// ThresholdFromUnsigned constructs a threshold expressed in terms
-// defined by Unsigned(), the number of rejections.
-func ThresholdFromUnsigned(unsigned uint64) (Threshold, error) {
-	if unsigned >= MaxAdjustedCount {
-		return NeverSampleThreshold, ErrTValueSize
-	}
-	return Threshold{unsigned: unsigned}, nil
 }

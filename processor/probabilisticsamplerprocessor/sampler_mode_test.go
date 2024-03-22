@@ -59,7 +59,7 @@ func TestHashSeedRoundingDown(t *testing.T) {
 
 	for _, isLogs := range []bool{false, true} {
 		cfg := Config{
-			SamplerMode:        HashSeed,
+			Mode:               HashSeed,
 			SamplingPercentage: pct,
 			HashSeed:           defaultHashSeed,
 		}

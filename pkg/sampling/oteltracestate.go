@@ -148,12 +148,13 @@ func (otts *OpenTelemetryTraceState) TValueThreshold() (Threshold, bool) {
 // changes its adjusted count.  If the change of TValue leads to
 // inconsistency (i.e., raising sampling probability), an error is
 // returned.
-func (otts *OpenTelemetryTraceState) UpdateTValueWithSampling(sampledThreshold Threshold, encodedTValue string) error {
+func (otts *OpenTelemetryTraceState) UpdateTValueWithSampling(sampledThreshold Threshold) error {
 	if len(otts.TValue()) != 0 && ThresholdGreater(otts.threshold, sampledThreshold) {
 		return ErrInconsistentSampling
 	}
+	// Note this allows NeverSampleThreshold, "" to be set.
 	otts.threshold = sampledThreshold
-	otts.tvalue = encodedTValue
+	otts.tvalue = sampledThreshold.TValue()
 	return nil
 }
 
@@ -164,7 +165,7 @@ func (otts *OpenTelemetryTraceState) AdjustedCount() float64 {
 	if len(otts.TValue()) == 0 {
 		return 0
 	}
-	return 1.0 / otts.threshold.Probability()
+	return otts.threshold.AdjustedCount()
 }
 
 // ClearTValue is used to unset TValue, in cases where it is
