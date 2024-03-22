@@ -12,7 +12,7 @@ import (
 )
 
 // On windows, we close files immediately after reading because they cannot be moved while open.
-func (t *Tracker) EndPoll() {
+func (t *Tracker) EndConsume() {
 	// m.currentPollFiles -> m.previousPollFiles
 	t.previousPollFiles = t.currentPollFiles
 	t.ClosePreviousFiles()

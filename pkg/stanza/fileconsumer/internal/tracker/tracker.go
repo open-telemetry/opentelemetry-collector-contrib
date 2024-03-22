@@ -90,7 +90,7 @@ func (t *Tracker) ClosePreviousFiles() {
 	}
 }
 
-func (t *Tracker) RotateFilesets() {
+func (t *Tracker) EndPoll() {
 	// shift the filesets at end of every poll() call
 	// t.knownFiles[0] -> t.knownFiles[1] -> t.knownFiles[2]
 	copy(t.knownFiles[1:], t.knownFiles)

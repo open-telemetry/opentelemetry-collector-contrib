@@ -134,7 +134,7 @@ func (m *Manager) poll(ctx context.Context) {
 		}
 	}
 	// rotate at end of every poll()
-	m.tracker.RotateFilesets()
+	m.tracker.EndPoll()
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
@@ -154,7 +154,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	}
 	wg.Wait()
 
-	m.tracker.EndPoll()
+	m.tracker.EndConsume()
 }
 
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
