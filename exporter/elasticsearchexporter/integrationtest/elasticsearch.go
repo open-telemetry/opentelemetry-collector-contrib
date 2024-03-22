@@ -110,7 +110,7 @@ func (m *mockES) bulkHandler(t testing.TB) http.HandlerFunc {
 		}
 
 		// do not update the counts map if bulk indexer returns non 2xx response
-		if m.handleMockStatusCode(t, w, response) {
+		if !m.handleMockStatusCode(t, w, response) {
 			return
 		}
 
