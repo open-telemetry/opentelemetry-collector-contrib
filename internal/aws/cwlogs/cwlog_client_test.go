@@ -501,6 +501,32 @@ func TestCreateStream_CreateLogStream_ResourceNotFound(t *testing.T) {
 	svc.AssertExpectations(t)
 	assert.NoError(t, err)
 }
+func TestCreateStream_CreateLogStream_ResourceNotFound_WithEncryptionAtRest(t *testing.T) {
+	logger := zap.NewNop()
+	kmsKeyID := "arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+	svc := new(mockCloudWatchLogsClient)
+
+	resourceNotFoundException := &cloudwatchlogs.ResourceNotFoundException{}
+	svc.On("CreateLogStream",
+		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(
+		new(cloudwatchlogs.CreateLogStreamOutput), resourceNotFoundException).Once()
+
+	svc.On("CreateLogGroup",
+		&cloudwatchlogs.CreateLogGroupInput{LogGroupName: &logGroup, KmsKeyId: &kmsKeyID}).Return(
+		new(cloudwatchlogs.CreateLogGroupOutput), nil)
+
+	svc.On("CreateLogStream",
+		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(
+		new(cloudwatchlogs.CreateLogStreamOutput), nil).Once()
+
+	client := newCloudWatchLogClient(svc, 0, nil, logger)
+	client.kmsKeyId = &kmsKeyID
+
+	err := client.CreateStream(&logGroup, &logStreamName)
+
+	svc.AssertExpectations(t)
+	assert.NoError(t, err)
+}
 
 type UnknownError struct {
 	otherField string
