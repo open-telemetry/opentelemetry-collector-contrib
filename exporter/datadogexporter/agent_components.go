@@ -58,6 +58,7 @@ func newSerializer(set component.TelemetrySettings, cfg *Config) (*serializer.Se
 		}),
 		fx.Supply(set.Logger),
 		fx.Supply(set),
+		fx.Supply(cfg),
 		fx.Provide(newLogComponent),
 		fx.Provide(newConfigComponent),
 

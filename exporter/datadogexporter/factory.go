@@ -42,7 +42,7 @@ import (
 var metricExportSerializerFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.metricexportserializer",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
+	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses the new serializer exporter."),
 )
 
 var metricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(

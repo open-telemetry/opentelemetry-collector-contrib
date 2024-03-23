@@ -11,6 +11,8 @@ require (
 	github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder v0.52.0-rc.3
 	github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.52.0-rc.3
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.53.0-devel.0.20240322193617-5136441782d3
+	github.com/DataDog/datadog-agent/pkg/config/model v0.52.0-rc.3
+	github.com/DataDog/datadog-agent/pkg/config/setup v0.52.0-rc.3
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.0-rc.3
 	github.com/DataDog/datadog-agent/pkg/serializer v0.53.0-devel
 	github.com/DataDog/datadog-agent/pkg/trace v0.52.0-rc.3
@@ -86,8 +88,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/aggregator/ckey v0.52.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.52.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.52.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/model v0.52.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/setup v0.52.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.52.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/metrics v0.52.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.52.0-rc.3 // indirect
