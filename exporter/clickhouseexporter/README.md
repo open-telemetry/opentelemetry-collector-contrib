@@ -348,6 +348,10 @@ exporters:
       initial_interval: 5s
       max_interval: 30s
       max_elapsed_time: 300s
+    # cluster_name: my_cluster
+    # table_engine:
+    #   name: ReplicatedMergeTree
+    #   params:
 service:
   pipelines:
     logs:
