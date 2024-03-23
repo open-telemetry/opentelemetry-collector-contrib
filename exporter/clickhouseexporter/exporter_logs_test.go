@@ -135,7 +135,6 @@ func TestLogsTableEngineConfig(t *testing.T) {
 	})
 }
 
-// nolint:unparam // not need to check this func
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
 	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
