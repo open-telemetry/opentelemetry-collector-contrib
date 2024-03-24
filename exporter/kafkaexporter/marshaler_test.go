@@ -105,7 +105,7 @@ func TestOTLPMetricsJsonMarshaling(t *testing.T) {
 
 	keyableMarshaler, ok := standardMarshaler.(KeyableMetricsMarshaler)
 	require.True(t, ok, "Must be a KeyableMetricsMarshaler")
-	keyableMarshaler.Key()
+	keyableMarshaler.Key([]string{})
 
 	msgs, err = keyableMarshaler.Marshal(metric, "KafkaTopicX")
 	require.NoError(t, err, "Must have marshaled the data without error")
