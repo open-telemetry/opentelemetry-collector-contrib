@@ -160,6 +160,10 @@ func (c *traceToMetricConnector) populateContainerTagsCache(traces ptrace.Traces
 				key := fmt.Sprintf("%s:%s", attr, val)
 				if v, ok := c.containerTagCache.Get(containerID.AsString()); ok {
 					cacheVal := v.(*sync.Map)
+					// check if the key already exists in the cache
+					if _, ok := cacheVal.Load(key); ok {
+						continue
+					}
 					cacheVal.Store(key, struct{}{})
 				} else {
 					cacheVal := &sync.Map{}
@@ -188,7 +192,7 @@ func (c *traceToMetricConnector) enrichStatsPayload(stats *pb.StatsPayload) {
 					tagList.Store(tag, struct{}{})
 				}
 				stat.Tags = make([]string, 0)
-				tagList.Range(func(key, value interface{}) bool {
+				tagList.Range(func(key, value any) bool {
 					stat.Tags = append(stat.Tags, key.(string))
 					return true
 				})
