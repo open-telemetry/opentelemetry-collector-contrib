@@ -1065,6 +1065,15 @@ func TestRetries(t *testing.T) {
 			context.Background(),
 		},
 		{
+			"test 429 should retry",
+			3,
+			4,
+			http.StatusTooManyRequests,
+			assert.NoError,
+			assert.NoError,
+			context.Background(),
+		},
+		{
 			"test 4xx should not retry",
 			4,
 			1,
