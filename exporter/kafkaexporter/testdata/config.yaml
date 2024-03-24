@@ -16,8 +16,8 @@ kafka:
   partition_metrics_by_resource_attributes:
     enabled: true
     attributes:
-      - service.name
-      - service.instance.id
+      - k1
+      - k2
   auth:
     plain_text:
       username: jdoe
