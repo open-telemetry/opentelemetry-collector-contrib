@@ -43,6 +43,18 @@ func ProbabilityToThresholdWithPrecision(fraction float64, precision int) (Thres
 		return AlwaysSampleThreshold, nil
 	}
 
+	// Calculate the amount of precision needed to encode the
+	// threshold with reasonable precision.  Here, we count the
+	// number of leading `0` or `f` characters and automatically
+	// add precision to preserve relative error near the extremes.
+	//
+	// Frexp() normalizes both the fraction and one-minus the
+	// fraction, because more digits of precision are needed if
+	// either value is near zero.  Frexp returns an exponent <= 0.
+	//
+	// If `exp <= -4`, there will be a leading hex `0` or `f`.
+	// For every multiple of -4, another leading `0` or `f`
+	// appears, so this raises precision accordingly.
 	_, expF := math.Frexp(fraction)
 	_, expR := math.Frexp(1 - fraction)
 	precision = min(NumHexDigits, max(precision+expF/-hexBits, precision+expR/-hexBits))
