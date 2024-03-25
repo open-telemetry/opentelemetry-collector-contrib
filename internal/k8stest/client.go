@@ -46,7 +46,7 @@ func NewK8sClient(ctx context.Context, kubeconfigPath string) (*K8sClient, error
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient))
 
 	k8sClient := &K8sClient{DynamicClient: dynamicClient, DiscoveryClient: discoveryClient, Mapper: mapper}
-	cctx, cancel := context.WithCancel(context.Background())
+	cctx, cancel := context.WithCancel(ctx)
 
 	k8sClient.ctx = cctx
 	k8sClient.cancel = cancel
