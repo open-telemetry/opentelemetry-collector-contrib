@@ -33,7 +33,7 @@ Example:
 ```yaml
 receivers:
   apachedruid:
-    endpoint: 0.0.0.0:9000
+    endpoint: localhost:9000
 ```
 
 ## Metrics
