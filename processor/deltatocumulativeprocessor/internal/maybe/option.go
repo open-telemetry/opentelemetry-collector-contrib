@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package maybe
+package maybe // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/maybe"
 
 // Ptr is a pointer that points to something that is not guaranteed to exist.
 // Any use must "Try()" accessing the underlying value, enforcing checking the
