@@ -6,6 +6,7 @@ package datadogconnector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
@@ -156,13 +157,17 @@ func (c *traceToMetricConnector) populateContainerTagsCache(traces ptrace.Traces
 		ddContainerTags := attributes.ContainerTagsFromResourceAttributes(attrs)
 		for attr := range c.resourceAttrs {
 			if val, ok := ddContainerTags[attr]; ok {
-				var cacheVal map[string]struct{}
+				key := fmt.Sprintf("%s:%s", attr, val)
 				if v, ok := c.containerTagCache.Get(containerID.AsString()); ok {
-					cacheVal = v.(map[string]struct{})
-					cacheVal[fmt.Sprintf("%s:%s", attr, val)] = struct{}{}
+					cacheVal := v.(*sync.Map)
+					// check if the key already exists in the cache
+					if _, ok := cacheVal.Load(key); ok {
+						continue
+					}
+					cacheVal.Store(key, struct{}{})
 				} else {
-					cacheVal = make(map[string]struct{})
-					cacheVal[fmt.Sprintf("%s:%s", attr, val)] = struct{}{}
+					cacheVal := &sync.Map{}
+					cacheVal.Store(key, struct{}{})
 					c.containerTagCache.Set(containerID.AsString(), cacheVal, cache.DefaultExpiration)
 				}
 
@@ -181,14 +186,16 @@ func (c *traceToMetricConnector) enrichStatsPayload(stats *pb.StatsPayload) {
 	for _, stat := range stats.Stats {
 		if stat.ContainerID != "" {
 			if tags, ok := c.containerTagCache.Get(stat.ContainerID); ok {
-				tagList := tags.(map[string]struct{})
+
+				tagList := tags.(*sync.Map)
 				for _, tag := range stat.Tags {
-					tagList[tag] = struct{}{}
+					tagList.Store(tag, struct{}{})
 				}
-				stat.Tags = make([]string, 0, len(tagList))
-				for tag := range tagList {
-					stat.Tags = append(stat.Tags, tag)
-				}
+				stat.Tags = make([]string, 0)
+				tagList.Range(func(key, value any) bool {
+					stat.Tags = append(stat.Tags, key.(string))
+					return true
+				})
 			}
 		}
 	}
