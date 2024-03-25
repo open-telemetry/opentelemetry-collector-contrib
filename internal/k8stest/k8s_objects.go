@@ -53,10 +53,10 @@ func DeleteObject(client *K8sClient, obj *unstructured.Unstructured) error {
 	}
 
 	gracePeriod := int64(0)
-	policy := metav1.DeletePropagationForeground
+	deletePolicy := metav1.DeletePropagationForeground
 	options := metav1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriod,
-		PropagationPolicy:  &policy,
+		PropagationPolicy:  &deletePolicy,
 	}
 
 	return resource.Delete(context.Background(), obj.GetName(), options)
@@ -70,7 +70,7 @@ func GetObject(client *K8sClient, gvk schema.GroupVersionKind, namespace string,
 	}
 
 	if client.DynamicClient == nil {
-		return nil, fmt.Errorf("No dynamic client, can't get object.")
+		return nil, fmt.Errorf("no dynamic client, can't get object")
 	}
 
 	return client.DynamicClient.Resource(gvr).Namespace(namespace).Get(context.Background(), name, metav1.GetOptions{})
