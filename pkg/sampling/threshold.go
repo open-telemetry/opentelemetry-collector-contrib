@@ -128,8 +128,14 @@ func (th Threshold) Unsigned() uint64 {
 	return th.unsigned
 }
 
-// AdjustedCount returns the effective count for this item, considering
-// the sampling probability.
+// AdjustedCount returns the adjusted count for this item, which is
+// the representativity of the item due to sampling, equal to the
+// inverse of sampling probability.  If the threshold equals
+// NeverSampleThreshold, the item should not have been sampled, in
+// which case the Adjusted count is zero.
+//
+// This term is defined here:
+// https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/
 func (th Threshold) AdjustedCount() float64 {
 	if th == NeverSampleThreshold {
 		return 0
