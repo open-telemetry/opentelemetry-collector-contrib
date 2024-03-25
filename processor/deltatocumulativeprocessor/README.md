@@ -29,4 +29,21 @@ processors:
         # upper limit of streams to track. new streams exceeding this limit
         # will be dropped
         [ max_streams: <int> | default = 0 (off) ]
+
 ```
+
+There is no further configuration required. All delta samples are converted to cumulative.
+
+## Troubleshooting
+
+The following metrics are recorded when [telemetry is
+enabled](https://opentelemetry.io/docs/collector/configuration/#telemetry):
+
+| Name                                     | Description                                                                           | Unit          |
+|------------------------------------------|---------------------------------------------------------------------------------------|---------------|
+| `deltatocumulative.streams.tracked`      | Number of streams currently tracked by the aggregation state                          | `{stream}`    |
+| `deltatocumulative.streams.limit`        | Upper limit of tracked streams                                                        | `{stream}`    |
+| `deltatocumulative.streams.evicted`      | Number of streams removed from tracking to ingest newer streams                       | `{stream}`    |
+| `deltatocumulative.datapoints.processed` | Total number of datapoints processed, whether successful or not                       | `{datapoint}` |
+| `deltatocumulative.datapoints.dropped`   | Faulty datapoints that were dropped due to the reason given in the `reason` attribute | `{datapoint}` |
+| `deltatocumulative.gaps.length`          | Total length of all gaps in the streams, which occur e.g. due to lost in transit      | `second`      |

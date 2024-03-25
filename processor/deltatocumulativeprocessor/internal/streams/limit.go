@@ -23,7 +23,9 @@ type LimitMap[T any] struct {
 }
 
 func (m LimitMap[T]) Store(id identity.Stream, v T) error {
-	if m.Map.Len() < m.Max {
+	_, ok := m.Map.Load(id)
+	avail := m.Map.Len() < m.Max
+	if ok || avail {
 		return m.Map.Store(id, v)
 	}
 
@@ -56,8 +58,4 @@ type ErrEvicted struct {
 
 func (e ErrEvicted) Error() string {
 	return fmt.Sprintf("%s. evicted stream %s", e.ErrLimit, e.id)
-}
-
-func (e ErrEvicted) Unwrap() error {
-	return e.ErrLimit
 }
