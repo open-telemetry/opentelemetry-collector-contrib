@@ -36,15 +36,14 @@ const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 //	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
 func TestE2E(t *testing.T) {
-	t.Skip("TEST: Skipping to ensure this is cause of goleak")
-
 	var expected pmetric.Metrics
 	expectedFile := filepath.Join("testdata", "e2e", "expected.yaml")
 	expected, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	k8sClient, err := k8stest.NewK8sClient(context.Background(), testKubeConfig)
 	require.NoError(t, err)
+	defer func() { k8sClient.Shutdown() }()
 
 	metricsConsumer := new(consumertest.MetricsSink)
 	shutdownSink := startUpSink(t, metricsConsumer)
@@ -100,7 +99,12 @@ func TestE2E(t *testing.T) {
 		return value
 	}
 	containerImageShorten := func(value string) string {
-		return value[(strings.LastIndex(value, "/") + 1):]
+		slashIndex := strings.LastIndex(value, "/")
+		lastDashIndex := strings.LastIndex(value, "-amd64")
+		if lastDashIndex != -1 && lastDashIndex >= slashIndex {
+			return value[slashIndex+1 : lastDashIndex]
+		}
+		return value[slashIndex+1:]
 	}
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 		pmetrictest.IgnoreTimestamp(),

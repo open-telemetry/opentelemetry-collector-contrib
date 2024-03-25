@@ -4,14 +4,13 @@
 package k8stest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
 
 import (
-	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/client-go/dynamic"
 )
@@ -35,7 +34,7 @@ func CreateObject(client *K8sClient, manifest []byte) (*unstructured.Unstructure
 		resource = client.DynamicClient.Resource(gvr.Resource)
 	}
 
-	return resource.Create(context.Background(), obj, metav1.CreateOptions{})
+	return resource.Create(client.ctx, obj, metav1.CreateOptions{})
 }
 
 func DeleteObject(client *K8sClient, obj *unstructured.Unstructured) error {
@@ -59,7 +58,7 @@ func DeleteObject(client *K8sClient, obj *unstructured.Unstructured) error {
 		PropagationPolicy:  &deletePolicy,
 	}
 
-	return resource.Delete(context.Background(), obj.GetName(), options)
+	return resource.Delete(client.ctx, obj.GetName(), options)
 }
 
 func GetObject(client *K8sClient, gvk schema.GroupVersionKind, namespace string, name string) (*unstructured.Unstructured, error) {
@@ -73,5 +72,5 @@ func GetObject(client *K8sClient, gvk schema.GroupVersionKind, namespace string,
 		return nil, fmt.Errorf("no dynamic client, can't get object")
 	}
 
-	return client.DynamicClient.Resource(gvr).Namespace(namespace).Get(context.Background(), name, metav1.GetOptions{})
+	return client.DynamicClient.Resource(gvr).Namespace(namespace).Get(client.ctx, name, metav1.GetOptions{})
 }
