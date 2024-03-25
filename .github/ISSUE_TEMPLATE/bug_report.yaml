@@ -30,6 +30,7 @@ body:
       - connector/datadog
       - connector/exceptions
       - connector/failover
+      - connector/grafanacloud
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
