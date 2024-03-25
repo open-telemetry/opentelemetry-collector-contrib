@@ -100,3 +100,17 @@ func mustPushTracesData(t *testing.T, exporter *tracesExporter, td ptrace.Traces
 	err := exporter.pushTraceData(context.TODO(), td)
 	require.NoError(t, err)
 }
+
+func TestTracesClusterConfig(t *testing.T) {
+	testClusterConfig(t, func(t *testing.T, dsn string, clusterTest clusterTestConfig, fns ...func(*Config)) {
+		exporter := newTestTracesExporter(t, dsn, fns...)
+		clusterTest.verifyConfig(t, exporter.cfg)
+	})
+}
+
+func TestTracesTableEngineConfig(t *testing.T) {
+	testTableEngineConfig(t, func(t *testing.T, dsn string, engineTest tableEngineTestConfig, fns ...func(*Config)) {
+		exporter := newTestTracesExporter(t, dsn, fns...)
+		engineTest.verifyConfig(t, exporter.cfg.TableEngine)
+	})
+}

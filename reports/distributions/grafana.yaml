@@ -3,6 +3,7 @@ url: https://github.com/grafana/agent
 maintainers: []
 components:
     connector:
+        - grafanacloud
         - servicegraph
         - spanmetrics
     exporter:
