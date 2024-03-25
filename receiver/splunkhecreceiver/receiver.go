@@ -42,7 +42,6 @@ const (
 	responseOKWithAckID               = `{"text": "Success", "code": 0, "ackId": %d}`
 	responseHecHealthy                = `{"text": "HEC is healthy", "code": 17}`
 	responseInvalidMethodPostOnly     = `"Only \"POST\" method is supported"`
-	responseInvalidMethodGetOnly      = `"Only \"GET\" method is supported"`
 	responseInvalidEncoding           = `"\"Content-Encoding\" must be \"gzip\" or empty"`
 	responseInvalidDataFormat         = `{"text":"Invalid data format","code":6}`
 	responseErrEventRequired          = `{"text":"Event field is required","code":12}`
@@ -79,7 +78,6 @@ var (
 	invalidEncodingRespBody       = []byte(responseInvalidEncoding)
 	invalidFormatRespBody         = []byte(responseInvalidDataFormat)
 	invalidMethodRespBodyPostOnly = []byte(responseInvalidMethodPostOnly)
-	invalidMethodRespBodyGetOnly  = []byte(responseInvalidMethodGetOnly)
 	errGzipReaderRespBody         = []byte(responseErrGzipReader)
 	errUnmarshalBodyRespBody      = []byte(responseErrUnmarshalBody)
 	errInternalServerError        = []byte(responseErrInternalServerError)
@@ -293,7 +291,7 @@ func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) 
 
 	// check that the channel exists
 	partitionID := req.Header.Get(splunk.HTTPSplunkChannelHeader)
-	if len(partitionID) <= 0 {
+	if len(partitionID) == 0 {
 		r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
 		return
 	}
@@ -337,7 +335,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	if r.ackExt != nil {
 		// check channel header exists
 		partitionID = req.Header.Get(splunk.HTTPSplunkChannelHeader)
-		if len(partitionID) <= 0 {
+		if len(partitionID) == 0 {
 			r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
 			return
 		}
@@ -439,7 +437,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	if r.ackExt != nil {
 		// check channel header exists
 		partitionID = req.Header.Get(splunk.HTTPSplunkChannelHeader)
-		if len(partitionID) <= 0 {
+		if len(partitionID) == 0 {
 			r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
 			return
 		}

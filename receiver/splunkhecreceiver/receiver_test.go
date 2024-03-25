@@ -1401,12 +1401,12 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
 			assert.NoError(t, err)
 
-			mockHost := mockHost{extensions: map[component.ID]component.Component{
+			mh := mockHost{extensions: map[component.ID]component.Component{
 				id: tt.setupMockAckExtension(t),
 			}}
 
 			r := rcv.(*splunkReceiver)
-			assert.NoError(t, r.Start(context.Background(), mockHost))
+			assert.NoError(t, r.Start(context.Background(), mh))
 			defer func() {
 				assert.NoError(t, r.Shutdown(context.Background()))
 			}()
@@ -1519,11 +1519,11 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			r := rcv.(*splunkReceiver)
 			w := httptest.NewRecorder()
 
-			mockHost := mockHost{extensions: map[component.ID]component.Component{
+			mh := mockHost{extensions: map[component.ID]component.Component{
 				id: tt.setupMockAckExtension(t),
 			}}
 
-			assert.NoError(t, r.Start(context.Background(), mockHost))
+			assert.NoError(t, r.Start(context.Background(), mh))
 			defer func() {
 				assert.NoError(t, r.Shutdown(context.Background()))
 			}()
