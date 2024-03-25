@@ -61,7 +61,7 @@ func TestE2E(t *testing.T) {
 			t,
 			func() bool {
 				for _, obj := range collectorObjs {
-					k8sObj, err := k8stest.GetObject(dynamicClient, obj.GroupVersionKind(), obj.GetNamespace(), obj.GetName())
+					k8sObj, err := k8stest.GetObject(k8sClient, obj.GroupVersionKind(), obj.GetNamespace(), obj.GetName())
 					// We want the Get operation to fail to ensure the object has been completely deleted. If
 					// an object is returned, or there's no error, it still exists.
 					if k8sObj != nil || err == nil {

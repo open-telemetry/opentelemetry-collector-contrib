@@ -5,6 +5,9 @@ package k8stest // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"fmt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,17 +59,19 @@ func DeleteObject(client *K8sClient, obj *unstructured.Unstructured) error {
 		PropagationPolicy:  &policy,
 	}
 
-	deletePolicy := metav1.DeletePropagationForeground
-	return resource.Delete(context.Background(), obj.GetName(), metav1.DeleteOptions{
-		PropagationPolicy: &deletePolicy,
-	})
+	return resource.Delete(context.Background(), obj.GetName(), options)
 }
 
-func GetObject(client *dynamic.DynamicClient, gvk schema.GroupVersionKind, namespace string, name string) (*unstructured.Unstructured, error) {
+func GetObject(client *K8sClient, gvk schema.GroupVersionKind, namespace string, name string) (*unstructured.Unstructured, error) {
 	gvr := schema.GroupVersionResource{
 		Group:    gvk.Group,
 		Version:  gvk.Version,
 		Resource: strings.ToLower(gvk.Kind + "s"),
 	}
-	return client.Resource(gvr).Namespace(namespace).Get(context.Background(), name, metav1.GetOptions{})
+
+	if client.DynamicClient == nil {
+		return nil, fmt.Errorf("No dynamic client, can't get object.")
+	}
+
+	return client.DynamicClient.Resource(gvr).Namespace(namespace).Get(context.Background(), name, metav1.GetOptions{})
 }
