@@ -231,8 +231,8 @@ default
 file_input.knownFiles0
 ```
 
-When a new log file is created with a single entry in it, and the `filelog` receiver in the collector
-pipeline has ingested this entry, the contents of the `/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file
+When a new log file is created with one or more entries in it, and the `filelog` receiver in the collector
+pipeline has ingested these entries, the contents of the `/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file
 change to reflect this new state.
 
 ```
