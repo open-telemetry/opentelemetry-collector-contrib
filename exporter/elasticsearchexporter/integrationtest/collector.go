@@ -187,7 +187,7 @@ func getCollectorCfg(cfg config, esURL, tmpDir string, flushIvl time.Duration) (
 	}
 	tmpl, err := template.New("otel-config").Parse(cfgTemplate)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create OTEL collector configuration: %w", err)
+		return nil, fmt.Errorf("failed to create OTEL collector configuration template: %w", err)
 	}
 	tmplCfg := struct {
 		config
