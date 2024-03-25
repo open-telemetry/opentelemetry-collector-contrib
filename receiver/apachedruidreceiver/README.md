@@ -21,7 +21,7 @@ Apache Druid cluster needs to be configured to enable metrics, see [Enabling Met
 
 The following configuration options are supported:
 
-- `endpoint` (default = 0.0.0.0:9000) HTTP service endpoint for the line protocol receiver
+- `endpoint` (default = localhost:9000) HTTP service endpoint for the line protocol receiver
 - `metrics_path` (default = `/services/collector/metrics`) The path accepting Apache Druid metrics.
 - `logs_path` (default = `/services/collector/logs`) The path accepting Apache Druid logs.
 - `cluster_name` (default = `default`) The default name of Druid cluster. Note that the [HTTP Emitter](https://druid.apache.org/docs/latest/configuration/#http-emitter-module) of Apache Druid `28.0.0` doesn't include cluster name information in metrics.
