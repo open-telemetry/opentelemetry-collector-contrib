@@ -11,7 +11,7 @@ import (
 
 const (
 	// MaxAdjustedCount is 2^56 i.e. 0x100000000000000 i.e., 1<<56.
-	MaxAdjustedCount = 1 << 56
+	MaxAdjustedCount uint64 = 1 << 56
 
 	// NumHexDigits is the number of hex digits equalling 56 bits.
 	// This is the limit of sampling precision.

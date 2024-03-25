@@ -13,7 +13,7 @@ var ErrProbabilityRange = errors.New("sampling probability out of the range [1/M
 
 // MinSamplingProbability is the smallest representable probability
 // and is the inverse of MaxAdjustedCount.
-const MinSamplingProbability = 1.0 / MaxAdjustedCount
+const MinSamplingProbability = 1.0 / float64(MaxAdjustedCount)
 
 // probabilityInRange tests MinSamplingProb <= prob <= 1.
 func probabilityInRange(prob float64) bool {
@@ -66,5 +66,5 @@ func ProbabilityToThresholdWithPrecision(fraction float64, precision int) (Thres
 
 // Probability is the sampling ratio in the range [MinSamplingProb, 1].
 func (t Threshold) Probability() float64 {
-	return float64(MaxAdjustedCount-t.unsigned) / MaxAdjustedCount
+	return float64(MaxAdjustedCount-t.unsigned) / float64(MaxAdjustedCount)
 }
