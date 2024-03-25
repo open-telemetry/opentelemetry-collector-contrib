@@ -15,22 +15,22 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
-	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.NotNil(t, cfg, "failed to create default config")
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestCreateProcessor(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := processortest.NewNopCreateSettings()
 	tp, err := createTracesProcessor(context.Background(), set, cfg, consumertest.NewNop())
-	assert.NoError(t, err, "cannot create trace processor")
 	assert.NotNil(t, tp)
+	assert.NoError(t, err, "cannot create trace processor")
 }
 
 func TestCreateProcessorLogs(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := processortest.NewNopCreateSettings()
 	tp, err := createLogsProcessor(context.Background(), set, cfg, consumertest.NewNop())
-	assert.NoError(t, err, "cannot create logs processor")
 	assert.NotNil(t, tp)
+	assert.NoError(t, err, "cannot create logs processor")
 }
