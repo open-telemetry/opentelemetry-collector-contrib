@@ -38,10 +38,6 @@ type Config struct {
 	ReportExtraScrapeMetrics bool `mapstructure:"report_extra_scrape_metrics"`
 
 	TargetAllocator *TargetAllocator `mapstructure:"target_allocator"`
-
-	// EnableProtobufNegotiation allows the collector to set the scraper option for
-	// protobuf negotiation when conferring with a prometheus client.
-	EnableProtobufNegotiation bool `mapstructure:"enable_protobuf_negotiation"`
 }
 
 // Validate checks the receiver configuration is valid.

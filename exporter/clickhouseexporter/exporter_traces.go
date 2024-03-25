@@ -158,7 +158,7 @@ func convertLinks(links ptrace.SpanLinkSlice) ([]string, []string, []string, []m
 const (
 	// language=ClickHouse SQL
 	createTracesTableSQL = `
-CREATE TABLE IF NOT EXISTS %s (
+CREATE TABLE IF NOT EXISTS %s %s (
      Timestamp DateTime64(9) CODEC(Delta, ZSTD(1)),
      TraceId String CODEC(ZSTD(1)),
      SpanId String CODEC(ZSTD(1)),
@@ -191,7 +191,7 @@ CREATE TABLE IF NOT EXISTS %s (
      INDEX idx_span_attr_key mapKeys(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_span_attr_value mapValues(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_duration Duration TYPE minmax GRANULARITY 1
-) ENGINE MergeTree()
+) ENGINE = %s
 %s
 PARTITION BY toDate(Timestamp)
 ORDER BY (ServiceName, SpanName, toUnixTimestamp(Timestamp), TraceId)
@@ -249,18 +249,18 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 
 const (
 	createTraceIDTsTableSQL = `
-create table IF NOT EXISTS %s_trace_id_ts (
+create table IF NOT EXISTS %s_trace_id_ts %s (
      TraceId String CODEC(ZSTD(1)),
      Start DateTime64(9) CODEC(Delta, ZSTD(1)),
      End DateTime64(9) CODEC(Delta, ZSTD(1)),
      INDEX idx_trace_id TraceId TYPE bloom_filter(0.01) GRANULARITY 1
-) ENGINE MergeTree()
+) ENGINE = %s
 %s
 ORDER BY (TraceId, toUnixTimestamp(Start))
 SETTINGS index_granularity=8192;
 `
 	createTraceIDTsMaterializedViewSQL = `
-CREATE MATERIALIZED VIEW IF NOT EXISTS %s_trace_id_ts_mv
+CREATE MATERIALIZED VIEW IF NOT EXISTS %s_trace_id_ts_mv %s
 TO %s.%s_trace_id_ts
 AS SELECT
 TraceId,
@@ -292,15 +292,15 @@ func renderInsertTracesSQL(cfg *Config) string {
 
 func renderCreateTracesTableSQL(cfg *Config) string {
 	ttlExpr := generateTTLExpr(cfg.TTLDays, cfg.TTL, "Timestamp")
-	return fmt.Sprintf(createTracesTableSQL, cfg.TracesTableName, ttlExpr)
+	return fmt.Sprintf(createTracesTableSQL, cfg.TracesTableName, cfg.ClusterString(), cfg.TableEngineString(), ttlExpr)
 }
 
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 	ttlExpr := generateTTLExpr(cfg.TTLDays, cfg.TTL, "Start")
-	return fmt.Sprintf(createTraceIDTsTableSQL, cfg.TracesTableName, ttlExpr)
+	return fmt.Sprintf(createTraceIDTsTableSQL, cfg.TracesTableName, cfg.ClusterString(), cfg.TableEngineString(), ttlExpr)
 }
 
 func renderTraceIDTsMaterializedViewSQL(cfg *Config) string {
 	return fmt.Sprintf(createTraceIDTsMaterializedViewSQL, cfg.TracesTableName,
-		cfg.Database, cfg.TracesTableName, cfg.Database, cfg.TracesTableName)
+		cfg.ClusterString(), cfg.Database, cfg.TracesTableName, cfg.Database, cfg.TracesTableName)
 }

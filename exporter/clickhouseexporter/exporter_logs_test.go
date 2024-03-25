@@ -121,7 +121,20 @@ func TestExporter_pushLogsData(t *testing.T) {
 	})
 }
 
-// nolint:unparam // not need to check this func
+func TestLogsClusterConfig(t *testing.T) {
+	testClusterConfig(t, func(t *testing.T, dsn string, clusterTest clusterTestConfig, fns ...func(*Config)) {
+		exporter := newTestLogsExporter(t, dsn, fns...)
+		clusterTest.verifyConfig(t, exporter.cfg)
+	})
+}
+
+func TestLogsTableEngineConfig(t *testing.T) {
+	testTableEngineConfig(t, func(t *testing.T, dsn string, engineTest tableEngineTestConfig, fns ...func(*Config)) {
+		exporter := newTestLogsExporter(t, dsn, fns...)
+		engineTest.verifyConfig(t, exporter.cfg.TableEngine)
+	})
+}
+
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
 	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)

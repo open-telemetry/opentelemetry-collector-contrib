@@ -1,0 +1,11 @@
+awss3:
+awss3/1:
+  s3downloader:
+    s3_bucket: abucket
+  starttime: "a date"
+  endtime: "2024-02-03a"
+awss3/2:
+  s3downloader:
+    s3_bucket: abucket
+  starttime: "2024-01-31 15:00"
+  endtime: "2024-02-03"

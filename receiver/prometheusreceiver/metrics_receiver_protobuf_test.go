@@ -7,6 +7,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/prometheus/prometheus/config"
 	dto "github.com/prometheus/prometheus/prompb/io/prometheus/client"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -153,6 +154,6 @@ func TestScrapeViaProtobuf(t *testing.T) {
 	}
 
 	testComponent(t, targets, func(c *Config) {
-		c.EnableProtobufNegotiation = true
+		c.PrometheusConfig.GlobalConfig.ScrapeProtocols = []config.ScrapeProtocol{config.PrometheusProto}
 	})
 }

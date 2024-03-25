@@ -49,8 +49,8 @@ func (w worker) simulateLogs(res *resource.Resource, exporter exporter, telemetr
 		lattrs := log.Attributes()
 		lattrs.PutStr("app", "server")
 
-		for i, key := range telemetryAttributes {
-			lattrs.PutStr(key.Value.AsString(), telemetryAttributes[i].Value.AsString())
+		for i, attr := range telemetryAttributes {
+			lattrs.PutStr(string(attr.Key), telemetryAttributes[i].Value.AsString())
 		}
 
 		if err := exporter.export(logs); err != nil {

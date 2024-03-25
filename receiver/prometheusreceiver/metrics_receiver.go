@@ -18,6 +18,7 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/mitchellh/hashstructure/v2"
+	"github.com/prometheus/client_golang/prometheus"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
@@ -51,6 +52,7 @@ type pReceiver struct {
 	scrapeManager    *scrape.Manager
 	discoveryManager *discovery.Manager
 	httpClient       *http.Client
+	registerer       prometheus.Registerer
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -61,6 +63,9 @@ func newPrometheusReceiver(set receiver.CreateSettings, cfg *Config, next consum
 		settings:            set,
 		configLoaded:        make(chan struct{}),
 		targetAllocatorStop: make(chan struct{}),
+		registerer: prometheus.WrapRegistererWith(
+			prometheus.Labels{"receiver": set.ID.String()},
+			prometheus.DefaultRegisterer),
 	}
 	return pr
 }
@@ -240,11 +245,15 @@ func (r *pReceiver) applyCfg(cfg *PromConfig) error {
 }
 
 func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Logger) error {
-	r.discoveryManager = discovery.NewManager(ctx, logger)
+	sdMetrics, err := discovery.CreateAndRegisterSDMetrics(r.registerer)
+	if err != nil {
+		return err
+	}
+	r.discoveryManager = discovery.NewManager(ctx, logger, r.registerer, sdMetrics)
 
 	go func() {
 		r.settings.Logger.Info("Starting discovery manager")
-		if err := r.discoveryManager.Run(); err != nil && !errors.Is(err, context.Canceled) {
+		if err = r.discoveryManager.Run(); err != nil && !errors.Is(err, context.Canceled) {
 			r.settings.Logger.Error("Discovery manager failed", zap.Error(err))
 			r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
@@ -252,7 +261,6 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 
 	var startTimeMetricRegex *regexp.Regexp
 	if r.cfg.StartTimeMetricRegex != "" {
-		var err error
 		startTimeMetricRegex, err = regexp.Compile(r.cfg.StartTimeMetricRegex)
 		if err != nil {
 			return err
@@ -273,14 +281,17 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		return err
 	}
 
-	r.scrapeManager = scrape.NewManager(&scrape.Options{
-		PassMetadataInContext:     true,
-		EnableProtobufNegotiation: r.cfg.EnableProtobufNegotiation,
-		ExtraMetrics:              r.cfg.ReportExtraScrapeMetrics,
+	scrapeManager, err := scrape.NewManager(&scrape.Options{
+		PassMetadataInContext: true,
+		ExtraMetrics:          r.cfg.ReportExtraScrapeMetrics,
 		HTTPClientOptions: []commonconfig.HTTPClientOption{
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},
-	}, logger, store)
+	}, logger, store, r.registerer)
+	if err != nil {
+		return err
+	}
+	r.scrapeManager = scrapeManager
 
 	go func() {
 		// The scrape manager needs to wait for the configuration to be loaded before beginning

@@ -30,6 +30,7 @@ body:
       - connector/datadog
       - connector/exceptions
       - connector/failover
+      - connector/grafanacloud
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
@@ -183,6 +184,7 @@ body:
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
+      - receiver/awss3
       - receiver/awsxray
       - receiver/azureblob
       - receiver/azureeventhub

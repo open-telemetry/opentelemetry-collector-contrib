@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
@@ -192,6 +193,9 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			rt := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(recorder))
 			cs := receivertest.NewNopCreateSettings()
 			cs.TracerProvider = rt
+			cs.ReportStatus = func(event *component.StatusEvent) {
+				assert.NoError(t, event.Err())
+			}
 			rcv, err := newMetricsReceiver(cs, *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*carbonReceiver)

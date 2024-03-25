@@ -5,6 +5,7 @@ components:
     connector:
         - count
         - datadog
+        - grafanacloud
         - routing
         - servicegraph
         - spanmetrics

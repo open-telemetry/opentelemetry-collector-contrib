@@ -36,7 +36,7 @@ var tracesCmd = &cobra.Command{
 	Use:     "traces",
 	Short:   fmt.Sprintf("Simulates a client generating traces. (Stability level: %s)", metadata.TracesStability),
 	Example: "telemetrygen traces",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		return traces.Start(tracesCfg)
 	},
 }
@@ -46,7 +46,7 @@ var metricsCmd = &cobra.Command{
 	Use:     "metrics",
 	Short:   fmt.Sprintf("Simulates a client generating metrics. (Stability level: %s)", metadata.MetricsStability),
 	Example: "telemetrygen metrics",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		return metrics.Start(metricsCfg)
 	},
 }
@@ -56,7 +56,7 @@ var logsCmd = &cobra.Command{
 	Use:     "logs",
 	Short:   fmt.Sprintf("Simulates a client generating logs. (Stability level: %s)", metadata.LogsStability),
 	Example: "telemetrygen logs",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		return logs.Start(logsCfg)
 	},
 }
