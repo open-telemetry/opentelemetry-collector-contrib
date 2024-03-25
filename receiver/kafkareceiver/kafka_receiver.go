@@ -189,6 +189,9 @@ func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 		return nil
 	}
 	c.cancelConsumeLoop()
+	if c.consumerGroup == nil {
+		return nil
+	}
 	return c.consumerGroup.Close()
 }
 
@@ -273,6 +276,9 @@ func (c *kafkaMetricsConsumer) Shutdown(context.Context) error {
 		return nil
 	}
 	c.cancelConsumeLoop()
+	if c.consumerGroup == nil {
+		return nil
+	}
 	return c.consumerGroup.Close()
 }
 
@@ -357,6 +363,9 @@ func (c *kafkaLogsConsumer) Shutdown(context.Context) error {
 		return nil
 	}
 	c.cancelConsumeLoop()
+	if c.consumerGroup == nil {
+		return nil
+	}
 	return c.consumerGroup.Close()
 }
 
