@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
@@ -26,10 +27,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
-	"github.com/google/uuid"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
