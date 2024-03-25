@@ -84,8 +84,8 @@ func TestSelfSignedBackend(t *testing.T) {
 		AgentKey: "key11",
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: server.URL,
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.ClientConfig{
+				TLSSetting: configtls.Config{
 					CAFile: caFile,
 				},
 			},
@@ -110,8 +110,8 @@ func TestSelfSignedBackendCAFileNotFound(t *testing.T) {
 		AgentKey: "key11",
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.ClientConfig{
+				TLSSetting: configtls.Config{
 					CAFile: "ca_file_not_found.pem",
 				},
 			},

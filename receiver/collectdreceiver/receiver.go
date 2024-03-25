@@ -41,9 +41,6 @@ func newCollectdReceiver(
 	defaultAttrsPrefix string,
 	nextConsumer consumer.Metrics,
 	createSettings receiver.CreateSettings) (receiver.Metrics, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 
 	r := &collectdReceiver{
 		logger:             logger,

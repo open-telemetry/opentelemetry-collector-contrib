@@ -37,7 +37,7 @@ func createDefaultConfig() component.Config {
 		Broker:     []string{defaultHost},
 		MaxUnacked: defaultMaxUnaked,
 		Auth:       Authentication{},
-		TLS: configtls.TLSClientSetting{
+		TLS: configtls.ClientConfig{
 			InsecureSkipVerify: false,
 			Insecure:           false,
 		},
