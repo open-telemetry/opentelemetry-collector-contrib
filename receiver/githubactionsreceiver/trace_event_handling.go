@@ -71,7 +71,7 @@ func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []Step, job WorkflowJo
 	parentSpanID, _ := generateParentSpanID(job.RunID, job.RunAttempt)
 	span.SetParentSpanID(parentSpanID)
 
-	jobSpanID, _ := generateJobSpanID(job.ID, job.RunAttempt, job.Name)
+	jobSpanID, _ := generateJobSpanID(job.RunID, job.RunAttempt, job.Name)
 	span.SetSpanID(jobSpanID)
 
 	span.SetName(job.Name)
