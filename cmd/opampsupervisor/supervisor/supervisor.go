@@ -368,12 +368,12 @@ func (s *Supervisor) startOpAMP() error {
 				s.logger.Error("Server returned an error response", zap.String("message", err.ErrorMessage))
 			},
 			OnMessageFunc: s.onMessage,
-			OnOpampConnectionSettingsFunc: func(_ context.Context, settings *protobufs.OpAMPConnectionSettings) error {
+			OnOpampConnectionSettingsFunc: func(_ context.Context, _ *protobufs.OpAMPConnectionSettings) error {
 				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043
 				s.logger.Debug("Received ConnectionSettings request")
 				return nil
 			},
-			OnOpampConnectionSettingsAcceptedFunc: func(_ context.Context, settings *protobufs.OpAMPConnectionSettings) {
+			OnOpampConnectionSettingsAcceptedFunc: func(_ context.Context, _ *protobufs.OpAMPConnectionSettings) {
 				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043
 				s.logger.Debug("ConnectionSettings accepted")
 			},
@@ -385,7 +385,7 @@ func (s *Supervisor) startOpAMP() error {
 				}
 				return nil
 			},
-			SaveRemoteConfigStatusFunc: func(_ context.Context, status *protobufs.RemoteConfigStatus) {
+			SaveRemoteConfigStatusFunc: func(_ context.Context, _ *protobufs.RemoteConfigStatus) {
 				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
 			},
 			GetEffectiveConfigFunc: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
