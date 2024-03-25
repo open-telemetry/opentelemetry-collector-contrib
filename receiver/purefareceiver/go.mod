@@ -135,14 +135,14 @@ require (
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.96.1-0.20240322165517-15201f1e5967 // indirect
-	go.opentelemetry.io/collector/config/configcompression v0.96.1-0.20240322165517-15201f1e5967 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240322165517-15201f1e5967 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.4.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.4.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240322165517-15201f1e5967 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.96.1-0.20240322165517-15201f1e5967 // indirect
 	go.opentelemetry.io/collector/config/internal v0.96.1-0.20240322165517-15201f1e5967 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.96.1-0.20240322165517-15201f1e5967 // indirect
-	go.opentelemetry.io/collector/featuregate v1.3.1-0.20240322165517-15201f1e5967 // indirect
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240322165517-15201f1e5967 // indirect
+	go.opentelemetry.io/collector/featuregate v1.4.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.4.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.96.1-0.20240322165517-15201f1e5967 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
