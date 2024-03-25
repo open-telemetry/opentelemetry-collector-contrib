@@ -140,7 +140,6 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		resp, err = httpClient.Get("https://localhost:7777/metrics")
 		require.NoError(t, err)
 		require.NoError(t, resp.Body.Close())
-
 	})
 
 	assert.NotNil(t, exp)
