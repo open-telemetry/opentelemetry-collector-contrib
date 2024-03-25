@@ -21,7 +21,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.50.27 // indirect
+	github.com/aws/aws-sdk-go v1.51.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -92,6 +92,3 @@ retract (
 	v0.76.1
 	v0.65.0
 )
-
-// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24240
-replace github.com/docker/docker v24.0.4+incompatible => github.com/docker/docker v24.0.5-0.20230719162248-f022632503d1+incompatible
