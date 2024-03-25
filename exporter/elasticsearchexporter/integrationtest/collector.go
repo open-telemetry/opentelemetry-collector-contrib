@@ -27,6 +27,15 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
+type otelColConfig struct {
+	GRPCEndpoint  string
+	StorageDir    string
+	ESEndpoint    string
+	ESLogsIndex   string
+	FlushInterval time.Duration
+	Debug         bool
+}
+
 // otelCol represents the otel collector instance created for testing the ES
 // exporter with otlp receivers.
 type otelCol struct {
@@ -37,7 +46,7 @@ type otelCol struct {
 
 // newTestCollector creates a new instance of OTEL collector. The collector wraps
 // the real OTEL collector and provides testing functions on top of it.
-func newTestCollector(t testing.TB, cfg config, esURL string, flushIvl time.Duration) *otelCol {
+func newTestCollector(t testing.TB, cfg otelColConfig) *otelCol {
 	var (
 		err       error
 		factories otelcol.Factories
@@ -56,7 +65,7 @@ func newTestCollector(t testing.TB, cfg config, esURL string, flushIvl time.Dura
 	)
 	require.NoError(t, err)
 
-	cfgFile, err := getCollectorCfg(cfg, esURL, t.TempDir(), flushIvl)
+	cfgFile, err := getCollectorCfg(cfg)
 	require.NoError(t, err)
 	_, err = otelcoltest.LoadConfigAndValidate(cfgFile.Name(), factories)
 	require.NoError(t, err)
@@ -180,8 +189,8 @@ service:
       exporters: [elasticsearch, debug]
 `
 
-func getCollectorCfg(cfg config, esURL, tmpDir string, flushIvl time.Duration) (*os.File, error) {
-	cfgFile, err := os.CreateTemp(tmpDir, "otelconf-*")
+func getCollectorCfg(cfg otelColConfig) (*os.File, error) {
+	cfgFile, err := os.CreateTemp(cfg.StorageDir, "otelconf-*")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OTEL configuration file: %w", err)
 	}
@@ -189,18 +198,7 @@ func getCollectorCfg(cfg config, esURL, tmpDir string, flushIvl time.Duration) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OTEL collector configuration template: %w", err)
 	}
-	tmplCfg := struct {
-		config
-		ESEndpoint    string
-		StorageDir    string
-		FlushInterval time.Duration
-	}{
-		config:        cfg,
-		ESEndpoint:    esURL,
-		StorageDir:    tmpDir,
-		FlushInterval: flushIvl,
-	}
-	if err := tmpl.Execute(cfgFile, tmplCfg); err != nil {
+	if err := tmpl.Execute(cfgFile, cfg); err != nil {
 		return nil, fmt.Errorf("failed to create OTEL collector configuration: %w", err)
 	}
 	return cfgFile, nil

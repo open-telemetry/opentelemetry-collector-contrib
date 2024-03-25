@@ -24,6 +24,11 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+const (
+	gRPCEndpoint = "127.0.0.1:4317"
+	esLogsIndex  = "esexportertest"
+)
+
 func TestExporter(t *testing.T) {
 	for _, tc := range []struct {
 		name string
@@ -49,13 +54,19 @@ func TestExporter(t *testing.T) {
 func runner(t *testing.T, restartCollector, mockESFailure bool) {
 	t.Helper()
 
-	cfg := loadConfig(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	flushIvl := time.Second
-	mockES := newMockESClient(t, cfg.Debug)
-	collector := newTestCollector(t, cfg, mockES.ServerURL, flushIvl)
+	debug := getDebugFlag(t)
+	mockES := newMockESClient(t, debug)
+	collector := newTestCollector(t, otelColConfig{
+		GRPCEndpoint:  gRPCEndpoint,
+		StorageDir:    t.TempDir(),
+		ESEndpoint:    mockES.ServerURL,
+		ESLogsIndex:   esLogsIndex,
+		FlushInterval: time.Second,
+		Debug:         debug,
+	})
 
 	var g errgroup.Group
 	cancelRun := runTestCollectorWithWait(ctx, t, collector, &g)
@@ -77,7 +88,7 @@ func runner(t *testing.T, restartCollector, mockESFailure bool) {
 		}
 	}
 
-	count := sendLogs(t, cfg.GRPCEndpoint, "batch_1", 500, 10) // total=logs*agents
+	count := sendLogs(t, gRPCEndpoint, "batch_1", 500, 10) // total=logs*agents
 
 	if restartCollector {
 		// Restart the collector after all data is sent to the collector.
@@ -93,11 +104,11 @@ func runner(t *testing.T, restartCollector, mockESFailure bool) {
 		mockES.SetReturnStatusCode(http.StatusOK)
 	}
 
-	count += sendLogs(t, cfg.GRPCEndpoint, "batch_2", 500, 10) // total=logs*agents
+	count += sendLogs(t, gRPCEndpoint, "batch_2", 500, 10) // total=logs*agents
 
 	assert.Eventually(
 		t, func() bool {
-			resp, err := mockES.Count(mockES.Count.WithIndex(cfg.ESLogsIndex))
+			resp, err := mockES.Count(mockES.Count.WithIndex(esLogsIndex))
 			require.NoError(t, err)
 			defer resp.Body.Close()
 
