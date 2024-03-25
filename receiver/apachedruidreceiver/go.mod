@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apache
 go 1.21
 
 require (
-	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.90.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.90.0
@@ -15,7 +14,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.21.0
 	go.opentelemetry.io/otel/trace v1.21.0
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.0
 )
 
 require (
@@ -49,10 +47,11 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.90.0 // indirect
 	go.opentelemetry.io/collector/extension v0.90.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.90.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.3.1-0.20240306115632-b2693620eff6 // indirect
+	go.opentelemetry.io/collector/featuregate v1.3.1-0.20240315172937-3b5aee0c7a16 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

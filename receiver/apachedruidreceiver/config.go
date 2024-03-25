@@ -9,7 +9,7 @@ import (
 
 // Config defines configuration for the Apache Druid receiver.
 type Config struct {
-	confighttp.HTTPServerSettings `mapstructure:",squash"`
+	confighttp.ServerConfig `mapstructure:",squash"`
 
 	// MetricsPath for metrics data collection, default is '/services/collector/metrics'
 	MetricsPath string `mapstructure:"metrics_path"`

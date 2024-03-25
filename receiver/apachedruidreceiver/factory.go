@@ -24,8 +24,8 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: "0.0.0.0:9000",
+		HTTPServerSettings: confighttp.ServerConfig{
+			Endpoint: "localhost:9000",
 		},
 		MetricsPath: "/services/collector/metrics",
 		ClusterName: "default",

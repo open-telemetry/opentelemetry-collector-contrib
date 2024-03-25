@@ -20,7 +20,7 @@ import (
 func TestWriteLineProtocol_v2API(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	config := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		HTTPServerSettings: confighttp.ServerConfig{
 			Endpoint: addr,
 		},
 	}
