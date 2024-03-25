@@ -29,6 +29,7 @@ connector/countconnector/                                @open-telemetry/collect
 connector/datadogconnector/                              @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13
 connector/exceptionsconnector/                           @open-telemetry/collector-contrib-approvers @jpkrohling @marctc
 connector/failoverconnector/                             @open-telemetry/collector-contrib-approvers @akats7 @djaglowski @fatsheep9146
+connector/grafanacloudconnector/                         @open-telemetry/collector-contrib-approvers @jpkrohling @rlankfo @jcreixell
 connector/routingconnector/                              @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 connector/servicegraphconnector/                         @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
 connector/spanmetricsconnector/                          @open-telemetry/collector-contrib-approvers @portertech
