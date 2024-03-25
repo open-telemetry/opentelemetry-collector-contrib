@@ -73,6 +73,12 @@ prometheus --config.file=prom.yaml
 "--feature-gates=receiver.prometheusreceiver.UseCreatedMetric"
 ```
 
+- `receiver.prometheusreceiver.EnableNativeHistograms`: process and turn native histogram metrics into OpenTelemetry exponential histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.EnableNativeHistograms"
+```
+
 - `report_extra_scrape_metrics`: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`
 
 You can copy and paste that same configuration under:
@@ -133,11 +139,15 @@ receivers:
 
 ## Prometheus native histograms
 
-Native histograms is an experimental [feature](https://prometheus.io/docs/prometheus/latest/feature_flags/#native-histograms) of Prometheus.
-To enable scraping native histograms, set the top level option `enable_protobuf_negotiation` to `true` and enable the feature gate
-`receiver.prometheusreceiver.EnableNativeHistograms`.
-Prometheus native histograms are mapped to OpenTelemetry exponential histograms. This applies to the most common integer counter histograms,
-gauge histograms are dropped.
+Native histograms are an experimental [feature](https://prometheus.io/docs/prometheus/latest/feature_flags/#native-histograms) of Prometheus.
+
+To start scraping native histograms, set the `config.global.scrape_protocols = [ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]`
+option in the receiver configuration. This requirement will be lifted once Prometheus can scrape native histograms over text formats.
+
+To enable converting native histograms to OpenTelemetry exponential histograms, enable the feature gate `receiver.prometheusreceiver.EnableNativeHistograms`.
+The feature is considered experimental.
+
+This feature applies to the most common integer counter histograms, gauge histograms are dropped.
 In case a metric has both the conventional (aka classic) buckets and also native histogram buckets, only the native histogram buckets will be
 taken into account to create the corresponding exponential histogram. To scrape the classic buckets instead use the
 [scrape option](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config) `scrape_classic_histograms`.

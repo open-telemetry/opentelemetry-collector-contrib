@@ -283,6 +283,12 @@ func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 					return false
 				}
 			}
+		case pmetric.MetricTypeExponentialHistogram:
+			for i := 0; i < m.ExponentialHistogram().DataPoints().Len(); i++ {
+				if !m.ExponentialHistogram().DataPoints().At(i).Flags().NoRecordedValue() {
+					return false
+				}
+			}
 		case pmetric.MetricTypeHistogram:
 			for i := 0; i < m.Histogram().DataPoints().Len(); i++ {
 				if !m.Histogram().DataPoints().At(i).Flags().NoRecordedValue() {
@@ -295,7 +301,7 @@ func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 					return false
 				}
 			}
-		case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
+		case pmetric.MetricTypeEmpty:
 		}
 	}
 	return true

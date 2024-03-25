@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 
 	"github.com/prometheus/common/model"
@@ -149,6 +150,9 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	curMF, existing := t.getOrCreateMetricFamily(getScopeID(ls), metricName)
 
 	if t.enableNativeHistograms && curMF.mtype == pmetric.MetricTypeExponentialHistogram {
+		// If a histogram has both classic and native version, the native histogram is scraped
+		// first. Getting a float sample for the same series means that `scrape_classic_histogram`
+		// is set to true in the scrape config. In this case, we should ignore the native histogram.
 		curMF.mtype = pmetric.MetricTypeHistogram
 	}
 
@@ -159,11 +163,14 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 		// histogram. This is similar to how Prometheus handles it, but we
 		// don't have access to the previous value so we're applying some
 		// heuristics to figure out if this is native histogram or not.
+		// The metric type will indicate histogram, but presumably there will be no
+		// _bucket, _count, _sum suffix or `le` label, which makes addSeries fail
+		// with errEmptyLeLabel.
 		if t.enableNativeHistograms && errors.Is(err, errEmptyLeLabel) && !existing && value.IsStaleNaN(val) && curMF.mtype == pmetric.MetricTypeHistogram {
 			mg := curMF.loadMetricGroupOrCreate(seriesRef, ls, atMs)
 			curMF.mtype = pmetric.MetricTypeExponentialHistogram
 			mg.mtype = pmetric.MetricTypeExponentialHistogram
-			_ = curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, &histogram.Histogram{Sum: val}, nil)
+			_ = curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, &histogram.Histogram{Sum: math.Float64frombits(value.StaleNaN)}, nil)
 			// ignore errors here, this is best effort.
 		} else {
 			t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))

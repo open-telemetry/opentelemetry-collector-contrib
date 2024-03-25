@@ -440,19 +440,23 @@ func (mf *metricFamily) addExponentialHistogramSeries(seriesRef uint64, metricNa
 	}
 	switch {
 	case fh != nil:
+		if mg.hValue != nil {
+			return fmt.Errorf("exponential histogram %v already has float counts", metricName)
+		}
 		mg.count = fh.Count
 		mg.sum = fh.Sum
 		mg.hasCount = true
 		mg.hasSum = true
-		mg.hValue = nil
 		mg.fhValue = fh
 	case h != nil:
+		if mg.fhValue != nil {
+			return fmt.Errorf("exponential histogram %v already has integer counts", metricName)
+		}
 		mg.count = float64(h.Count)
 		mg.sum = h.Sum
 		mg.hasCount = true
 		mg.hasSum = true
 		mg.hValue = h
-		mg.fhValue = nil
 	}
 	return nil
 }
