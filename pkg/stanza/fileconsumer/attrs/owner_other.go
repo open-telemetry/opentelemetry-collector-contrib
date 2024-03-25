@@ -12,22 +12,22 @@ import (
 	"syscall"
 )
 
-func (r *Resolver) addOwnerInfo(file *os.File, attributes map[string]any) (err error) {
-	var fileInfo, errStat = file.Stat()
+func (r *Resolver) addOwnerInfo(file *os.File, attributes map[string]any) error {
+	fileInfo, errStat := file.Stat()
 	if errStat != nil {
-		return fmt.Errorf("resolve file stat: %w", err)
+		return fmt.Errorf("resolve file stat: %w", errStat)
 	}
-	var fileStat = fileInfo.Sys().(*syscall.Stat_t)
+	fileStat := fileInfo.Sys().(*syscall.Stat_t)
 
 	if r.IncludeFileOwnerName {
-		var fileOwner, errFileUser = user.LookupId(fmt.Sprint(fileStat.Uid))
+		fileOwner, errFileUser := user.LookupId(fmt.Sprint(fileStat.Uid))
 		if errFileUser != nil {
 			return fmt.Errorf("resolve file owner name: %w", errFileUser)
 		}
 		attributes[LogFileOwnerName] = fileOwner.Username
 	}
 	if r.IncludeFileOwnerGroupName {
-		var fileGroup, errFileGroup = user.LookupGroupId(fmt.Sprint(fileStat.Gid))
+		fileGroup, errFileGroup := user.LookupGroupId(fmt.Sprint(fileStat.Gid))
 		if errFileGroup != nil {
 			return fmt.Errorf("resolve file group name: %w", errFileGroup)
 		}

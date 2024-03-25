@@ -28,8 +28,8 @@ func TestResolver(t *testing.T) {
 			IncludeFilePath:           bitString[1] == '1',
 			IncludeFileNameResolved:   bitString[2] == '1',
 			IncludeFilePathResolved:   bitString[3] == '1',
-			IncludeFileOwnerName:      bitString[4] == '1',
-			IncludeFileOwnerGroupName: bitString[5] == '1',
+			IncludeFileOwnerName:      bitString[4] == '1' && runtime.GOOS != "windows",
+			IncludeFileOwnerGroupName: bitString[5] == '1' && runtime.GOOS != "windows",
 		}
 
 		t.Run(bitString, func(t *testing.T) {
@@ -70,7 +70,7 @@ func TestResolver(t *testing.T) {
 			} else {
 				assert.Empty(t, attributes[LogFilePathResolved])
 			}
-			if runtime.GOOS != "windows" && r.IncludeFileOwnerName {
+			if r.IncludeFileOwnerName {
 				expectLen++
 				assert.NotNil(t, attributes[LogFileOwnerName])
 				assert.IsType(t, "", attributes[LogFileOwnerName])
@@ -78,7 +78,7 @@ func TestResolver(t *testing.T) {
 				assert.Empty(t, attributes[LogFileOwnerName])
 				assert.Empty(t, attributes[LogFileOwnerName])
 			}
-			if runtime.GOOS != "windows" && r.IncludeFileOwnerGroupName {
+			if r.IncludeFileOwnerGroupName {
 				expectLen++
 				assert.NotNil(t, attributes[LogFileOwnerGroupName])
 				assert.IsType(t, "", attributes[LogFileOwnerGroupName])
