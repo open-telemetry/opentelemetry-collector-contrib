@@ -26,8 +26,6 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				SamplingPercentage: 15.3,
-				SamplingPrecision:  4,
-				Mode:               "proportional",
 				AttributeSource:    "traceID",
 			},
 		},
@@ -35,9 +33,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "logs"),
 			expected: &Config{
 				SamplingPercentage: 15.3,
-				SamplingPrecision:  defaultPrecision,
 				HashSeed:           22,
-				Mode:               "",
 				AttributeSource:    "record",
 				FromAttribute:      "foo",
 				SamplingPriority:   "bar",

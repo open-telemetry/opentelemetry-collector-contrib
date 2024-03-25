@@ -51,10 +51,6 @@ var (
 
 	// AlwaysSampleThreshold represents 100% sampling.
 	AlwaysSampleThreshold = Threshold{unsigned: 0}
-
-	// NeverSampledThreshold is a threshold value that will always not sample.
-	// The TValue() corresponding with this threshold is an empty string.
-	NeverSampleThreshold = Threshold{unsigned: MaxAdjustedCount}
 )
 
 // TValueToThreshold returns a Threshold.  Because TValue strings
@@ -83,27 +79,14 @@ func TValueToThreshold(s string) (Threshold, error) {
 	}, nil
 }
 
-// UnsignedToThreshold constructs a threshold expressed in terms
-// defined by number of rejections out of MaxAdjustedCount, which
-// equals the number of randomness values.
-func UnsignedToThreshold(unsigned uint64) (Threshold, error) {
-	if unsigned >= MaxAdjustedCount {
-		return NeverSampleThreshold, ErrTValueSize
-	}
-	return Threshold{unsigned: unsigned}, nil
-}
-
 // TValue encodes a threshold, which is a variable-length hex string
 // up to 14 characters.  The empty string is returned for 100%
 // sampling.
 func (th Threshold) TValue() string {
 	// Always-sample is a special case because TrimRight() below
 	// will trim it to the empty string, which represents no t-value.
-	switch th {
-	case AlwaysSampleThreshold:
+	if th == AlwaysSampleThreshold {
 		return "0"
-	case NeverSampleThreshold:
-		return ""
 	}
 	// For thresholds other than the extremes, format a full-width
 	// (14 digit) unsigned value with leading zeros, then, remove
@@ -115,26 +98,9 @@ func (th Threshold) TValue() string {
 }
 
 // ShouldSample returns true when the span passes this sampler's
-// consistent sampling decision.  The sampling decision can be
-// expressed as a T <= R.
+// consistent sampling decision.
 func (th Threshold) ShouldSample(rnd Randomness) bool {
-	return th.unsigned <= rnd.unsigned
-}
-
-// Unsigned expresses the number of Randomness values (out of
-// MaxAdjustedCount) that are rejected or not sampled.  0 means 100%
-// sampling.
-func (th Threshold) Unsigned() uint64 {
-	return th.unsigned
-}
-
-// AdjustedCount returns the effective count for this item, considering
-// the sampling probability.
-func (th Threshold) AdjustedCount() float64 {
-	if th == NeverSampleThreshold {
-		return 0
-	}
-	return 1.0 / th.Probability()
+	return rnd.unsigned >= th.unsigned
 }
 
 // ThresholdGreater allows direct comparison of Threshold values.

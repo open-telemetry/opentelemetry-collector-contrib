@@ -97,6 +97,9 @@ func NewOpenTelemetryTraceState(input string) (OpenTelemetryTraceState, error) {
 			if otts.rnd, err = RValueToRandomness(value); err == nil {
 				otts.rvalue = value
 			} else {
+				// The zero-value for randomness implies always-sample;
+				// the threshold test is R < T, but T is not meaningful
+				// at zero, and this value implies zero adjusted count.
 				otts.rvalue = ""
 				otts.rnd = Randomness{}
 			}
@@ -148,13 +151,12 @@ func (otts *OpenTelemetryTraceState) TValueThreshold() (Threshold, bool) {
 // changes its adjusted count.  If the change of TValue leads to
 // inconsistency (i.e., raising sampling probability), an error is
 // returned.
-func (otts *OpenTelemetryTraceState) UpdateTValueWithSampling(sampledThreshold Threshold) error {
+func (otts *OpenTelemetryTraceState) UpdateTValueWithSampling(sampledThreshold Threshold, encodedTValue string) error {
 	if len(otts.TValue()) != 0 && ThresholdGreater(otts.threshold, sampledThreshold) {
 		return ErrInconsistentSampling
 	}
-	// Note this allows NeverSampleThreshold, "" to be set.
 	otts.threshold = sampledThreshold
-	otts.tvalue = sampledThreshold.TValue()
+	otts.tvalue = encodedTValue
 	return nil
 }
 
@@ -165,7 +167,7 @@ func (otts *OpenTelemetryTraceState) AdjustedCount() float64 {
 	if len(otts.TValue()) == 0 {
 		return 0
 	}
-	return otts.threshold.AdjustedCount()
+	return 1.0 / otts.threshold.Probability()
 }
 
 // ClearTValue is used to unset TValue, in cases where it is

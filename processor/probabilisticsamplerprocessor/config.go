@@ -39,33 +39,6 @@ type Config struct {
 	// that.
 	HashSeed uint32 `mapstructure:"hash_seed"`
 
-	// Mode selects the sampling behavior. Supported values:
-	//
-	// - "hash_seed": the legacy behavior of this processor.
-	//   Using an FNV hash combined with the HashSeed value, this
-	//   sampler performs a non-consistent probabilistic
-	//   downsampling.  The number of spans output is expected to
-	//   equal SamplingPercentage (as a ratio) times the number of
-	//   spans inpout, assuming good behavior from FNV and good
-	//   entropy in the hashed attributes or TraceID.
-	//
-	// - "equalizing": Using an OTel-specified consistent sampling
-	//   mechanism, this sampler selectively reduces the effective
-	//   sampling probability of arriving spans.  This can be
-	//   useful to select a small fraction of complete traces from
-	//   a stream with mixed sampling rates.  The rate of spans
-	//   passing through depends on how much sampling has already
-	//   been applied.  If an arriving span was head sampled at
-	//   the same probability it passes through.  If the span
-	//   arrives with lower probability, a warning is logged
-	//   because it means this sampler is configured with too
-	//   large a sampling probability to ensure complete traces.
-	//
-	// - "proportional": Using an OTel-specified consistent sampling
-	//   mechanism, this sampler reduces the effective sampling
-	//   probability of each span by `SamplingProbability`.
-	Mode SamplerMode `mapstructure:"mode"`
-
 	// FailClosed indicates to not sample data (the processor will
 	// fail "closed") in case of error, such as failure to parse
 	// the tracestate field or missing the randomness attribute.
@@ -75,11 +48,6 @@ type Config struct {
 	// FailClosed is processed, making it possible to sample
 	// despite errors using priority.
 	FailClosed bool `mapstructure:"fail_closed"`
-
-	// SamplingPrecision is how many hex digits of sampling
-	// threshold will be encoded, from 1 up to 14.  Default is 4.
-	// 0 is treated as full precision.
-	SamplingPrecision int `mapstructure:"sampling_precision"`
 
 	///////
 	// Logs only fields below.
@@ -121,12 +89,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.AttributeSource != "" && !validAttributeSource[cfg.AttributeSource] {
 		return fmt.Errorf("invalid attribute source: %v. Expected: %v or %v", cfg.AttributeSource, traceIDAttributeSource, recordAttributeSource)
-	}
-
-	if cfg.SamplingPrecision == 0 {
-		return fmt.Errorf("invalid sampling precision: 0")
-	} else if cfg.SamplingPrecision > sampling.NumHexDigits {
-		return fmt.Errorf("sampling precision is too great, should be <= 14: %d", cfg.SamplingPrecision)
 	}
 
 	return nil

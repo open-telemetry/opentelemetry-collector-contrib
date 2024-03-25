@@ -105,7 +105,7 @@ func TestOpenTelemetryTraceStateTValueUpdate(t *testing.T) {
 	require.NotEqual(t, "", otts.RValue())
 
 	th, _ := TValueToThreshold("3")
-	require.NoError(t, otts.UpdateTValueWithSampling(th))
+	require.NoError(t, otts.UpdateTValueWithSampling(th, "3"))
 
 	require.Equal(t, "3", otts.TValue())
 	tv, hasTv := otts.TValueThreshold()
@@ -126,7 +126,7 @@ func TestOpenTelemetryTraceStateRTUpdate(t *testing.T) {
 	require.True(t, otts.HasAnyValue())
 
 	th, _ := TValueToThreshold("3")
-	require.NoError(t, otts.UpdateTValueWithSampling(th))
+	require.NoError(t, otts.UpdateTValueWithSampling(th, "3"))
 	otts.SetRValue(must(RValueToRandomness("00000000000003")))
 
 	const updated = "rv:00000000000003;th:3;a:b"
@@ -329,7 +329,7 @@ func TestUpdateTValueWithSampling(t *testing.T) {
 			newTh, err := ProbabilityToThreshold(test.prob)
 			require.NoError(t, err)
 
-			upErr := otts.UpdateTValueWithSampling(newTh)
+			upErr := otts.UpdateTValueWithSampling(newTh, newTh.TValue())
 
 			require.Equal(t, test.updateErr, upErr)
 

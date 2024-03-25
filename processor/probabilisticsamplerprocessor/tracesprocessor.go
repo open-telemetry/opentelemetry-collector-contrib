@@ -6,7 +6,6 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 import (
 	"context"
 	"strconv"
-	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"go.opentelemetry.io/collector/consumer"
@@ -42,53 +41,20 @@ type traceProcessor struct {
 	logger     *zap.Logger
 }
 
+// tracestateCarrier conveys information about sampled spans between
+// the call to parse incoming randomness/threshold and the call to
+// decide.
 type tracestateCarrier struct {
 	span ptrace.Span
-	sampling.W3CTraceState
 }
 
 var _ samplingCarrier = &tracestateCarrier{}
 
 func newTracestateCarrier(s ptrace.Span) (samplingCarrier, error) {
-	var err error
 	tsc := &tracestateCarrier{
 		span: s,
 	}
-	tsc.W3CTraceState, err = sampling.NewW3CTraceState(s.TraceState().AsRaw())
-	return tsc, err
-}
-
-func (tc *tracestateCarrier) threshold() (sampling.Threshold, bool) {
-	return tc.W3CTraceState.OTelValue().TValueThreshold()
-}
-
-func (tc *tracestateCarrier) explicitRandomness() (randomnessNamer, bool) {
-	rnd, ok := tc.W3CTraceState.OTelValue().RValueRandomness()
-	if !ok {
-		return newMissingRandomnessMethod(), false
-	}
-	return newSamplingRandomnessMethod(rnd), true
-}
-
-func (tc *tracestateCarrier) updateThreshold(th sampling.Threshold) error {
-	return tc.W3CTraceState.OTelValue().UpdateTValueWithSampling(th)
-}
-
-func (tc *tracestateCarrier) setExplicitRandomness(rnd randomnessNamer) {
-	tc.W3CTraceState.OTelValue().SetRValue(rnd.randomness())
-}
-
-func (tc *tracestateCarrier) clearThreshold() {
-	tc.W3CTraceState.OTelValue().ClearTValue()
-}
-
-func (tc *tracestateCarrier) reserialize() error {
-	var w strings.Builder
-	err := tc.W3CTraceState.Serialize(&w)
-	if err == nil {
-		tc.span.TraceState().FromRaw(w.String())
-	}
-	return err
+	return tsc, nil
 }
 
 // newTracesProcessor returns a processor.TracesProcessor that will
@@ -96,7 +62,7 @@ func (tc *tracestateCarrier) reserialize() error {
 // configuration.
 func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
 	tp := &traceProcessor{
-		sampler:    makeSampler(cfg, false),
+		sampler:    makeSampler(cfg),
 		failClosed: cfg.FailClosed,
 		logger:     set.Logger,
 	}
@@ -110,47 +76,19 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
+func (th *neverSampler) randomnessFromSpan(_ ptrace.Span) (randomnessNamer, samplingCarrier, error) {
+	return newMissingRandomnessMethod(), nil, nil
+}
+
 func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {
 	tid := s.TraceID()
 	// Note: this admits empty TraceIDs.
 	rnd := newTraceIDHashingMethod(randomnessFromBytes(tid[:], th.hashSeed))
 	tsc, err := newTracestateCarrier(s)
 
-	// If the tracestate contains a proper R-value or T-value, we
-	// have to leave it alone.  The user should not be using this
-	// sampler mode if they are using specified forms of consistent
-	// sampling in OTel.
-	if err != nil {
-		return rnd, nil, err
-	} else if _, has := tsc.explicitRandomness(); has {
-		err = ErrRandomnessInUse
-		tsc = nil
-	} else if _, has := tsc.threshold(); has {
-		err = ErrThresholdInUse
-		tsc = nil
-	} else {
-		// When no sampling information is present, add a
-		// Randomness value.
-		tsc.setExplicitRandomness(rnd)
-	}
-	return rnd, tsc, err
-}
-
-func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {
-	rnd := newMissingRandomnessMethod()
-	tsc, err := newTracestateCarrier(s)
 	if err != nil {
 		tsc = nil
-	} else if rv, has := tsc.explicitRandomness(); has {
-		// When the tracestate is OK and has r-value, use it.
-		rnd = rv
-	} else if s.TraceID().IsEmpty() {
-		// If the TraceID() is all zeros, which W3C calls an invalid TraceID.
-		// rnd continues to be missing.
-	} else {
-		rnd = newTraceIDW3CSpecMethod(sampling.TraceIDToRandomness(s.TraceID()))
 	}
-
 	return rnd, tsc, err
 }
 

@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -20,93 +19,25 @@ type logsProcessor struct {
 	sampler dataSampler
 
 	samplingPriority string
-	precision        int
 	failClosed       bool
 	logger           *zap.Logger
 }
 
 type recordCarrier struct {
 	record plog.LogRecord
-
-	parsed struct {
-		tvalue    string
-		threshold sampling.Threshold
-
-		rvalue     string
-		randomness sampling.Randomness
-	}
 }
 
 var _ samplingCarrier = &recordCarrier{}
 
-func (rc *recordCarrier) get(key string) string {
-	val, ok := rc.record.Attributes().Get(key)
-	if !ok || val.Type() != pcommon.ValueTypeStr {
-		return ""
-	}
-	return val.Str()
-}
-
 func newLogRecordCarrier(l plog.LogRecord) (samplingCarrier, error) {
-	var ret error
 	carrier := &recordCarrier{
 		record: l,
 	}
-	if tvalue := carrier.get("sampling.threshold"); len(tvalue) != 0 {
-		th, err := sampling.TValueToThreshold(tvalue)
-		if err != nil {
-			ret = multierr.Append(err, ret)
-		} else {
-			carrier.parsed.tvalue = tvalue
-			carrier.parsed.threshold = th
-		}
-	}
-	if rvalue := carrier.get("sampling.randomness"); len(rvalue) != 0 {
-		rnd, err := sampling.RValueToRandomness(rvalue)
-		if err != nil {
-			ret = multierr.Append(err, ret)
-		} else {
-			carrier.parsed.rvalue = rvalue
-			carrier.parsed.randomness = rnd
-		}
-	}
-	return carrier, ret
+	return carrier, nil
 }
 
-func (rc *recordCarrier) threshold() (sampling.Threshold, bool) {
-	return rc.parsed.threshold, len(rc.parsed.tvalue) != 0
-}
-
-func (rc *recordCarrier) explicitRandomness() (randomnessNamer, bool) {
-	if len(rc.parsed.rvalue) == 0 {
-		return newMissingRandomnessMethod(), false
-	}
-	return newSamplingRandomnessMethod(rc.parsed.randomness), true
-}
-
-func (rc *recordCarrier) updateThreshold(th sampling.Threshold) error {
-	exist, has := rc.threshold()
-	if has && sampling.ThresholdLessThan(th, exist) {
-		return sampling.ErrInconsistentSampling
-	}
-	rc.record.Attributes().PutStr("sampling.threshold", th.TValue())
-	return nil
-}
-
-func (rc *recordCarrier) setExplicitRandomness(rnd randomnessNamer) {
-	rc.parsed.randomness = rnd.randomness()
-	rc.parsed.rvalue = rnd.randomness().RValue()
-	rc.record.Attributes().PutStr("sampling.randomness", rnd.randomness().RValue())
-}
-
-func (rc *recordCarrier) clearThreshold() {
-	rc.parsed.threshold = sampling.NeverSampleThreshold
-	rc.parsed.tvalue = ""
-	rc.record.Attributes().Remove("sampling.threshold")
-}
-
-func (rc *recordCarrier) reserialize() error {
-	return nil
+func (*neverSampler) randomnessFromLogRecord(_ plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
+	return newMissingRandomnessMethod(), nil, nil
 }
 
 // randomnessFromLogRecord (hashingSampler) uses a hash function over
@@ -135,45 +66,6 @@ func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (randomnessN
 		// The sampling.randomness or sampling.threshold attributes
 		// had a parse error, in this case.
 		lrc = nil
-	} else if _, hasRnd := lrc.explicitRandomness(); hasRnd {
-		// If the log record contains a randomness value, do not update.
-		err = ErrRandomnessInUse
-		lrc = nil
-	} else if _, hasTh := lrc.threshold(); hasTh {
-		// If the log record contains a threshold value, do not update.
-		err = ErrThresholdInUse
-		lrc = nil
-	} else if !isMissing(rnd) {
-		// When no sampling information is already present and we have
-		// calculated new randomness, add it to the record.
-		lrc.setExplicitRandomness(rnd)
-	}
-
-	return rnd, lrc, err
-}
-
-func (ctc *consistentTracestateCommon) randomnessFromLogRecord(l plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
-	lrc, err := newLogRecordCarrier(l)
-	rnd := newMissingRandomnessMethod()
-
-	if err != nil {
-		// Parse error in sampling.randomness or sampling.thresholdnil
-		lrc = nil
-	} else if rv, hasRnd := lrc.explicitRandomness(); hasRnd {
-		rnd = rv
-	} else if tid := l.TraceID(); !tid.IsEmpty() {
-		rnd = newTraceIDW3CSpecMethod(sampling.TraceIDToRandomness(tid))
-	} else {
-		// The case of no TraceID remains.  Use the configured attribute.
-
-		if ctc.logsRandomnessSourceAttribute == "" {
-			// rnd continues to be missing
-		} else if value, ok := l.Attributes().Get(ctc.logsRandomnessSourceAttribute); ok {
-			rnd = newAttributeHashingMethod(
-				ctc.logsRandomnessSourceAttribute,
-				randomnessFromBytes(getBytesFromValue(value), ctc.logsRandomnessHashSeed),
-			)
-		}
 	}
 
 	return rnd, lrc, err
@@ -183,9 +75,8 @@ func (ctc *consistentTracestateCommon) randomnessFromLogRecord(l plog.LogRecord)
 // configuration.
 func newLogsProcessor(ctx context.Context, set processor.CreateSettings, nextConsumer consumer.Logs, cfg *Config) (processor.Logs, error) {
 	lsp := &logsProcessor{
-		sampler:          makeSampler(cfg, true),
+		sampler:          makeSampler(cfg),
 		samplingPriority: cfg.SamplingPriority,
-		precision:        cfg.SamplingPrecision,
 		failClosed:       cfg.FailClosed,
 		logger:           set.Logger,
 	}
@@ -254,7 +145,7 @@ func (lsp *logsProcessor) logRecordToPriorityThreshold(l plog.LogRecord) samplin
 			minProb = float64(localPriority.Int()) / 100.0
 		}
 		if minProb != 0 {
-			if th, err := sampling.ProbabilityToThresholdWithPrecision(minProb, lsp.precision); err == nil {
+			if th, err := sampling.ProbabilityToThresholdWithPrecision(minProb, defaultPrecision); err == nil {
 				// The record has supplied a valid alternative sampling proabability
 				return th
 			}
