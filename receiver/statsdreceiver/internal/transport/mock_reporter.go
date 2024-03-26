@@ -25,6 +25,10 @@ func NewMockReporter(expectedOnMetricsProcessedCalls int) *MockReporter {
 func (m *MockReporter) OnDebugf(_ string, _ ...any) {
 }
 
+func (m *MockReporter) RecordReceivedMetric(_ error) {}
+
+func (m *MockReporter) RecordFlushedMetrics(_ int64, _ error) {}
+
 // WaitAllOnMetricsProcessedCalls blocks until the number of expected calls
 // specified at creation of the reporter is completed.
 func (m *MockReporter) WaitAllOnMetricsProcessedCalls() {

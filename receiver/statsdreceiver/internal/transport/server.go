@@ -41,4 +41,7 @@ type Reporter interface {
 	OnDebugf(
 		template string,
 		args ...any)
+
+	RecordReceivedMetric(err error)
+	RecordFlushedMetrics(count int64, err error)
 }
