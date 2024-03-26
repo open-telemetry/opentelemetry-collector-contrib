@@ -87,6 +87,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),
@@ -127,6 +128,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							JobName:         "prometheus_simple/localhost:1234",
@@ -169,6 +171,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							JobName:         "prometheus_simple/localhost:1234",
@@ -231,6 +234,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),
@@ -278,6 +282,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),
@@ -319,6 +324,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),
@@ -363,6 +369,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),
