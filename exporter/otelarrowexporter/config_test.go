@@ -13,6 +13,7 @@ import (
 	"github.com/open-telemetry/otel-arrow/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -45,7 +46,7 @@ func TestUnmarshalConfig(t *testing.T) {
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 10 * time.Second,
 			},
-			RetrySettings: configretry.BackOffConfig{
+			RetryConfig: configretry.BackOffConfig{
 				Enabled:             true,
 				InitialInterval:     10 * time.Second,
 				RandomizationFactor: 0.7,
@@ -66,8 +67,8 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "none",
-				TLSSetting: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+				TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
 						CAFile: "/var/lib/mycert.pem",
 					},
 					Insecure: false,
@@ -79,7 +80,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "experimental",
-				Auth:            &configauth.Authentication{AuthenticatorID: component.MustNewID("nop")},
+				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID(component.MustNewType("nop"))},
 			},
 			Arrow: ArrowSettings{
 				NumStreams:         2,
@@ -123,7 +124,7 @@ func TestDefaultSettingsValid(t *testing.T) {
 	// this must be set by the user and config
 	// validation always checks that a value is set.
 	cfg.(*Config).Arrow.MaxStreamLifetime = 2 * time.Second
-	require.NoError(t, cfg.(*Config).Validate())
+	require.NoError(t, component.ValidateConfig(cfg))
 }
 
 func TestArrowSettingsPayloadCompressionZstd(t *testing.T) {
@@ -131,7 +132,7 @@ func TestArrowSettingsPayloadCompressionZstd(t *testing.T) {
 		PayloadCompression: configcompression.TypeZstd,
 	}
 	var config config.Config
-	for _, opt := range settings.toArrowProducerOptions() {
+	for _, opt := range settings.ToArrowProducerOptions() {
 		opt(&config)
 	}
 	require.True(t, config.Zstd)
@@ -143,7 +144,7 @@ func TestArrowSettingsPayloadCompressionNone(t *testing.T) {
 			PayloadCompression: configcompression.Type(value),
 		}
 		var config config.Config
-		for _, opt := range settings.toArrowProducerOptions() {
+		for _, opt := range settings.ToArrowProducerOptions() {
 			opt(&config)
 		}
 		require.False(t, config.Zstd)

@@ -9,24 +9,20 @@ import (
 
 	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
 	"github.com/open-telemetry/otel-arrow/pkg/config"
+	"google.golang.org/grpc"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"google.golang.org/grpc"
 )
 
 // Config defines configuration for OTLP exporter.
 type Config struct {
-	// Timeout, Retry, Queue, and gRPC client settings are
-	// inherited from exporterhelper using field names
-	// intentionally identical to the core OTLP exporter.
-
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-
-	RetrySettings configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	RetryConfig                    configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
 	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
@@ -65,29 +61,17 @@ type ArrowSettings struct {
 	// Note that `Zstd` applies to gRPC, not Arrow compression.
 	PayloadCompression configcompression.Type `mapstructure:"payload_compression"`
 
-	// Disabled prevents using OTel Arrow streams.  The exporter
-	// falls back to standard OTLP.
+	// Disabled prevents registering the OTel Arrow service.
 	Disabled bool `mapstructure:"disabled"`
 
-	// DisableDowngrade prevents this exporter from fallback back
-	// to standard OTLP.  If the Arrow service is unavailable, it
-	// will retry and/or fail.
+	// DisableDowngrade prevents this exporter from fallback back to
+	// standard OTLP.
 	DisableDowngrade bool `mapstructure:"disable_downgrade"`
 }
 
 var _ component.Config = (*Config)(nil)
 
-// Validate checks if the exporter configuration is valid
-func (cfg *Config) Validate() error {
-	if err := cfg.QueueSettings.Validate(); err != nil {
-		return fmt.Errorf("queue settings has invalid configuration: %w", err)
-	}
-	if err := cfg.Arrow.Validate(); err != nil {
-		return fmt.Errorf("arrow settings has invalid configuration: %w", err)
-	}
-
-	return nil
-}
+var _ component.ConfigValidator = (*ArrowSettings)(nil)
 
 // Validate returns an error when the number of streams is less than 1.
 func (cfg *ArrowSettings) Validate() error {
@@ -95,8 +79,8 @@ func (cfg *ArrowSettings) Validate() error {
 		return fmt.Errorf("stream count must be > 0: %d", cfg.NumStreams)
 	}
 
-	if cfg.MaxStreamLifetime.Seconds() < 1 {
-		return fmt.Errorf("max stream life must be >= 1s: %d", cfg.MaxStreamLifetime)
+	if cfg.MaxStreamLifetime.Seconds() < float64(1) {
+		return fmt.Errorf("max stream life must be > 0: %d", cfg.MaxStreamLifetime)
 	}
 
 	if err := cfg.Zstd.Validate(); err != nil {
@@ -113,7 +97,7 @@ func (cfg *ArrowSettings) Validate() error {
 	return nil
 }
 
-func (cfg *ArrowSettings) toArrowProducerOptions() (arrowOpts []config.Option) {
+func (cfg *ArrowSettings) ToArrowProducerOptions() (arrowOpts []config.Option) {
 	switch cfg.PayloadCompression {
 	case configcompression.TypeZstd:
 		arrowOpts = append(arrowOpts, config.WithZstd())
