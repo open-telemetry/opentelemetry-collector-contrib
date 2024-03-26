@@ -15,7 +15,7 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.2
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.96.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/config/configretry v0.96.1-0.20240322165517-15201f1e5967
+	go.opentelemetry.io/collector/config/configretry v0.97.0
 	go.opentelemetry.io/collector/config/configtls v0.96.1-0.20240322165517-15201f1e5967
 	go.opentelemetry.io/collector/confmap v0.96.1-0.20240322165517-15201f1e5967
 	go.opentelemetry.io/collector/consumer v0.96.1-0.20240322165517-15201f1e5967
