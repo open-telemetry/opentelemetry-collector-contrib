@@ -22,7 +22,7 @@ const lagMetricsInSecondsFeatureGateID = "postgresqlreceiver.preciselagmetrics"
 
 var preciseLagMetricsFg = featuregate.GlobalRegistry().MustRegister(
 	lagMetricsInSecondsFeatureGateID,
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`."),
 	featuregate.WithRegisterFromVersion("0.89.0"),
 )
@@ -70,10 +70,10 @@ type postgreSQLConfig struct {
 	password string
 	database string
 	address  confignet.AddrConfig
-	tls      configtls.TLSClientSetting
+	tls      configtls.ClientConfig
 }
 
-func sslConnectionString(tls configtls.TLSClientSetting) string {
+func sslConnectionString(tls configtls.ClientConfig) string {
 	if tls.Insecure {
 		return "sslmode='disable'"
 	}

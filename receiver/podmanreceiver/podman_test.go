@@ -70,7 +70,7 @@ func TestWatchingTimeouts(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			Timeout: 50 * time.Millisecond,
 		},
 	}
@@ -123,7 +123,7 @@ func TestEventLoopHandlesError(t *testing.T) {
 	observed, logs := observer.New(zapcore.WarnLevel)
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			Timeout: 50 * time.Millisecond,
 		},
 	}

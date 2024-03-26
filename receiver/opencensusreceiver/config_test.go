@@ -95,8 +95,8 @@ func TestLoadConfig(t *testing.T) {
 						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
-					TLSSetting: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: &configtls.ServerConfig{
+						TLSSetting: configtls.Config{
 							CertFile: "test.crt",
 							KeyFile:  "test.key",
 						},

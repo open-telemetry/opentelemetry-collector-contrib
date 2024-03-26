@@ -23,15 +23,15 @@ const (
 )
 
 func createDefaultConfig() component.Config {
-	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = defaultInterval
 
 	return &Config{
-		ScraperControllerSettings: cfg,
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
-		Schema:                    defaultSchema,
-		Database:                  defaultDB,
-		Role:                      defaultRole,
+		ControllerConfig:     cfg,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Schema:               defaultSchema,
+		Database:             defaultDB,
+		Role:                 defaultRole,
 	}
 }
 
@@ -57,7 +57,7 @@ func createMetricsReceiver(_ context.Context,
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings,
+		&cfg.ControllerConfig,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scraper),

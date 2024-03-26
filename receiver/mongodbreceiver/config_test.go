@@ -86,10 +86,10 @@ func TestValidate(t *testing.T) {
 			}
 
 			cfg := &Config{
-				Username:                  tc.username,
-				Password:                  configopaque.String(tc.password),
-				Hosts:                     hosts,
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Username:         tc.username,
+				Password:         configopaque.String(tc.password),
+				Hosts:            hosts,
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			}
 			err := component.ValidateConfig(cfg)
 			if tc.expected == nil {
@@ -104,13 +104,13 @@ func TestValidate(t *testing.T) {
 func TestBadTLSConfigs(t *testing.T) {
 	testCases := []struct {
 		desc        string
-		tlsConfig   configtls.TLSClientSetting
+		tlsConfig   configtls.ClientConfig
 		expectError bool
 	}{
 		{
 			desc: "CA file not found",
-			tlsConfig: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			tlsConfig: configtls.ClientConfig{
+				TLSSetting: configtls.Config{
 					CAFile: "not/a/real/file.pem",
 				},
 				Insecure:           false,
@@ -121,8 +121,8 @@ func TestBadTLSConfigs(t *testing.T) {
 		},
 		{
 			desc: "no issues",
-			tlsConfig: configtls.TLSClientSetting{
-				TLSSetting:         configtls.TLSSetting{},
+			tlsConfig: configtls.ClientConfig{
+				TLSSetting:         configtls.Config{},
 				Insecure:           false,
 				InsecureSkipVerify: false,
 				ServerName:         "",
@@ -141,8 +141,8 @@ func TestBadTLSConfigs(t *testing.T) {
 						Transport: confignet.TransportTypeTCP,
 					},
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-				TLSClientSetting:          tc.tlsConfig,
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				ClientConfig:     tc.tlsConfig,
 			}
 			err := component.ValidateConfig(cfg)
 			if tc.expectError {
@@ -186,9 +186,9 @@ func TestOptionsTLS(t *testing.T) {
 				Endpoint: "localhost:27017",
 			},
 		},
-		TLSClientSetting: configtls.TLSClientSetting{
+		ClientConfig: configtls.ClientConfig{
 			Insecure: false,
-			TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.Config{
 				CAFile: caFile,
 			},
 		},

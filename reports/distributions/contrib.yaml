@@ -6,6 +6,7 @@ components:
         - count
         - datadog
         - exceptions
+        - grafanacloud
         - routing
         - servicegraph
         - spanmetrics
@@ -71,6 +72,7 @@ components:
         - k8s_observer
         - oauth2client
         - oidc
+        - opamp
         - pprof
         - sigv4auth
     processor:
