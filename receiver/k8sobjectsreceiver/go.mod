@@ -34,7 +34,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
-	github.com/evanphx/json-patch v5.7.0+incompatible // indirect
+	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
@@ -50,7 +50,7 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
-	github.com/imdario/mergo v0.3.13 // indirect
+	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.7 // indirect
@@ -66,7 +66,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.97.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
+	github.com/opencontainers/image-spec v1.1.0-rc4 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -76,7 +76,6 @@ require (
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rs/cors v1.10.1 // indirect
-	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opentelemetry.io/collector v0.97.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.97.0 // indirect
