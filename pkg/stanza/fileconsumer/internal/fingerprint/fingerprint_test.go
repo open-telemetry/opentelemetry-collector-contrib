@@ -5,6 +5,7 @@ package fingerprint
 
 import (
 	"fmt"
+	"hash/fnv"
 	"math/rand"
 	"os"
 	"testing"
@@ -53,7 +54,11 @@ func TestNewDoesNotModifyOffset(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	fp := New([]byte("hello"))
-	require.Equal(t, []byte("hello"), fp.firstBytes)
+	require.Equal(t, "hello", string(fp.firstBytes))
+
+	h := fnv.New64()
+	_, _ = h.Write([]byte("hello")) // nolint:errcheck
+	require.Equal(t, h.Sum64(), fp.firstBytesHash)
 }
 
 func TestNewFromFile(t *testing.T) {
@@ -170,6 +175,29 @@ func TestCopy(t *testing.T) {
 		// Copy is modified
 		require.Equal(t, tc+"also", string(cp.firstBytes))
 	}
+}
+
+func TestLen(t *testing.T) {
+	require.Equal(t, 0, New([]byte("")).Len())
+	require.Equal(t, 5, New([]byte("hello")).Len())
+	require.Equal(t, 10, New([]byte("helloworld")).Len())
+}
+
+func TestTruncate(t *testing.T) {
+	fp := New([]byte("hello"))
+	require.Equal(t, "hello", string(fp.firstBytes))
+
+	fp.Truncate(3)
+	require.Equal(t, "hel", string(fp.firstBytes))
+	require.Equal(t, New([]byte("hel")).firstBytesHash, fp.firstBytesHash)
+
+	fp.Truncate(10)
+	require.Equal(t, "hel", string(fp.firstBytes))
+	require.Equal(t, New([]byte("hel")).firstBytesHash, fp.firstBytesHash)
+
+	fp.Truncate(0)
+	require.Equal(t, "", string(fp.firstBytes))
+	require.Equal(t, New([]byte("")).firstBytesHash, fp.firstBytesHash)
 }
 
 func TestEqual(t *testing.T) {

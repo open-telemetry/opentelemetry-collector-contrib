@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"os"
 )
@@ -19,11 +20,14 @@ const MinSize = 16 // bytes
 // Fingerprint is used to identify a file
 // A file's fingerprint is the first N bytes of the file
 type Fingerprint struct {
-	firstBytes []byte
+	firstBytes     []byte
+	firstBytesHash uint64
 }
 
 func New(first []byte) *Fingerprint {
-	return &Fingerprint{firstBytes: first}
+	h := fnv.New64()
+	_, _ = h.Write(first) // nolint:errcheck // fnv.Write never returns an error
+	return &Fingerprint{firstBytes: first, firstBytesHash: h.Sum64()}
 }
 
 func NewFromFile(file *os.File, size int) (*Fingerprint, error) {
@@ -46,22 +50,23 @@ func (f *Fingerprint) Len() int {
 	return len(f.firstBytes)
 }
 
-// Equal returns true if the fingerprints have the same FirstBytes,
+func (f *Fingerprint) Truncate(size int) {
+	if size < 0 || size > len(f.firstBytes) {
+		return
+	}
+	shorter := New(f.firstBytes[:size])
+	*f = *shorter
+}
+
+// Equal returns true if the fingerprints have the same firstBytes,
 // false otherwise. This does not compare other aspects of the fingerprints
 // because the primary purpose of a fingerprint is to convey a unique
-// identity, and only the FirstBytes field contributes to this goal.
-func (f Fingerprint) Equal(other *Fingerprint) bool {
-	l0 := len(other.firstBytes)
-	l1 := len(f.firstBytes)
-	if l0 != l1 {
+// identity, and only the firstBytes field contributes to this goal.
+func (f *Fingerprint) Equal(other *Fingerprint) bool {
+	if len(f.firstBytes) != len(other.firstBytes) {
 		return false
 	}
-	for i := 0; i < l0; i++ {
-		if other.firstBytes[i] != f.firstBytes[i] {
-			return false
-		}
-	}
-	return true
+	return f.firstBytesHash == other.firstBytesHash
 }
 
 // StartsWith returns true if the fingerprints are the same
@@ -70,16 +75,17 @@ func (f Fingerprint) Equal(other *Fingerprint) bool {
 // since their initial size is typically less than that of
 // a fingerprint. As the file grows, its fingerprint is updated
 // until it reaches a maximum size, as configured on the operator
-func (f Fingerprint) StartsWith(old *Fingerprint) bool {
-	l0 := len(old.firstBytes)
-	if l0 == 0 {
+func (f *Fingerprint) StartsWith(other *Fingerprint) bool {
+	if len(other.firstBytes) == 0 {
 		return false
 	}
-	l1 := len(f.firstBytes)
-	if l0 > l1 {
+	if len(f.firstBytes) < len(other.firstBytes) {
 		return false
 	}
-	return bytes.Equal(old.firstBytes[:l0], f.firstBytes[:l0])
+	if len(f.firstBytes) == len(other.firstBytes) {
+		return f.firstBytesHash == other.firstBytesHash
+	}
+	return bytes.Equal(f.firstBytes[:len(other.firstBytes)], other.firstBytes)
 }
 
 func (f *Fingerprint) MarshalJSON() ([]byte, error) {
@@ -93,6 +99,9 @@ func (f *Fingerprint) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	f.firstBytes = m.FirstBytes
+	h := fnv.New64()
+	_, _ = h.Write(f.firstBytes) // nolint:errcheck
+	f.firstBytesHash = h.Sum64()
 	return nil
 }
 
