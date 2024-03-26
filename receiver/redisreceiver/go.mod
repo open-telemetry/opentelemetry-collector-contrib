@@ -9,14 +9,14 @@ require (
 	github.com/redis/go-redis/v9 v9.5.1
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.29.1
-	go.opentelemetry.io/collector/component v0.96.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/config/confignet v0.96.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/config/configtls v0.96.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/confmap v0.96.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/consumer v0.96.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/receiver v0.96.1-0.20240322165517-15201f1e5967
+	go.opentelemetry.io/collector/component v0.97.0
+	go.opentelemetry.io/collector/config/confignet v0.97.0
+	go.opentelemetry.io/collector/config/configopaque v1.4.0
+	go.opentelemetry.io/collector/config/configtls v0.97.0
+	go.opentelemetry.io/collector/confmap v0.97.0
+	go.opentelemetry.io/collector/consumer v0.97.0
+	go.opentelemetry.io/collector/pdata v1.4.0
+	go.opentelemetry.io/collector/receiver v0.97.0
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
 	go.uber.org/goleak v1.3.0
@@ -82,8 +82,8 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/collector v0.96.1-0.20240322165517-15201f1e5967 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240322165517-15201f1e5967 // indirect
+	go.opentelemetry.io/collector v0.97.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.97.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.45.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.46.0 // indirect
