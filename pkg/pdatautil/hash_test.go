@@ -263,7 +263,7 @@ func TestMapHashSelectedKeys(t *testing.T) {
 				for j := i + 1; j < len(tt.maps); j++ {
 					if tt.equal {
 						assert.Equal(t, MapHashSelectedKeys(tt.maps[i], tt.keys[i]), MapHashSelectedKeys(tt.maps[j], tt.keys[j]),
-							"maps %d %v and %d %v must have the same hash, then calculated with keys %v", i, tt.maps[i].AsRaw(), j, tt.maps[j].AsRaw(), tt.keys[i], tt.keys[j])
+							"maps %d %v and %d %v must have the same hash, then calculated with keys %v and %v", i, tt.maps[i].AsRaw(), j, tt.maps[j].AsRaw(), tt.keys[i], tt.keys[j])
 					} else {
 						assert.NotEqual(t, MapHashSelectedKeys(tt.maps[i], tt.keys[i]), MapHashSelectedKeys(tt.maps[j], tt.keys[j]),
 							"maps %d %v and %d %v must have different hashes, then calculated with keys %v and %v", i, tt.maps[i].AsRaw(), j, tt.maps[j].AsRaw(), tt.keys[i], tt.keys[j])
