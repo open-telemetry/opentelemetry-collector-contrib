@@ -426,7 +426,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 				mutCfg = func(*PromConfig) {}
 			}
 			testComponent(t, targets, func(c *Config) {
-				c.EnableProtobufNegotiation = true
+				c.PrometheusConfig.GlobalConfig.ScrapeProtocols = []config.ScrapeProtocol{config.PrometheusProto}
 			}, mutCfg)
 		})
 	}
@@ -544,7 +544,7 @@ func TestStaleExponentialHistogram(t *testing.T) {
 		_ = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
 	}()
 	testComponent(t, targets, func(c *Config) {
-		c.EnableProtobufNegotiation = true
+		c.PrometheusConfig.GlobalConfig.ScrapeProtocols = []config.ScrapeProtocol{config.PrometheusProto}
 	})
 }
 
@@ -608,6 +608,6 @@ func TestFloatCounterHistogram(t *testing.T) {
 		_ = featuregate.GlobalRegistry().Set("receiver.prometheusreceiver.EnableNativeHistograms", false)
 	}()
 	testComponent(t, targets, func(c *Config) {
-		c.EnableProtobufNegotiation = true
+		c.PrometheusConfig.GlobalConfig.ScrapeProtocols = []config.ScrapeProtocol{config.PrometheusProto}
 	})
 }
