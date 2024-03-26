@@ -56,24 +56,6 @@ func TestE2E(t *testing.T) {
 		for _, obj := range collectorObjs {
 			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object")
 		}
-
-		//require.Eventuallyf(
-		//	t,
-		//	func() bool {
-		//		for _, obj := range collectorObjs {
-		//			k8sObj, err := k8stest.GetObject(k8sClient, obj.GroupVersionKind(), obj.GetNamespace(), obj.GetName())
-		//			// We want the Get operation to fail to ensure the object has been completely deleted. If
-		//			// an object is returned, or there's no error, it still exists.
-		//			if k8sObj != nil || err == nil {
-		//				return false
-		//			}
-		//		}
-		//		return true
-		//	},
-		//	1*time.Minute,
-		//	1*time.Second,
-		//	"failed to delete all objects within time limit",
-		//)
 	}()
 
 	wantEntries := 10 // Minimal number of metrics to wait for.
