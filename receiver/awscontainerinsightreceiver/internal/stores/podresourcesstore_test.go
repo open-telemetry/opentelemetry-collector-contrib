@@ -144,7 +144,8 @@ func (m *MockPodResourcesClient) Shutdown() {
 
 func TestNewPodResourcesStore(t *testing.T) {
 	logger := zap.NewNop()
-	store := NewPodResourcesStore(logger)
+	store, err := NewPodResourcesStore(logger)
+	assert.Nil(t, err, "Error should be nil")
 	assert.NotNil(t, store, "PodResourcesStore should not be nil")
 	assert.NotNil(t, store.ctx, "Context should not be nil")
 	assert.NotNil(t, store.cancel, "Cancel function should not be nil")
