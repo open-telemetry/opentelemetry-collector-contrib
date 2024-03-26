@@ -39,7 +39,7 @@ resourceLogs:
                                               values:
                                                 - key: manager
                                                   value:
-                                                    stringValue: k8sobjectsreceiver.test
+                                                    stringValue: Go-http-client
                                                 - key: operation
                                                   value:
                                                     stringValue: Update
