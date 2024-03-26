@@ -240,7 +240,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	err = srv.Start(newServerSettings(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", supervisorPort),
-		onConnectingFunc: func(request *http.Request) {
+		onConnectingFunc: func(_ *http.Request) {
 			connected.Store(true)
 
 		},
