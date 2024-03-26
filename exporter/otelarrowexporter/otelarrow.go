@@ -11,19 +11,9 @@ import (
 	"time"
 
 	arrowPkg "github.com/apache/arrow/go/v14/arrow"
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
-	"go.uber.org/multierr"
-	"go.uber.org/zap"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
 	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
 	"github.com/open-telemetry/otel-arrow/collector/netstats"
+	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -35,6 +25,16 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
 )
 
 type baseExporter struct {
@@ -60,7 +60,7 @@ type baseExporter struct {
 	streamClientFactory streamClientFactory
 }
 
-type streamClientFactory func(cfg *Config, conn *grpc.ClientConn) arrow.StreamClientFunc
+type streamClientFactory func(conn *grpc.ClientConn) arrow.StreamClientFunc
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
@@ -150,7 +150,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 
 		e.arrow = arrow.NewExporter(e.config.Arrow.MaxStreamLifetime, e.config.Arrow.NumStreams, e.config.Arrow.DisableDowngrade, e.settings.TelemetrySettings, arrowCallOpts, func() arrowRecord.ProducerAPI {
 			return arrowRecord.NewProducerWithOptions(arrowOpts...)
-		}, e.streamClientFactory(e.config, e.clientConn), perRPCCreds, e.netReporter)
+		}, e.streamClientFactory(e.clientConn), perRPCCreds, e.netReporter)
 
 		if err := e.arrow.Start(ctx); err != nil {
 			return err
@@ -178,7 +178,7 @@ func (e *baseExporter) shutdown(ctx context.Context) error {
 // Note that ctx is has not had enhanceContext() called, meaning it
 // will have outgoing gRPC metadata only when an upstream processor or
 // receiver placed it there.
-func (e *baseExporter) arrowSendAndWait(ctx context.Context, data interface{}) (sent bool, _ error) {
+func (e *baseExporter) arrowSendAndWait(ctx context.Context, data any) (sent bool, _ error) {
 	if e.arrow == nil {
 		return false, nil
 	}

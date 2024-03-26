@@ -13,11 +13,10 @@ import (
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
 	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 // Exporter is 1:1 with exporter, isolates arrow-specific
@@ -222,7 +221,7 @@ func (e *Exporter) runArrowStream(ctx context.Context) {
 // (false, non-nil): Context timeout prevents retry.
 //
 // consumer should fall back to standard OTLP, (true, nil)
-func (e *Exporter) SendAndWait(ctx context.Context, data interface{}) (bool, error) {
+func (e *Exporter) SendAndWait(ctx context.Context, data any) (bool, error) {
 	for {
 		var stream *Stream
 		var err error

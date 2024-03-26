@@ -16,14 +16,6 @@ import (
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
 	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
-	"go.uber.org/multierr"
-	"go.uber.org/zap"
-	"golang.org/x/net/http2/hpack"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/status"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -34,6 +26,13 @@ import (
 	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
+	"golang.org/x/net/http2/hpack"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
 )
 
 // Stream is 1:1 with gRPC stream.
@@ -85,7 +84,7 @@ type Stream struct {
 // stream writer, which is not bound by the sender's context.
 type writeItem struct {
 	// records is a ptrace.Traces, plog.Logs, or pmetric.Metrics
-	records interface{}
+	records any
 	// md is the caller's metadata, derived from its context.
 	md map[string]string
 	// errCh is used by the stream reader to unblock the sender
@@ -510,7 +509,7 @@ func (s *Stream) processBatchStatus(ss *arrowpb.BatchStatus) error {
 // SendAndWait submits a batch of records to be encoded and sent.  Meanwhile, this
 // goroutine waits on the incoming context or for the asynchronous response to be
 // received by the stream reader.
-func (s *Stream) SendAndWait(ctx context.Context, records interface{}) error {
+func (s *Stream) SendAndWait(ctx context.Context, records any) error {
 	errCh := make(chan error, 1)
 
 	// Note that if the OTLP exporter's gRPC Headers field was
@@ -572,7 +571,7 @@ func (s *Stream) SendAndWait(ctx context.Context, records interface{}) error {
 }
 
 // encode produces the next batch of Arrow records.
-func (s *Stream) encode(records interface{}) (_ *arrowpb.BatchArrowRecords, retErr error) {
+func (s *Stream) encode(records any) (_ *arrowpb.BatchArrowRecords, retErr error) {
 	// Defensively, protect against panics in the Arrow producer function.
 	defer func() {
 		if err := recover(); err != nil {

@@ -14,24 +14,23 @@ import (
 	"time"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
+	"github.com/open-telemetry/otel-arrow/collector/netstats"
+	"github.com/open-telemetry/otel-arrow/collector/testdata"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	arrowRecordMock "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record/mock"
 	otelAssert "github.com/open-telemetry/otel-arrow/pkg/otel/assert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
-	"golang.org/x/net/http2/hpack"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
-
-	"github.com/open-telemetry/otel-arrow/collector/netstats"
-	"github.com/open-telemetry/otel-arrow/collector/testdata"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/mock/gomock"
+	"golang.org/x/net/http2/hpack"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 const defaultMaxStreamLifetime = 11 * time.Second
@@ -86,11 +85,11 @@ func newExporterNoisyTestCase(t *testing.T, numStreams int) *exporterTestCase {
 	return newExporterTestCaseCommon(t, Noisy, numStreams, false, nil)
 }
 
-func copyBatch[T any](real func(T) (*arrowpb.BatchArrowRecords, error)) func(T) (*arrowpb.BatchArrowRecords, error) {
+func copyBatch[T any](recordFunc func(T) (*arrowpb.BatchArrowRecords, error)) func(T) (*arrowpb.BatchArrowRecords, error) {
 	// Because Arrow-IPC uses zero copy, we have to copy inside the test
 	// instead of sharing pointers to BatchArrowRecords.
 	return func(data T) (*arrowpb.BatchArrowRecords, error) {
-		in, err := real(data)
+		in, err := recordFunc(data)
 		if err != nil {
 			return nil, err
 		}
@@ -191,7 +190,7 @@ func statusUnrecognizedFor(id int64) *arrowpb.BatchStatus {
 // TestArrowExporterSuccess tests a single Send through a healthy channel.
 func TestArrowExporterSuccess(t *testing.T) {
 	stdTesting := otelAssert.NewStdUnitTest(t)
-	for _, inputData := range []interface{}{twoTraces, twoMetrics, twoLogs} {
+	for _, inputData := range []any{twoTraces, twoMetrics, twoLogs} {
 		tc := newSingleStreamTestCase(t)
 		channel := newHealthyTestChannel()
 
