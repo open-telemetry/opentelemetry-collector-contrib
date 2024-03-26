@@ -77,6 +77,39 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "with_conditions"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Context:    "span",
+						Conditions: []string{`attributes["http.path"] == "/animal"`},
+						Statements: []string{
+							`set(name, "bear")`,
+						},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						Context:    "datapoint",
+						Conditions: []string{`attributes["http.path"] == "/animal"`},
+						Statements: []string{
+							`set(metric.name, "bear")`,
+						},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						Context:    "log",
+						Conditions: []string{`attributes["http.path"] == "/animal"`},
+						Statements: []string{
+							`set(body, "bear")`,
+						},
+					},
+				},
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "ignore_errors"),
 			expected: &Config{
 				ErrorMode: ottl.IgnoreError,
