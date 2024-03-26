@@ -40,10 +40,6 @@ type solaceTracesReceiver struct {
 
 // newTracesReceiver creates a new solaceTraceReceiver as a receiver.Traces
 func newTracesReceiver(config *Config, set receiver.CreateSettings, nextConsumer consumer.Traces) (receiver.Traces, error) {
-	if nextConsumer == nil {
-		set.Logger.Warn("Next consumer in pipeline is null, stopping receiver")
-		return nil, component.ErrNilNextConsumer
-	}
 
 	factory, err := newAMQPMessagingServiceFactory(config, set.Logger)
 	if err != nil {

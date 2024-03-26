@@ -1277,13 +1277,13 @@ func TestTLSExporterInit(t *testing.T) {
 			config: &Config{
 				APIURL:    "https://test",
 				IngestURL: "https://test",
-				IngestTLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				IngestTLSSettings: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
-				APITLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				APITLSSettings: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
@@ -1297,8 +1297,8 @@ func TestTLSExporterInit(t *testing.T) {
 			config: &Config{
 				APIURL:    "https://test",
 				IngestURL: "https://test",
-				IngestTLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				IngestTLSSettings: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "./testdata/certs/missingfile",
 					},
 				},
@@ -1313,8 +1313,8 @@ func TestTLSExporterInit(t *testing.T) {
 			config: &Config{
 				APIURL:    "https://test",
 				IngestURL: "https://test",
-				IngestTLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				IngestTLSSettings: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "./testdata/certs/invalid-ca.pem",
 					},
 				},
@@ -1384,8 +1384,8 @@ func TestTLSIngestConnection(t *testing.T) {
 			config: &Config{
 				APIURL:    serverURL,
 				IngestURL: serverURL,
-				IngestTLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				IngestTLSSettings: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
@@ -1497,8 +1497,8 @@ func TestTLSAPIConnection(t *testing.T) {
 				IngestURL:        server.URL,
 				AccessToken:      "random",
 				SyncHostMetadata: true,
-				APITLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				APITLSSettings: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},

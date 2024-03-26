@@ -22,11 +22,11 @@ var (
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	IdxEndpoint                             confighttp.ClientConfig `mapstructure:"indexer"`
-	SHEndpoint                              confighttp.ClientConfig `mapstructure:"search_head"`
-	CMEndpoint                              confighttp.ClientConfig `mapstructure:"cluster_master"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	IdxEndpoint                    confighttp.ClientConfig `mapstructure:"indexer"`
+	SHEndpoint                     confighttp.ClientConfig `mapstructure:"search_head"`
+	CMEndpoint                     confighttp.ClientConfig `mapstructure:"cluster_master"`
 }
 
 func (cfg *Config) Validate() (errors error) {
