@@ -35,7 +35,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueSettings())
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutSettings())
 	assert.Equal(t, ocfg.Compression, configcompression.TypeZstd)
-	assert.Equal(t, ocfg.Arrow, ArrowSettings{
+	assert.Equal(t, ocfg.Arrow, ArrowConfig{
 		Disabled:           false,
 		NumStreams:         runtime.NumCPU(),
 		MaxStreamLifetime:  time.Hour,
@@ -225,7 +225,7 @@ func TestCreateArrowTracesExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
-	cfg.Arrow = ArrowSettings{
+	cfg.Arrow = ArrowConfig{
 		NumStreams: 1,
 	}
 	set := exportertest.NewNopCreateSettings()

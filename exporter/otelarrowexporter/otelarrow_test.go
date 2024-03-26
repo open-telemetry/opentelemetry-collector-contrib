@@ -922,7 +922,7 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 		},
 	}
 	// Arrow client is enabled, but the server doesn't support it.
-	cfg.Arrow = ArrowSettings{
+	cfg.Arrow = ArrowConfig{
 		NumStreams:        1,
 		MaxStreamLifetime: 100 * time.Second,
 	}
@@ -1081,7 +1081,7 @@ func TestSendArrowFailedTraces(t *testing.T) {
 		WaitForReady: true,
 	}
 	// Arrow client is enabled, but the server doesn't support it.
-	cfg.Arrow = ArrowSettings{
+	cfg.Arrow = ArrowConfig{
 		NumStreams:        1,
 		MaxStreamLifetime: 100 * time.Second,
 	}

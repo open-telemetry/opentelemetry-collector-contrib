@@ -81,7 +81,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				BalancerName:    "experimental",
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID(component.MustNewType("nop"))},
 			},
-			Arrow: ArrowSettings{
+			Arrow: ArrowConfig{
 				NumStreams:         2,
 				MaxStreamLifetime:  2 * time.Hour,
 				PayloadCompression: configcompression.TypeZstd,
@@ -90,9 +90,9 @@ func TestUnmarshalConfig(t *testing.T) {
 		}, cfg)
 }
 
-func TestArrowSettingsValidate(t *testing.T) {
-	settings := func(enabled bool, numStreams int, maxStreamLifetime time.Duration, level zstd.Level) *ArrowSettings {
-		return &ArrowSettings{
+func TestArrowConfigValidate(t *testing.T) {
+	settings := func(enabled bool, numStreams int, maxStreamLifetime time.Duration, level zstd.Level) *ArrowConfig {
+		return &ArrowConfig{
 			Disabled:          !enabled,
 			NumStreams:        numStreams,
 			MaxStreamLifetime: maxStreamLifetime,
@@ -126,8 +126,8 @@ func TestDefaultConfigValid(t *testing.T) {
 	require.NoError(t, component.ValidateConfig(cfg))
 }
 
-func TestArrowSettingsPayloadCompressionZstd(t *testing.T) {
-	settings := ArrowSettings{
+func TestArrowConfigPayloadCompressionZstd(t *testing.T) {
+	settings := ArrowConfig{
 		PayloadCompression: configcompression.TypeZstd,
 	}
 	var config config.Config
@@ -137,9 +137,9 @@ func TestArrowSettingsPayloadCompressionZstd(t *testing.T) {
 	require.True(t, config.Zstd)
 }
 
-func TestArrowSettingsPayloadCompressionNone(t *testing.T) {
+func TestArrowConfigPayloadCompressionNone(t *testing.T) {
 	for _, value := range []string{"", "none"} {
-		settings := ArrowSettings{
+		settings := ArrowConfig{
 			PayloadCompression: configcompression.Type(value),
 		}
 		var config config.Config

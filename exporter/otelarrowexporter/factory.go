@@ -53,7 +53,7 @@ func createDefaultConfig() component.Config {
 			// destination.
 			BalancerName: "round_robin",
 		},
-		Arrow: ArrowSettings{
+		Arrow: ArrowConfig{
 			NumStreams:        runtime.NumCPU(),
 			MaxStreamLifetime: time.Hour,
 
