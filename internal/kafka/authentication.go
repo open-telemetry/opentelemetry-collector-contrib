@@ -42,8 +42,18 @@ type SASLConfig struct {
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
 }
 
-func (c *SASLConfig) Token() (*sarama.AccessToken, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(c.AWSMSK.Region))
+// AWSMSKConfig defines the additional SASL authentication
+// measures needed to use AWS_MSK_IAM mechanism
+type AWSMSKConfig struct {
+	// Region is the AWS region the MSK cluster is based in
+	Region string `mapstructure:"region"`
+	// BrokerAddr is the client is connecting to in order to perform the auth required
+	BrokerAddr string `mapstructure:"broker_addr"`
+}
+
+// Token return the AWS session token for the AWS_MSK_IAM mechanism
+func (c *AWSMSKConfig) Token() (*sarama.AccessToken, error) {
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(c.Region))
 	if err != nil {
 		return nil, fmt.Errorf(`unable to LoadDefaultConfig():\n err: %w`, err)
 	}
@@ -54,15 +64,6 @@ func (c *SASLConfig) Token() (*sarama.AccessToken, error) {
 	}
 
 	return &sarama.AccessToken{Token: cred.SessionToken}, err
-}
-
-// AWSMSKConfig defines the additional SASL authentication
-// measures needed to use AWS_MSK_IAM mechanism
-type AWSMSKConfig struct {
-	// Region is the AWS region the MSK cluster is based in
-	Region string `mapstructure:"region"`
-	// BrokerAddr is the client is connecting to in order to perform the auth required
-	BrokerAddr string `mapstructure:"broker_addr"`
 }
 
 // KerberosConfig defines kereros configuration.
@@ -129,7 +130,7 @@ func configureSASL(config SASLConfig, saramaConfig *sarama.Config) error {
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
 	case "AWS_MSK_IAM":
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
-		saramaConfig.Net.SASL.TokenProvider = &config
+		saramaConfig.Net.SASL.TokenProvider = &config.AWSMSK
 	default:
 		return fmt.Errorf(`invalid SASL Mechanism %q: can be either "PLAIN", "AWS_MSK_IAM", "SCRAM-SHA-256" or "SCRAM-SHA-512"`, config.Mechanism)
 	}
