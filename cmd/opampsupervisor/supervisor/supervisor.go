@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/rawbytes"
@@ -39,11 +40,14 @@ import (
 )
 
 var (
-	//go:embed templates/bootstrap.yaml
+	//go:embed templates/bootstrap_pipeline.yaml
 	bootstrapConfTpl string
 
 	//go:embed templates/extraconfig.yaml
 	extraConfigTpl string
+
+	//go:embed templates/opampextension.yaml
+	opampextensionTpl string
 
 	//go:embed templates/owntelemetry.yaml
 	ownTelemetryTpl string
@@ -71,9 +75,10 @@ type Supervisor struct {
 	// Agent's instance id.
 	instanceID ulid.ULID
 
-	bootstrapTemplate    *template.Template
-	extraConfigTemplate  *template.Template
-	ownTelemetryTemplate *template.Template
+	bootstrapTemplate      *template.Template
+	opampextensionTemplate *template.Template
+	extraConfigTemplate    *template.Template
+	ownTelemetryTemplate   *template.Template
 
 	// A config section to be added to the Collector's config to fetch its own metrics.
 	// TODO: store this persistently so that when starting we can compose the effective
@@ -87,6 +92,9 @@ type Supervisor struct {
 
 	// Final effective config of the Collector.
 	effectiveConfig *atomic.Value
+
+	// Final effective config of the Collector.
+	realEffectiveConfig *atomic.Value
 
 	// Location of the effective config file.
 	effectiveConfigFilePath string
@@ -105,6 +113,10 @@ type Supervisor struct {
 
 	agentHasStarted               bool
 	agentStartHealthCheckAttempts int
+
+	// The OpAMP server to communicate with the Collector's OpAMP extension
+	opampServer     server.OpAMPServer
+	opampServerPort int
 }
 
 func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
@@ -114,6 +126,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		effectiveConfigFilePath:      "effective.yaml",
 		agentConfigOwnMetricsSection: &atomic.Value{},
 		effectiveConfig:              &atomic.Value{},
+		realEffectiveConfig:          &atomic.Value{},
 	}
 
 	if err := s.createTemplates(); err != nil {
@@ -179,6 +192,9 @@ func (s *Supervisor) createTemplates() error {
 		return err
 	}
 	if s.extraConfigTemplate, err = template.New("extraconfig").Parse(extraConfigTpl); err != nil {
+		return err
+	}
+	if s.opampextensionTemplate, err = template.New("opampextension").Parse(opampextensionTpl); err != nil {
 		return err
 	}
 	if s.ownTelemetryTemplate, err = template.New("owntelemetry").Parse(ownTelemetryTpl); err != nil {
@@ -394,24 +410,58 @@ func (s *Supervisor) startOpAMP() error {
 		},
 		Capabilities: s.Capabilities(),
 	}
-	err = s.opampClient.SetAgentDescription(s.agentDescription)
-	if err != nil {
+	if err = s.opampClient.SetAgentDescription(s.agentDescription); err != nil {
 		return err
 	}
 
-	err = s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false})
-	if err != nil {
+	if err = s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false}); err != nil {
 		return err
 	}
 
 	s.logger.Debug("Starting OpAMP client...")
+	if err = s.opampClient.Start(context.Background(), settings); err != nil {
+		return err
+	}
+	s.logger.Debug("OpAMP client started.")
 
-	err = s.opampClient.Start(context.Background(), settings)
+	s.logger.Debug("Starting OpAMP server...")
+	if err = s.startOpAMPServer(); err != nil {
+		return err
+	}
+	s.logger.Debug("OpAMP server started.")
+
+	return nil
+}
+
+func (s *Supervisor) startOpAMPServer() error {
+	s.opampServer = server.New(newLoggerFromZap(s.logger))
+
+	var err error
+	s.opampServerPort, err = s.findRandomPort()
 	if err != nil {
 		return err
 	}
 
-	s.logger.Debug("OpAMP Client started.")
+	s.opampServer.Start(newServerSettings(flattenedSettings{
+		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
+		onConnectingFunc: func(request *http.Request) {
+		},
+		onMessageFunc: func(conn serverTypes.Connection, message *protobufs.AgentToServer) {
+			s.logger.Debug("Received message")
+			if message.AgentDescription != nil {
+				s.agentDescription = message.AgentDescription
+			}
+			if message.EffectiveConfig != nil {
+				s.logger.Debug("Setting confmap")
+				fmt.Println(string(message.EffectiveConfig.ConfigMap.ConfigMap[""].Body))
+				s.realEffectiveConfig.Store(string(message.EffectiveConfig.ConfigMap.ConfigMap[""].Body))
+				err := s.opampClient.UpdateEffectiveConfig(context.Background())
+				if err != nil {
+					s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
+				}
+			}
+		},
+	}))
 
 	return nil
 }
@@ -441,8 +491,27 @@ func (s *Supervisor) composeExtraLocalConfig() []byte {
 	tplVars := map[string]any{
 		"Healthcheck":        s.agentHealthCheckEndpoint,
 		"ResourceAttributes": resourceAttrs,
+		"SupervisorPort":     s.opampServerPort,
 	}
 	err := s.extraConfigTemplate.Execute(
+		&cfg,
+		tplVars,
+	)
+	if err != nil {
+		s.logger.Error("Could not compose local config", zap.Error(err))
+		return nil
+	}
+
+	return cfg.Bytes()
+}
+
+func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
+	var cfg bytes.Buffer
+	tplVars := map[string]any{
+		"InstanceUid":    s.instanceID.String(),
+		"SupervisorPort": s.opampServerPort,
+	}
+	err := s.opampextensionTemplate.Execute(
 		&cfg,
 		tplVars,
 	)
@@ -472,10 +541,15 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 // createEffectiveConfigMsg create an EffectiveConfig with the content of the
 // current effective config.
 func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
-	cfgStr, ok := s.effectiveConfig.Load().(string)
+	cfgStr, ok := s.realEffectiveConfig.Load().(string)
 	if !ok {
-		cfgStr = ""
+		cfgStr, ok = s.effectiveConfig.Load().(string)
+		if !ok {
+			cfgStr = ""
+		}
 	}
+
+	fmt.Println("Reporting", cfgStr)
 
 	cfg := &protobufs.EffectiveConfig{
 		ConfigMap: &protobufs.AgentConfigMap{
@@ -558,7 +632,7 @@ func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig)
 	for _, name := range names {
 		item := config.Config.ConfigMap[name]
 		var k2 = koanf.New(".")
-		err = k2.Load(rawbytes.Provider(item.Body), yaml.Parser())
+		err = k2.Load(rawbytes.Provider(item.Body), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
 		if err != nil {
 			return false, fmt.Errorf("cannot parse config named %s: %w", name, err)
 		}
@@ -571,13 +645,17 @@ func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig)
 	// Merge own metrics config.
 	ownMetricsCfg, ok := s.agentConfigOwnMetricsSection.Load().(string)
 	if ok {
-		if err = k.Load(rawbytes.Provider([]byte(ownMetricsCfg)), yaml.Parser()); err != nil {
+		if err = k.Load(rawbytes.Provider([]byte(ownMetricsCfg)), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
 			return false, err
 		}
 	}
 
 	// Merge local config last since it has the highest precedence.
-	if err = k.Load(rawbytes.Provider(s.composeExtraLocalConfig()), yaml.Parser()); err != nil {
+	if err = k.Load(rawbytes.Provider(s.composeExtraLocalConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+		return false, err
+	}
+
+	if err = k.Load(rawbytes.Provider(s.composeOpAMPExtensionConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
 		return false, err
 	}
 
@@ -878,4 +956,24 @@ func (s *Supervisor) findRandomPort() (int, error) {
 	}
 
 	return port, nil
+}
+
+// The default koanf behavior is to override lists in the config.
+// We want to override that here for extensions.
+// Will be resolved by https://github.com/open-telemetry/opentelemetry-collector/issues/8754
+func configMergeFunc(src, dest map[string]any) error {
+	srcExtensions := maps.Search(src, []string{"service", "extensions"})
+	destExtensions := maps.Search(dest, []string{"service", "extensions"})
+
+	maps.Merge(src, dest)
+
+	if destExt, ok := destExtensions.([]any); ok {
+		if srcExt, ok := srcExtensions.([]any); ok {
+			if service, ok := dest["service"].(map[string]any); ok {
+				service["extensions"] = append(destExt, srcExt...)
+			}
+		}
+	}
+
+	return nil
 }
