@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influx
 go 1.21
 
 require (
-	github.com/cenkalti/backoff/v4 v4.2.1
+	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/influxdata/influxdb-observability/common v0.5.8
 	github.com/influxdata/influxdb-observability/otel2influx v0.5.8
 	github.com/influxdata/line-protocol/v2 v2.2.1

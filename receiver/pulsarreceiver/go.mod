@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/apache/pulsar-client-go v0.8.1
-	github.com/apache/thrift v0.19.0
+	github.com/apache/thrift v0.20.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.96.0

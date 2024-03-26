@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertm
 go 1.21
 
 require (
-	github.com/cenkalti/backoff/v4 v4.2.1
+	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.96.0
 	github.com/prometheus/common v0.50.0
 	github.com/stretchr/testify v1.9.0

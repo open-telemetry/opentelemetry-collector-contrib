@@ -4,7 +4,7 @@ scope_name: otelcol/instana
 status:
   class: exporter
   stability:
-    alpha: [traces]
+    deprecated: [traces]
   distributions: [contrib]
   codeowners:
     active: [jpkrohling, hickeyma]

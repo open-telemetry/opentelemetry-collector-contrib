@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/IBM/sarama v1.43.0
-	github.com/apache/thrift v0.19.0
+	github.com/apache/thrift v0.20.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.55.0
 	github.com/json-iterator/go v1.1.12
@@ -31,9 +31,9 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.51.3 // indirect
+	github.com/aws/aws-sdk-go v1.51.7 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
+	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/eapache/go-resiliency v1.6.0 // indirect

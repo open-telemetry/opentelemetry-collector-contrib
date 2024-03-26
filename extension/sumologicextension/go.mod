@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/cenkalti/backoff/v4 v4.2.1
+	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/mitchellh/go-ps v1.0.0
 	github.com/shirou/gopsutil/v3 v3.24.2
 	github.com/stretchr/testify v1.9.0

@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmex
 go 1.21
 
 require (
-	github.com/cenkalti/backoff/v4 v4.2.1
+	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/jaegertracing/jaeger v1.55.0
 	github.com/klauspost/compress v1.17.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.96.0
