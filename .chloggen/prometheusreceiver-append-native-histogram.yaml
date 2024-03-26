@@ -20,9 +20,9 @@ subtext: |
   - The feature can be enabled via the feature gate `receiver.prometheusreceiver.EnableNativeHistograms`.
     Run the collector with the command line option `--feature-gates=receiver.prometheusreceiver.EnableNativeHistograms`.
   - Currently the feature also requires that targets are scraped via the ProtoBuf format.
-    To start scraping native histograms, set the
-    `config.global.scrape_protocols = [ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]`
-    option in the receiver configuration. This requirement will be lifted once Prometheus can scrape native histograms over text formats.
+    To start scraping native histograms, set
+    `config.global.scrape_protocols` to `[ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]` in the
+    receiver configuration. This requirement will be lifted once Prometheus can scrape native histograms over text formats.
   - For more up to date information see the README.md file of the receiver at
     https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/prometheusreceiver/README.md#prometheus-native-histograms.
 

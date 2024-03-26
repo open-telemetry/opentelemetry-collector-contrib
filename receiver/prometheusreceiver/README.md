@@ -141,8 +141,8 @@ receivers:
 
 Native histograms are an experimental [feature](https://prometheus.io/docs/prometheus/latest/feature_flags/#native-histograms) of Prometheus.
 
-To start scraping native histograms, set the `config.global.scrape_protocols = [ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]`
-option in the receiver configuration. This requirement will be lifted once Prometheus can scrape native histograms over text formats.
+To start scraping native histograms, set `config.global.scrape_protocols` to `[ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]`
+in the receiver configuration. This requirement will be lifted once Prometheus can scrape native histograms over text formats.
 
 To enable converting native histograms to OpenTelemetry exponential histograms, enable the feature gate `receiver.prometheusreceiver.EnableNativeHistograms`.
 The feature is considered experimental.
