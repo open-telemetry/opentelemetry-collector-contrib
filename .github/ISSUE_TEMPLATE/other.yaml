@@ -86,6 +86,7 @@ body:
       - extension/encoding/otlpencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
+      - extension/googleclientauth
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
