@@ -4,7 +4,6 @@ package datadog
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -84,13 +83,12 @@ func TestGaugeDataRace(t *testing.T) {
 
 	go func() {
 		defer wg.Done()
-		cnt := 0
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			default:
-				err := metricClient.Gauge(fmt.Sprintf("test_gauge-%d", cnt), 1, []string{"otlp:true"}, 1)
+				err := metricClient.Gauge("test_gauge", 1, []string{"otlp:true"}, 1)
 				assert.NoError(t, err)
 			}
 		}
