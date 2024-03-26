@@ -137,7 +137,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 			}
 		}
 
-		arrowOpts := e.config.Arrow.ToArrowProducerOptions()
+		arrowOpts := e.config.Arrow.toArrowProducerOptions()
 
 		arrowCallOpts := e.callOptions
 

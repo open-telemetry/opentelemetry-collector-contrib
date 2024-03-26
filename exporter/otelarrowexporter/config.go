@@ -19,9 +19,14 @@ import (
 
 // Config defines configuration for OTLP exporter.
 type Config struct {
+	// Timeout, Retry, Queue, and gRPC client settings are
+	// inherited from exporterhelper using field names
+	// intentionally identical to the core OTLP exporter.
+
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	RetryConfig                    configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+
+	RetryConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
@@ -60,11 +65,13 @@ type ArrowSettings struct {
 	// Note that `Zstd` applies to gRPC, not Arrow compression.
 	PayloadCompression configcompression.Type `mapstructure:"payload_compression"`
 
-	// Disabled prevents registering the OTel Arrow service.
+	// Disabled prevents using OTel-Arrow streams.  The exporter
+	// falls back to standard OTLP.
 	Disabled bool `mapstructure:"disabled"`
 
-	// DisableDowngrade prevents this exporter from fallback back to
-	// standard OTLP.
+	// DisableDowngrade prevents this exporter from fallback back
+	// to standard OTLP.  If the Arrow service is unavailable, it
+	// will retry and/or fail.
 	DisableDowngrade bool `mapstructure:"disable_downgrade"`
 }
 
@@ -78,8 +85,8 @@ func (cfg *ArrowSettings) Validate() error {
 		return fmt.Errorf("stream count must be > 0: %d", cfg.NumStreams)
 	}
 
-	if cfg.MaxStreamLifetime.Seconds() < float64(1) {
-		return fmt.Errorf("max stream life must be > 0: %d", cfg.MaxStreamLifetime)
+	if cfg.MaxStreamLifetime.Seconds() < 1 {
+		return fmt.Errorf("max stream life must be >= 1s: %d", cfg.MaxStreamLifetime)
 	}
 
 	if err := cfg.Zstd.Validate(); err != nil {
@@ -96,7 +103,7 @@ func (cfg *ArrowSettings) Validate() error {
 	return nil
 }
 
-func (cfg *ArrowSettings) ToArrowProducerOptions() (arrowOpts []config.Option) {
+func (cfg *ArrowSettings) toArrowProducerOptions() (arrowOpts []config.Option) {
 	switch cfg.PayloadCompression {
 	case configcompression.TypeZstd:
 		arrowOpts = append(arrowOpts, config.WithZstd())

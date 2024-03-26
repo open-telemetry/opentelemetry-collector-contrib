@@ -66,8 +66,8 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "none",
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "/var/lib/mycert.pem",
 					},
 					Insecure: false,
@@ -118,7 +118,7 @@ func TestArrowSettingsValidate(t *testing.T) {
 	require.Error(t, settings(true, math.MaxInt, 10*time.Second, zstd.MaxLevel+1).Validate())
 }
 
-func TestDefaultSettingsValid(t *testing.T) {
+func TestDefaultConfigValid(t *testing.T) {
 	cfg := createDefaultConfig()
 	// this must be set by the user and config
 	// validation always checks that a value is set.
@@ -131,7 +131,7 @@ func TestArrowSettingsPayloadCompressionZstd(t *testing.T) {
 		PayloadCompression: configcompression.TypeZstd,
 	}
 	var config config.Config
-	for _, opt := range settings.ToArrowProducerOptions() {
+	for _, opt := range settings.toArrowProducerOptions() {
 		opt(&config)
 	}
 	require.True(t, config.Zstd)
@@ -143,7 +143,7 @@ func TestArrowSettingsPayloadCompressionNone(t *testing.T) {
 			PayloadCompression: configcompression.Type(value),
 		}
 		var config config.Config
-		for _, opt := range settings.ToArrowProducerOptions() {
+		for _, opt := range settings.toArrowProducerOptions() {
 			opt(&config)
 		}
 		require.False(t, config.Zstd)
