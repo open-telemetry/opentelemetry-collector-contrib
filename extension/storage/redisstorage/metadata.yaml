@@ -1,0 +1,14 @@
+type: redis_storage
+scope_name: otelcol/redisstorage
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  codeowners:
+    active: [djaglowski]
+    seeking_new: true
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true
