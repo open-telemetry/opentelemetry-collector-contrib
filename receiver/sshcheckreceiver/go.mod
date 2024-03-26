@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.96.1-0.20240322165517-15201f1e5967
 	go.opentelemetry.io/collector/extension v0.96.1-0.20240322165517-15201f1e5967
 	go.opentelemetry.io/collector/extension/auth v0.96.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240322165517-15201f1e5967
+	go.opentelemetry.io/collector/pdata v1.4.0
 	go.opentelemetry.io/collector/receiver v0.96.1-0.20240322165517-15201f1e5967
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
