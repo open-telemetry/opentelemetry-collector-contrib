@@ -704,8 +704,6 @@ go.opentelemetry.io/build-tools/issuegenerator v0.13.0 h1:hAzDPWh/oyBVoYRB5Xb8Y6
 go.opentelemetry.io/build-tools/issuegenerator v0.13.0/go.mod h1:hHPQ5lv0apJv0QM8mz/k5nAwacDEEDD+fJ8xYhrKjBM=
 go.opentelemetry.io/build-tools/multimod v0.13.0 h1:HGAP3zCM8vOTNJSQbjQ5VbKZSctIZxppPBxRTzye7ic=
 go.opentelemetry.io/build-tools/multimod v0.13.0/go.mod h1:CxZp68c4PIN+bYlVOGB2FvE5zZMBuGz7cGSHv2L7pSc=
-go.opentelemetry.io/collector/cmd/builder v0.96.1-0.20240322165517-15201f1e5967 h1:xz1BPSqZEKgNA4VCLscTpMwfJdUblEMLllRbBR6pFKE=
-go.opentelemetry.io/collector/cmd/builder v0.96.1-0.20240322165517-15201f1e5967/go.mod h1:1Odbp7rTiPEXoJEcVMdw2Q1a3pmOTATlip3+kgFL02k=
 go.opentelemetry.io/collector/cmd/builder v0.97.0 h1:EgGoui0Dch4r90COFQ/5O6akUsIiWx7INezo0NKocNA=
 go.opentelemetry.io/collector/cmd/builder v0.97.0/go.mod h1:1Odbp7rTiPEXoJEcVMdw2Q1a3pmOTATlip3+kgFL02k=
 go.opentelemetry.io/collector/cmd/mdatagen v0.96.1-0.20240322165517-15201f1e5967 h1:4WY1ijJqrOL1nbuNEfaLnqxkBv/XrluThBHeTBW81no=
