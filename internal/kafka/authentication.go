@@ -10,7 +10,7 @@ import (
 	"fmt"
 
 	"github.com/IBM/sarama"
-	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -53,17 +53,9 @@ type AWSMSKConfig struct {
 
 // Token return the AWS session token for the AWS_MSK_IAM mechanism
 func (c *AWSMSKConfig) Token() (*sarama.AccessToken, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(c.Region))
-	if err != nil {
-		return nil, fmt.Errorf(`unable to LoadDefaultConfig():\n err: %w`, err)
-	}
+	token, _, err := signer.GenerateAuthToken(context.TODO(), c.Region)
 
-	cred, err := cfg.Credentials.Retrieve(context.TODO())
-	if err != nil {
-		return nil, fmt.Errorf(`unable to cfg.Credentials.Retrieve():\n err: %w`, err)
-	}
-
-	return &sarama.AccessToken{Token: cred.SessionToken}, err
+	return &sarama.AccessToken{Token: token}, err
 }
 
 // KerberosConfig defines kereros configuration.
