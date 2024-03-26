@@ -7,6 +7,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/prometheus/prometheus/config"
 	dto "github.com/prometheus/prometheus/prompb/io/prometheus/client"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
@@ -155,7 +156,7 @@ func TestScrapeViaProtobuf(t *testing.T) {
 	}
 
 	testComponent(t, targets, func(c *Config) {
-		c.EnableProtobufNegotiation = true
+		c.PrometheusConfig.GlobalConfig.ScrapeProtocols = []config.ScrapeProtocol{config.PrometheusProto}
 	})
 }
 
