@@ -41,7 +41,7 @@ func TestE2E(t *testing.T) {
 	expected, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	k8sClient, err := k8stest.NewK8sClient(context.Background(), testKubeConfig)
+	k8sClient, err := k8stest.NewK8sClient(context.TODO(), testKubeConfig)
 	require.NoError(t, err)
 	defer func() { k8sClient.Shutdown() }()
 
@@ -53,9 +53,7 @@ func TestE2E(t *testing.T) {
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, "")
 
 	defer func() {
-		for _, obj := range append(collectorObjs) {
-			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
-		}
+		require.NoErrorf(t, k8stest.DeleteObjects(k8sClient, collectorObjs), "failed to delete object")
 
 		require.Eventuallyf(
 			t,

@@ -7,7 +7,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/client-go/rest"
+	"net/http"
 
+	"k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
@@ -20,8 +23,9 @@ type K8sClient struct {
 	DiscoveryClient *discovery.DiscoveryClient
 	Mapper          *restmapper.DeferredDiscoveryRESTMapper
 
-	ctx    context.Context
-	cancel context.CancelFunc
+	httpClient *http.Client
+	ctx        context.Context
+	cancel     context.CancelFunc
 }
 
 func NewK8sClient(ctx context.Context, kubeconfigPath string) (*K8sClient, error) {
@@ -33,7 +37,13 @@ func NewK8sClient(ctx context.Context, kubeconfigPath string) (*K8sClient, error
 		return nil, fmt.Errorf("unable to load kubeconfig from %s: %w", kubeconfigPath, err)
 	}
 
-	dynamicClient, err := dynamic.NewForConfig(restConfig)
+	restConfig.Proxy = net.NewProxierWithNoProxyCIDR(http.ProxyFromEnvironment)
+	httpClient, err := rest.HTTPClientFor(restConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	dynamicClient, err := dynamic.NewForConfigAndClient(restConfig, httpClient)
 	if err != nil {
 		return nil, fmt.Errorf("error creating dynamic client: %w", err)
 	}
@@ -45,7 +55,7 @@ func NewK8sClient(ctx context.Context, kubeconfigPath string) (*K8sClient, error
 
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient))
 
-	k8sClient := &K8sClient{DynamicClient: dynamicClient, DiscoveryClient: discoveryClient, Mapper: mapper}
+	k8sClient := &K8sClient{DynamicClient: dynamicClient, DiscoveryClient: discoveryClient, Mapper: mapper, httpClient: httpClient}
 	cctx, cancel := context.WithCancel(ctx)
 
 	k8sClient.ctx = cctx
@@ -58,4 +68,11 @@ func (k *K8sClient) Shutdown() {
 	if k.cancel != nil {
 		k.cancel()
 	}
+
+	if k.Mapper != nil {
+		k.Mapper.Reset()
+	}
+
+	// TODO: Check if client is nil
+	net.CloseIdleConnectionsFor(k.httpClient.Transport)
 }

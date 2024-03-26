@@ -5,7 +5,6 @@ package k8stest // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"bytes"
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -60,7 +59,7 @@ func WaitForCollectorToStart(t *testing.T, client *K8sClient, podNamespace strin
 	podTimeoutMinutes := 3
 	t.Logf("waiting for collector pods to be ready")
 	require.Eventuallyf(t, func() bool {
-		list, err := client.DynamicClient.Resource(podGVR).Namespace(podNamespace).List(context.Background(), listOptions)
+		list, err := client.DynamicClient.Resource(podGVR).Namespace(podNamespace).List(client.ctx, listOptions)
 		require.NoError(t, err, "failed to list collector pods")
 		podsNotReady := len(list.Items)
 		if podsNotReady == 0 {
