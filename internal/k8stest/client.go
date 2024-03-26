@@ -4,7 +4,6 @@
 package k8stest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"k8s.io/client-go/rest"
@@ -24,11 +23,9 @@ type K8sClient struct {
 	Mapper          *restmapper.DeferredDiscoveryRESTMapper
 
 	httpClient *http.Client
-	ctx        context.Context
-	cancel     context.CancelFunc
 }
 
-func NewK8sClient(ctx context.Context, kubeconfigPath string) (*K8sClient, error) {
+func NewK8sClient(kubeconfigPath string) (*K8sClient, error) {
 	if kubeconfigPath == "" {
 		return nil, errors.New("Please provide file path to load kubeconfig")
 	}
@@ -37,7 +34,7 @@ func NewK8sClient(ctx context.Context, kubeconfigPath string) (*K8sClient, error
 		return nil, fmt.Errorf("unable to load kubeconfig from %s: %w", kubeconfigPath, err)
 	}
 
-	restConfig.Proxy = net.NewProxierWithNoProxyCIDR(http.ProxyFromEnvironment)
+	restConfig.Proxy = http.ProxyFromEnvironment
 	httpClient, err := rest.HTTPClientFor(restConfig)
 	if err != nil {
 		return nil, err
@@ -55,24 +52,12 @@ func NewK8sClient(ctx context.Context, kubeconfigPath string) (*K8sClient, error
 
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient))
 
-	k8sClient := &K8sClient{DynamicClient: dynamicClient, DiscoveryClient: discoveryClient, Mapper: mapper, httpClient: httpClient}
-	cctx, cancel := context.WithCancel(ctx)
-
-	k8sClient.ctx = cctx
-	k8sClient.cancel = cancel
-
-	return k8sClient, nil
+	return &K8sClient{DynamicClient: dynamicClient, DiscoveryClient: discoveryClient, Mapper: mapper, httpClient: httpClient}, nil
 }
 
 func (k *K8sClient) Shutdown() {
-	if k.cancel != nil {
-		k.cancel()
+	if k.httpClient != nil {
+		net.CloseIdleConnectionsFor(k.httpClient.Transport)
 	}
-
-	if k.Mapper != nil {
-		k.Mapper.Reset()
-	}
-
-	// TODO: Check if client is nil
-	net.CloseIdleConnectionsFor(k.httpClient.Transport)
+	return
 }
