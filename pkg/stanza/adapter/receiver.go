@@ -122,7 +122,7 @@ func (r *receiver) consumerLoop(ctx context.Context) {
 			}
 			obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
 			logRecordCount := pLogs.LogRecordCount()
-			cErr := r.consumer.ConsumeLogs(ctx, pLogs)
+			cErr := r.consumer.ConsumeLogs(obsrecvCtx, pLogs)
 			if cErr != nil {
 				r.logger.Error("ConsumeLogs() failed", zap.Error(cErr))
 			}
