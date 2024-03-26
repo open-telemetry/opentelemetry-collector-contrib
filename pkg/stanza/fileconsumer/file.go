@@ -33,6 +33,7 @@ type Manager struct {
 	maxBatches    int
 	maxBatchFiles int
 
+	noTracking        bool
 	currentPollFiles  *fileset.Fileset[*reader.Reader]
 	previousPollFiles *fileset.Fileset[*reader.Reader]
 	knownFiles        []*fileset.Fileset[*reader.Metadata]
@@ -46,7 +47,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 		m.Warnf("finding files: %v", err)
 	}
 
-	if persister != nil {
+	if !m.noTracking && persister != nil {
 		m.persister = persister
 		offsets, err := checkpoint.Load(ctx, m.persister)
 		if err != nil {
@@ -66,6 +67,9 @@ func (m *Manager) Start(persister operator.Persister) error {
 }
 
 func (m *Manager) closePreviousFiles() {
+	if m.noTracking {
+		return
+	}
 	// m.previousPollFiles -> m.knownFiles[0]
 	for r, _ := m.previousPollFiles.Pop(); r != nil; r, _ = m.previousPollFiles.Pop() {
 		m.knownFiles[0].Add(r.Close())
@@ -73,6 +77,9 @@ func (m *Manager) closePreviousFiles() {
 }
 
 func (m *Manager) rotateFilesets() {
+	if m.noTracking {
+		return
+	}
 	// shift the filesets at end of every consume() call
 	// m.knownFiles[0] -> m.knownFiles[1] -> m.knownFiles[2]
 	copy(m.knownFiles[1:], m.knownFiles)
@@ -87,7 +94,7 @@ func (m *Manager) Stop() error {
 	}
 	m.wg.Wait()
 	m.closePreviousFiles()
-	if m.persister != nil {
+	if !m.noTracking && m.persister != nil {
 		checkpoints := make([]*reader.Metadata, 0, m.totalReaders())
 		for _, knownFiles := range m.knownFiles {
 			checkpoints = append(checkpoints, knownFiles.Get()...)
@@ -149,7 +156,7 @@ func (m *Manager) poll(ctx context.Context) {
 
 	// Any new files that appear should be consumed entirely
 	m.readerFactory.FromBeginning = true
-	if m.persister != nil {
+	if !m.noTracking && m.persister != nil {
 		allCheckpoints := make([]*reader.Metadata, 0, m.totalReaders())
 		for _, knownFiles := range m.knownFiles {
 			allCheckpoints = append(allCheckpoints, knownFiles.Get()...)
@@ -244,6 +251,10 @@ func (m *Manager) makeReaders(paths []string) {
 }
 
 func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
+	if m.noTracking {
+		return m.readerFactory.NewReader(file, fp)
+	}
+
 	// Check previous poll cycle for match
 	if oldReader := m.previousPollFiles.Match(fp, fileset.StartsWith); oldReader != nil {
 		return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
@@ -262,6 +273,10 @@ func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader
 }
 
 func (m *Manager) totalReaders() int {
+	if m.noTracking {
+		// If there is no tracking set up, there are no checkpointed files
+		return 0
+	}
 	total := m.previousPollFiles.Len()
 	for i := 0; i < len(m.knownFiles); i++ {
 		total += m.knownFiles[i].Len()
