@@ -66,6 +66,7 @@ components:
         - file_storage
         - headers_setter
         - health_check
+        - healthcheckv2
         - host_observer
         - jaegerremotesampling
         - k8s_observer
