@@ -101,6 +101,15 @@ func Test_userConfigMap_resolve(t *testing.T) {
 				"endpoint": "localhost:6379",
 			}, false,
 		},
+		{"escaping", userConfigMap{
+			"endpoint": "`endpoint`",
+			"expr":     "body matches \"^\\{\"",
+			"escaped":  "\\`endpoint\\`",
+		}, args{observer.EndpointEnv{"endpoint": "localhost"}}, userConfigMap{
+			"endpoint": "localhost",
+			"expr":     "body matches \"^\\{\"",
+			"escaped":  "`endpoint`",
+		}, false},
 		{
 			"nested slices and maps", userConfigMap{
 				"one": []any{
