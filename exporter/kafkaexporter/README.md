@@ -43,8 +43,6 @@ The following settings can be optionally configured:
 - `partition_metrics_by_resource_attributes`  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
   - `enabled`: (default = false) 
   - `attributes`: (default = []) the list of resource attributes to include in the partitioning key. If empty, all resource attributes are included.
-    - `service.name`
-    - `service.instance.id`
 - `auth`
   - `plain_text`
     - `username`: The username to use.
