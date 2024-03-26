@@ -194,7 +194,7 @@ func (f *kafkaReceiverFactory) createLogsReceiver(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic
 	}
-	unmarshaler, err := getLogsUnmarshaler(oCfg.Encoding, f.logsUnmarshalers)
+	unmarshaler, err := getLogsUnmarshaler(oCfg, f.logsUnmarshalers)
 	if err != nil {
 		return nil, err
 	}
@@ -206,11 +206,11 @@ func (f *kafkaReceiverFactory) createLogsReceiver(
 	return r, nil
 }
 
-func getLogsUnmarshaler(encoding string, unmarshalers map[string]LogsUnmarshaler) (LogsUnmarshaler, error) {
+func getLogsUnmarshaler(cfg Config, unmarshalers map[string]LogsUnmarshaler) (LogsUnmarshaler, error) {
 	var enc string
-	unmarshaler, ok := unmarshalers[encoding]
+	unmarshaler, ok := unmarshalers[cfg.Encoding]
 	if !ok {
-		split := strings.SplitN(encoding, "_", 2)
+		split := strings.SplitN(cfg.Encoding, "_", 2)
 		prefix := split[0]
 		if len(split) > 1 {
 			enc = split[1]
@@ -224,6 +224,14 @@ func getLogsUnmarshaler(encoding string, unmarshalers map[string]LogsUnmarshaler
 	if unmarshalerWithEnc, ok := unmarshaler.(LogsUnmarshalerWithEnc); ok {
 		// This should be called even when enc is an empty string to initialize the encoding.
 		unmarshaler, err := unmarshalerWithEnc.WithEnc(enc)
+		if err != nil {
+			return nil, err
+		}
+		return unmarshaler, nil
+	}
+
+	if avroUnmarshaler, ok := unmarshaler.(*avroLogsUnmarshaler); ok {
+		unmarshaler, err := avroUnmarshaler.WithSchema(strings.NewReader(cfg.Avro.Schema))
 		if err != nil {
 			return nil, err
 		}

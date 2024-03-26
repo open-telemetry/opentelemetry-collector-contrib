@@ -78,11 +78,13 @@ func defaultLogsUnmarshalers(version string, logger *zap.Logger) map[string]Logs
 	raw := newRawLogsUnmarshaler()
 	text := newTextLogsUnmarshaler()
 	json := newJSONLogsUnmarshaler()
+	avro := newAVROLogsUnmarshaler()
 	return map[string]LogsUnmarshaler{
 		azureResourceLogs.Encoding(): azureResourceLogs,
 		otlpPb.Encoding():            otlpPb,
 		raw.Encoding():               raw,
 		text.Encoding():              text,
 		json.Encoding():              json,
+		avro.Encoding():              avro,
 	}
 }
