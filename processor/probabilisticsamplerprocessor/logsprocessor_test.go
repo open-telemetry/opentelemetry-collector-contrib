@@ -71,6 +71,11 @@ func TestLogsSampling(t *testing.T) {
 			name: "nothing",
 			cfg: &Config{
 				SamplingPercentage: 0,
+
+				// FailClosed because the test
+				// includes one empty TraceID which
+				// would otherwise fail open.
+				FailClosed: true,
 			},
 			received: 0,
 		},
@@ -80,6 +85,9 @@ func TestLogsSampling(t *testing.T) {
 				SamplingPercentage: 50,
 				AttributeSource:    traceIDAttributeSource,
 			},
+			// Note: This count includes the one empty TraceID
+			// that fails open, which the "nothing" test above excludes
+			// using FailClosed.
 			received: 45,
 		},
 		{
@@ -89,6 +97,7 @@ func TestLogsSampling(t *testing.T) {
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",
 			},
+
 			received: 0,
 		},
 		{
@@ -106,6 +115,11 @@ func TestLogsSampling(t *testing.T) {
 				SamplingPercentage: 50,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",
+
+				// FailClosed: true so that we do not
+				// sample when the attribute is
+				// missing.
+				FailClosed: true,
 			},
 			received: 23,
 		},
@@ -115,6 +129,11 @@ func TestLogsSampling(t *testing.T) {
 				SamplingPercentage: 50,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "bar",
+
+				// FailClosed: true so that we do not
+				// sample when the attribute is
+				// missing.
+				FailClosed: true,
 			},
 			received: 29, // probabilistic... doesn't yield the same results as foo
 		},

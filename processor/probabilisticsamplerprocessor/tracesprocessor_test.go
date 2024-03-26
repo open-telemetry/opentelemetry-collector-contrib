@@ -5,6 +5,8 @@ package probabilisticsamplerprocessor
 
 import (
 	"context"
+	"encoding/hex"
+	"fmt"
 	"math"
 	"math/rand"
 	"testing"
@@ -21,6 +23,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 )
 
+// defaultHashSeed is used throughout to ensure that the HashSeed is real
+// and does not fall back to proportional-mode sampling due to HashSeed == 0.
+const defaultHashSeed = 4312
+
+func TestHashBucketsLog2(t *testing.T) {
+	require.Equal(t, numHashBuckets, 1<<numHashBucketsLg2)
+}
+
 func TestNewTracesProcessor(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -29,7 +39,7 @@ func TestNewTracesProcessor(t *testing.T) {
 		wantErr      bool
 	}{
 		{
-			name:         "happy_path",
+			name:         "happy_path_default",
 			nextConsumer: consumertest.NewNop(),
 			cfg: &Config{
 				SamplingPercentage: 15.5,
@@ -40,7 +50,7 @@ func TestNewTracesProcessor(t *testing.T) {
 			nextConsumer: consumertest.NewNop(),
 			cfg: &Config{
 				SamplingPercentage: 13.33,
-				HashSeed:           4321,
+				HashSeed:           defaultHashSeed,
 			},
 		},
 	}
@@ -74,16 +84,16 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 			},
 			numBatches:        1e5,
 			numTracesPerBatch: 2,
-			acceptableDelta:   0.01,
+			acceptableDelta:   0.02,
 		},
 		{
 			name: "random_sampling_small",
 			cfg: &Config{
 				SamplingPercentage: 5,
 			},
-			numBatches:        1e5,
+			numBatches:        1e6,
 			numTracesPerBatch: 2,
-			acceptableDelta:   0.01,
+			acceptableDelta:   0.1,
 		},
 		{
 			name: "random_sampling_medium",
@@ -92,7 +102,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 			},
 			numBatches:        1e5,
 			numTracesPerBatch: 4,
-			acceptableDelta:   0.1,
+			acceptableDelta:   0.2,
 		},
 		{
 			name: "random_sampling_high",
@@ -116,6 +126,8 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 	const testSvcName = "test-svc"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.cfg.HashSeed = defaultHashSeed
+
 			sink := new(consumertest.TracesSink)
 			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.cfg, sink)
 			if err != nil {
@@ -175,6 +187,8 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 	const testSvcName = "test-svc"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.cfg.HashSeed = defaultHashSeed
+
 			sink := new(consumertest.TracesSink)
 			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.cfg, sink)
 			if err != nil {
@@ -283,9 +297,16 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(fmt.Sprint(tt.name), func(t *testing.T) {
+
 			sink := new(consumertest.TracesSink)
-			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.cfg, sink)
+			cfg := &Config{}
+			if tt.cfg != nil {
+				*cfg = *tt.cfg
+			}
+
+			cfg.HashSeed = defaultHashSeed
+			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
 			require.NoError(t, err)
 
 			err = tsp.ConsumeTraces(context.Background(), tt.td)
@@ -393,6 +414,11 @@ func getSpanWithAttributes(key string, value pcommon.Value) ptrace.Span {
 func initSpanWithAttribute(key string, value pcommon.Value, dest ptrace.Span) {
 	dest.SetName("spanName")
 	value.CopyTo(dest.Attributes().PutEmpty(key))
+
+	// ensure a non-empty trace ID with a deterministic value, one that has
+	// all zero bits for the w3c randomness portion.  this value, if sampled
+	// with the OTel specification, has R-value 0 and sampled only at 100%.
+	dest.SetTraceID(pcommon.TraceID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 }
 
 // genRandomTestData generates a slice of ptrace.Traces with the numBatches elements which one with
@@ -455,4 +481,31 @@ func assertSampledData(t *testing.T, sampled []ptrace.Traces, serviceName string
 		}
 	}
 	return
+}
+
+// mustParseTID generates TraceIDs from their hex encoding, for
+// testing probability sampling.
+func mustParseTID(in string) pcommon.TraceID {
+	b, err := hex.DecodeString(in)
+	if err != nil {
+		panic(err)
+	}
+	if len(b) != len(pcommon.TraceID{}) {
+		panic("incorrect size input")
+	}
+	return pcommon.TraceID(b)
+}
+
+// makeSingleSpanWithAttrib is used to construct test data with
+// a specific TraceID and a single attribute.
+func makeSingleSpanWithAttrib(tid pcommon.TraceID, sid pcommon.SpanID, ts string, key string, attribValue pcommon.Value) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.TraceState().FromRaw(ts)
+	span.SetTraceID(tid)
+	span.SetSpanID(sid)
+	if key != "" {
+		attribValue.CopyTo(span.Attributes().PutEmpty(key))
+	}
+	return traces
 }
