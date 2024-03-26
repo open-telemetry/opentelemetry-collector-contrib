@@ -40,6 +40,10 @@ type Config struct {
 	// - proto:  OTLP binary protobuf bytes.
 	FormatType string `mapstructure:"format"`
 
+	// Encoding defines the encoding of the telemetry data.
+	// If specified, it overrides `FormatType` and applies an encoding extension.
+	Encoding *component.ID `mapstructure:"encoding"`
+
 	// Compression Codec used to export telemetry data
 	// Supported compression algorithms:`zstd`
 	Compression string `mapstructure:"compression"`

@@ -28,14 +28,14 @@ func join(s string) string {
 	return strings.ReplaceAll(s, "\n", " ")
 }
 
-// mkAnchor takes a name and a type (e.g. "configtls.TLSClientSetting") and
+// mkAnchor takes a name and a type (e.g. "configtls.ClientConfig") and
 // returns a string suitable for use as a markdown anchor.
 func mkAnchor(name, typ string) string {
 	if isDuration(typ) {
 		return "time-Duration"
 	}
 	idx := strings.IndexRune(typ, '.')
-	// strip "configtls." from e.g. "configtls.TLSClientSetting"
+	// strip "configtls." from e.g. "configtls.ClientConfig"
 	typeStripped := typ[idx+1:]
 	concat := fmt.Sprintf("%s-%s", name, typeStripped)
 	asterisksRemoved := strings.ReplaceAll(concat, "*", "")

@@ -45,8 +45,8 @@ func TestLoadConfig(t *testing.T) {
 				Scopes:       []string{"api.metrics"},
 				TokenURL:     "https://example2.com/oauth2/default/v1/token",
 				Timeout:      time.Second,
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile:   "cafile",
 						CertFile: "certfile",
 						KeyFile:  "keyfile",
