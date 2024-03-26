@@ -103,7 +103,8 @@ func TestGaugeDataRace(t *testing.T) {
 			case <-ctx.Done():
 				return
 			default:
-				reader.Collect(context.Background(), &metricdata.ResourceMetrics{})
+				err := reader.Collect(context.Background(), &metricdata.ResourceMetrics{})
+				assert.NoError(t, err)
 			}
 		}
 	}()
