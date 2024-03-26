@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/getsentry/sentry-go v0.27.0
 	github.com/google/go-cmp v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.96.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.97.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.97.0
 	go.opentelemetry.io/collector/confmap v0.97.0

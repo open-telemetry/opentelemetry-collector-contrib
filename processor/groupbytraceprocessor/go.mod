@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/group
 go 1.21
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.96.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.97.0
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/component v0.97.0
