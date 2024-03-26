@@ -45,6 +45,20 @@ const (
 	OTTLCondition PolicyType = "ottl_condition"
 )
 
+type ProcessorMode string
+
+const (
+	// Marks traces as sampled in the pre-sampling stage.
+	DecideAndDrop ProcessorMode = "decide_and_drop"
+
+	// Drops traces in the post-sampling stage which are not sampled.
+	DecideAndTag ProcessorMode = "decide_and_tag"
+)
+
+const (
+	defaultSampledKeyName = "tail_sampling.sampled"
+)
+
 // sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
 // such as the and & composite policies.
 type sharedPolicyCfg struct {
@@ -231,6 +245,14 @@ type Config struct {
 	// ExpectedNewTracesPerSec sets the expected number of new traces sending to the tail sampling processor
 	// per second. This helps with allocating data structures with closer to actual usage size.
 	ExpectedNewTracesPerSec uint64 `mapstructure:"expected_new_traces_per_sec"`
+	// Processor mode to configure tailsampling phase
+	// during presample phase traces are marked as sampled but not dropped
+	// during postsample phase traces are dropped if not marked as sampled
+	ProcessorMode ProcessorMode `mapstructure:"processor_mode"`
+	// Attribute name to use to mark traces as sampled
+	// this attribute will be set with value true if trace is sampled
+	// if trace should not be sampled this attribute will not be set
+	SampledAttributeName string `mapstructure:"sampled_attribute_name"`
 	// PolicyCfgs sets the tail-based sampling policy which makes a sampling decision
 	// for a given trace when requested.
 	PolicyCfgs []PolicyCfg `mapstructure:"policies"`

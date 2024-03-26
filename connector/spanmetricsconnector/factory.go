@@ -33,6 +33,13 @@ func createDefaultConfig() component.Config {
 		ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 		MetricsFlushInterval:     15 * time.Second,
 		Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
+		Exemplars: ExemplarsConfig{
+			Enabled: false,
+			DynamicConfig: &ExemplarDynamicExportConfig{
+				Enabled:          false,
+				AttributeKeyName: dynamicExemplarAttributeKeyName,
+			},
+		},
 	}
 }
 
