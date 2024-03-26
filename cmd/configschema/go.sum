@@ -590,8 +590,8 @@ github.com/evanphx/json-patch v5.6.0+incompatible h1:jBYDEEiFBPxA0v50tFdvOzQQTCv
 github.com/evanphx/json-patch v5.6.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch/v5 v5.8.0 h1:lRj6N9Nci7MvzrXuX6HFzU8XjmhPiXPlsKEy1u0KQro=
 github.com/evanphx/json-patch/v5 v5.8.0/go.mod h1:VNkHZ/282BpEyt/tObQO8s5CMPmYYq14uClGH4abBuQ=
-github.com/expr-lang/expr v1.16.1 h1:Na8CUcMdyGbnNpShY7kzcHCU7WqxuL+hnxgHZ4vaz/A=
-github.com/expr-lang/expr v1.16.1/go.mod h1:uCkhfG+x7fcZ5A5sXHKuQ07jGZRl6J0FCAaf2k4PtVQ=
+github.com/expr-lang/expr v1.16.2 h1:JvMnzUs3LeVHBvGFcXYmXo+Q6DPDmzrlcSBO6Wy3w4s=
+github.com/expr-lang/expr v1.16.2/go.mod h1:uCkhfG+x7fcZ5A5sXHKuQ07jGZRl6J0FCAaf2k4PtVQ=
 github.com/facebook/time v0.0.0-20240109160331-d1456d1a6bac h1:Xn5xG7RTh7HqtXKCCnxDG4+ee96umlRTBQM3kNSXDoU=
 github.com/facebook/time v0.0.0-20240109160331-d1456d1a6bac/go.mod h1:1u7ple9CA8fMqfqqNsKIsxFL9i2yLfo8Hsv4ejTD1FM=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
