@@ -17,7 +17,7 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	awsCredsProvider := mockCredentials()
+	awsCredsProvider := mockCredentials("", "", "")
 	awsCreds, _ := (*awsCredsProvider).Retrieve(context.Background())
 
 	t.Setenv("AWS_ACCESS_KEY_ID", awsCreds.AccessKeyID)
@@ -53,4 +53,38 @@ func TestLoadConfigError(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 	assert.Error(t, component.ValidateConfig(cfg))
+}
+
+func TestSetCustomCredProvider(t *testing.T) {
+	awsCredsProvider := mockCredentials("", "", "")
+	awsCreds, _ := (*awsCredsProvider).Retrieve(context.Background())
+
+	t.Setenv("AWS_ACCESS_KEY_ID", awsCreds.AccessKeyID)
+	t.Setenv("AWS_SECRET_ACCESS_KEY", awsCreds.SecretAccessKey)
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewID(metadata.Type).String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.Equal(t, &Config{
+		Region:  "region",
+		Service: "service",
+		AssumeRole: AssumeRole{
+			SessionName: "role_session_name",
+			STSRegion:   "region",
+		},
+		// Ensure creds are the same for load config test; tested in extension_test.go
+		credsProvider: cfg.(*Config).credsProvider,
+	}, cfg)
+
+	customAwsCredsProvider := mockCredentials("custom", "custom", "custom")
+	cfg.(*Config).SetCredsProvider(customAwsCredsProvider)
+
+	assert.Equal(t, customAwsCredsProvider, cfg.(*Config).credsProvider)
+	assert.NoError(t, component.ValidateConfig(cfg))
 }

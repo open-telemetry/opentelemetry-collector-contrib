@@ -28,12 +28,23 @@ type AssumeRole struct {
 // compile time check that the Config struct satisfies the component.Config interface
 var _ component.Config = (*Config)(nil)
 
+// SetCredProvider sets customized credential provider to the config.
+// Mostly for mocking by downstream users
+func (cfg *Config) SetCredsProvider(credsProvider *aws.CredentialsProvider) {
+	cfg.credsProvider = credsProvider
+}
+
 // Validate checks that the configuration is valid.
 // We aim to catch most errors here to ensure that we
 // fail early and to avoid revalidating static data.
 func (cfg *Config) Validate() error {
 	if cfg.AssumeRole.STSRegion == "" && cfg.Region != "" {
 		cfg.AssumeRole.STSRegion = cfg.Region
+	}
+
+	// Credentials provider has been setup before
+	if cfg.credsProvider != nil {
+		return nil
 	}
 
 	credsProvider, err := getCredsProviderFromConfig(cfg)
