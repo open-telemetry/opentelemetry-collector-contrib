@@ -67,7 +67,7 @@ processors:
         # if and only if 'metric' is in the name
         include:
             metrics:
-                - "*metric*"
+                - ".*metric.*"
             match_type: regexp
 ```
 
@@ -80,7 +80,7 @@ processors:
         # if and only if 'metric' is not in the name
         exclude:
             metrics:
-                - "*metric*"
+                - ".*metric.*"
             match_type: regexp
 ```
 
