@@ -25,6 +25,7 @@ type Commander struct {
 	cfg     *config.Agent
 	args    []string
 	cmd     *exec.Cmd
+	exitCh  chan struct{}
 	doneCh  chan struct{}
 	running *atomic.Int64
 }
@@ -38,6 +39,7 @@ func NewCommander(logger *zap.Logger, cfg *config.Agent, args ...string) (*Comma
 		logger:  logger,
 		cfg:     cfg,
 		args:    args,
+		doneCh:  make(chan struct{}, 1),
 		running: &atomic.Int64{},
 	}, nil
 }
@@ -50,6 +52,13 @@ func (c *Commander) Start(ctx context.Context) error {
 	if c.running.Load() == 1 {
 		// Already started, nothing to do
 		return nil
+	}
+
+	if len(c.doneCh) > 0 {
+		<-c.doneCh
+	}
+	if c.exitCh != nil {
+		close(c.exitCh)
 	}
 
 	c.logger.Debug("Starting agent", zap.String("agent", c.cfg.Executable))
@@ -67,7 +76,8 @@ func (c *Commander) Start(ctx context.Context) error {
 	c.cmd.Stdout = logFile
 	c.cmd.Stderr = logFile
 
-	c.doneCh = make(chan struct{})
+	c.doneCh = make(chan struct{}, 1)
+	c.exitCh = make(chan struct{}, 1)
 
 	if err := c.cmd.Start(); err != nil {
 		return err
@@ -101,12 +111,13 @@ func (c *Commander) watch() {
 	}
 
 	c.running.Store(0)
-	close(c.doneCh)
+	c.doneCh <- struct{}{}
+	c.exitCh <- struct{}{}
 }
 
-// Done returns a channel that will send a signal when the Agent process is finished.
-func (c *Commander) Done() <-chan struct{} {
-	return c.doneCh
+// Exited returns a channel that will send a signal when the Agent process exits.
+func (c *Commander) Exited() <-chan struct{} {
+	return c.exitCh
 }
 
 // Pid returns Agent process PID if it is started or 0 if it is not.
