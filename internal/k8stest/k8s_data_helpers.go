@@ -22,9 +22,9 @@ func HostEndpoint(t *testing.T) string {
 
 	client, err := docker.NewClientWithOpts(docker.FromEnv)
 	require.NoError(t, err)
+	client.NegotiateAPIVersion(context.Background())
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	client.NegotiateAPIVersion(ctx)
 	network, err := client.NetworkInspect(ctx, "kind", types.NetworkInspectOptions{})
 	require.NoError(t, err)
 	for _, ipam := range network.IPAM.Config {

@@ -6,13 +6,13 @@ package k8stest // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"errors"
 	"fmt"
-	"k8s.io/client-go/rest"
 	"net/http"
 
 	"k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -52,7 +52,8 @@ func NewK8sClient(kubeconfigPath string) (*K8sClient, error) {
 
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient))
 
-	return &K8sClient{DynamicClient: dynamicClient, DiscoveryClient: discoveryClient, Mapper: mapper, httpClient: httpClient}, nil
+	return &K8sClient{
+		DynamicClient: dynamicClient, DiscoveryClient: discoveryClient, Mapper: mapper, httpClient: httpClient}, nil
 }
 
 func (k *K8sClient) Shutdown() {

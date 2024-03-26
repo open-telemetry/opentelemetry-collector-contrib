@@ -36,6 +36,7 @@ const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 //	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
 func TestE2E(t *testing.T) {
+
 	var expected pmetric.Metrics
 	expectedFile := filepath.Join("testdata", "e2e", "expected.yaml")
 	expected, err := golden.ReadMetrics(expectedFile)
@@ -53,8 +54,8 @@ func TestE2E(t *testing.T) {
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, "")
 
 	defer func() {
-		for _, obj := range collectorObjs {
-			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object")
+		for _, obj := range append(collectorObjs) {
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
 		}
 	}()
 
@@ -81,12 +82,7 @@ func TestE2E(t *testing.T) {
 		return value
 	}
 	containerImageShorten := func(value string) string {
-		slashIndex := strings.LastIndex(value, "/")
-		lastDashIndex := strings.LastIndex(value, "-amd64")
-		if lastDashIndex != -1 && lastDashIndex >= slashIndex {
-			return value[slashIndex+1 : lastDashIndex]
-		}
-		return value[slashIndex+1:]
+		return value[(strings.LastIndex(value, "/") + 1):]
 	}
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 		pmetrictest.IgnoreTimestamp(),
