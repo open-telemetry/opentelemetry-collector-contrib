@@ -4,14 +4,14 @@
 package kafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/sha512"
 	"fmt"
 
 	"github.com/IBM/sarama"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"go.opentelemetry.io/collector/config/configtls"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/awsmsk"
 )
 
 // Authentication defines authentication.
@@ -40,6 +40,20 @@ type SASLConfig struct {
 	Version int `mapstructure:"version"`
 
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
+}
+
+func (c *SASLConfig) Token() (*sarama.AccessToken, error) {
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(c.AWSMSK.Region))
+	if err != nil {
+		return nil, fmt.Errorf(`unable to LoadDefaultConfig():\n err: %w`, err)
+	}
+
+	cred, err := cfg.Credentials.Retrieve(context.TODO())
+	if err != nil {
+		return nil, fmt.Errorf(`unable to cfg.Credentials.Retrieve():\n err: %w`, err)
+	}
+
+	return &sarama.AccessToken{Token: cred.SessionToken}, err
 }
 
 // AWSMSKConfig defines the additional SASL authentication
@@ -114,10 +128,8 @@ func configureSASL(config SASLConfig, saramaConfig *sarama.Config) error {
 	case "PLAIN":
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
 	case "AWS_MSK_IAM":
-		saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
-			return awsmsk.NewIAMSASLClient(config.AWSMSK.BrokerAddr, config.AWSMSK.Region, saramaConfig.ClientID)
-		}
-		saramaConfig.Net.SASL.Mechanism = awsmsk.Mechanism
+		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
+		saramaConfig.Net.SASL.TokenProvider = &config
 	default:
 		return fmt.Errorf(`invalid SASL Mechanism %q: can be either "PLAIN", "AWS_MSK_IAM", "SCRAM-SHA-256" or "SCRAM-SHA-512"`, config.Mechanism)
 	}
