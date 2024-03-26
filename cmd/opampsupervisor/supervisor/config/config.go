@@ -21,6 +21,7 @@ type Capabilities struct {
 	ReportsOwnMetrics      *bool `mapstructure:"reports_own_metrics"`
 	ReportsHealth          *bool `mapstructure:"reports_health"`
 	ReportsRemoteConfig    *bool `mapstructure:"reports_remote_config"`
+	AcceptsRestartCommand  *bool `mapstructure:"accepts_restart_command"`
 }
 
 type OpAMPServer struct {
