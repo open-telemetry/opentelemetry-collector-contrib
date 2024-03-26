@@ -4,14 +4,14 @@ go 1.21
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
-	github.com/golang/protobuf v1.5.3
+	github.com/golang/protobuf v1.5.4
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.96.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.96.0
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240306115632-b2693620eff6
-	go.opentelemetry.io/collector/semconv v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/pdata v1.3.1-0.20240322165517-15201f1e5967
+	go.opentelemetry.io/collector/semconv v0.96.1-0.20240322165517-15201f1e5967
 	go.uber.org/goleak v1.3.0
 	google.golang.org/protobuf v1.33.0
 )

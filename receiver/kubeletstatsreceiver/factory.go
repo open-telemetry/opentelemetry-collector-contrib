@@ -38,11 +38,11 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	scs := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	scs := scraperhelper.NewDefaultControllerConfig()
 	scs.CollectionInterval = 10 * time.Second
 
 	return &Config{
-		ScraperControllerSettings: scs,
+		ControllerConfig: scs,
 		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: k8sconfig.AuthTypeTLS,
@@ -73,7 +73,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, set, consumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, set, consumer, scraperhelper.AddScraper(scrp))
 }
 
 func restClient(logger *zap.Logger, cfg *Config) (kubelet.RestClient, error) {

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v3/common"
+	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -48,6 +49,7 @@ type scraper struct {
 	excludeFS          filterset.FilterSet
 	scrapeProcessDelay time.Duration
 	ucals              map[int32]*ucal.CPUUtilizationCalculator
+	logicalCores       int
 
 	// for mocking
 	getProcessCreateTime func(p processHandle, ctx context.Context) (int64, error)
@@ -83,6 +85,13 @@ func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper,
 			return nil, fmt.Errorf("error creating process exclude filters: %w", err)
 		}
 	}
+
+	logicalCores, err := cpu.Counts(true)
+	if err != nil {
+		return nil, fmt.Errorf("error getting number of logical cores: %w", err)
+	}
+
+	scraper.logicalCores = logicalCores
 
 	return scraper, nil
 }
@@ -284,7 +293,7 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(ctx context.Context, now pcommon.
 		s.ucals[pid] = &ucal.CPUUtilizationCalculator{}
 	}
 
-	err = s.ucals[pid].CalculateAndRecord(now, times, s.recordCPUUtilization)
+	err = s.ucals[pid].CalculateAndRecord(now, s.logicalCores, times, s.recordCPUUtilization)
 	return err
 }
 

@@ -3,22 +3,22 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
 go 1.21
 
 require (
-	github.com/Khan/genqlient v0.6.0
+	github.com/Khan/genqlient v0.7.0
 	github.com/client9/misspell v0.3.4
-	github.com/daixiang0/gci v0.12.1
+	github.com/daixiang0/gci v0.13.1
 	github.com/golangci/golangci-lint v1.55.2
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
 	go.opentelemetry.io/build-tools/checkfile v0.13.0
 	go.opentelemetry.io/build-tools/chloggen v0.13.0
-	go.opentelemetry.io/build-tools/crosslink v0.12.0
+	go.opentelemetry.io/build-tools/crosslink v0.13.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.13.0
 	go.opentelemetry.io/build-tools/multimod v0.13.0
-	go.opentelemetry.io/collector/cmd/builder v0.96.1-0.20240306115632-b2693620eff6
-	go.opentelemetry.io/collector/cmd/mdatagen v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/cmd/builder v0.96.1-0.20240322165517-15201f1e5967
+	go.opentelemetry.io/collector/cmd/mdatagen v0.96.1-0.20240322165517-15201f1e5967
 	go.uber.org/goleak v1.3.0
-	golang.org/x/tools v0.18.0
+	golang.org/x/tools v0.19.0
 	golang.org/x/vuln v1.0.4
 	gotest.tools/gotestsum v1.11.0
 )
@@ -187,7 +187,7 @@ require (
 	github.com/sashamelentyev/interfacebloat v1.1.0 // indirect
 	github.com/sashamelentyev/usestdlibvars v1.24.0 // indirect
 	github.com/securego/gosec/v2 v2.18.2 // indirect
-	github.com/sergi/go-diff v1.1.0 // indirect
+	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/shazow/go-diff v0.0.0-20160112020656-b6b7b6733b8c // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sivchari/containedctx v1.0.3 // indirect
@@ -217,7 +217,7 @@ require (
 	github.com/ultraware/funlen v0.1.0 // indirect
 	github.com/ultraware/whitespace v0.0.5 // indirect
 	github.com/uudashr/gocognit v1.1.2 // indirect
-	github.com/vektah/gqlparser/v2 v2.5.1 // indirect
+	github.com/vektah/gqlparser/v2 v2.5.11 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xen0n/gosmopolitan v1.2.2 // indirect
 	github.com/yagipy/maintidx v1.0.0 // indirect
@@ -226,26 +226,26 @@ require (
 	gitlab.com/bosi/decorder v0.4.1 // indirect
 	go-simpler.org/sloglint v0.1.2 // indirect
 	go.opentelemetry.io/build-tools v0.13.0 // indirect
-	go.opentelemetry.io/collector/component v0.96.1-0.20240306115632-b2693620eff6 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240306115632-b2693620eff6 // indirect
-	go.opentelemetry.io/collector/confmap v0.96.1-0.20240306115632-b2693620eff6 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.96.1-0.20240306115632-b2693620eff6 // indirect
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240306115632-b2693620eff6 // indirect
+	go.opentelemetry.io/collector/component v0.96.1-0.20240322165517-15201f1e5967 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240322165517-15201f1e5967 // indirect
+	go.opentelemetry.io/collector/confmap v0.96.1-0.20240322165517-15201f1e5967 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.96.1-0.20240322165517-15201f1e5967 // indirect
+	go.opentelemetry.io/collector/pdata v1.3.1-0.20240322165517-15201f1e5967 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	go.tmz.dev/musttag v0.7.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.19.0 // indirect
+	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230307190834-24139beb5833 // indirect
-	golang.org/x/mod v0.15.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/mod v0.16.0 // indirect
+	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/oauth2 v0.17.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
-	golang.org/x/term v0.17.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
+	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect

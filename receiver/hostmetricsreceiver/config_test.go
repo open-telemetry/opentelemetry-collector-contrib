@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r1 := cfg.Receivers[component.NewIDWithName(metadata.Type, "customname")].(*Config)
 	expectedConfig := &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 30 * time.Second,
 			InitialDelay:       time.Second,
 		},
