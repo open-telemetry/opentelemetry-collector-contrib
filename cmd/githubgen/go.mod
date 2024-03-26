@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	github.com/google/go-github/v59 v59.0.0
+	github.com/google/go-github/v60 v60.0.0
 	go.opentelemetry.io/collector/confmap v0.97.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.97.0
 	gopkg.in/yaml.v3 v3.0.1
