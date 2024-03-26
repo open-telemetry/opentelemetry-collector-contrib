@@ -4,6 +4,7 @@
 package k8stest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -22,10 +23,12 @@ type K8sClient struct {
 	DiscoveryClient *discovery.DiscoveryClient
 	Mapper          *restmapper.DeferredDiscoveryRESTMapper
 
+	ctx        context.Context
+	cancel     context.CancelFunc
 	httpClient *http.Client
 }
 
-func NewK8sClient(kubeconfigPath string) (*K8sClient, error) {
+func NewK8sClient(ctx context.Context, kubeconfigPath string) (*K8sClient, error) {
 	if kubeconfigPath == "" {
 		return nil, errors.New("Please provide file path to load kubeconfig")
 	}
@@ -52,12 +55,22 @@ func NewK8sClient(kubeconfigPath string) (*K8sClient, error) {
 
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient))
 
-	return &K8sClient{
-		DynamicClient: dynamicClient, DiscoveryClient: discoveryClient, Mapper: mapper, httpClient: httpClient}, nil
+	k8sClient := &K8sClient{
+		DynamicClient: dynamicClient, DiscoveryClient: discoveryClient, Mapper: mapper, httpClient: httpClient}
+
+	cctx, cancel := context.WithCancel(ctx)
+	k8sClient.ctx = cctx
+	k8sClient.cancel = cancel
+
+	return k8sClient, nil
 }
 
 func (k *K8sClient) Shutdown() {
 	if k.httpClient != nil {
 		net.CloseIdleConnectionsFor(k.httpClient.Transport)
+	}
+
+	if k.cancel != nil {
+		k.cancel()
 	}
 }

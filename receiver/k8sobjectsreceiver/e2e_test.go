@@ -41,7 +41,7 @@ const (
 
 func TestE2E(t *testing.T) {
 
-	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
+	k8sClient, err := k8stest.NewK8sClient(context.Background(), testKubeConfig)
 	require.NoError(t, err)
 
 	testID := uuid.NewString()[:8]
