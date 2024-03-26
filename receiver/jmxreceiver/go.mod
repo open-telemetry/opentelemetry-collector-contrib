@@ -10,7 +10,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.29.1
 	go.opentelemetry.io/collector/component v0.96.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/config/confignet v0.96.1-0.20240322165517-15201f1e5967
+	go.opentelemetry.io/collector/config/confignet v0.97.0
 	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240322165517-15201f1e5967
 	go.opentelemetry.io/collector/confmap v0.96.1-0.20240322165517-15201f1e5967
 	go.opentelemetry.io/collector/consumer v0.96.1-0.20240322165517-15201f1e5967
