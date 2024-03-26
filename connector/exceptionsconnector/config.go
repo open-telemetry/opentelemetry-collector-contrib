@@ -15,6 +15,10 @@ type Dimension struct {
 	Default *string `mapstructure:"default"`
 }
 
+type ExemplarsConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
 // Config defines the configuration options for exceptionsconnector
 type Config struct {
 	// Dimensions defines the list of additional dimensions on top of the provided:
@@ -24,6 +28,8 @@ type Config struct {
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
 	Dimensions []Dimension `mapstructure:"dimensions"`
+	// Exemplars defines the configuration for exemplars.
+	Exemplars ExemplarsConfig `mapstructure:"exemplars"`
 }
 
 var _ component.ConfigValidator = (*Config)(nil)

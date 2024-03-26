@@ -122,6 +122,9 @@ func newTestMetricsConnector(mcon consumer.Metrics, defaultNullValue *string, lo
 			{exceptionTypeKey, nil},
 			{exceptionMessageKey, nil},
 		},
+		Exemplars: ExemplarsConfig{
+			Enabled: true,
+		},
 	}
 	c := newMetricsConnector(logger, cfg)
 	c.metricsConsumer = mcon
@@ -174,6 +177,13 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, numCumulativ
 		assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 		verifyMetricLabels(dp, t, seenMetricIDs)
+
+		assert.Equal(t, numCumulativeConsumptions, dp.Exemplars().Len())
+		exemplar := dp.Exemplars().At(0)
+		assert.NotZero(t, exemplar.Timestamp())
+		assert.NotZero(t, exemplar.TraceID())
+		assert.NotZero(t, exemplar.SpanID())
+
 	}
 	return true
 }
