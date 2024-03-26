@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsclo
 go 1.21
 
 require (
-	github.com/aws/aws-sdk-go v1.51.7
+	github.com/aws/aws-sdk-go v1.51.8
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.97.0
 	github.com/stretchr/testify v1.9.0
