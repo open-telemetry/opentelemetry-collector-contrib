@@ -60,5 +60,4 @@ func (k *K8sClient) Shutdown() {
 	if k.httpClient != nil {
 		net.CloseIdleConnectionsFor(k.httpClient.Transport)
 	}
-	return
 }
