@@ -240,6 +240,7 @@ to be included in the distributed otelcol-contrib binaries and docker images.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
+* [@crobert-1](https://github.com/crobert-1)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
 * [@Aneurysm9](https://github.com/Aneurysm9)
