@@ -64,6 +64,7 @@ func createLogsExporter(
 		params,
 		cfg,
 		logsExporter.PushLogs,
+		exporterhelper.WithStart(logsExporter.Start),
 		exporterhelper.WithShutdown(logsExporter.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
@@ -86,6 +87,7 @@ func createTracesExporter(
 		params,
 		cfg,
 		tExp.PushTraces,
+		exporterhelper.WithStart(tExp.Start),
 		exporterhelper.WithShutdown(tExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
@@ -108,6 +110,7 @@ func createMetricsExporter(
 		params,
 		cfg,
 		mExp.PushMetrics,
+		exporterhelper.WithStart(mExp.Start),
 		exporterhelper.WithShutdown(mExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
