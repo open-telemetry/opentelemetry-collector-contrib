@@ -11,5 +11,5 @@ import (
 )
 
 func (r *Resolver) addOwnerInfo(file *os.File, attributes map[string]any) error {
-	return fmt.Errorf("owner info not implemented for windows: %w")
+	return fmt.Errorf("owner info not implemented for windows")
 }
