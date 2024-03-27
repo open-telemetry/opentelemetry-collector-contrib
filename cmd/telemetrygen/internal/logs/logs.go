@@ -32,7 +32,7 @@ func Start(cfg *Config) error {
 	}
 
 	if err = Run(cfg, e, logger); err != nil {
-		logger.Error("failed to stop the exporter", zap.Error(err))
+		logger.Error("failed to execute the test scenario.", zap.Error(err))
 		return err
 	}
 
@@ -61,7 +61,11 @@ func Run(c *Config, exp exporter, logger *zap.Logger) error {
 	running := &atomic.Bool{}
 	running.Store(true)
 
-	severityText, severityNumber := parseSeverity(c.SeverityText, c.SeverityNumber)
+	severityText, severityNumber, err := parseSeverity(c.SeverityText, c.SeverityNumber)
+	if err != nil {
+		return err
+	}
+
 	for i := 0; i < c.WorkerCount; i++ {
 		wg.Add(1)
 		w := worker{
@@ -87,10 +91,10 @@ func Run(c *Config, exp exporter, logger *zap.Logger) error {
 	return nil
 }
 
-func parseSeverity(severityText string, severityNumber int32) (string, plog.SeverityNumber) {
+func parseSeverity(severityText string, severityNumber int32) (string, plog.SeverityNumber, error) {
 	// severityNumber must range in [1,24]
 	if severityNumber <= 0 || severityNumber >= 25 {
-		severityNumber = 9
+		return "", 0, fmt.Errorf("severity-number is out of range, the valid range is [1,24]")
 	}
 
 	sn := plog.SeverityNumber(severityNumber)
@@ -123,5 +127,5 @@ func parseSeverity(severityText string, severityNumber int32) (string, plog.Seve
 		}
 	}
 
-	return severityText, sn
+	return severityText, sn, nil
 }
