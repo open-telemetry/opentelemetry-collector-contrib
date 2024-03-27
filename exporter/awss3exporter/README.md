@@ -91,7 +91,7 @@ For example, when using OpenTelemetry Collector Helm Chart you could use `extraE
 ```yaml
 extraEnvs:
 - name: AWS_ACCESS_KEY_ID
-  value: "< YOUR AWS ACCESS KEY KEY >"
+  value: "< YOUR AWS ACCESS KEY >"
 - name: AWS_SECRET_ACCESS_KEY
   value: "< YOUR AWS SECRET ACCESS KEY >"
 ```
