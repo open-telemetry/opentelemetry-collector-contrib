@@ -113,9 +113,6 @@ func handleChannels(chans <-chan ssh.NewChannel) {
 }
 
 func TestScraper(t *testing.T) {
-	if !supportedOS() {
-		t.Skip("Skip tests if not running on one of: [linux, darwin, freebsd, openbsd]")
-	}
 	endpoint := setupSSHServer(t)
 	require.NotEmpty(t, endpoint)
 
@@ -184,9 +181,6 @@ func TestScraper(t *testing.T) {
 }
 
 func TestScraperPropagatesResourceAttributes(t *testing.T) {
-	if !supportedOS() {
-		t.Skip("Skip tests if not running on one of: [linux, darwin, freebsd, openbsd]")
-	}
 	endpoint := setupSSHServer(t)
 	require.NotEmpty(t, endpoint)
 
@@ -220,9 +214,6 @@ func TestScraperPropagatesResourceAttributes(t *testing.T) {
 }
 
 func TestScraperDoesNotErrForSSHErr(t *testing.T) {
-	if !supportedOS() {
-		t.Skip("Skip tests if not running on one of: [linux, darwin, freebsd, openbsd]")
-	}
 	endpoint := setupSSHServer(t)
 	require.NotEmpty(t, endpoint)
 
@@ -244,9 +235,6 @@ func TestScraperDoesNotErrForSSHErr(t *testing.T) {
 }
 
 func TestTimeout(t *testing.T) {
-	if !supportedOS() {
-		t.Skip("Skip tests if not running on one of: [linux, darwin, freebsd, openbsd]")
-	}
 	testCases := []struct {
 		name     string
 		deadline time.Time
@@ -284,10 +272,6 @@ func TestCancellation(t *testing.T) {
 	settings := receivertest.NewNopCreateSettings()
 
 	scrpr := newScraper(cfg, settings)
-	if !supportedOS() {
-		require.Error(t, scrpr.start(context.Background(), componenttest.NewNopHost()), "should err starting scraper")
-		return
-	}
 	require.NoError(t, scrpr.start(context.Background(), componenttest.NewNopHost()), "failed starting scraper")
 
 	ctx, cancel := context.WithCancel(context.Background())
