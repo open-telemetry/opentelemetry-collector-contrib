@@ -23,17 +23,17 @@ import (
 var _ component.Config = (*Config)(nil)
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	PublicKey                               string                        `mapstructure:"public_key"`
-	PrivateKey                              configopaque.String           `mapstructure:"private_key"`
-	Granularity                             string                        `mapstructure:"granularity"`
-	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	Projects                                []*ProjectConfig              `mapstructure:"projects"`
-	Alerts                                  AlertConfig                   `mapstructure:"alerts"`
-	Events                                  *EventsConfig                 `mapstructure:"events"`
-	Logs                                    LogConfig                     `mapstructure:"logs"`
-	BackOffConfig                           configretry.BackOffConfig     `mapstructure:"retry_on_failure"`
-	StorageID                               *component.ID                 `mapstructure:"storage"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	PublicKey                      string                        `mapstructure:"public_key"`
+	PrivateKey                     configopaque.String           `mapstructure:"private_key"`
+	Granularity                    string                        `mapstructure:"granularity"`
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Projects                       []*ProjectConfig              `mapstructure:"projects"`
+	Alerts                         AlertConfig                   `mapstructure:"alerts"`
+	Events                         *EventsConfig                 `mapstructure:"events"`
+	Logs                           LogConfig                     `mapstructure:"logs"`
+	BackOffConfig                  configretry.BackOffConfig     `mapstructure:"retry_on_failure"`
+	StorageID                      *component.ID                 `mapstructure:"storage"`
 }
 
 type AlertConfig struct {

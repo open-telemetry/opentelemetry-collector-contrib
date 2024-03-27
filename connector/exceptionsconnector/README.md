@@ -36,7 +36,7 @@ With the provided default config, each **metric** and **log** will also have the
 
 Each log will additionally have the following attributes:
 - Exception stacktrace
-- HTTP attributes from spans starting with `http.`.
+- Span attributes. If you want to filter out some attributes (like only copying HTTP attributes starting with `http.`) use the [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor/).
 
 ## Configurations
 

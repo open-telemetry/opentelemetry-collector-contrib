@@ -86,10 +86,10 @@ func TestValidate(t *testing.T) {
 			}
 
 			cfg := &Config{
-				Username:                  tc.username,
-				Password:                  configopaque.String(tc.password),
-				Hosts:                     hosts,
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Username:         tc.username,
+				Password:         configopaque.String(tc.password),
+				Hosts:            hosts,
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			}
 			err := component.ValidateConfig(cfg)
 			if tc.expected == nil {
@@ -141,8 +141,8 @@ func TestBadTLSConfigs(t *testing.T) {
 						Transport: confignet.TransportTypeTCP,
 					},
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-				ClientConfig:              tc.tlsConfig,
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				ClientConfig:     tc.tlsConfig,
 			}
 			err := component.ValidateConfig(cfg)
 			if tc.expectError {

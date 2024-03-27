@@ -357,11 +357,8 @@ func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Metrics, set receiver.Crea
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
-	doneFnList := []func(){func() { ln.Close() }}
 	done := func() {
-		for _, doneFn := range doneFnList {
-			doneFn()
-		}
+		_ = ln.Close()
 	}
 
 	oci, err := New(sr, set)
