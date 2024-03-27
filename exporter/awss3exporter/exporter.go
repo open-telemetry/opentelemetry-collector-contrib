@@ -39,7 +39,7 @@ func (e *s3Exporter) start(_ context.Context, host component.Host) error {
 	var m marshaler
 	var err error
 	if e.config.Encoding != nil {
-		if m, err = newMarshalerFromEncoding(e.config.Encoding, host, e.logger); err != nil {
+		if m, err = newMarshalerFromEncoding(e.config.Encoding, e.config.EncodingFileExtension, host, e.logger); err != nil {
 			return err
 		}
 	} else {
