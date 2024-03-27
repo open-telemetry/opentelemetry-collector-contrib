@@ -82,7 +82,7 @@ func resetMetrics(metricsNames ...string) {
 func Test_newHeartbeater_disabled(t *testing.T) {
 	config := createTestConfig(map[string]string{}, false)
 	config.Heartbeat.Interval = 0
-	hb := newHeartbeater(config, component.NewDefaultBuildInfo(), func(ctx context.Context, ld plog.Logs) error {
+	hb := newHeartbeater(config, component.NewDefaultBuildInfo(), func(_ context.Context, _ plog.Logs) error {
 		return nil
 	})
 	assert.Nil(t, hb)
@@ -111,7 +111,7 @@ func Test_Heartbeat_success(t *testing.T) {
 
 	for _, tt := range tests {
 		consumeLogsChan := make(chan plog.Logs, 10)
-		consumeFn := func(ctx context.Context, ld plog.Logs) error {
+		consumeFn := func(_ context.Context, ld plog.Logs) error {
 			consumeLogsChan <- ld
 			return nil
 		}
@@ -142,7 +142,7 @@ func Test_Heartbeat_success(t *testing.T) {
 
 func Test_Heartbeat_failure(t *testing.T) {
 	resetMetrics()
-	consumeFn := func(ctx context.Context, ld plog.Logs) error {
+	consumeFn := func(_ context.Context, _ plog.Logs) error {
 		return errors.New("always error")
 	}
 	initHeartbeater(t, map[string]string{}, true, consumeFn)

@@ -21,7 +21,7 @@ import (
 )
 
 func TestPushConvertedTraces(t *testing.T) {
-	traceServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	traceServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusAccepted)
 	}))
 	defer traceServer.Close()
@@ -55,7 +55,7 @@ func TestSelfSignedBackend(t *testing.T) {
 	var err error
 	caFile := "testdata/ca.crt"
 	handler := http.NewServeMux()
-	handler.HandleFunc("/bundle", func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc("/bundle", func(w http.ResponseWriter, _ *http.Request) {
 		_, err = io.WriteString(w, "Hello from CA self signed server")
 
 		if err != nil {

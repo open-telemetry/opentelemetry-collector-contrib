@@ -24,12 +24,12 @@ func Test_concat(t *testing.T) {
 			name: "concat strings",
 			vals: []ottl.StandardStringLikeGetter[any]{
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return "hello", nil
 					},
 				},
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return "world", nil
 					},
 				},
@@ -41,17 +41,17 @@ func Test_concat(t *testing.T) {
 			name: "nil",
 			vals: []ottl.StandardStringLikeGetter[any]{
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return "hello", nil
 					},
 				},
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return nil, nil
 					},
 				},
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return "world", nil
 					},
 				},
@@ -63,12 +63,12 @@ func Test_concat(t *testing.T) {
 			name: "integers",
 			vals: []ottl.StandardStringLikeGetter[any]{
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return "hello", nil
 					},
 				},
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return int64(1), nil
 					},
 				},
@@ -80,12 +80,12 @@ func Test_concat(t *testing.T) {
 			name: "floats",
 			vals: []ottl.StandardStringLikeGetter[any]{
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return "hello", nil
 					},
 				},
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return 3.14159, nil
 					},
 				},
@@ -97,12 +97,12 @@ func Test_concat(t *testing.T) {
 			name: "booleans",
 			vals: []ottl.StandardStringLikeGetter[any]{
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return "hello", nil
 					},
 				},
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return true, nil
 					},
 				},
@@ -114,7 +114,7 @@ func Test_concat(t *testing.T) {
 			name: "byte slices",
 			vals: []ottl.StandardStringLikeGetter[any]{
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0e, 0xd2, 0xe6, 0x3c, 0xbe, 0x71, 0xf5, 0xa8}, nil
 					},
 				},
@@ -126,14 +126,14 @@ func Test_concat(t *testing.T) {
 			name: "pcommon.Slice",
 			vals: []ottl.StandardStringLikeGetter[any]{
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						s := pcommon.NewSlice()
 						_ = s.FromRaw([]any{1, 2})
 						return s, nil
 					},
 				},
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						s := pcommon.NewSlice()
 						_ = s.FromRaw([]any{3, 4})
 						return s, nil
@@ -147,14 +147,14 @@ func Test_concat(t *testing.T) {
 			name: "maps",
 			vals: []ottl.StandardStringLikeGetter[any]{
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						m := pcommon.NewMap()
 						m.PutStr("a", "b")
 						return m, nil
 					},
 				},
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						m := pcommon.NewMap()
 						m.PutStr("c", "d")
 						return m, nil
@@ -168,17 +168,17 @@ func Test_concat(t *testing.T) {
 			name: "empty string values",
 			vals: []ottl.StandardStringLikeGetter[any]{
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return "", nil
 					},
 				},
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return "", nil
 					},
 				},
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return "", nil
 					},
 				},
@@ -190,7 +190,7 @@ func Test_concat(t *testing.T) {
 			name: "single argument",
 			vals: []ottl.StandardStringLikeGetter[any]{
 				{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return "hello", nil
 					},
 				},
@@ -229,7 +229,7 @@ func Test_concat(t *testing.T) {
 
 func Test_concat_error(t *testing.T) {
 	target := &ottl.StandardStringLikeGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, _ any) (any, error) {
 			return make(chan int), nil
 		},
 	}
