@@ -158,7 +158,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 					TLSSetting: configtls.ClientConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CAFile: filepath.Join("testdata", "test_cert.pem"),
 						},
 					},
@@ -171,7 +171,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 					TLSSetting: configtls.ClientConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CAFile: "nosuchfile",
 						},
 					},

@@ -61,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					Compression: configcompression.TypeGzip,
 					TLSSetting: configtls.ClientConfig{
-						TLSSetting:         configtls.Config{},
+						Config:             configtls.Config{},
 						Insecure:           false,
 						InsecureSkipVerify: false,
 						ServerName:         "",

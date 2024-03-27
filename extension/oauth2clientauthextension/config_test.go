@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 				TokenURL:     "https://example2.com/oauth2/default/v1/token",
 				Timeout:      time.Second,
 				TLSSetting: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile:   "cafile",
 						CertFile: "certfile",
 						KeyFile:  "keyfile",
