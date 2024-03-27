@@ -23,11 +23,14 @@ const (
 	DefaultSeverityTextLabel   = "otel.log.severity.text"
 	DefaultSeverityNumberLabel = "otel.log.severity.number"
 	HECTokenHeader             = "Splunk"
-	HecTokenLabel              = "com.splunk.hec.access_token" // #nosec
+	HTTPSplunkChannelHeader    = "X-Splunk-Request-Channel"
+
+	HecTokenLabel = "com.splunk.hec.access_token" // #nosec
 	// HecEventMetricType is the type of HEC event. Set to metric, as per https://docs.splunk.com/Documentation/Splunk/8.0.3/Metrics/GetMetricsInOther.
 	HecEventMetricType = "metric"
 	DefaultRawPath     = "/services/collector/raw"
 	DefaultHealthPath  = "/services/collector/health"
+	DefaultAckPath     = "/services/collector/ack"
 )
 
 // AccessTokenPassthroughConfig configures passing through access tokens.
@@ -111,4 +114,8 @@ type HecToOtelAttrs struct {
 	Index string `mapstructure:"index"`
 	// Host indicates the mapping of the host field to a specific unified model attribute.
 	Host string `mapstructure:"host"`
+}
+
+type AckRequest struct {
+	Acks []uint64 `json:"acks"`
 }
