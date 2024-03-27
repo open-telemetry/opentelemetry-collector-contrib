@@ -48,7 +48,7 @@ func NewK8sClient(ctx context.Context, kubeconfigPath string) (*K8sClient, error
 		return nil, fmt.Errorf("error creating dynamic client: %w", err)
 	}
 
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(restConfig)
+	discoveryClient, err := discovery.NewDiscoveryClientForConfigAndClient(restConfig, httpClient)
 	if err != nil {
 		return nil, fmt.Errorf("error creating discovery client: %w", err)
 	}
