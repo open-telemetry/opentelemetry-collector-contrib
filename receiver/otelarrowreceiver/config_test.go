@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -51,10 +51,10 @@ func TestUnmarshalConfig(t *testing.T) {
 				GRPC: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:4317",
-						Transport: confignet.TransportTypeTCP,
+						Transport: "tcp",
 					},
-					TLSSetting: &configtls.ServerConfig{
-						TLSSetting: configtls.Config{
+					TLSSetting: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
 							CertFile: "test.crt",
 							KeyFile:  "test.key",
 						},
@@ -79,9 +79,6 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				Arrow: ArrowSettings{
 					MemoryLimitMiB: 123,
-					Zstd: zstd.DecoderConfig{
-						MemoryLimitMiB: 8,
-					},
 				},
 			},
 		}, cfg)
@@ -100,7 +97,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 				GRPC: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "/tmp/grpc_otlp.sock",
-						Transport: confignet.TransportTypeUnix,
+						Transport: "unix",
 					},
 					ReadBufferSize: 512 * 1024,
 				},
@@ -109,6 +106,14 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 				},
 			},
 		}, cfg)
+}
+
+func TestUnmarshalConfigTypoDefaultProtocol(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "typo_default_proto_config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.EqualError(t, component.UnmarshalConfig(cm, cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: htttp")
 }
 
 func TestUnmarshalConfigInvalidProtocol(t *testing.T) {
@@ -121,5 +126,7 @@ func TestUnmarshalConfigInvalidProtocol(t *testing.T) {
 
 func TestUnmarshalConfigNoProtocols(t *testing.T) {
 	cfg := Config{}
-	assert.Error(t, component.ValidateConfig(cfg))
+	// This now produces an error due to breaking change.
+	// https://github.com/open-telemetry/opentelemetry-collector/pull/9385
+	assert.ErrorContains(t, component.ValidateConfig(cfg), "invalid transport type")
 }

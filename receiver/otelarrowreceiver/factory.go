@@ -6,14 +6,13 @@ package otelarrowreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
+	"github.com/open-telemetry/otel-arrow/collector/sharedcomponent"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
 const (
@@ -22,10 +21,10 @@ const (
 	defaultMemoryLimitMiB = 128
 )
 
-// NewFactory creates a new OTel-Arrow receiver factory.
+// NewFactory creates a new OTLP receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		metadata.Type,
+		component.MustNewType(metadata.Type),
 		createDefaultConfig,
 		receiver.WithTraces(createTraces, metadata.TracesStability),
 		receiver.WithMetrics(createMetrics, metadata.MetricsStability),
@@ -39,7 +38,7 @@ func createDefaultConfig() component.Config {
 			GRPC: configgrpc.ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  defaultGRPCEndpoint,
-					Transport: confignet.TransportTypeTCP,
+					Transport: "tcp",
 				},
 				// We almost write 0 bytes, so no need to tune WriteBufferSize.
 				ReadBufferSize: 512 * 1024,
@@ -57,17 +56,18 @@ func createTraces(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (_ receiver.Traces, err error) {
+) (receiver.Traces, error) {
 	oCfg := cfg.(*Config)
-	r := receivers.GetOrAdd(oCfg, func() (comp component.Component) {
-		comp, err = newOTelArrowReceiver(oCfg, set)
-		return
+	r, err := receivers.GetOrAdd(oCfg, func() (*otelArrowReceiver, error) {
+		return newOTelArrowReceiver(oCfg, set)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	r.Unwrap().(*otelArrowReceiver).registerTraceConsumer(nextConsumer)
+	if err = r.Unwrap().registerTraceConsumer(nextConsumer); err != nil {
+		return nil, err
+	}
 	return r, nil
 }
 
@@ -77,17 +77,18 @@ func createMetrics(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Metrics,
-) (_ receiver.Metrics, err error) {
+) (receiver.Metrics, error) {
 	oCfg := cfg.(*Config)
-	r := receivers.GetOrAdd(oCfg, func() (comp component.Component) {
-		comp, err = newOTelArrowReceiver(oCfg, set)
-		return comp
+	r, err := receivers.GetOrAdd(oCfg, func() (*otelArrowReceiver, error) {
+		return newOTelArrowReceiver(oCfg, set)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	r.Unwrap().(*otelArrowReceiver).registerMetricsConsumer(consumer)
+	if err = r.Unwrap().registerMetricsConsumer(consumer); err != nil {
+		return nil, err
+	}
 	return r, nil
 }
 
@@ -97,17 +98,18 @@ func createLog(
 	set receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Logs,
-) (_ receiver.Logs, err error) {
+) (receiver.Logs, error) {
 	oCfg := cfg.(*Config)
-	r := receivers.GetOrAdd(oCfg, func() (comp component.Component) {
-		comp, err = newOTelArrowReceiver(oCfg, set)
-		return comp
+	r, err := receivers.GetOrAdd(oCfg, func() (*otelArrowReceiver, error) {
+		return newOTelArrowReceiver(oCfg, set)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	r.Unwrap().(*otelArrowReceiver).registerLogsConsumer(consumer)
+	if err = r.Unwrap().registerLogsConsumer(consumer); err != nil {
+		return nil, err
+	}
 	return r, nil
 }
 
@@ -117,4 +119,4 @@ func createLog(
 // create separate objects, they must use one otelArrowReceiver object per configuration.
 // When the receiver is shutdown it should be removed from this map so the same configuration
 // can be recreated successfully.
-var receivers = sharedcomponent.NewSharedComponents()
+var receivers = sharedcomponent.NewSharedComponents[*Config, *otelArrowReceiver]()

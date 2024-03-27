@@ -9,12 +9,19 @@ import (
 	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/confmap"
+)
+
+const (
+	// Confmap values.
+	protoGRPC                = "protocols::grpc"
+	protoArrowMemoryLimitMiB = "protocols::arrow::memory_limit_mib"
 )
 
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
 	GRPC  configgrpc.ServerConfig `mapstructure:"grpc"`
-	Arrow ArrowSettings           `mapstructure:"arrow"`
+	Arrow ArrowSettings                 `mapstructure:"arrow"`
 }
 
 // ArrowSettings support configuring the Arrow receiver.
@@ -35,6 +42,7 @@ type Config struct {
 }
 
 var _ component.Config = (*Config)(nil)
+var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
@@ -48,5 +56,16 @@ func (cfg *ArrowSettings) Validate() error {
 	if err := cfg.Zstd.Validate(); err != nil {
 		return fmt.Errorf("zstd decoder: invalid configuration: %w", err)
 	}
+	return nil
+}
+
+// Unmarshal a confmap.Conf into the config struct.
+func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
+	// first load the config normally
+	err := conf.Unmarshal(cfg)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

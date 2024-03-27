@@ -7,9 +7,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/open-telemetry/otel-arrow/collector/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/otel-arrow/collector/testutil"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -45,7 +46,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	defaultGRPCSettings := configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
-			Transport: confignet.TransportTypeTCP,
+			Transport: "tcp",
 		},
 	}
 
@@ -69,7 +70,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 					GRPC: configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:112233",
-							Transport: confignet.TransportTypeTCP,
+							Transport: "tcp",
 						},
 					},
 				},
@@ -101,7 +102,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 	defaultGRPCSettings := configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
-			Transport: confignet.TransportTypeTCP,
+			Transport: "tcp",
 		},
 	}
 
@@ -125,7 +126,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 					GRPC: configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "327.0.0.1:1122",
-							Transport: confignet.TransportTypeTCP,
+							Transport: "tcp",
 						},
 					},
 				},
@@ -156,7 +157,7 @@ func TestCreateLogReceiver(t *testing.T) {
 	defaultGRPCSettings := configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
-			Transport: confignet.TransportTypeTCP,
+			Transport: "tcp",
 		},
 	}
 
@@ -183,7 +184,7 @@ func TestCreateLogReceiver(t *testing.T) {
 					GRPC: configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "327.0.0.1:1122",
-							Transport: confignet.TransportTypeTCP,
+							Transport: "tcp",
 						},
 					},
 				},

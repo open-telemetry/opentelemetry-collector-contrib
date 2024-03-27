@@ -9,9 +9,16 @@ import (
 	"sync"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
+	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+
 	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
 	"github.com/open-telemetry/otel-arrow/collector/netstats"
-	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
@@ -21,13 +28,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/logs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/trace"
 )
 
 // otelArrowReceiver is the type that exposes Trace and Metrics reception.
@@ -76,7 +76,7 @@ func newOTelArrowReceiver(cfg *Config, set receiver.CreateSettings) (*otelArrowR
 	return r, nil
 }
 
-func (r *otelArrowReceiver) startGRPCServer(cfg configgrpc.ServerConfig, _ component.Host) error {
+func (r *otelArrowReceiver) startGRPCServer(cfg configgrpc.ServerConfig, host component.Host) error {
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", cfg.NetAddr.Endpoint))
 
 	gln, err := cfg.NetAddr.Listen(context.Background())
@@ -114,7 +114,7 @@ func (r *otelArrowReceiver) startProtocolServers(host component.Host) error {
 		}
 	}
 
-	r.arrowReceiver = arrow.New(arrow.Consumers(r), r.settings, r.obsrepGRPC, r.cfg.GRPC, authServer, func() arrowRecord.ConsumerAPI {
+	r.arrowReceiver, err = arrow.New(arrow.Consumers(r), r.settings, r.obsrepGRPC, r.cfg.GRPC, authServer, func() arrowRecord.ConsumerAPI {
 		var opts []arrowRecord.Option
 		if r.cfg.Arrow.MemoryLimitMiB != 0 {
 			// in which case the default is selected in the arrowRecord package.
@@ -125,6 +125,10 @@ func (r *otelArrowReceiver) startProtocolServers(host component.Host) error {
 		}
 		return arrowRecord.NewConsumer(opts...)
 	}, r.netReporter)
+
+	if err != nil {
+		return err
+	}
 
 	if r.tracesReceiver != nil {
 		ptraceotlp.RegisterGRPCServer(r.serverGRPC, r.tracesReceiver)
@@ -159,7 +163,7 @@ func (r *otelArrowReceiver) Start(_ context.Context, host component.Host) error 
 }
 
 // Shutdown is a method to turn off receiving.
-func (r *otelArrowReceiver) Shutdown(_ context.Context) error {
+func (r *otelArrowReceiver) Shutdown(ctx context.Context) error {
 	var err error
 
 	if r.serverGRPC != nil {
@@ -170,16 +174,19 @@ func (r *otelArrowReceiver) Shutdown(_ context.Context) error {
 	return err
 }
 
-func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) {
+func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) error {
 	r.tracesReceiver = trace.New(tc, r.obsrepGRPC)
+	return nil
 }
 
-func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) {
+func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
 	r.metricsReceiver = metrics.New(mc, r.obsrepGRPC)
+	return nil
 }
 
-func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) {
+func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) error {
 	r.logsReceiver = logs.New(lc, r.obsrepGRPC)
+	return nil
 }
 
 var _ arrow.Consumers = &otelArrowReceiver{}
