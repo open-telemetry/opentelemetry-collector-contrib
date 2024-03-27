@@ -19,7 +19,7 @@ type exporter struct {
 }
 
 func newExporter() *exporter {
-	return &exporter{make(chan *metricdata.Metric)}
+	return &exporter{make(chan *metricdata.Metric, 1)}
 }
 
 func (e *exporter) ReturnAfter(after int) chan []*metricdata.Metric {
@@ -103,8 +103,8 @@ func TestMetrics(t *testing.T) {
 	}
 
 	var (
-		fail   = make(chan struct{})
-		chData = make(chan []*metricdata.Metric)
+		fail   = make(chan struct{}, 1)
+		chData = make(chan []*metricdata.Metric, 1)
 	)
 
 	go func() {
