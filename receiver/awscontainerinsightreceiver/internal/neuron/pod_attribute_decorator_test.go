@@ -61,90 +61,114 @@ func TestConsumeMetricsForPodAttributeDecorator(t *testing.T) {
 			ShouldError: false,
 		},
 		"neuron_hardware_info_not_found": {
-			Metrics: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier]map[string]string{
-				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
+			Metrics: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier][]map[string]string{
+				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {{
 					"device": "test0",
+				},
 				},
 			}),
 
-			Want: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier]map[string]string{
+			Want: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier][]map[string]string{
 				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
-					"device": "test0",
+					{
+						"device": "test0",
+					},
 				},
 			}),
 			ShouldError: false,
 		},
 		"correlation_via_neuron_device_index": {
-			Metrics: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier]map[string]string{
+			Metrics: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier][]map[string]string{
 				{Name: neuronHardwareInfoKey, MetricType: pmetric.MetricTypeSum}: {
-					neuronCorePerDeviceKey: "2",
+					{
+						neuronCorePerDeviceKey: "2",
+					},
 				},
-				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
+				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {{
 					"device":                 "test0",
 					neuronDeviceAttributeKey: "1",
 				},
+				},
 			}),
-			Want: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier]map[string]string{
-				{Name: neuronHardwareInfoKey, MetricType: pmetric.MetricTypeSum}: {
+			Want: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier][]map[string]string{
+				{Name: neuronHardwareInfoKey, MetricType: pmetric.MetricTypeSum}: {{
 					neuronCorePerDeviceKey: "2",
 				},
-				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
+				},
+				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {{
 					"device":                  "test0",
 					neuronDeviceAttributeKey:  "1",
 					ci.AttributeContainerName: dummyContainerName,
 					ci.AttributeK8sPodName:    dummyPodName,
 					ci.AttributeK8sNamespace:  dummyNamespace,
 				},
+				},
 			}),
 			ShouldError: false,
 		},
 		"correlation_via_neuron_core": {
-			Metrics: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier]map[string]string{
+			Metrics: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier][]map[string]string{
 				{Name: neuronHardwareInfoKey, MetricType: pmetric.MetricTypeSum}: {
-					neuronCorePerDeviceKey: "2",
+					{
+						neuronCorePerDeviceKey: "2",
+					},
 				},
 				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
-					"device":               "test0",
-					neuronCoreAttributeKey: "10",
+					{
+						"device":               "test0",
+						neuronCoreAttributeKey: "10",
+					},
 				},
 			}),
-			Want: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier]map[string]string{
+			Want: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier][]map[string]string{
 				{Name: neuronHardwareInfoKey, MetricType: pmetric.MetricTypeSum}: {
-					neuronCorePerDeviceKey: "2",
+					{
+						neuronCorePerDeviceKey: "2",
+					},
 				},
 				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
-					"device":                  "test0",
-					neuronCoreAttributeKey:    "10",
-					neuronDeviceAttributeKey:  "5",
-					ci.AttributeContainerName: dummyContainerName,
-					ci.AttributeK8sPodName:    dummyPodName,
-					ci.AttributeK8sNamespace:  dummyNamespace,
+					{
+						"device":                  "test0",
+						neuronCoreAttributeKey:    "10",
+						neuronDeviceAttributeKey:  "5",
+						ci.AttributeContainerName: dummyContainerName,
+						ci.AttributeK8sPodName:    dummyPodName,
+						ci.AttributeK8sNamespace:  dummyNamespace,
+					},
 				},
 			}),
 			ShouldError: false,
 		},
 		"correlation_when_both_present": {
-			Metrics: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier]map[string]string{
+			Metrics: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier][]map[string]string{
 				{Name: neuronHardwareInfoKey, MetricType: pmetric.MetricTypeSum}: {
-					neuronCorePerDeviceKey: "2",
+					{
+						neuronCorePerDeviceKey: "2",
+					},
 				},
 				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
-					"device":                 "test0",
-					neuronDeviceAttributeKey: "5",
-					neuronCoreAttributeKey:   "10",
+					{
+						"device":                 "test0",
+						neuronDeviceAttributeKey: "5",
+						neuronCoreAttributeKey:   "10",
+					},
 				},
 			}),
-			Want: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier]map[string]string{
+			Want: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier][]map[string]string{
 				{Name: neuronHardwareInfoKey, MetricType: pmetric.MetricTypeSum}: {
-					neuronCorePerDeviceKey: "2",
+					{
+						neuronCorePerDeviceKey: "2",
+					},
 				},
 				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
-					"device":                  "test0",
-					neuronCoreAttributeKey:    "10",
-					neuronDeviceAttributeKey:  "5",
-					ci.AttributeContainerName: dummyContainerName,
-					ci.AttributeK8sPodName:    dummyPodName,
-					ci.AttributeK8sNamespace:  dummyNamespace,
+					{
+						"device":                  "test0",
+						neuronCoreAttributeKey:    "10",
+						neuronDeviceAttributeKey:  "5",
+						ci.AttributeContainerName: dummyContainerName,
+						ci.AttributeK8sPodName:    dummyPodName,
+						ci.AttributeK8sNamespace:  dummyNamespace,
+					},
 				},
 			}),
 			ShouldError: false,
@@ -161,25 +185,32 @@ func TestConsumeMetricsForPodAttributeDecorator(t *testing.T) {
 
 	testcases2 := map[string]decoratorconsumer.TestCase{
 		"correlation_via_neuron_device_index_alt_name": {
-			Metrics: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier]map[string]string{
+			Metrics: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier][]map[string]string{
 				{Name: neuronHardwareInfoKey, MetricType: pmetric.MetricTypeSum}: {
-					neuronCorePerDeviceKey: "2",
+					{
+						neuronCorePerDeviceKey: "2",
+					},
 				},
 				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
-					"device":                 "test0",
-					neuronDeviceAttributeKey: "1",
+					{
+						"device":                 "test0",
+						neuronDeviceAttributeKey: "1",
+					},
 				},
 			}),
-			Want: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier]map[string]string{
-				{Name: neuronHardwareInfoKey, MetricType: pmetric.MetricTypeSum}: {
+			Want: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier][]map[string]string{
+				{Name: neuronHardwareInfoKey, MetricType: pmetric.MetricTypeSum}: {{
 					neuronCorePerDeviceKey: "2",
 				},
+				},
 				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
-					"device":                  "test0",
-					neuronDeviceAttributeKey:  "1",
-					ci.AttributeContainerName: dummyContainerName,
-					ci.AttributeK8sPodName:    dummyPodNameForAltResource,
-					ci.AttributeK8sNamespace:  dummyNamespace,
+					{
+						"device":                  "test0",
+						neuronDeviceAttributeKey:  "1",
+						ci.AttributeContainerName: dummyContainerName,
+						ci.AttributeK8sPodName:    dummyPodNameForAltResource,
+						ci.AttributeK8sNamespace:  dummyNamespace,
+					},
 				},
 			}),
 			ShouldError: false,
