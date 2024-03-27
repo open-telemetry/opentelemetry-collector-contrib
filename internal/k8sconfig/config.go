@@ -209,3 +209,13 @@ func NewNodeSharedInformer(client k8s.Interface, nodeName string, watchSyncPerio
 	)
 	return informer
 }
+
+// IgnoreDeletedFinalStateUnknown returns the object wrapped in
+// DeletedFinalStateUnknown. Useful in OnDelete resource event handlers that do
+// not need the additional context.
+func IgnoreDeletedFinalStateUnknown(obj any) any {
+	if obj, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+		return obj.Obj
+	}
+	return obj
+}
