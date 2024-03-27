@@ -26,12 +26,12 @@ type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 
-	RetrySettings configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	RetryConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// Arrow includes settings specific to OTel Arrow.
-	Arrow ArrowSettings `mapstructure:"arrow"`
+	Arrow ArrowConfig `mapstructure:"arrow"`
 
 	// UserDialOptions cannot be configured via `mapstructure`
 	// schemes.  This is useful for custom purposes where the
@@ -40,9 +40,9 @@ type Config struct {
 	UserDialOptions []grpc.DialOption `mapstructure:"-"`
 }
 
-// ArrowSettings includes whether Arrow is enabled and the number of
+// ArrowConfig includes whether Arrow is enabled and the number of
 // concurrent Arrow streams.
-type ArrowSettings struct {
+type ArrowConfig struct {
 	// NumStreams determines the number of OTel Arrow streams.
 	NumStreams int `mapstructure:"num_streams"`
 
@@ -65,7 +65,7 @@ type ArrowSettings struct {
 	// Note that `Zstd` applies to gRPC, not Arrow compression.
 	PayloadCompression configcompression.Type `mapstructure:"payload_compression"`
 
-	// Disabled prevents using OTel Arrow streams.  The exporter
+	// Disabled prevents using OTel-Arrow streams.  The exporter
 	// falls back to standard OTLP.
 	Disabled bool `mapstructure:"disabled"`
 
@@ -77,20 +77,10 @@ type ArrowSettings struct {
 
 var _ component.Config = (*Config)(nil)
 
-// Validate checks if the exporter configuration is valid
-func (cfg *Config) Validate() error {
-	if err := cfg.QueueSettings.Validate(); err != nil {
-		return fmt.Errorf("queue settings has invalid configuration: %w", err)
-	}
-	if err := cfg.Arrow.Validate(); err != nil {
-		return fmt.Errorf("arrow settings has invalid configuration: %w", err)
-	}
-
-	return nil
-}
+var _ component.ConfigValidator = (*ArrowConfig)(nil)
 
 // Validate returns an error when the number of streams is less than 1.
-func (cfg *ArrowSettings) Validate() error {
+func (cfg *ArrowConfig) Validate() error {
 	if cfg.NumStreams < 1 {
 		return fmt.Errorf("stream count must be > 0: %d", cfg.NumStreams)
 	}
@@ -113,7 +103,7 @@ func (cfg *ArrowSettings) Validate() error {
 	return nil
 }
 
-func (cfg *ArrowSettings) toArrowProducerOptions() (arrowOpts []config.Option) {
+func (cfg *ArrowConfig) toArrowProducerOptions() (arrowOpts []config.Option) {
 	switch cfg.PayloadCompression {
 	case configcompression.TypeZstd:
 		arrowOpts = append(arrowOpts, config.WithZstd())
