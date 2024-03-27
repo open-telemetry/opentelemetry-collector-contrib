@@ -56,7 +56,7 @@ func TestK8sResolve(t *testing.T) {
 		}
 
 		cl := fake.NewSimpleClientset(endpoint)
-		res, err := newK8sResolver(cl, zap.NewNop(), service, ports)
+		res, err := newK8sResolver(cl, zap.NewNop(), service, ports, defaultListWatchTimeout)
 		require.NoError(t, err)
 
 		require.NoError(t, res.start(context.Background()))
@@ -241,7 +241,7 @@ func Test_newK8sResolver(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newK8sResolver(fake.NewSimpleClientset(), tt.args.logger, tt.args.service, tt.args.ports)
+			got, err := newK8sResolver(fake.NewSimpleClientset(), tt.args.logger, tt.args.service, tt.args.ports, defaultListWatchTimeout)
 			if tt.wantErr != nil {
 				require.Error(t, err, tt.wantErr)
 			} else {
