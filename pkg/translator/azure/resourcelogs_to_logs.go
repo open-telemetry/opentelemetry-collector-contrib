@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"time"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/relvacode/iso8601"
@@ -107,14 +108,15 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 		for i := 0; i < len(logs); i++ {
 			log := logs[i]
+			lr := logRecords.AppendEmpty()
 			nanos, err := getTimestamp(log)
 			if err != nil {
 				r.Logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", log.Time))
-				continue
+			} else {
+				lr.SetTimestamp(nanos)
 			}
-
-			lr := logRecords.AppendEmpty()
-			lr.SetTimestamp(nanos)
+			// always set observed timestamp to time observed by Collector
+			lr.SetObservedTimestamp(pcommon.Timestamp(time.Now().UnixNano()))
 
 			if log.Level != nil {
 				severity := asSeverity(*log.Level)
