@@ -13,4 +13,8 @@ type Config struct {
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	internal.ScraperConfig
+
+	// CacheBootTime enables caching of the boot time of the system and each process. This means the
+	// boot times will never be updated as long as the collector is running.
+	CacheBootTime bool `mapstructure:"cache_boot_time"`
 }
