@@ -16,7 +16,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.4
 	github.com/DataDog/sketches-go v1.4.4
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0
-	github.com/aws/aws-sdk-go v1.51.7
+	github.com/aws/aws-sdk-go v1.51.8
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.97.0
@@ -216,7 +216,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
-	github.com/prometheus/common v0.50.0 // indirect
+	github.com/prometheus/common v0.51.1 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.13.0 // indirect
 	github.com/prometheus/prometheus v0.50.1 // indirect
