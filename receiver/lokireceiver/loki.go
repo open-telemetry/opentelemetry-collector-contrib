@@ -102,7 +102,7 @@ func (r *lokiReceiver) startProtocolsServers(ctx context.Context, host component
 	}
 
 	if r.conf.GRPC != nil {
-		r.serverGRPC, err = r.conf.GRPC.ToServerContext(ctx, host, r.settings.TelemetrySettings)
+		r.serverGRPC, err = r.conf.GRPC.ToServer(ctx, host, r.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed create grpc server error: %w", err)
 		}
