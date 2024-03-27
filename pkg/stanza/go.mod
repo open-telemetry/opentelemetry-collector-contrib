@@ -10,18 +10,18 @@ require (
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20230911200830-875f5bc594a4
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.96.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.96.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.97.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.97.0
 	github.com/stretchr/testify v1.9.0
 	github.com/valyala/fastjson v1.6.4
-	go.opentelemetry.io/collector/component v0.96.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/config/configtls v0.96.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/confmap v0.96.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/consumer v0.96.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/extension v0.96.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/featuregate v1.3.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240322165517-15201f1e5967
-	go.opentelemetry.io/collector/receiver v0.96.1-0.20240322165517-15201f1e5967
+	go.opentelemetry.io/collector/component v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/config/configtls v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/confmap v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/consumer v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/extension v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/featuregate v1.4.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/pdata v1.4.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/receiver v0.97.1-0.20240327181407-1038b67c85a0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -34,7 +34,7 @@ require (
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
+	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -57,9 +57,9 @@ require (
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	go.opentelemetry.io/collector v0.96.1-0.20240322165517-15201f1e5967 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240322165517-15201f1e5967 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240322165517-15201f1e5967 // indirect
+	go.opentelemetry.io/collector v0.97.1-0.20240327181407-1038b67c85a0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240327181407-1038b67c85a0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.97.1-0.20240327181407-1038b67c85a0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.46.0 // indirect
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
