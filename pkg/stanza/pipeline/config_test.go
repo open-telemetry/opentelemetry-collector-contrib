@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
@@ -25,7 +26,7 @@ func TestBuildPipelineSuccess(t *testing.T) {
 		},
 	}
 
-	pipe, err := cfg.Build(testutil.Logger(t))
+	pipe, err := cfg.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.Equal(t, 1, len(pipe.Operators()))
 }
@@ -39,7 +40,7 @@ func TestBuildPipelineNoLogger(t *testing.T) {
 		},
 	}
 
-	pipe, err := cfg.Build(nil)
+	pipe, err := cfg.Build(nil, componenttest.NewNopTelemetrySettings())
 	require.EqualError(t, err, "logger must be provided")
 	require.Nil(t, pipe)
 }
@@ -47,7 +48,7 @@ func TestBuildPipelineNoLogger(t *testing.T) {
 func TestBuildPipelineNilOperators(t *testing.T) {
 	cfg := Config{}
 
-	pipe, err := cfg.Build(testutil.Logger(t))
+	pipe, err := cfg.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings())
 	require.EqualError(t, err, "operators must be specified")
 	require.Nil(t, pipe)
 }
@@ -57,7 +58,7 @@ func TestBuildPipelineEmptyOperators(t *testing.T) {
 		Operators: []operator.Config{},
 	}
 
-	pipe, err := cfg.Build(testutil.Logger(t))
+	pipe, err := cfg.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings())
 	require.EqualError(t, err, "empty pipeline not allowed")
 	require.Nil(t, pipe)
 }
@@ -75,7 +76,7 @@ func TestBuildAPipelineDefaultOperator(t *testing.T) {
 		DefaultOutput: testutil.NewFakeOutput(t),
 	}
 
-	pipe, err := cfg.Build(testutil.Logger(t))
+	pipe, err := cfg.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	ops := pipe.Operators()
@@ -359,7 +360,7 @@ func TestUpdateOutputIDs(t *testing.T) {
 			pipeline, err := Config{
 				Operators:     tc.ops(),
 				DefaultOutput: tc.defaultOut,
-			}.Build(testutil.Logger(t))
+			}.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 			ops := pipeline.Operators()
 

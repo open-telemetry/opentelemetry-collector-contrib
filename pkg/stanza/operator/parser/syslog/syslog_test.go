@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -27,7 +28,7 @@ func TestParser(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			op, err := tc.Config.Build(testutil.Logger(t))
+			op, err := tc.Config.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 
 			fake := testutil.NewFakeOutput(t)
@@ -57,7 +58,7 @@ func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 
 	body := `<86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [verylongsdnamethatisgreaterthan32bytes@12345 UserHostAddress="192.168.2.132"] my message`
 
-	op, err := cfg.Build(testutil.Logger(t))
+	op, err := cfg.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	fake := testutil.NewFakeOutput(t)
@@ -82,14 +83,14 @@ func TestSyslogProtocolConfig(t *testing.T) {
 	for _, proto := range []string{"RFC5424", "rfc5424", "RFC3164", "rfc3164"} {
 		cfg := basicConfig()
 		cfg.Protocol = proto
-		_, err := cfg.Build(testutil.Logger(t))
+		_, err := cfg.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings())
 		require.NoError(t, err)
 	}
 
 	for _, proto := range []string{"RFC5424a", "rfc5424b", "RFC3164c", "rfc3164d"} {
 		cfg := basicConfig()
 		cfg.Protocol = proto
-		_, err := cfg.Build(testutil.Logger(t))
+		_, err := cfg.Build(testutil.Logger(t), componenttest.NewNopTelemetrySettings())
 		require.Error(t, err)
 	}
 }

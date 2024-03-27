@@ -6,6 +6,7 @@ package scope // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -39,7 +40,7 @@ type Config struct {
 }
 
 // Build will build a logger name parser operator.
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger, _ component.TelemetrySettings) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err

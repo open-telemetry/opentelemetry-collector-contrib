@@ -8,11 +8,12 @@ package journald // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-func (c Config) Build(_ *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(_ *zap.SugaredLogger, set component.TelemetrySettings) (operator.Operator, error) {
 	return nil, errors.New("journald input operator is only supported on linux")
 }

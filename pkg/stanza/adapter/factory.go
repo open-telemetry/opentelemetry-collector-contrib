@@ -56,7 +56,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 		pipe, err := pipeline.Config{
 			Operators:     operators,
 			DefaultOutput: emitter,
-		}.Build(params.Logger.Sugar())
+		}.Build(params.Logger.Sugar(), params.TelemetrySettings)
 		if err != nil {
 			return nil, err
 		}
