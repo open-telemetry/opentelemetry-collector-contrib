@@ -8,17 +8,15 @@ package podmanreceiver
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func TestTranslateStatsToMetrics(t *testing.T) {
-	ts := time.Now()
-	stats := genContainerStats()
-	md := containerStatsToMetrics(ts, container{Image: "localimage"}, stats)
-	assertStatsEqualToMetrics(t, stats, md)
+type point struct {
+	intVal     uint64
+	doubleVal  float64
+	attributes map[string]string
 }
 
 func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pmetric.Metrics) {
@@ -34,7 +32,7 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 	for k, v := range resourceAttrs {
 		attr, exists := rsm.Resource().Attributes().Get(k)
 		assert.True(t, exists)
-		assert.Equal(t, attr.Str(), v)
+		assert.Equal(t, v, attr.Str())
 	}
 
 	assert.Equal(t, rsm.ScopeMetrics().Len(), 1)
@@ -46,9 +44,9 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 		m := metrics.At(i)
 		switch m.Name() {
 		case "container.memory.usage.limit":
-			assertMetricEqual(t, m, pmetric.MetricTypeGauge, []point{{intVal: podmanStats.MemLimit}})
+			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.MemLimit}})
 		case "container.memory.usage.total":
-			assertMetricEqual(t, m, pmetric.MetricTypeGauge, []point{{intVal: podmanStats.MemUsage}})
+			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.MemUsage}})
 		case "container.memory.percent":
 			assertMetricEqual(t, m, pmetric.MetricTypeGauge, []point{{doubleVal: podmanStats.MemPerc}})
 		case "container.network.io.usage.tx_bytes":
@@ -62,15 +60,15 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.BlockInput}})
 
 		case "container.cpu.usage.system":
-			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.CPUSystemNano}})
+			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: toSecondsWithNanosecondPrecision(podmanStats.CPUSystemNano)}})
 		case "container.cpu.usage.total":
-			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.CPUNano}})
+			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: toSecondsWithNanosecondPrecision(podmanStats.CPUNano)}})
 		case "container.cpu.percent":
 			assertMetricEqual(t, m, pmetric.MetricTypeGauge, []point{{doubleVal: podmanStats.CPU}})
 		case "container.cpu.usage.percpu":
 			points := make([]point, len(podmanStats.PerCPU))
 			for i, v := range podmanStats.PerCPU {
-				points[i] = point{intVal: v, attributes: map[string]string{"core": fmt.Sprintf("cpu%d", i)}}
+				points[i] = point{intVal: toSecondsWithNanosecondPrecision(v), attributes: map[string]string{"core": fmt.Sprintf("cpu%d", i)}}
 			}
 			assertMetricEqual(t, m, pmetric.MetricTypeSum, points)
 

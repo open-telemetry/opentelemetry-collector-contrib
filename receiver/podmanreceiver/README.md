@@ -33,6 +33,7 @@ The following settings are optional:
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `timeout` (default = `5s`): The maximum amount of time to wait for Podman API responses.
+- `metrics` (defaults at [./documentation.md](./documentation.md)): Enables/disables individual metrics. See [./documentation.md](./documentation.md) for full detail.
 
 Example:
 
@@ -43,6 +44,9 @@ receivers:
     timeout: 10s
     collection_interval: 10s
     initial_delay: 1s
+    metrics:
+      container.cpu.usage.system:
+        enabled: false
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
@@ -84,6 +88,8 @@ The receiver emits the following metrics:
 	container.cpu.usage.total
 	container.cpu.percent
 	container.cpu.usage.percpu
+
+See [./documentation.md](./documentation.md) for full detail.
 
 ## Building
 
