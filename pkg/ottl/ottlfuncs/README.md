@@ -409,6 +409,7 @@ Available Converters:
 - [SHA256](#sha256)
 - [SpanID](#spanid)
 - [Split](#split)
+- [String](#string)
 - [Substring](#substring)
 - [Time](#time)
 - [TraceID](#traceid)
@@ -1068,6 +1069,33 @@ If the `target` is not a string or does not exist, the `Split` Converter will re
 Examples:
 
 - `Split("A|B|C", "|")`
+
+### String
+
+`String(value)`
+
+The `String` Converter converts the `value` to string type.
+
+The returned type is `string`.
+
+- string. The function returns the `value` without changes.
+- []byte. The function returns the `value` as a string encoded in hexadecimal.
+- map. The function returns the `value` as a key-value-pair of type string.
+- slice. The function returns the `value` as a list formatted string.
+- pcommon.Value. The function returns the `value` as a string type.
+
+If `value` is of another type it gets marshalled to string type.
+If `value` is empty, or parsing failed, nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+Examples:
+
+- `String("test")`
+- `String(attributes["http.method"])`
+- `String(span_id)`
+- `String([1,2,3])`
+- `String(false)`
 
 ### Substring
 
