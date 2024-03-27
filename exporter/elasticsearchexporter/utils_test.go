@@ -127,7 +127,7 @@ func (r *bulkRecorder) countItems() (count int) {
 func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", handleErr(func(w http.ResponseWriter, req *http.Request) error {
+	mux.HandleFunc("/", handleErr(func(w http.ResponseWriter, _ *http.Request) error {
 		w.Header().Add("X-Elastic-Product", "Elasticsearch")
 
 		enc := json.NewEncoder(w)
