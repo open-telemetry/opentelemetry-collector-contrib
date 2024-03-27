@@ -207,10 +207,10 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	mx.NewRoute().HandlerFunc(r.handleReq)
 
 	// set up the ack API handler if the ack extension is present
-	if storageID := r.config.AckExtension; storageID != nil {
+	if storageID := r.config.Ack.Extension; storageID != nil {
 		if ext, found := host.GetExtensions()[*storageID]; found {
 			r.ackExt = ext.(ackextension.AckExtension)
-			mx.NewRoute().Path(r.config.AckPath).HandlerFunc(r.handleAck)
+			mx.NewRoute().Path(r.config.Ack.Path).HandlerFunc(r.handleAck)
 		} else {
 			return fmt.Errorf("specified ack extension with id '%q' could not be found", *storageID)
 		}
@@ -253,7 +253,9 @@ func (r *splunkReceiver) Shutdown(context.Context) error {
 	return err
 }
 
-func (r *splunkReceiver) writeSuccessResponseWithAck(ctx context.Context, resp http.ResponseWriter, eventCount int, ackID uint64) {
+func (r *splunkReceiver) writeSuccessResponseWithAck(ctx context.Context, resp http.ResponseWriter, eventCount int, partitionID string) {
+	ackID := r.ackExt.ProcessEvent(partitionID)
+	r.ackExt.Ack(partitionID, ackID)
 	r.writeSuccessResponse(ctx, resp, eventCount, []byte(fmt.Sprintf(responseOKWithAckID, ackID)))
 }
 
@@ -328,19 +330,10 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidEncodingRespBody, 0, errInvalidEncoding)
 		return
 	}
-
 	var partitionID string
 	if r.ackExt != nil {
-		// check channel header exists
-		partitionID = req.Header.Get(splunk.HTTPSplunkChannelHeader)
+		partitionID = r.validateChannelHeader(ctx, resp, req)
 		if len(partitionID) == 0 {
-			r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
-			return
-		}
-		// check validity of channel
-		_, err := uuid.Parse(partitionID)
-		if err != nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, invalidDataChannelHeader, 0, err)
 			return
 		}
 	}
@@ -387,28 +380,36 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	var ackID uint64
-	if r.ackExt != nil {
-		ackID = r.ackExt.ProcessEvent(partitionID)
-	}
-
 	consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
-	if r.ackExt != nil {
-		r.ackExt.Ack(partitionID, ackID)
-	}
 	_ = bodyReader.Close()
 
 	if consumerErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, consumerErr)
 	} else {
 		if r.ackExt != nil {
-			r.writeSuccessResponseWithAck(ctx, resp, ld.LogRecordCount(), ackID)
+			r.writeSuccessResponseWithAck(ctx, resp, ld.LogRecordCount(), partitionID)
 		} else {
 			r.writeSuccessResponseWithoutAck(ctx, resp, ld.LogRecordCount())
 		}
 		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), slLen, nil)
 	}
+}
+
+func (r *splunkReceiver) validateChannelHeader(ctx context.Context, resp http.ResponseWriter, req *http.Request) string {
+	var partitionID string
+	// check channel header exists
+	partitionID = req.Header.Get(splunk.HTTPSplunkChannelHeader)
+	if len(partitionID) == 0 {
+		r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
+	}
+	// check validity of channel
+	_, err := uuid.Parse(partitionID)
+	if err != nil {
+		r.failRequest(ctx, resp, http.StatusBadRequest, invalidDataChannelHeader, 0, err)
+	}
+
+	return partitionID
 }
 
 func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
@@ -433,16 +434,8 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 	var partitionID string
 	if r.ackExt != nil {
-		// check channel header exists
-		partitionID = req.Header.Get(splunk.HTTPSplunkChannelHeader)
+		partitionID = r.validateChannelHeader(ctx, resp, req)
 		if len(partitionID) == 0 {
-			r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
-			return
-		}
-		// check validity of channel
-		_, err := uuid.Parse(partitionID)
-		if err != nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, invalidDataChannelHeader, 0, err)
 			return
 		}
 	}
@@ -510,11 +503,6 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 	resourceCustomizer := r.createResourceCustomizer(req)
 
-	var ackID uint64
-	if r.ackExt != nil {
-		ackID = r.ackExt.ProcessEvent(partitionID)
-	}
-
 	if r.logsConsumer != nil && len(events) > 0 {
 		ld, err := splunkHecToLogData(r.settings.Logger, events, resourceCustomizer, r.config)
 		if err != nil {
@@ -522,9 +510,6 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			return
 		}
 		decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
-		if r.ackExt != nil {
-			r.ackExt.Ack(partitionID, ackID)
-		}
 		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), len(events), decodeErr)
 		if decodeErr != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
@@ -533,11 +518,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 	if r.metricsConsumer != nil && len(metricEvents) > 0 {
 		md, _ := splunkHecToMetricsData(r.settings.Logger, metricEvents, resourceCustomizer, r.config)
-
 		decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
-		if r.ackExt != nil {
-			r.ackExt.Ack(partitionID, ackID)
-		}
 		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(metricEvents), decodeErr)
 		if decodeErr != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(metricEvents), decodeErr)
@@ -546,7 +527,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 
 	if r.ackExt != nil {
-		r.writeSuccessResponseWithAck(ctx, resp, len(events)+len(metricEvents), ackID)
+		r.writeSuccessResponseWithAck(ctx, resp, len(events)+len(metricEvents), partitionID)
 	} else {
 		r.writeSuccessResponseWithoutAck(ctx, resp, len(events)+len(metricEvents))
 	}

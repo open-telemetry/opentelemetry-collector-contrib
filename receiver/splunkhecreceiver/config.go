@@ -22,6 +22,9 @@ type Config struct {
 	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
+
+	Ack `mapstructure:",squash"`
+
 	// RawPath for raw data collection, default is '/services/collector/raw'
 	RawPath string `mapstructure:"raw_path"`
 	// Splitting defines the splitting strategy used by the receiver when ingesting raw events. Can be set to "line" or "none". Default is "line".
@@ -30,8 +33,12 @@ type Config struct {
 	HealthPath string `mapstructure:"health_path"`
 	// HecToOtelAttrs creates a mapping from HEC metadata to attributes.
 	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_metadata_to_otel_attrs"`
-	// AckExtension defines the extension to use for acking of events
-	AckExtension *component.ID `mapstructure:"ack_extension"`
-	// AckPath for Ack API, default is '/services/collector/ack'
-	AckPath string `mapstructure:"ack_path"`
+}
+
+// Ack defines configuration for the ACK functionality of the HEC receiver
+type Ack struct {
+	// Extension defines the extension to use for acking of events. Without specifying an extension, the ACK endpoint won't be exposed
+	Extension *component.ID `mapstructure:"ack_extension"`
+	// Path for Ack API, default is '/services/collector/ack'
+	Path string `mapstructure:"ack_path"`
 }
