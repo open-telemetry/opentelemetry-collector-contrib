@@ -283,7 +283,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					compareMetricUnit(""),
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
-							compareExponentialHistogram(1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 1}),
+							compareExponentialHistogram(3, 1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 1}),
 						},
 					}},
 				),
@@ -293,7 +293,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					compareMetricUnit(""),
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
-							compareExponentialHistogram(1214, 3456, 5, -3, []uint64{1, 0, 2}, 2, []uint64{1, 0, 0, 1}),
+							compareExponentialHistogram(3, 1214, 3456, 5, -3, []uint64{1, 0, 2}, 2, []uint64{1, 0, 0, 1}),
 						},
 					}},
 				),
@@ -360,7 +360,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					compareMetricUnit(""),
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
-							compareExponentialHistogram(1214, 3456, 5, -3, []uint64{1, 0, 2}, 2, []uint64{1, 0, 0, 1}),
+							compareExponentialHistogram(3, 1214, 3456, 5, -3, []uint64{1, 0, 2}, 2, []uint64{1, 0, 0, 1}),
 						},
 					}},
 				),
@@ -505,7 +505,7 @@ func TestStaleExponentialHistogram(t *testing.T) {
 			compareMetricUnit(""),
 			[]dataPointExpectation{{
 				exponentialHistogramComparator: []exponentialHistogramComparator{
-					compareExponentialHistogram(1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 0, 1}),
+					compareExponentialHistogram(3, 1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 0, 1}),
 				},
 			}},
 		),
@@ -584,7 +584,7 @@ func TestFloatCounterHistogram(t *testing.T) {
 			compareMetricUnit(""),
 			[]dataPointExpectation{{
 				exponentialHistogramComparator: []exponentialHistogramComparator{
-					compareExponentialHistogram(1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 0, 3}),
+					compareExponentialHistogram(3, 1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 0, 3}),
 				},
 			}},
 		),
