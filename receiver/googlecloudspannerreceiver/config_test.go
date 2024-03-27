@@ -42,6 +42,7 @@ func TestLoadConfig(t *testing.T) {
 			CardinalityTotalLimit:             200000,
 			HideTopnLockstatsRowrangestartkey: true,
 			TruncateText:                      true,
+			FGACRole:                          true,
 			Projects: []Project{
 				{
 					ID:                "spanner project 1",

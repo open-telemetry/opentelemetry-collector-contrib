@@ -10,6 +10,8 @@ import (
 	"google.golang.org/api/option"
 )
 
+const fgacRole = "spanner_sys_reader"
+
 type Database struct {
 	client     *spanner.Client
 	databaseID *DatabaseID
@@ -23,13 +25,18 @@ func (database *Database) DatabaseID() *DatabaseID {
 	return database.databaseID
 }
 
-func NewDatabase(ctx context.Context, databaseID *DatabaseID, credentialsFilePath string) (*Database, error) {
+func NewDatabase(ctx context.Context, databaseID *DatabaseID, credentialsFilePath string, useFGACDatabaseRole bool) (*Database, error) {
 	var client *spanner.Client
 	var err error
 
 	if credentialsFilePath != "" {
 		credentialsFileClientOption := option.WithCredentialsFile(credentialsFilePath)
 		client, err = spanner.NewClient(ctx, databaseID.ID(), credentialsFileClientOption)
+	} else if useFGACDatabaseRole {
+		cfg := spanner.ClientConfig{
+			DatabaseRole: fgacRole,
+		}
+		client, err = spanner.NewClientWithConfig(ctx, databaseID.ID(), cfg)
 	} else {
 		// Fallback to Application Default Credentials(https://google.aip.dev/auth/4110)
 		client, err = spanner.NewClient(ctx, databaseID.ID())

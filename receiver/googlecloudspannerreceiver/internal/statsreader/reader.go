@@ -14,6 +14,7 @@ type ReaderConfig struct {
 	BackfillEnabled                   bool
 	HideTopnLockstatsRowrangestartkey bool
 	TruncateText                      bool
+	SpannerFGACRole                   bool
 }
 
 type Reader interface {
