@@ -10,18 +10,9 @@ import (
 	"io"
 	"strings"
 
-	"go.uber.org/multierr"
-	"go.uber.org/zap"
-	"golang.org/x/net/http2/hpack"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
-
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
 	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
-
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -39,6 +30,13 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
+	"golang.org/x/net/http2/hpack"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -67,15 +65,15 @@ type Receiver struct {
 	arrowpb.UnsafeArrowLogsServiceServer
 	arrowpb.UnsafeArrowMetricsServiceServer
 
-	telemetry   component.TelemetrySettings
-	tracer      trace.Tracer
-	obsrecv     *receiverhelper.ObsReport
-	gsettings   configgrpc.ServerConfig
-	authServer  auth.Server
-	newConsumer func() arrowRecord.ConsumerAPI
-	netReporter netstats.Interface
-	recvInFlightBytes metric.Int64UpDownCounter
-	recvInFlightItems metric.Int64UpDownCounter
+	telemetry            component.TelemetrySettings
+	tracer               trace.Tracer
+	obsrecv              *receiverhelper.ObsReport
+	gsettings            configgrpc.ServerConfig
+	authServer           auth.Server
+	newConsumer          func() arrowRecord.ConsumerAPI
+	netReporter          netstats.Interface
+	recvInFlightBytes    metric.Int64UpDownCounter
+	recvInFlightItems    metric.Int64UpDownCounter
 	recvInFlightRequests metric.Int64UpDownCounter
 }
 
@@ -483,7 +481,6 @@ func (r *Receiver) processRecords(ctx context.Context, method string, arrowConsu
 			r.netReporter.SetSpanSizeAttributes(ctx, sized)
 		}()
 	}
-
 
 	switch payloads[0].Type {
 	case arrowpb.ArrowPayloadType_UNIVARIATE_METRICS:

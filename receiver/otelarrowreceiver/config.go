@@ -21,7 +21,7 @@ const (
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
 	GRPC  configgrpc.ServerConfig `mapstructure:"grpc"`
-	Arrow ArrowSettings                 `mapstructure:"arrow"`
+	Arrow ArrowSettings           `mapstructure:"arrow"`
 }
 
 // ArrowSettings support configuring the Arrow receiver.
