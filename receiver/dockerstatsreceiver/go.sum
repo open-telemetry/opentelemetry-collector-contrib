@@ -61,8 +61,6 @@ github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.0 h1:Wqo399gCIufwto+VfwCSvsnfGpF/w5E9CNxSwbpD6No=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.0/go.mod h1:qmOFXW2epJhM0qSnUUYpldc7gVz2KMQwJ/QYCDIa7XU=
-github.com/hashicorp/go-version v1.6.0 h1:feTTfFNnjP967rlCxM/I9g701jU+RN74YKx2mOkIeek=
-github.com/hashicorp/go-version v1.6.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
@@ -160,8 +158,6 @@ go.opentelemetry.io/collector/confmap v0.97.0 h1:0CGSk7YW9rPc6jCwJteJzHzN96HRoHT
 go.opentelemetry.io/collector/confmap v0.97.0/go.mod h1:AnJmZcZoOLuykSXGiAf3shi11ZZk5ei4tZd9dDTTpWE=
 go.opentelemetry.io/collector/consumer v0.97.0 h1:S0BZQtJQxSHT156S8a5rLt3TeWYP8Rq+jn8QEyWQUYk=
 go.opentelemetry.io/collector/consumer v0.97.0/go.mod h1:1D06LURiZ/1KA2OnuKNeSn9bvFmJ5ZWe6L8kLu0osSY=
-go.opentelemetry.io/collector/featuregate v1.4.0 h1:RWE9M659C9iuUQc4GzBsndkGHG1jIzIY+nZJWvcKy1M=
-go.opentelemetry.io/collector/featuregate v1.4.0/go.mod h1:w7nUODKxEi3FLf1HslCiE6YWtMtOOrMnSwsDam8Mg9w=
 go.opentelemetry.io/collector/pdata v1.4.0 h1:cA6Pr7Z2V7mE+i7FmYpavX7nefzd6H4CICgW0T9aJX0=
 go.opentelemetry.io/collector/pdata v1.4.0/go.mod h1:0Ttp4wQinhV5oJTd9MjyvUegmZBO9O0nrlh/+EDLw+Q=
 go.opentelemetry.io/collector/receiver v0.97.0 h1:ozzE5MhIPtfnYA/UKB/NCcgxSmeLqdwErboi6B/IpLQ=
