@@ -5,9 +5,22 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"fmt"
+	"testing"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
+
+func TestExplicitRandomness(t *testing.T) {
+	const val uint64 = 0x80000000000000
+	rv, err := UnsignedToRandomness(val)
+	require.NoError(t, err)
+	require.Equal(t, val, rv.Unsigned())
+
+	rv, err = UnsignedToRandomness(MaxAdjustedCount)
+	require.Equal(t, err, ErrRValueSize)
+	require.Equal(t, AllProbabilitiesRandomness.Unsigned(), rv.Unsigned())
+}
 
 func ExampleTraceIDToRandomness() {
 	// TraceID represented in hex as "abababababababababd29d6a7215ced0"

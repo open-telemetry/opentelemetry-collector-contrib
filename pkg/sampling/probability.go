@@ -11,12 +11,9 @@ import (
 // ErrProbabilityRange is returned when a value should be in the range [1/MaxAdjustedCount, 1].
 var ErrProbabilityRange = errors.New("sampling probability out of the range [1/MaxAdjustedCount, 1]")
 
-// ErrPrecisionUnderflow is returned when a precision is too great for the range.
-var ErrPrecisionUnderflow = errors.New("sampling precision is too great for the range")
-
 // MinSamplingProbability is the smallest representable probability
 // and is the inverse of MaxAdjustedCount.
-const MinSamplingProbability = 1.0 / MaxAdjustedCount
+const MinSamplingProbability = 1.0 / float64(MaxAdjustedCount)
 
 // probabilityInRange tests MinSamplingProb <= prob <= 1.
 func probabilityInRange(prob float64) bool {
@@ -26,67 +23,60 @@ func probabilityInRange(prob float64) bool {
 // ProbabilityToThreshold converts a probability to a Threshold.  It
 // returns an error when the probability is out-of-range.
 func ProbabilityToThreshold(prob float64) (Threshold, error) {
-	// Probability cases
-	if !probabilityInRange(prob) {
-		return AlwaysSampleThreshold, ErrProbabilityRange
-	}
-
-	scaled := uint64(math.Round(prob * MaxAdjustedCount))
-
-	return Threshold{
-		unsigned: MaxAdjustedCount - scaled,
-	}, nil
+	return ProbabilityToThresholdWithPrecision(prob, NumHexDigits)
 }
 
 // ProbabilityToThresholdWithPrecision is like ProbabilityToThreshold
-// with support for reduced precision.  The `prec` argument determines
+// with support for reduced precision.  The `precision` argument determines
 // how many significant hex digits will be used to encode the exact
 // probability.
-func ProbabilityToThresholdWithPrecision(prob float64, prec uint8) (Threshold, error) {
+func ProbabilityToThresholdWithPrecision(fraction float64, precision int) (Threshold, error) {
 	// Assume full precision at 0.
-	if prec == 0 {
-		return ProbabilityToThreshold(prob)
+	if precision == 0 {
+		precision = NumHexDigits
 	}
-	if !probabilityInRange(prob) {
+	if !probabilityInRange(fraction) {
 		return AlwaysSampleThreshold, ErrProbabilityRange
 	}
-	// Special case for prob == 1.  The logic for revising precision
-	// that follows requires 0 < 1 - prob < 1.
-	if prob == 1 {
+	// Special case for prob == 1.
+	if fraction == 1 {
 		return AlwaysSampleThreshold, nil
 	}
 
-	// Adjust precision considering the significance of leading
-	// zeros.  If we can multiply the rejection probability by 16
-	// and still be less than 1, then there is a leading zero of
-	// obligatory precision.
-	for reject := 1 - prob; reject*16 < 1; {
-		reject *= 16
-		prec++
+	// Calculate the amount of precision needed to encode the
+	// threshold with reasonable precision.  Here, we count the
+	// number of leading `0` or `f` characters and automatically
+	// add precision to preserve relative error near the extremes.
+	//
+	// Frexp() normalizes both the fraction and one-minus the
+	// fraction, because more digits of precision are needed if
+	// either value is near zero.  Frexp returns an exponent <= 0.
+	//
+	// If `exp <= -4`, there will be a leading hex `0` or `f`.
+	// For every multiple of -4, another leading `0` or `f`
+	// appears, so this raises precision accordingly.
+	_, expF := math.Frexp(fraction)
+	_, expR := math.Frexp(1 - fraction)
+	precision = min(NumHexDigits, max(precision+expF/-hexBits, precision+expR/-hexBits))
+
+	// Compute the threshold
+	scaled := uint64(math.Round(fraction * float64(MaxAdjustedCount)))
+	threshold := MaxAdjustedCount - scaled
+
+	// Round to the specified precision, if less than the maximum.
+	if shift := hexBits * (NumHexDigits - precision); shift != 0 {
+		half := uint64(1) << (shift - 1)
+		threshold += half
+		threshold >>= shift
+		threshold <<= shift
 	}
-
-	// Check if leading zeros plus precision is above the maximum.
-	// This is called underflow because the requested precision
-	// leads to complete no significant figures.
-	if prec > NumHexDigits {
-		return AlwaysSampleThreshold, ErrPrecisionUnderflow
-	}
-
-	scaled := uint64(math.Round(prob * MaxAdjustedCount))
-	rscaled := MaxAdjustedCount - scaled
-	shift := 4 * (14 - prec)
-	half := uint64(1) << (shift - 1)
-
-	rscaled += half
-	rscaled >>= shift
-	rscaled <<= shift
 
 	return Threshold{
-		unsigned: rscaled,
+		unsigned: threshold,
 	}, nil
 }
 
 // Probability is the sampling ratio in the range [MinSamplingProb, 1].
 func (t Threshold) Probability() float64 {
-	return float64(MaxAdjustedCount-t.unsigned) / MaxAdjustedCount
+	return float64(MaxAdjustedCount-t.unsigned) / float64(MaxAdjustedCount)
 }
