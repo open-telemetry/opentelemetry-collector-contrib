@@ -175,7 +175,7 @@ func sendSapm(
 
 	if tlsEnabled {
 		tlscs := configtls.ClientConfig{
-			TLSSetting: configtls.Config{
+			Config: configtls.Config{
 				CAFile:   "./testdata/ca.crt",
 				CertFile: "./testdata/client.crt",
 				KeyFile:  "./testdata/client.key",
@@ -311,7 +311,7 @@ func TestReception(t *testing.T) {
 					ServerConfig: confighttp.ServerConfig{
 						Endpoint: tlsAddress,
 						TLSSetting: &configtls.ServerConfig{
-							TLSSetting: configtls.Config{
+							Config: configtls.Config{
 								CAFile:   "./testdata/ca.crt",
 								CertFile: "./testdata/server.crt",
 								KeyFile:  "./testdata/server.key",

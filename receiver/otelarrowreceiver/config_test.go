@@ -54,7 +54,7 @@ func TestUnmarshalConfig(t *testing.T) {
 						Transport: confignet.TransportTypeTCP,
 					},
 					TLSSetting: &configtls.ServerConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CertFile: "test.crt",
 							KeyFile:  "test.key",
 						},

@@ -129,7 +129,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 						Mode:     alertModeListen,
 						Endpoint: testAddr,
 						TLS: &configtls.ServerConfig{
-							TLSSetting: configtls.Config{
+							Config: configtls.Config{
 								CertFile: filepath.Join("testdata", "alerts", "cert", "server.crt"),
 								KeyFile:  filepath.Join("testdata", "alerts", "cert", "server.key"),
 							},

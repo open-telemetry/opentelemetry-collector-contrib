@@ -173,7 +173,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				Traces: configgrpc.ClientConfig{
 					Endpoint: endpoint,
 					TLSSetting: configtls.ClientConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CAFile: "nosuchfile",
 						},
 					},

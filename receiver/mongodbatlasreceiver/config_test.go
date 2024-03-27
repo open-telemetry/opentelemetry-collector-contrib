@@ -89,7 +89,7 @@ func TestValidate(t *testing.T) {
 					Secret:   "some_secret",
 					Mode:     alertModeListen,
 					TLS: &configtls.ServerConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CertFile: "some_cert_file",
 						},
 					},
@@ -107,7 +107,7 @@ func TestValidate(t *testing.T) {
 					Secret:   "some_secret",
 					Mode:     alertModeListen,
 					TLS: &configtls.ServerConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							KeyFile: "some_key_file",
 						},
 					},

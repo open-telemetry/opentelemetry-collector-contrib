@@ -44,7 +44,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				Scopes:         []string{"resource.read"},
 				Timeout:        2,
 				TLSSetting: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile:   testCAFile,
 						CertFile: testCertFile,
 						KeyFile:  testKeyFile,
@@ -65,7 +65,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				Scopes:       []string{"resource.read"},
 				Timeout:      2,
 				TLSSetting: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile:   testCAFile,
 						CertFile: "doestexist.cert",
 						KeyFile:  testKeyFile,

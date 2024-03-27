@@ -207,7 +207,7 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = ":0"
 		cfg.TLS = &configtls.ServerConfig{
-			TLSSetting: configtls.Config{
+			Config: configtls.Config{
 				CertFile: "test.crt",
 				KeyFile:  "test.key",
 			},
@@ -326,7 +326,7 @@ func TestBuild(t *testing.T) {
 					MaxLogSize:    65536,
 					ListenAddress: "10.0.0.1:9000",
 					TLS: &configtls.ServerConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CertFile: "/tmp/cert/missing",
 							KeyFile:  "/tmp/key/missing",
 						},

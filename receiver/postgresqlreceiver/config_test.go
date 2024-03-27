@@ -163,7 +163,7 @@ func TestLoadConfig(t *testing.T) {
 		expected.ClientConfig = configtls.ClientConfig{
 			Insecure:           false,
 			InsecureSkipVerify: false,
-			TLSSetting: configtls.Config{
+			Config: configtls.Config{
 				CAFile:   "/home/otel/authorities.crt",
 				CertFile: "/home/otel/mypostgrescert.crt",
 				KeyFile:  "/home/otel/mypostgreskey.key",
