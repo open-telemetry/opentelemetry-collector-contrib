@@ -5,7 +5,6 @@ package otelarrowreceiver
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -14,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/klauspost/compress/zstd"
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
 	"github.com/open-telemetry/otel-arrow/collector/testdata"
 	"github.com/open-telemetry/otel-arrow/collector/testutil"
@@ -37,7 +35,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.uber.org/mock/gomock"
 	"golang.org/x/net/http2/hpack"
 	"google.golang.org/grpc"
@@ -53,82 +50,6 @@ import (
 const otlpReceiverName = "receiver_test"
 
 var testReceiverID = component.NewIDWithName(component.MustNewType(componentMetadata.Type), otlpReceiverName)
-
-var traceJSON = []byte(`
-	{
-	  "resource_spans": [
-		{
-		  "resource": {
-			"attributes": [
-			  {
-				"key": "host.name",
-				"value": { "stringValue": "testHost" }
-			  }
-			]
-		  },
-		  "scope_spans": [
-			{
-			  "spans": [
-				{
-				  "trace_id": "5B8EFFF798038103D269B633813FC60C",
-				  "span_id": "EEE19B7EC3C1B174",
-				  "parent_span_id": "EEE19B7EC3C1B173",
-				  "name": "testSpan",
-				  "start_time_unix_nano": 1544712660300000000,
-				  "end_time_unix_nano": 1544712660600000000,
-				  "kind": 2,
-				  "attributes": [
-					{
-					  "key": "attr1",
-					  "value": { "intValue": 55 }
-					}
-				  ]
-				},
-				{
-				  "trace_id": "5B8EFFF798038103D269B633813FC60C",
-				  "span_id": "EEE19B7EC3C1B173",
-				  "name": "testSpan",
-				  "start_time_unix_nano": 1544712660000000000,
-				  "end_time_unix_nano": 1544712661000000000,
-				  "kind": "SPAN_KIND_CLIENT",
-				  "attributes": [
-					{
-					  "key": "attr1",
-					  "value": { "intValue": 55 }
-					}
-				  ]
-				}
-			  ]
-			}
-		  ]
-		}
-	  ]
-	}`)
-
-var traceOtlp = func() ptrace.Traces {
-	td := ptrace.NewTraces()
-	rs := td.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().PutStr(semconv.AttributeHostName, "testHost")
-	spans := rs.ScopeSpans().AppendEmpty().Spans()
-	span1 := spans.AppendEmpty()
-	span1.SetTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC})
-	span1.SetSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x74})
-	span1.SetParentSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73})
-	span1.SetName("testSpan")
-	span1.SetStartTimestamp(1544712660300000000)
-	span1.SetEndTimestamp(1544712660600000000)
-	span1.SetKind(ptrace.SpanKindServer)
-	span1.Attributes().PutInt("attr1", 55)
-	span2 := spans.AppendEmpty()
-	span2.SetTraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC})
-	span2.SetSpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73})
-	span2.SetName("testSpan")
-	span2.SetStartTimestamp(1544712660000000000)
-	span2.SetEndTimestamp(1544712661000000000)
-	span2.SetKind(ptrace.SpanKindClient)
-	span2.Attributes().PutInt("attr1", 55)
-	return td
-}()
 
 func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
@@ -306,38 +227,6 @@ func newReceiver(t *testing.T, factory receiver.Factory, settings component.Tele
 		require.NoError(t, err)
 	}
 	return r
-}
-
-func compressGzip(body []byte) (*bytes.Buffer, error) {
-	var buf bytes.Buffer
-
-	gw := gzip.NewWriter(&buf)
-	defer gw.Close()
-
-	_, err := gw.Write(body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &buf, nil
-}
-
-func compressZstd(body []byte) (*bytes.Buffer, error) {
-	var buf bytes.Buffer
-
-	zw, err := zstd.NewWriter(&buf)
-	if err != nil {
-		return nil, err
-	}
-
-	defer zw.Close()
-
-	_, err = zw.Write(body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &buf, nil
 }
 
 type senderFunc func(td ptrace.Traces)
@@ -639,7 +528,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 
 	host := newHostWithExtensions(
 		map[component.ID]component.Component{
-			authID: newTestAuthExtension(t, func(ctx context.Context, hdrs map[string][]string) (context.Context, error) {
+			authID: newTestAuthExtension(t, func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 				if ctx.Value(inStreamCtx{}) != nil {
 					return ctx, fmt.Errorf(errorString)
 				}

@@ -76,7 +76,7 @@ func newOTelArrowReceiver(cfg *Config, set receiver.CreateSettings) (*otelArrowR
 	return r, nil
 }
 
-func (r *otelArrowReceiver) startGRPCServer(cfg configgrpc.ServerConfig, host component.Host) error {
+func (r *otelArrowReceiver) startGRPCServer(cfg configgrpc.ServerConfig, _ component.Host) error {
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", cfg.NetAddr.Endpoint))
 
 	gln, err := cfg.NetAddr.Listen(context.Background())
@@ -163,7 +163,7 @@ func (r *otelArrowReceiver) Start(_ context.Context, host component.Host) error 
 }
 
 // Shutdown is a method to turn off receiving.
-func (r *otelArrowReceiver) Shutdown(ctx context.Context) error {
+func (r *otelArrowReceiver) Shutdown(_ context.Context) error {
 	var err error
 
 	if r.serverGRPC != nil {
@@ -174,19 +174,16 @@ func (r *otelArrowReceiver) Shutdown(ctx context.Context) error {
 	return err
 }
 
-func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) error {
+func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) {
 	r.tracesReceiver = trace.New(tc, r.obsrepGRPC)
-	return nil
 }
 
-func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
+func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) {
 	r.metricsReceiver = metrics.New(mc, r.obsrepGRPC)
-	return nil
 }
 
-func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) error {
+func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) {
 	r.logsReceiver = logs.New(lc, r.obsrepGRPC)
-	return nil
 }
 
 var _ arrow.Consumers = &otelArrowReceiver{}

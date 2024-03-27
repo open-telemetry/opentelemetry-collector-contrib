@@ -66,9 +66,7 @@ func createTraces(
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerTraceConsumer(nextConsumer); err != nil {
-		return nil, err
-	}
+	r.Unwrap().registerTraceConsumer(nextConsumer)
 	return r, nil
 }
 
@@ -87,9 +85,7 @@ func createMetrics(
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerMetricsConsumer(consumer); err != nil {
-		return nil, err
-	}
+	r.Unwrap().registerMetricsConsumer(consumer)
 	return r, nil
 }
 
@@ -108,9 +104,7 @@ func createLog(
 		return nil, err
 	}
 
-	if err = r.Unwrap().registerLogsConsumer(consumer); err != nil {
-		return nil, err
-	}
+	r.Unwrap().registerLogsConsumer(consumer)
 	return r, nil
 }
 

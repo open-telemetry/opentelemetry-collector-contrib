@@ -364,7 +364,7 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 
 		if err != nil {
 			// client called CloseSend()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				status := &arrowpb.BatchStatus{}
 				status.StatusCode = arrowpb.StatusCode_CANCELED
 				err = serverStream.Send(status)
@@ -436,13 +436,14 @@ func (r *Receiver) processAndConsume(ctx context.Context, method string, arrowCo
 		status.StatusCode = arrowpb.StatusCode_OK
 	} else {
 		status.StatusMessage = err.Error()
-		if errors.Is(err, arrowRecord.ErrConsumerMemoryLimit) {
+		switch {
+		case errors.Is(err, arrowRecord.ErrConsumerMemoryLimit):
 			r.telemetry.Logger.Error("arrow resource exhausted", zap.Error(err))
 			status.StatusCode = arrowpb.StatusCode_RESOURCE_EXHAUSTED
-		} else if consumererror.IsPermanent(err) {
+		case consumererror.IsPermanent(err):
 			r.telemetry.Logger.Error("arrow data error", zap.Error(err))
 			status.StatusCode = arrowpb.StatusCode_INVALID_ARGUMENT
-		} else {
+		default:
 			r.telemetry.Logger.Debug("arrow consumer error", zap.Error(err))
 			status.StatusCode = arrowpb.StatusCode_UNAVAILABLE
 		}

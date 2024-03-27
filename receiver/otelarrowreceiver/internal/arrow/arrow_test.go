@@ -66,7 +66,7 @@ func (c compareJSONLogs) MarshalJSON() ([]byte, error) {
 
 type consumeResult struct {
 	Ctx  context.Context
-	Data interface{}
+	Data any
 }
 
 type commonTestCase struct {
@@ -452,7 +452,7 @@ func TestReceiverSendError(t *testing.T) {
 func TestReceiverConsumeError(t *testing.T) {
 	stdTesting := otelAssert.NewStdUnitTest(t)
 
-	data := []interface{}{
+	data := []any{
 		testdata.GenerateTraces(2),
 		testdata.GenerateMetrics(2),
 		testdata.GenerateLogs(2),
@@ -512,7 +512,7 @@ func TestReceiverConsumeError(t *testing.T) {
 }
 
 func TestReceiverInvalidData(t *testing.T) {
-	data := []interface{}{
+	data := []any{
 		testdata.GenerateTraces(2),
 		testdata.GenerateMetrics(2),
 		testdata.GenerateLogs(2),
@@ -550,7 +550,7 @@ func TestReceiverInvalidData(t *testing.T) {
 }
 
 func TestReceiverMemoryLimit(t *testing.T) {
-	data := []interface{}{
+	data := []any{
 		testdata.GenerateTraces(2),
 		testdata.GenerateMetrics(2),
 		testdata.GenerateLogs(2),
