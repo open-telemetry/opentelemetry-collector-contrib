@@ -307,7 +307,7 @@ func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) 
 	var ackRequest splunk.AckRequest
 
 	err = dec.Decode(&ackRequest)
-	if err != nil {
+	if err != nil || len(ackRequest.Acks) == 0 {
 		r.failRequest(ctx, resp, http.StatusBadRequest, invalidFormatRespBody, 0, err)
 		return
 	}

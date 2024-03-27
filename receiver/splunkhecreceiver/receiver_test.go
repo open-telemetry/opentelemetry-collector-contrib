@@ -1175,13 +1175,13 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 	tests := []struct {
 		name                  string
 		req                   *http.Request
-		setupMockAckExtension func(t *testing.T) component.Component
+		setupMockAckExtension func() component.Component
 		assertResponse        func(t *testing.T, resp *http.Response, body any)
 	}{
 		{
 			name: "incorrect_method",
 			req:  httptest.NewRequest("PUT", "http://localhost/ack", nil),
-			setupMockAckExtension: func(t *testing.T) component.Component {
+			setupMockAckExtension: func() component.Component {
 				mockAckExtension := mocks.AckExtension{}
 				return &mockAckExtension
 			},
@@ -1197,7 +1197,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/ack", nil)
 				return req
 			}(),
-			setupMockAckExtension: func(t *testing.T) component.Component {
+			setupMockAckExtension: func() component.Component {
 				mockAckExtension := mocks.AckExtension{}
 				return &mockAckExtension
 			},
@@ -1214,7 +1214,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 				req.Header.Set("X-Splunk-Request-Channel", "invalid-id")
 				return req
 			}(),
-			setupMockAckExtension: func(t *testing.T) component.Component {
+			setupMockAckExtension: func() component.Component {
 				mockAckExtension := mocks.AckExtension{}
 				return &mockAckExtension
 			},
@@ -1231,7 +1231,26 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 				req.Header.Set("X-Splunk-Request-Channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
 				return req
 			}(),
-			setupMockAckExtension: func(t *testing.T) component.Component {
+			setupMockAckExtension: func() component.Component {
+				mockAckExtension := mocks.AckExtension{}
+				return &mockAckExtension
+			},
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, map[string]any{"text": "Invalid data format", "code": float64(6)}, body)
+			},
+		},
+		{
+			name: "empty_ack_in_request_body",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(buildSplunkHecAckMsg([]uint64{}))
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/ack", bytes.NewReader(msgBytes))
+				req.Header.Set("X-Splunk-Request-Channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
+				return req
+			}(),
+			setupMockAckExtension: func() component.Component {
 				mockAckExtension := mocks.AckExtension{}
 				return &mockAckExtension
 			},
@@ -1248,24 +1267,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 				req.Header.Set("X-Splunk-Request-Channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
 				return req
 			}(),
-			setupMockAckExtension: func(t *testing.T) component.Component {
-				mockAckExtension := mocks.AckExtension{}
-				return &mockAckExtension
-			},
-			assertResponse: func(t *testing.T, resp *http.Response, body any) {
-				status := resp.StatusCode
-				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, map[string]any{"text": "Invalid data format", "code": float64(6)}, body)
-			},
-		},
-		{
-			name: "invalid_request_body",
-			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost/ack", bytes.NewReader([]byte(`hi there`)))
-				req.Header.Set("X-Splunk-Request-Channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
-				return req
-			}(),
-			setupMockAckExtension: func(t *testing.T) component.Component {
+			setupMockAckExtension: func() component.Component {
 				mockAckExtension := mocks.AckExtension{}
 				return &mockAckExtension
 			},
@@ -1284,7 +1286,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 				req.Header.Set("X-Splunk-Request-Channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
 				return req
 			}(),
-			setupMockAckExtension: func(t *testing.T) component.Component {
+			setupMockAckExtension: func() component.Component {
 				mockAckExtension := mocks.AckExtension{}
 				mockAckExtension.On("QueryAcks", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90", []uint64{1, 2, 3}).Once().Return(map[uint64]bool{
 					1: true,
@@ -1312,7 +1314,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 			assert.NoError(t, err)
 
 			mockHost := mockHost{extensions: map[component.ID]component.Component{
-				id: tt.setupMockAckExtension(t),
+				id: tt.setupMockAckExtension(),
 			}}
 
 			r := rcv.(*splunkReceiver)
@@ -1351,7 +1353,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 	tests := []struct {
 		name                  string
 		req                   *http.Request
-		setupMockAckExtension func(t *testing.T) component.Component
+		setupMockAckExtension func() component.Component
 		assertResponse        func(t *testing.T, resp *http.Response, body any)
 	}{
 		{
@@ -1362,7 +1364,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
-			setupMockAckExtension: func(t *testing.T) component.Component {
+			setupMockAckExtension: func() component.Component {
 				mockAckExtension := mocks.AckExtension{}
 				return &mockAckExtension
 			},
@@ -1381,7 +1383,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 				req.Header.Set("X-Splunk-Request-Channel", "invalid-id")
 				return req
 			}(),
-			setupMockAckExtension: func(t *testing.T) component.Component {
+			setupMockAckExtension: func() component.Component {
 				mockAckExtension := mocks.AckExtension{}
 				return &mockAckExtension
 			},
@@ -1400,7 +1402,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 				req.Header.Set("X-Splunk-Request-Channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
 				return req
 			}(),
-			setupMockAckExtension: func(t *testing.T) component.Component {
+			setupMockAckExtension: func() component.Component {
 				mockAckExtension := mocks.AckExtension{}
 				mockAckExtension.On("ProcessEvent", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90").Once().Return(uint64(1))
 				mockAckExtension.On("Ack", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90", uint64(1)).Once()
@@ -1419,7 +1421,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			assert.NoError(t, err)
 
 			mh := mockHost{extensions: map[component.ID]component.Component{
-				id: tt.setupMockAckExtension(t),
+				id: tt.setupMockAckExtension(),
 			}}
 
 			r := rcv.(*splunkReceiver)
@@ -1458,7 +1460,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 		req                   *http.Request
 		assertResponse        func(t *testing.T, resp *http.Response, body any)
 		assertSink            func(t *testing.T, sink *consumertest.LogsSink)
-		setupMockAckExtension func(t *testing.T) component.Component
+		setupMockAckExtension func() component.Component
 	}{
 		{
 			name: "no_channel_header",
@@ -1468,7 +1470,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
-			setupMockAckExtension: func(t *testing.T) component.Component {
+			setupMockAckExtension: func() component.Component {
 				mockAckExtension := mocks.AckExtension{}
 				return &mockAckExtension
 			},
@@ -1490,7 +1492,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				req.Header.Set("X-Splunk-Request-Channel", "invalid-id")
 				return req
 			}(),
-			setupMockAckExtension: func(t *testing.T) component.Component {
+			setupMockAckExtension: func() component.Component {
 				mockAckExtension := mocks.AckExtension{}
 				return &mockAckExtension
 			},
@@ -1512,7 +1514,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				req.Header.Set("X-Splunk-Request-Channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
 				return req
 			}(),
-			setupMockAckExtension: func(t *testing.T) component.Component {
+			setupMockAckExtension: func() component.Component {
 				mockAckExtension := mocks.AckExtension{}
 				mockAckExtension.On("ProcessEvent", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90").Once().Return(uint64(1))
 				mockAckExtension.On("Ack", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90", uint64(1)).Once()
@@ -1537,7 +1539,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			mh := mockHost{extensions: map[component.ID]component.Component{
-				id: tt.setupMockAckExtension(t),
+				id: tt.setupMockAckExtension(),
 			}}
 
 			assert.NoError(t, r.Start(context.Background(), mh))
