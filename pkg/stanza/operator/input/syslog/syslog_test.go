@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
@@ -22,6 +23,7 @@ import (
 )
 
 var (
+	ts          = time.Now()
 	basicConfig = func() *syslog.Config {
 		cfg := syslog.NewConfigWithID("test_syslog_parser")
 		return cfg
@@ -63,10 +65,39 @@ var (
 		},
 		ValidForTCP: true,
 	}
+	WithMetadata = syslog.Case{
+		Name: "RFC3164",
+		Config: func() *syslog.Config {
+			cfg := basicConfig()
+			cfg.Protocol = syslog.RFC3164
+			return cfg
+		}(),
+		Input: &entry.Entry{
+			Body: fmt.Sprintf("<34>%s 1.2.3.4 apache_server: test message", ts.Format("Jan _2 15:04:05")),
+		},
+		Expect: &entry.Entry{
+			Timestamp:    time.Date(ts.Year(), ts.Month(), ts.Day(), ts.Hour(), ts.Minute(), ts.Second(), 0, time.UTC),
+			Severity:     entry.Error2,
+			SeverityText: "crit",
+			Resource: map[string]any{
+				"service.name": "apache_server",
+			},
+			Attributes: map[string]any{
+				"foo":      "bar",
+				"appname":  "apache_server",
+				"facility": 4,
+				"hostname": "1.2.3.4",
+				"message":  "test message",
+				"priority": 34,
+			},
+			Body: fmt.Sprintf("<34>%s 1.2.3.4 apache_server: test message", ts.Format("Jan _2 15:04:05")),
+		},
+		ValidForTCP: true,
+		ValidForUDP: true,
+	}
 )
 
 func TestInput(t *testing.T) {
-
 	cases, err := syslog.CreateCases(basicConfig)
 	require.NoError(t, err)
 	cases = append(cases, OctetCase)
@@ -75,19 +106,37 @@ func TestInput(t *testing.T) {
 		cfg := tc.Config.BaseConfig
 		if tc.ValidForTCP {
 			t.Run(fmt.Sprintf("TCP-%s", tc.Name), func(t *testing.T) {
-				InputTest(t, NewConfigWithTCP(&cfg), tc)
+				InputTest(t, tc, NewConfigWithTCP(&cfg), nil, nil)
 			})
 		}
-
 		if tc.ValidForUDP {
 			t.Run(fmt.Sprintf("UDP-%s", tc.Name), func(t *testing.T) {
-				InputTest(t, NewConfigWithUDP(&cfg), tc)
+				InputTest(t, tc, NewConfigWithUDP(&cfg), nil, nil)
 			})
 		}
 	}
+
+	withMetadataCfg := WithMetadata.Config.BaseConfig
+	t.Run("TCPWithMetadata", func(t *testing.T) {
+		cfg := NewConfigWithTCP(&withMetadataCfg)
+		cfg.IdentifierConfig = helper.NewIdentifierConfig()
+		cfg.IdentifierConfig.Resource["service.name"] = helper.ExprStringConfig("apache_server")
+		cfg.AttributerConfig = helper.NewAttributerConfig()
+		cfg.AttributerConfig.Attributes["foo"] = helper.ExprStringConfig("bar")
+		InputTest(t, WithMetadata, cfg, map[string]any{"service.name": "apache_server"}, map[string]any{"foo": "bar"})
+	})
+
+	t.Run("UDPWithMetadata", func(t *testing.T) {
+		cfg := NewConfigWithUDP(&withMetadataCfg)
+		cfg.IdentifierConfig = helper.NewIdentifierConfig()
+		cfg.IdentifierConfig.Resource["service.name"] = helper.ExprStringConfig("apache_server")
+		cfg.AttributerConfig = helper.NewAttributerConfig()
+		cfg.AttributerConfig.Attributes["foo"] = helper.ExprStringConfig("bar")
+		InputTest(t, WithMetadata, cfg, map[string]any{"service.name": "apache_server"}, map[string]any{"foo": "bar"})
+	})
 }
 
-func InputTest(t *testing.T, cfg *Config, tc syslog.Case) {
+func InputTest(t *testing.T, tc syslog.Case, cfg *Config, rsrc map[string]any, attr map[string]any) {
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 
@@ -126,8 +175,28 @@ func InputTest(t *testing.T, cfg *Config, tc syslog.Case) {
 		// close pipeline to avoid data race
 		ots := time.Now()
 		e.ObservedTimestamp = ots
-		tc.Expect.ObservedTimestamp = ots
-		require.Equal(t, tc.Expect, e)
+
+		expect := tc.Expect
+		expect.ObservedTimestamp = ots
+		if rsrc != nil {
+			if expect.Resource == nil {
+				expect.Resource = rsrc
+			} else {
+				for k, v := range rsrc {
+					expect.Resource[k] = v
+				}
+			}
+		}
+		if attr != nil {
+			if expect.Attributes == nil {
+				expect.Attributes = attr
+			} else {
+				for k, v := range attr {
+					expect.Attributes[k] = v
+				}
+			}
+		}
+		require.Equal(t, expect, e)
 	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for entry to be processed")
 	}
