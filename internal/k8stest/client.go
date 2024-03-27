@@ -22,8 +22,7 @@ type K8sClient struct {
 	DiscoveryClient *discovery.DiscoveryClient
 	Mapper          *restmapper.DeferredDiscoveryRESTMapper
 
-	discoveryHTTPClient *http.Client
-	httpClient          *http.Client
+	httpClient *http.Client
 }
 
 func NewK8sClient(kubeconfigPath string) (*K8sClient, error) {
