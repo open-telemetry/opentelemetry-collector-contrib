@@ -397,9 +397,8 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 }
 
 func (r *splunkReceiver) validateChannelHeader(ctx context.Context, resp http.ResponseWriter, req *http.Request) string {
-	var partitionID string
 	// check channel header exists
-	partitionID = req.Header.Get(splunk.HTTPSplunkChannelHeader)
+	partitionID := req.Header.Get(splunk.HTTPSplunkChannelHeader)
 	if len(partitionID) == 0 {
 		r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
 		return ""
