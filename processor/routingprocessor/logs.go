@@ -108,6 +108,8 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 			plog.NewLogRecord(),
 			pcommon.NewInstrumentationScope(),
 			rlogs.Resource(),
+			plog.NewScopeLogs(),
+			rlogs,
 		)
 
 		matchCount := len(p.router.routes)
