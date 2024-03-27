@@ -14,6 +14,7 @@ import (
 	// SQLite driver
 	_ "github.com/mattn/go-sqlite3"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.uber.org/multierr"
 )
 
 const (
@@ -85,6 +86,10 @@ func (c *dbStorageClient) Delete(ctx context.Context, key string) error {
 // Batch executes the specified operations in order. Get operation results are updated in place
 func (c *dbStorageClient) Batch(ctx context.Context, ops ...storage.Operation) error {
 	var err error
+	tx, err := c.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
 	for _, op := range ops {
 		switch op.Type {
 		case storage.Get:
@@ -94,13 +99,15 @@ func (c *dbStorageClient) Batch(ctx context.Context, ops ...storage.Operation) e
 		case storage.Delete:
 			err = c.Delete(ctx, op.Key)
 		default:
-			return errors.New("wrong operation type")
+			err = errors.New("wrong operation type")
 		}
 
 		if err != nil {
+			err = multierr.Append(err, tx.Rollback())
 			return err
 		}
 	}
+	err = tx.Commit()
 	return err
 }
 
