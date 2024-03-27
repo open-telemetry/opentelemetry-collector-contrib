@@ -402,11 +402,13 @@ func (r *splunkReceiver) validateChannelHeader(ctx context.Context, resp http.Re
 	partitionID = req.Header.Get(splunk.HTTPSplunkChannelHeader)
 	if len(partitionID) == 0 {
 		r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
+		return ""
 	}
 	// check validity of channel
 	_, err := uuid.Parse(partitionID)
 	if err != nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, invalidDataChannelHeader, 0, err)
+		return ""
 	}
 
 	return partitionID
