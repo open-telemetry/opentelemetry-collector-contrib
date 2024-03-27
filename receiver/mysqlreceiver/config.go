@@ -22,15 +22,15 @@ const (
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Username                                string              `mapstructure:"username,omitempty"`
-	Password                                configopaque.String `mapstructure:"password,omitempty"`
-	Database                                string              `mapstructure:"database,omitempty"`
-	AllowNativePasswords                    bool                `mapstructure:"allow_native_passwords,omitempty"`
-	confignet.NetAddr                       `mapstructure:",squash"`
-	TLS                                     configtls.TLSClientSetting    `mapstructure:"tls,omitempty"`
-	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	StatementEvents                         StatementEventsConfig         `mapstructure:"statement_events"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	Username                       string              `mapstructure:"username,omitempty"`
+	Password                       configopaque.String `mapstructure:"password,omitempty"`
+	Database                       string              `mapstructure:"database,omitempty"`
+	AllowNativePasswords           bool                `mapstructure:"allow_native_passwords,omitempty"`
+	confignet.AddrConfig           `mapstructure:",squash"`
+	TLS                            configtls.ClientConfig        `mapstructure:"tls,omitempty"`
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	StatementEvents                StatementEventsConfig         `mapstructure:"statement_events"`
 }
 
 type StatementEventsConfig struct {
@@ -48,7 +48,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	// Change the default to Insecure = true as we don't want to break
 	// existing deployments which does not use TLS by default.
 	if !componentParser.IsSet("tls") {
-		cfg.TLS = configtls.TLSClientSetting{}
+		cfg.TLS = configtls.ClientConfig{}
 		cfg.TLS.Insecure = true
 	}
 

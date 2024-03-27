@@ -21,12 +21,12 @@ jobs:
           ref: ${{ github.head_ref }}
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.12
+          go-version: "1.21.8"
           cache: false
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/go/bin
@@ -38,13 +38,13 @@ jobs:
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
-      - name: go mod tidy
+      - name: go mod tidy, make genotelcontribcol and make genoteltestbedcol
         run: |
-          make gotidy
+          make gotidy && make genotelcontribcol && make genoteltestbedcol
           git config user.name opentelemetrybot
           git config user.email 107717825+opentelemetrybot@users.noreply.github.com
-          echo "git diff --exit-code || (git add . && git commit -m \"go mod tidy\" && git push)"
-          git diff --exit-code || (git add . && git commit -m "go mod tidy" && git push)
+          echo "git diff --exit-code || (git add . && git commit -m \"go mod tidy, make genotelcontribcol and make genoteltestbedcol\" && git push)"
+          git diff --exit-code || (git add . && git commit -m "go mod tidy, make genotelcontribcol and make genoteltestbedcol" && git push)
         env:
           GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
       - uses: actions-ecosystem/action-remove-labels@v1

@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("sigv4auth")
+)
+
 const (
-	Type               = "sigv4auth"
 	ExtensionStability = component.StabilityLevelBeta
 )
 

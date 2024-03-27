@@ -16,7 +16,7 @@ import (
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params receiver.CreateSettings,
 	cfg component.Config,
 	consumer consumer.Metrics,
@@ -35,7 +35,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&oCfg.ScraperControllerSettings,
+		&oCfg.ControllerConfig,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scrp),

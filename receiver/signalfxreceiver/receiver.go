@@ -20,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
@@ -32,9 +34,11 @@ import (
 const (
 	defaultServerTimeout = 20 * time.Second
 
-	responseOK                      = "OK"
-	responseInvalidMethod           = "Only \"POST\" method is supported"
-	responseInvalidContentType      = "\"Content-Type\" must be \"application/x-protobuf\""
+	responseOK                       = "OK"
+	responseInvalidMethod            = "Only \"POST\" method is supported"
+	responseEventsInvalidContentType = "\"Content-Type\" must be \"application/x-protobuf\""
+
+	responseInvalidContentType      = "\"Content-Type\" must be either \"application/x-protobuf\" or \"application/x-protobuf;format=otlp\""
 	responseInvalidEncoding         = "\"Content-Encoding\" must be \"gzip\" or empty"
 	responseErrGzipReader           = "Error on gzip body"
 	responseErrReadBody             = "Failed to read message body"
@@ -45,22 +49,24 @@ const (
 
 	// Centralizing some HTTP and related string constants.
 	protobufContentType       = "application/x-protobuf"
+	otlpProtobufContentType   = "application/x-protobuf;format=otlp"
 	gzipEncoding              = "gzip"
 	httpContentTypeHeader     = "Content-Type"
 	httpContentEncodingHeader = "Content-Encoding"
 )
 
 var (
-	okRespBody               = initJSONResponse(responseOK)
-	invalidMethodRespBody    = initJSONResponse(responseInvalidMethod)
-	invalidContentRespBody   = initJSONResponse(responseInvalidContentType)
-	invalidEncodingRespBody  = initJSONResponse(responseInvalidEncoding)
-	errGzipReaderRespBody    = initJSONResponse(responseErrGzipReader)
-	errReadBodyRespBody      = initJSONResponse(responseErrReadBody)
-	errUnmarshalBodyRespBody = initJSONResponse(responseErrUnmarshalBody)
-	errNextConsumerRespBody  = initJSONResponse(responseErrNextConsumer)
-	errLogsNotConfigured     = initJSONResponse(responseErrLogsNotConfigured)
-	errMetricsNotConfigured  = initJSONResponse(responseErrMetricsNotConfigured)
+	okRespBody                   = initJSONResponse(responseOK)
+	invalidMethodRespBody        = initJSONResponse(responseInvalidMethod)
+	invalidContentRespBody       = initJSONResponse(responseInvalidContentType)
+	invalidEventsContentRespBody = initJSONResponse(responseEventsInvalidContentType)
+	invalidEncodingRespBody      = initJSONResponse(responseInvalidEncoding)
+	errGzipReaderRespBody        = initJSONResponse(responseErrGzipReader)
+	errReadBodyRespBody          = initJSONResponse(responseErrReadBody)
+	errUnmarshalBodyRespBody     = initJSONResponse(responseErrUnmarshalBody)
+	errNextConsumerRespBody      = initJSONResponse(responseErrNextConsumer)
+	errLogsNotConfigured         = initJSONResponse(responseErrLogsNotConfigured)
+	errMetricsNotConfigured      = initJSONResponse(responseErrMetricsNotConfigured)
 
 	translator = &signalfx.ToTranslator{}
 )
@@ -116,16 +122,13 @@ func (r *sfxReceiver) RegisterLogsConsumer(lc consumer.Logs) {
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
 func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
-	if r.metricsConsumer == nil && r.logsConsumer == nil {
-		return component.ErrNilNextConsumer
-	}
 
 	if r.server != nil {
 		return nil
 	}
 
 	// set up the listener
-	ln, err := r.config.HTTPServerSettings.ToListener()
+	ln, err := r.config.ServerConfig.ToListener()
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
 	}
@@ -134,7 +137,7 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	mx.HandleFunc("/v2/datapoint", r.handleDatapointReq)
 	mx.HandleFunc("/v2/event", r.handleEventReq)
 
-	r.server, err = r.config.HTTPServerSettings.ToServer(host, r.settings.TelemetrySettings, mx)
+	r.server, err = r.config.ServerConfig.ToServer(host, r.settings.TelemetrySettings, mx)
 	if err != nil {
 		return err
 	}
@@ -148,7 +151,7 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	go func() {
 		defer r.shutdownWG.Done()
 		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			host.ReportFatalError(errHTTP)
+			r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 	return nil
@@ -166,16 +169,6 @@ func (r *sfxReceiver) Shutdown(context.Context) error {
 }
 
 func (r *sfxReceiver) readBody(ctx context.Context, resp http.ResponseWriter, req *http.Request) ([]byte, bool) {
-	if req.Method != http.MethodPost {
-		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBody, nil)
-		return nil, false
-	}
-
-	if req.Header.Get(httpContentTypeHeader) != protobufContentType {
-		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidContentRespBody, nil)
-		return nil, false
-	}
-
 	encoding := req.Header.Get(httpContentEncodingHeader)
 	if encoding != "" && encoding != gzipEncoding {
 		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidEncodingRespBody, nil)
@@ -221,40 +214,64 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		return
 	}
 
+	if req.Method != http.MethodPost {
+		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBody, nil)
+		return
+	}
+
+	otlpFormat := false
+	switch req.Header.Get(httpContentTypeHeader) {
+	case protobufContentType:
+	case otlpProtobufContentType:
+		otlpFormat = true
+	default:
+		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidContentRespBody, nil)
+		return
+	}
+
 	body, ok := r.readBody(ctx, resp, req)
 	if !ok {
 		return
 	}
 
-	msg := &sfxpb.DataPointUploadMessage{}
-	if err := msg.Unmarshal(body); err != nil {
-		r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
-		return
+	r.settings.Logger.Debug("Handling metrics data")
+
+	var md pmetric.Metrics
+
+	if otlpFormat {
+		r.settings.Logger.Debug("Received request is in OTLP format")
+		otlpreq := pmetricotlp.NewExportRequest()
+		if err := otlpreq.UnmarshalProto(body); err != nil {
+			r.settings.Logger.Debug("OTLP data unmarshalling failed", zap.Error(err))
+			r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
+			return
+		}
+		md = otlpreq.Metrics()
+	} else {
+		msg := &sfxpb.DataPointUploadMessage{}
+		err := msg.Unmarshal(body)
+		if err != nil {
+			r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
+			return
+		}
+
+		md, err = translator.ToMetrics(msg.Datapoints)
+		if err != nil {
+			r.settings.Logger.Debug("SignalFx conversion error", zap.Error(err))
+		}
 	}
 
-	if len(msg.Datapoints) == 0 {
-		r.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, nil)
+	dataPointCount := md.DataPointCount()
+	if dataPointCount == 0 {
+		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, nil)
 		_, _ = resp.Write(okRespBody)
 		return
 	}
 
-	md, err := translator.ToMetrics(msg.Datapoints)
-	if err != nil {
-		r.settings.Logger.Debug("SignalFx conversion error", zap.Error(err))
-	}
+	r.addAccessTokenLabel(md, req)
 
-	if r.config.AccessTokenPassthrough {
-		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
-			for i := 0; i < md.ResourceMetrics().Len(); i++ {
-				rm := md.ResourceMetrics().At(i)
-				res := rm.Resource()
-				res.Attributes().PutStr(splunk.SFxAccessTokenLabel, accessToken)
-			}
-		}
-	}
-
-	err = r.metricsConsumer.ConsumeMetrics(ctx, md)
-	r.obsrecv.EndMetricsOp(ctx, metadata.Type, len(msg.Datapoints), err)
+	err := r.metricsConsumer.ConsumeMetrics(ctx, md)
+	r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), dataPointCount, err)
 
 	r.writeResponse(ctx, resp, err)
 }
@@ -264,6 +281,16 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 
 	if r.logsConsumer == nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errLogsNotConfigured, nil)
+		return
+	}
+
+	if req.Method != http.MethodPost {
+		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBody, nil)
+		return
+	}
+
+	if req.Header.Get(httpContentTypeHeader) != protobufContentType {
+		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidEventsContentRespBody, nil)
 		return
 	}
 
@@ -279,7 +306,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	}
 
 	if len(msg.Events) == 0 {
-		r.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, nil)
+		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, nil)
 		_, _ = resp.Write(okRespBody)
 		return
 	}
@@ -298,7 +325,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	err := r.logsConsumer.ConsumeLogs(ctx, ld)
 	r.obsrecv.EndMetricsOp(
 		ctx,
-		metadata.Type,
+		metadata.Type.String(),
 		len(msg.Events),
 		err)
 
@@ -327,13 +354,25 @@ func (r *sfxReceiver) failRequest(
 	// Use the same pattern as strings.Builder String().
 	msg := *(*string)(unsafe.Pointer(&jsonResponse))
 
-	r.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, err)
+	r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
 	r.settings.Logger.Debug(
 		"SignalFx receiver request failed",
 		zap.Int("http_status_code", httpStatusCode),
 		zap.String("msg", msg),
 		zap.Error(err), // It handles nil error
 	)
+}
+
+func (r *sfxReceiver) addAccessTokenLabel(md pmetric.Metrics, req *http.Request) {
+	if r.config.AccessTokenPassthrough {
+		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
+			for i := 0; i < md.ResourceMetrics().Len(); i++ {
+				rm := md.ResourceMetrics().At(i)
+				res := rm.Resource()
+				res.Attributes().PutStr(splunk.SFxAccessTokenLabel, accessToken)
+			}
+		}
+	}
 }
 
 func initJSONResponse(s string) []byte {

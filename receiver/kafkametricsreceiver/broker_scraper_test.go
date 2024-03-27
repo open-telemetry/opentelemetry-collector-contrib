@@ -70,7 +70,7 @@ func TestBrokerScraperStart(t *testing.T) {
 }
 
 func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
-	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
+	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
 		return nil, fmt.Errorf("new client failed")
 	}
 	sc := sarama.NewConfig()
@@ -82,7 +82,7 @@ func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
 }
 
 func TestBrokerScraper_shutdown_handles_nil_client(t *testing.T) {
-	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
+	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
 		return nil, fmt.Errorf("new client failed")
 	}
 	sc := sarama.NewConfig()

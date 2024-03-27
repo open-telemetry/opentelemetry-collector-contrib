@@ -69,10 +69,6 @@ func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver
 		return nil, err
 	}
 
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
 	if conf.HTTP != nil {
 		r.httpMux = http.NewServeMux()
 		r.httpMux.HandleFunc("/loki/api/v1/push", func(resp http.ResponseWriter, req *http.Request) {
@@ -92,7 +88,7 @@ func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver
 	return r, nil
 }
 
-func (r *lokiReceiver) startProtocolsServers(host component.Host) error {
+func (r *lokiReceiver) startProtocolsServers(ctx context.Context, host component.Host) error {
 	var err error
 	if r.conf.HTTP != nil {
 		r.serverHTTP, err = r.conf.HTTP.ToServer(host, r.settings.TelemetrySettings, r.httpMux, confighttp.WithDecoder("snappy", func(body io.ReadCloser) (io.ReadCloser, error) { return body, nil }))
@@ -106,14 +102,14 @@ func (r *lokiReceiver) startProtocolsServers(host component.Host) error {
 	}
 
 	if r.conf.GRPC != nil {
-		r.serverGRPC, err = r.conf.GRPC.ToServer(host, r.settings.TelemetrySettings)
+		r.serverGRPC, err = r.conf.GRPC.ToServer(ctx, host, r.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed create grpc server error: %w", err)
 		}
 
 		push.RegisterPusherServer(r.serverGRPC, r)
 
-		err = r.startGRPCServer()
+		err = r.startGRPCServer(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to start grpc server error: %w", err)
 		}
@@ -139,9 +135,9 @@ func (r *lokiReceiver) startHTTPServer() error {
 	return nil
 }
 
-func (r *lokiReceiver) startGRPCServer() error {
+func (r *lokiReceiver) startGRPCServer(ctx context.Context) error {
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.conf.GRPC.NetAddr.Endpoint))
-	listener, err := r.conf.GRPC.ToListener()
+	listener, err := r.conf.GRPC.NetAddr.Listen(ctx)
 	if err != nil {
 		return err
 	}
@@ -169,8 +165,8 @@ func (r *lokiReceiver) Push(ctx context.Context, pushRequest *push.PushRequest) 
 	return &push.PushResponse{}, nil
 }
 
-func (r *lokiReceiver) Start(_ context.Context, host component.Host) error {
-	return r.startProtocolsServers(host)
+func (r *lokiReceiver) Start(ctx context.Context, host component.Host) error {
+	return r.startProtocolsServers(ctx, host)
 }
 
 func (r *lokiReceiver) Shutdown(ctx context.Context) error {

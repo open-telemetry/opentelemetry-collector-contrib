@@ -16,7 +16,7 @@ import (
 var _ component.Config = (*Config)(nil)
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	// The URL of the docker server.  Default is "unix:///var/run/docker.sock"
 	Endpoint string `mapstructure:"endpoint"`
 

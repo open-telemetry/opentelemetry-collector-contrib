@@ -55,12 +55,11 @@ func newLogsExporter(
 	if isMetricExportV2Enabled() {
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
-			cfg.Metrics.TCPAddr.Endpoint,
-			cfg.TimeoutSettings,
-			cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
+			cfg.Metrics.TCPAddrConfig.Endpoint,
+			cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 	} else {
-		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddr.Endpoint)
+		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
 		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
 	}
 	// validate the apiKey
@@ -74,7 +73,7 @@ func newLogsExporter(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logs translator: %w", err)
 	}
-	s := logs.NewSender(cfg.Logs.TCPAddr.Endpoint, params.Logger, cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify, cfg.Logs.DumpPayloads, string(cfg.API.Key))
+	s := logs.NewSender(cfg.Logs.TCPAddrConfig.Endpoint, params.Logger, cfg.ClientConfig, cfg.Logs.DumpPayloads, string(cfg.API.Key))
 
 	return &logsExporter{
 		params:           params,

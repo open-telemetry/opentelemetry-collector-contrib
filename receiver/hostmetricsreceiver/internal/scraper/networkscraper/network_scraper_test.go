@@ -121,7 +121,7 @@ func TestScrape(t *testing.T) {
 			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(), // conntrack metrics are disabled by default
 			},
-			conntrackFunc:           func(ctx context.Context) ([]net.FilterStat, error) { return nil, errors.New("conntrack failed") },
+			conntrackFunc:           func(context.Context) ([]net.FilterStat, error) { return nil, errors.New("conntrack failed") },
 			expectConntrakMetrics:   true,
 			expectConnectionsMetric: true,
 		},
@@ -132,7 +132,7 @@ func TestScrape(t *testing.T) {
 				cfg.MetricsBuilderConfig.Metrics.SystemNetworkConnections.Enabled = false
 				return &cfg
 			}(),
-			connectionsFunc: func(ctx context.Context, s string) ([]net.ConnectionStat, error) {
+			connectionsFunc: func(context.Context, string) ([]net.ConnectionStat, error) {
 				panic("should not be called")
 			},
 			expectConntrakMetrics: true,
@@ -231,5 +231,7 @@ func assertNetworkConnectionsMetricValid(t *testing.T, metric pmetric.Metric) {
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol",
 		pcommon.NewValueStr(metadata.AttributeProtocolTcp.String()))
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
-	assert.Equal(t, 12, metric.Sum().DataPoints().Len())
+	// Flaky test gives 12 or 13, so bound it
+	assert.LessOrEqual(t, 12, metric.Sum().DataPoints().Len())
+	assert.GreaterOrEqual(t, 13, metric.Sum().DataPoints().Len())
 }

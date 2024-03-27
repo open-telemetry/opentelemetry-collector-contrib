@@ -81,13 +81,14 @@ func TestSetTimeStamp(t *testing.T) {
 		recordedRequests, _ = io.ReadAll(req.Body)
 		rw.WriteHeader(http.StatusOK)
 	}))
+	defer func() { server.Close() }()
 	ld := generateLogsOneEmptyTimestamp()
 	cfg := &Config{
 		Region: "us",
 		Token:  "token",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint:    server.URL,
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 		},
 	}
 	var err error

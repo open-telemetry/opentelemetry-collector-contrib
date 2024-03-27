@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("health_check")
+)
+
 const (
-	Type               = "health_check"
 	ExtensionStability = component.StabilityLevelBeta
 )
 

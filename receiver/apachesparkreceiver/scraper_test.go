@@ -44,12 +44,12 @@ func TestScraper(t *testing.T) {
 	}{
 		{
 			desc: "Exits on failure to get app ids",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("Applications").Return(nil, errors.New("could not retrieve app ids"))
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
 			config:      createDefaultConfig().(*Config),
@@ -57,19 +57,19 @@ func TestScraper(t *testing.T) {
 		},
 		{
 			desc: "No Matching Allowed Apps",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("Applications").Return([]models.Application{}, nil)
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
-			config: &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			config: &Config{ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: defaultCollectionInterval,
 			},
 				ApplicationNames: []string{"local-123", "local-987"},
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
 				},
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -78,7 +78,7 @@ func TestScraper(t *testing.T) {
 		},
 		{
 			desc: "Successful Full Empty Collection",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("ClusterStats").Return(&models.ClusterProperties{}, nil)
 				mockClient.On("Applications").Return([]models.Application{}, nil)
@@ -212,11 +212,11 @@ func TestScraper(t *testing.T) {
 				require.NoError(t, err)
 				return expectedMetrics
 			},
-			config: &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			config: &Config{ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: defaultCollectionInterval,
 			},
 				ApplicationNames: []string{"streaming-example"},
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
 				},
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),

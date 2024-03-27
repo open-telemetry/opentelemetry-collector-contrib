@@ -85,7 +85,7 @@ func (f *FakeOutput) ExpectBody(t testing.TB, body any) {
 	case e := <-f.Received:
 		require.Equal(t, body, e.Body)
 	case <-time.After(time.Second):
-		require.FailNow(t, "Timed out waiting for entry")
+		require.FailNowf(t, "Timed out waiting for entry", "%s", body)
 	}
 }
 
@@ -96,8 +96,25 @@ func (f *FakeOutput) ExpectEntry(t testing.TB, expected *entry.Entry) {
 	case e := <-f.Received:
 		require.Equal(t, expected, e)
 	case <-time.After(time.Second):
-		require.FailNow(t, "Timed out waiting for entry")
+		require.FailNowf(t, "Timed out waiting for entry", "%v", expected)
 	}
+}
+
+// ExpectEntries expects that the given entries will be received in any order
+func (f *FakeOutput) ExpectEntries(t testing.TB, expected []*entry.Entry) {
+	entries := make([]*entry.Entry, 0, len(expected))
+	for i := 0; i < len(expected); i++ {
+		select {
+		case e := <-f.Received:
+			entries = append(entries, e)
+		case <-time.After(time.Second):
+			require.Fail(t, "Timed out waiting for entry")
+		}
+		if t.Failed() {
+			break
+		}
+	}
+	require.ElementsMatch(t, expected, entries)
 }
 
 // ExpectNoEntry expects that no entry will be received within the specified time

@@ -54,7 +54,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Timeout:              defaultHTTPTimeout,
 			MaxIdleConns:         &maxConnCount,
 			MaxIdleConnsPerHost:  &maxConnCount,
@@ -88,24 +88,24 @@ func createTracesExporter(
 	cfg := eCfg.(*Config)
 	corrCfg := cfg.Correlation
 
-	if corrCfg.HTTPClientSettings.Endpoint == "" {
+	if corrCfg.ClientConfig.Endpoint == "" {
 		apiURL, err := cfg.getAPIURL()
 		if err != nil {
 			return nil, fmt.Errorf("unable to create API URL: %w", err)
 		}
-		corrCfg.HTTPClientSettings.Endpoint = apiURL.String()
+		corrCfg.ClientConfig.Endpoint = apiURL.String()
 	}
 	if cfg.AccessToken == "" {
 		return nil, errors.New("access_token is required")
 	}
-	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.HTTPClientSettings.Endpoint))
+	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.ClientConfig.Endpoint))
 	tracker := correlation.NewTracker(corrCfg, cfg.AccessToken, set)
 
 	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,
-		tracker.AddSpans,
+		tracker.ProcessTraces,
 		exporterhelper.WithStart(tracker.Start),
 		exporterhelper.WithShutdown(tracker.Shutdown))
 }

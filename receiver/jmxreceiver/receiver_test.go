@@ -145,7 +145,7 @@ otel.resource.attributes = abc=123,one=two`,
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(tt *testing.T) {
+		t.Run(test.name, func(*testing.T) {
 			params := receivertest.NewNopCreateSettings()
 			receiver := newJMXMetricReceiver(params, test.config, consumertest.NewNop())
 			jmxConfig, err := receiver.buildJMXMetricGathererConfig()
@@ -178,7 +178,7 @@ func TestBuildOTLPReceiverInvalidEndpoints(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(tt *testing.T) {
+		t.Run(test.name, func(*testing.T) {
 			params := receivertest.NewNopCreateSettings()
 			jmxReceiver := newJMXMetricReceiver(params, test.config, consumertest.NewNop())
 			otlpReceiver, err := jmxReceiver.buildOTLPReceiver()

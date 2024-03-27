@@ -32,27 +32,22 @@ func push[T Matchable](ele ...T) func(t *testing.T, fileset *Fileset[T]) {
 
 func pop[T Matchable](expectedErr error, expectedElemet T) func(t *testing.T, fileset *Fileset[T]) {
 	return func(t *testing.T, fileset *Fileset[T]) {
+		pr := fileset.Len()
 		el, err := fileset.Pop()
 		if expectedErr == nil {
 			require.NoError(t, err)
 			require.Equal(t, el, expectedElemet)
+			require.Equal(t, pr-1, fileset.Len())
 		} else {
 			require.ErrorIs(t, err, expectedErr)
 		}
 	}
 }
 
-func reset[T Matchable](ele ...T) func(t *testing.T, fileset *Fileset[T]) {
-	return func(t *testing.T, fileset *Fileset[T]) {
-		fileset.Reset(ele...)
-		require.Equal(t, fileset.Len(), len(ele))
-	}
-}
-
 func match[T Matchable](ele T, expect bool) func(t *testing.T, fileset *Fileset[T]) {
 	return func(t *testing.T, fileset *Fileset[T]) {
 		pr := fileset.Len()
-		r := fileset.Match(ele.GetFingerprint())
+		r := fileset.Match(ele.GetFingerprint(), StartsWith)
 		if expect {
 			require.NotNil(t, r)
 			require.Equal(t, pr-1, fileset.Len())
@@ -64,20 +59,11 @@ func match[T Matchable](ele T, expect bool) func(t *testing.T, fileset *Fileset[
 	}
 }
 
-func newFingerprint(bytes []byte) *fingerprint.Fingerprint {
-	return &fingerprint.Fingerprint{
-		FirstBytes: bytes,
-	}
-}
-func newMetadata(bytes []byte) *reader.Metadata {
-	return &reader.Metadata{
-		Fingerprint: newFingerprint(bytes),
-	}
-}
-
 func newReader(bytes []byte) *reader.Reader {
 	return &reader.Reader{
-		Metadata: newMetadata(bytes),
+		Metadata: &reader.Metadata{
+			Fingerprint: fingerprint.New(bytes),
+		},
 	}
 }
 
@@ -90,12 +76,13 @@ func TestFilesetReader(t *testing.T) {
 
 				// match() removes the matched item and returns it
 				match(newReader([]byte("ABCDEFGHI")), true),
-				match(newReader([]byte("ABCEFGHI")), false),
+				match(newReader([]byte("ABCDEFGHI")), false),
 
-				reset(newReader([]byte("XYZ"))),
+				push(newReader([]byte("XYZ"))),
 				match(newReader([]byte("ABCDEF")), false),
-				match(newReader([]byte("QWERT")), false),
+				match(newReader([]byte("QWERT")), true), // should still be present
 				match(newReader([]byte("XYZabc")), true),
+				pop(errFilesetEmpty, newReader([]byte(""))),
 			},
 		},
 		{
@@ -106,7 +93,7 @@ func TestFilesetReader(t *testing.T) {
 				pop(nil, newReader([]byte("QWERT"))),
 				pop(errFilesetEmpty, newReader([]byte(""))),
 
-				reset(newReader([]byte("XYZ"))),
+				push(newReader([]byte("XYZ"))),
 				pop(nil, newReader([]byte("XYZ"))),
 				pop(errFilesetEmpty, newReader([]byte(""))),
 			},

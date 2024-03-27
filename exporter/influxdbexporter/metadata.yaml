@@ -1,4 +1,5 @@
 type: influxdb
+scope_name: otelcol/influxdb
 
 status:
   class: exporter
@@ -7,3 +8,6 @@ status:
   distributions: [contrib, observiq, liatrio]
   codeowners:
     active: [jacobmarble]
+
+tests:
+  expect_consumer_error: true

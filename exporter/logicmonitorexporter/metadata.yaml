@@ -1,4 +1,5 @@
 type: logicmonitor
+scope_name: otelcol/logicmonitor
 
 status:
   class: exporter
@@ -7,3 +8,11 @@ status:
   distributions: [contrib]
   codeowners:
     active: [bogdandrutu, khyatigandhi6, avadhut123pisal]
+
+tests:
+  config:
+    endpoint: https://company.logicmonitor.com/rest
+    api_token:
+      access_id: "accessid"
+      access_key: "accesskey"
+  expect_consumer_error: true

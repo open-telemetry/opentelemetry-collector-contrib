@@ -8,13 +8,15 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/osqueryreceiver/internal/metadata"
 )
 
 func TestFactory(t *testing.T) {
 	f := NewFactory()
-	assert.EqualValues(t, "osquery", f.Type())
+	assert.EqualValues(t, metadata.Type, f.Type())
 	cfg := f.CreateDefaultConfig()
 	assert.NotNil(t, cfg)
 	duration, _ := time.ParseDuration("30s")
-	assert.Equal(t, duration, cfg.(*Config).ScraperControllerSettings.CollectionInterval)
+	assert.Equal(t, duration, cfg.(*Config).ControllerConfig.CollectionInterval)
 }

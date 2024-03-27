@@ -1,4 +1,5 @@
 type: sqlquery
+scope_name: otelcol/sqlqueryreceiver
 
 status:
   class: receiver
@@ -7,7 +8,5 @@ status:
     development: [logs]
   distributions: [contrib, splunk, observiq, sumo]
   codeowners:
-    active: [dmitryax, pmcollins]
-
-tests:
-  config:
+    active: [dmitryax, crobert-1]
+    emeritus: [pmcollins]

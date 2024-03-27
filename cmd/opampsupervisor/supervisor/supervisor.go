@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"sync"
 	"sync/atomic"
 	"text/template"
 	"time"
@@ -100,6 +101,7 @@ type Supervisor struct {
 	opampClient client.OpAMPClient
 
 	shuttingDown bool
+	supervisorWG sync.WaitGroup
 
 	agentHasStarted               bool
 	agentStartHealthCheckAttempts int
@@ -160,7 +162,12 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	}
 
 	s.startHealthCheckTicker()
-	go s.runAgentProcess()
+
+	s.supervisorWG.Add(1)
+	go func() {
+		defer s.supervisorWG.Done()
+		s.runAgentProcess()
+	}()
 
 	return s, nil
 }
@@ -226,14 +233,14 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	s.writeEffectiveConfigToFile(cfg.String(), s.effectiveConfigFilePath)
 
-	srv := server.New(s.logger.Sugar())
+	srv := server.New(newLoggerFromZap(s.logger))
 
 	done := make(chan error, 1)
 	var connected atomic.Bool
 
 	err = srv.Start(newServerSettings(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", supervisorPort),
-		onConnectingFunc: func(request *http.Request) {
+		onConnectingFunc: func(_ *http.Request) {
 			connected.Store(true)
 
 		},
@@ -339,7 +346,7 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 }
 
 func (s *Supervisor) startOpAMP() error {
-	s.opampClient = client.NewWebSocket(s.logger.Sugar())
+	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
 
 	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfig()
 	if err != nil {
@@ -351,26 +358,26 @@ func (s *Supervisor) startOpAMP() error {
 		TLSConfig:      tlsConfig,
 		InstanceUid:    s.instanceID.String(),
 		Callbacks: types.CallbacksStruct{
-			OnConnectFunc: func() {
+			OnConnectFunc: func(_ context.Context) {
 				s.logger.Debug("Connected to the server.")
 			},
-			OnConnectFailedFunc: func(err error) {
+			OnConnectFailedFunc: func(_ context.Context, err error) {
 				s.logger.Error("Failed to connect to the server", zap.Error(err))
 			},
-			OnErrorFunc: func(err *protobufs.ServerErrorResponse) {
+			OnErrorFunc: func(_ context.Context, err *protobufs.ServerErrorResponse) {
 				s.logger.Error("Server returned an error response", zap.String("message", err.ErrorMessage))
 			},
 			OnMessageFunc: s.onMessage,
-			OnOpampConnectionSettingsFunc: func(ctx context.Context, settings *protobufs.OpAMPConnectionSettings) error {
+			OnOpampConnectionSettingsFunc: func(_ context.Context, _ *protobufs.OpAMPConnectionSettings) error {
 				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043
 				s.logger.Debug("Received ConnectionSettings request")
 				return nil
 			},
-			OnOpampConnectionSettingsAcceptedFunc: func(settings *protobufs.OpAMPConnectionSettings) {
+			OnOpampConnectionSettingsAcceptedFunc: func(_ context.Context, _ *protobufs.OpAMPConnectionSettings) {
 				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043
 				s.logger.Debug("ConnectionSettings accepted")
 			},
-			OnCommandFunc: func(command *protobufs.ServerToAgentCommand) error {
+			OnCommandFunc: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 				cmdType := command.GetType()
 				if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
 					// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21077
@@ -378,10 +385,10 @@ func (s *Supervisor) startOpAMP() error {
 				}
 				return nil
 			},
-			SaveRemoteConfigStatusFunc: func(ctx context.Context, status *protobufs.RemoteConfigStatus) {
+			SaveRemoteConfigStatusFunc: func(_ context.Context, _ *protobufs.RemoteConfigStatus) {
 				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
 			},
-			GetEffectiveConfigFunc: func(ctx context.Context) (*protobufs.EffectiveConfig, error) {
+			GetEffectiveConfigFunc: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
 				return s.createEffectiveConfigMsg(), nil
 			},
 		},
@@ -698,7 +705,7 @@ func (s *Supervisor) runAgentProcess() {
 
 		case <-s.commander.Done():
 			if s.shuttingDown {
-				break
+				return
 			}
 
 			s.logger.Debug("Agent process exited unexpectedly. Will restart in a bit...", zap.Int("pid", s.commander.Pid()), zap.Int("exit_code", s.commander.ExitCode()))
@@ -782,6 +789,12 @@ func (s *Supervisor) Shutdown() {
 			s.logger.Error("Could not stop the OpAMP client", zap.Error(err))
 		}
 	}
+
+	if s.healthCheckTicker != nil {
+		s.healthCheckTicker.Stop()
+	}
+
+	s.supervisorWG.Wait()
 }
 
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {

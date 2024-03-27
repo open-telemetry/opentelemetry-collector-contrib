@@ -8,17 +8,18 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
 )
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	pType := factory.Type()
-	assert.Equal(t, pType, component.Type("sumologic"))
+	assert.Equal(t, pType, metadata.Type)
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -38,8 +39,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 		Client:             "otelcol",
 		GraphiteTemplate:   "%{_metric_}",
 
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout: 5 * time.Second,
+		ClientConfig: confighttp.ClientConfig{
+			IdleConnTimeout: confighttp.NewDefaultClientConfig().IdleConnTimeout,
+			MaxIdleConns:    confighttp.NewDefaultClientConfig().MaxIdleConns,
+			Timeout:         5 * time.Second,
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: qs,

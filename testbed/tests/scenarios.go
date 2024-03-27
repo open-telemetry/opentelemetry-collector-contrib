@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -275,8 +276,8 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 			require.NoError(t, err)
 
 			// Create sender and receiver on available ports.
-			sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
-			receiver := testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t))
+			sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+			receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 
 			// Prepare config.
 			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)

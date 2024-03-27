@@ -39,6 +39,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/utils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
@@ -67,18 +68,18 @@ func TestNew(t *testing.T) {
 		{
 			name: "successfully create exporter",
 			config: &Config{
-				AccessToken:        "someToken",
-				Realm:              "xyz",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
+				AccessToken:  "someToken",
+				Realm:        "xyz",
+				ClientConfig: confighttp.ClientConfig{Timeout: 1 * time.Second},
 			},
 		},
 		{
 			name: "create exporter with host metadata syncer",
 			config: &Config{
-				AccessToken:        "someToken",
-				Realm:              "xyz",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
-				SyncHostMetadata:   true,
+				AccessToken:      "someToken",
+				Realm:            "xyz",
+				ClientConfig:     confighttp.ClientConfig{Timeout: 1 * time.Second},
+				SyncHostMetadata: true,
 			},
 		},
 	}
@@ -180,7 +181,7 @@ func TestConsumeMetrics(t *testing.T) {
 			assert.NoError(t, err)
 
 			cfg := &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout: 1 * time.Second,
 					Headers: map[string]configopaque.String{"test_header_": "test"},
 				},
@@ -189,7 +190,7 @@ func TestConsumeMetrics(t *testing.T) {
 			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
 			require.NoError(t, err)
 
-			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false)
+			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, true)
 			require.NoError(t, err)
 			require.NotNil(t, c)
 			dpClient := &sfxDPClient{
@@ -237,7 +238,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 	fromHeaders := "AccessTokenFromClientHeaders"
 	fromLabels := []string{"AccessTokenFromLabel0", "AccessTokenFromLabel1"}
 
-	validMetricsWithToken := func(includeToken bool, token string) pmetric.Metrics {
+	validMetricsWithToken := func(includeToken bool, token string, histogram bool) pmetric.Metrics {
 		out := pmetric.NewMetrics()
 		rm := out.ResourceMetrics().AppendEmpty()
 
@@ -248,12 +249,17 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		ilm := rm.ScopeMetrics().AppendEmpty()
 		m := ilm.Metrics().AppendEmpty()
 
-		m.SetName("test_gauge")
+		if histogram {
+			buildHistogram(m, "test_histogram", pcommon.Timestamp(100000000), 1)
+		} else {
+			m.SetName("test_gauge")
 
-		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-		dp.Attributes().PutStr("k0", "v0")
-		dp.Attributes().PutStr("k1", "v1")
-		dp.SetDoubleValue(123)
+			dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+			dp.Attributes().PutStr("k0", "v0")
+			dp.Attributes().PutStr("k1", "v1")
+			dp.SetDoubleValue(123)
+		}
+
 		return out
 	}
 
@@ -263,44 +269,93 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		metrics                pmetric.Metrics
 		additionalHeaders      map[string]string
 		pushedTokens           []string
+		sendOTLPHistograms     bool
 	}{
 		{
 			name:                   "passthrough access token and included in md",
 			accessTokenPassthrough: true,
-			metrics:                validMetricsWithToken(true, fromLabels[0]),
+			metrics:                validMetricsWithToken(true, fromLabels[0], false),
 			pushedTokens:           []string{fromLabels[0]},
+			sendOTLPHistograms:     false,
+		},
+		{
+			name:                   "passthrough access token and included in md with OTLP histogram",
+			accessTokenPassthrough: true,
+			metrics:                validMetricsWithToken(true, fromLabels[0], true),
+			pushedTokens:           []string{fromLabels[0]},
+			sendOTLPHistograms:     true,
 		},
 		{
 			name:                   "passthrough access token and not included in md",
 			accessTokenPassthrough: true,
-			metrics:                validMetricsWithToken(false, fromLabels[0]),
+			metrics:                validMetricsWithToken(false, fromLabels[0], false),
 			pushedTokens:           []string{fromHeaders},
+			sendOTLPHistograms:     false,
+		},
+		{
+			name:                   "passthrough access token and not included in md with OTLP histogram",
+			accessTokenPassthrough: true,
+			metrics:                validMetricsWithToken(false, fromLabels[0], true),
+			pushedTokens:           []string{fromHeaders},
+			sendOTLPHistograms:     true,
 		},
 		{
 			name:                   "don't passthrough access token and included in md",
 			accessTokenPassthrough: false,
 			metrics: func() pmetric.Metrics {
-				forFirstToken := validMetricsWithToken(true, fromLabels[0])
+				forFirstToken := validMetricsWithToken(true, fromLabels[0], false)
 				tgt := forFirstToken.ResourceMetrics().AppendEmpty()
-				validMetricsWithToken(true, fromLabels[1]).ResourceMetrics().At(0).CopyTo(tgt)
+				validMetricsWithToken(true, fromLabels[1], false).ResourceMetrics().At(0).CopyTo(tgt)
 				return forFirstToken
 			}(),
-			pushedTokens: []string{fromHeaders},
+			pushedTokens:       []string{fromHeaders},
+			sendOTLPHistograms: false,
+		},
+		{
+			name:                   "don't passthrough access token and included in md with OTLP histogram",
+			accessTokenPassthrough: false,
+			metrics: func() pmetric.Metrics {
+				forFirstToken := validMetricsWithToken(true, fromLabels[0], true)
+				tgt := forFirstToken.ResourceMetrics().AppendEmpty()
+				validMetricsWithToken(true, fromLabels[1], true).ResourceMetrics().At(0).CopyTo(tgt)
+				return forFirstToken
+			}(),
+			pushedTokens:       []string{fromHeaders},
+			sendOTLPHistograms: true,
 		},
 		{
 			name:                   "don't passthrough access token and not included in md",
 			accessTokenPassthrough: false,
-			metrics:                validMetricsWithToken(false, fromLabels[0]),
+			metrics:                validMetricsWithToken(false, fromLabels[0], false),
 			pushedTokens:           []string{fromHeaders},
+			sendOTLPHistograms:     false,
+		},
+		{
+			name:                   "don't passthrough access token and not included in md with OTLP histogram",
+			accessTokenPassthrough: false,
+			metrics:                validMetricsWithToken(false, fromLabels[0], true),
+			pushedTokens:           []string{fromHeaders},
+			sendOTLPHistograms:     true,
 		},
 		{
 			name:                   "override user-specified token-like header",
 			accessTokenPassthrough: true,
-			metrics:                validMetricsWithToken(true, fromLabels[0]),
+			metrics:                validMetricsWithToken(true, fromLabels[0], false),
 			additionalHeaders: map[string]string{
 				"x-sf-token": "user-specified",
 			},
-			pushedTokens: []string{fromLabels[0]},
+			pushedTokens:       []string{fromLabels[0]},
+			sendOTLPHistograms: false,
+		},
+		{
+			name:                   "override user-specified token-like header with OTLP histogram",
+			accessTokenPassthrough: true,
+			metrics:                validMetricsWithToken(true, fromLabels[0], true),
+			additionalHeaders: map[string]string{
+				"x-sf-token": "user-specified",
+			},
+			pushedTokens:       []string{fromLabels[0]},
+			sendOTLPHistograms: true,
 		},
 		{
 			name:                   "use token from header when resource is nil",
@@ -319,28 +374,58 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 				return out
 			}(),
-			pushedTokens: []string{fromHeaders},
+			pushedTokens:       []string{fromHeaders},
+			sendOTLPHistograms: false,
+		},
+		{
+			name:                   "use token from header when resource is nil with OTLP histogram",
+			accessTokenPassthrough: true,
+			metrics: func() pmetric.Metrics {
+				out := pmetric.NewMetrics()
+				rm := out.ResourceMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
+				m := ilm.Metrics().AppendEmpty()
+				buildHistogram(m, "test_histogram", pcommon.Timestamp(1000), 1)
+				return out
+			}(),
+			pushedTokens:       []string{fromHeaders},
+			sendOTLPHistograms: true,
 		},
 		{
 			name:                   "multiple tokens passed through",
 			accessTokenPassthrough: true,
 			metrics: func() pmetric.Metrics {
-				forFirstToken := validMetricsWithToken(true, fromLabels[0])
-				forSecondToken := validMetricsWithToken(true, fromLabels[1])
+				forFirstToken := validMetricsWithToken(true, fromLabels[0], false)
+				forSecondToken := validMetricsWithToken(true, fromLabels[1], false)
 				forSecondToken.ResourceMetrics().EnsureCapacity(2)
 				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
 
 				return forSecondToken
 			}(),
-			pushedTokens: []string{fromLabels[0], fromLabels[1]},
+			pushedTokens:       []string{fromLabels[0], fromLabels[1]},
+			sendOTLPHistograms: false,
+		},
+		{
+			name:                   "multiple tokens passed through with OTLP histogram",
+			accessTokenPassthrough: true,
+			metrics: func() pmetric.Metrics {
+				forFirstToken := validMetricsWithToken(true, fromLabels[0], true)
+				forSecondToken := validMetricsWithToken(true, fromLabels[1], true)
+				forSecondToken.ResourceMetrics().EnsureCapacity(2)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
+
+				return forSecondToken
+			}(),
+			pushedTokens:       []string{fromLabels[0], fromLabels[1]},
+			sendOTLPHistograms: true,
 		},
 		{
 			name:                   "multiple tokens passed through - multiple md with same token",
 			accessTokenPassthrough: true,
 			metrics: func() pmetric.Metrics {
-				forFirstToken := validMetricsWithToken(true, fromLabels[1])
-				forSecondToken := validMetricsWithToken(true, fromLabels[0])
-				moreForSecondToken := validMetricsWithToken(true, fromLabels[1])
+				forFirstToken := validMetricsWithToken(true, fromLabels[1], false)
+				forSecondToken := validMetricsWithToken(true, fromLabels[0], false)
+				moreForSecondToken := validMetricsWithToken(true, fromLabels[1], false)
 
 				forSecondToken.ResourceMetrics().EnsureCapacity(3)
 				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
@@ -348,15 +433,33 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 				return forSecondToken
 			}(),
-			pushedTokens: []string{fromLabels[0], fromLabels[1]},
+			pushedTokens:       []string{fromLabels[0], fromLabels[1]},
+			sendOTLPHistograms: false,
+		},
+		{
+			name:                   "multiple tokens passed through - multiple md with same token with OTLP histogram",
+			accessTokenPassthrough: true,
+			metrics: func() pmetric.Metrics {
+				forFirstToken := validMetricsWithToken(true, fromLabels[1], true)
+				forSecondToken := validMetricsWithToken(true, fromLabels[0], true)
+				moreForSecondToken := validMetricsWithToken(true, fromLabels[1], true)
+
+				forSecondToken.ResourceMetrics().EnsureCapacity(3)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
+				moreForSecondToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
+
+				return forSecondToken
+			}(),
+			pushedTokens:       []string{fromLabels[0], fromLabels[1]},
+			sendOTLPHistograms: true,
 		},
 		{
 			name:                   "multiple tokens passed through - multiple md with same token grouped together",
 			accessTokenPassthrough: true,
 			metrics: func() pmetric.Metrics {
-				forFirstToken := validMetricsWithToken(true, fromLabels[0])
-				forSecondToken := validMetricsWithToken(true, fromLabels[1])
-				moreForSecondToken := validMetricsWithToken(true, fromLabels[1])
+				forFirstToken := validMetricsWithToken(true, fromLabels[0], false)
+				forSecondToken := validMetricsWithToken(true, fromLabels[1], false)
+				moreForSecondToken := validMetricsWithToken(true, fromLabels[1], false)
 
 				forSecondToken.ResourceMetrics().EnsureCapacity(3)
 				moreForSecondToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
@@ -364,19 +467,51 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 				return forSecondToken
 			}(),
-			pushedTokens: []string{fromLabels[0], fromLabels[1]},
+			pushedTokens:       []string{fromLabels[0], fromLabels[1]},
+			sendOTLPHistograms: false,
+		},
+		{
+			name:                   "multiple tokens passed through - multiple md with same token grouped together in OTLP histogram",
+			accessTokenPassthrough: true,
+			metrics: func() pmetric.Metrics {
+				forFirstToken := validMetricsWithToken(true, fromLabels[0], true)
+				forSecondToken := validMetricsWithToken(true, fromLabels[1], true)
+				moreForSecondToken := validMetricsWithToken(true, fromLabels[1], true)
+
+				forSecondToken.ResourceMetrics().EnsureCapacity(3)
+				moreForSecondToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
+
+				return forSecondToken
+			}(),
+			pushedTokens:       []string{fromLabels[0], fromLabels[1]},
+			sendOTLPHistograms: true,
 		},
 		{
 			name:                   "multiple tokens passed through - one corrupted",
 			accessTokenPassthrough: true,
 			metrics: func() pmetric.Metrics {
-				forFirstToken := validMetricsWithToken(true, fromLabels[0])
-				forSecondToken := validMetricsWithToken(false, fromLabels[1])
+				forFirstToken := validMetricsWithToken(true, fromLabels[0], false)
+				forSecondToken := validMetricsWithToken(false, fromLabels[1], false)
 				forSecondToken.ResourceMetrics().EnsureCapacity(2)
 				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
 				return forSecondToken
 			}(),
-			pushedTokens: []string{fromLabels[0], fromHeaders},
+			pushedTokens:       []string{fromLabels[0], fromHeaders},
+			sendOTLPHistograms: false,
+		},
+		{
+			name:                   "multiple tokens passed through - one corrupted in OTLP histogram",
+			accessTokenPassthrough: true,
+			metrics: func() pmetric.Metrics {
+				forFirstToken := validMetricsWithToken(true, fromLabels[0], true)
+				forSecondToken := validMetricsWithToken(false, fromLabels[1], true)
+				forSecondToken.ResourceMetrics().EnsureCapacity(2)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().AppendEmpty())
+				return forSecondToken
+			}(),
+			pushedTokens:       []string{fromLabels[0], fromHeaders},
+			sendOTLPHistograms: true,
 		},
 	}
 	for _, tt := range tests {
@@ -402,13 +537,14 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.HTTPClientSettings.Headers = make(map[string]configopaque.String)
+			cfg.ClientConfig.Headers = make(map[string]configopaque.String)
 			for k, v := range tt.additionalHeaders {
-				cfg.HTTPClientSettings.Headers[k] = configopaque.String(v)
+				cfg.ClientConfig.Headers[k] = configopaque.String(v)
 			}
-			cfg.HTTPClientSettings.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.ClientConfig.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
 			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
@@ -441,9 +577,9 @@ func TestNewEventExporter(t *testing.T) {
 	assert.Nil(t, got)
 
 	cfg := &Config{
-		AccessToken:        "someToken",
-		Realm:              "xyz",
-		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
+		AccessToken:  "someToken",
+		Realm:        "xyz",
+		ClientConfig: confighttp.ClientConfig{Timeout: 1 * time.Second},
 	}
 
 	got, err = newEventExporter(cfg, exportertest.NewNopCreateSettings())
@@ -557,7 +693,7 @@ func TestConsumeEventData(t *testing.T) {
 			assert.NoError(t, err)
 
 			cfg := &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout: 1 * time.Second,
 					Headers: map[string]configopaque.String{"test_header_": "test"},
 				},
@@ -730,6 +866,7 @@ func TestConsumeMetadata(t *testing.T) {
 		cfg.IncludeMetrics,
 		cfg.NonAlphanumericDimensionChars,
 		false,
+		true,
 	)
 	require.NoError(t, err)
 	type args struct {
@@ -1077,7 +1214,7 @@ func TestConsumeMetadata(t *testing.T) {
 func BenchmarkExporterConsumeData(b *testing.B) {
 	batchSize := 1000
 	metrics := pmetric.NewMetrics()
-	tmd := testMetricsData()
+	tmd := testMetricsData(false)
 	for i := 0; i < batchSize; i++ {
 		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
@@ -1089,7 +1226,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	serverURL, err := url.Parse(server.URL)
 	assert.NoError(b, err)
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false)
+	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, true)
 	require.NoError(b, err)
 	require.NotNil(b, c)
 	dpClient := &sfxDPClient{
@@ -1140,13 +1277,13 @@ func TestTLSExporterInit(t *testing.T) {
 			config: &Config{
 				APIURL:    "https://test",
 				IngestURL: "https://test",
-				IngestTLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				IngestTLSSettings: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
-				APITLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				APITLSSettings: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
@@ -1160,8 +1297,8 @@ func TestTLSExporterInit(t *testing.T) {
 			config: &Config{
 				APIURL:    "https://test",
 				IngestURL: "https://test",
-				IngestTLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				IngestTLSSettings: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "./testdata/certs/missingfile",
 					},
 				},
@@ -1176,8 +1313,8 @@ func TestTLSExporterInit(t *testing.T) {
 			config: &Config{
 				APIURL:    "https://test",
 				IngestURL: "https://test",
-				IngestTLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				IngestTLSSettings: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "./testdata/certs/invalid-ca.pem",
 					},
 				},
@@ -1247,8 +1384,8 @@ func TestTLSIngestConnection(t *testing.T) {
 			config: &Config{
 				APIURL:    serverURL,
 				IngestURL: serverURL,
-				IngestTLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				IngestTLSSettings: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
@@ -1282,7 +1419,7 @@ func TestTLSIngestConnection(t *testing.T) {
 func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 	translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600)
 	require.NoError(t, err)
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), translator, defaultExcludeMetrics, nil, "_-.", false)
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), translator, defaultExcludeMetrics, nil, "_-.", false, true)
 	require.NoError(t, err)
 
 	md := pmetric.NewMetrics()
@@ -1325,7 +1462,8 @@ func TestTLSAPIConnection(t *testing.T) {
 		cfg.ExcludeMetrics,
 		cfg.IncludeMetrics,
 		cfg.NonAlphanumericDimensionChars,
-		false)
+		false,
+		true)
 	require.NoError(t, err)
 
 	metadata := []*metadata.MetadataUpdate{
@@ -1359,8 +1497,8 @@ func TestTLSAPIConnection(t *testing.T) {
 				IngestURL:        server.URL,
 				AccessToken:      "random",
 				SyncHostMetadata: true,
-				APITLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				APITLSSettings: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
@@ -1436,4 +1574,316 @@ func newLocalHTTPSTestServer(handler http.Handler) (*httptest.Server, error) {
 	ts.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
 	ts.StartTLS()
 	return ts, nil
+}
+
+func BenchmarkExporterConsumeDataWithOTLPHistograms(b *testing.B) {
+	batchSize := 1000
+	metrics := pmetric.NewMetrics()
+	tmd := testMetricsData(true)
+	for i := 0; i < batchSize; i++ {
+		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer server.Close()
+	serverURL, err := url.Parse(server.URL)
+	assert.NoError(b, err)
+
+	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, false)
+	require.NoError(b, err)
+	require.NotNil(b, c)
+	dpClient := &sfxDPClient{
+		sfxClientBase: sfxClientBase{
+			ingestURL: serverURL,
+			client: &http.Client{
+				Timeout: 1 * time.Second,
+			},
+			zippers: sync.Pool{New: func() any {
+				return gzip.NewWriter(nil)
+			}},
+		},
+		logger:    zap.NewNop(),
+		converter: c,
+	}
+
+	for i := 0; i < b.N; i++ {
+		numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), metrics)
+		assert.NoError(b, err)
+		assert.Equal(b, 0, numDroppedTimeSeries)
+	}
+}
+
+func TestConsumeMixedMetrics(t *testing.T) {
+	ts := pcommon.NewTimestampFromTime(time.Now())
+	smallBatch := pmetric.NewMetrics()
+	rm := smallBatch.ResourceMetrics().AppendEmpty()
+	res := rm.Resource()
+	res.Attributes().PutStr("kr0", "vr0")
+	ilms := rm.ScopeMetrics()
+	ilms.EnsureCapacity(2)
+	ilm := ilms.AppendEmpty()
+	ilm.Scope().Attributes().PutStr("ks0", "vs0")
+	ilm.Metrics().EnsureCapacity(2)
+	ilm.Metrics().AppendEmpty()
+	buildHistogram(ilm.Metrics().At(0), "test_histogram", ts, 2)
+	ilm.Metrics().AppendEmpty()
+	m1 := ilm.Metrics().At(1)
+	m1.SetName("test_gauge")
+	dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp1.Attributes().PutStr("k0", "v0")
+	dp1.SetDoubleValue(123)
+
+	smallBatchHistogramOnly := pmetric.NewMetrics()
+	rmh := smallBatchHistogramOnly.ResourceMetrics().AppendEmpty()
+	resh := rmh.Resource()
+	resh.Attributes().PutStr("kr0", "vr0")
+	ilmsh := rmh.ScopeMetrics()
+	ilmsh.EnsureCapacity(2)
+	ilmh := ilmsh.AppendEmpty()
+	ilmh.Scope().Attributes().PutStr("ks0", "vs0")
+	ilmh.Metrics().EnsureCapacity(2)
+	ilmh.Metrics().AppendEmpty()
+	buildHistogram(ilmh.Metrics().At(0), "test_histogram", ts, 2)
+
+	tests := []struct {
+		name                  string
+		md                    pmetric.Metrics
+		sfxHTTPResponseCode   int
+		otlpHTTPResponseCode  int
+		retryAfter            int
+		numDroppedTimeSeries  int
+		wantErr               bool
+		wantPermanentErr      bool
+		wantThrottleErr       bool
+		expectedErrorMsg      string
+		wantPartialMetricsErr bool
+	}{
+		{
+			name:                 "happy_path",
+			md:                   smallBatch,
+			sfxHTTPResponseCode:  http.StatusAccepted,
+			otlpHTTPResponseCode: http.StatusAccepted,
+		},
+		{
+			name:                 "happy_path_otlp",
+			md:                   smallBatchHistogramOnly,
+			otlpHTTPResponseCode: http.StatusAccepted,
+		},
+		{
+			name:                 "response_forbidden_sfx",
+			md:                   smallBatch,
+			sfxHTTPResponseCode:  http.StatusForbidden,
+			numDroppedTimeSeries: 1,
+			wantErr:              true,
+			expectedErrorMsg:     "HTTP 403 \"Forbidden\"",
+		},
+		{
+			name:                 "response_forbidden_otlp",
+			md:                   smallBatchHistogramOnly,
+			otlpHTTPResponseCode: http.StatusForbidden,
+			numDroppedTimeSeries: 2,
+			wantErr:              true,
+			expectedErrorMsg:     "HTTP 403 \"Forbidden\"",
+		},
+		{
+			name:                 "response_forbidden_mixed",
+			md:                   smallBatch,
+			sfxHTTPResponseCode:  http.StatusAccepted,
+			otlpHTTPResponseCode: http.StatusForbidden,
+			numDroppedTimeSeries: 2,
+			wantErr:              true,
+			expectedErrorMsg:     "HTTP 403 \"Forbidden\"",
+		},
+		{
+			name:                 "response_bad_request_sfx",
+			md:                   smallBatch,
+			sfxHTTPResponseCode:  http.StatusBadRequest,
+			numDroppedTimeSeries: 1,
+			wantPermanentErr:     true,
+			expectedErrorMsg:     "Permanent error: \"HTTP/1.1 400 Bad Request",
+		},
+		{
+			name:                 "response_bad_request_otlp",
+			md:                   smallBatchHistogramOnly,
+			otlpHTTPResponseCode: http.StatusBadRequest,
+			numDroppedTimeSeries: 2,
+			wantPermanentErr:     true,
+			expectedErrorMsg:     "Permanent error: \"HTTP/1.1 400 Bad Request",
+		},
+		{
+			name:                 "response_bad_request_mixed",
+			md:                   smallBatch,
+			sfxHTTPResponseCode:  http.StatusAccepted,
+			otlpHTTPResponseCode: http.StatusBadRequest,
+			numDroppedTimeSeries: 2,
+			wantPermanentErr:     true,
+			expectedErrorMsg:     "Permanent error: \"HTTP/1.1 400 Bad Request",
+		},
+		{
+			name:                 "response_throttle_sfx",
+			md:                   smallBatch,
+			sfxHTTPResponseCode:  http.StatusTooManyRequests,
+			numDroppedTimeSeries: 1,
+			wantThrottleErr:      true,
+		},
+		{
+			name:                  "response_throttle_mixed",
+			md:                    smallBatch,
+			sfxHTTPResponseCode:   http.StatusAccepted,
+			otlpHTTPResponseCode:  http.StatusTooManyRequests,
+			numDroppedTimeSeries:  2,
+			wantThrottleErr:       true,
+			wantPartialMetricsErr: true,
+		},
+		{
+			name:                  "response_throttle_otlp",
+			md:                    smallBatchHistogramOnly,
+			otlpHTTPResponseCode:  http.StatusTooManyRequests,
+			numDroppedTimeSeries:  2,
+			wantThrottleErr:       true,
+			wantPartialMetricsErr: true,
+		},
+		{
+			name:                 "response_throttle_with_header_sfx",
+			md:                   smallBatch,
+			retryAfter:           123,
+			sfxHTTPResponseCode:  http.StatusServiceUnavailable,
+			numDroppedTimeSeries: 1,
+			wantThrottleErr:      true,
+		},
+		{
+			name:                  "response_throttle_with_header_otlp",
+			md:                    smallBatchHistogramOnly,
+			retryAfter:            123,
+			otlpHTTPResponseCode:  http.StatusServiceUnavailable,
+			numDroppedTimeSeries:  2,
+			wantThrottleErr:       true,
+			wantPartialMetricsErr: true,
+		},
+		{
+			name:                  "response_throttle_with_header_mixed",
+			md:                    smallBatch,
+			retryAfter:            123,
+			sfxHTTPResponseCode:   http.StatusAccepted,
+			otlpHTTPResponseCode:  http.StatusServiceUnavailable,
+			numDroppedTimeSeries:  2,
+			wantThrottleErr:       true,
+			wantPartialMetricsErr: true,
+		},
+		{
+			name:                 "large_batch",
+			md:                   generateLargeMixedDPBatch(),
+			sfxHTTPResponseCode:  http.StatusAccepted,
+			otlpHTTPResponseCode: http.StatusAccepted,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "test", r.Header.Get("test_header_"))
+				var respCode int
+				if r.Header.Get("Content-Type") == otlpProtobufContentType {
+					respCode = tt.otlpHTTPResponseCode
+				} else {
+					respCode = tt.sfxHTTPResponseCode
+				}
+				if (respCode == http.StatusTooManyRequests ||
+					respCode == http.StatusServiceUnavailable) && tt.retryAfter != 0 {
+					w.Header().Add(splunk.HeaderRetryAfter, strconv.Itoa(tt.retryAfter))
+				}
+				w.WriteHeader(respCode)
+				_, _ = w.Write([]byte("response content"))
+			}))
+			defer server.Close()
+
+			serverURL, err := url.Parse(server.URL)
+			assert.NoError(t, err)
+
+			cfg := &Config{
+				ClientConfig: confighttp.ClientConfig{
+					Timeout: 1 * time.Second,
+					Headers: map[string]configopaque.String{"test_header_": "test"},
+				},
+			}
+
+			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
+			require.NoError(t, err)
+
+			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, false)
+			require.NoError(t, err)
+			require.NotNil(t, c)
+			sfxClient := &sfxDPClient{
+				sfxClientBase: sfxClientBase{
+					ingestURL: serverURL,
+					client:    client,
+					zippers: sync.Pool{New: func() any {
+						return gzip.NewWriter(nil)
+					}},
+				},
+				logger:             zap.NewNop(),
+				converter:          c,
+				sendOTLPHistograms: true,
+			}
+
+			numDroppedTimeSeries, err := sfxClient.pushMetricsData(context.Background(), tt.md)
+			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+				return
+			}
+
+			if tt.wantPermanentErr {
+				assert.Error(t, err)
+				assert.True(t, consumererror.IsPermanent(err))
+				assert.True(t, strings.HasPrefix(err.Error(), tt.expectedErrorMsg))
+				assert.Contains(t, err.Error(), "response content")
+				return
+			}
+
+			if tt.wantThrottleErr {
+				if tt.wantPartialMetricsErr {
+					partialMetrics, _ := utils.GetHistograms(smallBatch)
+					throttleErr := fmt.Errorf("HTTP %d %q", tt.otlpHTTPResponseCode, http.StatusText(tt.otlpHTTPResponseCode))
+					throttleErr = exporterhelper.NewThrottleRetry(throttleErr, time.Duration(tt.retryAfter)*time.Second)
+					testErr := consumererror.NewMetrics(throttleErr, partialMetrics)
+					assert.EqualValues(t, testErr, err)
+					return
+				}
+
+				expected := fmt.Errorf("HTTP %d %q", tt.sfxHTTPResponseCode, http.StatusText(tt.sfxHTTPResponseCode))
+				expected = exporterhelper.NewThrottleRetry(expected, time.Duration(tt.retryAfter)*time.Second)
+				assert.EqualValues(t, expected, err)
+				return
+			}
+
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func generateLargeMixedDPBatch() pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	md.ResourceMetrics().EnsureCapacity(7500)
+
+	ts := pcommon.NewTimestampFromTime(time.Now())
+	for i := 0; i < 7500; i++ {
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("kr0", "vr0")
+		ilm := rm.ScopeMetrics().AppendEmpty()
+		ilm.Metrics().EnsureCapacity(2)
+		m1 := ilm.Metrics().AppendEmpty()
+		m1.SetName("test_" + strconv.Itoa(i))
+		dp := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.SetTimestamp(ts)
+		dp.Attributes().PutStr("k0", "v0")
+		dp.Attributes().PutStr("k1", "v1")
+		dp.SetIntValue(int64(i))
+		m2 := ilm.Metrics().AppendEmpty()
+		buildHistogram(m2, "histogram_"+strconv.Itoa(i), ts, 1)
+	}
+	return md
 }

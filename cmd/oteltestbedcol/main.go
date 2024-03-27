@@ -14,7 +14,7 @@ func main() {
 	info := component.BuildInfo{
 		Command:     "oteltestbedcol",
 		Description: "OpenTelemetry Collector binary for testbed only tests.",
-		Version:     "0.92.0-dev",
+		Version:     "0.97.0-dev",
 	}
 
 	if err := run(otelcol.CollectorSettings{BuildInfo: info, Factories: components}); err != nil {

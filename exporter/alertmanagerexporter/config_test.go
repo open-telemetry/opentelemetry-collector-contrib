@@ -62,15 +62,15 @@ func TestLoadConfig(t *testing.T) {
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Headers: map[string]configopaque.String{
 						"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
 						"header1":                "234",
 						"another":                "somevalue",
 					},
 					Endpoint: "a.new.alertmanager.target:9093",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						TLSSetting: configtls.Config{
 							CAFile: "/var/lib/mycert.pem",
 						},
 					},
@@ -107,7 +107,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "NoEndpoint",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.HTTPClientSettings.Endpoint = ""
+				cfg.ClientConfig.Endpoint = ""
 				return cfg
 			}(),
 			wantErr: "endpoint must be non-empty",

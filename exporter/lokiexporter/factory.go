@@ -9,7 +9,6 @@ import (
 	"context"
 	"time"
 
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -22,8 +21,6 @@ import (
 
 // NewFactory creates a factory for the legacy Loki exporter.
 func NewFactory() exporter.Factory {
-	_ = view.Register(metricViews()...)
-
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
@@ -33,7 +30,7 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
 			Timeout:  30 * time.Second,
 			Headers:  map[string]configopaque.String{},
@@ -53,7 +50,11 @@ func createDefaultConfig() component.Config {
 
 func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	exporterConfig := config.(*Config)
-	exp := newExporter(exporterConfig, set.TelemetrySettings)
+	exp, err := newExporter(exporterConfig, set.TelemetrySettings)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewLogsExporter(
 		ctx,

@@ -25,9 +25,9 @@ Exporter supports the following features：
 
 + Support for compressing the telemetry data before exporting.
 
++ Support for writing into multiple files, where the file path is determined by a resource attribute.
 
 Please note that there is no guarantee that exact field names will remain stable.
-This intended for primarily for debugging Collector without setting up backends.
 
 The official [opentelemetry-collector-contrib container](https://hub.docker.com/r/otel/opentelemetry-collector-contrib/tags#!) does not have a writable filesystem by default since it's built on the `scratch` layer.
 As such, you will need to create a writable directory for the path, potentially by mounting writable volumes or creating a custom image.
@@ -47,9 +47,16 @@ The following settings are optional:
   - localtime : [default: false (use UTC)] whether or not the timestamps in backup files is formatted according to the host's local time.
 
 - `format`[default: json]: define the data format of encoded telemetry data. The setting can be overridden with `proto`.
+- `encoding`[default: none]: if specified, uses an encoding extension to encode telemetry data. Overrides `format`.
+- `append`[default: `false`] defines whether append to the file (`true`) or truncate (`false`). If `append: true` is set then setting `rotation` or `compression` is currently not supported.
 - `compression`[no default]: the compression algorithm used when exporting telemetry data to file. Supported compression algorithms:`zstd`
 - `flush_interval`[default: 1s]: `time.Duration` interval between flushes. See [time.ParseDuration](https://pkg.go.dev/time#ParseDuration) for valid formats. 
 NOTE: a value without unit is in nanoseconds and `flush_interval` is ignored and writes are not buffered if `rotation` is set.
+
+- `group_by` enables writing to separate files based on a resource attribute.
+  - enabled: [default: false] enables group_by. When group_by is enabled, rotation setting is ignored. 
+  - resource_attribute: [default: fileexporter.path_segment]: specifies the name of the resource attribute that contains the path segment of the file to write to. The final path will be the `path` config value, with the `*` replaced with the value of this resource attribute.
+  - max_open_files: [default: 100]: specifies the maximum number of open file descriptors for the output files.
 
 ## File Rotation
 Telemetry data is exported to a single file by default.
@@ -78,6 +85,15 @@ When `format` is json and `compression` is none , telemetry data is written to f
 
 Otherwise, when using `proto` format or any kind of encoding, each encoded object is preceded by 4 bytes (an unsigned 32 bit integer) which represent the number of bytes contained in the encoded object.When we need read the messages back in, we read the size, then read the bytes into a separate buffer, then parse from that buffer.
 
+## Group by attribute
+
+By specifying `group_by.resource_attribute` in the config, the exporter will determine a filepath for each telemetry record, by substituting the value of the resource attribute into the `path` configuration value.
+
+The final path is guaranteed to start with the prefix part of the `path` config value (the part before the `*` character). For example if `path` is "/data/*.json", and the resource attribute value is "../etc/my_config", then the final path will be sanitized to "/data/etc/my_config.json".
+
+The final path can contain path separators (`/`). The exporter will create missing directories recursively (similarly to `mkdir -p`).
+
+Grouping by attribute currently only supports a **single** **resource** attribute. If you would like to use multiple attributes, please use [Transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor) create a routing key. If you would like to use a non-resource level (eg: Log/Metric/DataPoint) attribute, please use [Group by Attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/groupbyattrsprocessor) first.
 
 ## Example:
 

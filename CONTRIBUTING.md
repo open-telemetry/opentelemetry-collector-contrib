@@ -119,7 +119,7 @@ Components refer to connectors, exporters, extensions, processors, and receivers
 * Implement the [component.Component](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component) interface
 * Provide a configuration structure which defines the configuration of the component
 * Provide the implementation which performs the component operation
-* Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md)).
+* Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/README.md)).
 
 Familiarize yourself with the interface of the component that you want to write, and use existing implementations as a reference.
 [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
@@ -152,7 +152,26 @@ and its contributors.
   and in the respective testing harnesses. To align with the test goal of the project, components must be testable within the framework defined within
   the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
   components number with a comment within the PR explaining as to why it can not be tested.
-- Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/metadata-schema.yaml).
+- Enable [goleak checks](https://github.com/uber-go/goleak) to help ensure your component does not leak goroutines. This
+  requires adding a file named `package_test.go` to every sub-directory containing tests. This file should have the following contents by default:
+```
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package fooreceiver
+
+import (
+	"testing"
+
+	"go.uber.org/goleak"
+)
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
+```
+
+- Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/metadata-schema.yaml).
 Here is a minimal representation:
 ```
 type: <name of your component, such as apache, http, haproxy, postgresql>
@@ -181,7 +200,7 @@ status:
 // Package fooreceiver bars.
 package fooreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fooreceiver"
 ```
-- Type `make update-codeowners`. This will trigger the regeneration of the `.github/CODEOWNERS` file and the [metadata generator](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md#using-the-metadata-generator) to generate the associated code/documentation.
+- Type `make update-codeowners`. This will trigger the regeneration of the `.github/CODEOWNERS` file and the [metadata generator](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/README.md#using-the-metadata-generator) to generate the associated code/documentation.
 
 When submitting a component to the community, consider breaking it down into separate PRs as follows:
 
@@ -361,14 +380,16 @@ Example label comment:
 
 ## Becoming a Code Owner
 
-A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, responding to issues, and reviewing pull requests.
+A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, triaging and responding to issues, and reviewing pull requests.
 
 Sometimes a component may be in need of a new or additional Code Owner. A few reasons this situation may arise would be:
-- The component was never assigned a Code Owner.
+
+- The existing Code Owners are actively looking for more help.
 - A previous Code Owner stepped down.
 - An existing Code Owner has become unresponsive. See [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector#unmaintained).
-- The existing Code Owners are actively looking for new Code Owners to help.
+- The component was never assigned a Code Owner.
 
+Code Ownership does not have to be a full-time job. If you can find a couple hours to help out on a recurring basis, please consider pursuing Code Ownership.
 
 ### Requirements
 

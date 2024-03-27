@@ -202,7 +202,9 @@ func (c *capturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	go func() {
-		c.receivedRequest <- receivedRequest{body, r.Header}
+		if c.receivedRequest != nil {
+			c.receivedRequest <- receivedRequest{body, r.Header}
+		}
 	}()
 	w.WriteHeader(c.statusCode)
 }
@@ -214,7 +216,7 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	}
 
 	factory := NewFactory()
-	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 	cfg.UseMultiMetricFormat = useMultiMetricsFormat
 
@@ -266,7 +268,7 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.DisableCompression = testConfig.DisableCompression
 	cfg.MaxContentLengthTraces = testConfig.MaxContentLengthTraces
 	cfg.Token = "1234-1234"
@@ -328,7 +330,7 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 		panic(err)
 	}
 
-	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
 	rr := make(chan receivedRequest)
@@ -1266,7 +1268,7 @@ func Test_PushMetricsData_Summary_NaN_Sum(t *testing.T) {
 func TestReceiveMetricsWithCompression(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.MaxContentLengthMetrics = 1800
-	request, err := runMetricsExport(cfg, createMetricsData(1, 100), 1, false, t)
+	request, err := runMetricsExport(cfg, createMetricsData(1, 100), 2, false, t)
 	assert.NoError(t, err)
 	assert.Equal(t, "gzip", request[0].headers.Get("Content-Encoding"))
 	assert.NotEqual(t, "", request)
@@ -1292,7 +1294,7 @@ func TestErrorReceived(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
@@ -1347,7 +1349,7 @@ func TestInvalidURL(t *testing.T) {
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
 	cfg.BackOffConfig.Enabled = false
-	cfg.HTTPClientSettings.Endpoint = "ftp://example.com:134"
+	cfg.ClientConfig.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
@@ -1363,8 +1365,7 @@ func TestInvalidURL(t *testing.T) {
 }
 
 func TestHeartbeatStartupFailed(t *testing.T) {
-	rr := make(chan receivedRequest)
-	capture := capturingData{receivedRequest: rr, statusCode: 403}
+	capture := capturingData{statusCode: 403}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -1381,7 +1382,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
@@ -1394,8 +1395,11 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
-	// The exporter's name is "" while generating default params
-	assert.EqualError(t, exporter.Start(context.Background(), componenttest.NewNopHost()), ": heartbeat on startup failed: HTTP 403 \"Forbidden\"")
+	assert.EqualError(t,
+		exporter.Start(context.Background(), componenttest.NewNopHost()),
+		fmt.Sprintf("%s: heartbeat on startup failed: HTTP 403 \"Forbidden\"", params.ID.String()),
+	)
+	assert.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 func TestHeartbeatStartupPass_Disabled(t *testing.T) {
@@ -1417,7 +1421,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
@@ -1431,11 +1435,11 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 func TestHeartbeatStartupPass(t *testing.T) {
-	rr := make(chan receivedRequest)
-	capture := capturingData{receivedRequest: rr, statusCode: 200}
+	capture := capturingData{statusCode: 200}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -1452,7 +1456,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
@@ -1466,6 +1470,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 type badJSON struct {

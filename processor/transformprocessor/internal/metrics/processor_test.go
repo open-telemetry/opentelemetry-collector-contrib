@@ -163,7 +163,7 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				countMetric.SetName(histogramMetric.Name() + "_count")
 				countMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				countMetric.Sum().SetIsMonotonic(true)
-				countMetric.SetUnit(histogramMetric.Unit())
+				countMetric.SetUnit("1")
 
 				histogramDp0 := histogramMetric.Histogram().DataPoints().At(0)
 				countDp0 := countMetric.Sum().DataPoints().AppendEmpty()
@@ -177,6 +177,15 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				histogramDp1.Attributes().CopyTo(countDp1.Attributes())
 				countDp1.SetIntValue(int64(histogramDp1.Count()))
 				countDp1.SetStartTimestamp(StartTimestamp)
+			},
+		},
+		{
+			statements: []string{`copy_metric(name="http.request.status_code", unit="s") where name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				newMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).CopyTo(newMetric)
+				newMetric.SetName("http.request.status_code")
+				newMetric.SetUnit("s")
 			},
 		},
 	}

@@ -4,6 +4,7 @@
 package azuremonitorexporter
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -15,6 +16,7 @@ import (
 func TestParseConnectionString(t *testing.T) {
 	tests := []struct {
 		name      string
+		envValue  string
 		config    *Config
 		want      *ConnectionVars
 		wantError bool
@@ -116,10 +118,38 @@ func TestParseConnectionString(t *testing.T) {
 			want:      nil,
 			wantError: true,
 		},
+		{
+			name:     "Environment variable only",
+			envValue: "InstrumentationKey=00000000-0000-0000-0000-00000000ENV;IngestionEndpoint=https://ingestion.env.azuremonitor.com/",
+			config:   &Config{},
+			want: &ConnectionVars{
+				InstrumentationKey: "00000000-0000-0000-0000-00000000ENV",
+				IngestionURL:       "https://ingestion.env.azuremonitor.com/v2.1/track",
+			},
+			wantError: false,
+		},
+		{
+			name:     "Environment variable override",
+			envValue: "InstrumentationKey=00000000-0000-0000-0000-00000000ENV;IngestionEndpoint=https://ingestion.override.azuremonitor.com/",
+			config: &Config{
+				ConnectionString:   "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/",
+				InstrumentationKey: "00000000-0000-0000-0000-00000000IKEY",
+			},
+			want: &ConnectionVars{
+				InstrumentationKey: "00000000-0000-0000-0000-00000000ENV",
+				IngestionURL:       "https://ingestion.override.azuremonitor.com/v2.1/track",
+			},
+			wantError: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.envValue != "" {
+				os.Setenv(ApplicationInsightsConnectionString, tt.envValue)
+				defer os.Unsetenv(ApplicationInsightsConnectionString)
+			}
+
 			got, err := parseConnectionString(tt.config)
 			if tt.wantError {
 				require.Error(t, err, "Expected an error but got none")

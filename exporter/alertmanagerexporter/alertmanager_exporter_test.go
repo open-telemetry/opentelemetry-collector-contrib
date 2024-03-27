@@ -308,6 +308,7 @@ func newMockServer(t *testing.T) *MockServer {
 
 func TestAlertManagerPostAlert(t *testing.T) {
 	mock := newMockServer(t)
+	defer func() { mock.mockserver.Close() }()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
@@ -332,7 +333,7 @@ func TestAlertManagerPostAlert(t *testing.T) {
 	}
 }
 
-func TestHTTPClientSettings(t *testing.T) {
+func TestClientConfig(t *testing.T) {
 	endpoint := "http://" + testutil.GetAvailableLocalAddress(t)
 	fmt.Println(endpoint)
 	tests := []struct {
@@ -344,9 +345,9 @@ func TestHTTPClientSettings(t *testing.T) {
 		{
 			name: "UseSecure",
 			config: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure: false,
 					},
 				},
@@ -355,7 +356,7 @@ func TestHTTPClientSettings(t *testing.T) {
 		{
 			name: "Headers",
 			config: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
 					Headers: map[string]configopaque.String{
 						"hdr1": "val1",
@@ -367,10 +368,10 @@ func TestHTTPClientSettings(t *testing.T) {
 		{
 			name: "CaCert",
 			config: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						TLSSetting: configtls.Config{
 							CAFile: "testdata/test_cert.pem",
 						},
 					},
@@ -380,10 +381,10 @@ func TestHTTPClientSettings(t *testing.T) {
 		{
 			name: "CertPemFileError",
 			config: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						TLSSetting: configtls.Config{
 							CAFile: "nosuchfile",
 						},
 					},

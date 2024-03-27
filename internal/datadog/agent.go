@@ -16,14 +16,11 @@ import (
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/trace/timing"
+	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
-
-// keyStatsComputed specifies the resource attribute key which indicates if stats have been
-// computed for the resource spans.
-const keyStatsComputed = "_dd.stats_computed"
 
 // TraceAgent specifies a minimal trace agent instance that is able to process traces and output stats.
 type TraceAgent struct {
@@ -40,21 +37,14 @@ type TraceAgent struct {
 	exit chan struct{}
 }
 
-// ConnectorPerformanceFeatureGate uses optimized code paths for the Datadog Connector.
-var ConnectorPerformanceFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"connector.datadogconnector.performance",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Datadog Connector will use optimized code"),
-)
-
 // newAgent creates a new unstarted traceagent using the given context. Call Start to start the traceagent.
 // The out channel will receive outoing stats payloads resulting from spans ingested using the Ingest method.
-func NewAgent(ctx context.Context, out chan *pb.StatsPayload) *TraceAgent {
-	return NewAgentWithConfig(ctx, traceconfig.New(), out)
+func NewAgent(ctx context.Context, out chan *pb.StatsPayload, metricsClient statsd.ClientInterface, timingReporter timing.Reporter) *TraceAgent {
+	return NewAgentWithConfig(ctx, traceconfig.New(), out, metricsClient, timingReporter)
 }
 
 // newAgentWithConfig creates a new traceagent with the given config cfg. Used in tests; use newAgent instead.
-func NewAgentWithConfig(ctx context.Context, cfg *traceconfig.AgentConfig, out chan *pb.StatsPayload) *TraceAgent {
+func NewAgentWithConfig(ctx context.Context, cfg *traceconfig.AgentConfig, out chan *pb.StatsPayload, metricsClient statsd.ClientInterface, timingReporter timing.Reporter) *TraceAgent {
 	// disable the HTTP receiver
 	cfg.ReceiverPort = 0
 	// set the API key to succeed startup; it is never used nor needed
@@ -66,16 +56,16 @@ func NewAgentWithConfig(ctx context.Context, cfg *traceconfig.AgentConfig, out c
 	// Ingest). This gives a better user experience.
 	cfg.Hostname = metrics.UnsetHostnamePlaceholder
 	pchan := make(chan *api.Payload, 1000)
-	a := agent.NewAgent(ctx, cfg, telemetry.NewNoopCollector())
+	a := agent.NewAgent(ctx, cfg, telemetry.NewNoopCollector(), metricsClient)
 	// replace the Concentrator (the component which computes and flushes APM Stats from incoming
 	// traces) with our own, which uses the 'out' channel.
-	a.Concentrator = stats.NewConcentrator(cfg, out, time.Now())
+	a.Concentrator = stats.NewConcentrator(cfg, out, time.Now(), metricsClient)
 	// ...and the same for the ClientStatsAggregator; we don't use it here, but it is also a source
 	// of stats which should be available to us.
-	a.ClientStatsAggregator = stats.NewClientStatsAggregator(cfg, out)
+	a.ClientStatsAggregator = stats.NewClientStatsAggregator(cfg, out, metricsClient)
 	// lastly, start the OTLP receiver, which will be used to introduce ResourceSpans into the traceagent,
 	// so that we can transform them to Datadog spans and receive stats.
-	a.OTLPReceiver = api.NewOTLPReceiver(pchan, cfg)
+	a.OTLPReceiver = api.NewOTLPReceiver(pchan, cfg, metricsClient, timingReporter)
 	return &TraceAgent{
 		Agent: a,
 		exit:  make(chan struct{}),
@@ -148,9 +138,6 @@ func (p *TraceAgent) Ingest(ctx context.Context, traces ptrace.Traces) {
 		// ...the call transforms the OTLP Spans into a Datadog payload and sends the result
 		// down the p.pchan channel
 
-		// Stats will be computed for p. Mark the original resource spans to ensure that they don't
-		// get computed twice in case these spans pass through here again.
-		rspans.Resource().Attributes().PutBool(keyStatsComputed, true)
 	}
 }
 

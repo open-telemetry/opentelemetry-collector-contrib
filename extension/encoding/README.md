@@ -13,7 +13,7 @@ worked towards.
 
 ### Development
 
-- Add endcoding extensions support additionally to the existing ways of configuring encodings (where applicable) 
+- Add encoding extensions support additionally to the existing ways of configuring encodings (where applicable) 
   to the following components:
     - `file receiver`
     - `file exporter`
@@ -31,8 +31,8 @@ worked towards.
 ```yaml
 extensions:
   zipkin_encoding:
-    format: proto
-    version: v1
+    protocol: zipkin_proto
+    version: v2
 
 receivers:
   kafka:

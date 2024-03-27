@@ -8,15 +8,18 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("jaegerremotesampling")
+)
+
 const (
-	Type               = "jaegerremotesampling"
 	ExtensionStability = component.StabilityLevelAlpha
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol")
+	return settings.MeterProvider.Meter("otelcol/jaegerremotesampling")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol")
+	return settings.TracerProvider.Tracer("otelcol/jaegerremotesampling")
 }

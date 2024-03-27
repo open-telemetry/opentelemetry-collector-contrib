@@ -35,12 +35,16 @@ extensions:
     role_arn: ""
     aws_endpoint: ""
     local_mode: false
+    service_name: "xray"
 ```
 
 ### endpoint (Optional)
 The TCP address and port on which this proxy listens for requests.
 
 Default: `0.0.0.0:2000`
+
+The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:2000. This will become the default in a future release.
+
 
 ### proxy_address (Optional)
 Defines the proxy address that this extension forwards HTTP requests to the AWS backend through. If left unconfigured, requests will be sent directly.
@@ -63,3 +67,5 @@ The IAM role used by this proxy when communicating with the AWS service. If non-
 ### aws_endpoint (Optional)
 The AWS service endpoint which this proxy forwards requests to. If not set, will default to the AWS X-Ray endpoint.
 
+### service_name (Optional)
+The AWS service name which this proxy forwards requests to. If not set, will default to "xray"

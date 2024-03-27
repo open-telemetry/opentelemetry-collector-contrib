@@ -1,4 +1,5 @@
 type: k8s_cluster
+scope_name: otelcol/k8sclusterreceiver
 
 status:
   class: receiver
@@ -182,13 +183,6 @@ resource_attributes:
     type: string
     enabled: false
 
-  k8s.kubeproxy.version:
-    description: The version of Kube Proxy running on the node.
-    type: string
-    enabled: false
-    warnings:
-      if_configured: k8s.kubeproxy.version resource attribute is deprecated and will be removed soon.
-
   openshift.clusterquota.uid:
     description: The k8s ClusterResourceQuota uid.
     type: string
@@ -198,6 +192,11 @@ resource_attributes:
     description: The k8s ClusterResourceQuota name.
     type: string
     enabled: true
+
+  k8s.container.status.last_terminated_reason:
+    description: Last terminated reason of a container.
+    type: string
+    enabled: false
 
 attributes:
   k8s.namespace.name:
@@ -517,3 +516,7 @@ metrics:
 
   # k8s.node.allocatable_* metrics (k8s.node.allocatable_cpu, k8s.node.allocatable_memory, etc) are controlled
   # by allocatable_types_to_report config option. By default, none of them are reported.
+
+tests:
+  config:
+  skip_lifecycle: true

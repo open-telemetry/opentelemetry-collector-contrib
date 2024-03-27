@@ -33,10 +33,10 @@ func TestTrackerAddSpans(t *testing.T) {
 	attr.PutStr("host.name", "localhost")
 
 	// Add empty first, should ignore.
-	assert.NoError(t, tracker.AddSpans(context.Background(), ptrace.NewTraces()))
+	assert.NoError(t, tracker.ProcessTraces(context.Background(), ptrace.NewTraces()))
 	assert.Nil(t, tracker.traceTracker)
 
-	assert.NoError(t, tracker.AddSpans(context.Background(), traces))
+	assert.NoError(t, tracker.ProcessTraces(context.Background(), traces))
 
 	assert.NotNil(t, tracker.traceTracker, "trace tracker should be set")
 
@@ -54,10 +54,10 @@ func TestTrackerStart(t *testing.T) {
 		{
 			name: "invalid http client settings fails",
 			config: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "localhost:9090",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						TLSSetting: configtls.Config{
 							CAFile: "/non/existent",
 						},
 					},
@@ -86,6 +86,8 @@ func TestTrackerStart(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+
+			assert.NoError(t, tracker.Shutdown(context.Background()))
 		})
 	}
 }

@@ -32,11 +32,11 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = defaultCollectionInterval
 
 	return &Config{
-		ScraperControllerSettings:     cfg,
+		ControllerConfig:              cfg,
 		MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
 		CacheResources:                24 * 60 * 60,
 		CacheResourcesDefinitions:     24 * 60 * 60,
@@ -54,10 +54,10 @@ func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rC
 	}
 
 	azureScraper := newScraper(cfg, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, azureScraper.scrape, scraperhelper.WithStart(azureScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), azureScraper.scrape, scraperhelper.WithStart(azureScraper.start))
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(scraper))
+	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(scraper))
 }

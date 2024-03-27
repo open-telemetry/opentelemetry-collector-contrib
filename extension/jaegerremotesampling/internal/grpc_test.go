@@ -17,17 +17,17 @@ import (
 )
 
 func TestMissingClientConfigManagerGRPC(t *testing.T) {
-	s, err := NewGRPC(componenttest.NewNopTelemetrySettings(), configgrpc.GRPCServerSettings{}, nil)
+	s, err := NewGRPC(componenttest.NewNopTelemetrySettings(), configgrpc.ServerConfig{}, nil)
 	assert.Equal(t, errMissingStrategyStore, err)
 	assert.Nil(t, s)
 }
 
 func TestStartAndStopGRPC(t *testing.T) {
 	// prepare
-	srvSettings := configgrpc.GRPCServerSettings{
-		NetAddr: confignet.NetAddr{
+	srvSettings := configgrpc.ServerConfig{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  "127.0.0.1:0",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	s, err := NewGRPC(componenttest.NewNopTelemetrySettings(), srvSettings, &mockCfgMgr{})

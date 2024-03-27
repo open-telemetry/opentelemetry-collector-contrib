@@ -8,15 +8,18 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("ecs_observer")
+)
+
 const (
-	Type               = "ecs_observer"
 	ExtensionStability = component.StabilityLevelBeta
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol")
+	return settings.MeterProvider.Meter("otelcol/ecsobserver")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol")
+	return settings.TracerProvider.Tracer("otelcol/ecsobserver")
 }

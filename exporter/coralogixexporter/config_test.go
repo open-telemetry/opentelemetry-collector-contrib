@@ -45,23 +45,23 @@ func TestLoadConfig(t *testing.T) {
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version
 				SubSystem:       "SUBSYSTEM_NAME",
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-				DomainSettings: configgrpc.GRPCClientSettings{
-					Compression: configcompression.Gzip,
+				DomainSettings: configgrpc.ClientConfig{
+					Compression: configcompression.TypeGzip,
 				},
-				Metrics: configgrpc.GRPCClientSettings{
+				Metrics: configgrpc.ClientConfig{
 					Endpoint:        "https://",
-					Compression:     configcompression.Gzip,
+					Compression:     configcompression.TypeGzip,
 					WriteBufferSize: 512 * 1024,
 				},
-				Logs: configgrpc.GRPCClientSettings{
+				Logs: configgrpc.ClientConfig{
 					Endpoint:    "https://",
-					Compression: configcompression.Gzip,
+					Compression: configcompression.TypeGzip,
 				},
-				Traces: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.ClientConfig{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: configcompression.Gzip,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting:         configtls.TLSSetting{},
+					Compression: configcompression.TypeGzip,
+					TLSSetting: configtls.ClientConfig{
+						TLSSetting:         configtls.Config{},
 						Insecure:           false,
 						InsecureSkipVerify: false,
 						ServerName:         "",
@@ -71,10 +71,10 @@ func TestLoadConfig(t *testing.T) {
 					WaitForReady:    false,
 					BalancerName:    "",
 				},
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: "https://",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting:         configtls.TLSSetting{},
+					TLSSetting: configtls.ClientConfig{
+						TLSSetting:         configtls.Config{},
 						Insecure:           false,
 						InsecureSkipVerify: false,
 						ServerName:         "",
@@ -100,23 +100,23 @@ func TestLoadConfig(t *testing.T) {
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version
 				SubSystem:       "SUBSYSTEM_NAME",
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-				DomainSettings: configgrpc.GRPCClientSettings{
-					Compression: configcompression.Gzip,
+				DomainSettings: configgrpc.ClientConfig{
+					Compression: configcompression.TypeGzip,
 				},
-				Metrics: configgrpc.GRPCClientSettings{
+				Metrics: configgrpc.ClientConfig{
 					Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression:     configcompression.Gzip,
+					Compression:     configcompression.TypeGzip,
 					WriteBufferSize: 512 * 1024,
 				},
-				Logs: configgrpc.GRPCClientSettings{
+				Logs: configgrpc.ClientConfig{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: configcompression.Gzip,
+					Compression: configcompression.TypeGzip,
 				},
-				Traces: configgrpc.GRPCClientSettings{
+				Traces: configgrpc.ClientConfig{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					Compression: configcompression.Gzip,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting:         configtls.TLSSetting{},
+					Compression: configcompression.TypeGzip,
+					TLSSetting: configtls.ClientConfig{
+						TLSSetting:         configtls.Config{},
 						Insecure:           false,
 						InsecureSkipVerify: false,
 						ServerName:         "",
@@ -128,10 +128,10 @@ func TestLoadConfig(t *testing.T) {
 				},
 				AppNameAttributes:   []string{"service.namespace", "k8s.namespace.name"},
 				SubSystemAttributes: []string{"service.name", "k8s.deployment.name", "k8s.statefulset.name", "k8s.daemonset.name", "k8s.cronjob.name", "k8s.job.name", "k8s.container.name"},
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: "https://",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting:         configtls.TLSSetting{},
+					TLSSetting: configtls.ClientConfig{
+						TLSSetting:         configtls.Config{},
 						Insecure:           false,
 						InsecureSkipVerify: false,
 						ServerName:         "",
@@ -179,6 +179,7 @@ func TestTraceExporter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, te.shutdown(context.Background()))
 }
 
 func TestMetricsExporter(t *testing.T) {
@@ -198,6 +199,7 @@ func TestMetricsExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, me, "failed to create metrics exporter")
 	require.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, me.shutdown(context.Background()))
 }
 
 func TestLogsExporter(t *testing.T) {
@@ -213,10 +215,11 @@ func TestLogsExporter(t *testing.T) {
 
 	params := exportertest.NewNopCreateSettings()
 
-	me, err := newLogsExporter(cfg, params)
+	le, err := newLogsExporter(cfg, params)
 	require.NoError(t, err)
-	require.NotNil(t, me, "failed to create logs exporter")
-	require.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
+	require.NotNil(t, le, "failed to create logs exporter")
+	require.NoError(t, le.start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, le.shutdown(context.Background()))
 }
 
 func TestDomainWithAllExporters(t *testing.T) {
@@ -234,16 +237,19 @@ func TestDomainWithAllExporters(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, te.shutdown(context.Background()))
 
 	me, err := newMetricsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, me, "failed to create metrics exporter")
 	require.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, me.shutdown(context.Background()))
 
 	le, err := newLogsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, le, "failed to create logs exporter")
 	require.NoError(t, le.start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, le.shutdown(context.Background()))
 }
 
 func TestEndpoindsAndDomainWithAllExporters(t *testing.T) {
@@ -261,16 +267,19 @@ func TestEndpoindsAndDomainWithAllExporters(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, te.shutdown(context.Background()))
 
 	me, err := newMetricsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, me, "failed to create metrics exporter")
 	require.NoError(t, me.start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, me.shutdown(context.Background()))
 
 	le, err := newLogsExporter(cfg, params)
 	require.NoError(t, err)
 	require.NotNil(t, le, "failed to create logs exporter")
 	require.NoError(t, le.start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, le.shutdown(context.Background()))
 }
 
 func TestGetMetadataFromResource(t *testing.T) {

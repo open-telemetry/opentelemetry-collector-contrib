@@ -8,15 +8,18 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("db_storage")
+)
+
 const (
-	Type               = "db_storage"
 	ExtensionStability = component.StabilityLevelAlpha
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol")
+	return settings.MeterProvider.Meter("otelcol/dbstorage")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol")
+	return settings.TracerProvider.Tracer("otelcol/dbstorage")
 }

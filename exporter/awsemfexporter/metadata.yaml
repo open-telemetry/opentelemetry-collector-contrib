@@ -1,4 +1,5 @@
 type: awsemf
+scope_name: otelcol/awsemf
 
 status:
   class: exporter
@@ -7,3 +8,10 @@ status:
   distributions: [contrib, aws, observiq]
   codeowners:
     active: [Aneurysm9, shaochengwang, mxiamxia, bryan-aguilar]
+
+tests:
+  config:
+    region: 'us-west-2'
+    resource_to_telemetry_conversion:
+      enabled: true
+  expect_consumer_error: true

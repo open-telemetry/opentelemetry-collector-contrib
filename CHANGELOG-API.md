@@ -7,6 +7,84 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.97.0
+
+### 🛑 Breaking changes 🛑
+
+- `datadogexporter`: Remove config structs `LimitedClientConfig` and `LimitedTLSClientSettings` (#31733)
+  This should have no impact to end users as long as they do not import Datadog exporter config structs in their source code.
+- `cmd/mdatagen`: Delete deprecated cmd/mdatagen from this project. Use go.opentelemetry.io/collector/cmd/mdatagen instead. (#30497)
+- `azuremonitorreceiver`: Reduce the public API for this receiver. (#24850)
+  This unexports the following types ArmClient, MetricsDefinitionsClientInterface, MetricsValuesClient.
+- `general`: Update any component using `scraperhelper.ScraperControllerSettings` to use `scraperhelper.ControllerConfig` (#31816)
+  This changes the config field name from `ScraperControllerSettings` to `ControllerConfig`
+- `prometheusreceiver`: Remove enable_protobuf_negotiation option on the prometheus receiver. Use config.global.scrape_protocols = [ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ] instead. (#30883)
+  See https://prometheus.io/docs/prometheus/latest/configuration/configuration/#configuration-file for details on setting scrape_protocols.
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate fileconsumer.BuildWithSplitFunc in favor of Build with options pattern (#31596)
+
+### 💡 Enhancements 💡
+
+- `clickhouseexporter`: Allow configuring `ON CLUSTER` and `ENGINE` when creating database and tables (#24649)
+  Increases table creation flexibility with the ability to add replication for fault tolerance
+- `all`: Remove explicit checks in all receivers to check if the next consumer is nil (#31793)
+  The nil check is now done by the pipeline builder.
+
+## v0.96.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/mdatagen`: Use enum for stability levels in the Metadata struct (#31530)
+- `httpforwarder`: Remove extension named httpforwarder, use httpforwarderextension instead. (#24171)
+
+## v0.95.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza`: Remove deprecated pkg/stanza/attrs (#30449)
+- `httpforwarderextension`: Rename the extension httpforwarder to httpforwarderextension (#24171)
+- `extension/storage`: The `filestorage` and `dbstorage` extensions are now standalone modules. (#31040)
+  If using the OpenTelemetry Collector Builder, you will need to update your import paths to use the new module(s).
+  - `github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage`
+  - `github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage`
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/golden`: Added an option to skip the metric timestamp normalization for WriteMetrics. (#30919)
+- `healthcheckextension`: Remove usage of deprecated `host.ReportFatalError` (#30582)
+
+## v0.94.0
+
+### 🚩 Deprecations 🚩
+
+- `testbed`: Deprecate testbed.GetAvailablePort in favor of testutil.GetAvailablePort (#30811)
+  Move healthcheckextension to use testutil.GetAvailablePort
+
+### 🚀 New components 🚀
+
+- `pkg_sampling`: Package of code for parsing OpenTelemetry tracestate probability sampling fields. (#29738)
+
+## v0.93.0
+
+### 🛑 Breaking changes 🛑
+
+- `testbed`: Remove unused AWS XRay mock receiver (#30381)
+- `docker`: Adopt api_version as strings to correct invalid float truncation (#24025)
+- `prometheusreceiver`: Consolidate Config members and remove the need of placeholders. (#29901)
+- `all`: Remove obsolete "// +build" directive (#30651)
+- `testbed`: Expand TestCase capabilities with broken out LoadGenerator interface (#30303)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate pkg/stanza/attrs package in favor of pkg/stanza/fileconsumer/attrs (#30449)
+
+### 💡 Enhancements 💡
+
+- `testbed`: Adds and adopts new WithEnvVar child process option, moving GOMAXPROCS=2 to initializations (#30491)
+
 ## v0.92.0
 
 ### 🛑 Breaking changes 🛑

@@ -7,11 +7,16 @@ import (
 	"context"
 	"io"
 	"os"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
@@ -28,7 +33,18 @@ const (
 
 	// the type of compression codec
 	compressionZSTD = "zstd"
+
+	defaultMaxOpenFiles = 100
+
+	defaultResourceAttribute = "fileexporter.path_segment"
 )
+
+type FileExporter interface {
+	component.Component
+	consumeTraces(_ context.Context, td ptrace.Traces) error
+	consumeMetrics(_ context.Context, md pmetric.Metrics) error
+	consumeLogs(_ context.Context, ld plog.Logs) error
+}
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
@@ -44,6 +60,10 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		FormatType: formatTypeJSON,
 		Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
+		GroupBy: &GroupBy{
+			ResourceAttribute: defaultResourceAttribute,
+			MaxOpenFiles:      defaultMaxOpenFiles,
+		},
 	}
 }
 
@@ -52,19 +72,12 @@ func createTracesExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	conf := cfg.(*Config)
-	writer, err := buildFileWriter(conf)
-	if err != nil {
-		return nil, err
-	}
-	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return newFileExporter(conf, writer)
-	})
+	fe := getOrCreateFileExporter(cfg, set.Logger)
 	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,
-		fe.Unwrap().(*fileExporter).consumeTraces,
+		fe.consumeTraces,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -76,19 +89,12 @@ func createMetricsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	conf := cfg.(*Config)
-	writer, err := buildFileWriter(conf)
-	if err != nil {
-		return nil, err
-	}
-	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return newFileExporter(conf, writer)
-	})
+	fe := getOrCreateFileExporter(cfg, set.Logger)
 	return exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
 		cfg,
-		fe.Unwrap().(*fileExporter).consumeMetrics,
+		fe.consumeMetrics,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -100,59 +106,80 @@ func createLogsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	conf := cfg.(*Config)
-	writer, err := buildFileWriter(conf)
-	if err != nil {
-		return nil, err
-	}
-	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return newFileExporter(conf, writer)
-	})
+	fe := getOrCreateFileExporter(cfg, set.Logger)
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,
-		fe.Unwrap().(*fileExporter).consumeLogs,
+		fe.consumeLogs,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 	)
 }
 
-func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
-	return &fileExporter{
-		path:             conf.Path,
-		formatType:       conf.FormatType,
-		file:             writer,
-		tracesMarshaler:  tracesMarshalers[conf.FormatType],
-		metricsMarshaler: metricsMarshalers[conf.FormatType],
-		logsMarshaler:    logsMarshalers[conf.FormatType],
-		exporter:         buildExportFunc(conf),
-		compression:      conf.Compression,
-		compressor:       buildCompressor(conf.Compression),
-		flushInterval:    conf.FlushInterval,
-	}
+// getOrCreateFileExporter creates a FileExporter and caches it for a particular configuration,
+// or returns the already cached one. Caching is required because the factory is asked trace and
+// metric receivers separately when it gets CreateTracesReceiver() and CreateMetricsReceiver()
+// but they must not create separate objects, they must use one Exporter object per configuration.
+func getOrCreateFileExporter(cfg component.Config, logger *zap.Logger) FileExporter {
+	conf := cfg.(*Config)
+	fe := exporters.GetOrAdd(cfg, func() component.Component {
+		return newFileExporter(conf, logger)
+	})
+
+	c := fe.Unwrap()
+	return c.(FileExporter)
 }
 
-func buildFileWriter(cfg *Config) (io.WriteCloser, error) {
-	if cfg.Rotation == nil {
-		f, err := os.OpenFile(cfg.Path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+func newFileExporter(conf *Config, logger *zap.Logger) FileExporter {
+	if conf.GroupBy == nil || !conf.GroupBy.Enabled {
+		return &fileExporter{
+			conf: conf,
+		}
+	}
+
+	return &groupingFileExporter{
+		conf:   conf,
+		logger: logger,
+	}
+
+}
+
+func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInterval time.Duration, export exportFunc) (*fileWriter, error) {
+	var wc io.WriteCloser
+	if rotation == nil {
+		fileFlags := os.O_RDWR | os.O_CREATE
+		if shouldAppend {
+			fileFlags |= os.O_APPEND
+		} else {
+			fileFlags |= os.O_TRUNC
+		}
+		f, err := os.OpenFile(path, fileFlags, 0644)
 		if err != nil {
 			return nil, err
 		}
-		return newBufferedWriteCloser(f), nil
+		wc = newBufferedWriteCloser(f)
+	} else {
+		wc = &lumberjack.Logger{
+			Filename:   path,
+			MaxSize:    rotation.MaxMegabytes,
+			MaxAge:     rotation.MaxDays,
+			MaxBackups: rotation.MaxBackups,
+			LocalTime:  rotation.LocalTime,
+		}
 	}
-	return &lumberjack.Logger{
-		Filename:   cfg.Path,
-		MaxSize:    cfg.Rotation.MaxMegabytes,
-		MaxAge:     cfg.Rotation.MaxDays,
-		MaxBackups: cfg.Rotation.MaxBackups,
-		LocalTime:  cfg.Rotation.LocalTime,
+
+	return &fileWriter{
+		path:          path,
+		file:          wc,
+		exporter:      export,
+		flushInterval: flushInterval,
 	}, nil
 }
 
 // This is the map of already created File exporters for particular configurations.
 // We maintain this map because the Factory is asked trace and metric receivers separately
 // when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
-// create separate objects, they must use one Receiver object per configuration.
+// create separate objects, they must use one Exporter object per configuration.
 var exporters = sharedcomponent.NewSharedComponents()

@@ -162,7 +162,7 @@ func Test_influxHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 	influxWriter, err := newInfluxHTTPWriter(
 		new(common.NoopLogger),
 		&Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: noopHTTPServer.URL,
 			},
 		},

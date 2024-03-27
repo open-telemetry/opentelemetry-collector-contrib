@@ -30,14 +30,14 @@ func samplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 
 	sampledTagKeys := []tag.Key{tagPolicyKey, tagSampledKey}
 	countTracesSampledView := &view.View{
-		Name:        processorhelper.BuildCustomMetricName(metadata.Type, statCountTracesSampled.Name()),
+		Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), statCountTracesSampled.Name()),
 		Measure:     statCountTracesSampled,
 		Description: statCountTracesSampled.Description(),
 		TagKeys:     sampledTagKeys,
 		Aggregation: view.Sum(),
 	}
 	countLogsSampledView := &view.View{
-		Name:        processorhelper.BuildCustomMetricName(metadata.Type, statCountLogsSampled.Name()),
+		Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), statCountLogsSampled.Name()),
 		Measure:     statCountLogsSampled,
 		Description: statCountLogsSampled.Description(),
 		TagKeys:     sampledTagKeys,

@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -20,15 +22,18 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters["awss3"] = factory
+	factories.Exporters[metadata.Type] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "default.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID("awss3")].(*Config)
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+	encoding := component.MustNewIDWithName("foo", "bar")
 	assert.Equal(t, e,
 		&Config{
+			Encoding:              &encoding,
+			EncodingFileExtension: "baz",
 			S3Uploader: S3UploaderConfig{
 				Region:      "us-east-1",
 				S3Bucket:    "foo",
@@ -51,7 +56,7 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID("awss3")].(*Config)
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
 	assert.Equal(t, e,
 		&Config{
@@ -79,7 +84,7 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID("awss3")].(*Config)
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
 	assert.Equal(t, e,
 		&Config{
@@ -167,7 +172,7 @@ func TestMarshallerName(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID("awss3")].(*Config)
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
 	assert.Equal(t, e,
 		&Config{
@@ -179,4 +184,60 @@ func TestMarshallerName(t *testing.T) {
 			MarshalerName: "sumo_ic",
 		},
 	)
+
+	e = cfg.Exporters[component.MustNewIDWithName("awss3", "proto")].(*Config)
+
+	assert.Equal(t, e,
+		&Config{
+			S3Uploader: S3UploaderConfig{
+				Region:      "us-east-1",
+				S3Bucket:    "bar",
+				S3Partition: "minute",
+			},
+			MarshalerName: "otlp_proto",
+		},
+	)
+
+}
+
+func TestCompressionName(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "compression.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+
+	assert.Equal(t, e,
+		&Config{
+			S3Uploader: S3UploaderConfig{
+				Region:      "us-east-1",
+				S3Bucket:    "foo",
+				S3Partition: "minute",
+				Compression: "gzip",
+			},
+			MarshalerName: "otlp_json",
+		},
+	)
+
+	e = cfg.Exporters[component.MustNewIDWithName("awss3", "proto")].(*Config)
+
+	assert.Equal(t, e,
+		&Config{
+			S3Uploader: S3UploaderConfig{
+				Region:      "us-east-1",
+				S3Bucket:    "bar",
+				S3Partition: "minute",
+				Compression: "none",
+			},
+			MarshalerName: "otlp_proto",
+		},
+	)
+
 }

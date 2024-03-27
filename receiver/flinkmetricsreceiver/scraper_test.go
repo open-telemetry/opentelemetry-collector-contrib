@@ -42,10 +42,10 @@ func TestScraperStart(t *testing.T) {
 			desc: "Bad Config",
 			scraper: &flinkmetricsScraper{
 				cfg: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: defaultEndpoint,
-						TLSSetting: configtls.TLSClientSetting{
-							TLSSetting: configtls.TLSSetting{
+						TLSSetting: configtls.ClientConfig{
+							TLSSetting: configtls.Config{
 								CAFile: "/non/existent",
 							},
 						},
@@ -59,8 +59,8 @@ func TestScraperStart(t *testing.T) {
 			desc: "Valid Config",
 			scraper: &flinkmetricsScraper{
 				cfg: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
-						TLSSetting: configtls.TLSClientSetting{},
+					ClientConfig: confighttp.ClientConfig{
+						TLSSetting: configtls.ClientConfig{},
 						Endpoint:   defaultEndpoint,
 					},
 				},
@@ -151,7 +151,7 @@ func TestScraperScrape(t *testing.T) {
 	}{
 		{
 			desc: "Nil client",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				return nil
 			},
 			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "no_metrics.yaml"),
@@ -159,7 +159,7 @@ func TestScraperScrape(t *testing.T) {
 		},
 		{
 			desc: "API Call Failure on Jobmanagers",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("GetJobmanagerMetrics", mock.Anything).Return(&models.JobmanagerMetrics{}, errors.New("some api error"))
 				mockClient.On("GetTaskmanagersMetrics", mock.Anything).Return(nil, nil)
@@ -172,7 +172,7 @@ func TestScraperScrape(t *testing.T) {
 		},
 		{
 			desc: "API Call Failure on Taskmanagers",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("GetJobmanagerMetrics", mock.Anything).Return(&jobmanagerMetrics, nil)
 				mockClient.On("GetTaskmanagersMetrics", mock.Anything).Return(nil, errors.New("some api error"))
@@ -185,7 +185,7 @@ func TestScraperScrape(t *testing.T) {
 		},
 		{
 			desc: "API Call Failure on Jobs",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("GetJobmanagerMetrics", mock.Anything).Return(&jobmanagerMetrics, nil)
 				mockClient.On("GetTaskmanagersMetrics", mock.Anything).Return(taskmanagerMetricsInstances, nil)
@@ -198,7 +198,7 @@ func TestScraperScrape(t *testing.T) {
 		},
 		{
 			desc: "API Call Failure on Subtasks",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("GetJobmanagerMetrics", mock.Anything).Return(&jobmanagerMetrics, nil)
 				mockClient.On("GetTaskmanagersMetrics", mock.Anything).Return(taskmanagerMetricsInstances, nil)
@@ -227,7 +227,7 @@ func TestScraperScrape(t *testing.T) {
 		},
 		{
 			desc: "Successful Collection",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 
 				// mock client calls

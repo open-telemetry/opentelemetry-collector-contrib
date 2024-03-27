@@ -12,9 +12,9 @@ import (
 
 func TestRegistry(t *testing.T) {
 	r := NewRegistry()
-	newID := component.NewID("new")
-	contribID := component.NewID("contrib")
-	notCreatedID := component.NewID("not-created")
+	newID := component.MustNewID("new")
+	contribID := component.MustNewID("contrib")
+	notCreatedID := component.MustNewID("not_created")
 	original := r.Register(
 		newID,
 		Config{

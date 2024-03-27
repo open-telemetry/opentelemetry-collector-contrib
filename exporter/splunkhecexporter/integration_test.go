@@ -10,7 +10,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	"os"
+	"net/url"
 	"os/exec"
 	"strconv"
 	"testing"
@@ -58,7 +58,7 @@ func teardown(cfg SplunkContainerConfig) {
 	fmt.Println("Stopping container")
 	err := cfg.container.Terminate(cfg.conCtx)
 	if err != nil {
-		fmt.Printf("Error while terminiating container")
+		fmt.Printf("Error while terminating container")
 		panic(err)
 	}
 	// Remove docker image after tests
@@ -72,17 +72,6 @@ func teardown(cfg SplunkContainerConfig) {
 	}
 	fmt.Printf("Removed Docker image: %s\n", splunkImage)
 	fmt.Printf("Command output:\n%s\n", output)
-}
-
-func TestMain(m *testing.M) {
-	splunkContCfg := setup()
-
-	// Run the tests
-	code := m.Run()
-
-	teardown(splunkContCfg)
-	// Exit with the test result code
-	os.Exit(code)
 }
 
 func createInsecureClient() *http.Client {
@@ -222,177 +211,180 @@ func prepareTracesData(index string, source string, sourcetype string) ptrace.Tr
 	return traces
 }
 
-func TestSplunkHecExporterEventsToSplunk(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-	logger.Info("Test -> Splunk running at:", zap.String("host", integrationtestutils.GetConfigVariable("HOST")),
-		zap.String("uiPort", integrationtestutils.GetConfigVariable("UI_PORT")),
-		zap.String("hecPort", integrationtestutils.GetConfigVariable("HEC_PORT")),
-		zap.String("managementPort", integrationtestutils.GetConfigVariable("MANAGEMENT_PORT")),
-	)
-	// Endpoint and Token do not have a default value so set them directly.
-	config := NewFactory().CreateDefaultConfig().(*Config)
-	config.Token = configopaque.String(integrationtestutils.GetConfigVariable("HEC_TOKEN"))
-	config.HTTPClientSettings.Endpoint = "https://" + integrationtestutils.GetConfigVariable("HOST") + ":" + integrationtestutils.GetConfigVariable("HEC_PORT") + "/services/collector"
-	config.Source = "otel"
-	config.SourceType = "st-otel"
-	config.Index = "main"
-	config.TLSSetting.InsecureSkipVerify = true
+type cfg struct {
+	event      string
+	index      string
+	source     string
+	sourcetype string
+}
 
-	url, err := config.getURL()
-	require.NoError(t, err, "Must not error while getting URL")
+type telemetryType string
+
+var metricsType = telemetryType("metrics")
+var logsType = telemetryType("logs")
+var tracesType = telemetryType("traces")
+
+type testCfg struct {
+	name      string
+	config    *cfg
+	startTime string
+	telType   telemetryType
+}
+
+func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	settings := exportertest.NewNopCreateSettings()
 	c := newLogsClient(settings, config)
-	logs := prepareLogs()
+	var logs plog.Logs
+	if test.config.index != "main" {
+		logs = prepareLogsNonDefaultParams(test.config.index, test.config.source, test.config.sourcetype, test.config.event)
+	} else {
+		logs = prepareLogs()
+	}
+
 	httpClient := createInsecureClient()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 
-	err = c.pushLogData(context.Background(), logs)
+	err := c.pushLogData(context.Background(), logs)
 	require.NoError(t, err, "Must not error while sending Logs data")
 	waitForEventToBeIndexed()
 
-	query := "index=main *"
-	events := integrationtestutils.CheckEventsFromSplunk(query, "-3h@h")
-	logger.Info("Splunk received %d events in the last minute", zap.Int("no. of events", len(events)))
-	assert.True(t, len(events) == 1)
+	events := integrationtestutils.CheckEventsFromSplunk("index="+test.config.index+" *", test.startTime)
+	assert.Equal(t, len(events), 1)
 	// check events fields
 	data, ok := events[0].(map[string]any)
-	if !ok {
-		logger.Info("Invalid event format")
-	}
-	assert.True(t, "test log" == data["_raw"].(string))
-	assert.True(t, "main" == data["index"].(string))
-	assert.True(t, "otel" == data["source"].(string))
-	assert.True(t, "st-otel" == data["sourcetype"].(string))
+	assert.True(t, ok, "Invalid event format")
+	assert.Equal(t, test.config.event, data["_raw"].(string))
+	assert.Equal(t, test.config.index, data["index"].(string))
+	assert.Equal(t, test.config.source, data["source"].(string))
+	assert.Equal(t, test.config.sourcetype, data["sourcetype"].(string))
 }
 
-func TestSplunkHecExporterEventsToSplunkNonDefaultIndex(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-	logger.Info("Test -> Splunk running at:", zap.String("host", integrationtestutils.GetConfigVariable("HOST")),
-		zap.String("uiPort", integrationtestutils.GetConfigVariable("UI_PORT")),
-		zap.String("hecPort", integrationtestutils.GetConfigVariable("HEC_PORT")),
-		zap.String("managementPort", integrationtestutils.GetConfigVariable("MANAGEMENT_PORT")),
-	)
-
-	event := "This is my new event! And some number 101"
-	index := integrationtestutils.GetConfigVariable("EVENT_INDEX")
-	source := "otel-source"
-	sourcetype := "sck-otel-st"
-
-	// Endpoint and Token do not have a default value so set them directly.
-	config := NewFactory().CreateDefaultConfig().(*Config)
-	config.Token = configopaque.String(integrationtestutils.GetConfigVariable("HEC_TOKEN"))
-	config.HTTPClientSettings.Endpoint = "https://" + integrationtestutils.GetConfigVariable("HOST") + ":" + integrationtestutils.GetConfigVariable("HEC_PORT") + "/services/collector"
-	config.Source = "otel"
-	config.SourceType = "st-otel"
-	config.Index = "main"
-	config.TLSSetting.InsecureSkipVerify = true
-
-	url, err := config.getURL()
-	require.NoError(t, err, "Must not error while getting URL")
-	settings := exportertest.NewNopCreateSettings()
-	c := newLogsClient(settings, config)
-	logs := prepareLogsNonDefaultParams(index, source, sourcetype, event)
-	httpClient := createInsecureClient()
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
-
-	err = c.pushLogData(context.Background(), logs)
-	require.NoError(t, err, "Must not error while sending Logs data")
-	waitForEventToBeIndexed()
-
-	query := "index=" + index + " *"
-	events := integrationtestutils.CheckEventsFromSplunk(query, "-1m@m")
-	logger.Info("Splunk received %d events in the last minute", zap.Int("no. of events", len(events)))
-	assert.True(t, len(events) == 1)
-	// check events fields
-	data, ok := events[0].(map[string]any)
-	if !ok {
-		logger.Info("Invalid event format")
-	}
-	assert.True(t, event == data["_raw"].(string))
-	assert.True(t, index == data["index"].(string))
-	assert.True(t, source == data["source"].(string))
-	assert.True(t, sourcetype == data["sourcetype"].(string))
-}
-
-func TestSplunkHecExporterMetricsToSplunk(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-	logger.Info("Test -> Splunk running at:", zap.String("host", integrationtestutils.GetConfigVariable("HOST")),
-		zap.String("uiPort", integrationtestutils.GetConfigVariable("UI_PORT")),
-		zap.String("hecPort", integrationtestutils.GetConfigVariable("HEC_PORT")),
-		zap.String("managementPort", integrationtestutils.GetConfigVariable("MANAGEMENT_PORT")),
-	)
-	index := integrationtestutils.GetConfigVariable("METRIC_INDEX")
-	metricName := "test.metric"
-	// Endpoint and Token do not have a default value so set them directly.
-	config := NewFactory().CreateDefaultConfig().(*Config)
-	config.Token = configopaque.String(integrationtestutils.GetConfigVariable("HEC_TOKEN"))
-	config.HTTPClientSettings.Endpoint = "https://" + integrationtestutils.GetConfigVariable("HOST") + ":" + integrationtestutils.GetConfigVariable("HEC_PORT") + "/services/collector"
-	config.Source = "otel"
-	config.SourceType = "st-otel"
-	config.Index = index
-	config.TLSSetting.InsecureSkipVerify = true
-
-	url, err := config.getURL()
-	require.NoError(t, err, "Must not error while getting URL")
+func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	settings := exportertest.NewNopCreateSettings()
 	c := newMetricsClient(settings, config)
-	metricData := prepareMetricsData(metricName)
+	metricData := prepareMetricsData(test.config.event)
 
 	httpClient := createInsecureClient()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 
-	err = c.pushMetricsData(context.Background(), metricData)
+	err := c.pushMetricsData(context.Background(), metricData)
 	require.NoError(t, err, "Must not error while sending Metrics data")
 	waitForEventToBeIndexed()
 
-	events := integrationtestutils.CheckMetricsFromSplunk(index, metricName)
-	assert.True(t, len(events) == 1, "Events length is less than 1. No metrics found")
+	events := integrationtestutils.CheckMetricsFromSplunk(test.config.index, test.config.event)
+	assert.Equal(t, len(events), 1, "Events length is less than 1. No metrics found")
 }
 
-func TestSplunkHecExporterTracesToSplunk(t *testing.T) {
-	logger := zaptest.NewLogger(t)
-	logger.Info("Test -> Splunk running at:", zap.String("host", integrationtestutils.GetConfigVariable("HOST")),
-		zap.String("uiPort", integrationtestutils.GetConfigVariable("UI_PORT")),
-		zap.String("hecPort", integrationtestutils.GetConfigVariable("HEC_PORT")),
-		zap.String("managementPort", integrationtestutils.GetConfigVariable("MANAGEMENT_PORT")),
-	)
-	index := integrationtestutils.GetConfigVariable("TRACE_INDEX")
-	source := "trace-source"
-	sourcetype := "trace-sourcetype"
-	// Endpoint and Token do not have a default value so set them directly.
-	config := NewFactory().CreateDefaultConfig().(*Config)
-	config.Token = configopaque.String(integrationtestutils.GetConfigVariable("HEC_TOKEN"))
-	config.HTTPClientSettings.Endpoint = "https://" + integrationtestutils.GetConfigVariable("HOST") + ":" + integrationtestutils.GetConfigVariable("HEC_PORT") + "/services/collector"
-	config.Source = "otel"
-	config.SourceType = "st-otel"
-	config.Index = "main"
-	config.TLSSetting.InsecureSkipVerify = true
-
-	url, err := config.getURL()
-	require.NoError(t, err, "Must not error while getting URL")
+func tracesTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	settings := exportertest.NewNopCreateSettings()
 	c := newTracesClient(settings, config)
-	tracesData := prepareTracesData(index, source, sourcetype)
+	tracesData := prepareTracesData(test.config.index, test.config.source, test.config.sourcetype)
 
 	httpClient := createInsecureClient()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
 
-	err = c.pushTraceData(context.Background(), tracesData)
+	err := c.pushTraceData(context.Background(), tracesData)
 	require.NoError(t, err, "Must not error while sending Trace data")
-
 	waitForEventToBeIndexed()
-	query := "index=" + index + " *"
-	events := integrationtestutils.CheckEventsFromSplunk(query, "-1m@m")
-	logger.Info("Splunk received %d events in the last minute", zap.Int("no. of events", len(events)))
-	assert.True(t, len(events) == 1)
+
+	events := integrationtestutils.CheckEventsFromSplunk("index="+test.config.index+" *", test.startTime)
+	assert.Equal(t, len(events), 1)
 	// check fields
 	data, ok := events[0].(map[string]any)
-	if !ok {
-		logger.Info("Invalid event format")
+	assert.True(t, ok, "Invalid event format")
+	assert.Equal(t, test.config.index, data["index"].(string))
+	assert.Equal(t, test.config.source, data["source"].(string))
+	assert.Equal(t, test.config.sourcetype, data["sourcetype"].(string))
+}
+
+func TestSplunkHecExporter(t *testing.T) {
+	splunkContCfg := setup()
+	defer teardown(splunkContCfg)
+
+	tests := []testCfg{
+		{
+			name: "Events to Splunk",
+			config: &cfg{
+				event:      "test log",
+				index:      "main",
+				source:     "otel",
+				sourcetype: "st-otel",
+			},
+			startTime: "-3h@h",
+			telType:   logsType,
+		},
+		{
+			name: "Events to Splunk - Non default index",
+			config: &cfg{
+				event:      "This is my new event! And some number 101",
+				index:      integrationtestutils.GetConfigVariable("EVENT_INDEX"),
+				source:     "otel-source",
+				sourcetype: "sck-otel-st",
+			},
+			startTime: "-1m@m",
+			telType:   logsType,
+		},
+		{
+			name: "Events to Splunk - metrics",
+			config: &cfg{
+				event:      "test.metric",
+				index:      integrationtestutils.GetConfigVariable("METRIC_INDEX"),
+				source:     "otel",
+				sourcetype: "st-otel",
+			},
+			startTime: "",
+			telType:   metricsType,
+		},
+		{
+			name: "Events to Splunk - traces",
+			config: &cfg{
+				event:      "",
+				index:      integrationtestutils.GetConfigVariable("TRACE_INDEX"),
+				source:     "trace-source",
+				sourcetype: "trace-sourcetype",
+			},
+			startTime: "-1m@m",
+			telType:   tracesType,
+		},
 	}
-	assert.True(t, index == data["index"].(string))
-	assert.True(t, source == data["source"].(string))
-	assert.True(t, sourcetype == data["sourcetype"].(string))
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			logger := zaptest.NewLogger(t)
+			logger.Info("Test -> Splunk running at:", zap.String("host", integrationtestutils.GetConfigVariable("HOST")),
+				zap.String("uiPort", integrationtestutils.GetConfigVariable("UI_PORT")),
+				zap.String("hecPort", integrationtestutils.GetConfigVariable("HEC_PORT")),
+				zap.String("managementPort", integrationtestutils.GetConfigVariable("MANAGEMENT_PORT")),
+			)
+
+			// Endpoint and Token do not have a default value so set them directly.
+			config := NewFactory().CreateDefaultConfig().(*Config)
+			config.Token = configopaque.String(integrationtestutils.GetConfigVariable("HEC_TOKEN"))
+			config.ClientConfig.Endpoint = "https://" + integrationtestutils.GetConfigVariable("HOST") + ":" + integrationtestutils.GetConfigVariable("HEC_PORT") + "/services/collector"
+			config.Source = "otel"
+			config.SourceType = "st-otel"
+
+			if test.telType == metricsType {
+				config.Index = test.config.index
+			} else {
+				config.Index = "main"
+			}
+			config.TLSSetting.InsecureSkipVerify = true
+
+			url, err := config.getURL()
+			require.NoError(t, err, "Must not error while getting URL")
+
+			switch test.telType {
+			case logsType:
+				logsTest(t, config, url, test)
+			case metricsType:
+				metricsTest(t, config, url, test)
+			case tracesType:
+				tracesTest(t, config, url, test)
+			default:
+				assert.Fail(t, "Telemetry type must be set to one of the following values: metrics, traces, or logs.")
+			}
+		})
+	}
 }
 
 func waitForEventToBeIndexed() {

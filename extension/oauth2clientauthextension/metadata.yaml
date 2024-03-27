@@ -1,4 +1,5 @@
 type: oauth2client
+scope_name: otelcol/oauth2clientauth
 
 status:
   class: extension
@@ -11,3 +12,6 @@ status:
   - sumo
   codeowners:
     active: [pavankrish123, jpkrohling]
+
+tests:
+  config:

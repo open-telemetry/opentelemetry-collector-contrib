@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,6 +21,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
@@ -37,7 +42,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 	dtconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
@@ -63,7 +67,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestDefaultExporters(t *testing.T) {
@@ -124,13 +127,10 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "debug",
 		},
 		{
-			exporter: "logging",
-		},
-		{
 			exporter: "opencensus",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["opencensus"].CreateDefaultConfig().(*opencensusexporter.Config)
-				cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+				cfg.ClientConfig = configgrpc.ClientConfig{
 					Endpoint: endpoint,
 				}
 				// disable queue/retry to validate passing the test data synchronously
@@ -144,7 +144,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "opensearch",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["opensearch"].CreateDefaultConfig().(*opensearchexporter.Config)
-				cfg.HTTPClientSettings = confighttp.HTTPClientSettings{
+				cfg.ClientConfig = confighttp.ClientConfig{
 					Endpoint: "http://" + endpoint,
 				}
 				return cfg
@@ -155,7 +155,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "otlp",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["otlp"].CreateDefaultConfig().(*otlpexporter.Config)
-				cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+				cfg.ClientConfig = configgrpc.ClientConfig{
 					Endpoint: endpoint,
 				}
 				// disable queue/retry to validate passing the test data synchronously
@@ -269,7 +269,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "alertmanager",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["alertmanager"].CreateDefaultConfig().(*alertmanagerexporter.Config)
-				cfg.HTTPClientSettings = confighttp.HTTPClientSettings{
+				cfg.ClientConfig = confighttp.ClientConfig{
 					Endpoint: "http://" + endpoint,
 				}
 				cfg.GeneratorURL = "opentelemetry-collector"
@@ -422,20 +422,6 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.QueueSettings.Enabled = false
 				return cfg
 			},
-		},
-		{
-			exporter: "f5cloud",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["f5cloud"].CreateDefaultConfig().(*f5cloudexporter.Config)
-				cfg.Endpoint = "http://" + endpoint
-				cfg.Source = "magic-source"
-				cfg.AuthConfig.CredentialFile = filepath.Join(t.TempDir(), "f5cloud.exporter.random.file")
-				// disable queue/retry to validate passing the test data synchronously
-				cfg.QueueConfig.Enabled = false
-				cfg.RetryConfig.Enabled = false
-				return cfg
-			},
-			skipLifecycle: true,
 		},
 		{
 			exporter:      "googlecloud",
@@ -649,19 +635,19 @@ func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn
 			assert.NotPanics(t, func() {
 				switch e := exp.(type) {
 				case exporter.Logs:
-					logs := testdata.GenerateLogsManyLogRecordsSameResource(2)
+					logs := generateTestLogs()
 					if !e.Capabilities().MutatesData {
 						logs.MarkReadOnly()
 					}
 					err = e.ConsumeLogs(ctx, logs)
 				case exporter.Metrics:
-					metrics := testdata.GenerateMetricsTwoMetrics()
+					metrics := generateTestMetrics()
 					if !e.Capabilities().MutatesData {
 						metrics.MarkReadOnly()
 					}
 					err = e.ConsumeMetrics(ctx, metrics)
 				case exporter.Traces:
-					traces := testdata.GenerateTracesTwoSpansSameResource()
+					traces := generateTestTraces()
 					if !e.Capabilities().MutatesData {
 						traces.MarkReadOnly()
 					}
@@ -674,6 +660,41 @@ func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn
 			assert.NoError(t, exp.Shutdown(ctx))
 		}
 	}
+}
+
+func generateTestLogs() plog.Logs {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("resource", "R1")
+	l := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	l.Body().SetStr("test log message")
+	l.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return logs
+}
+
+func generateTestMetrics() pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("resource", "R1")
+	m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("test_metric")
+	dp := m.Gauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("test_attr", "value_1")
+	dp.SetIntValue(123)
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return metrics
+}
+
+func generateTestTraces() ptrace.Traces {
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("resource", "R1")
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.Attributes().PutStr("test_attr", "value_1")
+	span.SetName("test_span")
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-1 * time.Second)))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return traces
 }
 
 // verifyExporterShutdown is used to test if an exporter type can be shutdown without being started first.

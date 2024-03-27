@@ -59,10 +59,10 @@ func TestLoadConfig(t *testing.T) {
 				AddMetricSuffixes: false,
 				Namespace:         "test-space",
 				ExternalLabels:    map[string]string{"key1": "value1", "key2": "value2"},
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "localhost:8888",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						TLSSetting: configtls.Config{
 							CAFile: "/var/lib/mycert.pem", // This is subject to change, but currently I have no idea what else to put here lol
 						},
 						Insecure: false,

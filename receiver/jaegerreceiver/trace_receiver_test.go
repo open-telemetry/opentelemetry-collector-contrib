@@ -41,7 +41,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-var jaegerReceiver = component.NewIDWithName("jaeger", "receiver_test")
+var jaegerReceiver = component.MustNewIDWithName("jaeger", "receiver_test")
 
 func TestTraceSource(t *testing.T) {
 	set := receivertest.NewNopCreateSettings()
@@ -78,7 +78,7 @@ func TestReception(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	// 1. Create the Jaeger receiver aka "server"
 	config := &configuration{
-		CollectorHTTPSettings: confighttp.HTTPServerSettings{
+		HTTPServerConfig: confighttp.ServerConfig{
 			Endpoint: addr,
 		},
 	}
@@ -141,10 +141,10 @@ func TestPortsNotOpen(t *testing.T) {
 func TestGRPCReception(t *testing.T) {
 	// prepare
 	config := &configuration{
-		CollectorGRPCServerSettings: configgrpc.GRPCServerSettings{
-			NetAddr: confignet.NetAddr{
+		GRPCServerConfig: configgrpc.ServerConfig{
+			NetAddr: confignet.AddrConfig{
 				Endpoint:  testutil.GetAvailableLocalAddress(t),
-				Transport: "tcp",
+				Transport: confignet.TransportTypeTCP,
 			},
 		},
 	}
@@ -157,7 +157,7 @@ func TestGRPCReception(t *testing.T) {
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
-	conn, err := grpc.Dial(config.CollectorGRPCServerSettings.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial(config.GRPCServerConfig.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -188,23 +188,23 @@ func TestGRPCReception(t *testing.T) {
 
 func TestGRPCReceptionWithTLS(t *testing.T) {
 	// prepare
-	tlsCreds := &configtls.TLSServerSetting{
-		TLSSetting: configtls.TLSSetting{
+	tlsCreds := &configtls.ServerConfig{
+		TLSSetting: configtls.Config{
 			CertFile: filepath.Join("testdata", "server.crt"),
 			KeyFile:  filepath.Join("testdata", "server.key"),
 		},
 	}
 
-	grpcServerSettings := configgrpc.GRPCServerSettings{
-		NetAddr: confignet.NetAddr{
+	grpcServerSettings := configgrpc.ServerConfig{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 		TLSSetting: tlsCreds,
 	}
 
 	config := &configuration{
-		CollectorGRPCServerSettings: grpcServerSettings,
+		GRPCServerConfig: grpcServerSettings,
 	}
 	sink := new(consumertest.TracesSink)
 
@@ -337,9 +337,9 @@ func grpcFixture(t *testing.T, t1 time.Time, d1, d2 time.Duration) *api_v2.PostS
 
 func TestSampling(t *testing.T) {
 	config := &configuration{
-		CollectorGRPCServerSettings: configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
+		GRPCServerConfig: configgrpc.ServerConfig{NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		}},
 	}
 	sink := new(consumertest.TracesSink)
@@ -351,7 +351,7 @@ func TestSampling(t *testing.T) {
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
-	conn, err := grpc.Dial(config.CollectorGRPCServerSettings.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.GRPCServerConfig.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err)
 	defer conn.Close()
 

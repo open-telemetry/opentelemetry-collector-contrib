@@ -63,24 +63,26 @@ func TestComponentsArePresent(t *testing.T) {
 				tt.Skip("component deprecated, skipping", metadataComponent)
 				return
 			}
+
+			cType := component.MustNewType(m.Type)
 			switch m.Status.Class {
 			case "connector":
-				assert.NotNil(tt, components.Connectors[component.Type(m.Type)], "missing connector: %s", m.Type)
+				assert.NotNil(tt, components.Connectors[cType], "missing connector: %s", m.Type)
 			case "exporter":
-				assert.NotNil(tt, components.Exporters[component.Type(m.Type)], "missing exporter: %s", m.Type)
+				assert.NotNil(tt, components.Exporters[cType], "missing exporter: %s", m.Type)
 			case "extension":
-				assert.NotNil(tt, components.Extensions[component.Type(m.Type)], "missing extension: %s", m.Type)
+				assert.NotNil(tt, components.Extensions[cType], "missing extension: %s", m.Type)
 			case "processor":
-				assert.NotNil(tt, components.Processors[component.Type(m.Type)], "missing processor: %s", m.Type)
+				assert.NotNil(tt, components.Processors[cType], "missing processor: %s", m.Type)
 			case "receiver":
-				assert.NotNil(tt, components.Receivers[component.Type(m.Type)], "missing receiver: %s", m.Type)
+				assert.NotNil(tt, components.Receivers[cType], "missing receiver: %s", m.Type)
 			}
 		})
 	}
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := fileprovider.New().Retrieve(context.Background(), "file:"+filePath, nil)
+	cp, err := fileprovider.NewWithSettings(confmap.ProviderSettings{}).Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}

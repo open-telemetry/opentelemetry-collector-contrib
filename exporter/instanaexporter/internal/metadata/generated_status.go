@@ -8,9 +8,12 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("instana")
+)
+
 const (
-	Type            = "instana"
-	TracesStability = component.StabilityLevelAlpha
+	TracesStability = component.StabilityLevelDeprecated
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
