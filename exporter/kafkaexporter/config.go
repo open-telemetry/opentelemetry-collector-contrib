@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
@@ -39,6 +40,9 @@ type Config struct {
 
 	// The name of the kafka topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
 	Topic string `mapstructure:"topic"`
+
+	// TopicFromAttribute is the name of the attribute to use as the topic name.
+	TopicFromAttribute string `mapstructure:"topic_from_attribute"`
 
 	// Encoding of messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
@@ -121,6 +125,20 @@ func (cfg *Config) Validate() error {
 	}
 
 	return validateSASLConfig(cfg.Authentication.SASL)
+}
+
+func (cfg *Config) getTopic(attrs pcommon.Map) string {
+	if cfg.TopicFromAttribute != "" {
+		rv, ok := attrs.Get(cfg.TopicFromAttribute)
+		if ok {
+			topic := rv.Str()
+			if topic != "" {
+				return topic
+			}
+		}
+	}
+
+	return cfg.Topic
 }
 
 func validateSASLConfig(c *kafka.SASLConfig) error {

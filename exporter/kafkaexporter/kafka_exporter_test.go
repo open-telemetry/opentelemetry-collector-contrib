@@ -149,6 +149,25 @@ func TestTracesPusher(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestTracesPusher_attr(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaTracesProducer{
+		cfg: Config{
+			TopicFromAttribute: "kafka_topic",
+		},
+		producer:  producer,
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.tracesPusher(context.Background(), testdata.GenerateTracesTwoSpansSameResource())
+	require.NoError(t, err)
+}
+
 func TestTracesPusher_err(t *testing.T) {
 	c := sarama.NewConfig()
 	producer := mocks.NewSyncProducer(t, c)
@@ -196,6 +215,25 @@ func TestMetricsDataPusher(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestMetricsDataPusher_attr(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaMetricsProducer{
+		cfg: Config{
+			TopicFromAttribute: "kafka_topic",
+		},
+		producer:  producer,
+		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.metricsDataPusher(context.Background(), testdata.GenerateMetricsTwoMetrics())
+	require.NoError(t, err)
+}
+
 func TestMetricsDataPusher_err(t *testing.T) {
 	c := sarama.NewConfig()
 	producer := mocks.NewSyncProducer(t, c)
@@ -233,6 +271,25 @@ func TestLogsDataPusher(t *testing.T) {
 	producer.ExpectSendMessageAndSucceed()
 
 	p := kafkaLogsProducer{
+		producer:  producer,
+		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.logsDataPusher(context.Background(), testdata.GenerateLogsOneLogRecord())
+	require.NoError(t, err)
+}
+
+func TestLogsDataPusher_attr(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaLogsProducer{
+		cfg: Config{
+			TopicFromAttribute: "kafka_topic",
+		},
 		producer:  producer,
 		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
 	}

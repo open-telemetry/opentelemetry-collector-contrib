@@ -17,8 +17,10 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
@@ -331,6 +333,67 @@ func Test_saramaProducerCompressionCodec(t *testing.T) {
 			c, err := saramaProducerCompressionCodec(test.compression)
 			assert.Equal(t, c, test.expectedCompression)
 			assert.Equal(t, err, test.expectedError)
+		})
+	}
+}
+
+func TestConfig_GetTopic(t *testing.T) {
+	tests := []struct {
+		name      string
+		cfg       Config
+		resource  pcommon.Map
+		wantTopic string
+	}{
+		{
+			name: "Valid metric attribute, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "resource-attr",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).Resource().Attributes(),
+			wantTopic: "resource-attr-val-1",
+		},
+		{
+			name: "Valid trace attribute, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "resource-attr",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateTracesOneSpan().ResourceSpans().At(0).Resource().Attributes(),
+			wantTopic: "resource-attr-val-1",
+		},
+		{
+			name: "Valid log attribute, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "resource-attr",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateLogsOneLogRecord().ResourceLogs().At(0).Resource().Attributes(),
+			wantTopic: "resource-attr-val-1",
+		},
+		{
+			name: "Attribute not found",
+			cfg: Config{
+				TopicFromAttribute: "nonexistent_attribute",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateMetricsOneMetricNoAttributes().ResourceMetrics().At(0).Resource().Attributes(),
+			wantTopic: "defaultTopic",
+		},
+		{
+			name: "TopicFromAttribute not set, return default topic",
+			cfg: Config{
+				Topic: "defaultTopic",
+			},
+			resource:  testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).Resource().Attributes(),
+			wantTopic: "defaultTopic",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			topic := tt.cfg.getTopic(tt.resource)
+			assert.Equal(t, tt.wantTopic, topic)
 		})
 	}
 }
