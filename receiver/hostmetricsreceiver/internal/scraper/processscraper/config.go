@@ -46,6 +46,11 @@ type Config struct {
 	// ScrapeProcessDelay is used to indicate the minimum amount of time a process must be running
 	// before metrics are scraped for it.  The default value is 0 seconds (0s)
 	ScrapeProcessDelay time.Duration `mapstructure:"scrape_process_delay"`
+
+	// CacheBootTime is used to enable functionality to cache the system boot time at the start of
+	// the process. With this enabled, the boot time will never update as long as the collector process
+	// is running.
+	CacheBootTime bool `mapstructure:"cache_boot_time"`
 }
 
 type MatchConfig struct {

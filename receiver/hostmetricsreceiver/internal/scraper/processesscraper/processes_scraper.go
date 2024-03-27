@@ -55,6 +55,10 @@ type processesMetadata struct {
 
 // newProcessesScraper creates a set of Processes related metrics
 func newProcessesScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) *scraper {
+	if cfg.CacheBootTime {
+		host.EnableBootTimeCache(true)
+		process.EnableBootTimeCache(true)
+	}
 	return &scraper{
 		settings:     settings,
 		config:       cfg,

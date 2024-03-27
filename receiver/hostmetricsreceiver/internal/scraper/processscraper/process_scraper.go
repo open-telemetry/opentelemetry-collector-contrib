@@ -93,6 +93,10 @@ func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper,
 
 	scraper.logicalCores = logicalCores
 
+	if cfg.CacheBootTime {
+		process.EnableBootTimeCache(true)
+	}
+
 	return scraper, nil
 }
 
