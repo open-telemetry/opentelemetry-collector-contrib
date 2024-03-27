@@ -184,6 +184,59 @@ func newMetricSqlserverBatchSQLRecompilationRate(cfg MetricConfig) metricSqlserv
 	return m
 }
 
+type metricSqlserverDatabaseIoReadLatency struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.database_io.read_latency metric with initial data.
+func (m *metricSqlserverDatabaseIoReadLatency) init() {
+	m.data.SetName("sqlserver.database_io.read_latency")
+	m.data.SetDescription("Total time that the users waited for reads.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSqlserverDatabaseIoReadLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, physicalFilenameAttributeValue string, logicalFilenameAttributeValue string, fileTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("physical_filename", physicalFilenameAttributeValue)
+	dp.Attributes().PutStr("logical_filename", logicalFilenameAttributeValue)
+	dp.Attributes().PutStr("file_type", fileTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverDatabaseIoReadLatency) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverDatabaseIoReadLatency) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverDatabaseIoReadLatency(cfg MetricConfig) metricSqlserverDatabaseIoReadLatency {
+	m := metricSqlserverDatabaseIoReadLatency{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverLockWaitRate struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1034,6 +1087,7 @@ type MetricsBuilder struct {
 	metricSqlserverBatchRequestRate            metricSqlserverBatchRequestRate
 	metricSqlserverBatchSQLCompilationRate     metricSqlserverBatchSQLCompilationRate
 	metricSqlserverBatchSQLRecompilationRate   metricSqlserverBatchSQLRecompilationRate
+	metricSqlserverDatabaseIoReadLatency       metricSqlserverDatabaseIoReadLatency
 	metricSqlserverLockWaitRate                metricSqlserverLockWaitRate
 	metricSqlserverLockWaitTimeAvg             metricSqlserverLockWaitTimeAvg
 	metricSqlserverPageBufferCacheHitRatio     metricSqlserverPageBufferCacheHitRatio
@@ -1072,6 +1126,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricSqlserverBatchRequestRate:            newMetricSqlserverBatchRequestRate(mbc.Metrics.SqlserverBatchRequestRate),
 		metricSqlserverBatchSQLCompilationRate:     newMetricSqlserverBatchSQLCompilationRate(mbc.Metrics.SqlserverBatchSQLCompilationRate),
 		metricSqlserverBatchSQLRecompilationRate:   newMetricSqlserverBatchSQLRecompilationRate(mbc.Metrics.SqlserverBatchSQLRecompilationRate),
+		metricSqlserverDatabaseIoReadLatency:       newMetricSqlserverDatabaseIoReadLatency(mbc.Metrics.SqlserverDatabaseIoReadLatency),
 		metricSqlserverLockWaitRate:                newMetricSqlserverLockWaitRate(mbc.Metrics.SqlserverLockWaitRate),
 		metricSqlserverLockWaitTimeAvg:             newMetricSqlserverLockWaitTimeAvg(mbc.Metrics.SqlserverLockWaitTimeAvg),
 		metricSqlserverPageBufferCacheHitRatio:     newMetricSqlserverPageBufferCacheHitRatio(mbc.Metrics.SqlserverPageBufferCacheHitRatio),
@@ -1153,6 +1208,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSqlserverBatchRequestRate.emit(ils.Metrics())
 	mb.metricSqlserverBatchSQLCompilationRate.emit(ils.Metrics())
 	mb.metricSqlserverBatchSQLRecompilationRate.emit(ils.Metrics())
+	mb.metricSqlserverDatabaseIoReadLatency.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitRate.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitTimeAvg.emit(ils.Metrics())
 	mb.metricSqlserverPageBufferCacheHitRatio.emit(ils.Metrics())
@@ -1203,6 +1259,11 @@ func (mb *MetricsBuilder) RecordSqlserverBatchSQLCompilationRateDataPoint(ts pco
 // RecordSqlserverBatchSQLRecompilationRateDataPoint adds a data point to sqlserver.batch.sql_recompilation.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverBatchSQLRecompilationRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverBatchSQLRecompilationRate.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverDatabaseIoReadLatencyDataPoint adds a data point to sqlserver.database_io.read_latency metric.
+func (mb *MetricsBuilder) RecordSqlserverDatabaseIoReadLatencyDataPoint(ts pcommon.Timestamp, val float64, physicalFilenameAttributeValue string, logicalFilenameAttributeValue string, fileTypeAttributeValue string) {
+	mb.metricSqlserverDatabaseIoReadLatency.recordDataPoint(mb.startTime, ts, val, physicalFilenameAttributeValue, logicalFilenameAttributeValue, fileTypeAttributeValue)
 }
 
 // RecordSqlserverLockWaitRateDataPoint adds a data point to sqlserver.lock.wait.rate metric.

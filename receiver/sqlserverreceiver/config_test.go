@@ -20,8 +20,9 @@ import (
 
 func TestValidate(t *testing.T) {
 	testCases := []struct {
-		desc string
-		cfg  *Config
+		desc            string
+		cfg             *Config
+		expectedSuccess bool
 	}{
 		{
 			desc: "valid config",
@@ -29,21 +30,48 @@ func TestValidate(t *testing.T) {
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 			},
+			expectedSuccess: true,
 		}, {
 			desc: "valid config with no metric settings",
 			cfg: &Config{
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
+			expectedSuccess: true,
 		},
 		{
-			desc: "default config is valid",
-			cfg:  createDefaultConfig().(*Config),
+			desc:            "default config is valid",
+			cfg:             createDefaultConfig().(*Config),
+			expectedSuccess: true,
+		},
+		{
+			desc: "invalid config with partial direct connect settings",
+			cfg: &Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Server:           "0.0.0.0",
+				Username:         "sa",
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "valid config with all direct connection settings",
+			cfg: &Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Server:           "0.0.0.0",
+				Username:         "sa",
+				Password:         "password",
+				Port:             1433,
+			},
+			expectedSuccess: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			require.NoError(t, component.ValidateConfig(tc.cfg))
+			if tc.expectedSuccess {
+				require.NoError(t, component.ValidateConfig(tc.cfg))
+			} else {
+				require.Error(t, component.ValidateConfig(tc.cfg))
+			}
 		})
 	}
 }
