@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"sort"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
@@ -248,9 +247,12 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	default:
 	}
 
-	if len(t.externalLabels) != 0 {
-		ls = append(ls, t.externalLabels...)
-		sort.Sort(ls)
+	if t.externalLabels.Len() != 0 {
+		b := labels.NewBuilder(ls)
+		t.externalLabels.Range(func(l labels.Label) {
+			b.Set(l.Name, l.Value)
+		})
+		ls = b.Labels()
 	}
 
 	if t.isNew {
