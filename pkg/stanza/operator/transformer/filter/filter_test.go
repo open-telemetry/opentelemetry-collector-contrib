@@ -47,6 +47,26 @@ func TestTransformer(t *testing.T) {
 			false,
 		},
 		{
+			"FilterOutRegexp",
+			&entry.Entry{
+				Body: map[string]any{
+					"message": "INFO: this is an info message",
+				},
+			},
+			`body.message matches "^INFO:"`,
+			true,
+		},
+		{
+			"FilterInRegexp",
+			&entry.Entry{
+				Body: map[string]any{
+					"message": "WARN: this is a warning message",
+				},
+			},
+			`body.message not matches "^WARN:"`,
+			false,
+		},
+		{
 			"MatchAttribute",
 			&entry.Entry{
 				Body: map[string]any{

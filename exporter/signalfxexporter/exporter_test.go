@@ -1278,12 +1278,12 @@ func TestTLSExporterInit(t *testing.T) {
 				APIURL:    "https://test",
 				IngestURL: "https://test",
 				IngestTLSSettings: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
 				APITLSSettings: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
@@ -1298,7 +1298,7 @@ func TestTLSExporterInit(t *testing.T) {
 				APIURL:    "https://test",
 				IngestURL: "https://test",
 				IngestTLSSettings: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/missingfile",
 					},
 				},
@@ -1314,7 +1314,7 @@ func TestTLSExporterInit(t *testing.T) {
 				APIURL:    "https://test",
 				IngestURL: "https://test",
 				IngestTLSSettings: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/invalid-ca.pem",
 					},
 				},
@@ -1385,7 +1385,7 @@ func TestTLSIngestConnection(t *testing.T) {
 				APIURL:    serverURL,
 				IngestURL: serverURL,
 				IngestTLSSettings: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
@@ -1498,7 +1498,7 @@ func TestTLSAPIConnection(t *testing.T) {
 				AccessToken:      "random",
 				SyncHostMetadata: true,
 				APITLSSettings: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
