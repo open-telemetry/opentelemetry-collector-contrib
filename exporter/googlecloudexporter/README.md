@@ -56,9 +56,9 @@ When running the Collector in a Docker container, a credentials file can be pass
 
 ```
 docker run \
-  --volume ~/service-account-key.json:/etc/otel/key.json \
-  --volume $(pwd)/config.yaml:/etc/otel/config.yaml \
-  --env GOOGLE_APPLICATION_CREDENTIALS=/etc/otel/key.json \
+  --volume ~/service-account-key.json:/etc/otelcol-contrib/key.json \
+  --volume $(pwd)/config.yaml:/etc/otelcol-contrib/config.yaml \
+  --env GOOGLE_APPLICATION_CREDENTIALS=/etc/otelcol-contrib/key.json \
   --expose 4317 \
   --expose 55681 \
   --rm \
@@ -235,6 +235,34 @@ following proxy environment variables:
 If set at Collector start time then exporters, regardless of protocol,
 will or will not proxy traffic as defined by these environment variables.
 
+### Monitored Resources
+
+For metrics and logs, this exporter maps the OpenTelemetry Resource to a Google
+Cloud [Logging](https://cloud.google.com/logging/docs/api/v2/resource-list) or
+[Monitoring](https://cloud.google.com/monitoring/api/resources) Monitored Resource.
+
+The complete mapping logic can be found [here](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/internal/resourcemapping/resourcemapping.go).
+That may be the most helpful reference if you want to map to a specific monitored
+resource.
+
+#### On GCP
+
+If running on GCP, using the GCP resource detector, as shown above, will populate
+the resource attributes required to map to the appropriate monitored resource.
+
+#### Off GCP
+
+If you are not running on GCP, you still need to choose a [GCP zone or
+region](https://cloud.google.com/compute/docs/regions-zones) to send telemetry to
+by setting `cloud.availability_zone` or `cloud.region`. In addition, you should use the detector associated with other cloud providers, if applicable.
+
+If running on Kubernetes, it is recommended to additionally set `k8s.pod.name`,
+`k8s.namespace.name`, and `k8s.container.name` using the `k8sattributes` processor.
+
+If you are getting "duplicate timeseries encountered" errors, it is likely because
+you are missing a required resource attribute, causing a metric from two different
+instances of an application to end up with the same monitored resource.
+
 ### Preventing metric label collisions
 
 The metrics exporter can add metric labels to timeseries, such as when setting
@@ -273,6 +301,9 @@ processors:
       - set(attributes["exported_instrumentation_version"], attributes["instrumentation_version"])
       - delete_key(attributes, "instrumentation_version")
 ```
+
+**Note** It is not recommended to use these transformations with the googlecloud
+exporter in a logging or trace pipeline.
 
 The same method can be used for any resource attributes being filtered to metric
 labels, or metric labels which might collide with the GCP monitored resource

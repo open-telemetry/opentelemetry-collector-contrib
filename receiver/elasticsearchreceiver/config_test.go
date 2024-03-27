@@ -160,14 +160,14 @@ func TestLoadConfig(t *testing.T) {
 				SkipClusterMetrics: true,
 				Nodes:              []string{"_local"},
 				Indices:            []string{".geoip_databases"},
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 2 * time.Minute,
 					InitialDelay:       time.Second,
 				},
 				MetricsBuilderConfig: defaultMetrics,
 				Username:             "otel",
 				Password:             "password",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout:  10000000000,
 					Endpoint: "http://example.com:9200",
 				},

@@ -71,16 +71,16 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &Config{
-		TimeoutSettings: defaulttimeoutSettings(),
-		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		ClientConfig:  defaultClientConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
 		},
 
 		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://api.datadoghq.com",
 			},
 			DeltaTTL: 3600,
@@ -98,13 +98,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 
 		Traces: TracesConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 			IgnoreResources: []string{},
 		},
 		Logs: LogsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://http-intake.logs.datadoghq.com",
 			},
 		},
@@ -132,9 +132,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
-				TimeoutSettings: defaulttimeoutSettings(),
-				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+				ClientConfig:  defaultClientConfig(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				API: APIConfig{
 					Key:              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 					Site:             "datadoghq.com",
@@ -142,7 +142,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 
 				Metrics: MetricsConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.com",
 					},
 					DeltaTTL: 3600,
@@ -160,13 +160,13 @@ func TestLoadConfig(t *testing.T) {
 				},
 
 				Traces: TracesConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://trace.agent.datadoghq.com",
 					},
 					IgnoreResources: []string{},
 				},
 				Logs: LogsConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.com",
 					},
 				},
@@ -180,9 +180,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "api"),
 			expected: &Config{
-				TimeoutSettings: defaulttimeoutSettings(),
-				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+				ClientConfig:  defaultClientConfig(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},
@@ -192,7 +192,7 @@ func TestLoadConfig(t *testing.T) {
 					FailOnInvalidKey: true,
 				},
 				Metrics: MetricsConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.eu",
 					},
 					DeltaTTL: 3600,
@@ -209,7 +209,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Traces: TracesConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://trace.agent.datadoghq.eu",
 					},
 					SpanNameRemappings: map[string]string{
@@ -221,7 +221,7 @@ func TestLoadConfig(t *testing.T) {
 					TraceBuffer:            10,
 				},
 				Logs: LogsConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.eu",
 					},
 				},
@@ -235,9 +235,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "api2"),
 			expected: &Config{
-				TimeoutSettings: defaulttimeoutSettings(),
-				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+				ClientConfig:  defaultClientConfig(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},
@@ -247,7 +247,7 @@ func TestLoadConfig(t *testing.T) {
 					FailOnInvalidKey: false,
 				},
 				Metrics: MetricsConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.test",
 					},
 					DeltaTTL: 3600,
@@ -264,7 +264,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Traces: TracesConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://trace.agent.datadoghq.test",
 					},
 					SpanNameRemappings: map[string]string{
@@ -274,7 +274,7 @@ func TestLoadConfig(t *testing.T) {
 					IgnoreResources: []string{},
 				},
 				Logs: LogsConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.test",
 					},
 				},
@@ -411,7 +411,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	c := cfg.(*Config)
-	c.Metrics.TCPAddr.Endpoint = server.URL
+	c.Metrics.TCPAddrConfig.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
@@ -445,7 +445,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 	// Use the mock server for API key validation
 	c := cfg.(*Config)
-	c.Metrics.TCPAddr.Endpoint = server.URL
+	c.Metrics.TCPAddrConfig.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	t.Run("true", func(t *testing.T) {
@@ -525,7 +525,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 	// Use the mock server for API key validation
 	c := cfg.(*Config)
-	c.Metrics.TCPAddr.Endpoint = server.URL
+	c.Metrics.TCPAddrConfig.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	t.Run("true", func(t *testing.T) {
@@ -599,7 +599,7 @@ func TestCreateAPILogsExporter(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	c := cfg.(*Config)
-	c.Metrics.TCPAddr.Endpoint = server.URL
+	c.Metrics.TCPAddrConfig.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
@@ -620,13 +620,13 @@ func TestOnlyMetadata(t *testing.T) {
 	factory := NewFactory()
 	ctx := context.Background()
 	cfg := &Config{
-		TimeoutSettings: defaulttimeoutSettings(),
-		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		ClientConfig:  defaultClientConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 		API:          APIConfig{Key: "notnull"},
-		Metrics:      MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
-		Traces:       TracesConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
+		Metrics:      MetricsConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
+		Traces:       TracesConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
 		OnlyMetadata: true,
 
 		HostMetadata: HostMetadataConfig{

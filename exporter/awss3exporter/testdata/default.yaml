@@ -3,6 +3,8 @@ receivers:
 
 exporters:
   awss3:
+    encoding: "foo/bar"
+    encoding_file_extension: "baz"
     s3uploader:
       s3_bucket: "foo"
       region: 'us-east-1'

@@ -19,6 +19,7 @@ type tracesExporter struct {
 	config   *Config
 	sender   *traces.Sender
 	settings component.TelemetrySettings
+	cancel   context.CancelFunc
 }
 
 // newTracesExporter creates new Logicmonitor Traces Exporter.
@@ -33,7 +34,7 @@ func newTracesExporter(_ context.Context, cfg component.Config, set exporter.Cre
 }
 
 func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
-	client, err := e.config.HTTPClientSettings.ToClient(host, e.settings)
+	client, err := e.config.ClientConfig.ToClient(host, e.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create http client: %w", err)
 	}
@@ -43,6 +44,8 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
 		AccessKey:   string(e.config.APIToken.AccessKey),
 		BearerToken: string(e.config.Headers["Authorization"]),
 	}
+
+	ctx, e.cancel = context.WithCancel(ctx)
 	e.sender, err = traces.NewSender(ctx, e.config.Endpoint, client, authParams, e.settings.Logger)
 	if err != nil {
 		return err
@@ -52,4 +55,12 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
 
 func (e *tracesExporter) PushTraceData(ctx context.Context, td ptrace.Traces) error {
 	return e.sender.SendTraces(ctx, td)
+}
+
+func (e *tracesExporter) shutdown(_ context.Context) error {
+	if e.cancel != nil {
+		e.cancel()
+	}
+
+	return nil
 }

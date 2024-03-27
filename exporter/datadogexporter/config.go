@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -55,7 +56,7 @@ type MetricsConfig struct {
 
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send metrics to.
 	// If unset, the value is obtained from the Site.
-	confignet.TCPAddr `mapstructure:",squash"`
+	confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	ExporterConfig MetricsExporterConfig `mapstructure:",squash"`
 
@@ -248,7 +249,7 @@ type MetricsExporterConfig struct {
 type TracesConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send traces to.
 	// If unset, the value is obtained from the Site.
-	confignet.TCPAddr `mapstructure:",squash"`
+	confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	// ignored resources
 	// A blacklist of regular expressions can be provided to disable certain traces based on their resource name
@@ -292,6 +293,11 @@ type TracesConfig struct {
 	// The default list of peer tags can be found in https://github.com/DataDog/datadog-agent/blob/main/pkg/trace/stats/concentrator.go.
 	PeerTagsAggregation bool `mapstructure:"peer_tags_aggregation"`
 
+	// [BETA] Optional list of supplementary peer tags that go beyond the defaults. The Datadog backend validates all tags
+	// and will drop ones that are unapproved. The default set of peer tags can be found at
+	// https://github.com/DataDog/datadog-agent/blob/505170c4ac8c3cbff1a61cf5f84b28d835c91058/pkg/trace/stats/concentrator.go#L55.
+	PeerTags []string `mapstructure:"peer_tags"`
+
 	// TraceBuffer specifies the number of Datadog Agent TracerPayloads to buffer before dropping.
 	// The default value is 0, meaning the Datadog Agent TracerPayloads are unbuffered.
 	TraceBuffer int `mapstructure:"trace_buffer"`
@@ -305,7 +311,7 @@ type TracesConfig struct {
 type LogsConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send logs to.
 	// If unset, the value is obtained from the Site.
-	confignet.TCPAddr `mapstructure:",squash"`
+	confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	// DumpPayloads report whether payloads should be dumped when logging level is debug.
 	DumpPayloads bool `mapstructure:"dump_payloads"`
@@ -314,8 +320,12 @@ type LogsConfig struct {
 // TagsConfig defines the tag-related configuration
 // It is embedded in the configuration
 type TagsConfig struct {
-	// Hostname is the host name for unified service tagging.
-	// If unset, it is determined automatically.
+	// Hostname is the fallback hostname used for payloads without hostname-identifying attributes.
+	// This option will NOT change the hostname applied to your metrics, traces and logs if they already have hostname-identifying attributes.
+	// If unset, the hostname will be determined automatically. See https://docs.datadoghq.com/opentelemetry/schema_semantics/hostname/?tab=datadogexporter#fallback-hostname-logic for details.
+	//
+	// Prefer using the `datadog.host.name` resource attribute over using this setting.
+	// See https://docs.datadoghq.com/opentelemetry/schema_semantics/hostname/?tab=datadogexporter#general-hostname-semantic-conventions for details.
 	Hostname string `mapstructure:"hostname"`
 }
 
@@ -360,11 +370,15 @@ type HostMetadataConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 
 	// HostnameSource is the source for the hostname of host metadata.
+	// This hostname is used for identifying the infrastructure list, host map and host tag information related to the host where the Datadog exporter is running.
+	// Changing this setting will not change the host used to tag your metrics, traces and logs in any way.
+	// For remote hosts, see https://docs.datadoghq.com/opentelemetry/schema_semantics/host_metadata/.
+	//
 	// Valid values are 'first_resource' and 'config_or_system':
 	// - 'first_resource' picks the host metadata hostname from the resource
 	//    attributes on the first OTLP payload that gets to the exporter.
 	//    If the first payload lacks hostname-like attributes, it will fallback to 'config_or_system'.
-	//    Do not use this hostname source if receiving data from multiple hosts.
+	//    **Do not use this hostname source if receiving data from multiple hosts**.
 	// - 'config_or_system' picks the host metadata hostname from the 'hostname' setting,
 	//    If this is empty it will use available system APIs and cloud provider endpoints.
 	//
@@ -377,24 +391,11 @@ type HostMetadataConfig struct {
 	Tags []string `mapstructure:"tags"`
 }
 
-// LimitedTLSClientSetting is a subset of TLSClientSetting, see LimitedHTTPClientSettings for more details
-type LimitedTLSClientSettings struct {
-	// InsecureSkipVerify controls whether a client verifies the server's
-	// certificate chain and host name.
-	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
-}
-
-type LimitedHTTPClientSettings struct {
-	TLSSetting LimitedTLSClientSettings `mapstructure:"tls,omitempty"`
-}
-
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
-
-	LimitedHTTPClientSettings `mapstructure:",squash"`
+	confighttp.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
 	TagsConfig `mapstructure:",squash"`
 
@@ -437,6 +438,10 @@ var _ component.Config = (*Config)(nil)
 
 // Validate the configuration for errors. This is required by component.Config.
 func (c *Config) Validate() error {
+	if err := validateClientConfig(c.ClientConfig); err != nil {
+		return err
+	}
+
 	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
 		return errNoMetadata
 	}
@@ -474,6 +479,36 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	return nil
+}
+
+func validateClientConfig(cfg confighttp.ClientConfig) error {
+	var unsupported []string
+	if cfg.Auth != nil {
+		unsupported = append(unsupported, "auth")
+	}
+	if cfg.Endpoint != "" {
+		unsupported = append(unsupported, "endpoint")
+	}
+	if cfg.Compression != "" {
+		unsupported = append(unsupported, "compression")
+	}
+	if cfg.ProxyURL != "" {
+		unsupported = append(unsupported, "proxy_url")
+	}
+	if cfg.Headers != nil {
+		unsupported = append(unsupported, "headers")
+	}
+	if cfg.HTTP2ReadIdleTimeout != 0 {
+		unsupported = append(unsupported, "http2_read_idle_timeout")
+	}
+	if cfg.HTTP2PingTimeout != 0 {
+		unsupported = append(unsupported, "http2_ping_timeout")
+	}
+
+	if len(unsupported) > 0 {
+		return fmt.Errorf("these confighttp client configs are currently not respected by Datadog exporter: %s", strings.Join(unsupported, ", "))
+	}
 	return nil
 }
 
@@ -568,17 +603,17 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 
 	// If an endpoint is not explicitly set, override it based on the site.
 	if !configMap.IsSet("metrics::endpoint") {
-		c.Metrics.TCPAddr.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
+		c.Metrics.TCPAddrConfig.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
 	}
 	if !configMap.IsSet("traces::endpoint") {
-		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
+		c.Traces.TCPAddrConfig.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
 	}
 	if !configMap.IsSet("logs::endpoint") {
-		c.Logs.TCPAddr.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
+		c.Logs.TCPAddrConfig.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
 	}
 
 	// Return an error if an endpoint is explicitly set to ""
-	if c.Metrics.TCPAddr.Endpoint == "" || c.Traces.TCPAddr.Endpoint == "" || c.Logs.TCPAddr.Endpoint == "" {
+	if c.Metrics.TCPAddrConfig.Endpoint == "" || c.Traces.TCPAddrConfig.Endpoint == "" || c.Logs.TCPAddrConfig.Endpoint == "" {
 		return errEmptyEndpoint
 	}
 

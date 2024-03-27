@@ -32,6 +32,7 @@ type logExporter struct {
 	config   *Config
 	sender   *logs.Sender
 	settings component.TelemetrySettings
+	cancel   context.CancelFunc
 }
 
 // Create new logicmonitor logs exporter
@@ -45,13 +46,14 @@ func newLogsExporter(_ context.Context, cfg component.Config, set exporter.Creat
 }
 
 func (e *logExporter) start(ctx context.Context, host component.Host) error {
-	client, err := e.config.HTTPClientSettings.ToClient(host, e.settings)
+	client, err := e.config.ClientConfig.ToClient(host, e.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create http client: %w", err)
 	}
 
 	opts := buildLogIngestOpts(e.config, client)
 
+	ctx, e.cancel = context.WithCancel(ctx)
 	e.sender, err = logs.NewSender(ctx, e.settings.Logger, opts...)
 	if err != nil {
 		return err
@@ -93,6 +95,14 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 		}
 	}
 	return e.sender.SendLogs(ctx, payload)
+}
+
+func (e *logExporter) shutdown(_ context.Context) error {
+	if e.cancel != nil {
+		e.cancel()
+	}
+
+	return nil
 }
 
 func buildLogIngestOpts(config *Config, client *http.Client) []lmsdklogs.Option {

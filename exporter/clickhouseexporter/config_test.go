@@ -4,6 +4,7 @@
 package clickhouseexporter
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -32,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoint = defaultEndpoint
 
-	storageID := component.NewIDWithName(component.Type("file_storage"), "clickhouse")
+	storageID := component.MustNewIDWithName("file_storage", "clickhouse")
 
 	tests := []struct {
 		id       component.ID
@@ -270,6 +271,81 @@ func TestConfig_buildDSN(t *testing.T) {
 				assert.Equalf(t, tt.want, got, "buildDSN(%v)", tt.args.database)
 			}
 
+		})
+	}
+}
+
+func TestTableEngineConfigParsing(t *testing.T) {
+	t.Parallel()
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected string
+	}{
+		{
+			id:       component.NewIDWithName(metadata.Type, "table-engine-empty"),
+			expected: "MergeTree()",
+		},
+		{
+			id:       component.NewIDWithName(metadata.Type, "table-engine-name-only"),
+			expected: "ReplicatedReplacingMergeTree()",
+		},
+		{
+			id:       component.NewIDWithName(metadata.Type, "table-engine-full"),
+			expected: "ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/table_name', '{replica}', ver)",
+		},
+		{
+			id:       component.NewIDWithName(metadata.Type, "table-engine-params-only"),
+			expected: "MergeTree()",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg.(*Config).TableEngineString())
+		})
+	}
+}
+
+func TestClusterString(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			input:    "",
+			expected: "",
+		},
+		{
+			input:    "cluster_a_b",
+			expected: "ON CLUSTER cluster_a_b",
+		},
+		{
+			input:    "cluster a b",
+			expected: "ON CLUSTER cluster a b",
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("ClusterString case %d", i), func(t *testing.T) {
+			cfg := createDefaultConfig()
+			cfg.(*Config).Endpoint = defaultEndpoint
+			cfg.(*Config).ClusterName = tt.input
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg.(*Config).ClusterString())
 		})
 	}
 }

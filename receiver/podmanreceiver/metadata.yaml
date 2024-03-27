@@ -1,4 +1,5 @@
 type: podman_stats
+scope_name: otelcol/podmanreceiver
 
 status:
   class: receiver
@@ -126,6 +127,6 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
 
+# TODO: Update the receiver to pass the tests
 tests:
-  config:
   skip_lifecycle: true

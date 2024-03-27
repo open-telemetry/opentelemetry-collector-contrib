@@ -8,9 +8,12 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("opamp")
+)
+
 const (
-	Type               = "opamp"
-	ExtensionStability = component.StabilityLevelDevelopment
+	ExtensionStability = component.StabilityLevelAlpha
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {

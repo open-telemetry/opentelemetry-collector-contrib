@@ -114,7 +114,7 @@ transform:
   log_statements:
     - context: resource
       statements:
-        - keep_keys(resource.attributes, ["service.name", "service.namespace", "cloud.region"])
+        - keep_keys(attributes, ["service.name", "service.namespace", "cloud.region"])
     - context: log
       statements:
         - set(severity_text, "FAIL") where body == "request failed"
@@ -191,6 +191,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [convert_gauge_to_sum](#convert_gauge_to_sum)
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
+- [copy_metric](#copy_metric)
 
 ### convert_sum_to_gauge
 
@@ -306,6 +307,25 @@ Examples:
 
 
 - `convert_summary_sum_val_to_sum("cumulative", false)`
+
+### copy_metric
+
+`copy_metric(Optional[name], Optional[description], Optional[unit])`
+
+The `copy_metric` function copies the current metric, adding it to the end of the metric slice.
+
+`name` is an optional string. `description` is an optional string. `unit` is an optional string.
+
+The new metric will be exactly the same as the current metric.  You can use the optional parameters to set the new metric's name, description, and unit.
+
+**NOTE:** The new metric is appended to the end of the metric slice and therefore will be included in all the metric statements. It is a best practice to ALWAYS include a Where clause when copying a metric that WILL NOT match the new metric.
+
+Examples:
+
+- `copy_metric(name="http.request.status_code", unit="s") where name == "http.status_code`
+
+
+- `copy_metric(desc="new desc") where description == "old desc"`
 
 ## Examples
 

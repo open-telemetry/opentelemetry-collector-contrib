@@ -16,9 +16,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -85,20 +87,35 @@ type HeaderConfig struct {
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
 }
 
-// Build will build a file input operator from the supplied configuration
-func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, error) {
+// Deprecated [v0.97.0] Use Build and WithSplitFunc option instead
+func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
+	return c.Build(logger, emit, WithSplitFunc(splitFunc))
+}
+
+func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Option) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
+	}
+	if emit == nil {
+		return nil, fmt.Errorf("must provide emit function")
+	}
+
+	o := new(options)
+	for _, opt := range opts {
+		opt(o)
 	}
 
 	enc, err := decode.LookupEncoding(c.Encoding)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to find encoding: %w", err)
 	}
 
-	splitFunc, err := c.SplitConfig.Func(enc, false, int(c.MaxLogSize))
-	if err != nil {
-		return nil, err
+	splitFunc := o.splitFunc
+	if splitFunc == nil {
+		splitFunc, err = c.SplitConfig.Func(enc, false, int(c.MaxLogSize))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	trimFunc := trim.Nop
@@ -106,21 +123,6 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, 
 		trimFunc = c.TrimConfig.Func()
 	}
 
-	return c.buildManager(logger, emit, splitFunc, trimFunc)
-}
-
-// BuildWithSplitFunc will build a file input operator with customized splitFunc function
-func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
-	if err := c.validate(); err != nil {
-		return nil, err
-	}
-	return c.buildManager(logger, emit, splitFunc, c.TrimConfig.Func())
-}
-
-func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, splitFunc bufio.SplitFunc, trimFunc trim.Func) (*Manager, error) {
-	if emit == nil {
-		return nil, fmt.Errorf("must provide emit function")
-	}
 	var startAtBeginning bool
 	switch c.StartAt {
 	case "beginning":
@@ -129,11 +131,6 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, spli
 		startAtBeginning = false
 	default:
 		return nil, fmt.Errorf("invalid start_at location '%s'", c.StartAt)
-	}
-
-	enc, err := decode.LookupEncoding(c.Encoding)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find encoding: %w", err)
 	}
 
 	var hCfg *header.Config
@@ -150,20 +147,24 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, spli
 	}
 
 	readerFactory := reader.Factory{
-		SugaredLogger:   logger.With("component", "fileconsumer"),
-		FromBeginning:   startAtBeginning,
-		FingerprintSize: int(c.FingerprintSize),
-		MaxLogSize:      int(c.MaxLogSize),
-		Encoding:        enc,
-		SplitFunc:       splitFunc,
-		TrimFunc:        trimFunc,
-		FlushTimeout:    c.FlushPeriod,
-		EmitFunc:        emit,
-		Attributes:      c.Resolver,
-		HeaderConfig:    hCfg,
-		DeleteAtEOF:     c.DeleteAfterRead,
+		SugaredLogger:     logger.With("component", "fileconsumer"),
+		FromBeginning:     startAtBeginning,
+		FingerprintSize:   int(c.FingerprintSize),
+		InitialBufferSize: scanner.DefaultBufferSize,
+		MaxLogSize:        int(c.MaxLogSize),
+		Encoding:          enc,
+		SplitFunc:         splitFunc,
+		TrimFunc:          trimFunc,
+		FlushTimeout:      c.FlushPeriod,
+		EmitFunc:          emit,
+		Attributes:        c.Resolver,
+		HeaderConfig:      hCfg,
+		DeleteAtEOF:       c.DeleteAfterRead,
 	}
-
+	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
+	for i := 0; i < len(knownFiles); i++ {
+		knownFiles[i] = fileset.New[*reader.Metadata](c.MaxConcurrentFiles / 2)
+	}
 	return &Manager{
 		SugaredLogger:     logger.With("component", "fileconsumer"),
 		readerFactory:     readerFactory,
@@ -171,8 +172,9 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, spli
 		pollInterval:      c.PollInterval,
 		maxBatchFiles:     c.MaxConcurrentFiles / 2,
 		maxBatches:        c.MaxBatches,
-		previousPollFiles: make([]*reader.Reader, 0, c.MaxConcurrentFiles/2),
-		knownFiles:        []*reader.Metadata{},
+		currentPollFiles:  fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
+		previousPollFiles: fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
+		knownFiles:        knownFiles,
 	}, nil
 }
 
@@ -224,4 +226,17 @@ func (c Config) validate() error {
 	}
 
 	return nil
+}
+
+type options struct {
+	splitFunc bufio.SplitFunc
+}
+
+type Option func(*options)
+
+// WithSplitFunc overrides the split func which is normally built from other settings on the config
+func WithSplitFunc(f bufio.SplitFunc) Option {
+	return func(o *options) {
+		o.splitFunc = f
+	}
 }

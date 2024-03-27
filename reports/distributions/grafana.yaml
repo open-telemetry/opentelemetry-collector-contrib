@@ -3,6 +3,7 @@ url: https://github.com/grafana/agent
 maintainers: []
 components:
     connector:
+        - grafanacloud
         - servicegraph
         - spanmetrics
     exporter:
@@ -19,6 +20,7 @@ components:
         - attributes
         - k8sattributes
         - probabilistic_sampler
+        - resourcedetection
         - span
         - tail_sampling
         - transform

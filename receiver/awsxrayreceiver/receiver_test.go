@@ -38,28 +38,6 @@ const (
 	mockRegion           = "us-west-2"
 )
 
-func TestConsumerCantBeNil(t *testing.T) {
-	addr, err := net.ResolveUDPAddr(udppoller.Transport, "localhost:0")
-	assert.NoError(t, err, "should resolve UDP address")
-
-	sock, err := net.ListenUDP(udppoller.Transport, addr)
-	assert.NoError(t, err, "should be able to listen")
-	defer sock.Close()
-	address := sock.LocalAddr().String()
-
-	_, err = newReceiver(
-		&Config{
-			NetAddr: confignet.NetAddr{
-				Endpoint:  address,
-				Transport: udppoller.Transport,
-			},
-		},
-		nil,
-		receivertest.NewNopCreateSettings(),
-	)
-	assert.True(t, errors.Is(err, component.ErrNilNextConsumer), "consumer is nil should be detected")
-}
-
 func TestProxyCreationFailed(t *testing.T) {
 	addr, err := findAvailableUDPAddress()
 	assert.NoError(t, err, "there should be address available")
@@ -67,12 +45,12 @@ func TestProxyCreationFailed(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	_, err = newReceiver(
 		&Config{
-			NetAddr: confignet.NetAddr{
+			AddrConfig: confignet.AddrConfig{
 				Endpoint:  addr,
 				Transport: udppoller.Transport,
 			},
 			ProxyServer: &proxy.Config{
-				TCPAddr: confignet.TCPAddr{
+				TCPAddrConfig: confignet.TCPAddrConfig{
 					Endpoint: "invalidEndpoint",
 				},
 			},
@@ -87,9 +65,9 @@ func TestPollerCreationFailed(t *testing.T) {
 	sink := new(consumertest.TracesSink)
 	_, err := newReceiver(
 		&Config{
-			NetAddr: confignet.NetAddr{
+			AddrConfig: confignet.AddrConfig{
 				Endpoint:  "dontCare",
-				Transport: "tcp",
+				Transport: confignet.TransportTypeTCP,
 			},
 		},
 		sink,
@@ -106,7 +84,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	}
 	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10596")
 
-	receiverID := component.NewID("TestSegmentsPassedToConsumer")
+	receiverID := component.MustNewID("TestSegmentsPassedToConsumer")
 	tt, err := componenttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
@@ -137,7 +115,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 }
 
 func TestTranslatorErrorsOut(t *testing.T) {
-	receiverID := component.NewID("TestTranslatorErrorsOut")
+	receiverID := component.MustNewID("TestTranslatorErrorsOut")
 	tt, err := componenttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
@@ -164,7 +142,7 @@ func TestTranslatorErrorsOut(t *testing.T) {
 }
 
 func TestSegmentsConsumerErrorsOut(t *testing.T) {
-	receiverID := component.NewID("TestSegmentsConsumerErrorsOut")
+	receiverID := component.MustNewID("TestSegmentsConsumerErrorsOut")
 	tt, err := componenttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
@@ -194,7 +172,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 }
 
 func TestPollerCloseError(t *testing.T) {
-	receiverID := component.NewID("TestPollerCloseError")
+	receiverID := component.MustNewID("TestPollerCloseError")
 	tt, err := componenttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
@@ -212,7 +190,7 @@ func TestPollerCloseError(t *testing.T) {
 }
 
 func TestProxyCloseError(t *testing.T) {
-	receiverID := component.NewID("TestPollerCloseError")
+	receiverID := component.MustNewID("TestPollerCloseError")
 	tt, err := componenttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
@@ -230,7 +208,7 @@ func TestProxyCloseError(t *testing.T) {
 }
 
 func TestBothPollerAndProxyCloseError(t *testing.T) {
-	receiverID := component.NewID("TestBothPollerAndProxyCloseError")
+	receiverID := component.MustNewID("TestBothPollerAndProxyCloseError")
 	tt, err := componenttest.SetupTelemetry(receiverID)
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer func() {
@@ -301,12 +279,12 @@ func createAndOptionallyStartReceiver(
 	set.Logger = logger
 	rcvr, err := newReceiver(
 		&Config{
-			NetAddr: confignet.NetAddr{
+			AddrConfig: confignet.AddrConfig{
 				Endpoint:  addr,
 				Transport: udppoller.Transport,
 			},
 			ProxyServer: &proxy.Config{
-				TCPAddr: confignet.TCPAddr{
+				TCPAddrConfig: confignet.TCPAddrConfig{
 					Endpoint: tcpAddr,
 				},
 			},

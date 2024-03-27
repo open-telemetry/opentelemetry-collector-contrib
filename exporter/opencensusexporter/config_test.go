@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
-				GRPCClientSettings: configgrpc.GRPCClientSettings{
+				ClientConfig: configgrpc.ClientConfig{
 					Headers: map[string]configopaque.String{
 						"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
 						"header1":                "234",
@@ -57,8 +57,8 @@ func TestLoadConfig(t *testing.T) {
 					},
 					Endpoint:    "1.2.3.4:1234",
 					Compression: "gzip",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						TLSSetting: configtls.Config{
 							CAFile: "/var/lib/mycert.pem",
 						},
 						Insecure: false,

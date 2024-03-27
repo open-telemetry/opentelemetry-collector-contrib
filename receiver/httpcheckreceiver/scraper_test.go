@@ -22,7 +22,7 @@ import (
 )
 
 func newMockServer(t *testing.T, responseCode int) *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(responseCode)
 		// This could be expanded if the checks for the server include
 		// parsing the response content
@@ -43,10 +43,10 @@ func TestScraperStart(t *testing.T) {
 				cfg: &Config{
 					Targets: []*targetConfig{
 						{
-							HTTPClientSettings: confighttp.HTTPClientSettings{
+							ClientConfig: confighttp.ClientConfig{
 								Endpoint: "http://example.com",
-								TLSSetting: configtls.TLSClientSetting{
-									TLSSetting: configtls.TLSSetting{
+								TLSSetting: configtls.ClientConfig{
+									TLSSetting: configtls.Config{
 										CAFile: "/non/existent",
 									},
 								},
@@ -64,8 +64,8 @@ func TestScraperStart(t *testing.T) {
 				cfg: &Config{
 					Targets: []*targetConfig{
 						{
-							HTTPClientSettings: confighttp.HTTPClientSettings{
-								TLSSetting: configtls.TLSClientSetting{},
+							ClientConfig: confighttp.ClientConfig{
+								TLSSetting: configtls.ClientConfig{},
 								Endpoint:   "http://example.com",
 							},
 						},
@@ -159,7 +159,7 @@ func TestScaperScrape(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			if len(tc.endpoint) > 0 {
 				cfg.Targets = []*targetConfig{{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: tc.endpoint,
 					}},
 				}
@@ -167,7 +167,7 @@ func TestScaperScrape(t *testing.T) {
 				ms := newMockServer(t, tc.expectedResponse)
 				defer ms.Close()
 				cfg.Targets = []*targetConfig{{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: ms.URL,
 					}},
 				}
@@ -205,12 +205,12 @@ func TestScraperMultipleTargets(t *testing.T) {
 	defer ms2.Close()
 
 	cfg.Targets = append(cfg.Targets, &targetConfig{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: ms1.URL,
 		},
 	})
 	cfg.Targets = append(cfg.Targets, &targetConfig{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: ms2.URL,
 		},
 	})

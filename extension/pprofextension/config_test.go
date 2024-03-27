@@ -30,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
-				TCPAddr:              confignet.TCPAddr{Endpoint: "127.0.0.1:1777"},
+				TCPAddr:              confignet.TCPAddrConfig{Endpoint: "127.0.0.1:1777"},
 				BlockProfileFraction: 3,
 				MutexProfileFraction: 5,
 			},

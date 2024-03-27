@@ -38,7 +38,7 @@ func Test_NewLogsExporter(t *testing.T) {
 				logger *zap.Logger
 			}{
 				config: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: "http://example.logicmonitor.com/rest",
 					},
 					APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
@@ -68,7 +68,7 @@ func TestPushLogData(t *testing.T) {
 	defer ts.Close()
 
 	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: ts.URL,
 		},
 		APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
@@ -110,6 +110,7 @@ func TestPushLogData(t *testing.T) {
 			exp := newLogsExporter(test.args.ctx, test.fields.config, set)
 
 			require.NoError(t, exp.start(test.args.ctx, componenttest.NewNopHost()))
+			defer func() { require.NoError(t, exp.shutdown(test.args.ctx)) }()
 			err := exp.PushLogData(test.args.ctx, test.args.lg)
 			assert.NoError(t, err)
 		})

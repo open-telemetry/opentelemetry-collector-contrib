@@ -20,7 +20,7 @@ resourceSpans:
           - attributes:
               - key: testKey2
                 value:
-                  stringValue: teststringvalue2
+                  stringValue: unpredictable
             parentSpanId: ""
             spanId: ""
             status: {}

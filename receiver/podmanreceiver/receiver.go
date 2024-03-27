@@ -54,11 +54,11 @@ func newMetricsReceiver(
 		mb:            metadata.NewMetricsBuilder(config.MetricsBuilderConfig, set),
 	}
 
-	scrp, err := scraperhelper.NewScraper(metadata.Type, recv.scrape, scraperhelper.WithStart(recv.start))
+	scrp, err := scraperhelper.NewScraper(metadata.Type.String(), recv.scrape, scraperhelper.WithStart(recv.start))
 	if err != nil {
 		return nil, err
 	}
-	return scraperhelper.NewScraperControllerReceiver(&recv.config.ScraperControllerSettings, set, nextConsumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewScraperControllerReceiver(&recv.config.ControllerConfig, set, nextConsumer, scraperhelper.AddScraper(scrp))
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {

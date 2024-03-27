@@ -1,4 +1,5 @@
 type: elasticsearch
+scope_name: otelcol/elasticsearch
 
 status:
   class: exporter
@@ -7,3 +8,7 @@ status:
   distributions: [contrib, observiq]
   codeowners:
     active: [JaredTan95]
+
+tests:
+  config:
+    endpoints: [http://localhost:9200]

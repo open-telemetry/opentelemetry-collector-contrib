@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
-	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/require"
@@ -36,61 +36,67 @@ func (tmc testMetadataStore) LengthMetadata() int {
 var mc = testMetadataStore{
 	"counter": scrape.MetricMetadata{
 		Metric: "cr",
-		Type:   textparse.MetricTypeCounter,
+		Type:   model.MetricTypeCounter,
+		Help:   "This is some help for a counter",
+		Unit:   "By",
+	},
+	"counter_created": scrape.MetricMetadata{
+		Metric: "counter",
+		Type:   model.MetricTypeCounter,
 		Help:   "This is some help for a counter",
 		Unit:   "By",
 	},
 	"gauge": scrape.MetricMetadata{
 		Metric: "ge",
-		Type:   textparse.MetricTypeGauge,
+		Type:   model.MetricTypeGauge,
 		Help:   "This is some help for a gauge",
 		Unit:   "1",
 	},
 	"gaugehistogram": scrape.MetricMetadata{
 		Metric: "gh",
-		Type:   textparse.MetricTypeGaugeHistogram,
+		Type:   model.MetricTypeGaugeHistogram,
 		Help:   "This is some help for a gauge histogram",
 		Unit:   "?",
 	},
 	"histogram": scrape.MetricMetadata{
 		Metric: "hg",
-		Type:   textparse.MetricTypeHistogram,
+		Type:   model.MetricTypeHistogram,
 		Help:   "This is some help for a histogram",
 		Unit:   "ms",
 	},
 	"histogram_with_created": scrape.MetricMetadata{
-		Metric: "hg",
-		Type:   textparse.MetricTypeHistogram,
+		Metric: "histogram_with_created",
+		Type:   model.MetricTypeHistogram,
 		Help:   "This is some help for a histogram",
 		Unit:   "ms",
 	},
 	"histogram_stale": scrape.MetricMetadata{
 		Metric: "hg_stale",
-		Type:   textparse.MetricTypeHistogram,
+		Type:   model.MetricTypeHistogram,
 		Help:   "This is some help for a histogram",
 		Unit:   "ms",
 	},
 	"summary": scrape.MetricMetadata{
 		Metric: "s",
-		Type:   textparse.MetricTypeSummary,
+		Type:   model.MetricTypeSummary,
 		Help:   "This is some help for a summary",
 		Unit:   "ms",
 	},
 	"summary_with_created": scrape.MetricMetadata{
-		Metric: "s",
-		Type:   textparse.MetricTypeSummary,
+		Metric: "summary_with_created",
+		Type:   model.MetricTypeSummary,
 		Help:   "This is some help for a summary",
 		Unit:   "ms",
 	},
 	"summary_stale": scrape.MetricMetadata{
 		Metric: "s_stale",
-		Type:   textparse.MetricTypeSummary,
+		Type:   model.MetricTypeSummary,
 		Help:   "This is some help for a summary",
 		Unit:   "ms",
 	},
 	"unknown": scrape.MetricMetadata{
 		Metric: "u",
-		Type:   textparse.MetricTypeUnknown,
+		Type:   model.MetricTypeUnknown,
 		Help:   "This is some help for an unknown metric",
 		Unit:   "?",
 	},
@@ -597,6 +603,29 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			scrapes: []*scrape{
 				{at: 13, value: 33.7, metric: "value"},
 				{at: 13, value: 150, metric: "value_created"},
+			},
+			want: func() pmetric.NumberDataPoint {
+				point := pmetric.NewNumberDataPoint()
+				point.SetDoubleValue(150)
+
+				// the time in milliseconds -> nanoseconds.
+				point.SetTimestamp(pcommon.Timestamp(13 * time.Millisecond))
+				point.SetStartTimestamp(pcommon.Timestamp(13 * time.Millisecond))
+
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
+		{
+			metricKind:               "counter_created",
+			name:                     "counter:: startTimestampMs from _created",
+			intervalStartTimestampMs: 11,
+			labels:                   labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			scrapes: []*scrape{
+				{at: 13, value: 33.7, metric: "counter"},
+				{at: 13, value: 150, metric: "counter_created"},
 			},
 			want: func() pmetric.NumberDataPoint {
 				point := pmetric.NewNumberDataPoint()

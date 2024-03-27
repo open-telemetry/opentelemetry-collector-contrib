@@ -26,7 +26,7 @@ import (
 func TestNewReceiver(t *testing.T) {
 	config := &Config{
 		Endpoint: "unix:///run/some.sock",
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 1 * time.Second,
 			InitialDelay:       time.Second,
 		},

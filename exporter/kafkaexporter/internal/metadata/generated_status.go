@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("kafka")
+)
+
 const (
-	Type             = "kafka"
 	TracesStability  = component.StabilityLevelBeta
 	MetricsStability = component.StabilityLevelBeta
 	LogsStability    = component.StabilityLevelBeta

@@ -32,10 +32,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:9090",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
 				},
@@ -44,10 +44,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "keepalive"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
 					Keepalive: &configgrpc.KeepaliveServerConfig{
@@ -69,10 +69,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "msg-size-conc-connect-max-idle"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					MaxRecvMsgSizeMiB:    32,
 					MaxConcurrentStreams: 16,
@@ -89,14 +89,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "tlscredentials"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
-					TLSSetting: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: &configtls.ServerConfig{
+						TLSSetting: configtls.Config{
 							CertFile: "test.crt",
 							KeyFile:  "test.key",
 						},
@@ -107,10 +107,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "cors"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:55678",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					ReadBufferSize: 512 * 1024,
 				},
@@ -120,10 +120,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "uds"),
 			expected: &Config{
-				GRPCServerSettings: configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
+				ServerConfig: configgrpc.ServerConfig{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "/tmp/opencensus.sock",
-						Transport: "unix",
+						Transport: confignet.TransportTypeUnix,
 					},
 					ReadBufferSize: 512 * 1024,
 				},

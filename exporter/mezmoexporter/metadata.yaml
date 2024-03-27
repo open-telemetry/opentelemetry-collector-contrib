@@ -1,4 +1,5 @@
 type: mezmo
+scope_name: otelcol/mezmo
 
 status:
   class: exporter
@@ -7,3 +8,8 @@ status:
   distributions: [contrib]
   codeowners:
     active: [dashpole, billmeyer, gjanco]
+
+tests:
+  config:
+    disable_keep_alives: true
+  expect_consumer_error: true

@@ -49,7 +49,11 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExp
 		maxAttempts = cfg.Retry.MaxRequests
 	}
 
-	model := &encodeModel{dedup: cfg.Mapping.Dedup, dedot: cfg.Mapping.Dedot}
+	model := &encodeModel{
+		dedup: cfg.Mapping.Dedup,
+		dedot: cfg.Mapping.Dedot,
+		mode:  cfg.MappingMode(),
+	}
 
 	return &elasticsearchTracesExporter{
 		logger:      logger,

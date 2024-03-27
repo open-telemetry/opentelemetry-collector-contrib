@@ -4,13 +4,14 @@
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [beta]: traces, metrics, logs   |
-| Distributions | [contrib], [aws], [liatrio], [observiq], [redhat], [splunk], [sumo] |
+| Distributions | [contrib], [aws], [grafana], [liatrio], [observiq], [redhat], [splunk], [sumo] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fresourcedetection%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fresourcedetection) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fresourcedetection%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fresourcedetection) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [aws]: https://github.com/aws-observability/aws-otel-collector
+[grafana]: https://github.com/grafana/agent
 [liatrio]: https://github.com/liatrio/liatrio-otel-collector
 [observiq]: https://github.com/observIQ/observiq-otel-collector
 [redhat]: https://github.com/os-observability/redhat-opentelemetry-collector
@@ -400,6 +401,7 @@ processors:
 
   * cloud.provider ("azure")
   * cloud.platform ("azure_aks")
+  * k8s.cluster.name
 
 ```yaml
 processors:
@@ -408,6 +410,34 @@ processors:
     timeout: 2s
     override: false
 ```
+
+#### Cluster Name
+
+Cluster name detection is disabled by default, and can be enabled with the
+following configuration:
+
+```yaml
+processors:
+  resourcedetection/aks:
+    detectors: [aks]
+    timeout: 2s
+    override: false
+    aks:
+      resource_attributes:
+        k8s.cluster.name: true
+```
+
+Azure AKS cluster name is derived from the Azure Instance Metadata Service's (IMDS) infrastructure resource group field. This field contains the resource group and name of the cluster, separated by underscores. e.g: `MC_<resource group>_<cluster name>_<location>`.
+
+Example:
+  - Resource group: my-resource-group
+  - Cluster name:   my-cluster
+  - Location:       eastus
+  - Generated name: MC_my-resource-group_my-cluster_eastus
+
+The cluster name is detected if it does not contain underscores and if a custom infrastructure resource group name was not used.
+
+If accurate parsing cannot be performed, the infrastructure resource group value is returned. This value can be used to uniquely identify the cluster, as Azure will not allow users to create multiple clusters with the same infrastructure resource group name.
 
 ### Consul
 

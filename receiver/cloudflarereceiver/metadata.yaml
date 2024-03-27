@@ -1,4 +1,5 @@
 type: cloudflare
+scope_name: otelcol/cloudflarereceiver
 
 status:
   class: receiver
@@ -7,6 +8,4 @@ status:
   distributions: [contrib, observiq, sumo]
   codeowners:
     active: [dehaansa, djaglowski]
-
-tests:
-  config:
+    seeking_new: true

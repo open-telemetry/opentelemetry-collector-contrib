@@ -78,7 +78,7 @@ func (dsb *DataSenderBase) Flush() {
 
 type otlpHTTPDataSender struct {
 	DataSenderBase
-	compression configcompression.CompressionType
+	compression configcompression.Type
 }
 
 func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphttpexporter.Config {
@@ -87,7 +87,7 @@ func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphtt
 	cfg.RetryConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueConfig.Enabled = false
-	cfg.TLSSetting = configtls.TLSClientSetting{
+	cfg.TLSSetting = configtls.ClientConfig{
 		Insecure: true,
 	}
 	cfg.Compression = ods.compression
@@ -114,7 +114,7 @@ type otlpHTTPTraceDataSender struct {
 }
 
 // NewOTLPHTTPTraceDataSender creates a new TraceDataSender for OTLP/HTTP traces exporter.
-func NewOTLPHTTPTraceDataSender(host string, port int, compression configcompression.CompressionType) TraceDataSender {
+func NewOTLPHTTPTraceDataSender(host string, port int, compression configcompression.Type) TraceDataSender {
 	return &otlpHTTPTraceDataSender{
 		otlpHTTPDataSender: otlpHTTPDataSender{
 			DataSenderBase: DataSenderBase{
@@ -219,7 +219,7 @@ func (ods *otlpDataSender) fillConfig(cfg *otlpexporter.Config) *otlpexporter.Co
 	cfg.RetryConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueConfig.Enabled = false
-	cfg.TLSSetting = configtls.TLSClientSetting{
+	cfg.TLSSetting = configtls.ClientConfig{
 		Insecure: true,
 	}
 	return cfg

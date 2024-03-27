@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/processor"
@@ -34,103 +33,80 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	apitrace "go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 )
 
 func TestIntegration(t *testing.T) {
-	tests := []struct {
-		name               string
-		featureGateEnabled bool
-	}{
-		{
-			name:               "with feature gate enabled",
-			featureGateEnabled: true,
-		},
-		{
-			name:               "with feature gate disabled",
-			featureGateEnabled: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// 1. Set up mock Datadog server
-			// See also https://github.com/DataDog/datadog-agent/blob/49c16e0d4deab396626238fa1d572b684475a53f/cmd/trace-agent/test/backend.go
-			apmstatsRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.APMStatsEndpoint, ReqChan: make(chan []byte)}
-			tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
-			server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
-			defer server.Close()
+	// 1. Set up mock Datadog server
+	// See also https://github.com/DataDog/datadog-agent/blob/49c16e0d4deab396626238fa1d572b684475a53f/cmd/trace-agent/test/backend.go
+	apmstatsRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.APMStatsEndpoint, ReqChan: make(chan []byte)}
+	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
+	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
+	defer server.Close()
 
-			// 2. Start in-process collector
-			factories := getIntegrationTestComponents(t)
-			app, confFilePath := getIntegrationTestCollector(t, server.URL, factories)
-			if tt.featureGateEnabled {
-				err := featuregate.GlobalRegistry().Set(datadog.ConnectorPerformanceFeatureGate.ID(), true)
-				assert.NoError(t, err)
-				defer func() {
-					_ = featuregate.GlobalRegistry().Set(datadog.ConnectorPerformanceFeatureGate.ID(), false)
-				}()
-			}
-			go func() {
-				assert.NoError(t, app.Run(context.Background()))
-			}()
-			defer app.Shutdown()
-			defer os.Remove(confFilePath)
-			waitForReadiness(app)
+	// 2. Start in-process collector
+	factories := getIntegrationTestComponents(t)
+	app, confFilePath := getIntegrationTestCollector(t, server.URL, factories)
+	go func() {
+		assert.NoError(t, app.Run(context.Background()))
+	}()
+	defer app.Shutdown()
+	defer os.Remove(confFilePath)
+	waitForReadiness(app)
 
-			// 3. Generate and send traces
-			sendTraces(t)
+	// 3. Generate and send traces
+	sendTraces(t)
 
-			// 4. Validate traces and APM stats from the mock server
-			var spans []*pb.Span
-			var stats []*pb.ClientGroupedStats
+	// 4. Validate traces and APM stats from the mock server
+	var spans []*pb.Span
+	var stats []*pb.ClientGroupedStats
 
-			// 5 sampled spans + APM stats on 10 spans are sent to datadog exporter
-			for len(spans) < 5 || len(stats) < 10 {
-				select {
-				case tracesBytes := <-tracesRec.ReqChan:
-					gz := getGzipReader(t, tracesBytes)
-					slurp, err := io.ReadAll(gz)
-					require.NoError(t, err)
-					var traces pb.AgentPayload
-					require.NoError(t, proto.Unmarshal(slurp, &traces))
-					for _, tps := range traces.TracerPayloads {
-						for _, chunks := range tps.Chunks {
-							spans = append(spans, chunks.Spans...)
-							for _, span := range chunks.Spans {
-								assert.Equal(t, span.Meta["_dd.stats_computed"], "true")
-							}
-						}
-					}
-
-				case apmstatsBytes := <-apmstatsRec.ReqChan:
-					gz := getGzipReader(t, apmstatsBytes)
-					var spl pb.StatsPayload
-					require.NoError(t, msgp.Decode(gz, &spl))
-					for _, csps := range spl.Stats {
-						for _, csbs := range csps.Stats {
-							stats = append(stats, csbs.Stats...)
-							for _, stat := range csbs.Stats {
-								assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan"))
-								assert.Equal(t, stat.Hits, uint64(1))
-								assert.Equal(t, stat.TopLevelHits, uint64(1))
-							}
-						}
-					}
+	// 5 sampled spans + APM stats on 10 spans are sent to datadog exporter
+	for len(spans) < 5 || len(stats) < 10 {
+		select {
+		case tracesBytes := <-tracesRec.ReqChan:
+			gz := getGzipReader(t, tracesBytes)
+			slurp, err := io.ReadAll(gz)
+			require.NoError(t, err)
+			var traces pb.AgentPayload
+			require.NoError(t, proto.Unmarshal(slurp, &traces))
+			for _, tps := range traces.TracerPayloads {
+				for _, chunks := range tps.Chunks {
+					spans = append(spans, chunks.Spans...)
 				}
 			}
 
-			// Verify we don't receive more than the expected numbers
-			assert.Len(t, spans, 5)
-			assert.Len(t, stats, 10)
-		})
+		case apmstatsBytes := <-apmstatsRec.ReqChan:
+			gz := getGzipReader(t, apmstatsBytes)
+			var spl pb.StatsPayload
+			require.NoError(t, msgp.Decode(gz, &spl))
+			for _, csps := range spl.Stats {
+				assert.Equal(t, "datadogexporter-otelcol-tests", spl.AgentVersion)
+				for _, csbs := range csps.Stats {
+					stats = append(stats, csbs.Stats...)
+					for _, stat := range csbs.Stats {
+						assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan"))
+						assert.Equal(t, uint64(1), stat.Hits)
+						assert.Equal(t, uint64(1), stat.TopLevelHits)
+						assert.Equal(t, "client", stat.SpanKind)
+						assert.Equal(t, []string{"extra_peer_tag:tag_val", "peer.service:svc"}, stat.PeerTags)
+					}
+				}
+			}
+		}
 	}
+
+	// Verify we don't receive more than the expected numbers
+	assert.Len(t, spans, 5)
+	assert.Len(t, stats, 10)
 }
 
 func getIntegrationTestComponents(t *testing.T) otelcol.Factories {
@@ -193,6 +169,10 @@ processors:
 
 connectors:
   datadog/connector:
+    traces:
+      compute_stats_by_span_kind: true
+      peer_tags_aggregation: true
+      peer_tags: ["extra_peer_tag"]
 
 exporters:
   debug:
@@ -235,7 +215,7 @@ service:
 	_, err = otelcoltest.LoadConfigAndValidate(confFile.Name(), factories)
 	require.NoError(t, err, "All yaml config must be valid.")
 
-	fmp := fileprovider.New()
+	fmp := fileprovider.NewWithSettings(confmap.ProviderSettings{})
 	configProvider, err := otelcol.NewConfigProvider(
 		otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
@@ -279,22 +259,40 @@ func sendTraces(t *testing.T) {
 	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure())
 	require.NoError(t, err)
 	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
+	r1, _ := resource.New(ctx, resource.WithAttributes(attribute.String("k8s.node.name", "aaaa")))
+	r2, _ := resource.New(ctx, resource.WithAttributes(attribute.String("k8s.node.name", "bbbb")))
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithSpanProcessor(bsp),
+		sdktrace.WithResource(r1),
+	)
+	tracerProvider2 := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSpanProcessor(bsp),
+		sdktrace.WithResource(r2),
 	)
 	otel.SetTracerProvider(tracerProvider)
 	defer func() {
 		require.NoError(t, tracerProvider.Shutdown(ctx))
+		require.NoError(t, tracerProvider2.Shutdown(ctx))
 	}()
 
 	tracer := otel.Tracer("test-tracer")
 	for i := 0; i < 10; i++ {
-		_, span := tracer.Start(ctx, fmt.Sprintf("TestSpan%d", i))
+		_, span := tracer.Start(ctx, fmt.Sprintf("TestSpan%d", i), apitrace.WithSpanKind(apitrace.SpanKindClient))
+
+		if i == 3 {
+			// Send some traces from a different resource
+			// This verifies that stats from different hosts don't accidentally create extraneous empty stats buckets
+			otel.SetTracerProvider(tracerProvider2)
+			tracer = otel.Tracer("test-tracer2")
+		}
 		// Only sample 5 out of the 10 spans
 		if i < 5 {
 			span.SetAttributes(attribute.Bool("sampled", true))
 		}
+		span.SetAttributes(attribute.String("peer.service", "svc"))
+		span.SetAttributes(attribute.String("extra_peer_tag", "tag_val"))
 		span.End()
 	}
 	time.Sleep(1 * time.Second)

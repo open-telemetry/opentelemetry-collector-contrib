@@ -14,7 +14,7 @@ import (
 
 func TestNewFactory(t *testing.T) {
 	factory := aerospikereceiver.NewFactory()
-	require.Equal(t, "aerospike", string(factory.Type()))
+	require.Equal(t, "aerospike", factory.Type().String())
 	cfg := factory.CreateDefaultConfig().(*aerospikereceiver.Config)
 	require.Equal(t, time.Minute, cfg.CollectionInterval)
 	require.False(t, cfg.CollectClusterMetrics)

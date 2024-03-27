@@ -1,10 +1,11 @@
 type: alertmanager
+scope_name: otelcol/alertmanager
 
 status:
   class: exporter
   stability:
     development: [traces]
-  distributions: [contrib]
+  distributions: []
   codeowners:
     active: [jpkrohling, sokoide, mcube8]
 

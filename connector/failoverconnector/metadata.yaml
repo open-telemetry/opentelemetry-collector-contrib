@@ -1,9 +1,14 @@
 type: failover
+scope_name: otelcol/failover
 
 status:
   class: connector
   stability:
     development: [metrics_to_metrics, traces_to_traces, logs_to_logs]
-  distributions: [contrib]
+  distributions: []
   codeowners:
-    active: [djaglowski, fatsheep9146]
+    active: [akats7, djaglowski, fatsheep9146]
+
+tests:
+    skip_lifecycle: true
+    skip_shutdown: true

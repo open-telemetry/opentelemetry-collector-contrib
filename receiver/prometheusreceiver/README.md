@@ -141,6 +141,11 @@ receivers:
       interval: 30s
       collector_id: collector-1
 ```
+
+The `target_allocator` section embeds the full [confighttp client configuration][confighttp].
+
+[confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration
+
 ## Exemplars
 This receiver accepts exemplars coming in Prometheus format and converts it to OTLP format.
 1. Value is expected to be received in `float64` format

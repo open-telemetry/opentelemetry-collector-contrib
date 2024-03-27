@@ -13,7 +13,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -70,17 +69,19 @@ func TestTelemetryEnabled(t *testing.T) {
 	registry := telemetry.NewRegistry()
 	sink := telemetrytest.NewSenderSink()
 	// preload the sender that the exporter will use
-	sender, loaded := registry.LoadOrStore(component.NewID(""), sink)
+	set := exportertest.NewNopCreateSettings()
+	sender, loaded := registry.LoadOrStore(set.ID, sink)
 	require.False(t, loaded)
 	require.NotNil(t, sender)
 	require.Equal(t, sink, sender)
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
-	traceExporter := initializeTracesExporter(t, cfg, registry)
+	traceExporter, err := newTracesExporter(cfg, set, new(awsutil.Conn), registry)
+	assert.NoError(t, err)
 	ctx := context.Background()
 	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))
 	td := constructSpanData()
-	err := traceExporter.ConsumeTraces(ctx, td)
+	err = traceExporter.ConsumeTraces(ctx, td)
 	assert.Error(t, err)
 	err = traceExporter.Shutdown(ctx)
 	assert.NoError(t, err)

@@ -34,7 +34,7 @@ func newTracesExporter(
 	cn awsutil.ConnAttr,
 	registry telemetry.Registry,
 ) (exporter.Traces, error) {
-	typeLog := zap.String("type", string(set.ID.Type()))
+	typeLog := zap.String("type", set.ID.Type().String())
 	nameLog := zap.String("name", set.ID.String())
 	logger := set.Logger
 	awsConfig, session, err := awsutil.GetAWSConfigSession(logger, cn, &cfg.AWSSessionSettings)

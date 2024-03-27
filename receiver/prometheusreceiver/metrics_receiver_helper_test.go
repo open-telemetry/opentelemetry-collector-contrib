@@ -160,7 +160,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 	// update attributes value (will use for validation)
 	l := []labels.Label{{Name: "__scheme__", Value: "http"}}
 	for _, t := range tds {
-		t.attributes = internal.CreateResource(t.name, u.Host, l).Attributes()
+		t.attributes = internal.CreateResource(t.name, u.Host, labels.New(l...)).Attributes()
 	}
 	pCfg, err := promcfg.Load(string(cfg), false, gokitlog.NewNopLogger())
 	return mp, (*PromConfig)(pCfg), err

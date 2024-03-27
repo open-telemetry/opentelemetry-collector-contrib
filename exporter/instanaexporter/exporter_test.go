@@ -27,9 +27,9 @@ func TestPushConvertedTraces(t *testing.T) {
 	defer traceServer.Close()
 
 	cfg := Config{
-		AgentKey:           "key11",
-		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: traceServer.URL},
-		Endpoint:           traceServer.URL,
+		AgentKey:     "key11",
+		ClientConfig: confighttp.ClientConfig{Endpoint: traceServer.URL},
+		Endpoint:     traceServer.URL,
 	}
 
 	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopCreateSettings())
@@ -82,10 +82,10 @@ func TestSelfSignedBackend(t *testing.T) {
 
 	cfg := Config{
 		AgentKey: "key11",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: server.URL,
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.ClientConfig{
+				TLSSetting: configtls.Config{
 					CAFile: caFile,
 				},
 			},
@@ -108,10 +108,10 @@ func TestSelfSignedBackend(t *testing.T) {
 func TestSelfSignedBackendCAFileNotFound(t *testing.T) {
 	cfg := Config{
 		AgentKey: "key11",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.ClientConfig{
+				TLSSetting: configtls.Config{
 					CAFile: "ca_file_not_found.pem",
 				},
 			},

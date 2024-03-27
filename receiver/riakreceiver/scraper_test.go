@@ -36,10 +36,10 @@ func TestScraperStart(t *testing.T) {
 			desc: "Bad Config",
 			scraper: &riakScraper{
 				cfg: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: defaultEndpoint,
-						TLSSetting: configtls.TLSClientSetting{
-							TLSSetting: configtls.TLSSetting{
+						TLSSetting: configtls.ClientConfig{
+							TLSSetting: configtls.Config{
 								CAFile: "/non/existent",
 							},
 						},
@@ -54,8 +54,8 @@ func TestScraperStart(t *testing.T) {
 			desc: "Valid Config",
 			scraper: &riakScraper{
 				cfg: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
-						TLSSetting: configtls.TLSClientSetting{},
+					ClientConfig: confighttp.ClientConfig{
+						TLSSetting: configtls.ClientConfig{},
 						Endpoint:   defaultEndpoint,
 					},
 				},
@@ -87,10 +87,10 @@ func TestScaperScrape(t *testing.T) {
 	}{
 		{
 			desc: "Nil client",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				return nil
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
 			setupCfg: func() *Config {
@@ -100,12 +100,12 @@ func TestScaperScrape(t *testing.T) {
 		},
 		{
 			desc: "API Call Failure",
-			setupMockClient: func(t *testing.T) client {
+			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("GetStats", mock.Anything).Return(nil, errors.New("some api error"))
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
 			setupCfg: func() *Config {

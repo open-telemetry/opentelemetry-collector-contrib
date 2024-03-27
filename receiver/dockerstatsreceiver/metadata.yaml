@@ -1,4 +1,5 @@
 type: docker_stats
+scope_name: otelcol/dockerstatsreceiver
 
 status:
   class: receiver
@@ -7,6 +8,7 @@ status:
   distributions: [contrib, observiq, sumo]
   codeowners:
     active: [rmfitzpatrick, jamesmoessis]
+  unsupported_platforms: [darwin, windows]
 
 sem_conv_version: 1.6.1
 
@@ -148,6 +150,12 @@ metrics:
     enabled: false
     description: "CPU shares set for the container."
     unit: "1"
+    gauge:
+      value_type: int
+  container.cpu.logical.count:
+    enabled: false
+    description: "Number of cores available to the container."
+    unit: "{cpus}"
     gauge:
       value_type: int
 
@@ -463,6 +471,14 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+  container.memory.fails:
+    enabled: false
+    description: "Number of times the memory limit was hit."
+    unit: "{fails}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
 
 
   # BlockIO (cgroup v1) and IO (cgroup v2) controllers

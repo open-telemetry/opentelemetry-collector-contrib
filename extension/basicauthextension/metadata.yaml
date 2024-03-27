@@ -1,4 +1,5 @@
 type: basicauth
+scope_name: otelcol/basicauth
 
 status:
   class: extension
@@ -15,3 +16,6 @@ status:
   codeowners:
     active: [jpkrohling, frzifus]
     emeritus: [svrakitin]
+
+tests:
+  config:

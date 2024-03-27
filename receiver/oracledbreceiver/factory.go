@@ -31,12 +31,12 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = 10 * time.Second
 
 	return &Config{
-		ScraperControllerSettings: cfg,
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		ControllerConfig:     cfg,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -44,7 +44,7 @@ type sqlOpenerFunc func(dataSourceName string) (*sql.DB, error)
 
 func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateMetricsFunc {
 	return func(
-		ctx context.Context,
+		_ context.Context,
 		settings receiver.CreateSettings,
 		cfg component.Config,
 		consumer consumer.Metrics,
@@ -57,7 +57,7 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 			return nil, err
 		}
 
-		mp, err := newScraper(settings.ID, metricsBuilder, sqlCfg.MetricsBuilderConfig, sqlCfg.ScraperControllerSettings, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
+		mp, err := newScraper(metricsBuilder, sqlCfg.MetricsBuilderConfig, sqlCfg.ControllerConfig, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
 			return sqlOpenerFunc(getDataSource(*sqlCfg))
 		}, clientProviderFunc, instanceName)
 		if err != nil {
@@ -66,7 +66,7 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 		opt := scraperhelper.AddScraper(mp)
 
 		return scraperhelper.NewScraperControllerReceiver(
-			&sqlCfg.ScraperControllerSettings,
+			&sqlCfg.ControllerConfig,
 			settings,
 			consumer,
 			opt,

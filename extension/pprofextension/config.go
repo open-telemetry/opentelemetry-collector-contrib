@@ -15,7 +15,7 @@ type Config struct {
 	// TCPAddr is the address and port in which the pprof will be listening to.
 	// Use localhost:<port> to make it available only locally, or ":<port>" to
 	// make it available on all network interfaces.
-	TCPAddr confignet.TCPAddr `mapstructure:",squash"`
+	TCPAddr confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	// Fraction of blocking events that are profiled. A value <= 0 disables
 	// profiling. See https://golang.org/pkg/runtime/#SetBlockProfileRate for details.

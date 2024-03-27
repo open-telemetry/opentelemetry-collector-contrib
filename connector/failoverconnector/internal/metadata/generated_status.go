@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("failover")
+)
+
 const (
-	Type                      = "failover"
 	MetricsToMetricsStability = component.StabilityLevelDevelopment
 	TracesToTracesStability   = component.StabilityLevelDevelopment
 	LogsToLogsStability       = component.StabilityLevelDevelopment

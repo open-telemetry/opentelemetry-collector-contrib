@@ -32,14 +32,14 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	scs := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	scs := scraperhelper.NewDefaultControllerConfig()
 	scs.CollectionInterval = 10 * time.Second
 	scs.Timeout = 5 * time.Second
 	return &Config{
-		ScraperControllerSettings: scs,
-		Endpoint:                  "unix:///var/run/docker.sock",
-		DockerAPIVersion:          defaultDockerAPIVersion,
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		ControllerConfig:     scs,
+		Endpoint:             "unix:///var/run/docker.sock",
+		DockerAPIVersion:     defaultDockerAPIVersion,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -52,10 +52,10 @@ func createMetricsReceiver(
 	dockerConfig := config.(*Config)
 	dsr := newMetricsReceiver(params, dockerConfig)
 
-	scrp, err := scraperhelper.NewScraper(metadata.Type, dsr.scrapeV2, scraperhelper.WithStart(dsr.start))
+	scrp, err := scraperhelper.NewScraper(metadata.Type.String(), dsr.scrapeV2, scraperhelper.WithStart(dsr.start), scraperhelper.WithShutdown(dsr.shutdown))
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&dsr.config.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewScraperControllerReceiver(&dsr.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(scrp))
 }

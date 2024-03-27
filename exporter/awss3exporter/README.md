@@ -22,26 +22,42 @@ This exporter targets to support proto/json format.
 
 The following exporter configuration parameters are supported.
 
-| Name                  | Description                                                                                                                                  | Default     |
-|:----------------------|:---------------------------------------------------------------------------------------------------------------------------------------------|-------------|
-| `region`              | AWS region.                                                                                                                                  | "us-east-1" |
-| `s3_bucket`           | S3 bucket                                                                                                                                    |             |
-| `s3_prefix`           | prefix for the S3 key (root directory inside bucket).                                                                                        |             |
-| `s3_partition`        | time granularity of S3 key: hour or minute                                                                                                   | "minute"    |
-| `role_arn`            | the Role ARN to be assumed                                                                                                                   |             |
-| `file_prefix`         | file prefix defined by user                                                                                                                  |             |
-| `marshaler`           | marshaler used to produce output data                                                                                                        | `otlp_json` |
-| `endpoint`            | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                         |             |
-| `s3_force_path_style` | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html)   | false       |
-| `disable_ssl`         | set this to `true` to disable SSL when sending requests                                                                                      | false       |
+| Name                  | Description                                                                                                                                | Default     |
+|:----------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|-------------|
+| `region`              | AWS region.                                                                                                                                | "us-east-1" |
+| `s3_bucket`           | S3 bucket                                                                                                                                  |             |
+| `s3_prefix`           | prefix for the S3 key (root directory inside bucket).                                                                                      |             |
+| `s3_partition`        | time granularity of S3 key: hour or minute                                                                                                 | "minute"    |
+| `role_arn`            | the Role ARN to be assumed                                                                                                                 |             |
+| `file_prefix`         | file prefix defined by user                                                                                                                |             |
+| `marshaler`           | marshaler used to produce output data                                                                                                      | `otlp_json` |
+| `encoding`            | Encoding extension to use to marshal data. Overrides the `marshaler` configuration option if set.                                          |             |
+| `encoding_file_extension` | file format extension suffix when using the `encoding` configuration option. May be left empty for no suffix to be appended.               |             |
+| `endpoint`            | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                       |             |
+| `s3_force_path_style` | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       |
+| `disable_ssl`         | set this to `true` to disable SSL when sending requests                                                                                    | false       |
+| `compression`         | should the file be compressed                                                                                                              | none        |
 
 ### Marshaler
 
 Marshaler determines the format of data sent to AWS S3. Currently, the following marshalers are implemented:
 
 - `otlp_json` (default): the [OpenTelemetry Protocol format](https://github.com/open-telemetry/opentelemetry-proto), represented as json.
+- `otlp_proto`: the [OpenTelemetry Protocol format](https://github.com/open-telemetry/opentelemetry-proto), represented as Protocol Buffers. A single protobuf message is written into each object.
 - `sumo_ic`: the [Sumo Logic Installed Collector Archive format](https://help.sumologic.com/docs/manage/data-archiving/archive/).
   **This format is supported only for logs.**
+- `body`: export the log body as string.
+  **This format is supported only for logs.**
+
+### Encoding
+
+Encoding overrides marshaler if present and sets to use an encoding extension defined in the collector configuration.
+
+See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/encoding.
+
+### Compression
+- `none` (default): No compression will be applied
+- `gzip`: Files will be compressed with gzip. **This does not support `sumo_ic`marshaler.**
 
 # Example Configuration
 

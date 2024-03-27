@@ -1,4 +1,5 @@
 type: gitprovider
+scope_name: otelcol/gitproviderreceiver
 
 sem_conv_version: 1.9.0
 
@@ -13,40 +14,82 @@ status:
 # this might need to be unique per sub receiver implementation
 resource_attributes:
   organization.name:
-      enabled: true
-      description: Git Organization or Project Name
-      type: string
+    enabled: true
+    description: Git Organization or Project Name
+    type: string
   git.vendor.name:
-      enabled: true
-      # github, gitlab, bitbucket, gittea
-      description: The name of the Git vendor/provider (ie. GitHub / GitLab)
-      type: string
+    enabled: true
+    # github, gitlab, bitbucket, gittea
+    description: The name of the Git vendor/provider (ie. GitHub / GitLab)
+    type: string
 
-## Attritbutes that will be uncommented when the rest of the metrics are added
+## Attributes that will be uncommented when the rest of the metrics are added
 attributes:
   repository.name:
-      description: The full name of the Git repository
-      type: string
+    description: The name of a Git repository
+    type: string
+  branch.name:
+    description: The name of a Git branch
+    type: string
 
 metrics:
   git.repository.count:
-      enabled: true
-      description: Number of repositories in an organization
-      unit: 1
-      gauge:
-          value_type: int
-      attributes: []
+    enabled: true
+    description: Number of repositories in an organization
+    unit: "{repository}"
+    gauge:
+      value_type: int
+    attributes: []
   git.repository.branch.count:
-      enabled: true
-      description: Number of branches in the repository
-      unit: 1
-      gauge:
-          value_type: int
-      attributes: [repository.name]
+    enabled: true
+    description: Number of branches in a repository
+    unit: "{branch}"
+    gauge:
+      value_type: int
+    attributes: [repository.name]
   git.repository.contributor.count:
-      enabled: false
-      description: Total number of unique contributors to this repository
-      unit: 1
-      gauge:
-          value_type: int
-      attributes: [repository.name]
+    enabled: false
+    description: Total number of unique contributors to a repository
+    unit: "{contributor}"
+    gauge:
+      value_type: int
+    attributes: [repository.name]
+  git.repository.pull_request.merged.count:
+    enabled: true
+    description: The number of merged pull requests in a repository
+    unit: "{pull_request}"
+    gauge:
+      value_type: int
+    attributes: [repository.name]
+  git.repository.pull_request.open.count:
+    enabled: true
+    description: The number of open pull requests in a repository
+    unit: "{pull_request}"
+    gauge:
+      value_type: int
+    attributes: [repository.name]
+  git.repository.pull_request.open.time:
+    enabled: true
+    description: The amount of time a pull request has been open
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
+  git.repository.pull_request.merged.time:
+    enabled: true
+    description: The amount of time it took a pull request to go from open to merged
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
+  git.repository.pull_request.approved.time:
+    enabled: true
+    description: The amount of time it took a pull request to go from open to approved
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
+
+tests:
+  config:
+

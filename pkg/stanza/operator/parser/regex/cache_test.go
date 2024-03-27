@@ -32,6 +32,7 @@ func TestNewMemoryCache(t *testing.T) {
 
 	for _, tc := range cases {
 		output := newMemoryCache(tc.maxSize, 0)
+		defer output.stop()
 		require.Equal(t, tc.expect.cache, output.cache)
 		require.Len(t, output.cache, 0, "new memory should always be empty")
 		require.Len(t, output.keys, 0, "new memory should always be empty")
@@ -72,6 +73,7 @@ func TestMemory(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			defer tc.cache.stop()
 			for key, value := range tc.input {
 				tc.cache.add(key, value)
 				out := tc.cache.get(key)
@@ -95,6 +97,7 @@ func TestCleanupLast(t *testing.T) {
 	maxSize := 10
 
 	m := newMemoryCache(uint16(maxSize), 0)
+	defer m.stop()
 
 	// Add to cache until it is full
 	for i := 0; i <= cap(m.keys); i++ {
@@ -175,6 +178,7 @@ func TestNewStartedAtomicLimiter(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			l := newStartedAtomicLimiter(tc.max, tc.interval)
 			require.Equal(t, tc.max, l.max)
+			defer l.stop()
 			if tc.interval == 0 {
 				// default
 				tc.interval = 5
@@ -192,6 +196,7 @@ func TestLimiter(t *testing.T) {
 	l := newStartedAtomicLimiter(max, 120)
 	require.NotNil(t, l)
 	require.Equal(t, max, l.max)
+	defer l.stop()
 
 	require.False(t, l.throttled(), "new limiter should not be throttling")
 	require.Equal(t, uint64(0), l.currentCount())
@@ -219,6 +224,7 @@ func TestThrottledLimiter(t *testing.T) {
 		max:      max,
 		count:    count,
 		interval: 1,
+		done:     make(chan struct{}),
 	}
 
 	require.True(t, l.throttled())
@@ -227,6 +233,7 @@ func TestThrottledLimiter(t *testing.T) {
 	// for it to reset the counter. The limiter will no longer
 	// be in a throttled state and the count will be reset.
 	l.init()
+	defer l.stop()
 	wait := 2 * l.interval
 	time.Sleep(time.Second * wait)
 	require.False(t, l.throttled())
@@ -235,6 +242,7 @@ func TestThrottledLimiter(t *testing.T) {
 
 func TestThrottledCache(t *testing.T) {
 	c := newMemoryCache(3, 120)
+	defer c.stop()
 	require.False(t, c.limiter.throttled())
 	require.Equal(t, 4, int(c.limiter.limit()), "expected limit be cache size + 1")
 	require.Equal(t, float64(120), c.limiter.resetInterval().Seconds(), "expected reset interval to be 120 seconds")

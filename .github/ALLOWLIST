@@ -25,3 +25,4 @@ internal/common
 
 ## UNMAINTAINED components
 exporter/alibabacloudlogserviceexporter/
+exporter/skywalkingexporter/

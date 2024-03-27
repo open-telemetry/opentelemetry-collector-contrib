@@ -43,10 +43,6 @@ func newCloudFoundryReceiver(
 	config Config,
 	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
@@ -66,7 +62,7 @@ func newCloudFoundryReceiver(
 }
 
 func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host) error {
-	tokenProvider, tokenErr := newUAATokenProvider(cfr.settings.Logger, cfr.config.UAA.LimitedHTTPClientSettings, cfr.config.UAA.Username, string(cfr.config.UAA.Password))
+	tokenProvider, tokenErr := newUAATokenProvider(cfr.settings.Logger, cfr.config.UAA.LimitedClientConfig, cfr.config.UAA.Username, string(cfr.config.UAA.Password))
 	if tokenErr != nil {
 		return fmt.Errorf("create cloud foundry UAA token provider: %w", tokenErr)
 	}
@@ -74,7 +70,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 	streamFactory, streamErr := newEnvelopeStreamFactory(
 		cfr.settings,
 		tokenProvider,
-		cfr.config.RLPGateway.HTTPClientSettings,
+		cfr.config.RLPGateway.ClientConfig,
 		host,
 	)
 	if streamErr != nil {

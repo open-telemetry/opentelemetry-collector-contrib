@@ -1,4 +1,5 @@
 type: prometheusremotewrite
+scope_name: otelcol/prometheusremotewrite
 
 status:
   class: exporter
@@ -7,3 +8,6 @@ status:
   distributions: [core, contrib, aws, observiq, liatrio]
   codeowners:
     active: [Aneurysm9, rapphil]
+
+tests:
+  expect_consumer_error: true

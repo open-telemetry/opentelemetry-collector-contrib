@@ -28,7 +28,7 @@ type Config struct {
 
 	RetrySettings configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
-	configgrpc.GRPCClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// Arrow includes settings specific to OTel Arrow.
 	Arrow ArrowSettings `mapstructure:"arrow"`
@@ -63,7 +63,7 @@ type ArrowSettings struct {
 	// gRPC-level compression is enabled by default.  This can be
 	// set to "zstd" to turn on Arrow-Zstd compression.
 	// Note that `Zstd` applies to gRPC, not Arrow compression.
-	PayloadCompression configcompression.CompressionType `mapstructure:"payload_compression"`
+	PayloadCompression configcompression.Type `mapstructure:"payload_compression"`
 
 	// Disabled prevents using OTel Arrow streams.  The exporter
 	// falls back to standard OTLP.
@@ -106,7 +106,7 @@ func (cfg *ArrowSettings) Validate() error {
 	// The cfg.PayloadCompression field is validated by the underlying library,
 	// but we only support Zstd or none.
 	switch cfg.PayloadCompression {
-	case "none", "", configcompression.Zstd:
+	case "none", "", configcompression.TypeZstd:
 	default:
 		return fmt.Errorf("unsupported payload compression: %s", cfg.PayloadCompression)
 	}
@@ -115,7 +115,7 @@ func (cfg *ArrowSettings) Validate() error {
 
 func (cfg *ArrowSettings) toArrowProducerOptions() (arrowOpts []config.Option) {
 	switch cfg.PayloadCompression {
-	case configcompression.Zstd:
+	case configcompression.TypeZstd:
 		arrowOpts = append(arrowOpts, config.WithZstd())
 	case "none", "":
 		arrowOpts = append(arrowOpts, config.WithNoZstd())

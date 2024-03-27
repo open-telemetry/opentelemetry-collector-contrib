@@ -43,8 +43,8 @@ func TestOAuthClientSettings(t *testing.T) {
 				TokenURL:       "https://example.com/v1/token",
 				Scopes:         []string{"resource.read"},
 				Timeout:        2,
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile:   testCAFile,
 						CertFile: testCertFile,
 						KeyFile:  testKeyFile,
@@ -64,8 +64,8 @@ func TestOAuthClientSettings(t *testing.T) {
 				TokenURL:     "https://example.com/v1/token",
 				Scopes:       []string{"resource.read"},
 				Timeout:      2,
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					TLSSetting: configtls.Config{
 						CAFile:   testCAFile,
 						CertFile: "doestexist.cert",
 						KeyFile:  testKeyFile,
@@ -316,7 +316,7 @@ func TestFailContactingOAuth(t *testing.T) {
 	assert.Contains(t, err.Error(), serverURL.String())
 
 	// Test for HTTP connections
-	setting := confighttp.HTTPClientSettings{
+	setting := confighttp.ClientConfig{
 		Endpoint: "http://example.com/",
 		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
 			return oauth2Authenticator.roundTripper(next)

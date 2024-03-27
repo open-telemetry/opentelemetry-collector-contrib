@@ -58,7 +58,7 @@ func TestScraperError(t *testing.T) {
 	}))
 	t.Run("404", func(t *testing.T) {
 		sc := newNginxScraper(receivertest.NewNopCreateSettings(), &Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: nginxMock.URL + "/badpath",
 			},
 		})
@@ -70,7 +70,7 @@ func TestScraperError(t *testing.T) {
 
 	t.Run("parse error", func(t *testing.T) {
 		sc := newNginxScraper(receivertest.NewNopCreateSettings(), &Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: nginxMock.URL + "/status",
 			},
 		})
@@ -83,10 +83,10 @@ func TestScraperError(t *testing.T) {
 
 func TestScraperFailedStart(t *testing.T) {
 	sc := newNginxScraper(receivertest.NewNopCreateSettings(), &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "localhost:8080",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.ClientConfig{
+				TLSSetting: configtls.Config{
 					CAFile: "/non/existent",
 				},
 			},

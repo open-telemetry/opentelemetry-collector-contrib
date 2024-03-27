@@ -1,9 +1,14 @@
 type: windowseventlog
+scope_name: otelcol/windowseventlogreceiver
 
 status:
   class: receiver
   stability:
     alpha: [logs]
-  distributions: [splunk, observiq, sumo]
+  distributions: [contrib, splunk, observiq, sumo]
   codeowners:
     active: [djaglowski, armstrmi, pjanotti]
+  unsupported_platforms: [darwin, linux]
+
+tests:
+  config:

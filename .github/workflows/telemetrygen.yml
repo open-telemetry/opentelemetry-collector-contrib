@@ -4,7 +4,12 @@ on:
     branches: [ main ]
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
+  merge_group:
   pull_request:
+env:
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
 # Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
@@ -17,10 +22,30 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21.8"
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      - name: Build binaries
+        run: |
+          GOOS=linux GOARCH=ppc64le make telemetrygen
+          GOOS=linux GOARCH=arm64 make telemetrygen
+          GOOS=linux GOARCH=amd64 make telemetrygen
+          GOOS=linux GOARCH=s390x make telemetrygen
+          cp bin/telemetrygen_* cmd/telemetrygen/
       - name: Build telemetrygen
         uses: docker/build-push-action@v5
         with:
@@ -36,6 +61,19 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21.8"
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -46,6 +84,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build binaries
+        run: |
+          GOOS=linux GOARCH=ppc64le make telemetrygen
+          GOOS=linux GOARCH=arm64 make telemetrygen
+          GOOS=linux GOARCH=amd64 make telemetrygen
+          GOOS=linux GOARCH=s390x make telemetrygen
+          cp bin/telemetrygen_* cmd/telemetrygen/
       - name: Push telemetrygen to Github packages
         uses: docker/build-push-action@v5
         with:
@@ -61,6 +106,19 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21.8"
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -74,6 +132,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build binaries
+        run: |
+          GOOS=linux GOARCH=ppc64le make telemetrygen
+          GOOS=linux GOARCH=arm64 make telemetrygen
+          GOOS=linux GOARCH=amd64 make telemetrygen
+          GOOS=linux GOARCH=s390x make telemetrygen
+          cp bin/telemetrygen_* cmd/telemetrygen/
       - name: Push telemetrygen to Github packages
         uses: docker/build-push-action@v5
         with:

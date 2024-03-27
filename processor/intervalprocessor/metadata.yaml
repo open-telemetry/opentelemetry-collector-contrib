@@ -1,10 +1,11 @@
 type: interval
+scope_name: otelcol/interval
 
 status:
   class: processor
   stability:
     development: [metrics]
-  distributions: [contrib]
+  distributions: []
   warnings: [Statefulness]
   codeowners:
     active: [RichieSams]

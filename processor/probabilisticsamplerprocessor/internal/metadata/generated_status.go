@@ -8,8 +8,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var (
+	Type = component.MustNewType("probabilistic_sampler")
+)
+
 const (
-	Type            = "probabilistic_sampler"
 	LogsStability   = component.StabilityLevelAlpha
 	TracesStability = component.StabilityLevelBeta
 )

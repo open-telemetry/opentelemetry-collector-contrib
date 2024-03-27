@@ -1,4 +1,5 @@
 type: postgresql
+scope_name: otelcol/postgresqlreceiver
 
 status:
   class: receiver

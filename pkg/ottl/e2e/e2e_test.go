@@ -250,6 +250,12 @@ func Test_e2e_converters(t *testing.T) {
 		want      func(tCtx ottllog.TransformContext)
 	}{
 		{
+			statement: `set(attributes["test"], Base64Decode("cGFzcw=="))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Concat(["A","B"], ":"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "A:B")
@@ -431,10 +437,68 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], ParseCSV("val1;val2;val3","header1|header2|header3",";","|","strict"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("header1", "val1")
+				m.PutStr("header2", "val2")
+				m.PutStr("header3", "val3")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseCSV("val1,val2,val3","header1|header2|header3",headerDelimiter="|",mode="strict"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("header1", "val1")
+				m.PutStr("header2", "val2")
+				m.PutStr("header3", "val3")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ParseJSON("{\"id\":1}"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
 				m.PutDouble("id", 1)
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseKeyValue("k1=v1 k2=v2"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("k1", "v1")
+				m.PutStr("k2", "v2")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseKeyValue("k1!v1_k2!v2", "!", "_"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("k1", "v1")
+				m.PutStr("k2", "v2")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseKeyValue("k1!v1_k2!\"v2__!__v2\"", "!", "_"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("k1", "v1")
+				m.PutStr("k2", "v2__!__v2")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseXML("<Log id=\"1\"><Message>This is a log message!</Message></Log>"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				log := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				log.PutStr("tag", "Log")
+
+				attrs := log.PutEmptyMap("attributes")
+				attrs.PutStr("id", "1")
+
+				logChildren := log.PutEmptySlice("children")
+
+				message := logChildren.AppendEmpty().SetEmptyMap()
+				message.PutStr("tag", "Message")
+				message.PutStr("content", "This is a log message!")
 			},
 		},
 		{
@@ -516,6 +580,44 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["test"], "pass") where IsString(UUID())`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "\\")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "\\")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "\\\\")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "\\\\")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "\\\\\\")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "\\\\\\")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "\\\\\\\\")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "\\\\\\\\")
+			},
+		},
+		{
+			statement: `set(attributes["test"], "\"")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", `"`)
+			},
+		},
+		{
+			statement: `keep_keys(attributes["foo"], ["\\", "bar"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				// keep_keys should see two arguments
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("foo")
+				m.PutStr("bar", "pass")
 			},
 		},
 	}

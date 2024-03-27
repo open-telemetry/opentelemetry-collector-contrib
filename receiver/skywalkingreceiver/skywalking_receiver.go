@@ -33,9 +33,9 @@ import (
 // the Skywalking receiver will use.
 type configuration struct {
 	CollectorHTTPPort           int
-	CollectorHTTPSettings       confighttp.HTTPServerSettings
+	CollectorHTTPSettings       confighttp.ServerConfig
 	CollectorGRPCPort           int
-	CollectorGRPCServerSettings configgrpc.GRPCServerSettings
+	CollectorGRPCServerSettings configgrpc.ServerConfig
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Skywaking.
@@ -70,9 +70,6 @@ func newSkywalkingReceiver(
 
 // registerTraceConsumer register a TracesReceiver that receives trace
 func (sr *swReceiver) registerTraceConsumer(tc consumer.Traces) error {
-	if tc == nil {
-		return component.ErrNilNextConsumer
-	}
 	var err error
 	sr.traceReceiver, err = trace.NewReceiver(tc, sr.settings)
 	if err != nil {
@@ -83,9 +80,6 @@ func (sr *swReceiver) registerTraceConsumer(tc consumer.Traces) error {
 
 // registerTraceConsumer register a TracesReceiver that receives trace
 func (sr *swReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
-	if mc == nil {
-		return component.ErrNilNextConsumer
-	}
 	var err error
 	sr.metricsReceiver, err = metrics.NewReceiver(mc, sr.settings)
 	if err != nil {
@@ -160,7 +154,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 
 	if sr.collectorGRPCEnabled() {
 		var err error
-		sr.grpc, err = sr.config.CollectorGRPCServerSettings.ToServer(host, sr.settings.TelemetrySettings)
+		sr.grpc, err = sr.config.CollectorGRPCServerSettings.ToServer(context.Background(), host, sr.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Skywalking gRPC Collector: %w", err)
 		}

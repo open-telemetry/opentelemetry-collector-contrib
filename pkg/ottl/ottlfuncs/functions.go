@@ -35,6 +35,7 @@ func StandardConverters[K any]() map[string]ottl.Factory[K] {
 func converters[K any]() []ottl.Factory[K] {
 	return []ottl.Factory[K]{
 		// Converters
+		NewBase64DecodeFactory[K](),
 		NewConcatFactory[K](),
 		NewConvertCaseFactory[K](),
 		NewDoubleFactory[K](),
@@ -46,6 +47,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewIntFactory[K](),
 		NewIsBoolFactory[K](),
 		NewIsDoubleFactory[K](),
+		NewIsIntFactory[K](),
 		NewIsMapFactory[K](),
 		NewIsMatchFactory[K](),
 		NewIsStringFactory[K](),
@@ -56,7 +58,10 @@ func converters[K any]() []ottl.Factory[K] {
 		NewMinutesFactory[K](),
 		NewNanosecondsFactory[K](),
 		NewNowFactory[K](),
+		NewParseCSVFactory[K](),
 		NewParseJSONFactory[K](),
+		NewParseKeyValueFactory[K](),
+		NewParseXMLFactory[K](),
 		NewSecondsFactory[K](),
 		NewSHA1Factory[K](),
 		NewSHA256Factory[K](),
@@ -66,6 +71,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewTimeFactory[K](),
 		NewTruncateTimeFactory[K](),
 		NewTraceIDFactory[K](),
+		NewUnixFactory[K](),
 		NewUnixMicroFactory[K](),
 		NewUnixMilliFactory[K](),
 		NewUnixNanoFactory[K](),
