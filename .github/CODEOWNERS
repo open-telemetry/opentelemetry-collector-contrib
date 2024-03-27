@@ -72,6 +72,7 @@ exporter/otelarrowexporter/                              @open-telemetry/collect
 exporter/prometheusexporter/                             @open-telemetry/collector-contrib-approvers @Aneurysm9
 exporter/prometheusremotewriteexporter/                  @open-telemetry/collector-contrib-approvers @Aneurysm9 @rapphil
 exporter/pulsarexporter/                                 @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
+exporter/rabbitmqexporter/                               @open-telemetry/collector-contrib-approvers @swar8080
 exporter/sapmexporter/                                   @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
 exporter/sentryexporter/                                 @open-telemetry/collector-contrib-approvers @AbhiPrasad
 exporter/signalfxexporter/                               @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1
@@ -92,6 +93,7 @@ extension/encoding/jsonlogencodingextension/             @open-telemetry/collect
 extension/encoding/otlpencodingextension/                @open-telemetry/collector-contrib-approvers @dao-jun @VihasMakwana
 extension/encoding/textencodingextension/                @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/zipkinencodingextension/              @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
+extension/googleclientauthextension/                     @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @damemi @psx95
 extension/headerssetterextension/                        @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/healthcheckextension/                          @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarderextension/                        @open-telemetry/collector-contrib-approvers @atoulme @rmfitzpatrick
@@ -187,6 +189,7 @@ receiver/awscloudwatchmetricsreceiver/                   @open-telemetry/collect
 receiver/awscloudwatchreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
 receiver/awscontainerinsightreceiver/                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
 receiver/awsecscontainermetricsreceiver/                 @open-telemetry/collector-contrib-approvers @Aneurysm9
+receiver/awss3receiver/                                  @open-telemetry/collector-contrib-approvers @atoulme @adcharre
 receiver/awsfirehosereceiver/                            @open-telemetry/collector-contrib-approvers @Aneurysm9
 receiver/awsxrayreceiver/                                @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 receiver/azureblobreceiver/                              @open-telemetry/collector-contrib-approvers @eedorenko @mx-psi

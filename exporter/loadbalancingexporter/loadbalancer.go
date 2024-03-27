@@ -85,7 +85,7 @@ func newLoadBalancer(params exporter.CreateSettings, cfg component.Config, facto
 		if err != nil {
 			return nil, err
 		}
-		res, err = newK8sResolver(clt, k8sLogger, oCfg.Resolver.K8sSvc.Service, oCfg.Resolver.K8sSvc.Ports)
+		res, err = newK8sResolver(clt, k8sLogger, oCfg.Resolver.K8sSvc.Service, oCfg.Resolver.K8sSvc.Ports, oCfg.Resolver.K8sSvc.Timeout)
 		if err != nil {
 			return nil, err
 		}
