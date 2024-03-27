@@ -558,7 +558,7 @@ func TestFloatCounterHistogram(t *testing.T) {
 					SampleCountFloat: 1213.0,
 					SampleSum:        456,
 					// Float counter histogram definition
-					Schema:         3,
+					Schema:         -1,
 					ZeroThreshold:  0.001,
 					ZeroCountFloat: 2.0,
 					NegativeSpan: []dto.BucketSpan{
@@ -584,7 +584,7 @@ func TestFloatCounterHistogram(t *testing.T) {
 			compareMetricUnit(""),
 			[]dataPointExpectation{{
 				exponentialHistogramComparator: []exponentialHistogramComparator{
-					compareExponentialHistogram(3, 1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 0, 3}),
+					compareExponentialHistogram(-1, 1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 0, 3}),
 				},
 			}},
 		),
