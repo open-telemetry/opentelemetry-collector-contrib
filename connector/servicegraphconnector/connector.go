@@ -42,7 +42,7 @@ var (
 	}
 
 	defaultPeerAttributes = []string{
-		semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeNetSockPeerName, semconv.AttributeNetPeerName, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget,
+		semconv.AttributePeerService, semconv.AttributeDBName, semconv.AttributeDBSystem,
 	}
 
 	defaultDatabaseNameAttribute = semconv.AttributeDBName
