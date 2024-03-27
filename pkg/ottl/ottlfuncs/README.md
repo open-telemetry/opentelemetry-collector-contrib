@@ -51,6 +51,7 @@ Available Editors:
 - [keep_keys](#keep_keys)
 - [limit](#limit)
 - [merge_maps](#merge_maps)
+- [rename](#rename)
 - [replace_all_matches](#replace_all_matches)
 - [replace_all_patterns](#replace_all_patterns)
 - [replace_match](#replace_match)
@@ -243,6 +244,34 @@ Examples:
 
 
 - `merge_maps(attributes, resource.attributes, "insert")`
+
+### rename
+
+`rename(target, source_map, source_key, [Optional] ignore_missing = true, [Optional] conflict_strategy = upsert)`
+
+
+The `rename` function combines `set` and `delete_key` calls in one function. It creates the `target` field with the `source_key` value from `source_map` and it deletes the `source_key` from `source_map`.
+
+`target` is a path expression to a telemetry field. `source_map` is a path expression to a `pcommon.Map` type field. `source_key` is a string key for `source_map`.
+
+How the ```rename``` function behaves is controlled by the optional `ignore_missing` and `conflict_strategy` arguments.
+
+`ignore_missing` is optional boolean argument that specifies what happens when the `source_key` is missing from the `source_map`. It is set to `true` by default.
+- The `true` value results in no changes if the `source_key` key doesn't exists in the `source_map`
+- The `false` value results in error if the `source_key` key doesn't exists in the `source_map`
+
+
+`conflict_strategy` is an optional string parameter that specifies the conflict resolution strategy for the `target`.
+Valid values are `upsert`, `fail`, and `insert`. By default, it is set to `upsert`.
+- The `upsert` overwrites the `target` value if it is already present.
+- The `fail` returns an error if `target` is already present.
+- The `insert` results in no changes if `target` is already present.
+
+Examples:
+
+- `rename(attributes["destination"], attributes, "source")`
+- `rename(attributes["destination"], attributes, "source", false)`
+- `rename(attributes["destination"], attributes, "source", true, "insert")`
 
 ### replace_all_matches
 
