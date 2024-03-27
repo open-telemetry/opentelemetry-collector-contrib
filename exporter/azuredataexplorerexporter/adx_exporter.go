@@ -214,6 +214,7 @@ func createKcsb(config *Config, version string) *kusto.ConnectionStringBuilder {
 	var kcsb *kusto.ConnectionStringBuilder
 	isManagedIdentity := len(strings.TrimSpace(config.ManagedIdentityID)) > 0
 	isSystemManagedIdentity := strings.EqualFold(strings.TrimSpace(config.ManagedIdentityID), "SYSTEM")
+	isWorkloadIdentity := config.UseWorkloadIdentity
 	// If the user has managed identity done, use it. For System managed identity use the MI as system
 	switch {
 	case !isManagedIdentity:
@@ -222,6 +223,8 @@ func createKcsb(config *Config, version string) *kusto.ConnectionStringBuilder {
 		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithSystemManagedIdentity()
 	case isManagedIdentity && !isSystemManagedIdentity:
 		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithUserManagedIdentity(config.ManagedIdentityID)
+	case isWorkloadIdentity:
+		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithDefaultAzureCredential()
 	}
 	kcsb.SetConnectorDetails("OpenTelemetry", version, "", "", false, "", kusto.StringPair{Key: "isManagedIdentity", Value: strconv.FormatBool(isManagedIdentity)})
 	return kcsb
