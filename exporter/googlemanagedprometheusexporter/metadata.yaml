@@ -8,3 +8,6 @@ status:
   distributions: [contrib]
   codeowners:
     active: [aabmass, dashpole, jsuereth, punya, damemi, psx95]
+
+tests:
+  skip_lifecycle: true
