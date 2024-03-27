@@ -9,7 +9,6 @@ import (
 	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/confmap"
 )
 
 const (
@@ -42,30 +41,11 @@ type Config struct {
 }
 
 var _ component.Config = (*Config)(nil)
-var _ confmap.Unmarshaler = (*Config)(nil)
-
-// Validate checks the receiver configuration is valid
-func (cfg *Config) Validate() error {
-	if err := cfg.Arrow.Validate(); err != nil {
-		return err
-	}
-	return nil
-}
+var _ component.ConfigValidator = (*ArrowConfig)(nil)
 
 func (cfg *ArrowConfig) Validate() error {
 	if err := cfg.Zstd.Validate(); err != nil {
 		return fmt.Errorf("zstd decoder: invalid configuration: %w", err)
 	}
-	return nil
-}
-
-// Unmarshal a confmap.Conf into the config struct.
-func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
-	// first load the config normally
-	err := conf.Unmarshal(cfg)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
