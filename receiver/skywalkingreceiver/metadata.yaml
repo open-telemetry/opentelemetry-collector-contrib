@@ -6,7 +6,7 @@ status:
   stability:
     development: [metrics]
     beta: [traces]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   codeowners:
     active: [JaredTan95]
 
