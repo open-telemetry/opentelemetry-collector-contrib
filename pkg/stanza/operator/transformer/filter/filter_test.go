@@ -164,7 +164,7 @@ func TestTransformer(t *testing.T) {
 
 			filtered := true
 			mockOutput := testutil.NewMockOperator("output")
-			mockOutput.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+			mockOutput.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(_ mock.Arguments) {
 				filtered = false
 			})
 
@@ -189,7 +189,7 @@ func TestFilterDropRatio(t *testing.T) {
 
 	processedEntries := 0
 	mockOutput := testutil.NewMockOperator("output")
-	mockOutput.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+	mockOutput.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(_ mock.Arguments) {
 		processedEntries++
 	})
 

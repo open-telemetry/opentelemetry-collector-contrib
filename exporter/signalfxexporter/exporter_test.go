@@ -1140,7 +1140,7 @@ func TestConsumeMetadata(t *testing.T) {
 			wg := sync.WaitGroup{}
 			wg.Add(1)
 
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				b, err := io.ReadAll(r.Body)
 				assert.NoError(t, err)
 
@@ -1219,7 +1219,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
@@ -1354,7 +1354,7 @@ func TestTLSIngestConnection(t *testing.T) {
 	dp.Attributes().PutStr("k1", "v1")
 	dp.SetDoubleValue(123)
 
-	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(w, "connection is successful")
 	}))
 	require.NoError(t, err)
@@ -1478,7 +1478,7 @@ func TestTLSAPIConnection(t *testing.T) {
 		},
 	}
 
-	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(w, "connection is successful")
 	}))
 	require.NoError(t, err)
@@ -1584,7 +1584,7 @@ func BenchmarkExporterConsumeDataWithOTLPHistograms(b *testing.B) {
 		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()

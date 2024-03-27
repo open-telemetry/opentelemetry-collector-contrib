@@ -45,7 +45,7 @@ func TestInitExporter(t *testing.T) {
 
 func TestAllSuccess(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, `Example log`, body)
 			assert.Equal(t, "", req.Header.Get("X-Sumo-Fields"))
@@ -61,7 +61,7 @@ func TestAllSuccess(t *testing.T) {
 
 func TestResourceMerge(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, `Example log`, body)
 			assert.Equal(t, "key1=original_value, key2=additional_value", req.Header.Get("X-Sumo-Fields"))
@@ -113,7 +113,7 @@ func TestPartiallyFailed(t *testing.T) {
 			assert.Equal(t, "Example log", body)
 			assert.Equal(t, "key1=value1, key2=value2", req.Header.Get("X-Sumo-Fields"))
 		},
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, "Another example log", body)
 			assert.Equal(t, "key3=value3, key4=value4", req.Header.Get("X-Sumo-Fields"))
@@ -158,7 +158,7 @@ func TestInvalidHTTPCLient(t *testing.T) {
 		CompressEncoding: "gzip",
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "test_endpoint",
-			CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
+			CustomRoundTripper: func(_ http.RoundTripper) (http.RoundTripper, error) {
 				return nil, errors.New("roundTripperException")
 			},
 		},
@@ -172,7 +172,7 @@ func TestInvalidHTTPCLient(t *testing.T) {
 
 func TestPushInvalidCompressor(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, `Example log`, body)
 			assert.Equal(t, "", req.Header.Get("X-Sumo-Fields"))
@@ -228,7 +228,7 @@ func TestPushFailedBatch(t *testing.T) {
 
 func TestAllMetricsSuccess(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000
 gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
@@ -288,7 +288,7 @@ func TestMetricsPartiallyFailed(t *testing.T) {
 			assert.Equal(t, expected, body)
 			assert.Equal(t, "application/vnd.sumologic.prometheus", req.Header.Get("Content-Type"))
 		},
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			expected := `gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
 gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
@@ -317,7 +317,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 
 func TestPushMetricsInvalidCompressor(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, `Example log`, body)
 			assert.Equal(t, "", req.Header.Get("X-Sumo-Fields"))
@@ -346,7 +346,7 @@ func TestMetricsDifferentMetadata(t *testing.T) {
 			assert.Equal(t, expected, body)
 			assert.Equal(t, "application/vnd.sumologic.prometheus", req.Header.Get("Content-Type"))
 		},
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			expected := `gauge_metric_name{foo="bar",key2="value2",remote_name="156920",url="http://example_url"} 124 1608124661166
 gauge_metric_name{foo="bar",key2="value2",remote_name="156955",url="http://another_url"} 245 1608124662166`
