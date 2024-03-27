@@ -33,6 +33,7 @@ func TestStartTimeMetricMatch(t *testing.T) {
 				summaryMetric("test_summary_metric", summaryPoint(nil, startTime, currentTime, 10, 100, []float64{10, 50, 90}, []float64{9, 15, 48})),
 				sumMetric("example_process_start_time_seconds", doublePoint(nil, startTime, currentTime, matchBuilderStartTime)),
 				sumMetric("process_start_time_seconds", doublePoint(nil, startTime, currentTime, matchBuilderStartTime+1)),
+				exponentialHistogramMetric("test_exponential_histogram_metric", exponentialHistogramPointSimplified(nil, startTime, currentTime, 3, 1, -5, 3)),
 			),
 			startTimeMetricRegex: regexp.MustCompile("^.*_process_start_time_seconds$"),
 			expectedStartTime:    timestampFromFloat64(matchBuilderStartTime),
@@ -45,6 +46,7 @@ func TestStartTimeMetricMatch(t *testing.T) {
 				summaryMetric("test_summary_metric", summaryPoint(nil, startTime, currentTime, 10, 100, []float64{10, 50, 90}, []float64{9, 15, 48})),
 				sumMetric("example_process_start_time_seconds", doublePoint(nil, startTime, currentTime, matchBuilderStartTime)),
 				sumMetric("process_start_time_seconds", doublePoint(nil, startTime, currentTime, matchBuilderStartTime+1)),
+				exponentialHistogramMetric("test_exponential_histogram_metric", exponentialHistogramPointSimplified(nil, startTime, currentTime, 3, 1, -5, 3)),
 			),
 			expectedStartTime: timestampFromFloat64(matchBuilderStartTime + 1),
 		},
@@ -139,7 +141,12 @@ func TestStartTimeMetricMatch(t *testing.T) {
 							for l := 0; l < dps.Len(); l++ {
 								assert.Equal(t, tt.expectedStartTime, dps.At(l).StartTimestamp())
 							}
-						case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram:
+						case pmetric.MetricTypeExponentialHistogram:
+							dps := metric.ExponentialHistogram().DataPoints()
+							for l := 0; l < dps.Len(); l++ {
+								assert.Equal(t, tt.expectedStartTime, dps.At(l).StartTimestamp())
+							}
+						case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge:
 						}
 					}
 				}

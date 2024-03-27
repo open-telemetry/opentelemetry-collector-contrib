@@ -73,6 +73,12 @@ prometheus --config.file=prom.yaml
 "--feature-gates=receiver.prometheusreceiver.UseCreatedMetric"
 ```
 
+- `receiver.prometheusreceiver.EnableNativeHistograms`: process and turn native histogram metrics into OpenTelemetry exponential histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.EnableNativeHistograms"
+```
+
 - `report_extra_scrape_metrics`: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`
 
 You can copy and paste that same configuration under:
@@ -112,6 +118,7 @@ The prometheus receiver also supports additional top-level options:
 - **trim_metric_suffixes**: [**Experimental**] When set to true, this enables trimming unit and some counter type suffixes from metric names. For example, it would cause `singing_duration_seconds_total` to be trimmed to `singing_duration`. This can be useful when trying to restore the original metric names used in OpenTelemetry instrumentation. Defaults to false.
 - **use_start_time_metric**: When set to true, this enables retrieving the start time of all counter metrics from the process_start_time_seconds metric. This is only correct if all counters on that endpoint started after the process start time, and the process is the only actor exporting the metric after the process started. It should not be used in "exporters" which export counters that may have started before the process itself. Use only if you know what you are doing, as this may result in incorrect rate calculations. Defaults to false.
 - **start_time_metric_regex**: The regular expression for the start time metric, and is only applied when use_start_time_metric is enabled.  Defaults to process_start_time_seconds.
+- **enable_protobuf_negotiation**: When set to true, Prometheus receiver will try to negotiate the protobuf format first for scraping the target. This is considered experimental.
 
 For example,
 
@@ -121,6 +128,7 @@ receivers:
       trim_metric_suffixes: true
       use_start_time_metric: true
       start_time_metric_regex: foo_bar_.*
+      enable_protobuf_negotiation: true
       config:
         scrape_configs:
           - job_name: 'otel-collector'
@@ -128,6 +136,21 @@ receivers:
             static_configs:
               - targets: ['0.0.0.0:8888']
 ```
+
+## Prometheus native histograms
+
+Native histograms are an experimental [feature](https://prometheus.io/docs/prometheus/latest/feature_flags/#native-histograms) of Prometheus.
+
+To start scraping native histograms, set `config.global.scrape_protocols` to `[ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]`
+in the receiver configuration. This requirement will be lifted once Prometheus can scrape native histograms over text formats.
+
+To enable converting native histograms to OpenTelemetry exponential histograms, enable the feature gate `receiver.prometheusreceiver.EnableNativeHistograms`.
+The feature is considered experimental.
+
+This feature applies to the most common integer counter histograms, gauge histograms are dropped.
+In case a metric has both the conventional (aka classic) buckets and also native histogram buckets, only the native histogram buckets will be
+taken into account to create the corresponding exponential histogram. To scrape the classic buckets instead use the
+[scrape option](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config) `scrape_classic_histograms`.
 
 ## OpenTelemetry Operator 
 Additional to this static job definitions this receiver allows to query a list of jobs from the 
