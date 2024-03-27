@@ -23,7 +23,7 @@ func Test_Duration(t *testing.T) {
 		{
 			name: "100 milliseconds",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "100ms", nil
 				},
 			},
@@ -31,7 +31,7 @@ func Test_Duration(t *testing.T) {
 		}, {
 			name: "234 microseconds",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "234us", nil
 				},
 			},
@@ -39,7 +39,7 @@ func Test_Duration(t *testing.T) {
 		}, {
 			name: "777 nanoseconds",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "777ns", nil
 				},
 			},
@@ -48,7 +48,7 @@ func Test_Duration(t *testing.T) {
 		{
 			name: "one second",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "1s", nil
 				},
 			},
@@ -57,7 +57,7 @@ func Test_Duration(t *testing.T) {
 		{
 			name: "two hundred second",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "200s", nil
 				},
 			},
@@ -66,7 +66,7 @@ func Test_Duration(t *testing.T) {
 		{
 			name: "three minutes",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "3m", nil
 				},
 			},
@@ -75,7 +75,7 @@ func Test_Duration(t *testing.T) {
 		{
 			name: "45 minutes",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "45m", nil
 				},
 			},
@@ -84,7 +84,7 @@ func Test_Duration(t *testing.T) {
 		{
 			name: "7 mins, 12 secs",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "7m12s", nil
 				},
 			},
@@ -93,7 +93,7 @@ func Test_Duration(t *testing.T) {
 		{
 			name: "4 hours",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "4h", nil
 				},
 			},
@@ -102,7 +102,7 @@ func Test_Duration(t *testing.T) {
 		{
 			name: "5 hours, 23 mins, 59 secs",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "5h23m59s", nil
 				},
 			},
@@ -111,7 +111,7 @@ func Test_Duration(t *testing.T) {
 		{
 			name: "5 hours, 59 secs",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "5h59s", nil
 				},
 			},
@@ -120,7 +120,7 @@ func Test_Duration(t *testing.T) {
 		{
 			name: "5 hours, 23 mins",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "5h23m", nil
 				},
 			},
@@ -129,7 +129,7 @@ func Test_Duration(t *testing.T) {
 		{
 			name: "2 mins, 1 sec, 64 microsecs",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "2m1s64us", nil
 				},
 			},
@@ -138,7 +138,7 @@ func Test_Duration(t *testing.T) {
 		{
 			name: "59 hours, 1 min, 78 millisecs",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "59h1m78ms", nil
 				},
 			},
@@ -165,7 +165,7 @@ func Test_DurationError(t *testing.T) {
 		{
 			name: "empty duration",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "", nil
 				},
 			},
@@ -174,7 +174,7 @@ func Test_DurationError(t *testing.T) {
 		{
 			name: "empty duration",
 			duration: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "one second", nil
 				},
 			},
