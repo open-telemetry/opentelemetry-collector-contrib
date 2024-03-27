@@ -186,7 +186,7 @@ func TestPushMetadata(t *testing.T) {
 	}
 
 	handler := http.NewServeMux()
-	handler.HandleFunc("/intake", func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc("/intake", func(_ http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Header.Get("DD-Api-Key"), "apikey")
 		assert.Equal(t, r.Header.Get("User-Agent"), "otelcontribcol/1.0")
 

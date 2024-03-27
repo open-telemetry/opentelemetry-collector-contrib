@@ -945,7 +945,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				req.Header.Set("Content-Type", "application/not-json")
 				return req
 			}(),
-			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+			assertResponse: func(t *testing.T, resp *http.Response, _ any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusOK, status)
 			},
@@ -982,7 +982,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", strings.NewReader("foo\nbar"))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+			assertResponse: func(t *testing.T, resp *http.Response, _ any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusOK, status)
 			},

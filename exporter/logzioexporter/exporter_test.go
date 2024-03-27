@@ -184,7 +184,7 @@ func TestExportErrors(tester *testing.T) {
 		{http.StatusBadRequest},
 	}
 	for _, test := range ExportErrorsTests {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 			rw.WriteHeader(test.status)
 		}))
 		cfg := &Config{

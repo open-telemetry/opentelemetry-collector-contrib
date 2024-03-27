@@ -290,7 +290,7 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 }
 
 func TestFailContactingOAuth(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(200)
 		_, err := w.Write([]byte("not-json"))
 		assert.NoError(t, err)

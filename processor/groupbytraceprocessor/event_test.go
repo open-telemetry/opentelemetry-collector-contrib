@@ -32,7 +32,7 @@ func TestEventCallback(t *testing.T) {
 			typ:      traceReceived,
 			payload:  tracesWithID{id: pcommon.NewTraceIDEmpty(), td: ptrace.NewTraces()},
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceReceived = func(received tracesWithID, worker *eventMachineWorker) error {
+				em.onTraceReceived = func(_ tracesWithID, _ *eventMachineWorker) error {
 					wg.Done()
 					return nil
 				}
@@ -43,7 +43,7 @@ func TestEventCallback(t *testing.T) {
 			typ:      traceExpired,
 			payload:  pcommon.TraceID([16]byte{1, 2, 3, 4}),
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceExpired = func(expired pcommon.TraceID, worker *eventMachineWorker) error {
+				em.onTraceExpired = func(expired pcommon.TraceID, _ *eventMachineWorker) error {
 					wg.Done()
 					assert.Equal(t, pcommon.TraceID([16]byte{1, 2, 3, 4}), expired)
 					return nil
@@ -55,7 +55,7 @@ func TestEventCallback(t *testing.T) {
 			typ:      traceReleased,
 			payload:  []ptrace.ResourceSpans{},
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceReleased = func(expired []ptrace.ResourceSpans) error {
+				em.onTraceReleased = func(_ []ptrace.ResourceSpans) error {
 					wg.Done()
 					return nil
 				}
@@ -128,7 +128,7 @@ func TestEventCallbackNotSet(t *testing.T) {
 
 			wg := &sync.WaitGroup{}
 			em := newEventMachine(logger, 50, 1, 1_000)
-			em.onError = func(e event) {
+			em.onError = func(_ event) {
 				wg.Done()
 			}
 			em.startInBackground()
@@ -155,8 +155,8 @@ func TestEventInvalidPayload(t *testing.T) {
 		{
 			casename: "onTraceReceived",
 			typ:      traceReceived,
-			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceReceived = func(received tracesWithID, worker *eventMachineWorker) error {
+			registerCallback: func(em *eventMachine, _ *sync.WaitGroup) {
+				em.onTraceReceived = func(_ tracesWithID, _ *eventMachineWorker) error {
 					return nil
 				}
 			},
@@ -164,8 +164,8 @@ func TestEventInvalidPayload(t *testing.T) {
 		{
 			casename: "onTraceExpired",
 			typ:      traceExpired,
-			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceExpired = func(expired pcommon.TraceID, worker *eventMachineWorker) error {
+			registerCallback: func(em *eventMachine, _ *sync.WaitGroup) {
+				em.onTraceExpired = func(_ pcommon.TraceID, _ *eventMachineWorker) error {
 					return nil
 				}
 			},
@@ -173,8 +173,8 @@ func TestEventInvalidPayload(t *testing.T) {
 		{
 			casename: "onTraceReleased",
 			typ:      traceReleased,
-			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceReleased = func(released []ptrace.ResourceSpans) error {
+			registerCallback: func(em *eventMachine, _ *sync.WaitGroup) {
+				em.onTraceReleased = func(_ []ptrace.ResourceSpans) error {
 					return nil
 				}
 			},
@@ -182,8 +182,8 @@ func TestEventInvalidPayload(t *testing.T) {
 		{
 			casename: "onTraceRemoved",
 			typ:      traceRemoved,
-			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceRemoved = func(expired pcommon.TraceID) error {
+			registerCallback: func(em *eventMachine, _ *sync.WaitGroup) {
+				em.onTraceRemoved = func(_ pcommon.TraceID) error {
 					return nil
 				}
 			},
@@ -196,7 +196,7 @@ func TestEventInvalidPayload(t *testing.T) {
 
 			wg := &sync.WaitGroup{}
 			em := newEventMachine(logger, 50, 1, 1_000)
-			em.onError = func(e event) {
+			em.onError = func(_ event) {
 				wg.Done()
 			}
 			tt.registerCallback(em, wg)
@@ -222,7 +222,7 @@ func TestEventUnknownType(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
 	em := newEventMachine(logger, 50, 1, 1_000)
-	em.onError = func(e event) {
+	em.onError = func(_ event) {
 		wg.Done()
 	}
 	em.startInBackground()
@@ -269,7 +269,7 @@ func TestEventTracePerWorker(t *testing.T) {
 
 			var wg sync.WaitGroup
 			var workerForTrace *eventMachineWorker
-			em.onTraceReceived = func(td tracesWithID, w *eventMachineWorker) error {
+			em.onTraceReceived = func(_ tracesWithID, w *eventMachineWorker) error {
 				workerForTrace = w
 				w.fire(event{
 					typ:     traceExpired,
@@ -277,7 +277,7 @@ func TestEventTracePerWorker(t *testing.T) {
 				})
 				return nil
 			}
-			em.onTraceExpired = func(id pcommon.TraceID, w *eventMachineWorker) error {
+			em.onTraceExpired = func(_ pcommon.TraceID, w *eventMachineWorker) error {
 				assert.Equal(t, workerForTrace, w)
 				wg.Done()
 				return nil

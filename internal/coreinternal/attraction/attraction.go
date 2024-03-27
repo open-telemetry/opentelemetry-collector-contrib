@@ -435,7 +435,7 @@ func getMatchingKeys(regexp *regexp.Regexp, attrs pcommon.Map) []string {
 		return keys
 	}
 
-	attrs.Range(func(k string, v pcommon.Value) bool {
+	attrs.Range(func(k string, _ pcommon.Value) bool {
 		if regexp.MatchString(k) {
 			keys = append(keys, k)
 		}
