@@ -221,8 +221,8 @@ func (c Config) validate() error {
 		if c.StartAt == "end" {
 			return fmt.Errorf("'header' cannot be specified with 'start_at: end'")
 		}
-		if _, err := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc); err != nil {
-			return fmt.Errorf("invalid config for 'header': %w", err)
+		if _, errConfig := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc); errConfig != nil {
+			return fmt.Errorf("invalid config for 'header': %w", errConfig)
 		}
 	}
 
