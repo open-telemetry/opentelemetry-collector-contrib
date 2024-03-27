@@ -4,6 +4,8 @@
 package k8stest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
 
 import (
+	"context"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -30,7 +32,7 @@ func CreateObject(client *K8sClient, manifest []byte) (*unstructured.Unstructure
 		resource = client.DynamicClient.Resource(gvr.Resource)
 	}
 
-	return resource.Create(client.ctx, obj, metav1.CreateOptions{})
+	return resource.Create(context.Background(), obj, metav1.CreateOptions{})
 }
 
 func DeleteObject(client *K8sClient, obj *unstructured.Unstructured) error {
@@ -54,5 +56,5 @@ func DeleteObject(client *K8sClient, obj *unstructured.Unstructured) error {
 		PropagationPolicy:  &deletePolicy,
 	}
 
-	return resource.Delete(client.ctx, obj.GetName(), options)
+	return resource.Delete(context.Background(), obj.GetName(), options)
 }

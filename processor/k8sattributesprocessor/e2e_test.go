@@ -61,7 +61,7 @@ func newExpectedValue(mode int, value string) *expectedValue {
 func TestE2E_ClusterRBAC(t *testing.T) {
 	testDir := filepath.Join("testdata", "e2e", "clusterrbac")
 
-	k8sClient, err := k8stest.NewK8sClient(context.Background(), testKubeConfig)
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
 
 	nsFile := filepath.Join(testDir, "namespace.yaml")
@@ -422,7 +422,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 func TestE2E_NamespacedRBAC(t *testing.T) {
 	testDir := filepath.Join("testdata", "e2e", "namespacedrbac")
 
-	k8sClient, err := k8stest.NewK8sClient(context.Background(), testKubeConfig)
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
 
 	nsFile := filepath.Join(testDir, "namespace.yaml")
@@ -561,7 +561,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 func TestE2E_MixRBAC(t *testing.T) {
 	testDir := filepath.Join("testdata", "e2e", "mixrbac")
 
-	k8sClient, err := k8stest.NewK8sClient(context.Background(), testKubeConfig)
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
 
 	metricsConsumer := new(consumertest.MetricsSink)

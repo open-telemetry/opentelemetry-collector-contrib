@@ -42,7 +42,7 @@ func TestE2E(t *testing.T) {
 	expected, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	k8sClient, err := k8stest.NewK8sClient(context.Background(), testKubeConfig)
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
 	defer func() { k8sClient.Shutdown() }()
 
