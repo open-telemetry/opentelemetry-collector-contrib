@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -37,6 +38,10 @@ var (
 	k8sResolverSuccessFalseMutators = []tag.Mutator{k8sResolverMutator, successFalseMutator}
 )
 
+const (
+	defaultListWatchTimeout = 1 * time.Second
+)
+
 type k8sResolver struct {
 	logger  *zap.Logger
 	svcName string
@@ -47,6 +52,8 @@ type k8sResolver struct {
 	once           *sync.Once
 	epsListWatcher cache.ListerWatcher
 	endpointsStore *sync.Map
+
+	lwTimeout time.Duration
 
 	endpoints         []string
 	onChangeCallbacks []func([]string)
@@ -60,10 +67,14 @@ type k8sResolver struct {
 func newK8sResolver(clt kubernetes.Interface,
 	logger *zap.Logger,
 	service string,
-	ports []int32) (*k8sResolver, error) {
+	ports []int32, timeout time.Duration) (*k8sResolver, error) {
 
 	if len(service) == 0 {
 		return nil, errNoSvc
+	}
+
+	if timeout == 0 {
+		timeout = defaultListWatchTimeout
 	}
 
 	nAddr := strings.SplitN(service, ".", 2)
@@ -84,12 +95,12 @@ func newK8sResolver(clt kubernetes.Interface,
 	epsListWatcher := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			options.FieldSelector = epsSelector
-			options.TimeoutSeconds = ptr.To[int64](1)
+			options.TimeoutSeconds = ptr.To[int64](int64(timeout.Seconds()))
 			return clt.CoreV1().Endpoints(namespace).List(context.Background(), options)
 		},
 		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 			options.FieldSelector = epsSelector
-			options.TimeoutSeconds = ptr.To[int64](1)
+			options.TimeoutSeconds = ptr.To[int64](int64(timeout.Seconds()))
 			return clt.CoreV1().Endpoints(namespace).Watch(context.Background(), options)
 		},
 	}
@@ -106,6 +117,7 @@ func newK8sResolver(clt kubernetes.Interface,
 		epsListWatcher: epsListWatcher,
 		handler:        h,
 		stopCh:         make(chan struct{}),
+		lwTimeout:      timeout,
 	}
 	h.callback = r.resolve
 
@@ -134,7 +146,8 @@ func (r *k8sResolver) start(_ context.Context) error {
 	r.logger.Debug("K8s service resolver started",
 		zap.String("service", r.svcName),
 		zap.String("namespace", r.svcNs),
-		zap.Int32s("ports", r.port))
+		zap.Int32s("ports", r.port),
+		zap.Duration("timeout", r.lwTimeout))
 	return nil
 }
 

@@ -37,19 +37,3 @@ func TestDefaultValidReceiver(t *testing.T) {
 	err = receiver.Shutdown(ctx)
 	require.NoError(t, err)
 }
-
-// Test to make sure start fails with invalid consumer
-func TestInvalidConsumer(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	params := receivertest.NewNopCreateSettings()
-
-	receiver, err := newCloudFoundryReceiver(
-		params,
-		*cfg,
-		nil,
-	)
-
-	require.EqualError(t, err, "nil next Consumer")
-	require.Nil(t, receiver, "receiver creation failed")
-}

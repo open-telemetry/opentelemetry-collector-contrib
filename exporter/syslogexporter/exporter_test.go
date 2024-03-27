@@ -191,27 +191,27 @@ func TestTLSConfig(t *testing.T) {
 	tests := []struct {
 		name        string
 		network     string
-		tlsSettings configtls.TLSClientSetting
+		tlsSettings configtls.ClientConfig
 		tlsConfig   *tls.Config
 	}{
 		{name: "TCP with TLS configuration",
 			network:     "tcp",
-			tlsSettings: configtls.TLSClientSetting{},
+			tlsSettings: configtls.ClientConfig{},
 			tlsConfig:   &tls.Config{},
 		},
 		{name: "TCP insecure",
 			network:     "tcp",
-			tlsSettings: configtls.TLSClientSetting{Insecure: true},
+			tlsSettings: configtls.ClientConfig{Insecure: true},
 			tlsConfig:   nil,
 		},
 		{name: "UDP with TLS configuration",
 			network:     "udp",
-			tlsSettings: configtls.TLSClientSetting{},
+			tlsSettings: configtls.ClientConfig{},
 			tlsConfig:   nil,
 		},
 		{name: "UDP insecure",
 			network:     "udp",
-			tlsSettings: configtls.TLSClientSetting{Insecure: true},
+			tlsSettings: configtls.ClientConfig{Insecure: true},
 			tlsConfig:   nil,
 		},
 	}
