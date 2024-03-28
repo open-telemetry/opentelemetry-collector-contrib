@@ -186,7 +186,7 @@ For additional resiliency, see [Fault tolerant log collection example](../../exa
 
 ### File storage
 
-The [`filestorage` extension](../../extension/storage/filestorage) is a common storage extension that's used for tracking log file offsets. Sometimes, typically for debugging reasons, it's useful to view the file in which offsets are stored. The simplest way to do this is by printing out the contents of this file using the `strings` utility.
+The [`file_storage` extension](../../extension/storage/filestorage) is a common storage extension that's used for tracking log file offsets. Sometimes, typically for debugging reasons, it's useful to view the file in which offsets are stored. The simplest way to do this is by printing out the contents of this file using the `strings` utility.
 
 The following configuration shows a collector pipeline that's using the `filelog` receiver with the `file_storage` extension. Note that [compaction](../../extension/storage/filestorage/README.md#compaction) is not being used.
 
