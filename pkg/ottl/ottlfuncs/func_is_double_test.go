@@ -71,7 +71,7 @@ func Test_IsDouble(t *testing.T) {
 
 // nolint:errorlint
 func Test_IsDouble_Error(t *testing.T) {
-	exprFunc := isString[any](&ottl.StandardStringGetter[any]{
+	exprFunc := isDouble[any](&ottl.StandardFloatGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
 			return nil, ottl.TypeError("")
 		},

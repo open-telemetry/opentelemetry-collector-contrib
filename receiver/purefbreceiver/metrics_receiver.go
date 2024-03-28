@@ -65,7 +65,7 @@ func (r *purefbMetricsReceiver) Start(ctx context.Context, compHost component.Ho
 		return err
 	}
 	promRecvCfg := fact.CreateDefaultConfig().(*prometheusreceiver.Config)
-	promRecvCfg.PrometheusConfig = &config.Config{ScrapeConfigs: scrapeCfgs}
+	promRecvCfg.PrometheusConfig = &prometheusreceiver.PromConfig{ScrapeConfigs: scrapeCfgs}
 
 	wrapped, err := fact.CreateMetricsReceiver(ctx, r.set, promRecvCfg, r.next)
 	if err != nil {

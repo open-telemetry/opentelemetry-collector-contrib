@@ -45,7 +45,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
 	assert.Equal(t, r1.UseStartTimeMetric, true)
 	assert.Equal(t, r1.TrimMetricSuffixes, true)
-	assert.Equal(t, r1.EnableProtobufNegotiation, true)
 	assert.Equal(t, r1.StartTimeMetricRegex, "^(.+_)*process_start_time_seconds$")
 	assert.True(t, r1.ReportExtraScrapeMetrics)
 
@@ -66,17 +65,22 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
 
 	r0 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
 	assert.Equal(t, "http://localhost:8080", r0.TargetAllocator.Endpoint)
+	assert.Equal(t, 5*time.Second, r0.TargetAllocator.Timeout)
+	assert.Equal(t, "client.crt", r0.TargetAllocator.TLSSetting.CertFile)
 	assert.Equal(t, 30*time.Second, r0.TargetAllocator.Interval)
 	assert.Equal(t, "collector-1", r0.TargetAllocator.CollectorID)
+	assert.NotNil(t, r0.PrometheusConfig)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withScrape").String())
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
 
 	r1 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
@@ -92,6 +96,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
 
 	r2 := cfg.(*Config)
 	assert.Equal(t, 1, len(r2.PrometheusConfig.ScrapeConfigs))
@@ -108,6 +113,36 @@ func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.Error(t, component.UnmarshalConfig(sub, cfg))
+}
+
+func TestLoadConfigFailsOnNoPrometheusOrTAConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-non-existent-scrape-config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+
+	cfg := factory.CreateDefaultConfig()
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.ErrorContains(t, component.ValidateConfig(cfg), "no Prometheus scrape_configs or target_allocator set")
+
+	cfg = factory.CreateDefaultConfig()
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withConfigAndTA").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
+
+	cfg = factory.CreateDefaultConfig()
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withOnlyTA").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
+
+	cfg = factory.CreateDefaultConfig()
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withOnlyScrape").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
 }
 
 // As one of the config parameters is consuming prometheus
@@ -156,7 +191,7 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
+	require.Error(t, err)
 
 	wantErrMsg := `unsupported features:
         alert_config.alertmanagers
@@ -167,7 +202,6 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
 
 	gotErrMsg := strings.ReplaceAll(err.Error(), "\t", strings.Repeat(" ", 8))
 	require.Equal(t, wantErrMsg, gotErrMsg)
-
 }
 
 func TestNonExistentAuthCredentialsFile(t *testing.T) {
@@ -180,13 +214,9 @@ func TestNonExistentAuthCredentialsFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
-
-	wantErrMsg := `error checking authorization credentials file "/nonexistentauthcredentialsfile"`
-
-	gotErrMsg := err.Error()
-	require.True(t, strings.HasPrefix(gotErrMsg, wantErrMsg))
+	assert.ErrorContains(t,
+		component.ValidateConfig(cfg),
+		`error checking authorization credentials file "/nonexistentauthcredentialsfile"`)
 }
 
 func TestTLSConfigNonExistentCertFile(t *testing.T) {
@@ -199,13 +229,9 @@ func TestTLSConfigNonExistentCertFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
-
-	wantErrMsg := `error checking client cert file "/nonexistentcertfile"`
-
-	gotErrMsg := err.Error()
-	require.True(t, strings.HasPrefix(gotErrMsg, wantErrMsg))
+	assert.ErrorContains(t,
+		component.ValidateConfig(cfg),
+		`error checking client cert file "/nonexistentcertfile"`)
 }
 
 func TestTLSConfigNonExistentKeyFile(t *testing.T) {
@@ -218,13 +244,9 @@ func TestTLSConfigNonExistentKeyFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	err = component.ValidateConfig(cfg)
-	require.NotNil(t, err, "Expected a non-nil error")
-
-	wantErrMsg := `error checking client key file "/nonexistentkeyfile"`
-
-	gotErrMsg := err.Error()
-	require.True(t, strings.HasPrefix(gotErrMsg, wantErrMsg))
+	assert.ErrorContains(t,
+		component.ValidateConfig(cfg),
+		`error checking client key file "/nonexistentkeyfile"`)
 }
 
 func TestTLSConfigCertFileWithoutKeyFile(t *testing.T) {
@@ -236,10 +258,9 @@ func TestTLSConfigCertFileWithoutKeyFile(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 
-	err = component.UnmarshalConfig(sub, cfg)
-	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "exactly one of key or key_file must be configured when a client certificate is configured")
-	}
+	assert.ErrorContains(t,
+		component.UnmarshalConfig(sub, cfg),
+		"exactly one of key or key_file must be configured when a client certificate is configured")
 }
 
 func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
@@ -250,10 +271,9 @@ func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	err = component.UnmarshalConfig(sub, cfg)
-	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "exactly one of cert or cert_file must be configured when a client key is configured")
-	}
+	assert.ErrorContains(t,
+		component.UnmarshalConfig(sub, cfg),
+		"exactly one of cert or cert_file must be configured when a client key is configured")
 }
 
 func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
@@ -265,10 +285,9 @@ func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 
-	err = component.UnmarshalConfig(sub, cfg)
-	if assert.Error(t, err) {
-		assert.Contains(t, err.Error(), "exactly one of key or key_file must be configured when a client certificate is configured")
-	}
+	assert.ErrorContains(t,
+		component.UnmarshalConfig(sub, cfg),
+		"exactly one of key or key_file must be configured when a client certificate is configured")
 }
 
 func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
@@ -281,8 +300,7 @@ func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	err = component.ValidateConfig(cfg)
-	require.NoError(t, err)
+	require.NoError(t, component.ValidateConfig(cfg))
 }
 
 func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
@@ -295,8 +313,7 @@ func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	err = component.ValidateConfig(cfg)
-	require.NoError(t, err)
+	require.NoError(t, component.ValidateConfig(cfg))
 }
 
 func TestFileSDConfigWithoutSDFile(t *testing.T) {
@@ -309,6 +326,5 @@ func TestFileSDConfigWithoutSDFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
-	err = component.ValidateConfig(cfg)
-	require.NoError(t, err)
+	require.NoError(t, component.ValidateConfig(cfg))
 }

@@ -167,6 +167,49 @@ var badLevelLogRecord = func() plog.LogRecord {
 	return lr
 }()
 
+var badTimeLogRecord = func() plog.LogRecord {
+	lr := plog.NewLogs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	ts, _ := asTimestamp("2021-10-14T22:17:11+00:00")
+	lr.SetTimestamp(ts)
+
+	lr.Attributes().PutStr(azureOperationName, "ApplicationGatewayAccess")
+	lr.Attributes().PutStr(azureCategory, "ApplicationGatewayAccessLog")
+	lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+
+	m := lr.Attributes().PutEmptyMap(azureProperties)
+	m.PutStr("instanceId", "appgw_2")
+	m.PutStr("clientIP", "185.42.129.24")
+	m.PutDouble("clientPort", 45057)
+	m.PutStr("httpMethod", "GET")
+	m.PutStr("originalRequestUriWithArgs", "/")
+	m.PutStr("requestUri", "/")
+	m.PutStr("requestQuery", "")
+	m.PutStr("userAgent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36")
+	m.PutDouble("httpStatus", 200)
+	m.PutStr("httpVersion", "HTTP/1.1")
+	m.PutDouble("receivedBytes", 184)
+	m.PutDouble("sentBytes", 466)
+	m.PutDouble("clientResponseTime", 0)
+	m.PutDouble("timeTaken", 0.034)
+	m.PutStr("WAFEvaluationTime", "0.000")
+	m.PutStr("WAFMode", "Detection")
+	m.PutStr("transactionId", "592d1649f75a8d480a3c4dc6a975309d")
+	m.PutStr("sslEnabled", "on")
+	m.PutStr("sslCipher", "ECDHE-RSA-AES256-GCM-SHA384")
+	m.PutStr("sslProtocol", "TLSv1.2")
+	m.PutStr("sslClientVerify", "NONE")
+	m.PutStr("sslClientCertificateFingerprint", "")
+	m.PutStr("sslClientCertificateIssuerName", "")
+	m.PutStr("serverRouted", "52.239.221.65:443")
+	m.PutStr("serverStatus", "200")
+	m.PutStr("serverResponseLatency", "0.028")
+	m.PutStr("upstreamSourcePort", "21564")
+	m.PutStr("originalHost", "20.110.30.194")
+	m.PutStr("host", "20.110.30.194")
+	return lr
+}()
+
 func TestAsTimestamp(t *testing.T) {
 	timestamp := "2022-11-11T04:48:27.6767145Z"
 	nanos, err := asTimestamp(timestamp)
@@ -371,6 +414,15 @@ func TestUnmarshalLogs(t *testing.T) {
 	lr = scopeLogs.LogRecords().AppendEmpty()
 	badLevelLogRecord.CopyTo(lr)
 
+	expectedBadTime := plog.NewLogs()
+	resourceLogs = expectedBadTime.ResourceLogs().AppendEmpty()
+	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
+	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
+	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
+	lr = scopeLogs.LogRecords().AppendEmpty()
+	badTimeLogRecord.CopyTo(lr)
+
 	tests := []struct {
 		file     string
 		expected plog.Logs
@@ -390,6 +442,10 @@ func TestUnmarshalLogs(t *testing.T) {
 		{
 			file:     "log-bad-level.json",
 			expected: expectedBadLevel,
+		},
+		{
+			file:     "log-bad-time.json",
+			expected: expectedBadTime,
 		},
 	}
 

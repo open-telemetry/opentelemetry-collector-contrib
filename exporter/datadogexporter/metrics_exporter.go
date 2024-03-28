@@ -13,11 +13,13 @@ import (
 	"time"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
-	"github.com/DataDog/datadog-agent/pkg/trace/api"
+	"github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -34,6 +36,7 @@ import (
 type metricsExporter struct {
 	params           exporter.CreateSettings
 	cfg              *Config
+	agntConfig       *config.AgentConfig
 	ctx              context.Context
 	client           *zorkian.Client
 	metricsAPI       *datadogV2.MetricsApi
@@ -45,12 +48,12 @@ type metricsExporter struct {
 	metadataReporter *inframetadata.Reporter
 	// getPushTime returns a Unix time in nanoseconds, representing the time pushing metrics.
 	// It will be overwritten in tests.
-	getPushTime       func() uint64
-	apmStatsProcessor api.StatsProcessor
+	getPushTime  func() uint64
+	statsToAgent chan<- *pb.StatsPayload
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter
-func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source.Provider) (*otlpmetrics.Translator, error) {
+func translatorFromConfig(set component.TelemetrySettings, cfg *Config, attrsTranslator *attributes.Translator, sourceProvider source.Provider, statsOut chan []byte) (*otlpmetrics.Translator, error) {
 	options := []otlpmetrics.TranslatorOption{
 		otlpmetrics.WithDeltaTTL(cfg.Metrics.DeltaTTL),
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
@@ -63,10 +66,6 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 
 	if cfg.Metrics.SummaryConfig.Mode == SummaryModeGauges {
 		options = append(options, otlpmetrics.WithQuantiles())
-	}
-
-	if cfg.Metrics.ExporterConfig.ResourceAttributesAsTags {
-		options = append(options, otlpmetrics.WithResourceAttributesAsTags())
 	}
 
 	if cfg.Metrics.ExporterConfig.InstrumentationScopeMetadataAsTags {
@@ -86,50 +85,54 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 	options = append(options, otlpmetrics.WithInitialCumulMonoValueMode(
 		otlpmetrics.InitialCumulMonoValueMode(cfg.Metrics.SumConfig.InitialCumulativeMonotonicMode)))
 
-	return otlpmetrics.NewTranslator(logger, options...)
+	options = append(options, otlpmetrics.WithStatsOut(statsOut))
+	return otlpmetrics.NewTranslator(set, attrsTranslator, options...)
 }
 
 func newMetricsExporter(
 	ctx context.Context,
 	params exporter.CreateSettings,
 	cfg *Config,
+	agntConfig *config.AgentConfig,
 	onceMetadata *sync.Once,
+	attrsTranslator *attributes.Translator,
 	sourceProvider source.Provider,
-	apmStatsProcessor api.StatsProcessor,
+	statsToAgent chan<- *pb.StatsPayload,
 	metadataReporter *inframetadata.Reporter,
+	statsOut chan []byte,
 ) (*metricsExporter, error) {
-	tr, err := translatorFromConfig(params.Logger, cfg, sourceProvider)
+	tr, err := translatorFromConfig(params.TelemetrySettings, cfg, attrsTranslator, sourceProvider, statsOut)
 	if err != nil {
 		return nil, err
 	}
 
 	scrubber := scrub.NewScrubber()
 	exporter := &metricsExporter{
-		params:            params,
-		cfg:               cfg,
-		ctx:               ctx,
-		tr:                tr,
-		scrubber:          scrubber,
-		retrier:           clientutil.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
-		onceMetadata:      onceMetadata,
-		sourceProvider:    sourceProvider,
-		getPushTime:       func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
-		apmStatsProcessor: apmStatsProcessor,
-		metadataReporter:  metadataReporter,
+		params:           params,
+		cfg:              cfg,
+		ctx:              ctx,
+		agntConfig:       agntConfig,
+		tr:               tr,
+		scrubber:         scrubber,
+		retrier:          clientutil.NewRetrier(params.Logger, cfg.BackOffConfig, scrubber),
+		onceMetadata:     onceMetadata,
+		sourceProvider:   sourceProvider,
+		getPushTime:      func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
+		statsToAgent:     statsToAgent,
+		metadataReporter: metadataReporter,
 	}
 	errchan := make(chan error)
 	if isMetricExportV2Enabled() {
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
-			cfg.Metrics.TCPAddr.Endpoint,
-			cfg.TimeoutSettings,
-			cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
+			cfg.Metrics.TCPAddrConfig.Endpoint,
+			cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
-		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddr.Endpoint)
+		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
 		client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
-		client.HttpClient = clientutil.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
+		client.HttpClient = clientutil.NewHTTPClient(cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
 		exporter.client = client
 	}
@@ -150,7 +153,7 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 
 	req, err := http.NewRequestWithContext(ctx,
 		http.MethodPost,
-		exp.cfg.Metrics.TCPAddr.Endpoint+sketches.SketchSeriesEndpoint,
+		exp.cfg.Metrics.TCPAddrConfig.Endpoint+sketches.SketchSeriesEndpoint,
 		bytes.NewBuffer(payload),
 	)
 	if err != nil {
@@ -256,8 +259,18 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	if len(sp) > 0 {
 		exp.params.Logger.Debug("exporting APM stats payloads", zap.Any("stats_payloads", sp))
 		statsv := exp.params.BuildInfo.Command + exp.params.BuildInfo.Version
-		for _, p := range sp {
-			exp.apmStatsProcessor.ProcessStats(p, "", statsv)
+		for _, csp := range sp {
+			if csp.TracerVersion == "" {
+				csp.TracerVersion = statsv
+			}
+		}
+		exp.statsToAgent <- &pb.StatsPayload{
+			AgentHostname:  exp.agntConfig.Hostname, // This is "dead-code". We will be removing this code path entirely
+			AgentEnv:       exp.agntConfig.DefaultEnv,
+			Stats:          sp,
+			AgentVersion:   exp.agntConfig.AgentVersion,
+			ClientComputed: false,
+			SplitPayload:   false,
 		}
 	}
 

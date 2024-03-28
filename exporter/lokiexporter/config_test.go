@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -35,13 +36,13 @@ func TestLoadConfigNewExporter(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Headers: map[string]configopaque.String{
 						"X-Custom-Header": "loki_rocks",
 					},
 					Endpoint: "https://loki:3100/loki/api/v1/push",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile:   "/var/lib/mycert.pem",
 							CertFile: "certfile",
 							KeyFile:  "keyfile",
@@ -52,7 +53,7 @@ func TestLoadConfigNewExporter(t *testing.T) {
 					WriteBufferSize: 345,
 					Timeout:         time.Second * 10,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					MaxInterval:         1 * time.Minute,
@@ -109,7 +110,7 @@ func TestConfigValidate(t *testing.T) {
 		{
 			desc: "Config is valid",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://loki.example.com",
 				},
 			},

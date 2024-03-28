@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 type exporter interface {
@@ -21,20 +23,42 @@ type exporter interface {
 }
 
 func newExporter(ctx context.Context, cfg *Config) (exporter, error) {
+
+	// Exporter with HTTP
 	if cfg.UseHTTP {
+		if cfg.Insecure {
+			return &httpClientExporter{
+				client: http.DefaultClient,
+				cfg:    cfg,
+			}, nil
+		}
+		creds, err := common.GetTLSCredentialsForHTTPExporter(cfg.CaFile, cfg.ClientAuth)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get TLS credentials: %w", err)
+		}
 		return &httpClientExporter{
-			client: http.DefaultClient,
+			client: &http.Client{Transport: &http.Transport{TLSClientConfig: creds}},
 			cfg:    cfg,
 		}, nil
 	}
 
-	if !cfg.Insecure {
-		return nil, fmt.Errorf("'telemetrygen logs' only supports insecure gRPC")
-	}
-	// only support grpc in insecure mode
-	clientConn, err := grpc.DialContext(ctx, cfg.Endpoint(), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, err
+	// Exporter with GRPC
+	var err error
+	var clientConn *grpc.ClientConn
+	if cfg.Insecure {
+		clientConn, err = grpc.DialContext(ctx, cfg.Endpoint(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		creds, err := common.GetTLSCredentialsForGRPCExporter(cfg.CaFile, cfg.ClientAuth)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get TLS credentials: %w", err)
+		}
+		clientConn, err = grpc.DialContext(ctx, cfg.Endpoint(), grpc.WithTransportCredentials(creds))
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &gRPCClientExporter{client: plogotlp.NewGRPCClient(clientConn)}, nil
 }

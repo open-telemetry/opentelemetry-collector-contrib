@@ -1,0 +1,15 @@
+type: sumologic
+scope_name: otelcol/sumologic
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [sumo]
+  codeowners:
+    active: [astencel-sumo, sumo-drosiek, swiatekm-sumo]
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

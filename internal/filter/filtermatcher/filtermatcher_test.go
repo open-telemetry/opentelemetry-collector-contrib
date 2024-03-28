@@ -226,7 +226,7 @@ func Test_MatchingCornerCases(t *testing.T) {
 	}
 
 	mp, err := NewMatcher(cfg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 
 	assert.False(t, mp.Match(pcommon.NewMap(), resource("svcA"), pcommon.NewInstrumentationScope()))

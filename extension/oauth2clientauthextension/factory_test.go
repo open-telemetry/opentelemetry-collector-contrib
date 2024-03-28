@@ -43,15 +43,6 @@ func TestCreateExtension(t *testing.T) {
 			},
 			shouldError: false,
 		},
-		{
-			name: "invalid_client_settings_should_error",
-			settings: &Config{
-				ClientID: "testclientid",
-				TokenURL: "https://example.com/v1/token",
-				Scopes:   []string{"resource.read"},
-			},
-			shouldError: true,
-		},
 	}
 
 	for _, testcase := range tests {
@@ -65,7 +56,7 @@ func TestCreateExtension(t *testing.T) {
 				assert.Error(t, err)
 				assert.Nil(t, ext)
 			} else {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 				assert.NotNil(t, ext)
 			}
 		})

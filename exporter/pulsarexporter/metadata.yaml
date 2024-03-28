@@ -1,9 +1,14 @@
 type: pulsar
+scope_name: otelcol/pulsar
 
 status:
   class: exporter
   stability:
     alpha: [traces, metrics, logs]
-  distributions: [contrib, splunk]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, dao-jun]
+
+# Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true

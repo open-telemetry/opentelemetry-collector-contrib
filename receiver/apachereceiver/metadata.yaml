@@ -1,10 +1,11 @@
 type: apache
+scope_name: otelcol/apachereceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski]
 

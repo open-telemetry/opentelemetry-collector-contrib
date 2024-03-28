@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package podmanreceiver
 
@@ -71,13 +70,13 @@ func TestWatchingTimeouts(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			Timeout: 50 * time.Millisecond,
 		},
 	}
 
 	client, err := newLibpodClient(zap.NewNop(), config)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	cli := newContainerScraper(client, zap.NewNop(), config)
 	assert.NotNil(t, cli)
@@ -124,13 +123,13 @@ func TestEventLoopHandlesError(t *testing.T) {
 	observed, logs := observer.New(zapcore.WarnLevel)
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			Timeout: 50 * time.Millisecond,
 		},
 	}
 
 	client, err := newLibpodClient(zap.NewNop(), config)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	cli := newContainerScraper(client, zap.New(observed), config)
 	assert.NotNil(t, cli)

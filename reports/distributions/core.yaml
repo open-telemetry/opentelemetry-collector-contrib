@@ -1,0 +1,27 @@
+name: core
+url: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
+maintainers: []
+components:
+    exporter:
+        - file
+        - kafka
+        - opencensus
+        - prometheus
+        - prometheusremotewrite
+        - zipkin
+    extension:
+        - health_check
+        - pprof
+    processor:
+        - attributes
+        - filter
+        - probabilistic_sampler
+        - resource
+        - span
+    receiver:
+        - hostmetrics
+        - jaeger
+        - kafka
+        - opencensus
+        - prometheus
+        - zipkin

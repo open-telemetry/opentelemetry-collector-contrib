@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lib/pq"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/featuregate"
@@ -23,7 +22,7 @@ const lagMetricsInSecondsFeatureGateID = "postgresqlreceiver.preciselagmetrics"
 
 var preciseLagMetricsFg = featuregate.GlobalRegistry().MustRegister(
 	lagMetricsInSecondsFeatureGateID,
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`."),
 	featuregate.WithRegisterFromVersion("0.89.0"),
 )
@@ -60,8 +59,8 @@ type client interface {
 }
 
 type postgreSQLClient struct {
-	client   *sql.DB
-	database string
+	client  *sql.DB
+	closeFn func() error
 }
 
 var _ client = (*postgreSQLClient)(nil)
@@ -70,11 +69,11 @@ type postgreSQLConfig struct {
 	username string
 	password string
 	database string
-	address  confignet.NetAddr
-	tls      configtls.TLSClientSetting
+	address  confignet.AddrConfig
+	tls      configtls.ClientConfig
 }
 
-func sslConnectionString(tls configtls.TLSClientSetting) string {
+func sslConnectionString(tls configtls.ClientConfig) string {
 	if tls.Insecure {
 		return "sslmode='disable'"
 	}
@@ -102,41 +101,32 @@ func sslConnectionString(tls configtls.TLSClientSetting) string {
 	return conn
 }
 
-func newPostgreSQLClient(conf postgreSQLConfig) (*postgreSQLClient, error) {
+func (c postgreSQLConfig) ConnectionString() (string, error) {
 	// postgres will assume the supplied user as the database name if none is provided,
-	// so we must specify a databse name even when we are just collecting the list of databases.
-	dbField := "dbname=postgres"
-	if conf.database != "" {
-		dbField = fmt.Sprintf("dbname=%s ", conf.database)
+	// so we must specify a database name even when we are just collecting the list of databases.
+	database := defaultPostgreSQLDatabase
+	if c.database != "" {
+		database = c.database
 	}
 
-	host, port, err := net.SplitHostPort(conf.address.Endpoint)
+	host, port, err := net.SplitHostPort(c.address.Endpoint)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	if conf.address.Transport == "unix" {
+	if c.address.Transport == confignet.TransportTypeUnix {
 		// lib/pg expects a unix socket host to start with a "/" and appends the appropriate .s.PGSQL.port internally
 		host = fmt.Sprintf("/%s", host)
 	}
 
-	connStr := fmt.Sprintf("port=%s host=%s user=%s password=%s %s %s", port, host, conf.username, conf.password, dbField, sslConnectionString(conf.tls))
-
-	conn, err := pq.NewConnector(connStr)
-	if err != nil {
-		return nil, err
-	}
-
-	db := sql.OpenDB(conn)
-
-	return &postgreSQLClient{
-		client:   db,
-		database: conf.database,
-	}, nil
+	return fmt.Sprintf("port=%s host=%s user=%s password=%s dbname=%s %s", port, host, c.username, c.password, database, sslConnectionString(c.tls)), nil
 }
 
 func (c *postgreSQLClient) Close() error {
-	return c.client.Close()
+	if c.closeFn != nil {
+		return c.closeFn()
+	}
+	return nil
 }
 
 type databaseStats struct {
@@ -264,6 +254,7 @@ func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []stri
 // tableStats contains a result for a row of the getDatabaseTableMetrics result
 type tableStats struct {
 	database    string
+	schema      string
 	table       string
 	live        int64
 	dead        int64
@@ -277,7 +268,7 @@ type tableStats struct {
 }
 
 func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error) {
-	query := `SELECT schemaname || '.' || relname AS table,
+	query := `SELECT schemaname as schema, relname AS table,
 	n_live_tup AS live,
 	n_dead_tup AS dead,
 	n_tup_ins AS ins,
@@ -296,15 +287,16 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 		return nil, err
 	}
 	for rows.Next() {
-		var table string
+		var schema, table string
 		var live, dead, ins, upd, del, hotUpd, seqScans, tableSize, vacuumCount int64
-		err = rows.Scan(&table, &live, &dead, &ins, &upd, &del, &hotUpd, &seqScans, &tableSize, &vacuumCount)
+		err = rows.Scan(&schema, &table, &live, &dead, &ins, &upd, &del, &hotUpd, &seqScans, &tableSize, &vacuumCount)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		ts[tableKey(db, table)] = tableStats{
+		ts[tableKey(db, schema, table)] = tableStats{
 			database:    db,
+			schema:      schema,
 			table:       table,
 			live:        live,
 			inserts:     ins,
@@ -321,6 +313,7 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 
 type tableIOStats struct {
 	database  string
+	schema    string
 	table     string
 	heapRead  int64
 	heapHit   int64
@@ -333,7 +326,7 @@ type tableIOStats struct {
 }
 
 func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error) {
-	query := `SELECT schemaname || '.' || relname AS table,
+	query := `SELECT schemaname as schema, relname AS table,
 	coalesce(heap_blks_read, 0) AS heap_read,
 	coalesce(heap_blks_hit, 0) AS heap_hit,
 	coalesce(idx_blks_read, 0) AS idx_read,
@@ -351,15 +344,16 @@ func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) 
 		return nil, err
 	}
 	for rows.Next() {
-		var table string
+		var schema, table string
 		var heapRead, heapHit, idxRead, idxHit, toastRead, toastHit, tidxRead, tidxHit int64
-		err = rows.Scan(&table, &heapRead, &heapHit, &idxRead, &idxHit, &toastRead, &toastHit, &tidxRead, &tidxHit)
+		err = rows.Scan(&schema, &table, &heapRead, &heapHit, &idxRead, &idxHit, &toastRead, &toastHit, &tidxRead, &tidxHit)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		tios[tableKey(db, table)] = tableIOStats{
+		tios[tableKey(db, schema, table)] = tableIOStats{
 			database:  db,
+			schema:    schema,
 			table:     table,
 			heapRead:  heapRead,
 			heapHit:   heapHit,
@@ -377,13 +371,14 @@ func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) 
 type indexStat struct {
 	index    string
 	table    string
+	schema   string
 	database string
 	size     int64
 	scans    int64
 }
 
 func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error) {
-	query := `SELECT relname, indexrelname,
+	query := `SELECT schemaname, relname, indexrelname,
 	pg_relation_size(indexrelid) AS index_size,
 	idx_scan
 	FROM pg_stat_user_indexes;`
@@ -399,17 +394,18 @@ func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (
 	var errs []error
 	for rows.Next() {
 		var (
-			table, index          string
+			schema, table, index  string
 			indexSize, indexScans int64
 		)
-		err := rows.Scan(&table, &index, &indexSize, &indexScans)
+		err := rows.Scan(&schema, &table, &index, &indexSize, &indexScans)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		stats[indexKey(database, table, index)] = indexStat{
+		stats[indexKey(database, schema, table, index)] = indexStat{
 			index:    index,
 			table:    table,
+			schema:   schema,
 			database: database,
 			size:     indexSize,
 			scans:    indexScans,
@@ -642,10 +638,10 @@ func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) 
 	return baseQuery + ";"
 }
 
-func tableKey(database, table string) tableIdentifier {
-	return tableIdentifier(fmt.Sprintf("%s|%s", database, table))
+func tableKey(database, schema, table string) tableIdentifier {
+	return tableIdentifier(fmt.Sprintf("%s|%s|%s", database, schema, table))
 }
 
-func indexKey(database, table, index string) indexIdentifer {
-	return indexIdentifer(fmt.Sprintf("%s|%s|%s", database, table, index))
+func indexKey(database, schema, table, index string) indexIdentifer {
+	return indexIdentifer(fmt.Sprintf("%s|%s|%s|%s", database, schema, table, index))
 }

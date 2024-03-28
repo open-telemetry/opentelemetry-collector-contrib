@@ -5,7 +5,6 @@ package attraction
 
 import (
 	"context"
-	"crypto/sha1" // #nosec
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
@@ -77,7 +76,7 @@ func TestAttributes_InsertValue(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -135,7 +134,7 @@ func TestAttributes_InsertFromAttribute(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -181,7 +180,7 @@ func TestAttributes_UpdateValue(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -239,7 +238,7 @@ func TestAttributes_UpdateFromAttribute(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -289,7 +288,7 @@ func TestAttributes_UpsertValue(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -409,7 +408,7 @@ func TestAttributes_Extract(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -472,7 +471,7 @@ func TestAttributes_UpsertFromAttribute(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -533,7 +532,7 @@ func TestAttributes_Delete(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -579,7 +578,7 @@ func TestAttributes_Delete_Regexp(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -684,7 +683,7 @@ func TestAttributes_HashValue(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -712,7 +711,7 @@ func TestAttributes_FromAttributeNoChange(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	runIndividualTestCase(t, tc, ap)
@@ -793,7 +792,7 @@ func TestAttributes_Ordering(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -930,20 +929,6 @@ func TestValidConfiguration(t *testing.T) {
 }
 
 func hash(b []byte) string {
-	if enableSha256Gate.IsEnabled() {
-		return sha2Hash(b)
-	}
-	return sha1Hash(b)
-}
-
-func sha1Hash(b []byte) string {
-	// #nosec
-	h := sha1.New()
-	h.Write(b)
-	return fmt.Sprintf("%x", h.Sum(nil))
-}
-
-func sha2Hash(b []byte) string {
 	h := sha256.New()
 	h.Write(b)
 	return fmt.Sprintf("%x", h.Sum(nil))
@@ -1030,7 +1015,7 @@ func TestFromContext(t *testing.T) {
 			ap, err := NewAttrProc(&Settings{
 				Actions: []ActionKeyValue{*tc.action},
 			})
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, ap)
 			attrMap := pcommon.NewMap()
 			ap.Process(tc.ctx, nil, attrMap)

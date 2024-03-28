@@ -1,0 +1,11 @@
+type: deltatocumulative
+scope_name: otelcol/deltatocumulative
+
+status:
+  class: processor
+  stability:
+    development: [metrics]
+  distributions: []
+  warnings: [Statefulness]
+  codeowners:
+    active: [sh0rez, RichieSams]

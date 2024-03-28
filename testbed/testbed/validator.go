@@ -24,6 +24,46 @@ type TestCaseValidator interface {
 	RecordResults(tc *TestCase)
 }
 
+type LogPresentValidator struct {
+	LogBody string
+	Present bool
+}
+
+func (v *LogPresentValidator) Validate(tc *TestCase) {
+	logMsg := v.LogBody
+	var successMsg, errorMsg string
+	if v.Present {
+		successMsg = fmt.Sprintf("Log '%s' found", logMsg)
+		errorMsg = fmt.Sprintf("Log '%s' not found", logMsg)
+	} else {
+		errorMsg = fmt.Sprintf("Log '%s' found", logMsg)
+		successMsg = fmt.Sprintf("Log '%s' not found", logMsg)
+	}
+
+	if assert.True(tc.t, tc.AgentLogsContains(logMsg) == v.Present, errorMsg) {
+		log.Print(successMsg)
+	}
+}
+
+func (v *LogPresentValidator) RecordResults(tc *TestCase) {
+
+	var result string
+	if tc.t.Failed() {
+		result = "FAIL"
+	} else {
+		result = "PASS"
+	}
+
+	// Remove "Test" prefix from test name.
+	testName := tc.t.Name()[4:]
+
+	tc.resultsSummary.Add(tc.t.Name(), &LogPresentResults{
+		testName: testName,
+		result:   result,
+		duration: time.Since(tc.startTime),
+	})
+}
+
 // PerfTestValidator implements TestCaseValidator for test suites using PerformanceResults for summarizing results.
 type PerfTestValidator struct{}
 

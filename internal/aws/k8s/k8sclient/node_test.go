@@ -311,5 +311,5 @@ func TestNodeClient(t *testing.T) {
 func TestTransformFuncNode(t *testing.T) {
 	info, err := transformFuncNode(nil)
 	assert.Nil(t, info)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

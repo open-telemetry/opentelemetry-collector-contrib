@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build linux
-// +build linux
 
 package journald
 
@@ -68,7 +67,7 @@ func TestInputJournald(t *testing.T) {
 	err = op.SetOutputs([]operator.Operator{mockOutput})
 	require.NoError(t, err)
 
-	op.(*Input).newCmd = func(ctx context.Context, cursor []byte) cmd {
+	op.(*Input).newCmd = func(_ context.Context, _ []byte) cmd {
 		return &fakeJournaldCmd{}
 	}
 
@@ -126,13 +125,13 @@ func TestInputJournald(t *testing.T) {
 func TestBuildConfig(t *testing.T) {
 	testCases := []struct {
 		Name          string
-		Config        func(cfg *Config)
+		Config        func(_ *Config)
 		Expected      []string
 		ExpectedError string
 	}{
 		{
 			Name:     "empty config",
-			Config:   func(cfg *Config) {},
+			Config:   func(_ *Config) {},
 			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info"},
 		},
 		{
@@ -204,6 +203,13 @@ func TestBuildConfig(t *testing.T) {
 			},
 			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--dmesg"},
 		},
+		{
+			Name: "all",
+			Config: func(cfg *Config) {
+				cfg.All = true
+			},
+			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--all"},
+		},
 	}
 
 	for _, tt := range testCases {
@@ -239,7 +245,7 @@ func TestInputJournaldError(t *testing.T) {
 	err = op.SetOutputs([]operator.Operator{mockOutput})
 	require.NoError(t, err)
 
-	op.(*Input).newCmd = func(ctx context.Context, cursor []byte) cmd {
+	op.(*Input).newCmd = func(_ context.Context, _ []byte) cmd {
 		return &fakeJournaldCmd{
 			exitError: &exec.ExitError{},
 			stdErr:    "stderr output\n",

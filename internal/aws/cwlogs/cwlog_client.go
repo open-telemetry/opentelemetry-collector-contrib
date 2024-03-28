@@ -45,10 +45,10 @@ func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetent
 }
 
 // NewClient create Client
-func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, tags map[string]*string, sess *session.Session) *Client {
+func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, tags map[string]*string, sess *session.Session, componentName string) *Client {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
-	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
+	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName, componentName))
 	return newCloudWatchLogClient(client, logRetention, tags, logger)
 }
 
@@ -175,10 +175,10 @@ func (client *Client) CreateStream(logGroup, streamName *string) error {
 	return nil
 }
 
-func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string) request.NamedHandler {
-	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version)
+func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string, componentName string) request.NamedHandler {
+	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, componentName)
 	if matchContainerInsightsPattern(logGroupName) {
-		fn = request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, "ContainerInsights")
+		fn = request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, componentName, "ContainerInsights")
 	}
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",

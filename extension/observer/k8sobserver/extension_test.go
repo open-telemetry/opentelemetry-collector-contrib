@@ -43,6 +43,7 @@ func TestNewExtension(t *testing.T) {
 func TestExtensionObserveServices(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
+	config.ObservePods = false // avoid causing data race when multiple test cases running in the same process using podListerWatcher
 	mockServiceHost(t, config)
 
 	set := extensiontest.NewNopCreateSettings()
@@ -213,6 +214,7 @@ func TestExtensionObservePods(t *testing.T) {
 func TestExtensionObserveNodes(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
+	config.ObservePods = false // avoid causing data race when multiple test cases running in the same process using podListerWatcher
 	mockServiceHost(t, config)
 
 	set := extensiontest.NewNopCreateSettings()

@@ -240,19 +240,19 @@ func populateAttributes(mType pmetric.MetricType, ls labels.Labels, dest pcommon
 	dest.EnsureCapacity(ls.Len())
 	names := getSortedNotUsefulLabels(mType)
 	j := 0
-	for i := range ls {
-		for j < len(names) && names[j] < ls[i].Name {
+	ls.Range(func(l labels.Label) {
+		for j < len(names) && names[j] < l.Name {
 			j++
 		}
-		if j < len(names) && ls[i].Name == names[j] {
-			continue
+		if j < len(names) && l.Name == names[j] {
+			return
 		}
-		if ls[i].Value == "" {
+		if l.Value == "" {
 			// empty label values should be omitted
-			continue
+			return
 		}
-		dest.PutStr(ls[i].Name, ls[i].Value)
-	}
+		dest.PutStr(l.Name, l.Value)
+	})
 }
 
 func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Labels, ts int64) *metricGroup {
@@ -287,7 +287,7 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			mg.ts = t
 			mg.count = v
 			mg.hasCount = true
-		case strings.HasSuffix(metricName, metricSuffixCreated):
+		case metricName == mf.metadata.Metric+metricSuffixCreated:
 			mg.created = v
 		default:
 			boundary, err := getBoundary(mf.mtype, ls)
@@ -297,7 +297,7 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			mg.complexValue = append(mg.complexValue, &dataPoint{value: v, boundary: boundary})
 		}
 	case pmetric.MetricTypeSum:
-		if strings.HasSuffix(metricName, metricSuffixCreated) {
+		if metricName == mf.metadata.Metric+metricSuffixCreated {
 			mg.created = v
 		} else {
 			mg.value = v
@@ -382,8 +382,8 @@ func (mf *metricFamily) addExemplar(seriesRef uint64, e exemplar.Exemplar) {
 func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 	e.SetTimestamp(timestampFromMs(pe.Ts))
 	e.SetDoubleValue(pe.Value)
-	e.FilteredAttributes().EnsureCapacity(len(pe.Labels))
-	for _, lb := range pe.Labels {
+	e.FilteredAttributes().EnsureCapacity(pe.Labels.Len())
+	pe.Labels.Range(func(lb labels.Label) {
 		switch strings.ToLower(lb.Name) {
 		case traceIDKey:
 			var tid [16]byte
@@ -404,7 +404,7 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 		default:
 			e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 		}
-	}
+	})
 }
 
 /*

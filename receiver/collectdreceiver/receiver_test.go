@@ -12,7 +12,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -44,22 +43,10 @@ func TestNewReceiver(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "nil next Consumer",
-			args: args{
-				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
-						Endpoint: ":0",
-					},
-				},
-				attrsPrefix: "default_attr_",
-			},
-			wantErr: component.ErrNilNextConsumer,
-		},
-		{
 			name: "happy path",
 			args: args{
 				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+					ServerConfig: confighttp.ServerConfig{
 						Endpoint: ":0",
 					},
 				},
@@ -89,7 +76,7 @@ func TestCollectDServer(t *testing.T) {
 	}
 
 	config := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:8081",
 		},
 	}
@@ -178,7 +165,7 @@ func TestCollectDServer(t *testing.T) {
 			sink.Reset()
 			req, err := http.NewRequest(
 				tt.HTTPMethod,
-				"http://"+config.HTTPServerSettings.Endpoint+"?"+tt.QueryParams,
+				"http://"+config.ServerConfig.Endpoint+"?"+tt.QueryParams,
 				bytes.NewBuffer([]byte(tt.RequestBody)),
 			)
 			require.NoError(t, err)

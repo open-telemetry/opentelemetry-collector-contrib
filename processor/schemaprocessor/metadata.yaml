@@ -1,4 +1,5 @@
 type: schema
+scope_name: otelcol/schema
 
 status:
   class: processor
@@ -7,3 +8,6 @@ status:
   distributions: [sumo]
   codeowners:
     active: [MovieStoreGuy]
+
+tests:
+  config:

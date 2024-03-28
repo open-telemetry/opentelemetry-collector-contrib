@@ -29,11 +29,11 @@ var (
 
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	Username                                string              `mapstructure:"username"`
-	Password                                configopaque.String `mapstructure:"password"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	confighttp.ClientConfig        `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	Username                       string              `mapstructure:"username"`
+	Password                       configopaque.String `mapstructure:"password"`
 }
 
 // Validate validates missing and invalid configuration fields.

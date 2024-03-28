@@ -166,7 +166,7 @@ func TestJSONParseError(t *testing.T) {
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	_, err = scraper.scrape(context.Background())
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestEmptyResponseBodyError(t *testing.T) {

@@ -193,7 +193,7 @@ func TestSpan_MissingServiceName(t *testing.T) {
 	}
 
 	mp, err := newExpr(cfg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 
 	emptySpan := ptrace.NewSpan()

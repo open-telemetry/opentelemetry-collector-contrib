@@ -16,13 +16,16 @@ import (
 
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -46,7 +49,7 @@ func TestNewExporter(t *testing.T) {
 			Key: "ddog_32_characters_long_api_key1",
 		},
 		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: server.URL,
 			},
 			DeltaTTL: 3600,
@@ -295,22 +298,26 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			defer server.Close()
 
 			var (
-				once          sync.Once
-				statsRecorder testutil.MockStatsProcessor
+				once sync.Once
 			)
-
+			statsToAgent := make(chan *pb.StatsPayload, 1000) // Buffer the channel to allow test to pass without go-routines
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
-
+			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
 				exportertest.NewNopCreateSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
+				acfg,
 				&once,
+				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
-				&statsRecorder,
+				statsToAgent,
 				reporter,
+				nil,
 			)
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")
@@ -352,10 +359,18 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, expected, sketchRecorder.ByteBody)
 			}
-			if tt.expectedStats == nil {
-				assert.Len(t, statsRecorder.In, 0)
-			} else {
-				assert.ElementsMatch(t, statsRecorder.In, tt.expectedStats)
+			if tt.expectedStats != nil {
+				var actualStats []*pb.ClientStatsPayload
+			pullStats:
+				for len(actualStats) < len(tt.expectedStats) {
+					select {
+					case <-time.After(10 * time.Second):
+						break pullStats
+					case sp := <-statsToAgent:
+						actualStats = append(actualStats, sp.Stats...)
+					}
+				}
+				assert.ElementsMatch(t, actualStats, tt.expectedStats)
 			}
 		})
 	}
@@ -374,7 +389,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 			Key: "ddog_32_characters_long_api_key1",
 		},
 		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: server.URL,
 			},
 			DeltaTTL: 3600,
@@ -614,7 +629,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			expectedErr:           nil,
 		},
 		{
-			metrics: createTestMetricsWithStats(),
+			metrics: createTestMetricsWithStats(t),
 			source: source.Source{
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
@@ -685,20 +700,26 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			defer server.Close()
 
 			var (
-				once          sync.Once
-				statsRecorder testutil.MockStatsProcessor
+				once sync.Once
 			)
+			statsToAgent := make(chan *pb.StatsPayload, 1000)
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
+			attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
 				exportertest.NewNopCreateSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
+				acfg,
 				&once,
+				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
-				&statsRecorder,
+				statsToAgent,
 				reporter,
+				nil,
 			)
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")
@@ -735,26 +756,37 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, expected, sketchRecorder.ByteBody)
 			}
-			if tt.expectedStats == nil {
-				assert.Len(t, statsRecorder.In, 0)
-			} else {
-				assert.ElementsMatch(t, statsRecorder.In, tt.expectedStats)
+			if tt.expectedStats != nil {
+				var actualStats []*pb.ClientStatsPayload
+			pullStats:
+				for len(actualStats) < len(tt.expectedStats) {
+					select {
+					case <-time.After(10 * time.Second):
+						break pullStats
+					case sp := <-statsToAgent:
+						actualStats = append(actualStats, sp.Stats...)
+					}
+				}
+				assert.ElementsMatch(t, actualStats, tt.expectedStats)
 			}
 		})
 	}
 }
 
-func createTestMetricsWithStats() pmetric.Metrics {
+func createTestMetricsWithStats(t *testing.T) pmetric.Metrics {
 	md := createTestMetrics(map[string]string{
 		conventions.AttributeDeploymentEnvironment: "dev",
 		"custom_attribute":                         "custom_value",
 	})
 	dest := md.ResourceMetrics()
-	logger, _ := zap.NewDevelopment()
-	trans, err := metrics.NewTranslator(logger)
-	if err != nil {
-		panic(err)
-	}
+	set := componenttest.NewNopTelemetrySettings()
+	var err error
+	set.Logger, err = zap.NewDevelopment()
+	require.NoError(t, err)
+	attributesTranslator, err := attributes.NewTranslator(set)
+	require.NoError(t, err)
+	trans, err := metrics.NewTranslator(set, attributesTranslator)
+	require.NoError(t, err)
 	src := trans.
 		StatsPayloadToMetrics(&pb.StatsPayload{Stats: testutil.StatsPayloads}).
 		ResourceMetrics()
@@ -827,7 +859,7 @@ func newTestConfig(t *testing.T, endpoint string, hostTags []string, histogramMo
 			Tags: hostTags,
 		},
 		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: endpoint,
 			},
 			HistConfig: HistogramConfig{

@@ -242,7 +242,7 @@ func TestMetricQueries(t *testing.T) {
 			desc:    "FetchStorageMetrics",
 			query:   storageMetricsQuery,
 			columns: []string{"storage_bytes", "stage_bytes", "failsafe_bytes"},
-			params:  []driver.Value{1, 2, 3},
+			params:  []driver.Value{1.0, 2.0, 3.0},
 			expect: storageMetric{
 				storageBytes:  1,
 				stageBytes:    2,

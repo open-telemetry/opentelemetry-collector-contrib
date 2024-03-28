@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package podmanreceiver
 
@@ -27,7 +26,7 @@ import (
 func TestNewReceiver(t *testing.T) {
 	config := &Config{
 		Endpoint: "unix:///run/some.sock",
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 1 * time.Second,
 			InitialDelay:       time.Second,
 		},
@@ -36,7 +35,7 @@ func TestNewReceiver(t *testing.T) {
 	mr, err := newMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, nextConsumer, nil)
 
 	assert.NotNil(t, mr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestNewReceiverErrors(t *testing.T) {

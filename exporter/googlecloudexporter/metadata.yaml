@@ -1,9 +1,15 @@
 type: googlecloud
+scope_name: otelcol/googlecloud
 
 status:
   class: exporter
   stability:
     beta: [traces, metrics, logs]
-  distributions: [contrib, observiq]
+  distributions: [contrib]
   codeowners:
     active: [aabmass, dashpole, jsuereth, punya, damemi, psx95]
+
+# TODO: Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 
@@ -52,11 +51,11 @@ func newMetricsReceiver(
 		set:           set,
 	}
 
-	scrp, err := scraperhelper.NewScraper(metadata.Type, recv.scrape, scraperhelper.WithStart(recv.start))
+	scrp, err := scraperhelper.NewScraper(metadata.Type.String(), recv.scrape, scraperhelper.WithStart(recv.start))
 	if err != nil {
 		return nil, err
 	}
-	return scraperhelper.NewScraperControllerReceiver(&recv.config.ScraperControllerSettings, set, nextConsumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewScraperControllerReceiver(&recv.config.ControllerConfig, set, nextConsumer, scraperhelper.AddScraper(scrp))
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {

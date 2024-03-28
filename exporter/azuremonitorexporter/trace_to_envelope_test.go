@@ -589,7 +589,7 @@ func commonRequestDataValidations(
 	span ptrace.Span,
 	data *contracts.RequestData) {
 
-	assertAttributesCopiedToPropertiesOrMeasurements(t, span.Attributes(), data.Properties, data.Measurements)
+	assertAttributesCopiedToProperties(t, span.Attributes(), data.Properties)
 	assert.Equal(t, defaultSpanIDAsHex, data.Id)
 	assert.Equal(t, defaultSpanDuration, data.Duration)
 
@@ -616,7 +616,7 @@ func commonRemoteDependencyDataValidations(
 	span ptrace.Span,
 	data *contracts.RemoteDependencyData) {
 
-	assertAttributesCopiedToPropertiesOrMeasurements(t, span.Attributes(), data.Properties, data.Measurements)
+	assertAttributesCopiedToProperties(t, span.Attributes(), data.Properties)
 	assert.Equal(t, defaultSpanIDAsHex, data.Id)
 	assert.Equal(t, defaultSpanDuration, data.Duration)
 }
@@ -711,35 +711,29 @@ func defaultInternalRemoteDependencyDataValidations(
 	span ptrace.Span,
 	data *contracts.RemoteDependencyData) {
 
-	assertAttributesCopiedToPropertiesOrMeasurements(t, span.Attributes(), data.Properties, data.Measurements)
+	assertAttributesCopiedToProperties(t, span.Attributes(), data.Properties)
 	assert.Equal(t, "InProc", data.Type)
 }
 
-// Verifies that all attributes are copies to either the properties or measurements maps of the envelope's data element
-func assertAttributesCopiedToPropertiesOrMeasurements(
+// Verifies that all attributes are copies to either the properties maps of the envelope's data element
+func assertAttributesCopiedToProperties(
 	t *testing.T,
 	attributeMap pcommon.Map,
-	properties map[string]string,
-	measurements map[string]float64) {
+	properties map[string]string) {
 
 	attributeMap.Range(func(k string, v pcommon.Value) bool {
+		p, exists := properties[k]
+		assert.True(t, exists)
+
 		switch v.Type() {
 		case pcommon.ValueTypeStr:
-			p, exists := properties[k]
-			assert.True(t, exists)
 			assert.Equal(t, v.Str(), p)
 		case pcommon.ValueTypeBool:
-			p, exists := properties[k]
-			assert.True(t, exists)
 			assert.Equal(t, strconv.FormatBool(v.Bool()), p)
 		case pcommon.ValueTypeInt:
-			m, exists := measurements[k]
-			assert.True(t, exists)
-			assert.Equal(t, float64(v.Int()), m)
+			assert.Equal(t, strconv.FormatInt(v.Int(), 10), p)
 		case pcommon.ValueTypeDouble:
-			m, exists := measurements[k]
-			assert.True(t, exists)
-			assert.Equal(t, v.Double(), m)
+			assert.Equal(t, strconv.FormatFloat(v.Double(), 'f', -1, 64), p)
 		}
 		return true
 	})

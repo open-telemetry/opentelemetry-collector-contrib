@@ -52,7 +52,7 @@ func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config
 		config,
 		e.consumeLogs,
 		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 		exporterhelper.WithShutdown(e.shutdown),
 	)

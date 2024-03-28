@@ -20,7 +20,7 @@ import (
 var _ consumer.Traces = &traceStatements{}
 
 type traceStatements struct {
-	ottl.Statements[ottlspan.TransformContext]
+	ottl.StatementSequence[ottlspan.TransformContext]
 }
 
 func (t traceStatements) Capabilities() consumer.Capabilities {
@@ -50,7 +50,7 @@ func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 var _ consumer.Traces = &spanEventStatements{}
 
 type spanEventStatements struct {
-	ottl.Statements[ottlspanevent.TransformContext]
+	ottl.StatementSequence[ottlspanevent.TransformContext]
 }
 
 func (s spanEventStatements) Capabilities() consumer.Capabilities {
@@ -152,14 +152,14 @@ func (pc TraceParserCollection) ParseContextStatements(contextStatements Context
 		if err != nil {
 			return nil, err
 		}
-		sStatements := ottlspan.NewStatements(parsedStatements, pc.settings, ottlspan.WithErrorMode(pc.errorMode))
+		sStatements := ottlspan.NewStatementSequence(parsedStatements, pc.settings, ottlspan.WithStatementSequenceErrorMode(pc.errorMode))
 		return traceStatements{sStatements}, nil
 	case SpanEvent:
 		parsedStatements, err := pc.spanEventParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		seStatements := ottlspanevent.NewStatements(parsedStatements, pc.settings, ottlspanevent.WithErrorMode(pc.errorMode))
+		seStatements := ottlspanevent.NewStatementSequence(parsedStatements, pc.settings, ottlspanevent.WithStatementSequenceErrorMode(pc.errorMode))
 		return spanEventStatements{seStatements}, nil
 	default:
 		return pc.parseCommonContextStatements(contextStatements)

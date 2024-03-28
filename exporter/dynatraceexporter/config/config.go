@@ -11,6 +11,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/apiconstants"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -18,10 +19,10 @@ import (
 
 // Config defines configuration for the Dynatrace exporter.
 type Config struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	confighttp.ClientConfig `mapstructure:",squash"`
 
 	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 	ResourceToTelemetrySettings  resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
 	// Dynatrace API token with metrics ingest permission
@@ -43,8 +44,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("queue settings has invalid configuration: %w", err)
 	}
 
-	if c.HTTPClientSettings.Headers == nil {
-		c.HTTPClientSettings.Headers = make(map[string]configopaque.String)
+	if c.ClientConfig.Headers == nil {
+		c.ClientConfig.Headers = make(map[string]configopaque.String)
 	}
 	c.APIToken = strings.TrimSpace(c.APIToken)
 
@@ -55,15 +56,15 @@ func (c *Config) Validate() error {
 			return errors.New("api_token is required if Endpoint is provided")
 		}
 
-		c.HTTPClientSettings.Headers["Authorization"] = configopaque.String(fmt.Sprintf("Api-Token %s", c.APIToken))
+		c.ClientConfig.Headers["Authorization"] = configopaque.String(fmt.Sprintf("Api-Token %s", c.APIToken))
 	}
 
 	if !(strings.HasPrefix(c.Endpoint, "http://") || strings.HasPrefix(c.Endpoint, "https://")) {
 		return errors.New("endpoint must start with https:// or http://")
 	}
 
-	c.HTTPClientSettings.Headers["Content-Type"] = "text/plain; charset=UTF-8"
-	c.HTTPClientSettings.Headers["User-Agent"] = "opentelemetry-collector"
+	c.ClientConfig.Headers["Content-Type"] = "text/plain; charset=UTF-8"
+	c.ClientConfig.Headers["User-Agent"] = "opentelemetry-collector"
 
 	return nil
 }

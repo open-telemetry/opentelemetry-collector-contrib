@@ -1,0 +1,24 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "localhost:{{.EndpointPort}}"
+exporters:
+  debug:
+    verbosity: basic
+
+extensions:
+  opamp:
+    instance_uid: "{{.InstanceUid}}"
+    server:
+      ws:
+        endpoint: "ws://localhost:{{.SupervisorPort}}/v1/opamp"
+        tls:
+          insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [debug]
+  extensions: [opamp]

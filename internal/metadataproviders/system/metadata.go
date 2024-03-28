@@ -66,6 +66,9 @@ type Provider interface {
 
 	// HostIPs returns the host's IP interfaces
 	HostIPs() ([]net.IP, error)
+
+	// HostMACs returns the host's MAC addresses
+	HostMACs() ([]net.HardwareAddr, error)
 }
 
 type systemMetadataProvider struct {
@@ -195,4 +198,21 @@ func (p systemMetadataProvider) HostIPs() (ips []net.IP, err error) {
 
 	}
 	return ips, err
+}
+
+func (p systemMetadataProvider) HostMACs() (macs []net.HardwareAddr, err error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, iface := range ifaces {
+		// skip if the interface is down or is a loopback interface
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		macs = append(macs, iface.HardwareAddr)
+	}
+	return macs, err
 }

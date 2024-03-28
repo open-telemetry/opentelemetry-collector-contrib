@@ -65,5 +65,5 @@ func TestJobClient_JobToCronJob(t *testing.T) {
 func TestTransformFuncJob(t *testing.T) {
 	info, err := transformFuncJob(nil)
 	assert.Nil(t, info)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

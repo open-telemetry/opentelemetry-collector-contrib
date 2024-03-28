@@ -53,24 +53,24 @@ var (
 )
 
 func TestTransactionCommitWithoutAdding(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	assert.NoError(t, tr.Commit())
 }
 
 func TestTransactionRollbackDoesNothing(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	assert.NoError(t, tr.Rollback())
 }
 
 func TestTransactionUpdateMetadataDoesNothing(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	_, err := tr.UpdateMetadata(0, labels.New(), metadata.Metadata{})
 	assert.NoError(t, err)
 }
 
 func TestTransactionAppendNoTarget(t *testing.T) {
 	badLabels := labels.FromStrings(model.MetricNameLabel, "counter_test")
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	_, err := tr.Append(0, badLabels, time.Now().Unix()*1000, 1.0)
 	assert.Error(t, err)
 }
@@ -80,7 +80,7 @@ func TestTransactionAppendNoMetricName(t *testing.T) {
 		model.InstanceLabel: "localhost:8080",
 		model.JobLabel:      "test2",
 	})
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	_, err := tr.Append(0, jobNotFoundLb, time.Now().Unix()*1000, 1.0)
 	assert.ErrorIs(t, err, errMetricNameNotFound)
 
@@ -88,7 +88,7 @@ func TestTransactionAppendNoMetricName(t *testing.T) {
 }
 
 func TestTransactionAppendEmptyMetricName(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test2",
@@ -99,7 +99,7 @@ func TestTransactionAppendEmptyMetricName(t *testing.T) {
 
 func TestTransactionAppendResource(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
@@ -122,7 +122,7 @@ func TestTransactionAppendResource(t *testing.T) {
 
 func TestReceiverVersionAndNameAreAttached(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
@@ -150,7 +150,7 @@ func TestTransactionCommitErrorWhenAdjusterError(t *testing.T) {
 	})
 	sink := new(consumertest.MetricsSink)
 	adjusterErr := errors.New("adjuster error")
-	tr := newTransaction(scrapeCtx, &errorAdjuster{err: adjusterErr}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &errorAdjuster{err: adjusterErr}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 	_, err := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0)
 	assert.NoError(t, err)
 	assert.ErrorIs(t, tr.Commit(), adjusterErr)
@@ -159,7 +159,7 @@ func TestTransactionCommitErrorWhenAdjusterError(t *testing.T) {
 // Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
 func TestTransactionAppendDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 
 	dupLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -184,7 +184,7 @@ func TestTransactionAppendHistogramNoLe(t *testing.T) {
 		scrapeCtx,
 		&startTimeAdjuster{startTime: startTimestamp},
 		sink,
-		nil,
+		labels.EmptyLabels(),
 		receiverSettings,
 		nopObsRecv(t),
 		false,
@@ -214,7 +214,7 @@ func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
 		scrapeCtx,
 		&startTimeAdjuster{startTime: startTimestamp},
 		sink,
-		nil,
+		labels.EmptyLabels(),
 		receiverSettings,
 		nopObsRecv(t),
 		false,
@@ -244,7 +244,7 @@ func TestTransactionAppendValidAndInvalid(t *testing.T) {
 		scrapeCtx,
 		&startTimeAdjuster{startTime: startTimestamp},
 		sink,
-		nil,
+		labels.EmptyLabels(),
 		receiverSettings,
 		nopObsRecv(t),
 		false,
@@ -282,7 +282,7 @@ func TestTransactionAppendValidAndInvalid(t *testing.T) {
 
 func TestAppendExemplarWithNoMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -295,7 +295,7 @@ func TestAppendExemplarWithNoMetricName(t *testing.T) {
 
 func TestAppendExemplarWithEmptyMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -308,7 +308,7 @@ func TestAppendExemplarWithEmptyMetricName(t *testing.T) {
 
 func TestAppendExemplarWithDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -324,7 +324,7 @@ func TestAppendExemplarWithDuplicateLabels(t *testing.T) {
 
 func TestAppendExemplarWithoutAddingMetric(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -338,23 +338,23 @@ func TestAppendExemplarWithoutAddingMetric(t *testing.T) {
 
 func TestAppendExemplarWithNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 
-	_, err := tr.AppendExemplar(0, nil, exemplar.Exemplar{Value: 0})
+	_, err := tr.AppendExemplar(0, labels.EmptyLabels(), exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errNoJobInstance, err)
 }
 
 func TestAppendExemplarWithEmptyLabelArray(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 
-	_, err := tr.AppendExemplar(0, []labels.Label{}, exemplar.Exemplar{Value: 0})
+	_, err := tr.AppendExemplar(0, labels.FromStrings(), exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errNoJobInstance, err)
 }
 
 func nopObsRecv(t *testing.T) *receiverhelper.ObsReport {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID:             component.NewID("prometheus"),
+		ReceiverID:             component.MustNewID("prometheus"),
 		Transport:              transport,
 		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
 	})
@@ -402,22 +402,22 @@ func TestMetricBuilderCounters(t *testing.T) {
 								{
 									Value:  1,
 									Ts:     1663113420863,
-									Labels: []labels.Label{{Name: model.MetricNameLabel, Value: "counter_test"}, {Name: model.JobLabel, Value: "job"}, {Name: model.InstanceLabel, Value: "instance"}, {Name: "foo", Value: "bar"}},
+									Labels: labels.New([]labels.Label{{Name: model.MetricNameLabel, Value: "counter_test"}, {Name: model.JobLabel, Value: "job"}, {Name: model.InstanceLabel, Value: "instance"}, {Name: "foo", Value: "bar"}}...),
 								},
 								{
 									Value:  1,
 									Ts:     1663113420863,
-									Labels: []labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: ""}, {Name: "span_id", Value: ""}},
+									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: ""}, {Name: "span_id", Value: ""}}...),
 								},
 								{
 									Value:  1,
 									Ts:     1663113420863,
-									Labels: []labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "10a47365b8aa04e08291fab9deca84db6170"}, {Name: "span_id", Value: "719cee4a669fd7d109ff"}},
+									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "10a47365b8aa04e08291fab9deca84db6170"}, {Name: "span_id", Value: "719cee4a669fd7d109ff"}}...),
 								},
 								{
 									Value:  1,
 									Ts:     1663113420863,
-									Labels: []labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc880"}, {Name: "span_id", Value: "dfa4597a9d"}},
+									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc880"}, {Name: "span_id", Value: "dfa4597a9d"}}...),
 								},
 							},
 							"foo", "bar"),
@@ -442,9 +442,9 @@ func TestMetricBuilderCounters(t *testing.T) {
 				e0.SetTimestamp(timestampFromMs(1663113420863))
 				e0.SetDoubleValue(1)
 				e0.FilteredAttributes().PutStr(model.MetricNameLabel, "counter_test")
-				e0.FilteredAttributes().PutStr(model.JobLabel, "job")
-				e0.FilteredAttributes().PutStr(model.InstanceLabel, "instance")
 				e0.FilteredAttributes().PutStr("foo", "bar")
+				e0.FilteredAttributes().PutStr(model.InstanceLabel, "instance")
+				e0.FilteredAttributes().PutStr(model.JobLabel, "job")
 
 				e1 := pt0.Exemplars().AppendEmpty()
 				e1.SetTimestamp(timestampFromMs(1663113420863))
@@ -635,22 +635,22 @@ func TestMetricBuilderGauges(t *testing.T) {
 								{
 									Value:  2,
 									Ts:     1663350815890,
-									Labels: []labels.Label{{Name: model.MetricNameLabel, Value: "counter_test"}, {Name: model.JobLabel, Value: "job"}, {Name: model.InstanceLabel, Value: "instance"}, {Name: "foo", Value: "bar"}},
+									Labels: labels.New([]labels.Label{{Name: model.MetricNameLabel, Value: "counter_test"}, {Name: model.JobLabel, Value: "job"}, {Name: model.InstanceLabel, Value: "instance"}, {Name: "foo", Value: "bar"}}...),
 								},
 								{
 									Value:  2,
 									Ts:     1663350815890,
-									Labels: []labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: ""}, {Name: "span_id", Value: ""}},
+									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: ""}, {Name: "span_id", Value: ""}}...),
 								},
 								{
 									Value:  2,
 									Ts:     1663350815890,
-									Labels: []labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "10a47365b8aa04e08291fab9deca84db6170"}, {Name: "span_id", Value: "719cee4a669fd7d109ff"}},
+									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "10a47365b8aa04e08291fab9deca84db6170"}, {Name: "span_id", Value: "719cee4a669fd7d109ff"}}...),
 								},
 								{
 									Value:  2,
 									Ts:     1663350815890,
-									Labels: []labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc880"}, {Name: "span_id", Value: "dfa4597a9d"}},
+									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc880"}, {Name: "span_id", Value: "dfa4597a9d"}}...),
 								},
 							},
 							"foo", "bar"),
@@ -678,9 +678,9 @@ func TestMetricBuilderGauges(t *testing.T) {
 				e0.SetTimestamp(timestampFromMs(1663350815890))
 				e0.SetDoubleValue(2)
 				e0.FilteredAttributes().PutStr(model.MetricNameLabel, "counter_test")
-				e0.FilteredAttributes().PutStr(model.JobLabel, "job")
-				e0.FilteredAttributes().PutStr(model.InstanceLabel, "instance")
 				e0.FilteredAttributes().PutStr("foo", "bar")
+				e0.FilteredAttributes().PutStr(model.InstanceLabel, "instance")
+				e0.FilteredAttributes().PutStr(model.JobLabel, "job")
 
 				e1 := pt0.Exemplars().AppendEmpty()
 				e1.SetTimestamp(timestampFromMs(1663350815890))
@@ -946,27 +946,27 @@ func TestMetricBuilderHistogram(t *testing.T) {
 								{
 									Value:  1,
 									Ts:     1663113420863,
-									Labels: []labels.Label{{Name: model.MetricNameLabel, Value: "counter_test"}, {Name: model.JobLabel, Value: "job"}, {Name: model.InstanceLabel, Value: "instance"}, {Name: "foo", Value: "bar"}},
+									Labels: labels.New([]labels.Label{{Name: model.MetricNameLabel, Value: "counter_test"}, {Name: model.JobLabel, Value: "job"}, {Name: model.InstanceLabel, Value: "instance"}, {Name: "foo", Value: "bar"}}...),
 								},
 								{
 									Value:  1,
 									Ts:     1663113420863,
-									Labels: []labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: ""}, {Name: "span_id", Value: ""}, {Name: "le", Value: "20"}},
+									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: ""}, {Name: "span_id", Value: ""}, {Name: "le", Value: "20"}}...),
 								},
 								{
 									Value:  1,
 									Ts:     1663113420863,
-									Labels: []labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "10a47365b8aa04e08291fab9deca84db6170"}, {Name: "traceid", Value: "e3688e1aa2961786"}, {Name: "span_id", Value: "719cee4a669fd7d109ff"}},
+									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "10a47365b8aa04e08291fab9deca84db6170"}, {Name: "traceid", Value: "e3688e1aa2961786"}, {Name: "span_id", Value: "719cee4a669fd7d109ff"}}...),
 								},
 								{
 									Value:  1,
 									Ts:     1663113420863,
-									Labels: []labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc880"}, {Name: "span_id", Value: "dfa4597a9d"}},
+									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc880"}, {Name: "span_id", Value: "dfa4597a9d"}}...),
 								},
 								{
 									Value:  1,
 									Ts:     1663113420863,
-									Labels: []labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc88"}, {Name: "span_id", Value: "dfa4597a9"}},
+									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc88"}, {Name: "span_id", Value: "dfa4597a9"}}...),
 								},
 							},
 							"foo", "bar", "le", "10"),
@@ -997,9 +997,9 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				e0.SetTimestamp(timestampFromMs(1663113420863))
 				e0.SetDoubleValue(1)
 				e0.FilteredAttributes().PutStr(model.MetricNameLabel, "counter_test")
-				e0.FilteredAttributes().PutStr(model.JobLabel, "job")
-				e0.FilteredAttributes().PutStr(model.InstanceLabel, "instance")
 				e0.FilteredAttributes().PutStr("foo", "bar")
+				e0.FilteredAttributes().PutStr(model.InstanceLabel, "instance")
+				e0.FilteredAttributes().PutStr(model.JobLabel, "job")
 
 				e1 := pt0.Exemplars().AppendEmpty()
 				e1.SetTimestamp(timestampFromMs(1663113420863))
@@ -1026,8 +1026,8 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				e4.SetTimestamp(timestampFromMs(1663113420863))
 				e4.SetDoubleValue(1)
 				e4.FilteredAttributes().PutStr("foo", "bar")
-				e4.FilteredAttributes().PutStr("trace_id", "174137cab66dc88")
 				e4.FilteredAttributes().PutStr("span_id", "dfa4597a9")
+				e4.FilteredAttributes().PutStr("trace_id", "174137cab66dc88")
 
 				return []pmetric.Metrics{md0}
 			},
@@ -1473,7 +1473,7 @@ func (tt buildTestData) run(t *testing.T) {
 	st := ts
 	for i, page := range tt.inputs {
 		sink := new(consumertest.MetricsSink)
-		tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+		tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
 		for _, pt := range page.pts {
 			// set ts for testing
 			pt.t = st

@@ -21,7 +21,7 @@ type ssoTracesExporter struct {
 	Dataset      string
 	bulkAction   string
 	model        mappingModel
-	httpSettings confighttp.HTTPClientSettings
+	httpSettings confighttp.ClientConfig
 	telemetry    component.TelemetrySettings
 }
 
@@ -41,7 +41,7 @@ func newSSOTracesExporter(cfg *Config, set exporter.CreateSettings) (*ssoTracesE
 		Dataset:      cfg.Dataset,
 		bulkAction:   cfg.BulkAction,
 		model:        model,
-		httpSettings: cfg.HTTPClientSettings,
+		httpSettings: cfg.ClientConfig,
 	}, nil
 }
 

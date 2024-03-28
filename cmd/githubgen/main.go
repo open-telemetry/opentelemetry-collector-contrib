@@ -9,10 +9,13 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"os"
 	"path/filepath"
 	"sort"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"gopkg.in/yaml.v3"
 )
 
 const unmaintainedStatus = "unmaintained"
@@ -25,6 +28,7 @@ type generator interface {
 // .github/CODEOWNERS
 // .github/ALLOWLIST
 // .github/ISSUE_TEMPLATES/*.yaml (list of components)
+// reports/distributions/*
 func main() {
 	folder := flag.String("folder", ".", "folder investigated for codeowners")
 	allowlistFilePath := flag.String("allowlist", "cmd/githubgen/allowlist.txt", "path to a file containing an allowlist of members outside the OpenTelemetry organization")
@@ -36,6 +40,8 @@ func main() {
 			generators = append(generators, issueTemplatesGenerator{})
 		case "codeowners":
 			generators = append(generators, codeownersGenerator{})
+		case "distributions":
+			generators = append(generators, distributionsGenerator{})
 		default:
 			panic(fmt.Sprintf("Unknown generator: %s", arg))
 		}
@@ -71,16 +77,23 @@ type metadata struct {
 	Status *Status `mapstructure:"status"`
 }
 
+type distributionData struct {
+	Name        string   `yaml:"name"`
+	URL         string   `yaml:"url"`
+	Maintainers []string `yaml:"maintainers,omitempty"`
+}
+
 type githubData struct {
 	folders           []string
 	codeowners        []string
 	allowlistFilePath string
 	maxLength         int
 	components        map[string]metadata
+	distributions     []distributionData
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := fileprovider.New().Retrieve(context.Background(), "file:"+filePath, nil)
+	cp, err := fileprovider.NewWithSettings(confmap.ProviderSettings{}).Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}
@@ -91,7 +104,7 @@ func loadMetadata(filePath string) (metadata, error) {
 	}
 
 	md := metadata{}
-	if err := conf.Unmarshal(&md); err != nil {
+	if err := conf.Unmarshal(&md, confmap.WithIgnoreUnused()); err != nil {
 		return md, err
 	}
 
@@ -104,7 +117,7 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 	var foldersList []string
 	maxLength := 0
 	allCodeowners := map[string]struct{}{}
-	err := filepath.Walk(folder, func(path string, info fs.FileInfo, err error) error {
+	err := filepath.Walk(folder, func(path string, info fs.FileInfo, _ error) error {
 		if info.Name() == "metadata.yaml" {
 			m, err := loadMetadata(path)
 			if err != nil {
@@ -147,12 +160,23 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 	}
 	sort.Strings(codeownersList)
 
+	var distributions []distributionData
+	dd, err := os.ReadFile(filepath.Join(folder, "distributions.yaml"))
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(dd, &distributions)
+	if err != nil {
+		return err
+	}
+
 	data := &githubData{
 		folders:           foldersList,
 		codeowners:        codeownersList,
 		allowlistFilePath: allowlistFilePath,
 		maxLength:         maxLength,
 		components:        components,
+		distributions:     distributions,
 	}
 
 	for _, g := range generators {

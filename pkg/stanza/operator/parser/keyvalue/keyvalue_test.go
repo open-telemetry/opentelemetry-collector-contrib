@@ -110,6 +110,15 @@ func TestBuild(t *testing.T) {
 			true,
 		},
 		{
+			"pair-delimiter-equals-default-delimiter",
+			func() *Config {
+				cfg := basicConfig()
+				cfg.Delimiter = " "
+				return cfg
+			}(),
+			true,
+		},
+		{
 			"unset-delimiter",
 			func() *Config {
 				cfg := basicConfig()
@@ -138,7 +147,7 @@ func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("expected '%s' to split by '%s' into two items, got", "invalid", parser.delimiter))
+	require.Contains(t, err.Error(), fmt.Sprintf("cannot split %q into 2 items, got 1 item(s)", "invalid"))
 }
 
 func TestParserInvalidType(t *testing.T) {
@@ -146,6 +155,13 @@ func TestParserInvalidType(t *testing.T) {
 	_, err := parser.parse([]int{})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "type []int cannot be parsed as key value pairs")
+}
+
+func TestParserEmptyInput(t *testing.T) {
+	parser := newTestParser(t)
+	_, err := parser.parse("")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "parse from field body is empty")
 }
 
 func TestKVImplementations(t *testing.T) {
@@ -163,7 +179,7 @@ func TestParser(t *testing.T) {
 	}{
 		{
 			"simple",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: "name=stanza age=2",
 			},
@@ -245,7 +261,7 @@ func TestParser(t *testing.T) {
 		},
 		{
 			"user-agent",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `requestClientApplication="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0"`,
 			},
@@ -260,7 +276,7 @@ func TestParser(t *testing.T) {
 		},
 		{
 			"double-quotes-removed",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: "name=\"stanza\" age=2",
 			},
@@ -276,7 +292,7 @@ func TestParser(t *testing.T) {
 		},
 		{
 			"single-quotes-removed",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: "description='stanza deployment number 5' x=y",
 			},
@@ -292,7 +308,7 @@ func TestParser(t *testing.T) {
 		},
 		{
 			"double-quotes-spaces-removed",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `name=" stanza " age=2`,
 			},
@@ -308,7 +324,7 @@ func TestParser(t *testing.T) {
 		},
 		{
 			"leading-and-trailing-space",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `" name "=" stanza " age=2`,
 			},
@@ -410,7 +426,7 @@ key=value`,
 		},
 		{
 			"large",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: "name=stanza age=1 job=\"software engineering\" location=\"grand rapids michigan\" src=\"10.3.3.76\" dst=172.217.0.10 protocol=udp sport=57112 dport=443 translated_src_ip=96.63.176.3 translated_port=57112",
 			},
@@ -435,7 +451,7 @@ key=value`,
 		},
 		{
 			"dell-sonic-wall",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `id=LVM_Sonicwall sn=22255555 time="2021-09-22 16:30:31" fw=14.165.177.10 pri=6 c=1024 gcat=2 m=97 msg="Web site hit" srcMac=6c:0b:84:3f:fa:63 src=192.168.50.2:52006:X0 srcZone=LAN natSrc=14.165.177.10:58457 dstMac=08:b2:58:46:30:54 dst=15.159.150.83:443:X1 dstZone=WAN natDst=15.159.150.83:443 proto=tcp/https sent=1422 rcvd=5993 rule="6 (LAN->WAN)" app=48 dstname=example.space.dev.com arg=/ code=27 Category="Information Technology/Computers" note="Policy: a0, Info: 888 " n=3412158`,
 			},
@@ -477,7 +493,7 @@ key=value`,
 		},
 		{
 			"missing-delimiter",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `test text`,
 			},
@@ -488,20 +504,55 @@ key=value`,
 			false,
 		},
 		{
-			"invalid-pair",
-			func(kv *Config) {},
+			"value-contains-delimiter",
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `test=text=abc`,
 			},
 			&entry.Entry{
+				Attributes: map[string]any{
+					"test": "text=abc",
+				},
 				Body: `test=text=abc`,
 			},
-			true,
+			false,
+			false,
+		},
+		{
+			"quoted-value-contains-whitespace-delimiter",
+			func(_ *Config) {},
+			&entry.Entry{
+				Body: `msg="Message successfully sent at 2023-12-04 06:47:31.204222276 +0000 UTC m=+5115.932279346"`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"msg": `Message successfully sent at 2023-12-04 06:47:31.204222276 +0000 UTC m=+5115.932279346`,
+				},
+				Body: `msg="Message successfully sent at 2023-12-04 06:47:31.204222276 +0000 UTC m=+5115.932279346"`,
+			},
+			false,
+			false,
+		},
+		{
+			"multiple-values-contain-delimiter",
+			func(_ *Config) {},
+			&entry.Entry{
+				Body: `one=1=i two="2=ii" three=3=iii`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"one":   "1=i",
+					"two":   "2=ii",
+					"three": "3=iii",
+				},
+				Body: `one=1=i two="2=ii" three=3=iii`,
+			},
+			false,
 			false,
 		},
 		{
 			"empty-input",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{},
 			&entry.Entry{},
 			true,
@@ -537,6 +588,105 @@ key=value`,
 			false,
 			true,
 		},
+		{
+			"custom pair delimiter in quoted value",
+			func(kv *Config) {
+				kv.PairDelimiter = "_"
+			},
+			&entry.Entry{
+				Body: `a=b_c="d_e"`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"a": "b",
+					"c": "d_e",
+				},
+				Body: `a=b_c="d_e"`,
+			},
+			false,
+			false,
+		},
+		{
+			"embedded double quotes in single quoted value",
+			func(_ *Config) {},
+			&entry.Entry{
+				Body: `a=b c='this is a "co ol" value'`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"a": "b",
+					"c": "this is a \"co ol\" value",
+				},
+				Body: `a=b c='this is a "co ol" value'`,
+			},
+			false,
+			false,
+		},
+		{
+			"embedded double quotes end single quoted value",
+			func(_ *Config) {},
+			&entry.Entry{
+				Body: `a=b c='this is a "co ol"'`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"a": "b",
+					"c": "this is a \"co ol\"",
+				},
+				Body: `a=b c='this is a "co ol"'`,
+			},
+			false,
+			false,
+		},
+		{
+			"leading and trailing pair delimiter w/o quotes",
+			func(_ *Config) {},
+			&entry.Entry{
+				Body: "   k1=v1   k2==v2       k3=v3= ",
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"k1": "v1",
+					"k2": "=v2",
+					"k3": "v3=",
+				},
+				Body: "   k1=v1   k2==v2       k3=v3= ",
+			},
+			false,
+			false,
+		},
+		{
+			"complicated delimiters",
+			func(kv *Config) {
+				kv.Delimiter = "@*"
+				kv.PairDelimiter = "_!_"
+			},
+			&entry.Entry{
+				Body: `k1@*v1_!_k2@**v2_!__k3@@*v3__`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"k1":   "v1",
+					"k2":   "*v2",
+					"_k3@": "v3__",
+				},
+				Body: `k1@*v1_!_k2@**v2_!__k3@@*v3__`,
+			},
+			false,
+			false,
+		},
+		{
+			"unclosed quotes",
+			func(_ *Config) {},
+			&entry.Entry{
+				Body: `k1='v1' k2='v2`,
+			},
+			&entry.Entry{
+				Body: `k1='v1' k2='v2`,
+			},
+			true,
+			false,
+		},
 	}
 
 	for _, tc := range cases {
@@ -566,31 +716,6 @@ key=value`,
 			}
 			require.NoError(t, err)
 			fake.ExpectEntry(t, tc.expect)
-		})
-	}
-}
-
-func TestSplitStringByWhitespace(t *testing.T) {
-	cases := []struct {
-		name   string
-		intput string
-		output []string
-	}{
-		{
-			"simple",
-			"k=v a=b x=\" y \" job=\"software engineering\"",
-			[]string{
-				"k=v",
-				"a=b",
-				"x=\" y \"",
-				"job=\"software engineering\"",
-			},
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.output, splitStringByWhitespace(tc.intput))
 		})
 	}
 }
