@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/open-telemetry/otel-arrow v0.18.0
-	github.com/open-telemetry/otel-arrow/collector v0.18.0
+	github.com/open-telemetry/otel-arrow/collector v0.20.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.97.1-0.20240327181407-1038b67c85a0
 	go.opentelemetry.io/collector/component v0.97.1-0.20240327181407-1038b67c85a0
@@ -24,7 +24,7 @@ require (
 	go.uber.org/mock v0.4.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/net v0.21.0
+	golang.org/x/net v0.22.0
 	google.golang.org/grpc v1.62.1
 )
 

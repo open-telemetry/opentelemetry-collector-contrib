@@ -49,7 +49,7 @@ import (
 
 const otlpReceiverName = "receiver_test"
 
-var testReceiverID = component.NewIDWithName(component.MustNewType(componentMetadata.Type), otlpReceiverName)
+var testReceiverID = component.NewIDWithName(componentMetadata.Type, otlpReceiverName)
 
 func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
