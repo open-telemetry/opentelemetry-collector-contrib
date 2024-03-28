@@ -332,13 +332,22 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 ### set
 
-`set(target, value)`
+`set(target, value, Optional[conflict_resolution_strategy])`
 
 The `set` function allows users to set a telemetry field using a value.
 
 `target` is a path expression to a telemetry field. `value` is any value type. If `value` resolves to `nil`, e.g. it references an unset map value, there will be no action.
 
 How the underlying telemetry field is updated is decided by the path expression implementation provided by the user to the `ottl.ParseStatements`.
+
+`conflict_resolution_strategy` specifies behavior in case of conflict and can fall into following cases:
+
+- **upsert**: Is the default behavior. This setting results in creating field in case it's missing or updating existing value.
+- **update**: This setting updates only existing value. In case value is missing no action is taken.
+- **insert**: Creates a new field in case it's not present. In case field is already present no action is taken.
+- **fail**: Similar to `insert` creates a field in case it's missing but returns an error otherwise.
+
+> In case field is preset but contains a zero value (e.g empty string, 0 for int64) it is considered missing.
 
 Examples:
 
