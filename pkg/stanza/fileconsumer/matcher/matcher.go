@@ -91,6 +91,7 @@ func New(c Criteria) (*Matcher, error) {
 	if c.OrderingCriteria.TopN == 0 {
 		c.OrderingCriteria.TopN = defaultOrderingCriteriaTopN
 	}
+	m.topN = c.OrderingCriteria.TopN
 
 	var regex *regexp.Regexp
 	if orderingCriteriaNeedsRegex(c.OrderingCriteria.SortBy) {
@@ -103,6 +104,8 @@ func New(c Criteria) (*Matcher, error) {
 		if err != nil {
 			return nil, fmt.Errorf("compile regex: %w", err)
 		}
+
+		m.regex = regex
 	}
 
 	for _, sc := range c.OrderingCriteria.SortBy {
@@ -135,13 +138,7 @@ func New(c Criteria) (*Matcher, error) {
 		}
 	}
 
-	return &Matcher{
-		include:    c.Include,
-		exclude:    c.Exclude,
-		regex:      regex,
-		topN:       c.OrderingCriteria.TopN,
-		filterOpts: m.filterOpts,
-	}, nil
+	return m, nil
 }
 
 // orderingCriteriaNeedsRegex returns true if any of the sort options require a regex to be set.
