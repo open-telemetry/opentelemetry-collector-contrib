@@ -3,13 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidca
 go 1.21
 
 require (
-	github.com/coreos/go-oidc v2.2.1+incompatible
+	github.com/coreos/go-oidc/v3 v3.10.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.96.1-0.20240306115632-b2693620eff6
-	go.opentelemetry.io/collector/component v0.96.1-0.20240306115632-b2693620eff6
-	go.opentelemetry.io/collector/confmap v0.96.1-0.20240306115632-b2693620eff6
-	go.opentelemetry.io/collector/extension v0.96.1-0.20240306115632-b2693620eff6
-	go.opentelemetry.io/collector/extension/auth v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/component v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/confmap v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/extension v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/extension/auth v0.97.1-0.20240327181407-1038b67c85a0
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
 	go.uber.org/zap v1.27.0
@@ -19,24 +19,25 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/go-jose/go-jose/v4 v4.0.1 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240306115632-b2693620eff6 // indirect
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240306115632-b2693620eff6 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.97.1-0.20240327181407-1038b67c85a0 // indirect
+	go.opentelemetry.io/collector/pdata v1.4.1-0.20240327181407-1038b67c85a0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
@@ -51,7 +52,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
 	google.golang.org/grpc v1.62.1 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
-	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

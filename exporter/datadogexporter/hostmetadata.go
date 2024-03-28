@@ -16,7 +16,7 @@ func newMetadataConfigfromConfig(cfg *Config) hostmetadata.PusherConfig {
 		APIKey:              string(cfg.API.Key),
 		UseResourceMetadata: cfg.HostMetadata.HostnameSource == HostnameSourceFirstResource,
 		InsecureSkipVerify:  cfg.TLSSetting.InsecureSkipVerify,
-		TimeoutSettings:     cfg.TimeoutSettings,
+		ClientConfig:        cfg.ClientConfig,
 		RetrySettings:       cfg.BackOffConfig,
 	}
 }

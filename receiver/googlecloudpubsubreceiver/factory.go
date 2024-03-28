@@ -71,9 +71,6 @@ func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 	cfg component.Config,
 	consumer consumer.Traces) (receiver.Traces, error) {
 
-	if consumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 	err := cfg.(*Config).validateForTrace()
 	if err != nil {
 		return nil, err
@@ -92,9 +89,6 @@ func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics) (receiver.Metrics, error) {
 
-	if consumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 	err := cfg.(*Config).validateForMetric()
 	if err != nil {
 		return nil, err
@@ -113,9 +107,6 @@ func (factory *pubsubReceiverFactory) CreateLogsReceiver(
 	cfg component.Config,
 	consumer consumer.Logs) (receiver.Logs, error) {
 
-	if consumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 	err := cfg.(*Config).validateForLog()
 	if err != nil {
 		return nil, err

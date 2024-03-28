@@ -101,7 +101,7 @@ func (r *otelArrowReceiver) startProtocolServers(host component.Host) error {
 	if r.netReporter != nil {
 		serverOpts = append(serverOpts, grpc.StatsHandler(r.netReporter.Handler()))
 	}
-	r.serverGRPC, err = r.cfg.GRPC.ToServer(host, r.settings.TelemetrySettings, serverOpts...)
+	r.serverGRPC, err = r.cfg.GRPC.ToServer(context.Background(), host, r.settings.TelemetrySettings, serverOpts...)
 	if err != nil {
 		return err
 	}
@@ -170,28 +170,16 @@ func (r *otelArrowReceiver) Shutdown(_ context.Context) error {
 	return err
 }
 
-func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) error {
-	if tc == nil {
-		return component.ErrNilNextConsumer
-	}
+func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) {
 	r.tracesReceiver = trace.New(tc, r.obsrepGRPC)
-	return nil
 }
 
-func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
-	if mc == nil {
-		return component.ErrNilNextConsumer
-	}
+func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) {
 	r.metricsReceiver = metrics.New(mc, r.obsrepGRPC)
-	return nil
 }
 
-func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) error {
-	if lc == nil {
-		return component.ErrNilNextConsumer
-	}
+func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) {
 	r.logsReceiver = logs.New(lc, r.obsrepGRPC)
-	return nil
 }
 
 var _ arrow.Consumers = &otelArrowReceiver{}

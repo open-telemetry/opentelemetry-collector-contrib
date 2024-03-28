@@ -23,7 +23,7 @@ type Config struct {
 
 	// TLSSetting struct exposes TLS client configuration when forwarding
 	// calls to the AWS X-Ray backend.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
 	// Region is the AWS region the local TCP server forwards requests to.
 	Region string `mapstructure:"region"`
@@ -40,6 +40,10 @@ type Config struct {
 	// will be called or not. Set to `true` to skip EC2 instance
 	// metadata check.
 	LocalMode bool `mapstructure:"local_mode"`
+
+	// ServiceName determines which service the requests are sent to.
+	// will be default to `xray`. This is mandatory for SigV4
+	ServiceName string `mapstructure:"service_name"`
 }
 
 func DefaultConfig() *Config {
@@ -48,12 +52,13 @@ func DefaultConfig() *Config {
 			Endpoint: localhostgate.EndpointForPort(2000),
 		},
 		ProxyAddress: "",
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure:   false,
 			ServerName: "",
 		},
 		Region:      "",
 		RoleARN:     "",
 		AWSEndpoint: "",
+		ServiceName: "xray",
 	}
 }

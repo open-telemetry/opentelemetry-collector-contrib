@@ -5,14 +5,14 @@ go 1.21
 require (
 	github.com/go-logfmt/logfmt v0.6.0
 	github.com/grafana/loki/pkg/push v0.0.0-20231127162423-bd505f8e2d37
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.96.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.96.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.96.0
-	github.com/prometheus/common v0.48.0
-	github.com/prometheus/prometheus v0.48.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.97.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.97.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.97.0
+	github.com/prometheus/common v0.51.1
+	github.com/prometheus/prometheus v0.50.1
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240306115632-b2693620eff6
-	go.opentelemetry.io/collector/semconv v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector/pdata v1.4.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/semconv v0.97.1-0.20240327181407-1038b67c85a0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -29,18 +29,17 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.96.0 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.97.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.3.1-0.20240306115632-b2693620eff6 // indirect
+	go.opentelemetry.io/collector/featuregate v1.4.1-0.20240327181407-1038b67c85a0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
+	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect
 	google.golang.org/grpc v1.62.1 // indirect

@@ -16,23 +16,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
-
-type testHost struct {
-	component.Host
-	t *testing.T
-}
-
-// ReportFatalError causes the test to be run to fail.
-func (h *testHost) ReportFatalError(err error) {
-	h.t.Fatalf("Receiver reported a fatal error: %v", err)
-}
-
-var _ component.Host = (*testHost)(nil)
 
 func TestObserverEmitsEndpointsIntegration(t *testing.T) {
 	image := "docker.io/library/nginx"
@@ -226,9 +214,7 @@ func startObserverWithConfig(t *testing.T, listener observer.Notify, c *Config) 
 	obvs, ok := ext.(*dockerObserver)
 	require.True(t, ok)
 	require.NoError(t, err, "failed creating extension")
-	require.NoError(t, obvs.Start(ctx, &testHost{
-		t: t,
-	}))
+	require.NoError(t, obvs.Start(ctx, componenttest.NewNopHost()))
 
 	go obvs.ListAndWatch(listener)
 	return obvs

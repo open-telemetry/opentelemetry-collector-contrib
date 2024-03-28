@@ -40,7 +40,7 @@ func newDefaultClientFactory(cfg *Config) *defaultClientFactory {
 			username: cfg.Username,
 			password: string(cfg.Password),
 			address:  cfg.AddrConfig,
-			tls:      cfg.TLSClientSetting,
+			tls:      cfg.ClientConfig,
 		},
 	}
 }
@@ -73,7 +73,7 @@ func newPoolClientFactory(cfg *Config) *poolClientFactory {
 			username: cfg.Username,
 			password: string(cfg.Password),
 			address:  cfg.AddrConfig,
-			tls:      cfg.TLSClientSetting,
+			tls:      cfg.ClientConfig,
 		},
 		poolConfig: &poolCfg,
 		pool:       make(map[string]*sql.DB),

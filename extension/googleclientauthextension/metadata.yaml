@@ -1,0 +1,12 @@
+type: googleclientauth
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  codeowners:
+    active: [dashpole, damemi, aabmass, jsuereth, punya, psx95]
+
+tests:
+  skip_lifecycle: true # in development
+  skip_shutdown: true # in development

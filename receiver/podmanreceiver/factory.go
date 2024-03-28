@@ -27,14 +27,14 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() *Config {
-	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = 10 * time.Second
 	cfg.Timeout = 5 * time.Second
 
 	return &Config{
-		ScraperControllerSettings: cfg,
-		Endpoint:                  "unix:///run/podman/podman.sock",
-		APIVersion:                defaultAPIVersion,
+		ControllerConfig: cfg,
+		Endpoint:         "unix:///run/podman/podman.sock",
+		APIVersion:       defaultAPIVersion,
 	}
 }
 

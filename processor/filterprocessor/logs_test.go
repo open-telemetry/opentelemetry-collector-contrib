@@ -741,7 +741,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			conditions: []string{
 				`Substring("", 0, 100) == "test"`,
 			},
-			want:      func(ld plog.Logs) {},
+			want:      func(_ plog.Logs) {},
 			errorMode: ottl.IgnoreError,
 		},
 	}

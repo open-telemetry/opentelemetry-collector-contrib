@@ -9,19 +9,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
-)
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"receiver.dockerstats.useScraperV2",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9794"),
-	featuregate.WithRegisterToVersion("0.74.0"),
 )
 
 func NewFactory() receiver.Factory {
@@ -32,14 +23,14 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	scs := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	scs := scraperhelper.NewDefaultControllerConfig()
 	scs.CollectionInterval = 10 * time.Second
 	scs.Timeout = 5 * time.Second
 	return &Config{
-		ScraperControllerSettings: scs,
-		Endpoint:                  "unix:///var/run/docker.sock",
-		DockerAPIVersion:          defaultDockerAPIVersion,
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		ControllerConfig:     scs,
+		Endpoint:             "unix:///var/run/docker.sock",
+		DockerAPIVersion:     defaultDockerAPIVersion,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -57,5 +48,5 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&dsr.config.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewScraperControllerReceiver(&dsr.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(scrp))
 }
