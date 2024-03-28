@@ -109,25 +109,24 @@ func configureSASL(config SASLConfig, saramaConfig *sarama.Config) error {
 	}
 
 	saramaConfig.Net.SASL.Enable = true
+	saramaConfig.Net.SASL.User = config.Username
+	saramaConfig.Net.SASL.Password = config.Password
 
 	switch config.Mechanism {
 	case "SCRAM-SHA-512":
 		saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &XDGSCRAMClient{HashGeneratorFcn: sha512.New} }
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA512
-		saramaConfig.Net.SASL.User = config.Username
-		saramaConfig.Net.SASL.Password = config.Password
 	case "SCRAM-SHA-256":
 		saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &XDGSCRAMClient{HashGeneratorFcn: sha256.New} }
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA256
-		saramaConfig.Net.SASL.User = config.Username
-		saramaConfig.Net.SASL.Password = config.Password
 	case "PLAIN":
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
-		saramaConfig.Net.SASL.User = config.Username
-		saramaConfig.Net.SASL.Password = config.Password
+
 	case "AWS_MSK_IAM":
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
 		saramaConfig.Net.SASL.TokenProvider = &config.AWSMSK
+		saramaConfig.Net.SASL.User = ""
+		saramaConfig.Net.SASL.Password = ""
 		tlsConfig := tls.Config{}
 		saramaConfig.Net.TLS.Enable = true
 		saramaConfig.Net.TLS.Config = &tlsConfig
