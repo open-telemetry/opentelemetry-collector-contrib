@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -382,15 +383,16 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 }
 
 func (p *serviceGraphConnector) aggregateMetricsForEdge(e *store.Edge) {
-	metricKey := p.buildMetricKey(e.ClientService, e.ServerService, string(e.ConnectionType), e.Dimensions)
+	metricKey := p.buildMetricKey(e.ClientService, e.ServerService, string(e.ConnectionType), strconv.FormatBool(e.Failed), e.Dimensions)
 	dimensions := buildDimensions(e)
 
 	p.seriesMutex.Lock()
 	defer p.seriesMutex.Unlock()
 	p.updateSeries(metricKey, dimensions)
-	p.updateCountMetrics(metricKey)
 	if e.Failed {
 		p.updateErrorMetrics(metricKey)
+	} else {
+		p.updateCountMetrics(metricKey)
 	}
 	p.updateDurationMetrics(metricKey, e.ServerLatencySec, e.ClientLatencySec)
 }
@@ -589,9 +591,9 @@ func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMet
 	return nil
 }
 
-func (p *serviceGraphConnector) buildMetricKey(clientName, serverName, connectionType string, edgeDimensions map[string]string) string {
+func (p *serviceGraphConnector) buildMetricKey(clientName, serverName, connectionType string, failed string, edgeDimensions map[string]string) string {
 	var metricKey strings.Builder
-	metricKey.WriteString(clientName + metricKeySeparator + serverName + metricKeySeparator + connectionType)
+	metricKey.WriteString(clientName + metricKeySeparator + serverName + metricKeySeparator + connectionType + metricKeySeparator + failed)
 
 	for _, dimName := range p.config.Dimensions {
 		dim, ok := edgeDimensions[dimName]
