@@ -112,24 +112,24 @@ func New(c Criteria) (*Matcher, error) {
 			if err != nil {
 				return nil, fmt.Errorf("numeric sort: %w", err)
 			}
-			filterOpts = append(filterOpts, f)
+			m.filterOpts = append(m.filterOpts, f)
 		case sortTypeAlphabetical:
 			f, err := filter.SortAlphabetical(sc.RegexKey, sc.Ascending)
 			if err != nil {
 				return nil, fmt.Errorf("alphabetical sort: %w", err)
 			}
-			filterOpts = append(filterOpts, f)
+			m.filterOpts = append(m.filterOpts, f)
 		case sortTypeTimestamp:
 			f, err := filter.SortTemporal(sc.RegexKey, sc.Ascending, sc.Layout, sc.Location)
 			if err != nil {
 				return nil, fmt.Errorf("timestamp sort: %w", err)
 			}
-			filterOpts = append(filterOpts, f)
+			m.filterOpts = append(m.filterOpts, f)
 		case sortTypeMtime:
 			if !mtimeSortTypeFeatureGate.IsEnabled() {
 				return nil, fmt.Errorf("the %q feature gate must be enabled to use %q sort type", mtimeSortTypeFeatureGate.ID(), sortTypeMtime)
 			}
-			filterOpts = append(filterOpts, filter.SortMtime())
+			m.filterOpts = append(m.filterOpts, filter.SortMtime())
 		default:
 			return nil, fmt.Errorf("'sort_type' must be specified")
 		}
@@ -140,7 +140,7 @@ func New(c Criteria) (*Matcher, error) {
 		exclude:    c.Exclude,
 		regex:      regex,
 		topN:       c.OrderingCriteria.TopN,
-		filterOpts: filterOpts,
+		filterOpts: m.filterOpts,
 	}, nil
 }
 
