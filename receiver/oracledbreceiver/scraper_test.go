@@ -36,8 +36,7 @@ var queryResponses = map[string][]metricRow{
 	sessionCountSQL: {{"VALUE": "1"}},
 	systemResourceLimitsSQL: {{"RESOURCE_NAME": "processes", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "100", "LIMIT_VALUE": "100"},
 		{"RESOURCE_NAME": "locks", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "-1", "LIMIT_VALUE": "-1"}},
-	tablespaceUsageSQL:    {{"TABLESPACE_NAME": "SYS", "BYTES": "1024"}},
-	tablespaceMaxSpaceSQL: {{"TABLESPACE_NAME": "SYS", "VALUE": "1024"}},
+	tablespaceUsageSQL: {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
 }
 
 func TestScraper_Scrape(t *testing.T) {
@@ -76,11 +75,11 @@ func TestScraper_Scrape(t *testing.T) {
 		{
 			name: "no limit on tablespace",
 			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-				if s == tablespaceMaxSpaceSQL {
+				if s == tablespaceUsageSQL {
 					return &fakeDbClient{Responses: [][]metricRow{
 						{
-							{"TABLESPACE_NAME": "SYS", "VALUE": "1024"},
-							{"TABLESPACE_NAME": "FOO", "VALUE": ""},
+							{"TABLESPACE_NAME": "SYS", "TABLESPACE_SIZE": "1024", "USED_SPACE": "111288", "BLOCK_SIZE": "8192"},
+							{"TABLESPACE_NAME": "FOO", "TABLESPACE_SIZE": "", "USED_SPACE": "111288", "BLOCK_SIZE": "8192"},
 						},
 					}}
 				}
@@ -92,11 +91,11 @@ func TestScraper_Scrape(t *testing.T) {
 		{
 			name: "bad value on tablespace",
 			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
-				if s == tablespaceMaxSpaceSQL {
+				if s == tablespaceUsageSQL {
 					return &fakeDbClient{Responses: [][]metricRow{
 						{
-							{"TABLESPACE_NAME": "SYS", "VALUE": "1024"},
-							{"TABLESPACE_NAME": "FOO", "VALUE": "ert"},
+							{"TABLESPACE_NAME": "SYS", "TABLESPACE_SIZE": "1024", "USED_SPACE": "111288", "BLOCK_SIZE": "8192"},
+							{"TABLESPACE_NAME": "FOO", "TABLESPACE_SIZE": "ert", "USED_SPACE": "111288", "BLOCK_SIZE": "8192"},
 						},
 					}}
 				}
@@ -105,6 +104,22 @@ func TestScraper_Scrape(t *testing.T) {
 				}}
 			},
 			errWanted: `failed to parse int64 for OracledbTablespaceSizeLimit, value was ert: strconv.ParseInt: parsing "ert": invalid syntax`,
+		},
+		{
+			name: "Empty block size",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == tablespaceUsageSQL {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{
+							{"TABLESPACE_NAME": "SYS", "TABLESPACE_SIZE": "1024", "USED_SPACE": "111288", "BLOCK_SIZE": ""},
+						},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{
+					queryResponses[s],
+				}}
+			},
+			errWanted: `failed to parse int64 for OracledbBlockSize, value was : strconv.ParseInt: parsing "": invalid syntax`,
 		},
 	}
 	for _, test := range tests {
