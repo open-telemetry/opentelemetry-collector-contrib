@@ -173,7 +173,7 @@ func (r *k8sResolver) resolve(ctx context.Context) ([]string, error) {
 	defer r.shutdownWg.Done()
 
 	var backends []string
-	r.endpointsStore.Range(func(address, value any) bool {
+	r.endpointsStore.Range(func(address, _ any) bool {
 		addr := address.(string)
 		if len(r.port) == 0 {
 			backends = append(backends, addr)

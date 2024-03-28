@@ -125,7 +125,7 @@ func TestAccumulateMetrics(t *testing.T) {
 		},
 		{
 			name: "Summary",
-			metric: func(ts time.Time, v float64, metrics pmetric.MetricSlice) {
+			metric: func(ts time.Time, _ float64, metrics pmetric.MetricSlice) {
 				metric := metrics.AppendEmpty()
 				metric.SetName("test_metric")
 				metric.SetDescription("test description")
@@ -194,7 +194,7 @@ func TestAccumulateMetrics(t *testing.T) {
 		},
 		{
 			name: "StalenessMarkerSummary",
-			metric: func(ts time.Time, v float64, metrics pmetric.MetricSlice) {
+			metric: func(ts time.Time, _ float64, metrics pmetric.MetricSlice) {
 				metric := metrics.AppendEmpty()
 				metric.SetName("test_metric")
 				metric.SetDescription("test description")
