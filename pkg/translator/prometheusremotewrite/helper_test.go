@@ -170,6 +170,13 @@ func TestPrometheusConverter_addSample(t *testing.T) {
 
 // Test_timeSeriesSignature checks that timeSeriesSignature returns consistent and unique signatures for a distinct label set.
 func Test_timeSeriesSignature(t *testing.T) {
+	var oneKBLabels []prompb.Label
+	for i := 0; i < 100; i++ {
+		const name = "12345"
+		const value = "12345"
+		oneKBLabels = append(oneKBLabels, prompb.Label{Name: name, Value: value})
+	}
+
 	tests := []struct {
 		name   string
 		lbs    []prompb.Label
@@ -195,6 +202,12 @@ func Test_timeSeriesSignature(t *testing.T) {
 			"nil_case",
 			nil,
 			validMetrics1[validHistogram],
+		},
+		{
+			// Case that triggers optimized logic when exceeding 1 kb
+			"greater_than_1kb_signature",
+			oneKBLabels,
+			validMetrics1[validIntGauge],
 		},
 	}
 
