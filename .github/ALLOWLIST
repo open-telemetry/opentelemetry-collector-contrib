@@ -24,5 +24,4 @@ internal/common
 ## DEPRECATED components
 
 ## UNMAINTAINED components
-exporter/alibabacloudlogserviceexporter/
 exporter/skywalkingexporter/

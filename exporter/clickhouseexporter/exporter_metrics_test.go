@@ -37,7 +37,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 	t.Parallel()
 	t.Run("push success", func(t *testing.T) {
 		items := &atomic.Int32{}
-		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+		initClickhouseTestServer(t, func(query string, _ []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
 				items.Add(1)
 			}
@@ -49,7 +49,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 		require.Equal(t, int32(15), items.Load())
 	})
 	t.Run("push failure", func(t *testing.T) {
-		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+		initClickhouseTestServer(t, func(query string, _ []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
 				return fmt.Errorf("mock insert error")
 			}

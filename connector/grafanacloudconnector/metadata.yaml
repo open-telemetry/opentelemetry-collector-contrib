@@ -5,7 +5,7 @@ status:
   class: connector
   stability:
     development: [traces_to_metrics]
-  distributions: [contrib, grafana]
+  distributions: [contrib]
   codeowners:
     active: [jpkrohling, rlankfo, jcreixell]
     emeritus: []
