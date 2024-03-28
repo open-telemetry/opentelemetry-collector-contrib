@@ -23,7 +23,7 @@ func Test_Unix(t *testing.T) {
 		{
 			name: "January 1, 2023",
 			seconds: &ottl.StandardIntGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return int64(1672527600), nil
 				},
 			},

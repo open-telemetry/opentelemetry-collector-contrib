@@ -444,7 +444,7 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 	se.logger.Info("Calling register API", zap.String("URL", u.String()))
 
 	client := *http.DefaultClient
-	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+	client.CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
 	res, err := client.Do(req)

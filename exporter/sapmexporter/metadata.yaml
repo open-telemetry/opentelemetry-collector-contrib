@@ -5,7 +5,7 @@ status:
   class: exporter
   stability:
     beta: [traces]
-  distributions: [contrib, splunk, observiq, aws]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, atoulme]
 
