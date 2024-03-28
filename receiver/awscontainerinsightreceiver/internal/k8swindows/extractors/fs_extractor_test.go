@@ -27,7 +27,7 @@ func TestFSStats(t *testing.T) {
 	containerType := containerinsight.TypeNode
 	extractor := NewFileSystemMetricExtractor(nil)
 
-	var cMetrics []*stores.RawContainerInsightsMetric
+	var cMetrics []*stores.CIMetricImpl
 	if extractor.HasValue(nodeRawMetric) {
 		cMetrics = extractor.GetValue(nodeRawMetric, nil, containerType)
 	}

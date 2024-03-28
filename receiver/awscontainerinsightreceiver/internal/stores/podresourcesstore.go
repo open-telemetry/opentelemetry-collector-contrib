@@ -56,6 +56,9 @@ func NewPodResourcesStore(logger *zap.Logger) (*PodResourcesStore, error) {
 	once.Do(func() {
 		podResourcesClient, err := kubeletutil.NewPodResourcesClient()
 		clientInitErr = err
+		if clientInitErr != nil {
+			return
+		}
 		ctx, cancel := context.WithCancel(context.Background())
 		instance = &PodResourcesStore{
 			containerInfoToResourcesMap: make(map[ContainerInfo][]ResourceInfo),

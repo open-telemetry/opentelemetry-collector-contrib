@@ -24,17 +24,17 @@ func (f *FileSystemMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 	return info.Spec.HasFilesystem
 }
 
-func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*stores.RawContainerInsightsMetric {
+func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl {
 	if containerType == ci.TypePod || containerType == ci.TypeInfraContainer {
 		return nil
 	}
 
 	containerType = getFSMetricType(containerType, f.logger)
 	stats := GetStats(info)
-	metrics := make([]*stores.RawContainerInsightsMetric, 0, len(stats.Filesystem))
+	metrics := make([]*stores.CIMetricImpl, 0, len(stats.Filesystem))
 
 	for _, v := range stats.Filesystem {
-		metric := stores.NewRawContainerInsightsMetric(containerType, f.logger)
+		metric := stores.NewCIMetric(containerType, f.logger)
 		if v.Device == "" {
 			continue
 		}

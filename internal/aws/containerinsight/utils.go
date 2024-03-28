@@ -52,7 +52,13 @@ func SumFields(fields []map[string]any) map[string]float64 {
 // IsNode checks if a type belongs to node level metrics (for EKS)
 func IsNode(mType string) bool {
 	switch mType {
-	case TypeNode, TypeNodeNet, TypeNodeFS, TypeNodeDiskIO:
+	case
+		TypeNode,
+		TypeNodeDiskIO,
+		TypeNodeEFA,
+		TypeNodeFS,
+		TypeNodeGPU,
+		TypeNodeNet:
 		return true
 	}
 	return false
@@ -70,7 +76,12 @@ func IsInstance(mType string) bool {
 // IsContainer checks if a type belongs to container level metrics
 func IsContainer(mType string) bool {
 	switch mType {
-	case TypeContainer, TypeContainerDiskIO, TypeContainerFS:
+	case
+		TypeContainer,
+		TypeContainerDiskIO,
+		TypeContainerEFA,
+		TypeContainerFS,
+		TypeContainerGPU:
 		return true
 	}
 	return false
@@ -79,7 +90,11 @@ func IsContainer(mType string) bool {
 // IsPod checks if a type belongs to container level metrics
 func IsPod(mType string) bool {
 	switch mType {
-	case TypePod, TypePodNet:
+	case
+		TypePod,
+		TypePodEFA,
+		TypePodGPU,
+		TypePodNet:
 		return true
 	}
 	return false
@@ -100,9 +115,12 @@ func getPrefixByMetricType(mType string) string {
 	nodePrefix := "node_"
 	instanceNetPrefix := "instance_interface_"
 	nodeNetPrefix := "node_interface_"
+	nodeEfaPrefix := "node_efa_"
 	podPrefix := "pod_"
 	podNetPrefix := "pod_interface_"
+	podEfaPrefix := "pod_efa_"
 	containerPrefix := "container_"
+	containerEfaPrefix := "container_efa_"
 	service := "service_"
 	cluster := "cluster_"
 	namespace := "namespace_"
@@ -128,16 +146,22 @@ func getPrefixByMetricType(mType string) string {
 		prefix = nodePrefix
 	case TypeNodeNet:
 		prefix = nodeNetPrefix
+	case TypeNodeEFA:
+		prefix = nodeEfaPrefix
 	case TypePod:
 		prefix = podPrefix
 	case TypePodNet:
 		prefix = podNetPrefix
+	case TypePodEFA:
+		prefix = podEfaPrefix
 	case TypeContainer:
 		prefix = containerPrefix
 	case TypeContainerDiskIO:
 		prefix = containerPrefix
 	case TypeContainerFS:
 		prefix = containerPrefix
+	case TypeContainerEFA:
+		prefix = containerEfaPrefix
 	case TypeService:
 		prefix = service
 	case TypeCluster:

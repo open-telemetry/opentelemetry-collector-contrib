@@ -7,10 +7,8 @@
 package cadvisor // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/google/cadvisor/cache/memory"
@@ -80,7 +78,7 @@ func cadvisorManagerCreator(f createCadvisorManager) Option {
 // WithDecorator constructs an option for configuring the metric decorator
 func WithDecorator(d Decorator) Option {
 	return func(c *Cadvisor) {
-		c.k8sDecorator = d
+		c.decorator = d
 	}
 }
 
@@ -94,19 +92,12 @@ type hostInfo interface {
 	GetNumCores() int64
 	GetMemoryCapacity() int64
 	GetClusterName() string
-	GetEBSVolumeID(string) string
-	ExtractEbsIDsUsedByKubernetes() map[string]string
-	GetInstanceID() string
-	GetInstanceType() string
-	GetAutoScalingGroupName() string
 }
 
 type EcsInfo interface {
 	GetCPUReserved() int64
 	GetMemReserved() int64
 	GetRunningTaskCount() int64
-	GetContainerInstanceID() string
-	GetClusterName() string
 }
 
 type Decorator interface {
@@ -116,12 +107,10 @@ type Decorator interface {
 
 type Cadvisor struct {
 	logger                *zap.Logger
-	nodeName              string // get the value from downward API
 	createCadvisorManager createCadvisorManager
 	manager               cadvisorManager
-	version               string
 	hostInfo              hostInfo
-	k8sDecorator          Decorator
+	decorator             Decorator
 	ecsInfo               EcsInfo
 	containerOrchestrator string
 }
@@ -134,15 +123,8 @@ func init() {
 
 // New creates a Cadvisor struct which can generate metrics from embedded cadvisor lib
 func New(containerOrchestrator string, hostInfo hostInfo, logger *zap.Logger, options ...Option) (*Cadvisor, error) {
-	nodeName := os.Getenv("HOST_NAME")
-	if nodeName == "" && containerOrchestrator == ci.EKS {
-		return nil, errors.New("missing environment variable HOST_NAME. Please check your deployment YAML config")
-	}
-
 	c := &Cadvisor{
 		logger:                logger,
-		nodeName:              nodeName,
-		version:               "0",
 		createCadvisorManager: defaultCreateManager,
 		containerOrchestrator: containerOrchestrator,
 	}
@@ -172,33 +154,10 @@ func (c *Cadvisor) Shutdown() error {
 		errs = errors.Join(errs, ext.Shutdown())
 	}
 
-	if c.k8sDecorator != nil {
-		errs = errors.Join(errs, c.k8sDecorator.Shutdown())
-	}
 	return errs
 }
 
-func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIdsUsedAsPV map[string]string) {
-	deviceName, ok := tags[ci.DiskDev]
-	if !ok {
-		return
-	}
-
-	if c.hostInfo != nil {
-		if volID := c.hostInfo.GetEBSVolumeID(deviceName); volID != "" {
-			tags[ci.HostEbsVolumeID] = volID
-		}
-	}
-
-	if tags[ci.MetricType] == ci.TypeContainerFS || tags[ci.MetricType] == ci.TypeNodeFS ||
-		tags[ci.MetricType] == ci.TypeNodeDiskIO || tags[ci.MetricType] == ci.TypeContainerDiskIO {
-		if volID := ebsVolumeIdsUsedAsPV[deviceName]; volID != "" {
-			tags[ci.EbsVolumeID] = volID
-		}
-	}
-}
-
-func (c *Cadvisor) addECSMetrics(cadvisormetrics []*stores.RawContainerInsightsMetric) {
+func (c *Cadvisor) addECSMetrics(cadvisormetrics []stores.CIMetric) {
 
 	if len(cadvisormetrics) == 0 {
 		c.logger.Warn("cadvisor can't collect any metrics!")
@@ -232,91 +191,6 @@ func (c *Cadvisor) addECSMetrics(cadvisormetrics []*stores.RawContainerInsightsM
 	}
 }
 
-func addECSResources(tags map[string]string) {
-	metricType := tags[ci.MetricType]
-	if metricType == "" {
-		return
-	}
-	var sources []string
-	switch metricType {
-	case ci.TypeInstance:
-		sources = []string{"cadvisor", "/proc", "ecsagent", "calculated"}
-	case ci.TypeInstanceFS:
-		sources = []string{"cadvisor", "calculated"}
-	case ci.TypeInstanceNet:
-		sources = []string{"cadvisor", "calculated"}
-	case ci.TypeInstanceDiskIO:
-		sources = []string{"cadvisor"}
-	}
-	if len(sources) > 0 {
-		sourcesInfo, err := json.Marshal(sources)
-		if err != nil {
-			return
-		}
-		tags[ci.SourcesKey] = string(sourcesInfo)
-	}
-}
-
-func (c *Cadvisor) decorateMetrics(cadvisormetrics []*stores.RawContainerInsightsMetric) []*stores.RawContainerInsightsMetric {
-	ebsVolumeIdsUsedAsPV := c.hostInfo.ExtractEbsIDsUsedByKubernetes()
-	var result []*stores.RawContainerInsightsMetric
-	for _, m := range cadvisormetrics {
-		tags := m.GetTags()
-		c.addEbsVolumeInfo(tags, ebsVolumeIdsUsedAsPV)
-
-		// add version
-		tags[ci.Version] = c.version
-
-		// add NodeName for node, pod and container
-		metricType := tags[ci.MetricType]
-		if c.nodeName != "" && (ci.IsNode(metricType) || ci.IsInstance(metricType) ||
-			ci.IsPod(metricType) || ci.IsContainer(metricType)) {
-			tags[ci.NodeNameKey] = c.nodeName
-		}
-
-		// add instance id and type
-		if instanceID := c.hostInfo.GetInstanceID(); instanceID != "" {
-			tags[ci.InstanceID] = instanceID
-		}
-		if instanceType := c.hostInfo.GetInstanceType(); instanceType != "" {
-			tags[ci.InstanceType] = instanceType
-		}
-
-		// add scaling group name
-		tags[ci.AutoScalingGroupNameKey] = c.hostInfo.GetAutoScalingGroupName()
-
-		// add ECS cluster name and container instance id
-		if c.containerOrchestrator == ci.ECS {
-			if c.ecsInfo.GetClusterName() == "" {
-				c.logger.Warn("Can't get cluster name")
-			} else {
-				tags[ci.ClusterNameKey] = c.ecsInfo.GetClusterName()
-			}
-
-			if c.ecsInfo.GetContainerInstanceID() == "" {
-				c.logger.Warn("Can't get containerInstanceId")
-			} else {
-				tags[ci.ContainerInstanceIDKey] = c.ecsInfo.GetContainerInstanceID()
-			}
-			addECSResources(tags)
-		}
-
-		// add tags for EKS
-		if c.containerOrchestrator == ci.EKS {
-
-			tags[ci.ClusterNameKey] = c.hostInfo.GetClusterName()
-
-			out := c.k8sDecorator.Decorate(m)
-			if out != nil {
-				result = append(result, out.(*stores.RawContainerInsightsMetric))
-			}
-		}
-
-	}
-
-	return result
-}
-
 // GetMetrics generates metrics from cadvisor
 func (c *Cadvisor) GetMetrics() []pmetric.Metrics {
 	c.logger.Debug("collect data from cadvisor...")
@@ -344,10 +218,12 @@ func (c *Cadvisor) GetMetrics() []pmetric.Metrics {
 	}
 
 	out := processContainers(containerinfos, c.hostInfo, c.containerOrchestrator, c.logger)
-	results := c.decorateMetrics(out)
+	var results []stores.CIMetric
+	for _, m := range out {
+		results = append(results, c.decorator.Decorate(m))
+	}
 
 	if c.containerOrchestrator == ci.ECS {
-		results = out
 		c.addECSMetrics(results)
 	}
 

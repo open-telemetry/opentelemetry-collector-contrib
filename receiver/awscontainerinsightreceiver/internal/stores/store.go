@@ -14,12 +14,15 @@ import (
 
 // CIMetric represents the raw metric interface for container insights
 type CIMetric interface {
+	GetMetricType() string
 	HasField(key string) bool
 	AddField(key string, val any)
 	GetField(key string) any
+	GetFields() map[string]any
 	HasTag(key string) bool
 	AddTag(key, val string)
 	GetTag(key string) string
+	GetTags() map[string]string
 	RemoveTag(key string)
 }
 

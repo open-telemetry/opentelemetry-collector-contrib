@@ -23,13 +23,13 @@ func (m *MemMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 	return info.Spec.HasMemory
 }
 
-func (m *MemMetricExtractor) GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*stores.RawContainerInsightsMetric {
-	var metrics []*stores.RawContainerInsightsMetric
+func (m *MemMetricExtractor) GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl {
+	var metrics []*stores.CIMetricImpl
 	if containerType == ci.TypeInfraContainer {
 		return metrics
 	}
 
-	metric := stores.NewRawContainerInsightsMetric(containerType, m.logger)
+	metric := stores.NewCIMetric(containerType, m.logger)
 	metric.ContainerName = info.Name
 	curStats := GetStats(info)
 

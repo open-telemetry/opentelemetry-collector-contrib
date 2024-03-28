@@ -73,9 +73,11 @@ func TestMetricName(t *testing.T) {
 
 func TestIsNode(t *testing.T) {
 	assert.Equal(t, true, IsNode(TypeNode))
-	assert.Equal(t, true, IsNode(TypeNodeNet))
-	assert.Equal(t, true, IsNode(TypeNodeFS))
 	assert.Equal(t, true, IsNode(TypeNodeDiskIO))
+	assert.Equal(t, true, IsNode(TypeNodeEFA))
+	assert.Equal(t, true, IsNode(TypeNodeFS))
+	assert.Equal(t, true, IsNode(TypeNodeGPU))
+	assert.Equal(t, true, IsNode(TypeNodeNet))
 	assert.Equal(t, false, IsNode(TypePod))
 }
 
@@ -90,12 +92,16 @@ func TestIsInstance(t *testing.T) {
 func TestIsContainer(t *testing.T) {
 	assert.Equal(t, true, IsContainer(TypeContainer))
 	assert.Equal(t, true, IsContainer(TypeContainerDiskIO))
+	assert.Equal(t, true, IsContainer(TypeContainerEFA))
+	assert.Equal(t, true, IsContainer(TypeContainerGPU))
 	assert.Equal(t, true, IsContainer(TypeContainerFS))
 	assert.Equal(t, false, IsContainer(TypePod))
 }
 
 func TestIsPod(t *testing.T) {
 	assert.Equal(t, true, IsPod(TypePod))
+	assert.Equal(t, true, IsPod(TypePodEFA))
+	assert.Equal(t, true, IsPod(TypePodGPU))
 	assert.Equal(t, true, IsPod(TypePodNet))
 	assert.Equal(t, false, IsPod(TypeInstance))
 }
@@ -862,6 +868,46 @@ func TestConvertToOTLPMetricsForPodContainerStatusMetrics(t *testing.T) {
 		"Version":              "0",
 		"interface":            "eth0",
 		"Timestamp":            timestamp,
+	}
+	md = ConvertToOTLPMetrics(fields, tags, zap.NewNop())
+	checkMetricsAreExpected(t, md, fields, tags, expectedUnits)
+}
+
+func TestConvertToOTLPMetricsForPodEfaMetrics(t *testing.T) {
+	var fields map[string]any
+	var expectedUnits map[string]string
+	var tags map[string]string
+	var md pmetric.Metrics
+	now := time.Now()
+	timestamp := strconv.FormatInt(now.UnixNano(), 10)
+
+	fields = map[string]any{
+		"pod_efa_rdma_read_bytes":       uint64(31654),
+		"pod_efa_rdma_write_bytes":      uint64(45548),
+		"pod_efa_rdma_write_recv_bytes": uint64(63253),
+		"pod_efa_rx_bytes":              uint64(33543),
+		"pod_efa_rx_dropped":            uint64(40089),
+		"pod_efa_tx_bytes":              uint64(42508),
+	}
+	expectedUnits = map[string]string{
+		"pod_efa_rdma_read_bytes":       UnitBytesPerSec,
+		"pod_efa_rdma_write_bytes":      UnitBytesPerSec,
+		"pod_efa_rdma_write_recv_bytes": UnitBytesPerSec,
+		"pod_efa_rx_bytes":              UnitBytesPerSec,
+		"pod_efa_rx_dropped":            UnitCountPerSec,
+		"pod_efa_tx_bytes":              UnitBytesPerSec,
+	}
+	tags = map[string]string{
+		"ClusterName":   "eks-aoc",
+		"InstanceId":    "i-01bf9fb097cbf3205",
+		"InstanceType":  "t2.xlarge",
+		"Namespace":     "amazon-cloudwatch",
+		"NodeName":      "ip-192-168-12-170.ec2.internal",
+		"PodName":       "cloudwatch-agent",
+		"ContainerName": "cloudwatch-agent",
+		"Type":          "PodEFA",
+		"Version":       "0",
+		"Timestamp":     timestamp,
 	}
 	md = ConvertToOTLPMetrics(fields, tags, zap.NewNop())
 	checkMetricsAreExpected(t, md, fields, tags, expectedUnits)

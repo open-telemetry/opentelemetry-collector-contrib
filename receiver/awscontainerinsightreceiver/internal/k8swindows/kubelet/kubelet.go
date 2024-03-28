@@ -50,8 +50,8 @@ func New(logger *zap.Logger, info cExtractor.CPUMemInfoProvider, mextractor []ex
 	return sp, nil
 }
 
-func (sp *SummaryProvider) GetMetrics() ([]*stores.RawContainerInsightsMetric, error) {
-	var metrics []*stores.RawContainerInsightsMetric
+func (sp *SummaryProvider) GetMetrics() ([]*stores.CIMetricImpl, error) {
+	var metrics []*stores.CIMetricImpl
 
 	summary, err := sp.kubeletProvider.GetSummary()
 	if err != nil {
@@ -76,8 +76,8 @@ func (sp *SummaryProvider) GetMetrics() ([]*stores.RawContainerInsightsMetric, e
 }
 
 // getContainerMetrics returns container level metrics from kubelet summary.
-func (sp *SummaryProvider) getContainerMetrics(pod stats.PodStats) ([]*stores.RawContainerInsightsMetric, error) {
-	var metrics []*stores.RawContainerInsightsMetric
+func (sp *SummaryProvider) getContainerMetrics(pod stats.PodStats) ([]*stores.CIMetricImpl, error) {
+	var metrics []*stores.CIMetricImpl
 
 	for _, container := range pod.Containers {
 		tags := map[string]string{}
@@ -106,15 +106,15 @@ func (sp *SummaryProvider) getContainerMetrics(pod stats.PodStats) ([]*stores.Ra
 }
 
 // getPodMetrics returns pod and container level metrics from kubelet summary.
-func (sp *SummaryProvider) getPodMetrics(summary *stats.Summary) ([]*stores.RawContainerInsightsMetric, error) {
-	var metrics []*stores.RawContainerInsightsMetric
+func (sp *SummaryProvider) getPodMetrics(summary *stats.Summary) ([]*stores.CIMetricImpl, error) {
+	var metrics []*stores.CIMetricImpl
 
 	if summary == nil {
 		return metrics, nil
 	}
 
 	for _, pod := range summary.Pods {
-		var metricsPerPod []*stores.RawContainerInsightsMetric
+		var metricsPerPod []*stores.CIMetricImpl
 
 		tags := map[string]string{}
 
@@ -146,8 +146,8 @@ func (sp *SummaryProvider) getPodMetrics(summary *stats.Summary) ([]*stores.RawC
 }
 
 // getNodeMetrics returns Node level metrics from kubelet summary.
-func (sp *SummaryProvider) getNodeMetrics(summary *stats.Summary) ([]*stores.RawContainerInsightsMetric, error) {
-	var metrics []*stores.RawContainerInsightsMetric
+func (sp *SummaryProvider) getNodeMetrics(summary *stats.Summary) ([]*stores.CIMetricImpl, error) {
+	var metrics []*stores.CIMetricImpl
 
 	if summary == nil {
 		return metrics, nil

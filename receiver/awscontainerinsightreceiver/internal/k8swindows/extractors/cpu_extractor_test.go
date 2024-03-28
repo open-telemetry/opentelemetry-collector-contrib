@@ -32,7 +32,7 @@ func TestCPUStats(t *testing.T) {
 	containerType := containerinsight.TypePod
 	extractor := NewCPUMetricExtractor(&zap.Logger{})
 
-	var cMetrics []*stores.RawContainerInsightsMetric
+	var cMetrics []*stores.CIMetricImpl
 	if extractor.HasValue(podRawMetric) {
 		cMetrics = extractor.GetValue(podRawMetric, MockCPUMemInfo, containerType)
 	}

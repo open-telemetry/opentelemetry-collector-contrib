@@ -25,8 +25,8 @@ func (c *CPUMetricExtractor) HasValue(info *cInfo.ContainerInfo) bool {
 	return info.Spec.HasCpu
 }
 
-func (c *CPUMetricExtractor) GetValue(info *cInfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*stores.RawContainerInsightsMetric {
-	var metrics []*stores.RawContainerInsightsMetric
+func (c *CPUMetricExtractor) GetValue(info *cInfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl {
+	var metrics []*stores.CIMetricImpl
 	// Skip infra container and handle node, pod, other containers in pod
 	if containerType == ci.TypeInfraContainer {
 		return metrics
@@ -34,7 +34,7 @@ func (c *CPUMetricExtractor) GetValue(info *cInfo.ContainerInfo, mInfo CPUMemInf
 
 	// When there is more than one stats point, always use the last one
 	curStats := GetStats(info)
-	metric := stores.NewRawContainerInsightsMetric(containerType, c.logger)
+	metric := stores.NewCIMetric(containerType, c.logger)
 	metric.ContainerName = info.Name
 	multiplier := float64(decimalToMillicores)
 

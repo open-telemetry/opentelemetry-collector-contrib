@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"syscall"
 	"time"
 
 	"google.golang.org/grpc"
@@ -40,11 +41,9 @@ func NewPodResourcesClient() (*PodResourcesClient, error) {
 }
 
 func (p *PodResourcesClient) connectToServer(socket string) (*grpc.ClientConn, error) {
-	_, err := os.Stat(socket)
-	if os.IsNotExist(err) {
-		return nil, fmt.Errorf("socket path does not exist: %s", socket)
-	} else if err != nil {
-		return nil, fmt.Errorf("failed to check socket path: %w", err)
+	err := validateSocket(socket)
+	if err != nil {
+		return nil, err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), connectionTimeout)
@@ -65,6 +64,34 @@ func (p *PodResourcesClient) connectToServer(socket string) (*grpc.ClientConn, e
 	}
 
 	return conn, nil
+}
+
+func validateSocket(socket string) error {
+	info, err := os.Stat(socket)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("socket path does not exist: %s", socket)
+		}
+		return fmt.Errorf("failed to check socket path: %w", err)
+	}
+
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	if !ok {
+		return nil
+	}
+
+	if stat.Uid != 0 {
+		return fmt.Errorf("socket path %s is owned by %d, not root", socket, stat.Uid)
+	}
+	perms := info.Mode().Perm()
+	if perms&0002 != 0 {
+		return fmt.Errorf("socket path %s is writeable by anyone - permissions: %s", socket, perms)
+	}
+	if info.Mode()&os.ModeSocket == 0 {
+		return fmt.Errorf("socket path %s is not a socket - mode: %s", socket, info.Mode())
+	}
+
+	return nil
 }
 
 func (p *PodResourcesClient) ListPods() (*podresourcesapi.ListPodResourcesResponse, error) {

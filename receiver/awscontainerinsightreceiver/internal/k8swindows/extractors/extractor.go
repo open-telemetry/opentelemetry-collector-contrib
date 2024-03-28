@@ -93,6 +93,6 @@ type RawMetric struct {
 
 type MetricExtractor interface {
 	HasValue(summary RawMetric) bool
-	GetValue(summary RawMetric, mInfo cExtractor.CPUMemInfoProvider, containerType string) []*stores.RawContainerInsightsMetric
+	GetValue(summary RawMetric, mInfo cExtractor.CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl
 	Shutdown() error
 }

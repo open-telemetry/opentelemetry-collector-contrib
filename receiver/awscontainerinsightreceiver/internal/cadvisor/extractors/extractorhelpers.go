@@ -15,7 +15,7 @@ import (
 
 func AssertContainsTaggedFloat(
 	t *testing.T,
-	cadvisorMetric *stores.RawContainerInsightsMetric,
+	cadvisorMetric *stores.CIMetricImpl,
 	field string,
 	expectedValue float64,
 	delta float64,
@@ -41,7 +41,7 @@ func AssertContainsTaggedFloat(
 
 func AssertContainsTaggedInt(
 	t *testing.T,
-	cadvisorMetric *stores.RawContainerInsightsMetric,
+	cadvisorMetric *stores.CIMetricImpl,
 	field string,
 	expectedValue int64,
 ) {
@@ -61,7 +61,7 @@ func AssertContainsTaggedInt(
 
 func AssertContainsTaggedUint(
 	t *testing.T,
-	cadvisorMetric *stores.RawContainerInsightsMetric,
+	cadvisorMetric *stores.CIMetricImpl,
 	field string,
 	expectedValue uint64,
 ) {
@@ -81,7 +81,7 @@ func AssertContainsTaggedUint(
 
 func AssertContainsTaggedField(
 	t *testing.T,
-	cadvisorMetric *stores.RawContainerInsightsMetric,
+	cadvisorMetric *stores.CIMetricImpl,
 	expectedFields map[string]any,
 	expectedTags map[string]string,
 ) {

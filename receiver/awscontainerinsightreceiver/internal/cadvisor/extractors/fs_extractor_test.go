@@ -22,7 +22,7 @@ func TestFSStats(t *testing.T) {
 	containerType := containerinsight.TypeContainer
 	extractor := NewFileSystemMetricExtractor(nil)
 
-	var cMetrics []*stores.RawContainerInsightsMetric
+	var cMetrics []*stores.CIMetricImpl
 	if extractor.HasValue(result[0]) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)
 	}
@@ -126,7 +126,7 @@ func TestFSStatsWithAllowList(t *testing.T) {
 	containerType := containerinsight.TypeContainer
 	extractor := NewFileSystemMetricExtractor(nil)
 
-	var cMetrics []*stores.RawContainerInsightsMetric
+	var cMetrics []*stores.CIMetricImpl
 	if extractor.HasValue(result[0]) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)
 	}

@@ -29,7 +29,7 @@ func TestMemStats(t *testing.T) {
 	containerType := containerinsight.TypePod
 	extractor := NewMemMetricExtractor(nil)
 
-	var cMetrics []*stores.RawContainerInsightsMetric
+	var cMetrics []*stores.CIMetricImpl
 	if extractor.HasValue(podRawMetric) {
 		cMetrics = extractor.GetValue(podRawMetric, MockCPUMemInfo, containerType)
 	}

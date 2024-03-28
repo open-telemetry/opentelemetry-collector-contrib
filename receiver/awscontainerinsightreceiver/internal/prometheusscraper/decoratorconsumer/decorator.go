@@ -46,9 +46,9 @@ func (dc *DecorateConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
 				converted := ci.ConvertToFieldsAndTags(m, dc.Logger)
-				var rcis []*stores.RawContainerInsightsMetric
+				var rcis []*stores.CIMetricImpl
 				for _, pair := range converted {
-					rcis = append(rcis, stores.NewRawContainerInsightsMetricWithData(dc.MetricType, pair.Fields, pair.Tags, dc.Logger))
+					rcis = append(rcis, stores.NewCIMetricWithData(dc.MetricType, pair.Fields, pair.Tags, dc.Logger))
 				}
 
 				decorated := dc.decorateMetrics(rcis)
@@ -67,8 +67,8 @@ type Decorator interface {
 	Shutdown() error
 }
 
-func (dc *DecorateConsumer) decorateMetrics(rcis []*stores.RawContainerInsightsMetric) []*stores.RawContainerInsightsMetric {
-	var result []*stores.RawContainerInsightsMetric
+func (dc *DecorateConsumer) decorateMetrics(rcis []*stores.CIMetricImpl) []*stores.CIMetricImpl {
+	var result []*stores.CIMetricImpl
 	if dc.ContainerOrchestrator != ci.EKS {
 		return result
 	}
@@ -76,13 +76,13 @@ func (dc *DecorateConsumer) decorateMetrics(rcis []*stores.RawContainerInsightsM
 		// add tags for EKS
 		out := dc.K8sDecorator.Decorate(rci)
 		if out != nil {
-			result = append(result, out.(*stores.RawContainerInsightsMetric))
+			result = append(result, out.(*stores.CIMetricImpl))
 		}
 	}
 	return result
 }
 
-func (dc *DecorateConsumer) updateAttributes(m pmetric.Metric, rcis []*stores.RawContainerInsightsMetric) {
+func (dc *DecorateConsumer) updateAttributes(m pmetric.Metric, rcis []*stores.CIMetricImpl) {
 	if len(rcis) == 0 {
 		return
 	}

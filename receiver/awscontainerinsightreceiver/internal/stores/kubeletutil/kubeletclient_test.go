@@ -33,7 +33,7 @@ func (f *fakeClient) Get(path string) ([]byte, error) {
 }
 
 func TestNewKubeletClient(t *testing.T) {
-	kubeletNewClientProvider = func(endpoint string, cfg *kube.ClientConfig, logger *zap.Logger) (kube.ClientProvider, error) {
+	kubeletNewClientProvider = func(endpoint string, cfg *kube.ClientConfig, _ *zap.Logger) (kube.ClientProvider, error) {
 		return &mockClientProvider{
 			endpoint: endpoint,
 			cfg:      cfg,

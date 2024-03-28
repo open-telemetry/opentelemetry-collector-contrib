@@ -914,7 +914,7 @@ func TestPodStore_RefreshTick(t *testing.T) {
 }
 
 func TestPodStore_decorateNode(t *testing.T) {
-	t.Setenv("HOST_NAME", "testNode1")
+	t.Setenv(ci.HostName, "testNode1")
 	pod := getBaseTestPodInfo()
 	podList := []corev1.Pod{*pod}
 	podStore := getPodStore()

@@ -20,6 +20,18 @@ type mockCIMetric struct {
 	fields map[string]any
 }
 
+func (m *mockCIMetric) GetMetricType() string {
+	return "dummy_type"
+}
+
+func (m *mockCIMetric) GetFields() map[string]any {
+	return m.fields
+}
+
+func (m *mockCIMetric) GetTags() map[string]string {
+	return m.tags
+}
+
 func (m *mockCIMetric) HasField(key string) bool {
 	return m.fields[key] != nil
 }
@@ -175,8 +187,12 @@ func TestUtils_TagMetricSource(t *testing.T) {
 		ci.TypeContainer,
 		ci.TypeContainerFS,
 		ci.TypeContainerDiskIO,
-		ci.TypeGpuContainer,
-		ci.TypeNeuronContainer,
+		ci.TypeInstance,
+		ci.TypeInstanceFS,
+		ci.TypeInstanceNet,
+		ci.TypeInstanceDiskIO,
+		ci.TypeContainerGPU,
+		ci.TypeContainerNeuron,
 	}
 
 	expectedSources := []string{
@@ -188,6 +204,10 @@ func TestUtils_TagMetricSource(t *testing.T) {
 		"[\"cadvisor\",\"pod\",\"calculated\"]",
 		"[\"cadvisor\",\"calculated\"]",
 		"[\"cadvisor\",\"pod\",\"calculated\"]",
+		"[\"cadvisor\",\"calculated\"]",
+		"[\"cadvisor\"]",
+		"[\"cadvisor\",\"/proc\",\"ecsagent\",\"calculated\"]",
+		"[\"cadvisor\",\"calculated\"]",
 		"[\"cadvisor\",\"calculated\"]",
 		"[\"cadvisor\"]",
 		"[\"dcgm\",\"pod\",\"calculated\"]",

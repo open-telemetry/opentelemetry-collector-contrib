@@ -17,6 +17,7 @@ const (
 	AttributeContainerName = "ContainerName"
 	AttributeContainerID   = "ContainerId"
 	AttributeGpuDevice     = "GpuDevice"
+	AttributeEfaDevice     = "EfaDevice"
 
 	PodStatus       = "pod_status"
 	ContainerStatus = "container_status"

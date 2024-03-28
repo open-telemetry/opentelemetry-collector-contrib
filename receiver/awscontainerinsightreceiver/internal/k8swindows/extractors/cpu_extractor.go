@@ -31,10 +31,10 @@ func (c *CPUMetricExtractor) HasValue(rawMetric RawMetric) bool {
 	return false
 }
 
-func (c *CPUMetricExtractor) GetValue(rawMetric RawMetric, mInfo cExtractor.CPUMemInfoProvider, containerType string) []*stores.RawContainerInsightsMetric {
-	var metrics []*stores.RawContainerInsightsMetric
+func (c *CPUMetricExtractor) GetValue(rawMetric RawMetric, mInfo cExtractor.CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl {
+	var metrics []*stores.CIMetricImpl
 
-	metric := stores.NewRawContainerInsightsMetric(containerType, c.logger)
+	metric := stores.NewCIMetric(containerType, c.logger)
 
 	multiplier := float64(decimalToMillicores)
 	identifier := rawMetric.Id

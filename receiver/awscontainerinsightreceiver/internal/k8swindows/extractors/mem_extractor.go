@@ -29,9 +29,9 @@ func (m *MemMetricExtractor) HasValue(rawMetric RawMetric) bool {
 	return false
 }
 
-func (m *MemMetricExtractor) GetValue(rawMetric RawMetric, mInfo cExtractor.CPUMemInfoProvider, containerType string) []*stores.RawContainerInsightsMetric {
-	var metrics []*stores.RawContainerInsightsMetric
-	metric := stores.NewRawContainerInsightsMetric(containerType, m.logger)
+func (m *MemMetricExtractor) GetValue(rawMetric RawMetric, mInfo cExtractor.CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl {
+	var metrics []*stores.CIMetricImpl
+	metric := stores.NewCIMetric(containerType, m.logger)
 	identifier := rawMetric.Id
 
 	metric.AddField(ci.MetricName(containerType, ci.MemUsage), rawMetric.MemoryStats.UsageBytes)

@@ -22,7 +22,7 @@ func TestDiskIOStats(t *testing.T) {
 	containerType := containerinsight.TypeNode
 	extractor := NewDiskIOMetricExtractor(nil)
 
-	var cMetrics []*stores.RawContainerInsightsMetric
+	var cMetrics []*stores.CIMetricImpl
 	if extractor.HasValue(result[0]) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)
 	}

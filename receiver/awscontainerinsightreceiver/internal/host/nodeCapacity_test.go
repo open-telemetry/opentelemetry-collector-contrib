@@ -21,7 +21,7 @@ import (
 func TestNodeCapacity(t *testing.T) {
 	// no proc directory
 	lstatOption := func(nc *nodeCapacity) {
-		nc.osLstat = func(name string) (os.FileInfo, error) {
+		nc.osLstat = func(_ string) (os.FileInfo, error) {
 			return nil, os.ErrNotExist
 		}
 	}
@@ -31,24 +31,24 @@ func TestNodeCapacity(t *testing.T) {
 
 	// can't set environment variables
 	lstatOption = func(nc *nodeCapacity) {
-		nc.osLstat = func(name string) (os.FileInfo, error) {
+		nc.osLstat = func(_ string) (os.FileInfo, error) {
 			return nil, nil
 		}
 	}
 
 	// can't parse cpu and mem info
 	setEnvOption := func(nc *nodeCapacity) {
-		nc.osSetenv = func(key, value string) error {
+		nc.osSetenv = func(_, _ string) error {
 			return nil
 		}
 	}
 	virtualMemOption := func(nc *nodeCapacity) {
-		nc.virtualMemory = func(ctx context.Context) (*mem.VirtualMemoryStat, error) {
+		nc.virtualMemory = func(_ context.Context) (*mem.VirtualMemoryStat, error) {
 			return nil, errors.New("error")
 		}
 	}
 	cpuInfoOption := func(nc *nodeCapacity) {
-		nc.cpuInfo = func(ctx context.Context) ([]cpu.InfoStat, error) {
+		nc.cpuInfo = func(_ context.Context) ([]cpu.InfoStat, error) {
 			return nil, errors.New("error")
 		}
 	}
@@ -60,15 +60,18 @@ func TestNodeCapacity(t *testing.T) {
 
 	// normal case where everything is working
 	virtualMemOption = func(nc *nodeCapacity) {
-		nc.virtualMemory = func(ctx context.Context) (*mem.VirtualMemoryStat, error) {
+		nc.virtualMemory = func(_ context.Context) (*mem.VirtualMemoryStat, error) {
 			return &mem.VirtualMemoryStat{
 				Total: 1024,
 			}, nil
 		}
 	}
 	cpuInfoOption = func(nc *nodeCapacity) {
-		nc.cpuInfo = func(ctx context.Context) ([]cpu.InfoStat, error) {
-			return []cpu.InfoStat{}, nil
+		nc.cpuInfo = func(_ context.Context) ([]cpu.InfoStat, error) {
+			return []cpu.InfoStat{
+				{},
+				{},
+			}, nil
 		}
 	}
 	nc, err = newNodeCapacity(zap.NewNop(), lstatOption, setEnvOption, virtualMemOption, cpuInfoOption)

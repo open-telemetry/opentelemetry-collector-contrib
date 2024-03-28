@@ -27,16 +27,16 @@ func (f *FileSystemMetricExtractor) HasValue(rawMetric RawMetric) bool {
 	return false
 }
 
-func (f *FileSystemMetricExtractor) GetValue(rawMetric RawMetric, _ cExtractor.CPUMemInfoProvider, containerType string) []*stores.RawContainerInsightsMetric {
+func (f *FileSystemMetricExtractor) GetValue(rawMetric RawMetric, _ cExtractor.CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl {
 	if containerType == ci.TypePod {
 		return nil
 	}
 
 	containerType = getFSMetricType(containerType, f.logger)
-	metrics := make([]*stores.RawContainerInsightsMetric, 0, len(rawMetric.FileSystemStats))
+	metrics := make([]*stores.CIMetricImpl, 0, len(rawMetric.FileSystemStats))
 
 	for _, v := range rawMetric.FileSystemStats {
-		metric := stores.NewRawContainerInsightsMetric(containerType, f.logger)
+		metric := stores.NewCIMetric(containerType, f.logger)
 
 		metric.AddTag(ci.DiskDev, v.Device)
 		metric.AddTag(ci.FSType, v.Type)

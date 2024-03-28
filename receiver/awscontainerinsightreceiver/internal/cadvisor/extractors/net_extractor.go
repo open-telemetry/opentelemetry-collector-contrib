@@ -31,7 +31,7 @@ func (n *NetMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 	return info.Spec.HasNetwork
 }
 
-func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*stores.RawContainerInsightsMetric {
+func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl {
 
 	// Just a protection here, there is no Container level Net metrics
 	if containerType == ci.TypePod || containerType == ci.TypeContainer {
@@ -48,7 +48,7 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 
 	// used for aggregation
 	netIfceMetrics := make([]map[string]any, len(curIfceStats))
-	metrics := make([]*stores.RawContainerInsightsMetric, len(curIfceStats))
+	metrics := make([]*stores.CIMetricImpl, len(curIfceStats))
 
 	for i, cur := range curIfceStats {
 		mType := getNetMetricType(containerType, n.logger)
@@ -71,7 +71,7 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 
 		netIfceMetrics[i] = netIfceMetric
 
-		metric := stores.NewRawContainerInsightsMetric(mType, n.logger)
+		metric := stores.NewCIMetric(mType, n.logger)
 		metric.Tags[ci.NetIfce] = cur.Name
 		for k, v := range netIfceMetric {
 			metric.Fields[ci.MetricName(mType, k)] = v
@@ -82,7 +82,7 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 
 	aggregatedFields := ci.SumFields(netIfceMetrics)
 	if len(aggregatedFields) > 0 {
-		metric := stores.NewRawContainerInsightsMetric(containerType, n.logger)
+		metric := stores.NewCIMetric(containerType, n.logger)
 		for k, v := range aggregatedFields {
 			metric.Fields[ci.MetricName(containerType, k)] = v
 		}

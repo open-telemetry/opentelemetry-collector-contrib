@@ -66,8 +66,8 @@ func NewHnSProvider(logger *zap.Logger, info cExtractor.CPUMemInfoProvider, mext
 	return hp, nil
 }
 
-func (hp *HCSStatsProvider) GetMetrics() ([]*stores.RawContainerInsightsMetric, error) {
-	var metrics []*stores.RawContainerInsightsMetric
+func (hp *HCSStatsProvider) GetMetrics() ([]*stores.CIMetricImpl, error) {
+	var metrics []*stores.CIMetricImpl
 	if ci.IsWindowsHostProcessContainer() {
 		containerToEndpointMap, err := hp.getContainerToEndpointMap()
 		if err != nil {
@@ -115,7 +115,7 @@ func (hp *HCSStatsProvider) getContainerMetrics(containerId string) (extractors.
 	return stat, nil
 }
 
-func (hp *HCSStatsProvider) getPodMetrics() ([]*stores.RawContainerInsightsMetric, error) {
+func (hp *HCSStatsProvider) getPodMetrics() ([]*stores.CIMetricImpl, error) {
 	hp.logger.Debug("Getting pod stats using Microsoft HCS shim APIs")
 	podToContainerMap, err := hp.getPodToContainerMap()
 	if err != nil {
@@ -123,11 +123,11 @@ func (hp *HCSStatsProvider) getPodMetrics() ([]*stores.RawContainerInsightsMetri
 		return nil, err
 	}
 
-	var metrics []*stores.RawContainerInsightsMetric
+	var metrics []*stores.CIMetricImpl
 	var endpointMetricsCollected []string
 
 	for _, pod := range podToContainerMap {
-		var metricsPerPod []*stores.RawContainerInsightsMetric
+		var metricsPerPod []*stores.CIMetricImpl
 		tags := map[string]string{}
 
 		tags[ci.AttributePodID] = pod.PodId

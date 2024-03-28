@@ -114,27 +114,35 @@ func tagMetricSourceLinux(metric CIMetric) {
 	var sources []string
 	switch metricType {
 	case ci.TypeNode:
-		sources = append(sources, []string{"cadvisor", "/proc", "pod", "calculated"}...)
+		sources = []string{"cadvisor", "/proc", "pod", "calculated"}
 	case ci.TypeNodeFS:
-		sources = append(sources, []string{"cadvisor", "calculated"}...)
+		sources = []string{"cadvisor", "calculated"}
 	case ci.TypeNodeNet:
-		sources = append(sources, []string{"cadvisor", "calculated"}...)
+		sources = []string{"cadvisor", "calculated"}
 	case ci.TypeNodeDiskIO:
-		sources = append(sources, []string{"cadvisor"}...)
+		sources = []string{"cadvisor"}
 	case ci.TypePod:
-		sources = append(sources, []string{"cadvisor", "pod", "calculated"}...)
+		sources = []string{"cadvisor", "pod", "calculated"}
 	case ci.TypePodNet:
-		sources = append(sources, []string{"cadvisor", "calculated"}...)
+		sources = []string{"cadvisor", "calculated"}
 	case ci.TypeContainer:
-		sources = append(sources, []string{"cadvisor", "pod", "calculated"}...)
+		sources = []string{"cadvisor", "pod", "calculated"}
 	case ci.TypeContainerFS:
-		sources = append(sources, []string{"cadvisor", "calculated"}...)
+		sources = []string{"cadvisor", "calculated"}
 	case ci.TypeContainerDiskIO:
-		sources = append(sources, []string{"cadvisor"}...)
-	case ci.TypeGpuContainer:
-		sources = append(sources, []string{"dcgm", "pod", "calculated"}...)
-	case ci.TypeNeuronContainer:
-		sources = append(sources, []string{"neuron", "pod", "calculated"}...)
+		sources = []string{"cadvisor"}
+	case ci.TypeInstance:
+		sources = []string{"cadvisor", "/proc", "ecsagent", "calculated"}
+	case ci.TypeInstanceFS:
+		sources = []string{"cadvisor", "calculated"}
+	case ci.TypeInstanceNet:
+		sources = []string{"cadvisor", "calculated"}
+	case ci.TypeInstanceDiskIO:
+		sources = []string{"cadvisor"}
+	case ci.TypeContainerGPU:
+		sources = []string{"dcgm", "pod", "calculated"}
+	case ci.TypeContainerNeuron:
+		sources = []string{"neuron", "pod", "calculated"}
 	}
 
 	if len(sources) > 0 {
@@ -226,7 +234,7 @@ func refreshWithTimeout(parentContext context.Context, refresh func(), timeout t
 	cancel()
 }
 
-type RawContainerInsightsMetric struct {
+type CIMetricImpl struct {
 	// source of the metric for debugging merge conflict
 	ContainerName string
 	// key/value pairs that are typed and contain the metric (numerical) data
@@ -236,10 +244,10 @@ type RawContainerInsightsMetric struct {
 	Logger *zap.Logger
 }
 
-var _ CIMetric = (*RawContainerInsightsMetric)(nil)
+var _ CIMetric = (*CIMetricImpl)(nil)
 
-func NewRawContainerInsightsMetric(mType string, logger *zap.Logger) *RawContainerInsightsMetric {
-	metric := &RawContainerInsightsMetric{
+func NewCIMetric(mType string, logger *zap.Logger) *CIMetricImpl {
+	metric := &CIMetricImpl{
 		Fields: make(map[string]any),
 		Tags:   make(map[string]string),
 		Logger: logger,
@@ -248,60 +256,65 @@ func NewRawContainerInsightsMetric(mType string, logger *zap.Logger) *RawContain
 	return metric
 }
 
-func NewRawContainerInsightsMetricWithData(mType string, fields map[string]any, tags map[string]string, logger *zap.Logger) *RawContainerInsightsMetric {
-	metric := NewRawContainerInsightsMetric(mType, logger)
-	metric.Fields = fields
-	metric.Tags = tags
+func NewCIMetricWithData(mType string, fields map[string]any, tags map[string]string, logger *zap.Logger) *CIMetricImpl {
+	metric := &CIMetricImpl{
+		Fields: fields,
+		Tags:   tags,
+		Logger: logger,
+	}
+	if _, ok := metric.Tags[ci.MetricType]; !ok {
+		metric.Tags[ci.MetricType] = mType
+	}
 	return metric
 }
 
-func (c *RawContainerInsightsMetric) GetTags() map[string]string {
+func (c *CIMetricImpl) GetTags() map[string]string {
 	return c.Tags
 }
 
-func (c *RawContainerInsightsMetric) GetFields() map[string]any {
+func (c *CIMetricImpl) GetFields() map[string]any {
 	return c.Fields
 }
 
-func (c *RawContainerInsightsMetric) GetMetricType() string {
+func (c *CIMetricImpl) GetMetricType() string {
 	return c.Tags[ci.MetricType]
 }
 
-func (c *RawContainerInsightsMetric) AddTags(tags map[string]string) {
+func (c *CIMetricImpl) AddTags(tags map[string]string) {
 	for k, v := range tags {
 		c.Tags[k] = v
 	}
 }
 
-func (c *RawContainerInsightsMetric) HasField(key string) bool {
+func (c *CIMetricImpl) HasField(key string) bool {
 	return c.Fields[key] != nil
 }
 
-func (c *RawContainerInsightsMetric) AddField(key string, val any) {
+func (c *CIMetricImpl) AddField(key string, val any) {
 	c.Fields[key] = val
 }
 
-func (c *RawContainerInsightsMetric) GetField(key string) any {
+func (c *CIMetricImpl) GetField(key string) any {
 	return c.Fields[key]
 }
 
-func (c *RawContainerInsightsMetric) HasTag(key string) bool {
+func (c *CIMetricImpl) HasTag(key string) bool {
 	return c.Tags[key] != ""
 }
 
-func (c *RawContainerInsightsMetric) AddTag(key, val string) {
+func (c *CIMetricImpl) AddTag(key, val string) {
 	c.Tags[key] = val
 }
 
-func (c *RawContainerInsightsMetric) GetTag(key string) string {
+func (c *CIMetricImpl) GetTag(key string) string {
 	return c.Tags[key]
 }
 
-func (c *RawContainerInsightsMetric) RemoveTag(key string) {
+func (c *CIMetricImpl) RemoveTag(key string) {
 	delete(c.Tags, key)
 }
 
-func (c *RawContainerInsightsMetric) Merge(src *RawContainerInsightsMetric) {
+func (c *CIMetricImpl) Merge(src *CIMetricImpl) {
 	// If there is any conflict, keep the Fields with earlier timestamp
 	for k, v := range src.Fields {
 		if _, ok := c.Fields[k]; ok {

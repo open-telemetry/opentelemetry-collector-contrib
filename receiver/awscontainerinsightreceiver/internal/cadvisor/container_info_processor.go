@@ -34,13 +34,13 @@ const (
 type podKey struct {
 	cgroupPath   string
 	podID        string
-	containerIds []string
+	containerIDs []string
 	podName      string
 	namespace    string
 }
 
-func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger) []*stores.RawContainerInsightsMetric {
-	var metrics []*stores.RawContainerInsightsMetric
+func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger) []*stores.CIMetricImpl {
+	var metrics []*stores.CIMetricImpl
 	podKeys := make(map[string]podKey)
 
 	// first iteration of container infos processes individual container info and
@@ -61,7 +61,7 @@ func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInf
 				podKeys[outPodKey.cgroupPath] = *outPodKey
 			} else {
 				// collect the container ids associated with a pod
-				key.containerIds = append(key.containerIds, outPodKey.containerIds...)
+				key.containerIDs = append(key.containerIDs, outPodKey.containerIDs...)
 			}
 		}
 	}
@@ -89,8 +89,8 @@ func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInf
 }
 
 // processContainers get metrics for individual container and gather information for pod so we can look it up later.
-func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger) ([]*stores.RawContainerInsightsMetric, *podKey, error) {
-	var result []*stores.RawContainerInsightsMetric
+func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger) ([]*stores.CIMetricImpl, *podKey, error) {
+	var result []*stores.CIMetricImpl
 	var pKey *podKey
 
 	if isContainerInContainer(info.Name) {
@@ -138,7 +138,7 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 			tags[ci.AttributeContainerName] = containerName
 			containerID := path.Base(info.Name)
 			tags[ci.AttributeContainerID] = containerID
-			pKey.containerIds = []string{containerID}
+			pKey.containerIDs = []string{containerID}
 			containerType = ci.TypeContainer
 			// TODO(pvasir): wait for upstream fix https://github.com/google/cadvisor/issues/2785
 			if !info.Spec.HasFilesystem {
@@ -166,8 +166,8 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 	return result, pKey, nil
 }
 
-func processPod(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, podKeys map[string]podKey, logger *zap.Logger) []*stores.RawContainerInsightsMetric {
-	var result []*stores.RawContainerInsightsMetric
+func processPod(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, podKeys map[string]podKey, logger *zap.Logger) []*stores.CIMetricImpl {
+	var result []*stores.CIMetricImpl
 	if isContainerInContainer(info.Name) {
 		logger.Debug("drop metric because it's nested container", zap.String("name", info.Name))
 		return result

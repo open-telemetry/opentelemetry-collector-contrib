@@ -29,7 +29,7 @@ type CPUMemInfoProvider interface {
 
 type MetricExtractor interface {
 	HasValue(*cinfo.ContainerInfo) bool
-	GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*stores.RawContainerInsightsMetric
+	GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl
 	Shutdown() error
 }
 
@@ -55,9 +55,9 @@ func AssignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields 
 }
 
 // MergeMetrics merges an array of cadvisor metrics based on common metric keys
-func MergeMetrics(metrics []*stores.RawContainerInsightsMetric) []*stores.RawContainerInsightsMetric {
-	result := make([]*stores.RawContainerInsightsMetric, 0, len(metrics))
-	metricMap := make(map[string]*stores.RawContainerInsightsMetric)
+func MergeMetrics(metrics []*stores.CIMetricImpl) []*stores.CIMetricImpl {
+	result := make([]*stores.CIMetricImpl, 0, len(metrics))
+	metricMap := make(map[string]*stores.CIMetricImpl)
 	for _, metric := range metrics {
 		if metricKey := getMetricKey(metric); metricKey != "" {
 			if mergedMetric, ok := metricMap[metricKey]; ok {
@@ -77,7 +77,7 @@ func MergeMetrics(metrics []*stores.RawContainerInsightsMetric) []*stores.RawCon
 }
 
 // return MetricKey for merge-able metrics
-func getMetricKey(metric *stores.RawContainerInsightsMetric) string {
+func getMetricKey(metric *stores.CIMetricImpl) string {
 	metricType := metric.GetMetricType()
 	var metricKey string
 	switch metricType {

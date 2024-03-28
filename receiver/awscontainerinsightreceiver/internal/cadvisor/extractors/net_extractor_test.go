@@ -20,7 +20,7 @@ func TestNetStats(t *testing.T) {
 
 	containerType := ci.TypeNode
 	extractor := NewNetMetricExtractor(nil)
-	var cMetrics []*stores.RawContainerInsightsMetric
+	var cMetrics []*stores.CIMetricImpl
 	if extractor.HasValue(result[0]) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)
 	}

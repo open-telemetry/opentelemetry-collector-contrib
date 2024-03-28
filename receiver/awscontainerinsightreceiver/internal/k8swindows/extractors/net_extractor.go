@@ -29,8 +29,8 @@ func (n *NetMetricExtractor) HasValue(rawMetric RawMetric) bool {
 	return false
 }
 
-func (n *NetMetricExtractor) GetValue(rawMetric RawMetric, mInfo cExtractor.CPUMemInfoProvider, containerType string) []*stores.RawContainerInsightsMetric {
-	var metrics []*stores.RawContainerInsightsMetric
+func (n *NetMetricExtractor) GetValue(rawMetric RawMetric, mInfo cExtractor.CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl {
+	var metrics []*stores.CIMetricImpl
 
 	if containerType == ci.TypeContainer {
 		return nil
@@ -58,7 +58,7 @@ func (n *NetMetricExtractor) GetValue(rawMetric RawMetric, mInfo cExtractor.CPUM
 
 		netIfceMetrics[i] = netIfceMetric
 
-		metric := stores.NewRawContainerInsightsMetric(mType, n.logger)
+		metric := stores.NewCIMetric(mType, n.logger)
 		metric.AddTag(ci.NetIfce, intf.Name)
 		for k, v := range netIfceMetric {
 			metric.AddField(ci.MetricName(mType, k), v)
@@ -69,7 +69,7 @@ func (n *NetMetricExtractor) GetValue(rawMetric RawMetric, mInfo cExtractor.CPUM
 
 	aggregatedFields := ci.SumFields(netIfceMetrics)
 	if len(aggregatedFields) > 0 {
-		metric := stores.NewRawContainerInsightsMetric(containerType, n.logger)
+		metric := stores.NewCIMetric(containerType, n.logger)
 		for k, v := range aggregatedFields {
 			metric.AddField(ci.MetricName(containerType, k), v)
 		}

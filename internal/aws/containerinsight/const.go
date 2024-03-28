@@ -13,6 +13,7 @@ const (
 	MinTimeDiff = 50 * time.Microsecond
 
 	// Environment variables
+	HostName                  = "HOST_NAME"
 	RunInContainer            = "RUN_IN_CONTAINER"
 	RunAsHostProcessContainer = "RUN_AS_HOST_PROCESS_CONTAINER"
 	TrueValue                 = "True"
@@ -133,6 +134,13 @@ const (
 	DiskIOWrite              = "Write"
 	DiskIOTotal              = "Total"
 
+	EfaRdmaReadBytes      = "rdma_read_bytes"
+	EfaRdmaWriteBytes     = "rdma_write_bytes"
+	EfaRdmaWriteRecvBytes = "rdma_write_recv_bytes"
+	EfaRxBytes            = "rx_bytes"
+	EfaRxDropped          = "rx_dropped"
+	EfaTxBytes            = "tx_bytes"
+
 	// Define the metric types
 	TypeCluster            = "Cluster"
 	TypeClusterService     = "ClusterService"
@@ -158,11 +166,14 @@ const (
 	// Special type for pause container
 	// because containerd does not set container name pause container name to POD like docker does.
 	TypeInfraContainer  = "InfraContainer"
-	TypeGpuContainer    = "ContainerGPU"
-	TypeGpuPod          = "PodGPU"
-	TypeGpuNode         = "NodeGPU"
-	TypeGpuCluster      = "ClusterGPU"
-	TypeNeuronContainer = "ContainerNeuron"
+	TypeContainerGPU    = "ContainerGPU"
+	TypePodGPU          = "PodGPU"
+	TypeNodeGPU         = "NodeGPU"
+	TypeClusterGPU      = "ClusterGPU"
+	TypeContainerNeuron = "ContainerNeuron"
+	TypeContainerEFA    = "ContainerEFA"
+	TypePodEFA          = "PodEFA"
+	TypeNodeEFA         = "NodeEFA"
 
 	// unit
 	UnitBytes       = "Bytes"
@@ -301,5 +312,12 @@ func init() {
 		ContainerCount:        UnitCount,
 		ContainerRestartCount: UnitCount,
 		RunningTaskCount:      UnitCount,
+
+		EfaRdmaReadBytes:      UnitBytesPerSec,
+		EfaRdmaWriteBytes:     UnitBytesPerSec,
+		EfaRdmaWriteRecvBytes: UnitBytesPerSec,
+		EfaRxBytes:            UnitBytesPerSec,
+		EfaRxDropped:          UnitCountPerSec,
+		EfaTxBytes:            UnitBytesPerSec,
 	}
 }

@@ -64,7 +64,7 @@ func (m MockHostInfo) GetInstanceID() string {
 }
 
 func (m MockHostInfo) GetInstanceType() string {
-	return "instance-id"
+	return "instance-type"
 }
 
 func (m MockHostInfo) GetAutoScalingGroupName() string {
@@ -72,5 +72,5 @@ func (m MockHostInfo) GetAutoScalingGroupName() string {
 }
 
 func (m MockHostInfo) ExtractEbsIDsUsedByKubernetes() map[string]string {
-	return map[string]string{}
+	return map[string]string{"device": "ebs-volume-id"}
 }

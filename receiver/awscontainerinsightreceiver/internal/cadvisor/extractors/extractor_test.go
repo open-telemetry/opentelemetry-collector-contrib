@@ -15,12 +15,12 @@ import (
 )
 
 func TestCAdvisorMetric_Merge(t *testing.T) {
-	src := &stores.RawContainerInsightsMetric{
+	src := &stores.CIMetricImpl{
 		Fields: map[string]any{"value1": 1, "value2": 2},
 		Tags:   map[string]string{ci.Timestamp: "1586331559882"},
 		Logger: zap.NewNop(),
 	}
-	dest := &stores.RawContainerInsightsMetric{
+	dest := &stores.CIMetricImpl{
 		Fields: map[string]any{"value1": 3, "value3": 3},
 		Tags:   map[string]string{ci.Timestamp: "1586331559973"},
 		Logger: zap.NewNop(),
@@ -31,21 +31,21 @@ func TestCAdvisorMetric_Merge(t *testing.T) {
 }
 
 func TestGetMetricKey(t *testing.T) {
-	c := &stores.RawContainerInsightsMetric{
+	c := &stores.CIMetricImpl{
 		Tags: map[string]string{
 			ci.MetricType: ci.TypeInstance,
 		},
 	}
 	assert.Equal(t, "metricType:Instance", getMetricKey(c))
 
-	c = &stores.RawContainerInsightsMetric{
+	c = &stores.CIMetricImpl{
 		Tags: map[string]string{
 			ci.MetricType: ci.TypeNode,
 		},
 	}
 	assert.Equal(t, "metricType:Node", getMetricKey(c))
 
-	c = &stores.RawContainerInsightsMetric{
+	c = &stores.CIMetricImpl{
 		Tags: map[string]string{
 			ci.MetricType:     ci.TypePod,
 			ci.AttributePodID: "podID",
@@ -53,7 +53,7 @@ func TestGetMetricKey(t *testing.T) {
 	}
 	assert.Equal(t, "metricType:Pod,podId:podID", getMetricKey(c))
 
-	c = &stores.RawContainerInsightsMetric{
+	c = &stores.CIMetricImpl{
 		Tags: map[string]string{
 			ci.MetricType:             ci.TypeContainer,
 			ci.AttributePodID:         "podID",
@@ -62,7 +62,7 @@ func TestGetMetricKey(t *testing.T) {
 	}
 	assert.Equal(t, "metricType:Container,podId:podID,containerName:ContainerName", getMetricKey(c))
 
-	c = &stores.RawContainerInsightsMetric{
+	c = &stores.CIMetricImpl{
 		Tags: map[string]string{
 			ci.MetricType: ci.TypeInstanceDiskIO,
 			ci.DiskDev:    "/abc",
@@ -70,7 +70,7 @@ func TestGetMetricKey(t *testing.T) {
 	}
 	assert.Equal(t, "metricType:InstanceDiskIO,device:/abc", getMetricKey(c))
 
-	c = &stores.RawContainerInsightsMetric{
+	c = &stores.CIMetricImpl{
 		Tags: map[string]string{
 			ci.MetricType: ci.TypeNodeDiskIO,
 			ci.DiskDev:    "/abc",
@@ -78,12 +78,12 @@ func TestGetMetricKey(t *testing.T) {
 	}
 	assert.Equal(t, "metricType:NodeDiskIO,device:/abc", getMetricKey(c))
 
-	c = &stores.RawContainerInsightsMetric{}
+	c = &stores.CIMetricImpl{}
 	assert.Equal(t, "", getMetricKey(c))
 }
 
 func TestMergeMetrics(t *testing.T) {
-	cpuMetrics := &stores.RawContainerInsightsMetric{
+	cpuMetrics := &stores.CIMetricImpl{
 		Fields: map[string]any{
 			"node_cpu_usage_total": float64(10),
 			"node_cpu_usage_user":  float64(10),
@@ -93,7 +93,7 @@ func TestMergeMetrics(t *testing.T) {
 		},
 	}
 
-	memMetrics := &stores.RawContainerInsightsMetric{
+	memMetrics := &stores.CIMetricImpl{
 		Fields: map[string]any{
 			"node_memory_cache": uint(25645056),
 		},
@@ -102,12 +102,12 @@ func TestMergeMetrics(t *testing.T) {
 		},
 	}
 
-	metrics := []*stores.RawContainerInsightsMetric{
+	metrics := []*stores.CIMetricImpl{
 		cpuMetrics,
 		memMetrics,
 	}
 
-	expected := &stores.RawContainerInsightsMetric{
+	expected := &stores.CIMetricImpl{
 		Fields: map[string]any{
 			"node_cpu_usage_total": float64(10),
 			"node_cpu_usage_user":  float64(10),

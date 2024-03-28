@@ -97,9 +97,9 @@ func (k *K8sWindows) GetMetrics() []pmetric.Metrics {
 	return result
 }
 
-func (k *K8sWindows) decorateMetrics(windowsmetrics []*stores.RawContainerInsightsMetric) []*stores.RawContainerInsightsMetric {
+func (k *K8sWindows) decorateMetrics(windowsmetrics []*stores.CIMetricImpl) []*stores.CIMetricImpl {
 	//ebsVolumeIdsUsedAsPV := c.hostInfo.ExtractEbsIDsUsedByKubernetes()
-	var result []*stores.RawContainerInsightsMetric
+	var result []*stores.CIMetricImpl
 	for _, m := range windowsmetrics {
 		tags := m.GetTags()
 		//c.addEbsVolumeInfo(tags, ebsVolumeIdsUsedAsPV)
@@ -133,7 +133,7 @@ func (k *K8sWindows) decorateMetrics(windowsmetrics []*stores.RawContainerInsigh
 
 		out := k.k8sDecorator.Decorate(m)
 		if out != nil {
-			result = append(result, out.(*stores.RawContainerInsightsMetric))
+			result = append(result, out.(*stores.CIMetricImpl))
 		}
 	}
 	return result

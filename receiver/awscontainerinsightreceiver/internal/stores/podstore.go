@@ -133,9 +133,9 @@ func NewPodStore(hostIP string, prefFullPodName bool, addFullPodNameMetricLabel 
 		return nil, fmt.Errorf("cannot get pod from kubelet, err: %w", err)
 	}
 
-	nodeName := os.Getenv("HOST_NAME")
+	nodeName := os.Getenv(ci.HostName)
 	if nodeName == "" {
-		return nil, errors.New("missing environment variable HOST_NAME. Please check your deployment YAML config")
+		return nil, fmt.Errorf("missing environment variable %s. Please check your deployment YAML config", ci.HostName)
 	}
 
 	k8sClient := k8sclient.Get(logger,
@@ -166,7 +166,7 @@ func (p *PodStore) Shutdown() error {
 	var errs error
 	errs = p.cache.Shutdown()
 	p.prevMeasurements.Range(
-		func(key, prevMeasurement any) bool {
+		func(_, prevMeasurement any) bool {
 			if prevMeasErr := prevMeasurement.(*mapWithExpiry).Shutdown(); prevMeasErr != nil {
 				errs = errors.Join(errs, prevMeasErr)
 			}
@@ -281,7 +281,7 @@ func (p *PodStore) refresh(ctx context.Context, now time.Time) {
 
 func (p *PodStore) cleanup(now time.Time) {
 	p.prevMeasurements.Range(
-		func(key, prevMeasurement any) bool {
+		func(_, prevMeasurement any) bool {
 			prevMeasurement.(*mapWithExpiry).Lock()
 			prevMeasurement.(*mapWithExpiry).CleanUp(now)
 			prevMeasurement.(*mapWithExpiry).Unlock()
