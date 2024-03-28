@@ -23,7 +23,7 @@ resource usage of cpu, memory, network, and the
 
 ## Configuration
 
-The following settings are optional and  for all telemetry:
+The following settings are optional and affect all telemetry:
 
 - `endpoint` (default = `unix:///var/run/docker.sock`): Address to reach the desired Docker daemon.
 - `api_version` (default = `1.25`): The Docker client API version (must be 1.25+). If using one with a terminating zero, input as a string to prevent undesired truncation (e.g. `"1.40"` instead of `1.40`, which is parsed as `1.4`). [Docker API versions](https://docs.docker.com/engine/api/).
