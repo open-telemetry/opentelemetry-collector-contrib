@@ -9,4 +9,3 @@ status:
 
 tests:
   skip_lifecycle: true # in development
-  skip_shutdown: true # in development
