@@ -71,21 +71,17 @@ func New(c Criteria) (*Matcher, error) {
 		return nil, fmt.Errorf("exclude: %w", err)
 	}
 
-	matcher := &Matcher{
+	m := &Matcher{
 		include: c.Include,
 		exclude: c.Exclude,
 	}
 
-	var filterOpts []filter.Option
 	if c.ExcludeOlderThan != 0 {
-		f := filter.ExcludeOlderThan(c.ExcludeOlderThan)
-		filterOpts = append(filterOpts, f)
-
-		matcher.filterOpts = filterOpts
+		m.filterOpts = append(m.filterOpts, filter.ExcludeOlderThan(c.ExcludeOlderThan))
 	}
 
 	if len(c.OrderingCriteria.SortBy) == 0 {
-		return matcher, nil
+		return m, nil
 	}
 
 	if c.OrderingCriteria.TopN < 0 {
