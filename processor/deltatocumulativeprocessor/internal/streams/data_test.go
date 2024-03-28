@@ -76,7 +76,7 @@ func TestAggregate(t *testing.T) {
 	dps := generate(total)
 
 	// inv aggregator inverts each sample
-	inv := aggr(func(id streams.Ident, n data.Number) (data.Number, error) {
+	inv := aggr(func(_ streams.Ident, n data.Number) (data.Number, error) {
 		dp := n.Clone()
 		dp.SetIntValue(-dp.IntValue())
 		return dp, nil

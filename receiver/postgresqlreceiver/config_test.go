@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/multierr"
@@ -67,7 +68,7 @@ func TestValidate(t *testing.T) {
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Username = "otel"
 				cfg.Password = "otel"
-				cfg.Transport = "teacup"
+				cfg.Transport = "udp"
 			},
 			expected: multierr.Combine(
 				errors.New(ErrTransportsSupported),
@@ -135,7 +136,7 @@ func TestLoadConfig(t *testing.T) {
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"
-		expected.AddrConfig.Transport = "tcp"
+		expected.AddrConfig.Transport = confignet.TransportTypeTCP
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.ConnectionPool = ConnectionPool{
@@ -153,16 +154,16 @@ func TestLoadConfig(t *testing.T) {
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"
-		expected.AddrConfig.Transport = "tcp"
+		expected.AddrConfig.Transport = confignet.TransportTypeTCP
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.Databases = []string{"otel"}
 		expected.ExcludeDatabases = []string{"template0"}
 		expected.CollectionInterval = 10 * time.Second
-		expected.TLSClientSetting = configtls.TLSClientSetting{
+		expected.ClientConfig = configtls.ClientConfig{
 			Insecure:           false,
 			InsecureSkipVerify: false,
-			TLSSetting: configtls.TLSSetting{
+			Config: configtls.Config{
 				CAFile:   "/home/otel/authorities.crt",
 				CertFile: "/home/otel/mypostgrescert.crt",
 				KeyFile:  "/home/otel/mypostgreskey.key",

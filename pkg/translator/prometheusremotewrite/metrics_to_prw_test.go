@@ -39,7 +39,7 @@ func BenchmarkFromMetrics(b *testing.B) {
 												err := converter.FromMetrics(payload.Metrics(), Settings{})
 												require.NoError(b, err)
 												ts := converter.TimeSeries()
-												require.NotNil(t, ts)
+												require.NotNil(b, ts)
 											}
 										})
 									}

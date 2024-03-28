@@ -5,7 +5,7 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib, splunk]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, crobert-1, atoulme]
 

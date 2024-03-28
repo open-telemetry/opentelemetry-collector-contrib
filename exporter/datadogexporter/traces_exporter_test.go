@@ -120,7 +120,7 @@ func TestTracesSource(t *testing.T) {
 		assert.NoError(t, err)
 	}))
 	defer metricsServer.Close()
-	tracesServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	tracesServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusAccepted)
 	}))
 	defer tracesServer.Close()
