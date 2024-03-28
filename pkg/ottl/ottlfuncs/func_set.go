@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var (
@@ -16,10 +17,10 @@ var (
 )
 
 const (
-	setConflictReplace = "replace"
-	setConflictFail    = "fail"
-	setConflictIgnore  = "ignore"
-	setConflictUpdate  = "update"
+	setConflictUpsert = "upsert"
+	setConflictFail   = "fail"
+	setConflictInsert = "insert"
+	setConflictUpdate = "update"
 )
 
 type SetArguments[K any] struct {
@@ -43,16 +44,16 @@ func createSetFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 }
 
 func set[K any](target ottl.GetSetter[K], value ottl.Getter[K], strategy ottl.Optional[string]) (ottl.ExprFunc[K], error) {
-	conflictStrategy := setConflictReplace
+	conflictStrategy := setConflictUpsert
 	if !strategy.IsEmpty() {
 		conflictStrategy = strategy.Get()
 	}
 
-	if conflictStrategy != setConflictReplace &&
+	if conflictStrategy != setConflictUpsert &&
 		conflictStrategy != setConflictUpdate &&
 		conflictStrategy != setConflictFail &&
-		conflictStrategy != setConflictIgnore {
-		return nil, fmt.Errorf("invalid value for conflict strategy, %v, must be %q, %q, %q or %q", conflictStrategy, setConflictReplace, setConflictUpdate, setConflictFail, setConflictIgnore)
+		conflictStrategy != setConflictInsert {
+		return nil, fmt.Errorf("invalid value for conflict strategy, %v, must be %q, %q, %q or %q", conflictStrategy, setConflictUpsert, setConflictUpdate, setConflictFail, setConflictUpsert)
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
@@ -68,9 +69,9 @@ func set[K any](target ottl.GetSetter[K], value ottl.Getter[K], strategy ottl.Op
 				return nil, err
 			}
 
-			valueMissing := oldVal == nil
+			valueMissing := oldVal == nil || isDefaultValue(oldVal)
 			switch conflictStrategy {
-			case setConflictReplace:
+			case setConflictUpsert:
 				// overwrites if present or create when missing
 			case setConflictUpdate:
 				// update existing field with a new value. If the field does not exist, then no action will be taken
@@ -82,7 +83,7 @@ func set[K any](target ottl.GetSetter[K], value ottl.Getter[K], strategy ottl.Op
 				if !valueMissing {
 					return nil, ErrValueAlreadyPresent
 				}
-			case setConflictIgnore:
+			case setConflictInsert:
 				// noop if target field present
 				if !valueMissing {
 					return nil, nil
@@ -96,4 +97,66 @@ func set[K any](target ottl.GetSetter[K], value ottl.Getter[K], strategy ottl.Op
 		}
 		return nil, nil
 	}, nil
+}
+
+func isDefaultValue(val any) bool {
+	switch v := val.(type) {
+	case string:
+		return len(v) == 0
+	case bool:
+		return !v
+	case float64:
+		return v == 0
+	case int64:
+		return v == 0
+
+	case []byte:
+		return len(v) == 0
+	case []string:
+		return len(v) == 0
+	case []int64:
+		return len(v) == 0
+	case []float64:
+		return len(v) == 0
+	case [][]byte:
+		return len(v) == 0
+	case []any:
+		return len(v) == 0
+
+	case pcommon.ByteSlice:
+		return v.Len() == 0
+	case pcommon.Float64Slice:
+		return v.Len() == 0
+	case pcommon.UInt64Slice:
+		return v.Len() == 0
+	case pcommon.Slice:
+		return v.Len() == 0
+
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeStr ||
+			v.Type() == pcommon.ValueTypeBytes ||
+			v.Type() == pcommon.ValueTypeSlice {
+			return v.Bytes().Len() == 0
+		}
+		if v.Type() == pcommon.ValueTypeBool {
+			return !v.Bool()
+		}
+		if v.Type() == pcommon.ValueTypeDouble {
+			return v.Double() == 0
+		}
+		if v.Type() == pcommon.ValueTypeInt {
+			return v.Int() == 0
+		}
+
+		if v.Type() == pcommon.ValueTypeEmpty {
+			return true
+		}
+
+	case pcommon.Map:
+		return v.Len() == 0
+	case map[string]any:
+		return v == nil
+	}
+
+	return false
 }
