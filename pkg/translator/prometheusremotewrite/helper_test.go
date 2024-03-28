@@ -884,3 +884,72 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 		})
 	}
 }
+
+func TestPrometheusConverter_getOrCreateTimeSeries(t *testing.T) {
+	converter := NewPrometheusConverter()
+	lbls := []prompb.Label{
+		{
+			Name:  "key1",
+			Value: "value1",
+		},
+		{
+			Name:  "key2",
+			Value: "value2",
+		},
+	}
+	ts, created := converter.getOrCreateTimeSeries(lbls)
+	require.NotNil(t, ts)
+	require.True(t, created)
+
+	// Now, get (not create) the unique time series
+	gotTS, created := converter.getOrCreateTimeSeries(ts.Labels)
+	require.Same(t, ts, gotTS)
+	require.False(t, created)
+
+	var keys []uint64
+	for k := range converter.unique {
+		keys = append(keys, k)
+	}
+	require.Len(t, keys, 1)
+	h := keys[0]
+
+	// Make sure that state is correctly set
+	require.Equal(t, map[uint64]*prompb.TimeSeries{
+		h: ts,
+	}, converter.unique)
+	require.Empty(t, converter.conflicts)
+
+	// Fake a hash collision, by making this not equal to the next series with the same hash
+	ts.Labels = append(ts.Labels, prompb.Label{Name: "key3", Value: "value3"})
+
+	// Make the first hash collision
+	cTS1, created := converter.getOrCreateTimeSeries(lbls)
+	require.NotNil(t, cTS1)
+	require.True(t, created)
+	require.Equal(t, map[uint64][]*prompb.TimeSeries{
+		h: []*prompb.TimeSeries{cTS1},
+	}, converter.conflicts)
+
+	// Fake a hash collision, by making this not equal to the next series with the same hash
+	cTS1.Labels = append(cTS1.Labels, prompb.Label{Name: "key3", Value: "value3"})
+
+	// Make the second hash collision
+	cTS2, created := converter.getOrCreateTimeSeries(lbls)
+	require.NotNil(t, cTS2)
+	require.True(t, created)
+	require.Equal(t, map[uint64][]*prompb.TimeSeries{
+		h: []*prompb.TimeSeries{cTS1, cTS2},
+	}, converter.conflicts)
+
+	// Now, get (not create) the second colliding time series
+	gotCTS2, created := converter.getOrCreateTimeSeries(lbls)
+	require.Same(t, cTS2, gotCTS2)
+	require.False(t, created)
+	require.Equal(t, map[uint64][]*prompb.TimeSeries{
+		h: []*prompb.TimeSeries{cTS1, cTS2},
+	}, converter.conflicts)
+
+	require.Equal(t, map[uint64]*prompb.TimeSeries{
+		h: ts,
+	}, converter.unique)
+}
