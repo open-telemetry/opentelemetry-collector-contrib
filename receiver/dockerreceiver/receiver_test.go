@@ -121,8 +121,10 @@ var (
 
 func TestNewReceiver(t *testing.T) {
 	cfg := &Config{
-		ControllerConfig: scraperhelper.ControllerConfig{
-			CollectionInterval: 1 * time.Second,
+		Stats: StatsConfig{
+			ControllerConfig: scraperhelper.ControllerConfig{
+				CollectionInterval: 1 * time.Second,
+			},
 		},
 		Endpoint:         "unix:///run/some.sock",
 		DockerAPIVersion: defaultDockerAPIVersion,
@@ -134,8 +136,10 @@ func TestNewReceiver(t *testing.T) {
 func TestErrorsInStart(t *testing.T) {
 	unreachable := "unix:///not/a/thing.sock"
 	cfg := &Config{
-		ControllerConfig: scraperhelper.ControllerConfig{
-			CollectionInterval: 1 * time.Second,
+		Stats: StatsConfig{
+			ControllerConfig: scraperhelper.ControllerConfig{
+				CollectionInterval: 1 * time.Second,
+			},
 		},
 		Endpoint:         unreachable,
 		DockerAPIVersion: defaultDockerAPIVersion,
@@ -417,11 +421,11 @@ func (cb *testConfigBuilder) withResourceAttributes(ras metadata.ResourceAttribu
 }
 
 func (cb *testConfigBuilder) withDefaultLabels() *testConfigBuilder {
-	cb.config.EnvVarsToMetricLabels = map[string]string{
+	cb.config.Stats.EnvVarsToMetricLabels = map[string]string{
 		"ENV_VAR":   "env-var-metric-label",
 		"ENV_VAR_2": "env-var-metric-label-2",
 	}
-	cb.config.ContainerLabelsToMetricLabels = map[string]string{
+	cb.config.Stats.ContainerLabelsToMetricLabels = map[string]string{
 		"container.label":   "container-metric-label",
 		"container.label.2": "container-metric-label-2",
 	}

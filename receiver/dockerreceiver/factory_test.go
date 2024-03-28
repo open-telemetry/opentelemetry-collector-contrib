@@ -16,7 +16,7 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, "docker_stats", factory.Type().String())
+	assert.Equal(t, "docker", factory.Type().String())
 
 	config := factory.CreateDefaultConfig()
 	assert.NotNil(t, config, "failed to create default config")

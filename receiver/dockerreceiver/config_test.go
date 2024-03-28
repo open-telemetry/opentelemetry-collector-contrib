@@ -33,29 +33,30 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: 2 * time.Second,
-					InitialDelay:       time.Second,
-					Timeout:            20 * time.Second,
-				},
-
 				Endpoint:         "http://example.com/",
 				DockerAPIVersion: "1.40",
+				Stats: StatsConfig{
+					ControllerConfig: scraperhelper.ControllerConfig{
+						CollectionInterval: 2 * time.Second,
+						InitialDelay:       time.Second,
+						Timeout:            20 * time.Second,
+					},
+					ExcludedImages: []string{
+						"undesired-container",
+						"another-*-container",
+					},
 
-				ExcludedImages: []string{
-					"undesired-container",
-					"another-*-container",
+					ContainerLabelsToMetricLabels: map[string]string{
+						"my.container.label":       "my-metric-label",
+						"my.other.container.label": "my-other-metric-label",
+					},
+
+					EnvVarsToMetricLabels: map[string]string{
+						"MY_ENVIRONMENT_VARIABLE":       "my-metric-label",
+						"MY_OTHER_ENVIRONMENT_VARIABLE": "my-other-metric-label",
+					},
 				},
 
-				ContainerLabelsToMetricLabels: map[string]string{
-					"my.container.label":       "my-metric-label",
-					"my.other.container.label": "my-other-metric-label",
-				},
-
-				EnvVarsToMetricLabels: map[string]string{
-					"MY_ENVIRONMENT_VARIABLE":       "my-metric-label",
-					"MY_OTHER_ENVIRONMENT_VARIABLE": "my-other-metric-label",
-				},
 				MetricsBuilderConfig: func() metadata.MetricsBuilderConfig {
 					m := metadata.DefaultMetricsBuilderConfig()
 					m.Metrics.ContainerCPUUsageSystem = metadata.MetricConfig{
@@ -91,20 +92,26 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestValidateErrors(t *testing.T) {
-	cfg := &Config{ControllerConfig: scraperhelper.NewDefaultControllerConfig()}
+	cfg := &Config{Stats: StatsConfig{ControllerConfig: scraperhelper.NewDefaultControllerConfig()}}
 	assert.Equal(t, "endpoint must be specified", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{
 		DockerAPIVersion: "1.21",
 		Endpoint:         "someEndpoint",
-		ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 1 * time.Second},
+		Stats: StatsConfig{
+			ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 1 * time.Second},
+		},
 	}
 	assert.Equal(t, `"api_version" 1.21 must be at least 1.25`, component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{
 		Endpoint:         "someEndpoint",
 		DockerAPIVersion: "1.25",
-		ControllerConfig: scraperhelper.ControllerConfig{},
+		Stats: StatsConfig{
+			ControllerConfig: scraperhelper.ControllerConfig{},
+		},
 	}
-	assert.Equal(t, `"collection_interval": requires positive value`, component.ValidateConfig(cfg).Error())
+	// The message is generated twice because when it's nested,
+	// it is returned both as an error of ControllerConfig and StatsConfig.
+	assert.Equal(t, `"collection_interval": requires positive value; "collection_interval": requires positive value`, component.ValidateConfig(cfg).Error())
 }
