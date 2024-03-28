@@ -32,7 +32,7 @@ The current metrics available via scraping from GitHub are:
 - [x] Repository pull request time to merge
 - [ ] Repository pull request deployment time
 - [x] Repository pull request time to approval
-- [x] Repository pull request count | stores an attribute of `pull_request_state` equal to `open` or `merged`
+- [x] Repository pull request count | stores an attribute of `pull_request.state` equal to `open` or `merged`
 
 > Note: Some metrics may be disabled by default and have to be explicitly enabled.
 > For example, the repository contributor count metric is one such metric. This is
