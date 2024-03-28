@@ -6,22 +6,18 @@
 package googleclientauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension"
 
 import (
-	"context"
-
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/auth"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension/internal/metadata"
+
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension"
 )
 
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
 		metadata.Type,
-		func() component.Config { return &Config{} },
-		func(context.Context, extension.CreateSettings, component.Config) (extension.Extension, error) {
-			return auth.NewClient(), nil
-		},
+		googleclientauthextension.CreateDefaultConfig,
+		googleclientauthextension.CreateExtension,
 		metadata.ExtensionStability,
 	)
 }
