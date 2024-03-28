@@ -201,6 +201,7 @@ body:
       - receiver/collectd
       - receiver/couchdb
       - receiver/datadog
+      - receiver/docker
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
