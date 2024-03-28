@@ -147,7 +147,7 @@ func (ctc *commonTestCase) repeatedNewStream(nc func() testChannel) func(context
 	arrowpb.ArrowTracesService_ArrowTracesClient,
 	error,
 ) {
-	return func(ctx context.Context, opts ...grpc.CallOption) (
+	return func(ctx context.Context, _ ...grpc.CallOption) (
 		arrowpb.ArrowTracesService_ArrowTracesClient,
 		error,
 	) {
@@ -222,7 +222,7 @@ func (tc *unresponsiveTestChannel) onConnect(_ context.Context) error {
 }
 
 func (tc *unresponsiveTestChannel) onSend(ctx context.Context) func(*arrowpb.BatchArrowRecords) error {
-	return func(req *arrowpb.BatchArrowRecords) error {
+	return func(_ *arrowpb.BatchArrowRecords) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -264,7 +264,7 @@ func (tc *arrowUnsupportedTestChannel) onConnect(_ context.Context) error {
 }
 
 func (tc *arrowUnsupportedTestChannel) onSend(ctx context.Context) func(*arrowpb.BatchArrowRecords) error {
-	return func(req *arrowpb.BatchArrowRecords) error {
+	return func(_ *arrowpb.BatchArrowRecords) error {
 		<-ctx.Done()
 		return ctx.Err()
 	}
@@ -291,7 +291,7 @@ func (tc *disconnectedTestChannel) onConnect(ctx context.Context) error {
 }
 
 func (tc *disconnectedTestChannel) onSend(_ context.Context) func(*arrowpb.BatchArrowRecords) error {
-	return func(req *arrowpb.BatchArrowRecords) error {
+	return func(_ *arrowpb.BatchArrowRecords) error {
 		panic("unreachable")
 	}
 }

@@ -69,7 +69,7 @@ func newSingleStreamDowngradeDisabledTestCase(t *testing.T) *exporterTestCase {
 
 func newSingleStreamMetadataTestCase(t *testing.T) *exporterTestCase {
 	var count int
-	return newExporterTestCaseCommon(t, NotNoisy, 1, false, func(ctx context.Context) (map[string]string, error) {
+	return newExporterTestCaseCommon(t, NotNoisy, 1, false, func(_ context.Context) (map[string]string, error) {
 		defer func() { count++ }()
 		if count%2 == 0 {
 			return nil, nil
