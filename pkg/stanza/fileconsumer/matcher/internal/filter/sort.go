@@ -176,7 +176,7 @@ func SortMtime() Option {
 }
 
 type excludeOlderThanOption struct {
-	minMtime time.Time
+	age time.Duration
 }
 
 func (eot excludeOlderThanOption) apply(items []*item) ([]*item, error) {
@@ -189,7 +189,10 @@ func (eot excludeOlderThanOption) apply(items []*item) ([]*item, error) {
 			continue
 		}
 
-		if !fi.ModTime().Before(eot.minMtime) {
+		// Keep (include) the file if its age (since last modification)
+		// is the same or less than the configured age.
+		fileAge := time.Now().Sub(fi.ModTime())
+		if fileAge <= eot.age {
 			filteredItems = append(filteredItems, item)
 		}
 	}
@@ -199,6 +202,5 @@ func (eot excludeOlderThanOption) apply(items []*item) ([]*item, error) {
 
 // ExcludeOlderThan excludes files whose modification time is older than the specified age.
 func ExcludeOlderThan(age time.Duration) Option {
-	minMtime := time.Now().Add(-age)
-	return excludeOlderThanOption{minMtime: minMtime}
+	return excludeOlderThanOption{age: age}
 }
