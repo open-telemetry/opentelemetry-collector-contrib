@@ -138,7 +138,7 @@ func TestContainerTags(t *testing.T) {
 	// check if the container tags are added to the cache
 	assert.Equal(t, 1, len(connector.containerTagCache.Items()))
 	count := 0
-	connector.containerTagCache.Items()["my-container-id"].Object.(*sync.Map).Range(func(key, value any) bool {
+	connector.containerTagCache.Items()["my-container-id"].Object.(*sync.Map).Range(func(_, _ any) bool {
 		count++
 		return true
 	})

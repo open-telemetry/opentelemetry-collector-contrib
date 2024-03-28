@@ -671,7 +671,7 @@ func TestInvalidTLSCredentials(t *testing.T) {
 	cfg := Config{
 		ServerConfig: configgrpc.ServerConfig{
 			TLSSetting: &configtls.ServerConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CertFile: "willfail",
 				},
 			},

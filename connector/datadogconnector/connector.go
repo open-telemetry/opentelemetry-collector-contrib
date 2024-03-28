@@ -192,7 +192,7 @@ func (c *traceToMetricConnector) enrichStatsPayload(stats *pb.StatsPayload) {
 					tagList.Store(tag, struct{}{})
 				}
 				stat.Tags = make([]string, 0)
-				tagList.Range(func(key, value any) bool {
+				tagList.Range(func(key, _ any) bool {
 					stat.Tags = append(stat.Tags, key.(string))
 					return true
 				})

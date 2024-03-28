@@ -7,11 +7,6 @@ status:
     beta: [traces]
   distributions:
   - contrib
-  - aws
-  - grafana
-  - observiq
-  - splunk
-  - sumo
   codeowners:
     active: [jpkrohling]
 

@@ -179,7 +179,7 @@ func TestParser(t *testing.T) {
 	}{
 		{
 			"simple",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: "name=stanza age=2",
 			},
@@ -261,7 +261,7 @@ func TestParser(t *testing.T) {
 		},
 		{
 			"user-agent",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `requestClientApplication="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0"`,
 			},
@@ -276,7 +276,7 @@ func TestParser(t *testing.T) {
 		},
 		{
 			"double-quotes-removed",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: "name=\"stanza\" age=2",
 			},
@@ -292,7 +292,7 @@ func TestParser(t *testing.T) {
 		},
 		{
 			"single-quotes-removed",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: "description='stanza deployment number 5' x=y",
 			},
@@ -308,7 +308,7 @@ func TestParser(t *testing.T) {
 		},
 		{
 			"double-quotes-spaces-removed",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `name=" stanza " age=2`,
 			},
@@ -324,7 +324,7 @@ func TestParser(t *testing.T) {
 		},
 		{
 			"leading-and-trailing-space",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `" name "=" stanza " age=2`,
 			},
@@ -426,7 +426,7 @@ key=value`,
 		},
 		{
 			"large",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: "name=stanza age=1 job=\"software engineering\" location=\"grand rapids michigan\" src=\"10.3.3.76\" dst=172.217.0.10 protocol=udp sport=57112 dport=443 translated_src_ip=96.63.176.3 translated_port=57112",
 			},
@@ -451,7 +451,7 @@ key=value`,
 		},
 		{
 			"dell-sonic-wall",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `id=LVM_Sonicwall sn=22255555 time="2021-09-22 16:30:31" fw=14.165.177.10 pri=6 c=1024 gcat=2 m=97 msg="Web site hit" srcMac=6c:0b:84:3f:fa:63 src=192.168.50.2:52006:X0 srcZone=LAN natSrc=14.165.177.10:58457 dstMac=08:b2:58:46:30:54 dst=15.159.150.83:443:X1 dstZone=WAN natDst=15.159.150.83:443 proto=tcp/https sent=1422 rcvd=5993 rule="6 (LAN->WAN)" app=48 dstname=example.space.dev.com arg=/ code=27 Category="Information Technology/Computers" note="Policy: a0, Info: 888 " n=3412158`,
 			},
@@ -493,7 +493,7 @@ key=value`,
 		},
 		{
 			"missing-delimiter",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `test text`,
 			},
@@ -505,7 +505,7 @@ key=value`,
 		},
 		{
 			"value-contains-delimiter",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `test=text=abc`,
 			},
@@ -520,7 +520,7 @@ key=value`,
 		},
 		{
 			"quoted-value-contains-whitespace-delimiter",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `msg="Message successfully sent at 2023-12-04 06:47:31.204222276 +0000 UTC m=+5115.932279346"`,
 			},
@@ -535,7 +535,7 @@ key=value`,
 		},
 		{
 			"multiple-values-contain-delimiter",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `one=1=i two="2=ii" three=3=iii`,
 			},
@@ -552,7 +552,7 @@ key=value`,
 		},
 		{
 			"empty-input",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{},
 			&entry.Entry{},
 			true,
@@ -608,7 +608,7 @@ key=value`,
 		},
 		{
 			"embedded double quotes in single quoted value",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `a=b c='this is a "co ol" value'`,
 			},
@@ -624,7 +624,7 @@ key=value`,
 		},
 		{
 			"embedded double quotes end single quoted value",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `a=b c='this is a "co ol"'`,
 			},
@@ -640,7 +640,7 @@ key=value`,
 		},
 		{
 			"leading and trailing pair delimiter w/o quotes",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: "   k1=v1   k2==v2       k3=v3= ",
 			},
@@ -677,7 +677,7 @@ key=value`,
 		},
 		{
 			"unclosed quotes",
-			func(kv *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `k1='v1' k2='v2`,
 			},
