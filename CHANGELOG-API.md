@@ -7,6 +7,31 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.97.0
+
+### 🛑 Breaking changes 🛑
+
+- `datadogexporter`: Remove config structs `LimitedClientConfig` and `LimitedTLSClientSettings` (#31733)
+  This should have no impact to end users as long as they do not import Datadog exporter config structs in their source code.
+- `cmd/mdatagen`: Delete deprecated cmd/mdatagen from this project. Use go.opentelemetry.io/collector/cmd/mdatagen instead. (#30497)
+- `azuremonitorreceiver`: Reduce the public API for this receiver. (#24850)
+  This unexports the following types ArmClient, MetricsDefinitionsClientInterface, MetricsValuesClient.
+- `general`: Update any component using `scraperhelper.ScraperControllerSettings` to use `scraperhelper.ControllerConfig` (#31816)
+  This changes the config field name from `ScraperControllerSettings` to `ControllerConfig`
+- `prometheusreceiver`: Remove enable_protobuf_negotiation option on the prometheus receiver. Use config.global.scrape_protocols = [ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ] instead. (#30883)
+  See https://prometheus.io/docs/prometheus/latest/configuration/configuration/#configuration-file for details on setting scrape_protocols.
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate fileconsumer.BuildWithSplitFunc in favor of Build with options pattern (#31596)
+
+### 💡 Enhancements 💡
+
+- `clickhouseexporter`: Allow configuring `ON CLUSTER` and `ENGINE` when creating database and tables (#24649)
+  Increases table creation flexibility with the ability to add replication for fault tolerance
+- `all`: Remove explicit checks in all receivers to check if the next consumer is nil (#31793)
+  The nil check is now done by the pipeline builder.
+
 ## v0.96.0
 
 ### 🛑 Breaking changes 🛑

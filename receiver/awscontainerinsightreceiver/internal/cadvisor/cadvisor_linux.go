@@ -176,7 +176,7 @@ func (c *Cadvisor) Shutdown() error {
 	return errs
 }
 
-func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIdsUsedAsPV map[string]string) {
+func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIDsUsedAsPV map[string]string) {
 	deviceName, ok := tags[ci.DiskDev]
 	if !ok {
 		return
@@ -190,7 +190,7 @@ func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIdsUsedAsPV
 
 	if tags[ci.MetricType] == ci.TypeContainerFS || tags[ci.MetricType] == ci.TypeNodeFS ||
 		tags[ci.MetricType] == ci.TypeNodeDiskIO || tags[ci.MetricType] == ci.TypeContainerDiskIO {
-		if volID := ebsVolumeIdsUsedAsPV[deviceName]; volID != "" {
+		if volID := ebsVolumeIDsUsedAsPV[deviceName]; volID != "" {
 			tags[ci.EbsVolumeID] = volID
 		}
 	}
@@ -256,11 +256,11 @@ func addECSResources(tags map[string]string) {
 }
 
 func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric) []*extractors.CAdvisorMetric {
-	ebsVolumeIdsUsedAsPV := c.hostInfo.ExtractEbsIDsUsedByKubernetes()
+	ebsVolumeIDsUsedAsPV := c.hostInfo.ExtractEbsIDsUsedByKubernetes()
 	var result []*extractors.CAdvisorMetric
 	for _, m := range cadvisormetrics {
 		tags := m.GetTags()
-		c.addEbsVolumeInfo(tags, ebsVolumeIdsUsedAsPV)
+		c.addEbsVolumeInfo(tags, ebsVolumeIDsUsedAsPV)
 
 		// add version
 		tags[ci.Version] = c.version

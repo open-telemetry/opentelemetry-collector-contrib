@@ -76,7 +76,7 @@ func TestParserJarray(t *testing.T) {
 		},
 		{
 			"basic-no-parse_to-fail",
-			func(p *Config) {
+			func(_ *Config) {
 			},
 			[]entry.Entry{
 				{
