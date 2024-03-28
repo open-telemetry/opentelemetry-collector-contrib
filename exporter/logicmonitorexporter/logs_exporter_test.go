@@ -57,7 +57,7 @@ func Test_NewLogsExporter(t *testing.T) {
 }
 
 func TestPushLogData(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		response := lmsdklogs.LMLogIngestResponse{
 			Success: true,
 			Message: "Accepted",

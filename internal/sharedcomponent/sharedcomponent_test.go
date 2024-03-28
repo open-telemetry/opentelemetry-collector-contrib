@@ -46,11 +46,11 @@ func TestSharedComponent(t *testing.T) {
 	calledStart := 0
 	calledStop := 0
 	comp := &mockComponent{
-		StartFunc: func(ctx context.Context, host component.Host) error {
+		StartFunc: func(_ context.Context, _ component.Host) error {
 			calledStart++
 			return wantErr
 		},
-		ShutdownFunc: func(ctx context.Context) error {
+		ShutdownFunc: func(_ context.Context) error {
 			calledStop++
 			return wantErr
 		},
