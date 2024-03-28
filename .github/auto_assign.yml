@@ -12,7 +12,6 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - Aneurysm9
-    - astencel-sumo
     - atoulme
     - bryan-aguilar
     - crobert-1
@@ -20,6 +19,7 @@ assigneeGroups:
     - songy23
     - fatsheep9146
     # Maintainers
+    - astencel-sumo
     - bogdandrutu
     - codeboten
     - djaglowski
