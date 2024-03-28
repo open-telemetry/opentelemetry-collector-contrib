@@ -20,7 +20,7 @@ func Test_set(t *testing.T) {
 			tCtx.SetStr(val.(string))
 			return nil
 		},
-		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+		Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 			if tCtx.Str() == missingValue {
 				return nil, nil
 			}
@@ -71,7 +71,7 @@ func Test_set(t *testing.T) {
 			setter:       target,
 			strategy:     ottl.NewTestingOptional[string](setConflictInsert),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
 				},
 			},
@@ -85,7 +85,7 @@ func Test_set(t *testing.T) {
 			setter:       target,
 			strategy:     ottl.NewTestingOptional[string](setConflictFail),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
 				},
 			},
@@ -97,7 +97,7 @@ func Test_set(t *testing.T) {
 			setter:       target,
 			strategy:     ottl.NewTestingOptional[string](setConflictUpsert),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
 				},
 			},
@@ -111,7 +111,7 @@ func Test_set(t *testing.T) {
 			setter:       target,
 			strategy:     ottl.NewTestingOptional[string](setConflictUpdate),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
 				},
 			},
@@ -126,7 +126,7 @@ func Test_set(t *testing.T) {
 			setter:       target,
 			strategy:     ottl.NewTestingOptional[string](setConflictUpdate),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
 				},
 			},
@@ -140,7 +140,7 @@ func Test_set(t *testing.T) {
 			setter:       target,
 			strategy:     ottl.Optional[string]{},
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return "new name", nil
 				},
 			},
@@ -182,7 +182,7 @@ func Test_set_default_bool(t *testing.T) {
 			tCtx.SetBool(val.(bool))
 			return nil
 		},
-		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+		Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 			return tCtx.Bool(), nil
 		},
 	}
@@ -200,7 +200,7 @@ func Test_set_default_bool(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictUpsert),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -213,7 +213,7 @@ func Test_set_default_bool(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictUpdate),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -226,7 +226,7 @@ func Test_set_default_bool(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictInsert),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -239,7 +239,7 @@ func Test_set_default_bool(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictFail),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -281,7 +281,7 @@ func Test_set_default_string(t *testing.T) {
 			tCtx.SetStr(val.(string))
 			return nil
 		},
-		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+		Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 			return tCtx.Str(), nil
 		},
 	}
@@ -299,7 +299,7 @@ func Test_set_default_string(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictUpsert),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -312,7 +312,7 @@ func Test_set_default_string(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictUpdate),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -325,7 +325,7 @@ func Test_set_default_string(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictInsert),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -338,7 +338,7 @@ func Test_set_default_string(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictFail),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -380,7 +380,7 @@ func Test_set_default_int64(t *testing.T) {
 			tCtx.SetInt(val.(int64))
 			return nil
 		},
-		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+		Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 			return tCtx.Int(), nil
 		},
 	}
@@ -398,7 +398,7 @@ func Test_set_default_int64(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictUpsert),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -411,7 +411,7 @@ func Test_set_default_int64(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictUpdate),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -424,7 +424,7 @@ func Test_set_default_int64(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictInsert),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -437,7 +437,7 @@ func Test_set_default_int64(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictFail),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -479,7 +479,7 @@ func Test_set_default_float(t *testing.T) {
 			tCtx.SetDouble(val.(float64))
 			return nil
 		},
-		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+		Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 			return tCtx.Double(), nil
 		},
 	}
@@ -497,7 +497,7 @@ func Test_set_default_float(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictUpsert),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -510,7 +510,7 @@ func Test_set_default_float(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictUpdate),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -523,7 +523,7 @@ func Test_set_default_float(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictInsert),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -536,7 +536,7 @@ func Test_set_default_float(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictFail),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -579,7 +579,7 @@ func Test_set_default_byte_array(t *testing.T) {
 			slice.Append(val.([]byte)...)
 			return nil
 		},
-		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+		Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 			return tCtx.Bytes(), nil
 		},
 	}
@@ -597,7 +597,7 @@ func Test_set_default_byte_array(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictUpsert),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -611,7 +611,7 @@ func Test_set_default_byte_array(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictUpdate),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -625,7 +625,7 @@ func Test_set_default_byte_array(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictInsert),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -639,7 +639,7 @@ func Test_set_default_byte_array(t *testing.T) {
 			setter:   target,
 			strategy: ottl.NewTestingOptional[string](setConflictFail),
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 					return newValue, nil
 				},
 			},
@@ -679,7 +679,7 @@ func Test_set_get_nil(t *testing.T) {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
