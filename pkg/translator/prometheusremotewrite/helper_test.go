@@ -927,7 +927,7 @@ func TestPrometheusConverter_getOrCreateTimeSeries(t *testing.T) {
 	require.NotNil(t, cTS1)
 	require.True(t, created)
 	require.Equal(t, map[uint64][]*prompb.TimeSeries{
-		h: []*prompb.TimeSeries{cTS1},
+		h: {cTS1},
 	}, converter.conflicts)
 
 	// Fake a hash collision, by making this not equal to the next series with the same hash
@@ -938,7 +938,7 @@ func TestPrometheusConverter_getOrCreateTimeSeries(t *testing.T) {
 	require.NotNil(t, cTS2)
 	require.True(t, created)
 	require.Equal(t, map[uint64][]*prompb.TimeSeries{
-		h: []*prompb.TimeSeries{cTS1, cTS2},
+		h: {cTS1, cTS2},
 	}, converter.conflicts)
 
 	// Now, get (not create) the second colliding time series
@@ -946,10 +946,104 @@ func TestPrometheusConverter_getOrCreateTimeSeries(t *testing.T) {
 	require.Same(t, cTS2, gotCTS2)
 	require.False(t, created)
 	require.Equal(t, map[uint64][]*prompb.TimeSeries{
-		h: []*prompb.TimeSeries{cTS1, cTS2},
+		h: {cTS1, cTS2},
 	}, converter.conflicts)
 
 	require.Equal(t, map[uint64]*prompb.TimeSeries{
 		h: ts,
 	}, converter.unique)
+}
+
+func TestCreateLabels(t *testing.T) {
+	testCases := []struct {
+		name       string
+		metricName string
+		baseLabels []prompb.Label
+		extras     []string
+		expected   []prompb.Label
+	}{
+		{
+			name:       "no base labels, no extras",
+			metricName: "test",
+			baseLabels: nil,
+			expected: []prompb.Label{
+				{Name: model.MetricNameLabel, Value: "test"},
+			},
+		},
+		{
+			name:       "base labels, no extras",
+			metricName: "test",
+			baseLabels: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+			},
+			expected: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+				{Name: model.MetricNameLabel, Value: "test"},
+			},
+		},
+		{
+			name:       "base labels, 1 extra",
+			metricName: "test",
+			baseLabels: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+			},
+			extras: []string{"extra1", "extraValue1"},
+			expected: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+				{Name: "extra1", Value: "extraValue1"},
+				{Name: model.MetricNameLabel, Value: "test"},
+			},
+		},
+		{
+			name:       "base labels, 2 extras",
+			metricName: "test",
+			baseLabels: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+			},
+			extras: []string{"extra1", "extraValue1", "extra2", "extraValue2"},
+			expected: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+				{Name: "extra1", Value: "extraValue1"},
+				{Name: "extra2", Value: "extraValue2"},
+				{Name: model.MetricNameLabel, Value: "test"},
+			},
+		},
+		{
+			name:       "base labels, unpaired extra",
+			metricName: "test",
+			baseLabels: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+			},
+			extras: []string{"extra1", "extraValue1", "extra2"},
+			expected: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+				{Name: "extra1", Value: "extraValue1"},
+				{Name: model.MetricNameLabel, Value: "test"},
+			},
+		},
+		{
+			name:       "no base labels, 1 extra",
+			metricName: "test",
+			baseLabels: nil,
+			extras:     []string{"extra1", "extraValue1"},
+			expected: []prompb.Label{
+				{Name: "extra1", Value: "extraValue1"},
+				{Name: model.MetricNameLabel, Value: "test"},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			lbls := createLabels(tc.metricName, tc.baseLabels, tc.extras...)
+			assert.Equal(t, lbls, tc.expected)
+		})
+	}
 }

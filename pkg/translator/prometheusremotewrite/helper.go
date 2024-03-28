@@ -207,21 +207,6 @@ func isValidAggregationTemporality(metric pmetric.Metric) bool {
 
 func (c *PrometheusConverter) addHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice,
 	resource pcommon.Resource, settings Settings, baseName string) {
-	createLabels := func(nameSuffix string, baseLabels []prompb.Label, extras ...string) []prompb.Label {
-		extraLabelCount := len(extras) / 2
-		labels := make([]prompb.Label, len(baseLabels), len(baseLabels)+extraLabelCount+1) // +1 for name
-		copy(labels, baseLabels)
-
-		for extrasIdx := 0; extrasIdx < extraLabelCount; extrasIdx++ {
-			labels = append(labels, prompb.Label{Name: extras[extrasIdx], Value: extras[extrasIdx+1]})
-		}
-
-		// sum, count, and buckets of the histogram should append suffix to baseName
-		labels = append(labels, prompb.Label{Name: model.MetricNameLabel, Value: baseName + nameSuffix})
-
-		return labels
-	}
-
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
@@ -239,7 +224,7 @@ func (c *PrometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 				sum.Value = math.Float64frombits(value.StaleNaN)
 			}
 
-			sumlabels := createLabels(sumStr, baseLabels)
+			sumlabels := createLabels(baseName+sumStr, baseLabels)
 			c.addSample(sum, sumlabels)
 
 		}
@@ -253,7 +238,7 @@ func (c *PrometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 			count.Value = math.Float64frombits(value.StaleNaN)
 		}
 
-		countlabels := createLabels(countStr, baseLabels)
+		countlabels := createLabels(baseName+countStr, baseLabels)
 		c.addSample(count, countlabels)
 
 		// cumulative count for conversion to cumulative histogram
@@ -273,7 +258,7 @@ func (c *PrometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 				bucket.Value = math.Float64frombits(value.StaleNaN)
 			}
 			boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
-			labels := createLabels(bucketStr, baseLabels, leStr, boundStr)
+			labels := createLabels(baseName+bucketStr, baseLabels, leStr, boundStr)
 			ts := c.addSample(bucket, labels)
 
 			bucketBounds = append(bucketBounds, bucketBoundsData{ts: ts, bound: bound})
@@ -287,7 +272,7 @@ func (c *PrometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 		} else {
 			infBucket.Value = float64(pt.Count())
 		}
-		infLabels := createLabels(bucketStr, baseLabels, leStr, pInfStr)
+		infLabels := createLabels(baseName+bucketStr, baseLabels, leStr, pInfStr)
 		ts := c.addSample(infBucket, infLabels)
 
 		bucketBounds = append(bucketBounds, bucketBoundsData{ts: ts, bound: math.Inf(1)})
@@ -295,7 +280,7 @@ func (c *PrometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 
 		startTimestamp := pt.StartTimestamp()
 		if settings.ExportCreatedMetric && startTimestamp != 0 {
-			labels := createLabels(createdSuffix, baseLabels)
+			labels := createLabels(baseName+createdSuffix, baseLabels)
 			c.addTimeSeriesIfNeeded(labels, startTimestamp, pt.Timestamp())
 		}
 	}
@@ -405,20 +390,6 @@ func maxTimestamp(a, b pcommon.Timestamp) pcommon.Timestamp {
 
 func (c *PrometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
 	settings Settings, baseName string) {
-	createLabels := func(name string, baseLabels []prompb.Label, extras ...string) []prompb.Label {
-		extraLabelCount := len(extras) / 2
-		labels := make([]prompb.Label, len(baseLabels), len(baseLabels)+extraLabelCount+1) // +1 for name
-		copy(labels, baseLabels)
-
-		for extrasIdx := 0; extrasIdx < extraLabelCount; extrasIdx++ {
-			labels = append(labels, prompb.Label{Name: extras[extrasIdx], Value: extras[extrasIdx+1]})
-		}
-
-		labels = append(labels, prompb.Label{Name: model.MetricNameLabel, Value: name})
-
-		return labels
-	}
-
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
@@ -468,6 +439,24 @@ func (c *PrometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDat
 			c.addTimeSeriesIfNeeded(createdLabels, startTimestamp, pt.Timestamp())
 		}
 	}
+}
+
+// createLabels returns a copy of baseLabels, adding to it the pair model.MetricNameLabel=name.
+// If extras are provided, corresponding label pairs are also added to the returned slice.
+// If extras is uneven length, the last (unpaired) extra will be ignored.
+func createLabels(name string, baseLabels []prompb.Label, extras ...string) []prompb.Label {
+	extraLabelCount := len(extras) / 2
+	labels := make([]prompb.Label, len(baseLabels), len(baseLabels)+extraLabelCount+1) // +1 for name
+	copy(labels, baseLabels)
+
+	n := len(extras)
+	n -= n % 2
+	for extrasIdx := 0; extrasIdx < n; extrasIdx += 2 {
+		labels = append(labels, prompb.Label{Name: extras[extrasIdx], Value: extras[extrasIdx+1]})
+	}
+
+	labels = append(labels, prompb.Label{Name: model.MetricNameLabel, Value: name})
+	return labels
 }
 
 // getOrCreateTimeSeries returns the time series corresponding to the label set if existent, and false.
