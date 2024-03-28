@@ -183,8 +183,7 @@ func (eot excludeOlderThanOption) apply(items []*item) ([]*item, error) {
 	filteredItems := make([]*item, 0, len(items))
 	var errs error
 	for _, item := range items {
-		path := item.value
-		fi, err := os.Stat(path)
+		fi, err := os.Stat(item.value)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
