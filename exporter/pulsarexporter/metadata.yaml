@@ -5,7 +5,7 @@ status:
   class: exporter
   stability:
     alpha: [traces, metrics, logs]
-  distributions: [contrib, splunk]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, dao-jun]
 

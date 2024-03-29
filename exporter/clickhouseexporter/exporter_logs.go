@@ -128,7 +128,7 @@ func attributesToMap(attributes pcommon.Map) map[string]string {
 const (
 	// language=ClickHouse SQL
 	createLogsTableSQL = `
-CREATE TABLE IF NOT EXISTS %s (
+CREATE TABLE IF NOT EXISTS %s %s (
      Timestamp DateTime64(9) CODEC(Delta, ZSTD(1)),
      TraceId String CODEC(ZSTD(1)),
      SpanId String CODEC(ZSTD(1)),
@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS %s (
      INDEX idx_log_attr_key mapKeys(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_log_attr_value mapValues(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 1
-) ENGINE MergeTree()
+) ENGINE = %s
 %s
 PARTITION BY toDate(Timestamp)
 ORDER BY (ServiceName, SeverityText, toUnixTimestamp(Timestamp), TraceId)
@@ -218,7 +218,7 @@ func createDatabase(ctx context.Context, cfg *Config) error {
 	defer func() {
 		_ = db.Close()
 	}()
-	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.Database)
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s", cfg.Database, cfg.ClusterString())
 	_, err = db.ExecContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("create database:%w", err)
@@ -235,7 +235,7 @@ func createLogsTable(ctx context.Context, cfg *Config, db *sql.DB) error {
 
 func renderCreateLogsTableSQL(cfg *Config) string {
 	ttlExpr := generateTTLExpr(cfg.TTLDays, cfg.TTL, "Timestamp")
-	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, ttlExpr)
+	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, cfg.ClusterString(), cfg.TableEngineString(), ttlExpr)
 }
 
 func renderInsertLogsSQL(cfg *Config) string {
