@@ -153,12 +153,8 @@ func (c *Converter) workerLoop() {
 			pLogs := plog.NewLogs()
 			var sl plog.ScopeLogs
 
-			/**
-				[ {resourceId, scope name} ]
-			**/
 			for _, e := range entries {
 				resourceID := HashResource(e.Resource)
-				scopeName := e.ScopeName
 				var rl plog.ResourceLogs
 
 				resourceIdx, ok := resourceHashToIdx[resourceID]
@@ -168,23 +164,20 @@ func (c *Converter) workerLoop() {
 					rl = pLogs.ResourceLogs().AppendEmpty()
 					upsertToMap(e.Resource, rl.Resource().Attributes())
 
-					scopeIdxByResource[resourceID] = make(map[string]int)
-					scopeIdxByResource[resourceID][scopeName] = rl.ScopeLogs().Len()
+					scopeIdxByResource[resourceID] = map[string]int{e.ScopeName: 0}
 					sl = rl.ScopeLogs().AppendEmpty()
-					sl.Scope().SetName(scopeName)
+					sl.Scope().SetName(e.ScopeName)
 				} else {
 					rl = pLogs.ResourceLogs().At(resourceIdx)
-					scopesInThisResource, _ := scopeIdxByResource[resourceID]
-					scopeIdxInResource, ok := scopesInThisResource[scopeName]
+					scopeIdxInResource, ok := scopeIdxByResource[resourceID][e.ScopeName]
 					if !ok {
-						scopesInThisResource[scopeName] = rl.ScopeLogs().Len()
+						scopeIdxByResource[resourceID][e.ScopeName] = rl.ScopeLogs().Len()
 						sl = rl.ScopeLogs().AppendEmpty()
-						sl.Scope().SetName(scopeName)
+						sl.Scope().SetName(e.ScopeName)
 					} else {
 						sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(scopeIdxInResource)
 					}
 				}
-
 				convertInto(e, sl.LogRecords().AppendEmpty())
 			}
 
