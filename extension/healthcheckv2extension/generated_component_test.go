@@ -12,14 +12,6 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
-func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "healthcheckv2", NewFactory().Type().String())
-}
-
-func TestComponentConfigStruct(t *testing.T) {
-	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
-}
-
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 

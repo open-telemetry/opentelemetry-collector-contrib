@@ -1,9 +1,0 @@
-type: healthcheckv2
-
-status:
-  class: extension
-  stability:
-    development: [extension]
-  distributions: [core, contrib]
-  codeowners:
-    active: [mwear]
