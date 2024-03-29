@@ -14,8 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-// CreateOperator creates a new operator.
-func (f *factory) CreateOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
+func createOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
 	c := cfg.(*Config)
 	inputOperator, err := helper.NewInput(c.InputConfig, set)
 	if err != nil {

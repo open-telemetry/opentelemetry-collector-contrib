@@ -13,7 +13,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-// CreateOperator creates a windows event log input operator.
-func (f *factory) CreateOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
+func createOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
 	return nil, errors.New("windows event log input is not supported on non-windows platforms")
 }

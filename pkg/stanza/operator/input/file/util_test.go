@@ -16,21 +16,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func newDefaultConfig(tempDir string) *Config {
+func newTestFileOperator(t *testing.T, cfgMod func(*Config)) (*Input, chan *entry.Entry, string) {
+	fakeOutput := testutil.NewFakeOutput(t)
+	tempDir := t.TempDir()
 	cfg := NewConfigWithID("testfile")
 	cfg.PollInterval = 200 * time.Millisecond
 	cfg.StartAt = "beginning"
 	cfg.Include = []string{fmt.Sprintf("%s/*", tempDir)}
 	cfg.OutputIDs = []string{"fake"}
-	return cfg
-}
-
-func newTestFileOperator(t *testing.T, cfgMod func(*Config)) (*Input, chan *entry.Entry, string) {
-	fakeOutput := testutil.NewFakeOutput(t)
-
-	tempDir := t.TempDir()
-
-	cfg := newDefaultConfig(tempDir)
 	if cfgMod != nil {
 		cfgMod(cfg)
 	}

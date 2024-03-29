@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package noop // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/noop"
+package generate // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/generate"
 
 import (
 	"go.opentelemetry.io/collector/component"
@@ -10,7 +10,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-var operatorType = component.MustNewType("noop")
+var operatorType = component.MustNewType("generate_input")
 
 func init() {
 	operator.RegisterFactory(NewFactory())
@@ -23,18 +23,23 @@ func NewFactory() operator.Factory {
 
 func newDefaultConfig(operatorID string) component.Config {
 	return &Config{
-		TransformerConfig: helper.NewTransformerConfig(operatorID, operatorType.String()),
+		InputConfig: helper.NewInputConfig(operatorID, operatorType.String()),
 	}
 }
 
 func createOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
 	c := cfg.(*Config)
-	transformerOperator, err := helper.NewTransformer(c.TransformerConfig, set)
+	inputOperator, err := helper.NewInput(c.InputConfig, set)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Transformer{
-		TransformerOperator: transformerOperator,
+	c.Entry.Body = recursiveMapInterfaceToMapString(c.Entry.Body)
+
+	return &Input{
+		InputOperator: inputOperator,
+		entry:         c.Entry,
+		count:         c.Count,
+		static:        c.Static,
 	}, nil
 }

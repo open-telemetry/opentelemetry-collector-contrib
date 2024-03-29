@@ -13,6 +13,36 @@ type Factory interface {
 	CreateOperator(component.Config, component.TelemetrySettings) (Operator, error)
 }
 
+func NewFactory(
+	t component.Type,
+	newDefaultConfig func(string) component.Config,
+	createOperator func(component.Config, component.TelemetrySettings) (Operator, error),
+) Factory {
+	return &factory{
+		t:                t,
+		newDefaultConfig: newDefaultConfig,
+		createOperator:   createOperator,
+	}
+}
+
+type factory struct {
+	t                component.Type
+	newDefaultConfig func(string) component.Config
+	createOperator   func(component.Config, component.TelemetrySettings) (Operator, error)
+}
+
+func (f *factory) Type() component.Type {
+	return f.t
+}
+
+func (f *factory) NewDefaultConfig(operatorID string) component.Config {
+	return f.newDefaultConfig(operatorID)
+}
+
+func (f *factory) CreateOperator(config component.Config, set component.TelemetrySettings) (Operator, error) {
+	return f.createOperator(config, set)
+}
+
 // GlobalFactoryRegistry is a global registry of operator types and their factories.
 var GlobalFactoryRegistry = NewFactories()
 

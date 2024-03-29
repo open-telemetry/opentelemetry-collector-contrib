@@ -43,27 +43,18 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	return NewFactory().CreateOperator(&c, component.TelemetrySettings{Logger: logger.Desugar()})
 }
 
-type factory struct{}
-
-// NewFactory creates a factory.
+// NewFactory creates a new factory.
 func NewFactory() operator.Factory {
-	return &factory{}
+	return operator.NewFactory(operatorType, newDefaultConfig, createOperator)
 }
 
-// Type gets the type of the operator.
-func (f *factory) Type() component.Type {
-	return operatorType
-}
-
-// NewDefaultConfig creates the default configuration.
-func (f *factory) NewDefaultConfig(operatorID string) component.Config {
+func newDefaultConfig(operatorID string) component.Config {
 	return &Config{
 		OutputConfig: helper.NewOutputConfig(operatorID, "file_output"),
 	}
 }
 
-// CreateOperator creates an operator.
-func (f *factory) CreateOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
+func createOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
 	c := cfg.(*Config)
 	outputOperator, err := helper.NewOutputOperator(c.OutputConfig, set)
 	if err != nil {

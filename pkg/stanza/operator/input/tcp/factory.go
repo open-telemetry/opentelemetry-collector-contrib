@@ -23,20 +23,12 @@ func init() {
 	operator.RegisterFactory(NewFactory())
 }
 
-type factory struct{}
-
 // NewFactory creates a new factory.
 func NewFactory() operator.Factory {
-	return &factory{}
+	return operator.NewFactory(operatorType, newDefaultConfig, createOperator)
 }
 
-// Type gets the type of the operator.
-func (f *factory) Type() component.Type {
-	return operatorType
-}
-
-// NewDefaultConfig creates a new default configuration.
-func (f *factory) NewDefaultConfig(operatorID string) component.Config {
+func newDefaultConfig(operatorID string) component.Config {
 	return &Config{
 		InputConfig: helper.NewInputConfig(operatorID, operatorType.String()),
 		BaseConfig: BaseConfig{
@@ -46,8 +38,7 @@ func (f *factory) NewDefaultConfig(operatorID string) component.Config {
 	}
 }
 
-// CreateOperator creates a tcp input operator.
-func (f *factory) CreateOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
+func createOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
 	c := cfg.(*Config)
 	inputOperator, err := helper.NewInput(c.InputConfig, set)
 	if err != nil {

@@ -18,20 +18,12 @@ func init() {
 	operator.RegisterFactory(NewFactory())
 }
 
-type factory struct{}
-
-// NewFactory creates a factory.
+// NewFactory creates a new factory.
 func NewFactory() operator.Factory {
-	return &factory{}
+	return operator.NewFactory(operatorType, newDefaultConfig, createOperator)
 }
 
-// Type gets the type of the operator.
-func (f *factory) Type() component.Type {
-	return operatorType
-}
-
-// NewDefaultConfig creates a new default configuration.
-func (f *factory) NewDefaultConfig(operatorID string) component.Config {
+func newDefaultConfig(operatorID string) component.Config {
 	return &Config{
 		InputConfig:  helper.NewInputConfig(operatorID, operatorType.String()),
 		MaxReads:     100,
