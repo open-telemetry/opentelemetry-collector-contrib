@@ -38,6 +38,8 @@ func TestNewConfig(t *testing.T) {
 	assert.False(t, cfg.IncludeFilePath)
 	assert.False(t, cfg.IncludeFileNameResolved)
 	assert.False(t, cfg.IncludeFilePathResolved)
+	assert.False(t, cfg.IncludeFileOwnerName)
+	assert.False(t, cfg.IncludeFileOwnerGroupName)
 }
 
 func TestUnmarshal(t *testing.T) {

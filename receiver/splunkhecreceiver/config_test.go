@@ -58,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "0.0.0.0:8088",
 					TLSSetting: &configtls.ServerConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CertFile: "/test.crt",
 							KeyFile:  "/test.key",
 						},

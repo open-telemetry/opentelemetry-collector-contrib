@@ -61,7 +61,7 @@ func TestNewClient(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
 					TLSSetting: configtls.ClientConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CAFile: "/non/existent",
 						},
 					},

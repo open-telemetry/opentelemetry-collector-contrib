@@ -5,7 +5,7 @@ status:
   class: exporter
   stability:
     deprecated: [metrics]
-  distributions: [contrib, aws, observiq]
+  distributions: [contrib]
   codeowners:
     active: [dyladan, arminru, evan-bradley]
 
