@@ -4,7 +4,7 @@
 change_type: 'new_component'
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: healthcheckextensionv2
+component: healthcheckv2extension
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Health Check Extension V2 is meant to be a replacement for the current Health Check Extension. It is based off of component status reporting and provides HTTP and gRPC services health check services.

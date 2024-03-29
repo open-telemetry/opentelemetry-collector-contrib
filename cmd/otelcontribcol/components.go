@@ -88,11 +88,7 @@ import (
 	googleclientauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension"
 	headerssetterextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	healthcheckextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
-<<<<<<< HEAD
 	healthcheckv2extension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension"
-=======
-	healthcheckextensionv2 "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextensionv2"
->>>>>>> 9e2ab3fdae (Introduce health check extension based on component status reporting)
 	httpforwarderextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension"
 	jaegerremotesampling "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 	oauth2clientauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
@@ -235,11 +231,7 @@ func components() (otelcol.Factories, error) {
 		googleclientauthextension.NewFactory(),
 		headerssetterextension.NewFactory(),
 		healthcheckextension.NewFactory(),
-<<<<<<< HEAD
 		healthcheckv2extension.NewFactory(),
-=======
-		healthcheckextensionv2.NewFactory(),
->>>>>>> 9e2ab3fdae (Introduce health check extension based on component status reporting)
 		httpforwarderextension.NewFactory(),
 		jaegerremotesampling.NewFactory(),
 		oauth2clientauthextension.NewFactory(),
