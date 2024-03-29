@@ -89,6 +89,53 @@ func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
 	return ret
 }
 
+func complexEntriesForNDifferentHostsMDifferentScopes(count int, n int, m int) []*entry.Entry {
+	ret := make([]*entry.Entry, count)
+	for i := 0; i < count; i++ {
+		for j := 0; j < m; j++ {
+			e := entry.New()
+			e.Severity = entry.Error
+			e.Resource = map[string]any{
+				"host":   fmt.Sprintf("host-%d", i%n),
+				"bool":   true,
+				"int":    123,
+				"double": 12.34,
+				"string": "hello",
+				"object": map[string]any{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+				},
+			}
+			e.Body = map[string]any{
+				"bool":   true,
+				"int":    123,
+				"double": 12.34,
+				"string": "hello",
+				"bytes":  []byte("asdf"),
+				"object": map[string]any{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+					"bytes":  []byte("asdf"),
+					"object": map[string]any{
+						"bool":   true,
+						"int":    123,
+						"double": 12.34,
+						"string": "hello",
+						"bytes":  []byte("asdf"),
+					},
+				},
+			}
+			e.ScopeName = fmt.Sprintf("scope-%d", j)
+			ret[i] = e
+		}
+	}
+	return ret
+}
+
 func complexEntry() *entry.Entry {
 	e := entry.New()
 	e.Severity = entry.Error
