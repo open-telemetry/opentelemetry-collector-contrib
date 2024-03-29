@@ -367,7 +367,7 @@ func TestHashResource(t *testing.T) {
 	}
 }
 
-func TestAllConvertedEntriesAndHaveScope(t *testing.T) {
+func TestAllConvertedEntriesScopeGrouping(t *testing.T) {
 	t.Parallel()
 
 	testcases := []struct {
