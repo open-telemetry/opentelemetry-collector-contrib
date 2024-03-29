@@ -82,6 +82,7 @@ body:
       - extension/basicauth
       - extension/bearertokenauth
       - extension/encoding
+      - extension/encoding/avrologencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
       - extension/encoding/otlpencoding
