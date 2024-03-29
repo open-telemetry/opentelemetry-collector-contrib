@@ -24,7 +24,7 @@ func (eot excludeOlderThanOption) apply(items []*item) ([]*item, error) {
 
 		// Keep (include) the file if its age (since last modification)
 		// is the same or less than the configured age.
-		fileAge := time.Now().Sub(fi.ModTime())
+		fileAge := time.Since(fi.ModTime())
 		if fileAge <= eot.age {
 			filteredItems = append(filteredItems, item)
 		}
