@@ -21,8 +21,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -43,9 +41,7 @@ const (
 
 func TestE2E(t *testing.T) {
 
-	kubeConfig, err := clientcmd.BuildConfigFromFlags("", testKubeConfig)
-	require.NoError(t, err)
-	dynamicClient, err := dynamic.NewForConfig(kubeConfig)
+	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
 
 	testID := uuid.NewString()[:8]
@@ -62,11 +58,11 @@ func TestE2E(t *testing.T) {
 	}()
 
 	// startup collector in k8s cluster
-	collectorObjs := k8stest.CreateCollectorObjects(t, dynamicClient, testID)
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, "")
 
 	defer func() {
 		for _, obj := range collectorObjs {
-			require.NoErrorf(t, k8stest.DeleteObject(dynamicClient, obj), "failed to delete object %s", obj.GetName())
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
 		}
 	}()
 
@@ -125,18 +121,18 @@ func TestE2E(t *testing.T) {
 				for _, fileName := range tc.objectFileNames {
 					obj, err := os.ReadFile(filepath.Join(testObjectsDir, fileName))
 					require.NoErrorf(t, err, "failed to read object file %s", fileName)
-					newObj, err := k8stest.CreateObject(dynamicClient, obj)
+					newObj, err := k8stest.CreateObject(k8sClient, obj)
 					require.NoErrorf(t, err, "failed to create k8s object from file %s", fileName)
 					testObjs = append(testObjs, newObj)
 				}
 				if tc.objectAction == createAndDelete {
 					for _, obj := range testObjs {
-						require.NoErrorf(t, k8stest.DeleteObject(dynamicClient, obj), "failed to delete object %s", obj.GetName())
+						require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
 					}
 				} else {
 					defer func() {
 						for _, obj := range testObjs {
-							require.NoErrorf(t, k8stest.DeleteObject(dynamicClient, obj), "failed to delete object %s", obj.GetName())
+							require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
 						}
 					}()
 				}

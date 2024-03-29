@@ -1,10 +1,11 @@
 type: awscloudwatchlogs
+scope_name: otelcol/awscloudwatchlogs
 
 status:
   class: exporter
   stability:
     beta: [logs]
-  distributions: [contrib, observiq, liatrio]
+  distributions: [contrib]
   codeowners:
     active: [boostchicken, bryan-aguilar, rapphil]
 

@@ -3,7 +3,10 @@ resourceMetrics:
       attributes:
         - key: file.name
           value:
-            stringValue: filestats_darwin.go
+            stringValue: foo.txt
+        - key: file.path
+          value:
+            stringValue: /foo.txt
     scopeMetrics:
       - metrics:
           - description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
@@ -11,14 +14,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1703319421"
+                - asInt: "1710390874"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: s
           - description: The size of the file or folder, in bytes.
             gauge:
               dataPoints:
-                - asInt: "882"
+                - asInt: "3"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: file.size
@@ -30,34 +33,10 @@ resourceMetrics:
       attributes:
         - key: file.name
           value:
-            stringValue: filestats_linux.go
-    scopeMetrics:
-      - metrics:
-          - description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
-            name: file.mtime
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "1703319421"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: s
-          - description: The size of the file or folder, in bytes.
-            gauge:
-              dataPoints:
-                - asInt: "845"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: file.size
-            unit: b
-        scope:
-          name: otelcol/filestatsreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: file.name
+            stringValue: foobar.txt
+        - key: file.path
           value:
-            stringValue: filestats_other.go
+            stringValue: /foobar.txt
     scopeMetrics:
       - metrics:
           - description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
@@ -65,41 +44,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1703319421"
+                - asInt: "1710390874"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: s
           - description: The size of the file or folder, in bytes.
             gauge:
               dataPoints:
-                - asInt: "776"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: file.size
-            unit: b
-        scope:
-          name: otelcol/filestatsreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: file.name
-          value:
-            stringValue: filestats_windows.go
-    scopeMetrics:
-      - metrics:
-          - description: Elapsed time since the last modification of the file or folder, in seconds since Epoch.
-            name: file.mtime
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "1703319421"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: s
-          - description: The size of the file or folder, in bytes.
-            gauge:
-              dataPoints:
-                - asInt: "901"
+                - asInt: "6"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: file.size

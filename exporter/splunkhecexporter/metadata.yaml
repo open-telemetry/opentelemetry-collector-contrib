@@ -1,10 +1,11 @@
 type: splunk_hec
+scope_name: otelcol/splunkhec
 
 status:
   class: exporter
   stability:
     beta: [traces, metrics, logs]
-  distributions: [contrib, splunk, observiq]
+  distributions: [contrib]
   codeowners:
     active: [atoulme, dmitryax]
 tests:

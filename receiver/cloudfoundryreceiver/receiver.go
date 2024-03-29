@@ -43,10 +43,6 @@ func newCloudFoundryReceiver(
 	config Config,
 	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,

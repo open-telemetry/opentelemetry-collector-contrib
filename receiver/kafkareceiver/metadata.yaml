@@ -1,4 +1,5 @@
 type: kafka
+scope_name: otelcol/kafkareceiver
 
 status:
   class: receiver
@@ -7,14 +8,9 @@ status:
   distributions:
   - core
   - contrib
-  - aws
-  - grafana
-  - observiq
-  - splunk
-  - sumo
   codeowners:
     active: [pavolloffay, MovieStoreGuy]
 
+# TODO: Update the receiver to pass the tests
 tests:
-  config:
   skip_lifecycle: true

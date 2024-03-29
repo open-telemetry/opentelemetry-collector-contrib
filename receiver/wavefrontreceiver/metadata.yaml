@@ -1,13 +1,10 @@
 type: wavefront
+scope_name: otelcol/wavefrontreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, sumo, splunk]
+  distributions: [contrib]
   codeowners:
     active: [samiura]
-
-tests:
-  config:
-  skip_lifecycle: true

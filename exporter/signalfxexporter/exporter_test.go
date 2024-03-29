@@ -1140,7 +1140,7 @@ func TestConsumeMetadata(t *testing.T) {
 			wg := sync.WaitGroup{}
 			wg.Add(1)
 
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				b, err := io.ReadAll(r.Body)
 				assert.NoError(t, err)
 
@@ -1219,7 +1219,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
@@ -1277,13 +1277,13 @@ func TestTLSExporterInit(t *testing.T) {
 			config: &Config{
 				APIURL:    "https://test",
 				IngestURL: "https://test",
-				IngestTLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				IngestTLSSettings: configtls.ClientConfig{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
-				APITLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				APITLSSettings: configtls.ClientConfig{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
@@ -1297,8 +1297,8 @@ func TestTLSExporterInit(t *testing.T) {
 			config: &Config{
 				APIURL:    "https://test",
 				IngestURL: "https://test",
-				IngestTLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				IngestTLSSettings: configtls.ClientConfig{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/missingfile",
 					},
 				},
@@ -1313,8 +1313,8 @@ func TestTLSExporterInit(t *testing.T) {
 			config: &Config{
 				APIURL:    "https://test",
 				IngestURL: "https://test",
-				IngestTLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				IngestTLSSettings: configtls.ClientConfig{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/invalid-ca.pem",
 					},
 				},
@@ -1354,7 +1354,7 @@ func TestTLSIngestConnection(t *testing.T) {
 	dp.Attributes().PutStr("k1", "v1")
 	dp.SetDoubleValue(123)
 
-	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(w, "connection is successful")
 	}))
 	require.NoError(t, err)
@@ -1384,8 +1384,8 @@ func TestTLSIngestConnection(t *testing.T) {
 			config: &Config{
 				APIURL:    serverURL,
 				IngestURL: serverURL,
-				IngestTLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				IngestTLSSettings: configtls.ClientConfig{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
@@ -1478,7 +1478,7 @@ func TestTLSAPIConnection(t *testing.T) {
 		},
 	}
 
-	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(w, "connection is successful")
 	}))
 	require.NoError(t, err)
@@ -1497,8 +1497,8 @@ func TestTLSAPIConnection(t *testing.T) {
 				IngestURL:        server.URL,
 				AccessToken:      "random",
 				SyncHostMetadata: true,
-				APITLSSettings: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				APITLSSettings: configtls.ClientConfig{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
@@ -1584,7 +1584,7 @@ func BenchmarkExporterConsumeDataWithOTLPHistograms(b *testing.B) {
 		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()

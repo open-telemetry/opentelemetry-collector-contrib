@@ -55,7 +55,7 @@ func TestNewTLSClientProvider(t *testing.T) {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeTLS,
 		},
-		TLSSetting: configtls.TLSSetting{
+		Config: configtls.Config{
 			CAFile:   certPath,
 			CertFile: certPath,
 			KeyFile:  keyFile,
@@ -130,7 +130,7 @@ func TestSvcAcctClient(t *testing.T) {
 }
 
 func TestSAClientBadTLS(t *testing.T) {
-	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		_, _ = rw.Write([]byte(`OK`))
 	}))
 	cert, err := tls.LoadX509KeyPair(certPath, keyFile)
@@ -278,7 +278,7 @@ func TestTLSMissingCertFile(t *testing.T) {
 	p := tlsClientProvider{
 		endpoint: "",
 		cfg: &ClientConfig{
-			TLSSetting: configtls.TLSSetting{
+			Config: configtls.Config{
 				CAFile: certPath,
 			},
 		},

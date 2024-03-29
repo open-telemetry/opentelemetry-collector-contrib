@@ -1,10 +1,11 @@
 type: azuremonitor
+scope_name: otelcol/azuremonitor
 
 status:
   class: exporter
   stability:
     beta: [traces, metrics, logs]
-  distributions: [contrib, observiq]
+  distributions: [contrib]
   codeowners:
     active: [pcwiese]
 

@@ -89,6 +89,10 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "unknown Unit \"h\"",
 		},
 		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_metrics_expiration"),
+			errorMessage: "the duration should be positive",
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "exemplars_enabled"),
 			expected: &Config{
 				AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",

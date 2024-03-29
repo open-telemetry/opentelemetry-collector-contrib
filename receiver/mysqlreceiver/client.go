@@ -180,7 +180,7 @@ func newMySQLClient(conf *Config) (client, error) {
 	driverConf := mysql.Config{
 		User:                 conf.Username,
 		Passwd:               string(conf.Password),
-		Net:                  conf.Transport,
+		Net:                  string(conf.Transport),
 		Addr:                 conf.Endpoint,
 		DBName:               conf.Database,
 		AllowNativePasswords: conf.AllowNativePasswords,

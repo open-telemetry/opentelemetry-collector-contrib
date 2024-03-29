@@ -5,6 +5,7 @@ components:
     connector:
         - count
         - datadog
+        - grafanacloud
         - routing
         - servicegraph
         - spanmetrics
@@ -25,7 +26,6 @@ components:
         - dataset
         - dynatrace
         - elasticsearch
-        - f5cloud
         - file
         - googlecloud
         - googlecloudpubsub
@@ -67,11 +67,11 @@ components:
         - headers_setter
         - health_check
         - host_observer
-        - http_forwarder
         - jaegerremotesampling
         - k8s_observer
         - oauth2client
         - oidc
+        - opamp
         - pprof
         - sigv4auth
     processor:
@@ -91,7 +91,6 @@ components:
         - resourcedetection
         - routing
         - span
-        - spanmetrics
         - sumologic
         - tail_sampling
         - transform

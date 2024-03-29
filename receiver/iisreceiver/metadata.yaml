@@ -1,10 +1,11 @@
 type: iis
+scope_name: otelcol/iisreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [Mrod1598, djaglowski]
     seeking_new: true
@@ -135,6 +136,3 @@ metrics:
     gauge:
       value_type: int
     enabled: true
-
-tests:
-  config:

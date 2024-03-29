@@ -128,9 +128,9 @@ func (m *Manager) poll(ctx context.Context) {
 	// Get the list of paths on disk
 	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
-		m.Warnf("finding files: %v", err)
+		m.Debugf("finding files: %v", err)
 	}
-	m.Debugf("matched files", zap.Strings("paths", matches))
+	m.Debugw("matched files", zap.Strings("paths", matches))
 
 	for len(matches) > m.maxBatchFiles {
 		m.consume(ctx, matches[:m.maxBatchFiles])
