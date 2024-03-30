@@ -113,6 +113,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   
 - `opencensusreceiver`: Refactor the opencensusreceiver to pass lifecycle tests and avoid leaking gRPC connections. (#31643)
 - `sqlqueryreceiver`: Fix memory leak on shutdown for log telemetry (#31782)
+- `pkg/stanza/adapter`: Fix missing scope name and group logs based on scope ( #23387)
 
 ## v0.96.0
 

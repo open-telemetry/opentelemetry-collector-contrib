@@ -397,7 +397,7 @@ func TestAllConvertedEntriesScopeGrouping(t *testing.T) {
 
 			go func() {
 				entries := complexEntriesForNDifferentHostsMDifferentScopes(100, 1, tc.numberOFScopes)
-				converter.Batch(entries)
+				assert.NoError(t, converter.Batch(entries))
 			}()
 
 			var (
