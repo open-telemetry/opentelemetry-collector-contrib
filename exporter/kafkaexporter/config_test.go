@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -341,7 +340,7 @@ func TestConfig_GetTopic(t *testing.T) {
 	tests := []struct {
 		name      string
 		cfg       Config
-		resource  pcommon.Map
+		resource  interface{}
 		wantTopic string
 	}{
 		{
@@ -350,7 +349,7 @@ func TestConfig_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
-			resource:  testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).Resource().Attributes(),
+			resource:  testdata.GenerateMetricsOneMetric().ResourceMetrics(),
 			wantTopic: "resource-attr-val-1",
 		},
 		{
@@ -359,7 +358,7 @@ func TestConfig_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
-			resource:  testdata.GenerateTracesOneSpan().ResourceSpans().At(0).Resource().Attributes(),
+			resource:  testdata.GenerateTracesOneSpan().ResourceSpans(),
 			wantTopic: "resource-attr-val-1",
 		},
 		{
@@ -368,7 +367,7 @@ func TestConfig_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
-			resource:  testdata.GenerateLogsOneLogRecord().ResourceLogs().At(0).Resource().Attributes(),
+			resource:  testdata.GenerateLogsOneLogRecord().ResourceLogs(),
 			wantTopic: "resource-attr-val-1",
 		},
 		{
@@ -377,7 +376,7 @@ func TestConfig_GetTopic(t *testing.T) {
 				TopicFromAttribute: "nonexistent_attribute",
 				Topic:              "defaultTopic",
 			},
-			resource:  testdata.GenerateMetricsOneMetricNoAttributes().ResourceMetrics().At(0).Resource().Attributes(),
+			resource:  testdata.GenerateMetricsOneMetricNoAttributes().ResourceMetrics(),
 			wantTopic: "defaultTopic",
 		},
 		{
@@ -385,7 +384,7 @@ func TestConfig_GetTopic(t *testing.T) {
 			cfg: Config{
 				Topic: "defaultTopic",
 			},
-			resource:  testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).Resource().Attributes(),
+			resource:  testdata.GenerateMetricsOneMetric().ResourceMetrics(),
 			wantTopic: "defaultTopic",
 		},
 	}
