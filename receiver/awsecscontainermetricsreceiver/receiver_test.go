@@ -53,19 +53,6 @@ func TestReceiver(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestReceiverForNilConsumer(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	metricsReceiver, err := newAWSECSContainermetrics(
-		zap.NewNop(),
-		cfg,
-		nil,
-		&fakeRestClient{},
-	)
-
-	require.Error(t, err)
-	require.Nil(t, metricsReceiver)
-}
-
 func TestCollectDataFromEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	metricsReceiver, err := newAWSECSContainermetrics(

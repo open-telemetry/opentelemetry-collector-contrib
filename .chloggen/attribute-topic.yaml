@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/kafkaexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: We have made it possible to determine the topic by using attributes.
+note: Enable setting message topics using resource attributes.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [31178]
