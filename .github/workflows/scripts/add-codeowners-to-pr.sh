@@ -29,9 +29,9 @@ main () {
     # is only available through the API. To cut down on API calls to GitHub,
     # we use the latest reviews to determine which users to filter out.
     JSON=$(gh pr view "${PR}" --json "files,author,latestReviews" | tr -dc '[:print:]' | sed -E 's/\\[a-z]//g')
-    AUTHOR=$(printf "${JSON}"| jq -r '.author.login')
-    FILES=$(printf "${JSON}"| jq -r '.files[].path')
-    REVIEW_LOGINS=$(printf "${JSON}"| jq -r '.latestReviews[].author.login')
+    AUTHOR=$(echo "${JSON}"| jq -r '.author.login')
+    FILES=$(echo "${JSON}"| jq -r '.files[].path')
+    REVIEW_LOGINS=$(echo "${JSON}"| jq -r '.latestReviews[].author.login')
     COMPONENTS=$(bash "${CUR_DIRECTORY}/get-components.sh")
     REVIEWERS=""
     LABELS=""
@@ -66,7 +66,7 @@ main () {
             fi
 
             # If we match a file with a component we don't need to process the file again.
-            FILES=$(printf "${FILES}" | grep -v "${FILE}")
+            FILES=$(echo "${FILES}" | grep -v "${FILE}")
 
             if [[ -v PROCESSED_COMPONENTS["${COMPONENT}"] ]]; then
                 continue
