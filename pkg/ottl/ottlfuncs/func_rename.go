@@ -18,9 +18,9 @@ var (
 )
 
 const (
-	renameConflictReplace = "replace"
-	renameConflictFail    = "fail"
-	renameConflictIgnore  = "ignore"
+	renameConflictFail   = "fail"
+	renameConflictInsert = "insert"
+	renameConflictUpsert = "upsert"
 )
 
 // rename(map, field, target_field, [Optional] ignore_missing = true, [Optional] conflict_strategy = replace)
@@ -47,15 +47,15 @@ func createRenameFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 }
 
 func rename[K any](mg ottl.PMapGetter[K], f string, tf string, im ottl.Optional[bool], cs ottl.Optional[string]) (ottl.ExprFunc[K], error) {
-	conflictStrategy := renameConflictReplace
+	conflictStrategy := renameConflictUpsert
 	if !cs.IsEmpty() {
 		conflictStrategy = cs.Get()
 	}
 
-	if conflictStrategy != renameConflictReplace &&
+	if conflictStrategy != renameConflictUpsert &&
 		conflictStrategy != renameConflictFail &&
-		conflictStrategy != renameConflictIgnore {
-		return nil, fmt.Errorf("%v %w, must be %q, %q or %q", conflictStrategy, ErrRenameInvalidConflictStrategy, renameConflictReplace, renameConflictFail, renameConflictIgnore)
+		conflictStrategy != renameConflictInsert {
+		return nil, fmt.Errorf("%v %w, must be %q, %q or %q", conflictStrategy, ErrRenameInvalidConflictStrategy, renameConflictUpsert, renameConflictFail, renameConflictInsert)
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
@@ -85,14 +85,14 @@ func rename[K any](mg ottl.PMapGetter[K], f string, tf string, im ottl.Optional[
 		_, oldExists := m.Get(tf)
 
 		switch conflictStrategy {
-		case renameConflictReplace:
+		case renameConflictUpsert:
 			// Overwrite if present or create when missing
 		case renameConflictFail:
 			// Fail if target field present
 			if oldExists {
 				return nil, ErrRenameKeyAlreadyExists
 			}
-		case renameConflictIgnore:
+		case renameConflictInsert:
 			// Noop if target field present
 			if oldExists {
 				return nil, nil

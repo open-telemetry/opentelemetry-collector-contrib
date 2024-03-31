@@ -95,11 +95,11 @@ func Test_rename(t *testing.T) {
 			},
 		},
 		{
-			name:             "rename with replace strategy",
+			name:             "rename with upsert strategy",
 			mg:               mg,
 			field:            "test",
 			targetField:      "test2",
-			conflictStrategy: ottl.NewTestingOptional[string]("replace"),
+			conflictStrategy: ottl.NewTestingOptional[string](renameConflictUpsert),
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutEmpty("empty")
 				expectedMap.PutStr("test2", "hello world")
@@ -110,15 +110,15 @@ func Test_rename(t *testing.T) {
 			mg:               mg,
 			field:            "test",
 			targetField:      "test2",
-			conflictStrategy: ottl.NewTestingOptional[string]("fail"),
+			conflictStrategy: ottl.NewTestingOptional[string](renameConflictFail),
 			wantErr:          ErrRenameKeyAlreadyExists,
 		},
 		{
-			name:             "rename with ignore strategy",
+			name:             "rename with insert strategy",
 			mg:               mg,
 			field:            "test",
 			targetField:      "test2",
-			conflictStrategy: ottl.NewTestingOptional[string]("ignore"),
+			conflictStrategy: ottl.NewTestingOptional[string](renameConflictInsert),
 			want: func(expectedMap pcommon.Map) {
 				input.CopyTo(expectedMap)
 			},
@@ -137,7 +137,7 @@ func Test_rename(t *testing.T) {
 			mg:               mg,
 			field:            "test",
 			targetField:      "test",
-			conflictStrategy: ottl.NewTestingOptional[string]("replace"),
+			conflictStrategy: ottl.NewTestingOptional[string](renameConflictUpsert),
 			want: func(expectedMap pcommon.Map) {
 				input.CopyTo(expectedMap)
 			},
@@ -147,7 +147,7 @@ func Test_rename(t *testing.T) {
 			mg:               mg,
 			field:            "test",
 			targetField:      "test",
-			conflictStrategy: ottl.NewTestingOptional[string]("fail"),
+			conflictStrategy: ottl.NewTestingOptional[string](renameConflictFail),
 			wantErr:          ErrRenameKeyAlreadyExists,
 		},
 		{
@@ -155,7 +155,7 @@ func Test_rename(t *testing.T) {
 			mg:               mg,
 			field:            "test",
 			targetField:      "test",
-			conflictStrategy: ottl.NewTestingOptional[string]("ignore"),
+			conflictStrategy: ottl.NewTestingOptional[string](renameConflictInsert),
 			want: func(expectedMap pcommon.Map) {
 				input.CopyTo(expectedMap)
 			},
