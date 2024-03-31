@@ -40,7 +40,10 @@ func (ke kafkaErrors) Error() string {
 }
 
 func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) error {
-	topic := e.cfg.getTopic(td.ResourceSpans().At(0).Resource().Attributes())
+	topic := e.cfg.Topic
+	if td.ResourceSpans().Len() > 0 {
+		topic = e.cfg.getTopic(td.ResourceSpans().At(0).Resource().Attributes())
+	}
 
 	messages, err := e.marshaler.Marshal(td, topic)
 	if err != nil {
@@ -84,8 +87,10 @@ type kafkaMetricsProducer struct {
 }
 
 func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pmetric.Metrics) error {
-	topic := e.cfg.getTopic(md.ResourceMetrics().At(0).Resource().Attributes())
-
+	topic := e.cfg.Topic
+	if md.ResourceMetrics().Len() > 0 {
+		topic = e.cfg.getTopic(md.ResourceMetrics().At(0).Resource().Attributes())
+	}
 	messages, err := e.marshaler.Marshal(md, topic)
 	if err != nil {
 		return consumererror.NewPermanent(err)
@@ -128,7 +133,10 @@ type kafkaLogsProducer struct {
 }
 
 func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld plog.Logs) error {
-	topic := e.cfg.getTopic(ld.ResourceLogs().At(0).Resource().Attributes())
+	topic := e.cfg.Topic
+	if ld.ResourceLogs().Len() > 0 {
+		topic = e.cfg.getTopic(ld.ResourceLogs().At(0).Resource().Attributes())
+	}
 
 	messages, err := e.marshaler.Marshal(ld, topic)
 	if err != nil {
