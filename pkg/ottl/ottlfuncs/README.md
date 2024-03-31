@@ -263,16 +263,16 @@ How the ```rename``` function behaves is controlled by the optional `ignore_miss
 
 
 `conflict_strategy` is an optional string paramater that specifies the conflict resolution strategy for the `targetField`.
-Valid values are `replace`, `fail`, and `ignore`. By default, it is set to `replace`.
-- The `replace` overwrites the `targetField` if it is already present.
-- The `fail` returns an error if `targetField` is already present.
-- The `ignore` results in no changes to the `map` if `targetField` is already present.
+Valid values are `upsert`, `fail`, and `insert`. By default, it is set to `upsert`.
+- The `upsert` overwrites the `targetField` if it is already present.
+- The `fail` returns an error if `targetField` is already present, otherwise creates new field.
+- The `insert` results in no changes to the `map` if `targetField` is already present.
 
 Examples:
 
 - `rename(attributes, "foo", "bar")`
 - `rename(attributes, "foo", "bar", false)`
-- `rename(attributes, "foo", "bar", true, "ignore")`
+- `rename(attributes, "foo", "bar", true, "insert")`
 
 ### replace_all_matches
 
