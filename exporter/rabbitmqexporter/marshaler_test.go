@@ -19,10 +19,10 @@ func TestMarshalUsingEncodingExtension(t *testing.T) {
 	host := mockHostWithEncodings{}
 	extension := mockEncodingExtension{}
 	extensionMap := make(map[component.ID]component.Component)
-	extensionMap[encodingComponentId] = &extension
+	extensionMap[encodingComponentID] = &extension
 	host.On("GetExtensions").Return(extensionMap)
 
-	m, err := newMarshaler(&encodingComponentId, &host)
+	m, err := newMarshaler(&encodingComponentID, &host)
 
 	require.NotNil(t, m)
 	require.NoError(t, err)
@@ -64,10 +64,10 @@ func (m *mockEncodingExtension) MarshalMetrics(pmetric.Metrics) ([]byte, error) 
 	return nil, nil
 }
 
-func (m mockEncodingExtension) Start(context.Context, component.Host) error {
+func (m *mockEncodingExtension) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (m mockEncodingExtension) Shutdown(context.Context) error {
+func (m *mockEncodingExtension) Shutdown(context.Context) error {
 	return nil
 }

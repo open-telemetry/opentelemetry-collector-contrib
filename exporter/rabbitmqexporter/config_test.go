@@ -19,7 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter/internal/metadata"
 )
 
-var encodingComponentId = component.NewIDWithName(component.MustNewType("otlp_encoding"), "rabbitmq123")
+var encodingComponentID = component.NewIDWithName(component.MustNewType("otlp_encoding"), "rabbitmq123")
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 					TLSConfig: &configtls.ClientConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CAFile: "cert123",
 						},
 						Insecure: true,
@@ -66,7 +66,7 @@ func TestLoadConfig(t *testing.T) {
 					Exchange:   "amq.direct",
 					RoutingKey: "custom_routing_key",
 				},
-				EncodingExtensionId: &encodingComponentId,
+				EncodingExtensionID: &encodingComponentID,
 				Durable:             false,
 				RetrySettings: configretry.BackOffConfig{
 					Enabled: true,

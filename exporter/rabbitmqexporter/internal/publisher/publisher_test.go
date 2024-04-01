@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	connectUrl = "amqp://localhost"
+	connectURL = "amqp://localhost"
 	exchange   = "amq.direct"
 	routingKey = "some_routing_key"
 )
@@ -26,11 +26,11 @@ func TestConnectAndClose(t *testing.T) {
 	client := mockClient{}
 	connection := mockConnection{}
 	dialConfig := DialConfig{
-		Url: connectUrl,
+		URL: connectURL,
 	}
 
 	// Start the connection successfully
-	client.On("DialConfig", connectUrl, mock.Anything).Return(&connection, nil)
+	client.On("DialConfig", connectURL, mock.Anything).Return(&connection, nil)
 	connection.On("NotifyClose", mock.Anything).Return(make(chan *amqp.Error))
 
 	publisher, err := NewConnection(zap.NewNop(), &client, dialConfig)
@@ -51,10 +51,10 @@ func TestConnectAndClose(t *testing.T) {
 func TestConnectionErrorAndClose(t *testing.T) {
 	client := mockClient{}
 	dialConfig := DialConfig{
-		Url: connectUrl,
+		URL: connectURL,
 	}
 
-	client.On("DialConfig", connectUrl, mock.Anything).Return(nil, errors.New("simulated connection error"))
+	client.On("DialConfig", connectURL, mock.Anything).Return(nil, errors.New("simulated connection error"))
 	publisher, err := NewConnection(zap.NewNop(), &client, dialConfig)
 
 	assert.EqualError(t, err, "simulated connection error")
@@ -201,7 +201,7 @@ func TestFailRestoreConnectionDuringPublishing(t *testing.T) {
 	connection.On("IsClosed").Return(true)
 
 	resetCall(client.ExpectedCalls, "DialConfig", t)
-	client.On("DialConfig", connectUrl, mock.Anything).Return(nil, errors.New("simulated connection error"))
+	client.On("DialConfig", connectURL, mock.Anything).Return(nil, errors.New("simulated connection error"))
 
 	err = publisher.Publish(context.Background(), makePublishMessage())
 	assert.EqualError(t, err, "failed attempt at restoring unhealthy connection\nsimulated connection error")
@@ -381,7 +381,7 @@ func makePublishMessage() Message {
 
 func makeDialConfig() DialConfig {
 	return DialConfig{
-		Url:                        connectUrl,
+		URL:                        connectURL,
 		PublishConfirmationTimeout: time.Millisecond * 20,
 		Durable:                    true,
 	}

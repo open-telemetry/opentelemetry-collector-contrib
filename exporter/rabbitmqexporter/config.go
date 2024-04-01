@@ -15,7 +15,7 @@ import (
 type Config struct {
 	Connection          ConnectionConfig          `mapstructure:"connection"`
 	Routing             RoutingConfig             `mapstructure:"routing"`
-	EncodingExtensionId *component.ID             `mapstructure:"encoding_extension"`
+	EncodingExtensionID *component.ID             `mapstructure:"encoding_extension"`
 	Durable             bool                      `mapstructure:"durable"`
 	RetrySettings       configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 }

@@ -16,7 +16,7 @@ import (
 )
 
 type DialConfig struct {
-	Url                        string
+	URL                        string
 	Durable                    bool
 	Vhost                      string
 	Auth                       amqp.Authentication
@@ -75,9 +75,9 @@ func (p *publisher) Publish(ctx context.Context, message Message) error {
 	channel, err := p.connection.Channel()
 	defer func(channel Channel) {
 		if channel != nil {
-			err := channel.Close()
-			if err != nil {
-				p.logger.Warn("Failed closing channel", zap.Error(err))
+			err2 := channel.Close()
+			if err2 != nil {
+				p.logger.Warn("Failed closing channel", zap.Error(err2))
 			}
 		}
 	}(channel)
@@ -148,9 +148,8 @@ func (p *publisher) reconnectIfUnhealthy() error {
 
 		if err := p.connect(); err != nil {
 			return errors.Join(errors.New("failed attempt at restoring unhealthy connection"), err)
-		} else {
-			p.logger.Info("Successfully restored unhealthy rabbitmq connection")
 		}
+		p.logger.Info("Successfully restored unhealthy rabbitmq connection")
 	}
 
 	return nil
@@ -162,7 +161,7 @@ func (p *publisher) connect() error {
 	properties := amqp.Table{}
 	properties.SetClientConnectionName(p.config.ConnectionName)
 
-	connection, err := p.client.DialConfig(p.config.Url, amqp.Config{
+	connection, err := p.client.DialConfig(p.config.URL, amqp.Config{
 		SASL:            []amqp.Authentication{p.config.Auth},
 		Vhost:           p.config.Vhost,
 		Heartbeat:       p.config.Heartbeat,

@@ -7,12 +7,13 @@ import (
 	"context"
 	"crypto/tls"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter/internal/publisher"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter/internal/publisher"
 )
 
 type rabbitmqExporter struct {
@@ -42,14 +43,14 @@ func newRabbitmqExporter(cfg *Config, set component.TelemetrySettings, publisher
 }
 
 func (e *rabbitmqExporter) start(_ context.Context, host component.Host) error {
-	m, err := newMarshaler(e.config.EncodingExtensionId, host)
+	m, err := newMarshaler(e.config.EncodingExtensionID, host)
 	if err != nil {
 		return err
 	}
 	e.marshaler = m
 
 	dialConfig := publisher.DialConfig{
-		Url:   e.config.Connection.Endpoint,
+		URL:   e.config.Connection.Endpoint,
 		Vhost: e.config.Connection.VHost,
 		Auth: &amqp.PlainAuth{
 			Username: e.config.Connection.Auth.Plain.Username,
