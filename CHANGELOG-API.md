@@ -7,6 +7,11 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.97.0
+
+### 💡 Enhancements 💡
+
+- `internal/aws/cwlogs`: Added support to encryption at rest using KmsKey . (#31788)
 ## v0.96.0
 
 ### 🛑 Breaking changes 🛑
