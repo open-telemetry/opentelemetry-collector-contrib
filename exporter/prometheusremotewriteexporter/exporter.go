@@ -131,6 +131,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 			ExportCreatedMetric: cfg.CreatedMetric.Enabled,
 			AddMetricSuffixes:   cfg.AddMetricSuffixes,
 			SendMetadata:        cfg.SendMetadata,
+			RetryOnHTTP429:      cfg.RetryOnHTTP429,
 		},
 		telemetry: prwTelemetry,
 	}
@@ -318,19 +319,24 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 
 		// 2xx status code is considered a success
 		// 5xx errors are recoverable and the exporter should retry
-		// 429 errors are recoverable and the exporter should retry
 		// Reference for different behavior according to status code:
 		// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
-		// Updated reference: https://github.com/prometheus/prometheus/pull/12677
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 			return nil
 		}
 
 		body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
 		rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
-		if resp.StatusCode >= 500 && resp.StatusCode < 600 || resp.StatusCode == 429 {
+		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 			return rerr
 		}
+
+		// 429 errors are recoverable and the exporter should retry if RetryOnHTTP429 enabled
+		// Reference: https://github.com/prometheus/prometheus/pull/12677
+		if prwe.exporterSettings.RetryOnHTTP429 && resp.StatusCode == 429 {
+			return rerr
+		}
+
 		return backoff.Permanent(consumererror.NewPermanent(rerr))
 	}
 
