@@ -32,12 +32,12 @@ type TransformerConfig struct {
 
 // Deprecated [v0.97.0] Use NewTransformer instead.
 func (c TransformerConfig) Build(logger *zap.SugaredLogger) (TransformerOperator, error) {
-	return NewTransformer(c, component.TelemetrySettings{Logger: logger.Desugar()})
+	return NewTransformer(component.TelemetrySettings{Logger: logger.Desugar()}, c)
 }
 
 // NewTransformer creates a new transformer operator.
-func NewTransformer(c TransformerConfig, set component.TelemetrySettings) (TransformerOperator, error) {
-	writerOperator, err := NewWriter(c.WriterConfig, set)
+func NewTransformer(set component.TelemetrySettings, c TransformerConfig) (TransformerOperator, error) {
+	writerOperator, err := NewWriter(set, c.WriterConfig)
 	if err != nil {
 		return TransformerOperator{}, errors.WithDetails(err, "operator_id", c.ID())
 	}

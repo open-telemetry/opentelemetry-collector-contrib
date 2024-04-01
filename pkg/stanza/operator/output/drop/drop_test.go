@@ -17,7 +17,7 @@ import (
 func TestBuildValid(t *testing.T) {
 	f := NewFactory()
 	cfg := f.NewDefaultConfig("test")
-	op, err := f.CreateOperator(cfg, componenttest.NewNopTelemetrySettings())
+	op, err := f.CreateOperator(componenttest.NewNopTelemetrySettings(), cfg)
 	require.NoError(t, err)
 	require.IsType(t, &Output{}, op)
 }
@@ -25,7 +25,7 @@ func TestBuildValid(t *testing.T) {
 func TestBuildIvalid(t *testing.T) {
 	f := NewFactory()
 	cfg := f.NewDefaultConfig("test")
-	_, err := f.CreateOperator(cfg, component.TelemetrySettings{})
+	_, err := f.CreateOperator(component.TelemetrySettings{}, cfg)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "build context is missing a logger")
 }
@@ -33,7 +33,7 @@ func TestBuildIvalid(t *testing.T) {
 func TestProcess(t *testing.T) {
 	f := NewFactory()
 	cfg := f.NewDefaultConfig("test")
-	op, err := f.CreateOperator(cfg, componenttest.NewNopTelemetrySettings())
+	op, err := f.CreateOperator(componenttest.NewNopTelemetrySettings(), cfg)
 	require.NoError(t, err)
 
 	entry := entry.New()

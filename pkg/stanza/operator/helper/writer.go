@@ -29,12 +29,12 @@ type WriterConfig struct {
 
 // Deprecated [v0.97.0] Use NewWriter instead.
 func (c WriterConfig) Build(logger *zap.SugaredLogger) (WriterOperator, error) {
-	return NewWriter(c, component.TelemetrySettings{Logger: logger.Desugar()})
+	return NewWriter(component.TelemetrySettings{Logger: logger.Desugar()}, c)
 }
 
 // NewWriter creates a new writer operator.
-func NewWriter(c WriterConfig, set component.TelemetrySettings) (WriterOperator, error) {
-	basicOperator, err := NewBasicOperator(c.BasicConfig, set)
+func NewWriter(set component.TelemetrySettings, c WriterConfig) (WriterOperator, error) {
+	basicOperator, err := NewBasicOperator(set, c.BasicConfig)
 	if err != nil {
 		return WriterOperator{}, err
 	}

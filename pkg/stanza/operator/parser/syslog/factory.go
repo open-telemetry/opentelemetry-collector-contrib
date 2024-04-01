@@ -33,7 +33,7 @@ func newDefaultConfig(operatorID string) component.Config {
 	}
 }
 
-func createOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
+func createOperator(set component.TelemetrySettings, cfg component.Config) (operator.Operator, error) {
 	c := cfg.(*Config)
 	if c.ParserConfig.TimeParser == nil {
 		parseFromField := entry.NewAttributeField("timestamp")
@@ -43,7 +43,7 @@ func createOperator(cfg component.Config, set component.TelemetrySettings) (oper
 		}
 	}
 
-	parserOperator, err := helper.NewParser(c.ParserConfig, set)
+	parserOperator, err := helper.NewParser(set, c.ParserConfig)
 	if err != nil {
 		return nil, err
 	}

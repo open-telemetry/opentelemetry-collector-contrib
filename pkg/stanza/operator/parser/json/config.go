@@ -11,12 +11,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-// Deprecated [v0.97.0] Use Factory.NewDefaultConfig instead.
+// Deprecated [v0.98.0] Use NewFactory().NewDefaultConfig instead.
 func NewConfig() *Config {
 	return NewFactory().NewDefaultConfig(operatorType.String()).(*Config)
 }
 
-// Deprecated [v0.97.0] Use Factory.NewDefaultConfig instead.
+// Deprecated [v0.98.0] Use NewFactory().NewDefaultConfig instead.
 func NewConfigWithID(operatorID string) *Config {
 	return NewFactory().NewDefaultConfig(operatorID).(*Config)
 }
@@ -32,5 +32,5 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	if logger != nil {
 		set.Logger = logger.Desugar()
 	}
-	return NewFactory().CreateOperator(&c, set)
+	return NewFactory().CreateOperator(set, &c)
 }

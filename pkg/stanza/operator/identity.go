@@ -11,21 +11,32 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-// Identity provides a basic implemention for an operator config.
-type Identity struct {
+// // Identifiable is an interface for obtaining operator type and name.
+// type Identifiable interface {
+// 	ComponentID() component.ID
+// 	SetName(string)
+// }
+
+// var _ Identifiable = (*Identity)(nil)
+
+// ConfigWithID provides a basic implemention for an operator config.
+type ConfigWithID struct {
 	Type string `mapstructure:"type"`
-	ID   string `mapstructure:"id"`
+	Name string `mapstructure:"id"` // "id" is the legacy key used in user configs.
+	factory
 }
 
-func (i *Identity) String() string {
-	if i.ID != "" {
-		return i.ID
-	}
-	return i.Type
+// ID returns the component ID for the operator.
+func (i *ConfigWithID) ComponentID() component.ID {
+	return component.MustNewIDWithName(i.Type, i.Name)
+}
+
+func (i *ConfigWithID) SetName(name string) {
+	i.Name = name
 }
 
 // UnmarshalJSON will unmarshal a config from JSON.
-func (i *Identity) UnmarshalJSON(bytes []byte) error {
+func (i *ConfigWithID) UnmarshalJSON(bytes []byte) error {
 	var typeUnmarshaller struct {
 		Type string
 	}
@@ -40,7 +51,7 @@ func (i *Identity) UnmarshalJSON(bytes []byte) error {
 }
 
 // UnmarshalYAML will unmarshal a config from YAML.
-func (i *Identity) UnmarshalYAML(unmarshal func(any) error) error {
+func (i *ConfigWithID) UnmarshalYAML(unmarshal func(any) error) error {
 	raw := map[string]any{}
 	err := unmarshal(&raw)
 	if err != nil {
@@ -58,7 +69,7 @@ func (i *Identity) UnmarshalYAML(unmarshal func(any) error) error {
 	return err
 }
 
-func (i *Identity) Unmarshal(conf *confmap.Conf) error {
+func (i *ConfigWithID) Unmarshal(conf *confmap.Conf) error {
 	if !conf.IsSet("type") {
 		return fmt.Errorf("missing required field 'type'")
 	}

@@ -23,7 +23,7 @@ func TestTransformer(t *testing.T) {
 		return &Config{
 			BasicConfig: helper.BasicConfig{
 				Identity: operator.Identity{
-					ID:   "test_operator_id",
+					Name: "test_operator_id",
 					Type: "router",
 				},
 			},

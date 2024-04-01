@@ -33,9 +33,9 @@ func newDefaultConfig(operatorID string) component.Config {
 	}
 }
 
-func createOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
+func createOperator(set component.TelemetrySettings, cfg component.Config) (operator.Operator, error) {
 	c := cfg.(*Config)
-	inputBase, err := helper.NewInput(c.InputConfig, set)
+	inputBase, err := helper.NewInput(set, c.InputConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func createOperator(cfg component.Config, set component.TelemetrySettings) (oper
 	syslogParserCfg.BaseConfig = c.BaseConfig
 	syslogParserCfg.SetID(inputBase.ID() + "_internal_parser")
 	syslogParserCfg.OutputIDs = c.OutputIDs
-	syslogParser, err := syslogParserFactory.CreateOperator(syslogParserCfg, set)
+	syslogParser, err := syslogParserFactory.CreateOperator(set, syslogParserCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve syslog config: %w", err)
 	}
@@ -58,7 +58,7 @@ func createOperator(cfg component.Config, set component.TelemetrySettings) (oper
 			tcpInputCfg.SplitFuncBuilder = OctetSplitFuncBuilder
 		}
 
-		tcpInput, err := tcpFactory.CreateOperator(tcpInputCfg, set)
+		tcpInput, err := tcpFactory.CreateOperator(set, tcpInputCfg)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve tcp config: %w", err)
 		}
@@ -85,7 +85,7 @@ func createOperator(cfg component.Config, set component.TelemetrySettings) (oper
 			return nil, errors.New("octet_counting and non_transparent_framing is not compatible with UDP")
 		}
 
-		udpInput, err := udpFactory.CreateOperator(udpInputCfg, set)
+		udpInput, err := udpFactory.CreateOperator(set, udpInputCfg)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve udp config: %w", err)
 		}

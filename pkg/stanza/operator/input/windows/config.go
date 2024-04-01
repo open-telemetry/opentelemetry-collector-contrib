@@ -6,10 +6,11 @@ package windows // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 // Deprecated: [v0.97.0] Use Factory.NewDefaultConfig instead.
@@ -39,5 +40,5 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	if logger != nil {
 		set.Logger = logger.Desugar()
 	}
-	return NewFactory().CreateOperator(&c, set)
+	return NewFactory().CreateOperator(set, &c)
 }

@@ -19,6 +19,6 @@ func (c Config) Build(_ *zap.SugaredLogger) (operator.Operator, error) {
 	return nil, errors.New("journald input operator is only supported on linux")
 }
 
-func createOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
+func createOperator(_ component.TelemetrySettings, _ component.Config) (operator.Operator, error) {
 	return nil, errors.New("journald input operator is only supported on linux")
 }

@@ -7,9 +7,10 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -22,13 +23,15 @@ type pipelineOutput struct {
 }
 
 // newPipelineOutput creates a new receiver output
-func newPipelineOutput(logger *zap.SugaredLogger) *pipelineOutput {
+func newPipelineOutput(set component.TelemetrySettings) *pipelineOutput {
 	return &pipelineOutput{
 		OutputOperator: helper.OutputOperator{
 			BasicOperator: helper.BasicOperator{
-				OperatorID:    pipelineOutputType,
-				OperatorType:  pipelineOutputType,
-				SugaredLogger: logger,
+				Identity: operator.Identity{
+					Type: pipelineOutputType,
+					Name: pipelineOutputType,
+				},
+				TelemetrySettings: set,
 			},
 		},
 		logChan: make(chan *entry.Entry, 1),

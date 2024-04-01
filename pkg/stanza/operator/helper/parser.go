@@ -37,12 +37,12 @@ type ParserConfig struct {
 
 // Deprecated [v0.97.0] Use NewParser instead.
 func (c ParserConfig) Build(logger *zap.SugaredLogger) (ParserOperator, error) {
-	return NewParser(c, component.TelemetrySettings{Logger: logger.Desugar()})
+	return NewParser(component.TelemetrySettings{Logger: logger.Desugar()}, c)
 }
 
 // NewParser creates a new parser operator.
-func NewParser(c ParserConfig, set component.TelemetrySettings) (ParserOperator, error) {
-	transformerOperator, err := NewTransformer(c.TransformerConfig, set)
+func NewParser(set component.TelemetrySettings, c ParserConfig) (ParserOperator, error) {
+	transformerOperator, err := NewTransformer(set, c.TransformerConfig)
 	if err != nil {
 		return ParserOperator{}, err
 	}

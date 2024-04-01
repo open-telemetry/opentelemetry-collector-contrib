@@ -33,99 +33,67 @@ func TestBuild(t *testing.T) {
 		name        string
 		enc         encoding.Encoding
 		pattern     string
-		ops         []operator.Config
+		ops         []operator.Identifiable
 		expectedErr string
 	}{
 		{
 			name:    "valid config",
 			enc:     encoding.Nop,
 			pattern: "^#",
-			ops: []operator.Config{
-				{
-					Builder: regexConf,
-				},
-			},
+			ops:     []operator.Identifiable{regexConf},
 		},
 		{
-			name:    "Invalid pattern",
-			enc:     unicode.UTF8,
-			pattern: "(",
-			ops: []operator.Config{
-				{
-					Builder: regexConf,
-				},
-			},
+			name:        "Invalid pattern",
+			enc:         unicode.UTF8,
+			pattern:     "(",
+			ops:         []operator.Identifiable{regexConf},
 			expectedErr: "failed to compile `pattern`:",
 		},
 		{
 			name:    "Valid without specified header size",
 			enc:     unicode.UTF8,
 			pattern: "^#",
-			ops: []operator.Config{
-				{
-					Builder: regexConf,
-				},
-			},
+			ops:     []operator.Identifiable{regexConf},
 		},
 		{
 			name:        "No operators specified",
 			enc:         unicode.UTF8,
 			pattern:     "^#",
-			ops:         []operator.Config{},
+			ops:         []operator.Identifiable{},
 			expectedErr: "at least one operator must be specified for `metadata_operators`",
 		},
 		{
-			name:    "No encoding specified",
-			pattern: "^#",
-			ops: []operator.Config{
-				{
-					Builder: regexConf,
-				},
-			},
+			name:        "No encoding specified",
+			pattern:     "^#",
+			ops:         []operator.Identifiable{regexConf},
 			expectedErr: "encoding must be specified",
 		},
 		{
-			name:    "Invalid operator specified",
-			enc:     unicode.UTF8,
-			pattern: "^#",
-			ops: []operator.Config{
-				{
-					Builder: invalidRegexConf,
-				},
-			},
+			name:        "Invalid operator specified",
+			enc:         unicode.UTF8,
+			pattern:     "^#",
+			ops:         []operator.Identifiable{invalidRegexConf},
 			expectedErr: "failed to build pipelines:",
 		},
 		{
-			name:    "first operator cannot process",
-			enc:     unicode.UTF8,
-			pattern: "^#",
-			ops: []operator.Config{
-				{
-					Builder: generateConf,
-				},
-			},
+			name:        "first operator cannot process",
+			enc:         unicode.UTF8,
+			pattern:     "^#",
+			ops:         []operator.Identifiable{generateConf},
 			expectedErr: "operator 'generate_input' in `metadata_operators` cannot process entries",
 		},
 		{
-			name:    "operator cannot output",
-			enc:     unicode.UTF8,
-			pattern: "^#",
-			ops: []operator.Config{
-				{
-					Builder: stdoutConf,
-				},
-			},
+			name:        "operator cannot output",
+			enc:         unicode.UTF8,
+			pattern:     "^#",
+			ops:         []operator.Identifiable{stdoutConf},
 			expectedErr: "operator 'stdout' in `metadata_operators` does not propagate entries",
 		},
 		{
-			name:    "filter operator present",
-			enc:     unicode.UTF8,
-			pattern: "^#",
-			ops: []operator.Config{
-				{
-					Builder: filterConfg,
-				},
-			},
+			name:        "filter operator present",
+			enc:         unicode.UTF8,
+			pattern:     "^#",
+			ops:         []operator.Identifiable{filterConfg},
 			expectedErr: "operator of type filter is not allowed in `metadata_operators`",
 		},
 	}

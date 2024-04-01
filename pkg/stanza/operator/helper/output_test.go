@@ -24,8 +24,8 @@ func TestOutputConfigBuildValid(t *testing.T) {
 	config := OutputConfig{
 		BasicConfig: BasicConfig{
 			Identity: operator.Identity{
-				Type: "test-type",
-				ID:   "test-id",
+				Type: "test_type",
+				Name: "test-id",
 			},
 		},
 	}
@@ -34,14 +34,16 @@ func TestOutputConfigBuildValid(t *testing.T) {
 }
 
 func TestOutputOperatorCanProcess(t *testing.T) {
-	output, err := NewOutputOperator(OutputConfig{
-		BasicConfig: BasicConfig{
-			Identity: operator.Identity{
-				Type: "test-type",
-				ID:   "test-id",
+	output, err := NewOutputOperator(
+		componenttest.NewNopTelemetrySettings(),
+		OutputConfig{
+			BasicConfig: BasicConfig{
+				Identity: operator.Identity{
+					Type: "test_type",
+					Name: "test-id",
+				},
 			},
-		},
-	}, componenttest.NewNopTelemetrySettings())
+		})
 	require.NoError(t, err)
 	require.True(t, output.CanProcess())
 }
@@ -50,7 +52,7 @@ func TestOutputOperatorCanOutput(t *testing.T) {
 	output := OutputOperator{
 		BasicOperator: BasicOperator{
 			OperatorID:    "test-id",
-			OperatorType:  "test-type",
+			OperatorType:  "test_type",
 			SugaredLogger: testutil.Logger(t),
 		},
 	}
@@ -61,7 +63,7 @@ func TestOutputOperatorOutputs(t *testing.T) {
 	output := OutputOperator{
 		BasicOperator: BasicOperator{
 			OperatorID:    "test-id",
-			OperatorType:  "test-type",
+			OperatorType:  "test_type",
 			SugaredLogger: testutil.Logger(t),
 		},
 	}
@@ -72,7 +74,7 @@ func TestOutputOperatorSetOutputs(t *testing.T) {
 	output := OutputOperator{
 		BasicOperator: BasicOperator{
 			OperatorID:    "test-id",
-			OperatorType:  "test-type",
+			OperatorType:  "test_type",
 			SugaredLogger: testutil.Logger(t),
 		},
 	}

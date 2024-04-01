@@ -31,5 +31,5 @@ type Config struct {
 
 // Deprecated [v0.97.0] Use NewFactory.CreateOperator instead.
 func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	return NewFactory().CreateOperator(&c, component.TelemetrySettings{Logger: logger.Desugar()})
+	return NewFactory().CreateOperator(component.TelemetrySettings{Logger: logger.Desugar()}, &c)
 }

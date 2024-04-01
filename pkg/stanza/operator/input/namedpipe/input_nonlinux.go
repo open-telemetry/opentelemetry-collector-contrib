@@ -18,6 +18,6 @@ func (c *Config) Build(_ *zap.SugaredLogger) (operator.Operator, error) {
 	return nil, errors.New("namedpipe input operator is only supported on linux")
 }
 
-func createOperator(_ component.Config, _ component.TelemetrySettings) (operator.Operator, error) {
+func createOperator(_ component.TelemetrySettings, _ component.Config) (operator.Operator, error) {
 	return nil, errors.New("namedpipe input operator is only supported on linux")
 }

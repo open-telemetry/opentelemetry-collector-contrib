@@ -10,7 +10,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -22,10 +23,10 @@ import (
 type Config struct {
 	regex             *regexp.Regexp
 	SplitFunc         bufio.SplitFunc
-	metadataOperators []operator.Config
+	metadataOperators []operator.Identifiable
 }
 
-func NewConfig(matchRegex string, metadataOperators []operator.Config, enc encoding.Encoding) (*Config, error) {
+func NewConfig(matchRegex string, metadataOperators []operator.Identifiable, enc encoding.Encoding) (*Config, error) {
 	var err error
 	if len(metadataOperators) == 0 {
 		return nil, errors.New("at least one operator must be specified for `metadata_operators`")
@@ -35,12 +36,10 @@ func NewConfig(matchRegex string, metadataOperators []operator.Config, enc encod
 		return nil, errors.New("encoding must be specified")
 	}
 
-	nopLogger := zap.NewNop().Sugar()
-	p, err := pipeline.Config{
-		Operators:     metadataOperators,
-		DefaultOutput: newPipelineOutput(nopLogger),
-	}.Build(nopLogger)
+	set := componenttest.NewNopTelemetrySettings()
+	opt := pipeline.WithDefaultOutput(newPipelineOutput(set))
 
+	p, err := pipeline.New(set, metadataOperators, opt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build pipelines: %w", err)
 	}
@@ -85,4 +84,8 @@ func NewConfig(matchRegex string, metadataOperators []operator.Config, enc encod
 		SplitFunc:         splitFunc,
 		metadataOperators: metadataOperators,
 	}, nil
+}
+
+func (c *Config) Unmarshal(conf *confmap.Conf) error {
+
 }

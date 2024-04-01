@@ -43,7 +43,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	if logger != nil {
 		set.Logger = logger.Desugar()
 	}
-	return NewFactory().CreateOperator(&c, set)
+	return NewFactory().CreateOperator(set, &c)
 }
 
 // NewFactory creates a new factory.
@@ -57,9 +57,9 @@ func newDefaultConfig(operatorID string) component.Config {
 	}
 }
 
-func createOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
+func createOperator(set component.TelemetrySettings, cfg component.Config) (operator.Operator, error) {
 	c := cfg.(*Config)
-	outputOperator, err := helper.NewOutputOperator(c.OutputConfig, set)
+	outputOperator, err := helper.NewOutputOperator(set, c.OutputConfig)
 	if err != nil {
 		return nil, err
 	}

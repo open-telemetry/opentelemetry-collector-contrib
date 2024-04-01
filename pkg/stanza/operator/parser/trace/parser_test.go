@@ -24,7 +24,7 @@ func TestInit(t *testing.T) {
 
 func TestDefaultParser(t *testing.T) {
 	f := NewFactory()
-	_, err := f.CreateOperator(f.NewDefaultConfig(operatorType.String()), componenttest.NewNopTelemetrySettings())
+	_, err := f.CreateOperator(componenttest.NewNopTelemetrySettings(), f.NewDefaultConfig(operatorType.String()))
 	require.NoError(t, err)
 }
 

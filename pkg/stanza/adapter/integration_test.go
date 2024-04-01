@@ -46,11 +46,11 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	}
 
 	return &receiver{
+		set:       componenttest.NewNopTelemetrySettings(),
 		id:        component.MustNewID("testReceiver"),
 		pipe:      pipe,
 		emitter:   emitter,
 		consumer:  nextConsumer,
-		logger:    zap.NewNop(),
 		converter: NewConverter(zap.NewNop()),
 		obsrecv:   obsrecv,
 	}, nil

@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
@@ -28,7 +28,7 @@ const (
 )
 
 type Factory struct {
-	*zap.SugaredLogger
+	component.TelemetrySettings
 	HeaderConfig      *header.Config
 	FromBeginning     bool
 	FingerprintSize   int
@@ -62,7 +62,7 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
 	r = &Reader{
 		Metadata:          m,
-		logger:            f.SugaredLogger.With("path", file.Name()),
+		logger:            f.TelemetrySettings.Logger.Sugar().With("path", file.Name()),
 		file:              file,
 		fileName:          file.Name(),
 		fingerprintSize:   f.FingerprintSize,
@@ -100,7 +100,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		r.splitFunc = r.lineSplitFunc
 		r.processFunc = r.emitFunc
 	} else {
-		r.headerReader, err = header.NewReader(f.SugaredLogger, *f.HeaderConfig)
+		r.headerReader, err = header.NewReader(f.TelemetrySettings, *f.HeaderConfig)
 		if err != nil {
 			return nil, err
 		}

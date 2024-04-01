@@ -199,7 +199,7 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	enc, err := decode.LookupEncoding("utf-8")
 	require.NoError(t, err)
 
-	h, err := header.NewConfig("^#", []operator.Config{{Builder: regexConf}}, enc)
+	h, err := header.NewConfig("^#", []operator.Identifiable{regexConf}, enc)
 	require.NoError(t, err)
 	f.HeaderConfig = h
 

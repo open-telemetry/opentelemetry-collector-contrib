@@ -26,7 +26,7 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					cfg.Identity.ID = "merge-split-lines"
+					cfg.Identity.Name = "merge-split-lines"
 					return cfg
 				}(),
 			},

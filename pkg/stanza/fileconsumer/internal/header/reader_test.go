@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -19,8 +19,6 @@ import (
 )
 
 func TestReader(t *testing.T) {
-	logger := zaptest.NewLogger(t).Sugar()
-
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header_line>.*)"
 	regexConf.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
@@ -29,13 +27,10 @@ func TestReader(t *testing.T) {
 	kvConf.ParseFrom = entry.NewBodyField("header_line")
 	kvConf.Delimiter = ":"
 
-	cfg, err := NewConfig("^#", []operator.Config{
-		{Builder: regexConf},
-		{Builder: kvConf},
-	}, unicode.UTF8)
+	cfg, err := NewConfig("^#", []operator.Identifiable{regexConf, kvConf}, unicode.UTF8)
 	require.NoError(t, err)
 
-	reader, err := NewReader(logger, *cfg)
+	reader, err := NewReader(componenttest.NewNopTelemetrySettings(), *cfg)
 	assert.NoError(t, err)
 
 	attrs := make(map[string]any)
@@ -50,8 +45,6 @@ func TestReader(t *testing.T) {
 }
 
 func TestSkipUnmatchedHeaderLine(t *testing.T) {
-	logger := zaptest.NewLogger(t).Sugar()
-
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header_line>.*)"
 	regexConf.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
@@ -60,13 +53,10 @@ func TestSkipUnmatchedHeaderLine(t *testing.T) {
 	kvConf.ParseFrom = entry.NewBodyField("header_line")
 	kvConf.Delimiter = ":"
 
-	cfg, err := NewConfig("^#", []operator.Config{
-		{Builder: regexConf},
-		{Builder: kvConf},
-	}, unicode.UTF8)
+	cfg, err := NewConfig("^#", []operator.Identifiable{regexConf, kvConf}, unicode.UTF8)
 	require.NoError(t, err)
 
-	reader, err := NewReader(logger, *cfg)
+	reader, err := NewReader(componenttest.NewNopTelemetrySettings(), *cfg)
 	assert.NoError(t, err)
 
 	attrs := make(map[string]any)
@@ -82,6 +72,6 @@ func TestSkipUnmatchedHeaderLine(t *testing.T) {
 }
 
 func TestNewReaderErr(t *testing.T) {
-	_, err := NewReader(nil, Config{})
+	_, err := NewReader(componenttest.NewNopTelemetrySettings(), Config{})
 	assert.Error(t, err)
 }

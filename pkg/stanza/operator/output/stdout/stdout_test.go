@@ -23,7 +23,7 @@ func TestOperator(t *testing.T) {
 		OutputConfig: helper.OutputConfig{
 			BasicConfig: helper.BasicConfig{
 				Identity: operator.Identity{
-					ID:   "test_operator_id",
+					Name: "test_operator_id",
 					Type: "stdout",
 				},
 			},

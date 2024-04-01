@@ -21,11 +21,7 @@ func TestCreateReceiver(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 		cfg := factory.CreateDefaultConfig().(*TestConfig)
-		cfg.Operators = []operator.Config{
-			{
-				Builder: json.NewConfig(),
-			},
-		}
+		cfg.Operators = []operator.Identifiable{json.NewConfig()}
 		receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 		require.NoError(t, err, "receiver creation failed")
 		require.NotNil(t, receiver, "receiver creation failed")
@@ -34,11 +30,7 @@ func TestCreateReceiver(t *testing.T) {
 	t.Run("DecodeOperatorConfigsFailureMissingFields", func(t *testing.T) {
 		factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 		badCfg := factory.CreateDefaultConfig().(*TestConfig)
-		badCfg.Operators = []operator.Config{
-			{
-				Builder: regex.NewConfig(),
-			},
-		}
+		badCfg.Operators = []operator.Identifiable{regex.NewConfig()}
 		receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), badCfg, consumertest.NewNop())
 		require.Error(t, err, "receiver creation should fail if parser configs aren't valid")
 		require.Nil(t, receiver, "receiver creation should fail if parser configs aren't valid")

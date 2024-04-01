@@ -22,27 +22,20 @@ type helpersConfig struct {
 	Size         ByteSize        `mapstructure:"size"`
 }
 
-type helpersFactory struct{}
-
-func newHelpersFactory() helpersFactory {
-	return helpersFactory{}
-}
-
-func (f helpersFactory) Type() component.Type {
-	return helpersTestType
-}
-
-func (f helpersFactory) NewDefaultConfig(operatorID string) component.Config {
-	cfg := &helpersConfig{
-		WriterConfig: NewWriterConfig(operatorID, helpersTestType.String()),
-		Time:         NewTimeParser(),
-		Severity:     NewSeverityConfig(),
-		Scope:        NewScopeNameParser(),
-	}
-	return cfg
-}
-
-// This function is impelmented for compatibility with operator.Factory but is not meant to be used directly
-func (f helpersFactory) CreateOperator(_ component.Config, _ component.TelemetrySettings) (operator.Operator, error) {
-	panic("not implemented")
+func newHelpersFactory() operator.Factory {
+	return operator.NewFactory(
+		helpersTestType,
+		func(operatorID string) component.Config {
+			cfg := &helpersConfig{
+				WriterConfig: NewWriterConfig(operatorID, helpersTestType.String()),
+				Time:         NewTimeParser(),
+				Severity:     NewSeverityConfig(),
+				Scope:        NewScopeNameParser(),
+			}
+			return cfg
+		},
+		func(_ component.TelemetrySettings, _ component.Config) (operator.Operator, error) {
+			panic("not implemented")
+		},
+	)
 }

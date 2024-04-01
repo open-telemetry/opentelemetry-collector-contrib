@@ -35,5 +35,5 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	if logger != nil {
 		set.Logger = logger.Desugar()
 	}
-	return NewFactory().CreateOperator(&c, set)
+	return NewFactory().CreateOperator(set, &c)
 }

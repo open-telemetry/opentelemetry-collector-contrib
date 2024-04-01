@@ -25,12 +25,12 @@ type OutputConfig struct {
 
 // Deprecated [v0.97.0] Use NewOutputOperator instead.
 func (c OutputConfig) Build(logger *zap.SugaredLogger) (OutputOperator, error) {
-	return NewOutputOperator(c, component.TelemetrySettings{Logger: logger.Desugar()})
+	return NewOutputOperator(component.TelemetrySettings{Logger: logger.Desugar()}, c)
 }
 
 // NewOutputOperator creates a new output operator.
-func NewOutputOperator(c OutputConfig, set component.TelemetrySettings) (OutputOperator, error) {
-	basicOperator, err := NewBasicOperator(c.BasicConfig, set)
+func NewOutputOperator(set component.TelemetrySettings, c OutputConfig) (OutputOperator, error) {
+	basicOperator, err := NewBasicOperator(set, c.BasicConfig)
 	if err != nil {
 		return OutputOperator{}, err
 	}

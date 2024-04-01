@@ -15,7 +15,7 @@ import (
 func NewBasicConfig(operatorID, operatorType string) BasicConfig {
 	return BasicConfig{
 		Identity: operator.Identity{
-			ID:   operatorID,
+			Name: operatorID,
 			Type: operatorType,
 		},
 	}
@@ -26,22 +26,22 @@ type BasicConfig struct {
 	operator.Identity `mapstructure:",squash"`
 }
 
-// ID will return the operator id.
+// Deprecated [v0.98.0] Use operator.Identity instead.
 func (c BasicConfig) ID() string {
-	return c.Identity.ID
+	return c.Identity.Name
 }
 
-// SetID will Update the operator id.
+// Deprecated [v0.98.0] Use operator.Identity instead.
 func (c *BasicConfig) SetID(id string) {
-	c.Identity.ID = id
+	c.Identity.Name = id
 }
 
-// Type will return the operator type.
+// Deprecated [v0.98.0] Use operator.Identity instead.
 func (c BasicConfig) Type() string {
 	return c.Identity.Type
 }
 
-// Deprecated [v0.97.0] Use NewBasicOperator instead.
+// Deprecated [v0.98.0] Use NewBasicOperator instead.
 func (c BasicConfig) Build(logger *zap.SugaredLogger) (BasicOperator, error) {
 	if c.Identity.Type == "" {
 		return BasicOperator{}, errors.NewError(
@@ -51,11 +51,11 @@ func (c BasicConfig) Build(logger *zap.SugaredLogger) (BasicOperator, error) {
 		)
 	}
 
-	return NewBasicOperator(c, component.TelemetrySettings{Logger: logger.Desugar()})
+	return NewBasicOperator(component.TelemetrySettings{Logger: logger.Desugar()}, c)
 }
 
 // BasicOperator provides a basic implementation of an operator.
-func NewBasicOperator(c BasicConfig, set component.TelemetrySettings) (BasicOperator, error) {
+func NewBasicOperator(set component.TelemetrySettings, c BasicConfig) (BasicOperator, error) {
 	if c.Identity.Type == "" {
 		return BasicOperator{}, errors.NewError(
 			"missing required `type` field.",
@@ -69,44 +69,52 @@ func NewBasicOperator(c BasicConfig, set component.TelemetrySettings) (BasicOper
 			"operator build context is missing a logger.",
 			"this is an unexpected internal error",
 			"operator_type", c.Identity.Type,
-			"operator_id", c.Identity.ID,
+			"operator_id", c.Identity.Name,
 		)
 	}
 
 	return BasicOperator{
-		OperatorID:        c.Identity.ID,
-		OperatorType:      c.Identity.Type,
-		SugaredLogger:     set.Logger.Sugar().With("operator_type", c.Identity.Type, "operator_id", c.Identity.ID),
+		Identity:          c.Identity,
 		TelemetrySettings: set,
+
+		// Initialized for backwards compatibility
+		OperatorType:  c.Identity.Type,
+		OperatorID:    c.Identity.Name,
+		SugaredLogger: set.Logger.Sugar().With("operator_id", c.Identity.ComponentID()),
 	}, nil
 }
 
 // BasicOperator provides a basic implementation of an operator.
 type BasicOperator struct {
-	OperatorID   string
-	OperatorType string
+	operator.Identity
 	component.TelemetrySettings
+
+	// Deprecated [v0.98.0] Use Identity.Type instead
+	OperatorType string
+
+	// Deprecated [v0.98.0] Use Identity.Name instead
+	OperatorID string
 
 	// Deprecated [v0.97.0] Use TelemetrySettings instead
 	*zap.SugaredLogger
 }
 
-// ID will return the operator id.
+// Deprecated [v0.98.0] Use Identity instead.
 func (p *BasicOperator) ID() string {
-	if p.OperatorID == "" {
-		return p.OperatorType
+	if p.Identity.Name != "" {
+		return p.Identity.Name
 	}
-	return p.OperatorID
+	return p.Identity.Type
 }
 
-// Type will return the operator type.
+// Deprecated [v0.98.0] Use Identity instead.
 func (p *BasicOperator) Type() string {
-	return p.OperatorType
+	return p.Identity.Type
 }
 
 // Deprecated [v0.97.0]
 func (p *BasicOperator) Logger() *zap.SugaredLogger {
-	return p.SugaredLogger
+	return p.TelemetrySettings.Logger.Sugar()
 }
 
 // Start will start the operator.

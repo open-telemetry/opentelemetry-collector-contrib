@@ -27,7 +27,7 @@ func TestParserConfigMissingBase(t *testing.T) {
 }
 
 func TestParserConfigInvalidTimeParser(t *testing.T) {
-	cfg := NewParserConfig("test-id", "test-type")
+	cfg := NewParserConfig("test-id", "test_type")
 	f := entry.NewBodyField("timestamp")
 	cfg.TimeParser = &TimeParser{
 		ParseFrom:  &f,
@@ -41,7 +41,7 @@ func TestParserConfigInvalidTimeParser(t *testing.T) {
 }
 
 func TestParserConfigBodyCollision(t *testing.T) {
-	cfg := NewParserConfig("test-id", "test-type")
+	cfg := NewParserConfig("test-id", "test_type")
 	cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
 
 	b := entry.NewAttributeField("message")
@@ -53,7 +53,7 @@ func TestParserConfigBodyCollision(t *testing.T) {
 }
 
 func TestParserConfigBuildValid(t *testing.T) {
-	cfg := NewParserConfig("test-id", "test-type")
+	cfg := NewParserConfig("test-id", "test_type")
 
 	timeField := entry.NewBodyField("timestamp")
 	cfg.TimeParser = &TimeParser{
@@ -102,7 +102,7 @@ func TestParserMissingField(t *testing.T) {
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
 					OperatorID:    "test-id",
-					OperatorType:  "test-type",
+					OperatorType:  "test_type",
 					SugaredLogger: zaptest.NewLogger(t).Sugar(),
 				},
 			},
@@ -245,7 +245,7 @@ func TestParserInvalidTimeValidSeverityParse(t *testing.T) {
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
 					OperatorID:    "test-id",
-					OperatorType:  "test-type",
+					OperatorType:  "test_type",
 					SugaredLogger: testutil.Logger(t),
 				},
 			},
@@ -298,7 +298,7 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
 					OperatorID:    "test-id",
-					OperatorType:  "test-type",
+					OperatorType:  "test_type",
 					SugaredLogger: testutil.Logger(t),
 				},
 			},
@@ -344,7 +344,7 @@ func TestParserOutput(t *testing.T) {
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
 					OperatorID:    "test-id",
-					OperatorType:  "test-type",
+					OperatorType:  "test_type",
 					SugaredLogger: testutil.Logger(t),
 				},
 				OutputOperators: []operator.Operator{output},
@@ -624,7 +624,7 @@ func TestParserFields(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewParserConfig("test-id", "test-type")
+			cfg := NewParserConfig("test-id", "test_type")
 			tc.cfgMod(&cfg)
 
 			parser, err := cfg.Build(testutil.Logger(t))
@@ -664,7 +664,7 @@ func writerWithFakeOut(t *testing.T) (*WriterOperator, *testutil.FakeOutput) {
 	writer := &WriterOperator{
 		BasicOperator: BasicOperator{
 			OperatorID:    "test-id",
-			OperatorType:  "test-type",
+			OperatorType:  "test_type",
 			SugaredLogger: testutil.Logger(t),
 		},
 		OutputIDs: []string{fakeOut.ID()},

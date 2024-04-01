@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -124,11 +123,12 @@ func (f BenchReceiverType) Type() component.Type {
 }
 
 func (f BenchReceiverType) CreateDefaultConfig() component.Config {
+	bCfg, _ := newDefaultConfig("").(*BenchOpConfig)
 	return &BenchConfig{
 		BaseConfig: BaseConfig{
-			Operators: []operator.Config{},
+			Operators: []operator.Identifiable{},
 		},
-		BenchOpConfig: *NewBenchOpConfig(),
+		BenchOpConfig: *bCfg,
 	}
 }
 
@@ -136,21 +136,19 @@ func (f BenchReceiverType) BaseConfig(cfg component.Config) BaseConfig {
 	return cfg.(*BenchConfig).BaseConfig
 }
 
-func (f BenchReceiverType) InputConfig(cfg component.Config) operator.Config {
-	return operator.NewConfig(cfg.(*BenchConfig))
+func (f BenchReceiverType) InputConfig(cfg component.Config) operator.Identifiable {
+	return cfg.(*BenchConfig)
 }
 
 func init() {
-	operator.Register(benchTypeStr, func() operator.Builder { return NewBenchOpConfig() })
+	operator.RegisterFactory(newBenchOpFactory())
 }
 
-// NewBenchOpConfig creates a new benchmarking operator config with default values
-func NewBenchOpConfig() *BenchOpConfig {
-	return NewBenchOpConfigWithID(benchTypeStr)
+func newBenchOpFactory() operator.Factory {
+	return operator.NewFactory(benchType, newDefaultConfig, createOperator)
 }
 
-// NewBenchOpConfigWithID creates a new noop operator config with default values
-func NewBenchOpConfigWithID(operatorID string) *BenchOpConfig {
+func newDefaultConfig(operatorID string) component.Config {
 	return &BenchOpConfig{
 		InputConfig: helper.NewInputConfig(operatorID, benchTypeStr),
 	}
@@ -163,9 +161,9 @@ type BenchOpConfig struct {
 	NumHosts           int `mapstructure:"num_hosts"`
 }
 
-// Build will build a noop operator.
-func (c BenchOpConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(logger)
+func createOperator(set component.TelemetrySettings, cfg component.Config) (operator.Operator, error) {
+	c := cfg.(*BenchConfig).BenchOpConfig
+	inputOperator, err := c.InputConfig.Build(set.Logger.Sugar())
 	if err != nil {
 		return nil, err
 	}

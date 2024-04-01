@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
@@ -83,8 +84,8 @@ type Config struct {
 }
 
 type HeaderConfig struct {
-	Pattern           string            `mapstructure:"pattern"`
-	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
+	Pattern           string                  `mapstructure:"pattern"`
+	MetadataOperators []operator.Identifiable `mapstructure:"metadata_operators"`
 }
 
 // Deprecated [v0.97.0] Use Build and WithSplitFunc option instead
@@ -92,7 +93,14 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback
 	return c.Build(logger, emit, WithSplitFunc(splitFunc))
 }
 
+// Deprecated [v0.98.0] Use New instead
 func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Option) (*Manager, error) {
+	set := component.TelemetrySettings{Logger: logger.Desugar()}
+	return New(set, c, emit, opts...)
+}
+
+// New creates a new file consumer manager
+func New(set component.TelemetrySettings, c Config, emit emit.Callback, opts ...Option) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -147,7 +155,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 	}
 
 	readerFactory := reader.Factory{
-		SugaredLogger:     logger.With("component", "fileconsumer"),
+		TelemetrySettings: set,
 		FromBeginning:     startAtBeginning,
 		FingerprintSize:   int(c.FingerprintSize),
 		InitialBufferSize: scanner.DefaultBufferSize,
@@ -166,7 +174,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 		knownFiles[i] = fileset.New[*reader.Metadata](c.MaxConcurrentFiles / 2)
 	}
 	return &Manager{
-		SugaredLogger:     logger.With("component", "fileconsumer"),
+		SugaredLogger:     set.Logger.Sugar().With("component", "file_consumer"),
 		readerFactory:     readerFactory,
 		fileMatcher:       fileMatcher,
 		pollInterval:      c.PollInterval,

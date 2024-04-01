@@ -6,10 +6,11 @@ package move // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"go.opentelemetry.io/collector/component"
 )
 
 var operatorType = component.MustNewType("move")
@@ -29,9 +30,9 @@ func newDefaultConfig(operatorID string) component.Config {
 	}
 }
 
-func createOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
+func createOperator(set component.TelemetrySettings, cfg component.Config) (operator.Operator, error) {
 	c := cfg.(*Config)
-	transformerOperator, err := helper.NewTransformer(c.TransformerConfig, set)
+	transformerOperator, err := helper.NewTransformer(set, c.TransformerConfig)
 	if err != nil {
 		return nil, err
 	}

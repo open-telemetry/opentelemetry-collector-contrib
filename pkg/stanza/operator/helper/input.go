@@ -31,11 +31,11 @@ type InputConfig struct {
 
 // Build will build a base producer.
 func (c InputConfig) Build(logger *zap.SugaredLogger) (InputOperator, error) {
-	return NewInput(c, component.TelemetrySettings{Logger: logger.Desugar()})
+	return NewInput(component.TelemetrySettings{Logger: logger.Desugar()}, c)
 }
 
-func NewInput(c InputConfig, set component.TelemetrySettings) (InputOperator, error) {
-	writerOperator, err := NewWriter(c.WriterConfig, set)
+func NewInput(set component.TelemetrySettings, c InputConfig) (InputOperator, error) {
+	writerOperator, err := NewWriter(set, c.WriterConfig)
 	if err != nil {
 		return InputOperator{}, errors.WithDetails(err, "operator_id", c.ID())
 	}

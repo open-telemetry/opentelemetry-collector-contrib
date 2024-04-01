@@ -8,7 +8,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -16,9 +15,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/noop"
 )
 
+var unstartableType = component.MustNewType("unstartable_operator")
+
 // This file implements some useful testing components
 func init() {
-	operator.Register("unstartable_operator", func() operator.Builder { return NewUnstartableConfig() })
+	operator.RegisterFactory(operator.NewFactory(unstartableType, newUnstartableConfig, createUnstartableOperator))
 }
 
 // UnstartableConfig is the configuration of an unstartable mock operator
@@ -33,17 +34,18 @@ type UnstartableOperator struct {
 	helper.OutputOperator
 }
 
-// newUnstartableConfig creates new output config
-func NewUnstartableConfig() operator.Config {
-	return operator.NewConfig(&UnstartableConfig{
-		OutputConfig: helper.NewOutputConfig("unstartable_operator", "unstartable_operator"),
-	})
+func newUnstartableConfig(operatorID string) component.Config {
+	return &UnstartableConfig{
+		OutputConfig: helper.NewOutputConfig(operatorID, "unstartable_operator"),
+	}
 }
 
-// Build will build an unstartable operator
-func (c *UnstartableConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	o, _ := c.OutputConfig.Build(logger)
-	return &UnstartableOperator{OutputOperator: o}, nil
+func createUnstartableOperator(set component.TelemetrySettings, cfg component.Config) (operator.Operator, error) {
+	op, err := helper.NewOutputOperator(set, cfg.(*UnstartableConfig).OutputConfig)
+	if err != nil {
+		return nil, err
+	}
+	return &UnstartableOperator{OutputOperator: op}, nil
 }
 
 // Start will return an error
@@ -62,7 +64,7 @@ var testType = component.MustNewType(testTypeStr)
 
 type TestConfig struct {
 	BaseConfig `mapstructure:",squash"`
-	Input      operator.Config `mapstructure:",squash"`
+	Input      operator.Identifiable `mapstructure:",squash"`
 }
 type TestReceiverType struct{}
 
@@ -73,9 +75,9 @@ func (f TestReceiverType) Type() component.Type {
 func (f TestReceiverType) CreateDefaultConfig() component.Config {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
-			Operators: []operator.Config{},
+			Operators: []operator.Identifiable{},
 		},
-		Input: operator.NewConfig(noop.NewConfig()),
+		Input: noop.NewFactory().NewDefaultConfig("").(operator.Identifiable),
 	}
 }
 
@@ -83,6 +85,6 @@ func (f TestReceiverType) BaseConfig(cfg component.Config) BaseConfig {
 	return cfg.(*TestConfig).BaseConfig
 }
 
-func (f TestReceiverType) InputConfig(cfg component.Config) operator.Config {
+func (f TestReceiverType) InputConfig(cfg component.Config) operator.Identifiable {
 	return cfg.(*TestConfig).Input
 }

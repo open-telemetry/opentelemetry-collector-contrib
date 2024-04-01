@@ -22,12 +22,12 @@ func TestWriterConfigMissingOutput(t *testing.T) {
 	c := WriterConfig{
 		BasicConfig: BasicConfig{
 			Identity: operator.Identity{
-				Type: "test-type",
-				ID:   "test-id",
+				Type: "test_type",
+				Name: "test-id",
 			},
 		},
 	}
-	_, err := NewWriter(c, componenttest.NewNopTelemetrySettings())
+	_, err := NewWriter(componenttest.NewNopTelemetrySettings(), c)
 	require.NoError(t, err)
 }
 
@@ -36,12 +36,12 @@ func TestWriterConfigValidBuild(t *testing.T) {
 		OutputIDs: []string{"output"},
 		BasicConfig: BasicConfig{
 			Identity: operator.Identity{
-				Type: "test-type",
-				ID:   "test-id",
+				Type: "test_type",
+				Name: "test-id",
 			},
 		},
 	}
-	_, err := NewWriter(c, componenttest.NewNopTelemetrySettings())
+	_, err := NewWriter(componenttest.NewNopTelemetrySettings(), c)
 	require.NoError(t, err)
 }
 

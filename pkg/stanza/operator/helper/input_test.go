@@ -22,7 +22,7 @@ func TestInputConfigMissingBase(t *testing.T) {
 		},
 	}
 
-	_, err := NewInput(c, componenttest.NewNopTelemetrySettings())
+	_, err := NewInput(componenttest.NewNopTelemetrySettings(), c)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing required `type` field.")
 }
@@ -32,8 +32,8 @@ func TestInputConfigMissingOutput(t *testing.T) {
 		WriterConfig: WriterConfig{
 			BasicConfig: BasicConfig{
 				Identity: operator.Identity{
-					Type: "test-type",
-					ID:   "test-id",
+					Type: "test_type",
+					Name: "test_id",
 				},
 			},
 		},
@@ -48,30 +48,32 @@ func TestInputConfigValid(t *testing.T) {
 		WriterConfig: WriterConfig{
 			BasicConfig: BasicConfig{
 				Identity: operator.Identity{
-					Type: "test-type",
-					ID:   "test-id",
+					Type: "test_type",
+					Name: "test_id",
 				},
 			},
 			OutputIDs: []string{"test-output"},
 		},
 	}
 
-	_, err := NewInput(c, componenttest.NewNopTelemetrySettings())
+	_, err := NewInput(componenttest.NewNopTelemetrySettings(), c)
 	require.NoError(t, err)
 }
 
 func TestInputOperatorCanProcess(t *testing.T) {
-	input, err := NewInput(InputConfig{
-		WriterConfig: WriterConfig{
-			BasicConfig: BasicConfig{
-				Identity: operator.Identity{
-					Type: "test-type",
-					ID:   "test-id",
+	input, err := NewInput(
+		componenttest.NewNopTelemetrySettings(),
+		InputConfig{
+			WriterConfig: WriterConfig{
+				BasicConfig: BasicConfig{
+					Identity: operator.Identity{
+						Type: "test_type",
+						Name: "test_id",
+					},
 				},
+				OutputIDs: []string{"test-output"},
 			},
-			OutputIDs: []string{"test-output"},
-		},
-	}, componenttest.NewNopTelemetrySettings())
+		})
 	require.NoError(t, err)
 	require.False(t, input.CanProcess())
 }
@@ -80,8 +82,8 @@ func TestInputOperatorProcess(t *testing.T) {
 	input := InputOperator{
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
-				OperatorID:    "test-id",
-				OperatorType:  "test-type",
+				OperatorID:    "test_id",
+				OperatorType:  "test_type",
 				SugaredLogger: testutil.Logger(t),
 			},
 		},
@@ -115,8 +117,8 @@ func TestInputOperatorNewEntry(t *testing.T) {
 		},
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
-				OperatorID:    "test-id",
-				OperatorType:  "test-type",
+				OperatorID:    "test_id",
+				OperatorType:  "test_type",
 				SugaredLogger: testutil.Logger(t),
 			},
 		},

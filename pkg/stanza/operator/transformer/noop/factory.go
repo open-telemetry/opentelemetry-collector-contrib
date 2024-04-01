@@ -27,9 +27,9 @@ func newDefaultConfig(operatorID string) component.Config {
 	}
 }
 
-func createOperator(cfg component.Config, set component.TelemetrySettings) (operator.Operator, error) {
+func createOperator(set component.TelemetrySettings, cfg component.Config) (operator.Operator, error) {
 	c := cfg.(*Config)
-	transformerOperator, err := helper.NewTransformer(c.TransformerConfig, set)
+	transformerOperator, err := helper.NewTransformer(set, c.TransformerConfig)
 	if err != nil {
 		return nil, err
 	}

@@ -21,7 +21,7 @@ type LogReceiverType interface {
 	Type() component.Type
 	CreateDefaultConfig() component.Config
 	BaseConfig(component.Config) BaseConfig
-	InputConfig(component.Config) operator.Config
+	InputConfig(component.Config) operator.Identifiable
 }
 
 // NewFactory creates a factory for a Stanza-based receiver
@@ -36,14 +36,14 @@ func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) rc
 func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 	return func(
 		ctx context.Context,
-		params rcvr.CreateSettings,
+		set rcvr.CreateSettings,
 		cfg component.Config,
 		nextConsumer consumer.Logs,
 	) (rcvr.Logs, error) {
 		inputCfg := logReceiverType.InputConfig(cfg)
 		baseCfg := logReceiverType.BaseConfig(cfg)
 
-		operators := append([]operator.Config{inputCfg}, baseCfg.Operators...)
+		operators := append([]operator.Identifiable{inputCfg}, baseCfg.Operators...)
 
 		emitterOpts := []emitterOption{}
 		if baseCfg.maxBatchSize > 0 {
@@ -52,11 +52,13 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 		if baseCfg.flushInterval > 0 {
 			emitterOpts = append(emitterOpts, withFlushInterval(baseCfg.flushInterval))
 		}
-		emitter := NewLogEmitter(params.Logger.Sugar(), emitterOpts...)
-		pipe, err := pipeline.Config{
-			Operators:     operators,
-			DefaultOutput: emitter,
-		}.Build(params.Logger.Sugar())
+
+		emitter, err := NewEmitter(set.TelemetrySettings, emitterOpts...)
+		if err != nil {
+			return nil, err
+		}
+
+		pipe, err := pipeline.New(set.TelemetrySettings, operators, pipeline.WithDefaultOutput(emitter))
 		if err != nil {
 			return nil, err
 		}
@@ -65,20 +67,20 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 		if baseCfg.numWorkers > 0 {
 			converterOpts = append(converterOpts, withWorkerCount(baseCfg.numWorkers))
 		}
-		converter := NewConverter(params.Logger, converterOpts...)
+		converter := NewConverter(set.Logger, converterOpts...)
 		obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-			ReceiverID:             params.ID,
-			ReceiverCreateSettings: params,
+			ReceiverID:             set.ID,
+			ReceiverCreateSettings: set,
 		})
 		if err != nil {
 			return nil, err
 		}
 		return &receiver{
-			id:        params.ID,
+			set:       set.TelemetrySettings,
+			id:        set.ID,
 			pipe:      pipe,
 			emitter:   emitter,
-			consumer:  consumerretry.NewLogs(baseCfg.RetryOnFailure, params.Logger, nextConsumer),
-			logger:    params.Logger,
+			consumer:  consumerretry.NewLogs(baseCfg.RetryOnFailure, set.Logger, nextConsumer),
 			converter: converter,
 			obsrecv:   obsrecv,
 			storageID: baseCfg.StorageID,

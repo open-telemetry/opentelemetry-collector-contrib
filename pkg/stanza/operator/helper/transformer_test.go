@@ -38,7 +38,7 @@ func TestTransformerConfigValid(t *testing.T) {
 }
 
 func TestTransformerOnErrorDefault(t *testing.T) {
-	cfg := NewTransformerConfig("test-id", "test-type")
+	cfg := NewTransformerConfig("test-id", "test_type")
 	transformer, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 	require.Equal(t, SendOnError, transformer.OnError)
@@ -68,7 +68,7 @@ func TestTransformerDropOnError(t *testing.T) {
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
 				OperatorID:    "test-id",
-				OperatorType:  "test-type",
+				OperatorType:  "test_type",
 				SugaredLogger: testutil.Logger(t),
 			},
 			OutputOperators: []operator.Operator{output},
@@ -95,7 +95,7 @@ func TestTransformerSendOnError(t *testing.T) {
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
 				OperatorID:    "test-id",
-				OperatorType:  "test-type",
+				OperatorType:  "test_type",
 				SugaredLogger: testutil.Logger(t),
 			},
 			OutputOperators: []operator.Operator{output},
@@ -122,7 +122,7 @@ func TestTransformerProcessWithValid(t *testing.T) {
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
 				OperatorID:    "test-id",
-				OperatorType:  "test-type",
+				OperatorType:  "test_type",
 				SugaredLogger: testutil.Logger(t),
 			},
 			OutputOperators: []operator.Operator{output},
