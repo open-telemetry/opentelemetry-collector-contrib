@@ -26,11 +26,12 @@ func NewFactory() extension.Factory {
 
 func createExtension(ctx context.Context, set extension.CreateSettings, cfg component.Config) (component.Component, error) {
 	eCfg := cfg.(*Config)
-	return googleclientauthextension.CreateExtension(ctx, set, eCfg.Config)
+	return googleclientauthextension.CreateExtension(ctx, set, &eCfg.Config)
 }
 
 func createDefaultConfig() component.Config {
+	cfg := googleclientauthextension.CreateDefaultConfig().(*googleclientauthextension.Config)
 	return &Config{
-		Config: googleclientauthextension.CreateDefaultConfig().(*googleclientauthextension.Config),
+		Config: *cfg,
 	}
 }
