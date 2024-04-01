@@ -18,7 +18,7 @@ import (
 
 func createLogsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProviderFunc sqlquery.ClientProviderFunc) receiver.CreateLogsFunc {
 	return func(
-		ctx context.Context,
+		_ context.Context,
 		settings receiver.CreateSettings,
 		config component.Config,
 		consumer consumer.Logs,
@@ -30,7 +30,7 @@ func createLogsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvider
 
 func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProviderFunc sqlquery.ClientProviderFunc) receiver.CreateMetricsFunc {
 	return func(
-		ctx context.Context,
+		_ context.Context,
 		settings receiver.CreateSettings,
 		cfg component.Config,
 		consumer consumer.Metrics,

@@ -5,7 +5,7 @@ status:
   class: receiver
   stability:
     beta: [traces, logs, metrics]
-  distributions: [observiq, sumo]
+  distributions: []
   codeowners:
     active: [alexvanboxel]
 

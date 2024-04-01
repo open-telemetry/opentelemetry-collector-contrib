@@ -30,10 +30,10 @@ func Test_replaceMatch(t *testing.T) {
 	}
 	optionalArg := ottl.NewTestingOptional[ottl.FunctionGetter[pcommon.Value]](ottlValue)
 	target := &ottl.StandardGetSetter[pcommon.Value]{
-		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+		Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 			return tCtx.Str(), nil
 		},
-		Setter: func(ctx context.Context, tCtx pcommon.Value, val any) error {
+		Setter: func(_ context.Context, tCtx pcommon.Value, val any) error {
 			tCtx.SetStr(val.(string))
 			return nil
 		},
@@ -115,10 +115,10 @@ func Test_replaceMatch(t *testing.T) {
 func Test_replaceMatch_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
 	target := &ottl.StandardGetSetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx any, val any) error {
+		Setter: func(_ context.Context, _ any, _ any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -144,10 +144,10 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 func Test_replaceMatch_bad_function_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
 	target := &ottl.StandardGetSetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx any, val any) error {
+		Setter: func(_ context.Context, _ any, _ any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -172,10 +172,10 @@ func Test_replaceMatch_bad_function_input(t *testing.T) {
 func Test_replaceMatch_bad_function_result(t *testing.T) {
 	input := pcommon.NewValueInt(1)
 	target := &ottl.StandardGetSetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx any, val any) error {
+		Setter: func(_ context.Context, _ any, _ any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -205,10 +205,10 @@ func Test_replaceMatch_bad_function_result(t *testing.T) {
 
 func Test_replaceMatch_get_nil(t *testing.T) {
 	target := &ottl.StandardGetSetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx any, val any) error {
+		Setter: func(_ context.Context, _ any, _ any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},

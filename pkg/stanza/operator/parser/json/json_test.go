@@ -72,7 +72,7 @@ func TestParser(t *testing.T) {
 	}{
 		{
 			"simple",
-			func(p *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `{}`,
 			},
@@ -83,7 +83,7 @@ func TestParser(t *testing.T) {
 		},
 		{
 			"nested",
-			func(p *Config) {},
+			func(_ *Config) {},
 			&entry.Entry{
 				Body: `{"superkey":"superval"}`,
 			},

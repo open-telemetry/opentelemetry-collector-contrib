@@ -63,6 +63,9 @@ type TracesConfig struct {
 	// TraceBuffer specifies the number of Datadog Agent TracerPayloads to buffer before dropping.
 	// The default value is 1000.
 	TraceBuffer int `mapstructure:"trace_buffer"`
+
+	// ResourceAttributesAsContainerTags specifies the list of resource attributes to be used as container tags.
+	ResourceAttributesAsContainerTags []string `mapstructure:"resource_attributes_as_container_tags"`
 }
 
 // Validate the configuration for errors. This is required by component.Config.

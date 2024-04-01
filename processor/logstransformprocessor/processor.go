@@ -111,7 +111,7 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) 
 func (ltp *logsTransformProcessor) startFromConverter() {
 	ltp.fromConverter.Start()
 
-	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
 		ltp.fromConverter.Stop()
 		return nil
 	})
@@ -124,7 +124,7 @@ func (ltp *logsTransformProcessor) startConverterLoop(ctx context.Context) {
 	wg.Add(1)
 	go ltp.converterLoop(ctx, wg)
 
-	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
 		wg.Wait()
 		return nil
 	})
@@ -137,7 +137,7 @@ func (ltp *logsTransformProcessor) startPipeline() error {
 		return err
 	}
 
-	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
 		return ltp.pipe.Stop()
 	})
 
@@ -157,7 +157,7 @@ func (ltp *logsTransformProcessor) startEmitterLoop(ctx context.Context) {
 	wg.Add(1)
 	go ltp.emitterLoop(ctx, wg)
 
-	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
 		wg.Wait()
 		return nil
 	})
@@ -166,7 +166,7 @@ func (ltp *logsTransformProcessor) startEmitterLoop(ctx context.Context) {
 func (ltp *logsTransformProcessor) startConverter() {
 	ltp.converter.Start()
 
-	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
 		ltp.converter.Stop()
 		return nil
 	})
@@ -179,7 +179,7 @@ func (ltp *logsTransformProcessor) startConsumerLoop(ctx context.Context) {
 	wg.Add(1)
 	go ltp.consumerLoop(ctx, wg)
 
-	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
 		wg.Wait()
 		return nil
 	})

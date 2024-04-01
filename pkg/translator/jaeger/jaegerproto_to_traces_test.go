@@ -536,7 +536,7 @@ func TestProtoBatchesToInternalTraces(t *testing.T) {
 	for i := 0; i < lenbatches; i++ {
 		rsExpected := expected.ResourceSpans().At(i)
 		for j := 0; j < lenbatches; j++ {
-			got.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+			got.ResourceSpans().RemoveIf(func(_ ptrace.ResourceSpans) bool {
 				nameExpected := rsExpected.ScopeSpans().At(0).Spans().At(0).Name()
 				nameGot := got.ResourceSpans().At(j).ScopeSpans().At(0).Scope().Name()
 				if nameExpected == nameGot {

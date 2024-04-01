@@ -510,7 +510,7 @@ func TestCollectEndpoints(t *testing.T) {
 			newProc: func(pid int32) (*process.Process, error) {
 				return &process.Process{Pid: pid}, nil
 			},
-			procDetails: func(proc *process.Process) (*processDetails, error) {
+			procDetails: func(_ *process.Process) (*processDetails, error) {
 				return nil, errors.New("always fail")
 			},
 			want: []observer.Endpoint{},
