@@ -18,9 +18,13 @@ jobs:
           SHELLCHECK_OPTS: -x -e SC2059 -e SC2086
         with:
           scandir: '.github/workflows/scripts'
+          ignore_paths: >-
+            .github/workflows/scripts/*
       - name: shellcheck buildscripts
         uses: ludeeus/action-shellcheck@master
         env:
           SHELLCHECK_OPTS: -x -e SC2059 -e SC2086
         with:
           scandir: 'internal/buildscripts'
+          ignore_paths: >-
+            internal/buildscripts/*
