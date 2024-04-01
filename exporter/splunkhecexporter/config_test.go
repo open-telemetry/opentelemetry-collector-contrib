@@ -63,8 +63,8 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:  10 * time.Second,
 					Endpoint: "https://splunk:8088/services/collector",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile:   "",
 							CertFile: "",
 							KeyFile:  "",

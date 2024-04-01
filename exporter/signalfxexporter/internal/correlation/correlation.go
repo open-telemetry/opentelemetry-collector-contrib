@@ -137,6 +137,7 @@ func (cor *Tracker) Shutdown(_ context.Context) error {
 	if cor != nil {
 		if cor.correlation != nil {
 			cor.correlation.cancel()
+			cor.correlation.CorrelationClient.Shutdown()
 		}
 
 		if cor.pTicker != nil {

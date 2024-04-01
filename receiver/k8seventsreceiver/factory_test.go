@@ -59,4 +59,5 @@ func TestCreateReceiver(t *testing.T) {
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.NoError(t, err)
+	require.NoError(t, r.Shutdown(context.Background()))
 }

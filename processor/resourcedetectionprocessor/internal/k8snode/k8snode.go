@@ -27,6 +27,7 @@ var _ internal.Detector = (*detector)(nil)
 type detector struct {
 	provider k8snode.Provider
 	logger   *zap.Logger
+	ra       *metadata.ResourceAttributesConfig
 	rb       *metadata.ResourceBuilder
 }
 
@@ -43,22 +44,27 @@ func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (in
 	return &detector{
 		provider: k8snodeProvider,
 		logger:   set.Logger,
+		ra:       &cfg.ResourceAttributes,
 		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
 	}, nil
 }
 
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	nodeUID, err := d.provider.NodeUID(ctx)
-	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s node UID: %w", err)
+	if d.ra.K8sNodeUID.Enabled {
+		nodeUID, err := d.provider.NodeUID(ctx)
+		if err != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s node UID: %w", err)
+		}
+		d.rb.SetK8sNodeUID(nodeUID)
 	}
-	d.rb.SetK8sNodeUID(nodeUID)
 
-	nodeName, err := d.provider.NodeName(ctx)
-	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s node name: %w", err)
+	if d.ra.K8sNodeName.Enabled {
+		nodeName, err := d.provider.NodeName(ctx)
+		if err != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s node name: %w", err)
+		}
+		d.rb.SetK8sNodeName(nodeName)
 	}
-	d.rb.SetK8sNodeName(nodeName)
 
 	return d.rb.Emit(), conventions.SchemaURL, nil
 }

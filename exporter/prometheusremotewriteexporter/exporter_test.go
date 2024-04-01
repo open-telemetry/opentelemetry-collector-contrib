@@ -180,8 +180,8 @@ func Test_Start(t *testing.T) {
 			returnErrorOnStartUp: true,
 			clientSettings: confighttp.ClientConfig{
 				Endpoint: "https://some.url:9411/api/prom/push",
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					Config: configtls.Config{
 						CAFile:   "non-existent file",
 						CertFile: "",
 						KeyFile:  "",
@@ -327,7 +327,7 @@ func Test_export(t *testing.T) {
 }
 
 func TestNoMetricsNoError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
@@ -892,7 +892,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	// receive the bytes uploaded to it by our exporter.
 	uploadedBytesCh := make(chan []byte, 1)
 	exiting := make(chan bool)
-	prweServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	prweServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
 		uploaded, err2 := io.ReadAll(req.Body)
 		assert.NoError(t, err2, "Error while reading from HTTP upload")
 		select {
@@ -1087,7 +1087,7 @@ func TestRetries(t *testing.T) {
 	for _, tt := range tts {
 		t.Run(tt.name, func(t *testing.T) {
 			totalAttempts := 0
-			mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				if totalAttempts < tt.serverErrorCount {
 					http.Error(w, http.StatusText(tt.httpStatus), tt.httpStatus)
 				} else {

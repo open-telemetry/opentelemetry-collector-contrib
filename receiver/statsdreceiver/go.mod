@@ -4,24 +4,24 @@ go 1.21
 
 require (
 	github.com/lightstep/go-expohisto v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.96.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.96.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.97.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.97.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.96.1-0.20240306115632-b2693620eff6
-	go.opentelemetry.io/collector/component v0.96.1-0.20240306115632-b2693620eff6
-	go.opentelemetry.io/collector/config/confignet v0.96.1-0.20240306115632-b2693620eff6
-	go.opentelemetry.io/collector/confmap v0.96.1-0.20240306115632-b2693620eff6
-	go.opentelemetry.io/collector/consumer v0.96.1-0.20240306115632-b2693620eff6
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240306115632-b2693620eff6
-	go.opentelemetry.io/collector/receiver v0.96.1-0.20240306115632-b2693620eff6
-	go.opentelemetry.io/collector/semconv v0.96.1-0.20240306115632-b2693620eff6
+	go.opentelemetry.io/collector v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/component v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/config/confignet v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/confmap v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/consumer v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/pdata v1.4.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/receiver v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/semconv v0.97.1-0.20240327181407-1038b67c85a0
 	go.opentelemetry.io/otel v1.24.0
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	gonum.org/v1/gonum v0.14.0
+	gonum.org/v1/gonum v0.15.0
 )
 
 require (
@@ -33,6 +33,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
@@ -47,8 +48,8 @@ require (
 	github.com/prometheus/client_model v0.6.0 // indirect
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240306115632-b2693620eff6 // indirect
-	go.opentelemetry.io/collector/featuregate v1.3.1-0.20240306115632-b2693620eff6 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.97.1-0.20240327181407-1038b67c85a0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.4.1-0.20240327181407-1038b67c85a0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.24.0 // indirect

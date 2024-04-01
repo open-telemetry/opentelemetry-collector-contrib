@@ -71,7 +71,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(pmetric.MetricTypeSum),
 			newVal: int64(pmetric.MetricTypeSum),
-			modified: func(metric pmetric.Metric) {
+			modified: func(_ pmetric.Metric) {
 			},
 		},
 		{
