@@ -302,6 +302,10 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			Limit: aws.Int64(maxLogGroupsPerDiscovery),
 		}
 
+		if nextToken != nil {
+			req.NextToken = nextToken
+		}
+
 		if auto.Prefix != "" {
 			req.LogGroupNamePrefix = &auto.Prefix
 		}
