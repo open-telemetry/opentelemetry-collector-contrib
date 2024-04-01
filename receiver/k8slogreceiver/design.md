@@ -79,7 +79,7 @@ Finally, there will be a Reader to read the files from logPath.
 
 As same as `deamonset-stdout`, the `Source` will get pod list and metadata from k8s api (maybe there will also be an
 implementation using kubelet).
-Then, it will get the graph driver (to get mount point of `/`), and mount points, so the actual path of log files cloud
+Then, it will get the graph driver (to get mount point of `/`), and mount points, so the actual path of log files could
 be calculated.
 Then, the `Poller` will find the files based on the includes mount point. And the `Reader` will read the files from
 logPath.
