@@ -299,11 +299,8 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 		}
 
 		req := &cloudwatchlogs.DescribeLogGroupsInput{
-			Limit: aws.Int64(maxLogGroupsPerDiscovery),
-		}
-
-		if nextToken != nil {
-			req.NextToken = nextToken
+			Limit:     aws.Int64(maxLogGroupsPerDiscovery),
+			NextToken: nextToken,
 		}
 
 		if auto.Prefix != "" {
