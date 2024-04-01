@@ -5,7 +5,6 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +12,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
