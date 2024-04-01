@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"syscall"
 	"time"
 
 	"google.golang.org/grpc"
@@ -75,20 +74,9 @@ func validateSocket(socket string) error {
 		return fmt.Errorf("failed to check socket path: %w", err)
 	}
 
-	stat, ok := info.Sys().(*syscall.Stat_t)
-	if !ok {
-		return nil
-	}
-
-	if stat.Uid != 0 {
-		return fmt.Errorf("socket path %s is owned by %d, not root", socket, stat.Uid)
-	}
-	perms := info.Mode().Perm()
-	if perms&0002 != 0 {
-		return fmt.Errorf("socket path %s is writeable by anyone - permissions: %s", socket, perms)
-	}
-	if info.Mode()&os.ModeSocket == 0 {
-		return fmt.Errorf("socket path %s is not a socket - mode: %s", socket, info.Mode())
+	err = checkPodResourcesSocketPermissions(info)
+	if err != nil {
+		return fmt.Errorf("socket path %s is not valid: %w", socket, err)
 	}
 
 	return nil

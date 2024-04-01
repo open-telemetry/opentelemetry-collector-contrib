@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package efa
+package efa // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/efa"
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -343,19 +342,9 @@ func (r *sysfsReaderImpl) EfaDataExists() (bool, error) {
 		return false, err
 	}
 
-	stat, ok := info.Sys().(*syscall.Stat_t)
-	if !ok {
-		r.logger.Warn("Couldn't read permissions of EFA directory, not reading from it", zap.String("path", efaPath))
-		return false, nil
-	}
-
-	if stat.Uid != 0 {
-		r.logger.Warn("EFA directory exists but is not owned by root, not reading from it", zap.String("path", efaPath), zap.Uint32("owner uid", stat.Uid))
-		return false, nil
-	}
-	perms := info.Mode().Perm()
-	if perms&0002 != 0 {
-		r.logger.Warn("EFA directory exists but is writeable by anyone, not reading from it", zap.String("path", efaPath), zap.String("permissions", perms.String()))
+	err = checkPermissions(info)
+	if err != nil {
+		r.logger.Warn("not reading from EFA directory", zap.String("path", efaPath), zap.Error(err))
 		return false, nil
 	}
 

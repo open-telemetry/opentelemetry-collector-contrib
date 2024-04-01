@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
@@ -279,11 +280,34 @@ func TestGetMetricsMissingDeviceFromPodResources(t *testing.T) {
 
 func checkExpectations(t *testing.T, expected []expectation, actual []pmetric.Metrics) {
 	assert.Equal(t, len(expected), len(actual))
+	if len(expected) == 0 {
+		return
+	}
+
+	slices.SortFunc(expected, func(a, b expectation) int {
+		return compareStrings(a.tags[ci.AttributeEfaDevice], b.tags[ci.AttributeEfaDevice])
+	})
+	slices.SortFunc(actual, func(a, b pmetric.Metrics) int {
+		aVal, _ := a.ResourceMetrics().At(0).Resource().Attributes().Get(ci.AttributeEfaDevice)
+		bVal, _ := b.ResourceMetrics().At(0).Resource().Attributes().Get(ci.AttributeEfaDevice)
+		return compareStrings(aVal.Str(), bVal.Str())
+	})
+
 	for i := 0; i < len(expected); i++ {
 		expectedMetric := expected[i]
 		actualMetric := actual[i]
 		checkExpectation(t, expectedMetric.fields, expectedMetric.tags, actualMetric)
 	}
+}
+
+func compareStrings(x, y string) int {
+	if x < y {
+		return -1
+	}
+	if x > y {
+		return +1
+	}
+	return 0
 }
 
 func checkExpectation(t *testing.T, expectedFields map[string]uint64, expectedTags map[string]string, md pmetric.Metrics) {
