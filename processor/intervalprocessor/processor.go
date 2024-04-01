@@ -249,6 +249,11 @@ func (p *Processor) exportMetrics() {
 	if err := p.nextConsumer.ConsumeMetrics(p.ctx, md); err != nil {
 		p.logger.Error("Metrics export failed", zap.Error(err))
 	}
+
+	// Clear everything now that we've exported
+	p.numbers.Clear()
+	p.histograms.Clear()
+	p.expHistograms.Clear()
 }
 
 func getOrCreateMetric(

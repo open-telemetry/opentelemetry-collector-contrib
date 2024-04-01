@@ -15,7 +15,7 @@ import (
 
 func New[D data.Point[D]]() Accumulator[D] {
 	return Accumulator[D]{
-		Map: make(exp.HashMap[D]),
+		Map: &exp.HashMap[D]{},
 	}
 }
 

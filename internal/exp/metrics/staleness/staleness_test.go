@@ -17,7 +17,7 @@ func TestStaleness(t *testing.T) {
 	max := 1 * time.Second
 	stalenessMap := NewStaleness[int](
 		max,
-		make(streams.HashMap[int]),
+		&streams.HashMap[int]{},
 	)
 
 	idA := generateStreamID(t, map[string]any{

@@ -15,8 +15,6 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
-// TODO: Add tests for the other data types. Ensuring things like: gauges are passed through unchanged, etc.
-
 // TODO: Add tests for data expiration
 
 func TestAggregation(t *testing.T) {
@@ -28,7 +26,6 @@ func TestAggregation(t *testing.T) {
 		next    []testMetric
 		outputs []testMetric
 	}{
-		// TODO: Add many more test cases for all the edge cases
 		{
 			name: "BasicAggregation",
 			inputs: []testMetric{
@@ -259,14 +256,25 @@ func TestAggregation(t *testing.T) {
 			// Pretend we hit the interval timer and call export
 			processor.exportMetrics()
 
-			// Next should have gotten two data sets:
+			// Processor should now be empty
+			require.Equal(t, 0, processor.numbers.Len())
+			require.Equal(t, 0, processor.histograms.Len())
+			require.Equal(t, 0, processor.expHistograms.Len())
+
+			// Exporting again should return nothing
+			processor.exportMetrics()
+
+			// Next should have gotten three data sets:
 			// 1. Anything left over from ConsumeMetrics()
 			// 2. Anything exported from exportMetrics()
+			// 3. An empty entry for the second call to exportMetrics()
 			allMetrics := next.AllMetrics()
-			require.Len(t, allMetrics, 2)
+			require.Len(t, allMetrics, 3)
 
 			nextData := convertMetricsToTestData(t, allMetrics[0])
 			exportData := convertMetricsToTestData(t, allMetrics[1])
+			secondExportData := convertMetricsToTestData(t, allMetrics[2])
+			require.Empty(t, secondExportData)
 
 			expectedNextData := testMetrics{
 				{
