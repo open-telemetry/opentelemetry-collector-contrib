@@ -4,7 +4,7 @@ server:
     # Disable verification to test locally.
     # Don't do this in production.
     insecure_skip_verify: true 
-    # For more TLS settings see config/configtls.TLSClientSetting
+    # For more TLS settings see config/configtls.ClientConfig
 
 capabilities:
   reports_effective_config: true

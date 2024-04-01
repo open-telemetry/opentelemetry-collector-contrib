@@ -25,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
@@ -112,6 +113,7 @@ func newTestComponents(t *testing.T) otelcol.Factories {
 			k8sattributesprocessor.NewFactory(),
 			resourcedetectionprocessor.NewFactory(),
 			probabilisticsamplerprocessor.NewFactory(),
+			transformprocessor.NewFactory(),
 		}...,
 	)
 	require.NoError(t, err)

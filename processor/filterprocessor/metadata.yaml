@@ -1,10 +1,11 @@
 type: filter
+scope_name: otelcol/filter
 
 status:
   class: processor
   stability:
     alpha: [traces, metrics, logs]
-  distributions: [core, contrib, splunk, observiq, sumo, aws, redhat, liatrio]
+  distributions: [core, contrib]
   warnings: [Orphaned Telemetry, Other]
   codeowners:
     active: [TylerHelmuth, boostchicken]

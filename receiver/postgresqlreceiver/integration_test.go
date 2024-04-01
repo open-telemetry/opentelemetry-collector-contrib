@@ -24,6 +24,7 @@ const postgresqlPort = "5432"
 
 func TestIntegration(t *testing.T) {
 	defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, false)()
+	defer testutil.SetFeatureGateForTest(t, connectionPoolGate, false)()
 	t.Run("single_db", integrationTest("single_db", []string{"otel"}))
 	t.Run("multi_db", integrationTest("multi_db", []string{"otel", "otel2"}))
 	t.Run("all_db", integrationTest("all_db", []string{}))
@@ -31,9 +32,18 @@ func TestIntegration(t *testing.T) {
 
 func TestIntegrationWithSeparateSchemaAttr(t *testing.T) {
 	defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, true)()
+	defer testutil.SetFeatureGateForTest(t, connectionPoolGate, false)()
 	t.Run("single_db_schemaattr", integrationTest("single_db_schemaattr", []string{"otel"}))
 	t.Run("multi_db_schemaattr", integrationTest("multi_db_schemaattr", []string{"otel", "otel2"}))
 	t.Run("all_db_schemaattr", integrationTest("all_db_schemaattr", []string{}))
+}
+
+func TestIntegrationWithConnectionPool(t *testing.T) {
+	defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, false)()
+	defer testutil.SetFeatureGateForTest(t, connectionPoolGate, true)()
+	t.Run("single_db_connpool", integrationTest("single_db_connpool", []string{"otel"}))
+	t.Run("multi_db_connpool", integrationTest("multi_db_connpool", []string{"otel", "otel2"}))
+	t.Run("all_db_connpool", integrationTest("all_db_connpool", []string{}))
 }
 
 func integrationTest(name string, databases []string) func(*testing.T) {
@@ -66,6 +76,7 @@ func integrationTest(name string, databases []string) func(*testing.T) {
 				rCfg.Username = "otelu"
 				rCfg.Password = "otelp"
 				rCfg.Insecure = true
+				rCfg.Metrics.PostgresqlWalDelay.Enabled = true
 				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
 				rCfg.Metrics.PostgresqlTempFiles.Enabled = true
 				rCfg.Metrics.PostgresqlSequentialScans.Enabled = true

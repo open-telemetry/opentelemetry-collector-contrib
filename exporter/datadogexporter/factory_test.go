@@ -71,9 +71,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &Config{
-		TimeoutSettings: defaulttimeoutSettings(),
-		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		ClientConfig:  defaultClientConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
@@ -132,9 +132,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
-				TimeoutSettings: defaulttimeoutSettings(),
-				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+				ClientConfig:  defaultClientConfig(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				API: APIConfig{
 					Key:              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 					Site:             "datadoghq.com",
@@ -180,9 +180,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "api"),
 			expected: &Config{
-				TimeoutSettings: defaulttimeoutSettings(),
-				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+				ClientConfig:  defaultClientConfig(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},
@@ -235,9 +235,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "api2"),
 			expected: &Config{
-				TimeoutSettings: defaulttimeoutSettings(),
-				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+				ClientConfig:  defaultClientConfig(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},
@@ -620,9 +620,9 @@ func TestOnlyMetadata(t *testing.T) {
 	factory := NewFactory()
 	ctx := context.Background()
 	cfg := &Config{
-		TimeoutSettings: defaulttimeoutSettings(),
-		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		ClientConfig:  defaultClientConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 		API:          APIConfig{Key: "notnull"},
 		Metrics:      MetricsConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},

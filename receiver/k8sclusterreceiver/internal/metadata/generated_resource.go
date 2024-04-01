@@ -63,6 +63,13 @@ func (rb *ResourceBuilder) SetK8sContainerName(val string) {
 	}
 }
 
+// SetK8sContainerStatusLastTerminatedReason sets provided value as "k8s.container.status.last_terminated_reason" attribute.
+func (rb *ResourceBuilder) SetK8sContainerStatusLastTerminatedReason(val string) {
+	if rb.config.K8sContainerStatusLastTerminatedReason.Enabled {
+		rb.res.Attributes().PutStr("k8s.container.status.last_terminated_reason", val)
+	}
+}
+
 // SetK8sCronjobName sets provided value as "k8s.cronjob.name" attribute.
 func (rb *ResourceBuilder) SetK8sCronjobName(val string) {
 	if rb.config.K8sCronjobName.Enabled {
@@ -137,13 +144,6 @@ func (rb *ResourceBuilder) SetK8sJobUID(val string) {
 func (rb *ResourceBuilder) SetK8sKubeletVersion(val string) {
 	if rb.config.K8sKubeletVersion.Enabled {
 		rb.res.Attributes().PutStr("k8s.kubelet.version", val)
-	}
-}
-
-// SetK8sKubeproxyVersion sets provided value as "k8s.kubeproxy.version" attribute.
-func (rb *ResourceBuilder) SetK8sKubeproxyVersion(val string) {
-	if rb.config.K8sKubeproxyVersion.Enabled {
-		rb.res.Attributes().PutStr("k8s.kubeproxy.version", val)
 	}
 }
 

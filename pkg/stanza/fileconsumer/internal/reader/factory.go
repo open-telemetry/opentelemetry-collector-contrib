@@ -5,6 +5,7 @@ package reader // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -28,25 +29,26 @@ const (
 
 type Factory struct {
 	*zap.SugaredLogger
-	HeaderConfig    *header.Config
-	FromBeginning   bool
-	FingerprintSize int
-	MaxLogSize      int
-	Encoding        encoding.Encoding
-	SplitFunc       bufio.SplitFunc
-	TrimFunc        trim.Func
-	FlushTimeout    time.Duration
-	EmitFunc        emit.Callback
-	Attributes      attrs.Resolver
-	DeleteAtEOF     bool
+	HeaderConfig      *header.Config
+	FromBeginning     bool
+	FingerprintSize   int
+	InitialBufferSize int
+	MaxLogSize        int
+	Encoding          encoding.Encoding
+	SplitFunc         bufio.SplitFunc
+	TrimFunc          trim.Func
+	FlushTimeout      time.Duration
+	EmitFunc          emit.Callback
+	Attributes        attrs.Resolver
+	DeleteAtEOF       bool
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
-	return fingerprint.New(file, f.FingerprintSize)
+	return fingerprint.NewFromFile(file, f.FingerprintSize)
 }
 
 func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
-	attributes, err := f.Attributes.Resolve(file.Name())
+	attributes, err := f.Attributes.Resolve(file)
 	if err != nil {
 		return nil, err
 	}
@@ -59,15 +61,28 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 
 func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
 	r = &Reader{
-		Metadata:        m,
-		logger:          f.SugaredLogger.With("path", file.Name()),
-		file:            file,
-		fileName:        file.Name(),
-		fingerprintSize: f.FingerprintSize,
-		maxLogSize:      f.MaxLogSize,
-		decoder:         decode.New(f.Encoding),
-		lineSplitFunc:   f.SplitFunc,
-		deleteAtEOF:     f.DeleteAtEOF,
+		Metadata:          m,
+		logger:            f.SugaredLogger.With("path", file.Name()),
+		file:              file,
+		fileName:          file.Name(),
+		fingerprintSize:   f.FingerprintSize,
+		initialBufferSize: f.InitialBufferSize,
+		maxLogSize:        f.MaxLogSize,
+		decoder:           decode.New(f.Encoding),
+		lineSplitFunc:     f.SplitFunc,
+		deleteAtEOF:       f.DeleteAtEOF,
+	}
+
+	if r.Fingerprint.Len() > r.fingerprintSize {
+		// User has reconfigured fingerprint_size
+		shorter, rereadErr := fingerprint.NewFromFile(file, r.fingerprintSize)
+		if rereadErr != nil {
+			return nil, fmt.Errorf("reread fingerprint: %w", err)
+		}
+		if !r.Fingerprint.StartsWith(shorter) {
+			return nil, errors.New("file truncated")
+		}
+		m.Fingerprint = shorter
 	}
 
 	if !f.FromBeginning {
@@ -93,7 +108,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		r.processFunc = r.headerReader.Process
 	}
 
-	attributes, err := f.Attributes.Resolve(file.Name())
+	attributes, err := f.Attributes.Resolve(file)
 	if err != nil {
 		return nil, err
 	}

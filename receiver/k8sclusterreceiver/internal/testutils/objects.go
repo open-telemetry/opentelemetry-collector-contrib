@@ -202,7 +202,6 @@ func NewNode(id string) *corev1.Node {
 			},
 			NodeInfo: corev1.NodeSystemInfo{
 				KubeletVersion:          "v1.25.3",
-				KubeProxyVersion:        "v1.25.3",
 				OSImage:                 "Ubuntu 22.04.1 LTS",
 				ContainerRuntimeVersion: "containerd://1.6.9",
 				OperatingSystem:         "linux",
@@ -279,6 +278,11 @@ func NewEvictedTerminatedPodStatusWithContainer(containerName, containerID strin
 				ContainerID:  containerID,
 				State: corev1.ContainerState{
 					Terminated: &corev1.ContainerStateTerminated{},
+				},
+				LastTerminationState: corev1.ContainerState{
+					Terminated: &corev1.ContainerStateTerminated{
+						Reason: "Evicted",
+					},
 				},
 			},
 		},
