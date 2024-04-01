@@ -143,7 +143,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, "1", "tablespace_name-val")
+			mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, 1, "tablespace_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
