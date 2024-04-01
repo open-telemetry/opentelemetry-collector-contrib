@@ -163,21 +163,25 @@ func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP
 
 		existing, ok := state.Load(streamDataPointID)
 		if !ok {
-			state.Store(streamDataPointID, metrics.StreamDataPoint[DP]{
+			if err := state.Store(streamDataPointID, metrics.StreamDataPoint[DP]{
 				Metric:      metric,
 				DataPoint:   dp,
 				LastUpdated: now,
-			})
+			}); err != nil {
+				panic(fmt.Sprintf("Storing state should never panic, because HashMap always returns nil - Err: %v", err))
+			}
 			continue
 		}
 
 		// Check if the datapoint is newer
 		if dp.Timestamp().AsTime().After(existing.DataPoint.Timestamp().AsTime()) {
-			state.Store(streamDataPointID, metrics.StreamDataPoint[DP]{
+			if err := state.Store(streamDataPointID, metrics.StreamDataPoint[DP]{
 				Metric:      metric,
 				DataPoint:   dp,
 				LastUpdated: now,
-			})
+			}); err != nil {
+				panic(fmt.Sprintf("Storing state should never panic, because HashMap always returns nil - Err: %v", err))
+			}
 			continue
 		}
 
