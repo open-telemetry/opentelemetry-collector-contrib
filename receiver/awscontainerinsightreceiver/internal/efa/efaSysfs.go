@@ -132,32 +132,66 @@ func (s *Scraper) GetMetrics() []pmetric.Metrics {
 	store := s.store
 	for deviceName, counters := range *store.devices {
 		containerInfo := s.podResourcesStore.GetContainerInfo(string(deviceName), efaK8sResourceName)
-		if containerInfo == nil {
-			continue
+
+		nodeMetric := stores.NewCIMetric(ci.TypeNodeEFA, s.logger)
+		var containerMetric, podMetric stores.CIMetric
+		if containerInfo != nil {
+			containerMetric = stores.NewCIMetric(ci.TypeContainerEFA, s.logger)
+			podMetric = stores.NewCIMetric(ci.TypePodEFA, s.logger)
 		}
 
-		containerMetric := stores.NewCIMetric(ci.TypeContainerEFA, s.logger)
-		podMetric := stores.NewCIMetric(ci.TypePodEFA, s.logger)
-		nodeMetric := stores.NewCIMetric(ci.TypeNodeEFA, s.logger)
+		measurementValue := map[string]uint64{
+			ci.EfaRdmaReadBytes:      counters.rdmaReadBytes,
+			ci.EfaRdmaWriteBytes:     counters.rdmaWriteBytes,
+			ci.EfaRdmaWriteRecvBytes: counters.rdmaWriteRecvBytes,
+			ci.EfaRxBytes:            counters.rxBytes,
+			ci.EfaRxDropped:          counters.rxDrops,
+			ci.EfaTxBytes:            counters.txBytes,
+		}
 
-		s.fillMetric(containerMetric, ci.TypeContainerEFA, containerInfo.Namespace, containerInfo.PodName,
-			containerInfo.ContainerName, string(deviceName), store.timestamp, counters)
-		s.fillMetric(podMetric, ci.TypePodEFA, containerInfo.Namespace, containerInfo.PodName,
-			containerInfo.ContainerName, string(deviceName), store.timestamp, counters)
-		s.fillMetric(nodeMetric, ci.TypeNodeEFA, containerInfo.Namespace, containerInfo.PodName,
-			containerInfo.ContainerName, string(deviceName), store.timestamp, counters)
+		for measurement, value := range measurementValue {
+			nodeKey := metrics.Key{MetricMetadata: metadata{
+				measurement: measurement,
+				deviceName:  string(deviceName),
+			}}
+			deltaVal, found := s.deltaCalculator.Calculate(nodeKey, value, store.timestamp)
+			if found {
+				nodeMetric.AddField(ci.MetricName(ci.TypeNodeEFA, measurement), deltaVal)
+			}
 
-		for _, m := range []stores.CIMetric{containerMetric, podMetric, nodeMetric} {
+			if containerInfo != nil {
+				containerKey := metrics.Key{MetricMetadata: metadata{
+					measurement:       measurement,
+					deviceName:        string(deviceName),
+					containerMetadata: *containerInfo,
+				}}
+				deltaVal, found := s.deltaCalculator.Calculate(containerKey, value, store.timestamp)
+				if found {
+					podMetric.AddField(ci.MetricName(ci.TypePodEFA, measurement), deltaVal)
+					containerMetric.AddField(ci.MetricName(ci.TypeContainerEFA, measurement), deltaVal)
+				}
+			}
+		}
+
+		allMetrics := make([]stores.CIMetric, 0)
+		podContainerMetrics := make([]stores.CIMetric, 0)
+		allMetrics = append(allMetrics, nodeMetric)
+		if containerInfo != nil {
+			allMetrics = append(allMetrics, podMetric, containerMetric)
+			podContainerMetrics = append(podContainerMetrics, podMetric, containerMetric)
+		}
+
+		for _, m := range allMetrics {
 			m.AddTag(ci.AttributeEfaDevice, string(deviceName))
 			m.AddTag(ci.Timestamp, strconv.FormatInt(store.timestamp.UnixNano(), 10))
 		}
-		for _, m := range []stores.CIMetric{containerMetric, podMetric} {
+		for _, m := range podContainerMetrics {
 			m.AddTag(ci.AttributeK8sNamespace, containerInfo.Namespace)
 			m.AddTag(ci.AttributeK8sPodName, containerInfo.PodName)
 			m.AddTag(ci.AttributeContainerName, containerInfo.ContainerName)
 		}
 
-		for _, m := range []stores.CIMetric{containerMetric, podMetric, nodeMetric} {
+		for _, m := range allMetrics {
 			if len(m.GetFields()) == 0 {
 				continue
 			}
@@ -170,48 +204,9 @@ func (s *Scraper) GetMetrics() []pmetric.Metrics {
 }
 
 type metadata struct {
-	namespace     string
-	podName       string
-	containerName string
-	deviceName    string
-	metricName    string
-}
-
-func (s *Scraper) fillMetric(metric stores.CIMetric, metricType string, namespace string, podName string,
-	containerName string, deviceName string, timestamp time.Time, counters *efaCounters) {
-
-	metricNameValue := map[string]uint64{
-		ci.MetricName(metricType, ci.EfaRdmaReadBytes):      counters.rdmaReadBytes,
-		ci.MetricName(metricType, ci.EfaRdmaWriteBytes):     counters.rdmaWriteBytes,
-		ci.MetricName(metricType, ci.EfaRdmaWriteRecvBytes): counters.rdmaWriteRecvBytes,
-		ci.MetricName(metricType, ci.EfaRxBytes):            counters.rxBytes,
-		ci.MetricName(metricType, ci.EfaRxDropped):          counters.rxDrops,
-		ci.MetricName(metricType, ci.EfaTxBytes):            counters.txBytes,
-	}
-
-	for metricName, value := range metricNameValue {
-		s.assignRateValueToField(metricName, value, metric, namespace, podName, containerName, deviceName, timestamp)
-	}
-}
-
-func (s *Scraper) assignRateValueToField(metricName string, value uint64, metric stores.CIMetric, namespace string,
-	podName string, containerName string, deviceName string, timestamp time.Time) {
-	key := metrics.Key{
-		MetricMetadata: metadata{
-			namespace:     namespace,
-			podName:       podName,
-			containerName: containerName,
-			deviceName:    deviceName,
-			metricName:    metricName,
-		},
-	}
-	deltaValue, found := s.deltaCalculator.Calculate(key, value, timestamp)
-	if found {
-		metric.AddField(metricName, deltaValue)
-	}
-}
-
-func (s *Scraper) init() {
+	measurement       string
+	deviceName        string
+	containerMetadata stores.ContainerInfo
 }
 
 func (s *Scraper) startScrape(ctx context.Context) {

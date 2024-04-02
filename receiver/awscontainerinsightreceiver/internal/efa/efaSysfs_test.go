@@ -44,18 +44,6 @@ func (r mockSysfsReader) ListPorts(_ efaDeviceName) ([]string, error) {
 	return []string{"1", "2"}, nil
 }
 
-// func (r mockSysfsReader) ListCounters(_ efaDeviceName, _ string) ([]string, error) {
-//	return []string{
-//		counterRdmaReadBytes,
-//		counterRdmaWriteBytes,
-//		counterRdmaWriteRecvBytes,
-//		counterRxBytes,
-//		counterRxDrops,
-//		counterTxBytes,
-//		"ignored-counter",
-//	}, nil
-// }
-
 var mockCounterValues = map[string]uint64{
 	counterRdmaReadBytes:      1,
 	counterRdmaWriteBytes:     2,
@@ -117,44 +105,6 @@ type expectation struct {
 var efa0Metrics = []expectation{
 	{
 		map[string]uint64{
-			"container_efa_rdma_read_bytes":       2,
-			"container_efa_rdma_write_bytes":      4,
-			"container_efa_rdma_write_recv_bytes": 6,
-			"container_efa_rx_bytes":              8,
-			"container_efa_rx_dropped":            10,
-			"container_efa_tx_bytes":              12,
-		},
-		map[string]string{
-			ci.MetricType:             ci.TypeContainerEFA,
-			ci.AttributeEfaDevice:     "efa0",
-			ci.AttributeK8sNamespace:  "namespace0",
-			ci.AttributeK8sPodName:    "pod0",
-			ci.AttributeContainerName: "container0",
-			ci.Timestamp:              "to-be-replaced",
-			"decorated":               "true",
-		},
-	},
-	{
-		map[string]uint64{
-			"pod_efa_rdma_read_bytes":       2,
-			"pod_efa_rdma_write_bytes":      4,
-			"pod_efa_rdma_write_recv_bytes": 6,
-			"pod_efa_rx_bytes":              8,
-			"pod_efa_rx_dropped":            10,
-			"pod_efa_tx_bytes":              12,
-		},
-		map[string]string{
-			ci.MetricType:             ci.TypePodEFA,
-			ci.AttributeEfaDevice:     "efa0",
-			ci.AttributeK8sNamespace:  "namespace0",
-			ci.AttributeK8sPodName:    "pod0",
-			ci.AttributeContainerName: "container0",
-			ci.Timestamp:              "to-be-replaced",
-			"decorated":               "true",
-		},
-	},
-	{
-		map[string]uint64{
 			"node_efa_rdma_read_bytes":       2,
 			"node_efa_rdma_write_bytes":      4,
 			"node_efa_rdma_write_recv_bytes": 6,
@@ -169,9 +119,25 @@ var efa0Metrics = []expectation{
 			"decorated":           "true",
 		},
 	},
-}
-
-var efa1Metrics = []expectation{
+	{
+		map[string]uint64{
+			"pod_efa_rdma_read_bytes":       2,
+			"pod_efa_rdma_write_bytes":      4,
+			"pod_efa_rdma_write_recv_bytes": 6,
+			"pod_efa_rx_bytes":              8,
+			"pod_efa_rx_dropped":            10,
+			"pod_efa_tx_bytes":              12,
+		},
+		map[string]string{
+			ci.MetricType:             ci.TypePodEFA,
+			ci.AttributeEfaDevice:     "efa0",
+			ci.AttributeK8sNamespace:  "namespace0",
+			ci.AttributeK8sPodName:    "pod0",
+			ci.AttributeContainerName: "container0",
+			ci.Timestamp:              "to-be-replaced",
+			"decorated":               "true",
+		},
+	},
 	{
 		map[string]uint64{
 			"container_efa_rdma_read_bytes":       2,
@@ -183,14 +149,34 @@ var efa1Metrics = []expectation{
 		},
 		map[string]string{
 			ci.MetricType:             ci.TypeContainerEFA,
-			ci.AttributeEfaDevice:     "efa1",
-			ci.AttributeK8sNamespace:  "namespace1",
-			ci.AttributeK8sPodName:    "pod1",
-			ci.AttributeContainerName: "container1",
+			ci.AttributeEfaDevice:     "efa0",
+			ci.AttributeK8sNamespace:  "namespace0",
+			ci.AttributeK8sPodName:    "pod0",
+			ci.AttributeContainerName: "container0",
 			ci.Timestamp:              "to-be-replaced",
 			"decorated":               "true",
 		},
 	},
+}
+
+var efa1NodeMetric = expectation{
+	map[string]uint64{
+		"node_efa_rdma_read_bytes":       2,
+		"node_efa_rdma_write_bytes":      4,
+		"node_efa_rdma_write_recv_bytes": 6,
+		"node_efa_rx_bytes":              8,
+		"node_efa_rx_dropped":            10,
+		"node_efa_tx_bytes":              12,
+	},
+	map[string]string{
+		ci.MetricType:         ci.TypeNodeEFA,
+		ci.AttributeEfaDevice: "efa1",
+		ci.Timestamp:          "to-be-replaced",
+		"decorated":           "true",
+	},
+}
+
+var efa1PodContainerMetrics = []expectation{
 	{
 		map[string]uint64{
 			"pod_efa_rdma_read_bytes":       2,
@@ -212,21 +198,26 @@ var efa1Metrics = []expectation{
 	},
 	{
 		map[string]uint64{
-			"node_efa_rdma_read_bytes":       2,
-			"node_efa_rdma_write_bytes":      4,
-			"node_efa_rdma_write_recv_bytes": 6,
-			"node_efa_rx_bytes":              8,
-			"node_efa_rx_dropped":            10,
-			"node_efa_tx_bytes":              12,
+			"container_efa_rdma_read_bytes":       2,
+			"container_efa_rdma_write_bytes":      4,
+			"container_efa_rdma_write_recv_bytes": 6,
+			"container_efa_rx_bytes":              8,
+			"container_efa_rx_dropped":            10,
+			"container_efa_tx_bytes":              12,
 		},
 		map[string]string{
-			ci.MetricType:         ci.TypeNodeEFA,
-			ci.AttributeEfaDevice: "efa1",
-			ci.Timestamp:          "to-be-replaced",
-			"decorated":           "true",
+			ci.MetricType:             ci.TypeContainerEFA,
+			ci.AttributeEfaDevice:     "efa1",
+			ci.AttributeK8sNamespace:  "namespace1",
+			ci.AttributeK8sPodName:    "pod1",
+			ci.AttributeContainerName: "container1",
+			ci.Timestamp:              "to-be-replaced",
+			"decorated":               "true",
 		},
 	},
 }
+
+var efa1Metrics = []expectation{efa1NodeMetric, efa1PodContainerMetrics[0], efa1PodContainerMetrics[1]}
 
 func TestGetMetrics(t *testing.T) {
 	s := NewEfaSyfsScraper(zap.NewNop(), mockDecorator{}, mockPodResourcesStore{})
@@ -271,7 +262,9 @@ func TestGetMetricsMissingDeviceFromPodResources(t *testing.T) {
 	assert.NoError(t, s.scrape())
 	assert.Empty(t, s.GetMetrics())
 
-	expectedMetrics := efa0Metrics
+	var expectedMetrics []expectation
+	expectedMetrics = append(expectedMetrics, efa0Metrics...)
+	expectedMetrics = append(expectedMetrics, efa1NodeMetric)
 
 	assert.NoError(t, s.scrape())
 	result := s.GetMetrics()
