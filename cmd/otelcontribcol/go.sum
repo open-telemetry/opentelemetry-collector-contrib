@@ -1293,8 +1293,8 @@ github.com/onsi/gomega v1.13.0/go.mod h1:lRk9szgn8TxENtWd0Tp4c3wjlRfMTMH27I+3Je4
 github.com/onsi/gomega v1.30.0 h1:hvMK7xYz4D3HapigLTeGdId/NcfQx1VHMJc60ew99+8=
 github.com/onsi/gomega v1.30.0/go.mod h1:9sxs+SwGrKI0+PWe4Fxa9tFQQBG5xSsSbMXOI8PPpoQ=
 github.com/op/go-logging v0.0.0-20160315200505-970db520ece7/go.mod h1:HzydrMdWErDVzsI23lYNej1Htcns9BCg93Dk0bBINWk=
-github.com/open-telemetry/opamp-go v0.12.0 h1:N97R8BY5FfaB9SzG5pURrOfXQk7MT9a4RD8oERlii5o=
-github.com/open-telemetry/opamp-go v0.12.0/go.mod h1:bk3WZ4RjbVdzsHT3gaPZscUdGvoz9Bi2+AvG8/5X824=
+github.com/open-telemetry/opamp-go v0.14.0 h1:KoziIK+wsFojhUXNTkCSTnCPf0eCMqFAaccOs0HrWIY=
+github.com/open-telemetry/opamp-go v0.14.0/go.mod h1:XOGCigljsLSTZ8FfLwvat0M1QDj3conIIgRa77BWrKs=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.0 h1:8SG7/vwALn54lVB/0yZ/MMwhFrPYtpEHQb2IpWsCzug=
