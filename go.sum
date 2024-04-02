@@ -1594,8 +1594,8 @@ github.com/vmihailenco/tagparser v0.1.2 h1:gnjoVuB/kljJ5wICEEOpx98oXMWPLj22G67Vb
 github.com/vmihailenco/tagparser v0.1.2/go.mod h1:OeAg3pn3UbLjkWt+rN9oFYB6u/cQgqMEUPoW2WPyhdI=
 github.com/vmware/go-vmware-nsxt v0.0.0-20230223012718-d31b8a1ca05e h1:Vu41Q0Pv3yMdd+tcDW6QeEUIK2L+9ZrPrq8NAMrKSLc=
 github.com/vmware/go-vmware-nsxt v0.0.0-20230223012718-d31b8a1ca05e/go.mod h1:aRq5pxwgdJpAuP97SCjX1+Db32z/b0dggQ07FDF+fqE=
-github.com/vmware/govmomi v0.36.1 h1:+E/nlfteQ8JvC0xhuKAfpnMsuIeGeGj7rJwqENUcWm8=
-github.com/vmware/govmomi v0.36.1/go.mod h1:mtGWtM+YhTADHlCgJBiskSRPOZRsN9MSjPzaZLte/oQ=
+github.com/vmware/govmomi v0.36.3 h1:1Ng3CBNQVbFjCQbKtfsewy5o3dFa+EoTjqeThVISUBc=
+github.com/vmware/govmomi v0.36.3/go.mod h1:mtGWtM+YhTADHlCgJBiskSRPOZRsN9MSjPzaZLte/oQ=
 github.com/vultr/govultr/v2 v2.17.2 h1:gej/rwr91Puc/tgh+j33p/BLR16UrIPnSr+AIwYWZQs=
 github.com/vultr/govultr/v2 v2.17.2/go.mod h1:ZFOKGWmgjytfyjeyAdhQlSWwTjh2ig+X49cAp50dzXI=
 github.com/xdg-go/pbkdf2 v1.0.0 h1:Su7DPu48wXMwC3bs7MCNG+z4FhcyEuz5dlvchbq0B0c=
