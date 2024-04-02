@@ -1369,9 +1369,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 				return &mockAckExtension
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
-				status := resp.StatusCode
-				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, map[string]any{"code": float64(10), "text": "Data channel is missing"}, body)
+				assertHecSuccessResponse(t, resp, body)
 			},
 		},
 		{
@@ -1475,12 +1473,10 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				return &mockAckExtension
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
-				status := resp.StatusCode
-				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, map[string]any{"code": float64(10), "text": "Data channel is missing"}, body)
+				assertHecSuccessResponse(t, resp, body)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
-				assert.Equal(t, 0, len(sink.AllLogs()))
+				assert.Equal(t, 1, len(sink.AllLogs()))
 			},
 		},
 		{
