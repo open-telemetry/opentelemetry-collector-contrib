@@ -6,6 +6,7 @@ status:
   stability:
     alpha: [traces, metrics, logs]
   distributions: [contrib]
+  warnings: []
   codeowners:
     active: [hanjm, dmitryax, Frapschen, SpencerTorres]
 
