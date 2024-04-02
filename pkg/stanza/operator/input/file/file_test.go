@@ -28,6 +28,8 @@ func TestAddFileResolvedFields(t *testing.T) {
 		cfg.IncludeFilePath = true
 		cfg.IncludeFileNameResolved = true
 		cfg.IncludeFilePathResolved = true
+		cfg.IncludeFileOwnerName = runtime.GOOS != "windows"
+		cfg.IncludeFileOwnerGroupName = runtime.GOOS != "windows"
 	})
 
 	// Create temp dir with log file
@@ -63,6 +65,10 @@ func TestAddFileResolvedFields(t *testing.T) {
 	require.Equal(t, symLinkPath, e.Attributes["log.file.path"])
 	require.Equal(t, filepath.Base(resolved), e.Attributes["log.file.name_resolved"])
 	require.Equal(t, resolved, e.Attributes["log.file.path_resolved"])
+	if runtime.GOOS != "windows" {
+		require.NotNil(t, e.Attributes["log.file.owner.name"])
+		require.NotNil(t, e.Attributes["log.file.owner.group.name"])
+	}
 }
 
 // ReadExistingLogs tests that, when starting from beginning, we

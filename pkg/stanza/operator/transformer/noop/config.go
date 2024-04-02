@@ -4,11 +4,8 @@
 package noop // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/noop"
 
 import (
-	"context"
-
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -46,15 +43,4 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	return &Transformer{
 		TransformerOperator: transformerOperator,
 	}, nil
-}
-
-// Transformer is an operator that performs no operations on an entry.
-type Transformer struct {
-	helper.TransformerOperator
-}
-
-// Process will forward the entry to the next output without any alterations.
-func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
-	p.Write(ctx, entry)
-	return nil
 }
