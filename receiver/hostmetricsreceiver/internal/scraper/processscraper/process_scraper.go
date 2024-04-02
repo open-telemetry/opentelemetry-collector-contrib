@@ -111,7 +111,10 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	// cases of boot time changing in the middle of a scrape.
 	if !bootTimeCacheFeaturegate.IsEnabled() {
 		host.EnableBootTimeCache(false)
-		host.BootTimeWithContext(ctx)
+		_, err := host.BootTimeWithContext(ctx)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(`retrieving boot time failed with error "%w", using cached boot time`, err))
+		}
 		host.EnableBootTimeCache(true)
 	}
 
