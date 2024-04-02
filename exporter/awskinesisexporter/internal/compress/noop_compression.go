@@ -27,4 +27,4 @@ func (n noop) Flush() error {
 	return nil
 }
 
-func (n *noop) Close() error { return n.Close() }
+func (n *noop) Close() error { return nil }
