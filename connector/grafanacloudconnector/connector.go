@@ -47,7 +47,7 @@ func newConnector(logger *zap.Logger, set component.TelemetrySettings, config co
 		"grafanacloud_host_count",
 		metric.WithDescription("Number of unique hosts"),
 		metric.WithUnit("1"),
-		metric.WithInt64Callback(func(ctx context.Context, result metric.Int64Observer) error {
+		metric.WithInt64Callback(func(_ context.Context, result metric.Int64Observer) error {
 			result.Observe(int64(hm.count()))
 			return nil
 		}),
