@@ -51,6 +51,10 @@ github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjR
 github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
 github.com/solarwindscloud/apm-proto v0.0.0-20231107001908-432e697887b6 h1:VzTSxvPqSwcv//OBbxQrvIxjg0VP1Y1aqRun5MDgAxw=
 github.com/solarwindscloud/apm-proto v0.0.0-20231107001908-432e697887b6/go.mod h1:PIMzXc8HpB0ryT4Oci4pUz8F0m1X7Q/hVXkQE4jGv6Y=
+github.com/solarwindscloud/apm-proto v0.1.0 h1:egbu6cZZX6EaSo5+7r+yecCm7qzdCvNEh3h0bP/gkfI=
+github.com/solarwindscloud/apm-proto v0.1.0/go.mod h1:PIMzXc8HpB0ryT4Oci4pUz8F0m1X7Q/hVXkQE4jGv6Y=
+github.com/solarwindscloud/apm-proto v1.0.3 h1:fmPwWNrM5kduAqvmH8mCD0E9MASK8m/mtPmw0yXGOBs=
+github.com/solarwindscloud/apm-proto v1.0.3/go.mod h1:PIMzXc8HpB0ryT4Oci4pUz8F0m1X7Q/hVXkQE4jGv6Y=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
