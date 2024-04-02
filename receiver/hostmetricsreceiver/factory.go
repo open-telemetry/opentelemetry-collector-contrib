@@ -24,6 +24,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 // This file implements Factory for HostMetrics receiver.
@@ -75,6 +77,9 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
+
+	host.EnableBootTimeCache(true)
+	process.EnableBootTimeCache(true)
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ControllerConfig,
