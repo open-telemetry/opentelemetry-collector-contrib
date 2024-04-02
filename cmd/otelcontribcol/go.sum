@@ -154,8 +154,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/ClickHouse/ch-go v0.61.5 h1:zwR8QbYI0tsMiEcze/uIMK+Tz1D3XZXLdNrlaOpeEI4=
 github.com/ClickHouse/ch-go v0.61.5/go.mod h1:s1LJW/F/LcFs5HJnuogFMta50kKDO0lf9zzfrbl0RQg=
-github.com/ClickHouse/clickhouse-go/v2 v2.22.4 h1:3cUjBGM992wUI40BKHLeCX60wT9Kzpm6b6r/4zUgxo4=
-github.com/ClickHouse/clickhouse-go/v2 v2.22.4/go.mod h1:tBhdF3f3RdP7sS59+oBAtTyhWpy0024ZxDMhgxra0QE=
+github.com/ClickHouse/clickhouse-go/v2 v2.23.0 h1:srmRrkS0BR8gEut87u8jpcZ7geOob6nGj9ifrb+aKmg=
+github.com/ClickHouse/clickhouse-go/v2 v2.23.0/go.mod h1:tBhdF3f3RdP7sS59+oBAtTyhWpy0024ZxDMhgxra0QE=
 github.com/Code-Hex/go-generics-cache v1.3.1 h1:i8rLwyhoyhaerr7JpjtYjJZUcCbWOdiYO3fZXLiEC4g=
 github.com/Code-Hex/go-generics-cache v1.3.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
 github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7OputlJIzU=
