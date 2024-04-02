@@ -107,7 +107,7 @@ func Test_influxHTTPWriterBatch_maxPayload(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			var httpRequests []*http.Request
 
-			mockHTTPService := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mockHTTPService := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				httpRequests = append(httpRequests, r)
 			}))
 			t.Cleanup(mockHTTPService.Close)
@@ -149,7 +149,7 @@ func Test_influxHTTPWriterBatch_maxPayload(t *testing.T) {
 func Test_influxHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 	var recordedRequest *http.Request
 	var recordedRequestBody []byte
-	noopHTTPServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	noopHTTPServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		if assert.Nil(t, recordedRequest) {
 			recordedRequest = r
 			recordedRequestBody, _ = io.ReadAll(r.Body)

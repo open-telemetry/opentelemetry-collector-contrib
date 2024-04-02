@@ -5,7 +5,7 @@ status:
   class: processor
   stability:
     development: [traces, metrics, logs]
-  distributions: [sumo]
+  distributions: []
   codeowners:
     active: [MovieStoreGuy]
 
