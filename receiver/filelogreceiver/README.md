@@ -184,121 +184,12 @@ While the storage parameter can ensure that log files are consumed accurately, i
 logs are dropped while moving downstream through other components in the collector.
 For additional resiliency, see [Fault tolerant log collection example](../../examples/fault-tolerant-logs-collection/README.md)
 
-### File storage
+Here is some of the information the `filelog` receiver stores:
+- The number of files it is currently tracking (`knownFiles`).
+- For each file being tracked:
+  - The fingerprint of the file (`Fingerprint.first_bytes`).
+  - The byte offset from the start of the file, indicating the position in the file from where the
+    `filelog` receiver will continue reading the file (`Offset`).
+  - An arbitrary set of file attributes, e.g. the name of the file (`FileAttributes`).
 
-The [`file_storage` extension](../../extension/storage/filestorage) is a common storage extension that's used for tracking log file offsets. Sometimes, typically for debugging reasons, it's useful to view the file in which offsets are stored. The simplest way to do this is by printing out the contents of this file using the `strings` utility.
-
-The following configuration shows a collector pipeline that's using the `filelog` receiver with the `file_storage` extension. Note that [compaction](../../extension/storage/filestorage/README.md#compaction) is not being used.
-
-```yaml
-receivers:
-  filelog:
-    include: /tmp/*.log
-    storage: file_storage/filelogreceiver
-
-exporters:
-  ...
-
-extensions:
-  file_storage/filelogreceiver:
-    directory: /tmp/otelcol/file_storage/filelogreceiver
-
-service:
-  extensions: [file_storage/filelogreceiver]
-  pipelines:
-    logs:
-      receivers: [filelog]
-      exporters: [...]
-```
-
-Assume there are no log files matching `/tmp/*.log` when the previous collector pipeline starts executing. In this
-scenario, the `/tmp/otelcol/file_storage/filelogreceiver` directory contains one file:
-
-```
-$ ls /tmp/otelcol/file_storage/filelogreceiver
-receiver_filelog_
-```
-
-This is a binary file, so we can read its contents using the `strings` utility.
-
-```
-$ strings /tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_
-default
-file_input.knownFiles0
-default
-file_input.knownFiles0
-default
-file_input.knownFiles0
-```
-
-When a new log file is created with one or more entries in it, and the `filelog` receiver in the collector
-pipeline has ingested these entries, the contents of the `/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file
-change to reflect this new state.
-
-```
-$ echo "$RANDOM" >> /tmp/1.log
-$ cat /tmp/1.log
-31079
-$ strings /tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_
-default
-file_input.knownFiles1
-{"Fingerprint":{"first_bytes":"MzEwNzkK"},"Offset":6,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:15:54.763711-07:00","LastDataLength":0}}
-default
-file_input.knownFiles1
-{"Fingerprint":{"first_bytes":"MzEwNzkK"},"Offset":6,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:15:54.763711-07:00","LastDataLength":0}}
-default
-file_input.knownFiles1
-{"Fingerprint":{"first_bytes":"MzEwNzkK"},"Offset":6,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:15:54.763711-07:00","LastDataLength":0}}
-```
-
-Taking a closer look at the changes, we can infer a few things about the contents of the
- `/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file:
-* The number after `file_input.knownFiles` reflects the number of log files being tracked.
-* If this number is `N`, the subsequent `N` lines contain details of each log file being tracked. Each line is JSON-formatted.
-  * The details contain the fingerprint of the log file, how much of the log file's contents the `filelog` receiver has consumed,
-    the file name, and some other details.
-  * The fingerprint of the log file, stored in the `.Fingerprint.first_bytes` JSON field, is a base64-encoding of the first
-    `B` bytes of the log file, where `B` corresponds to the value specified by the `fingerprint_size` configuration setting of
-    the `filelog` receiver. If the log file has fewer bytes than `B`, the fingerprint is calculated from the available bytes
-    and is re-calculated when the file grows, until it reaches `B` bytes.
-
-When another log entry is added to the same log file, the contents of the `/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file
-change to reflect this new state. Note that the offset has been incremented by the size of the new entry, in bytes.
-
-```
-$ echo "$RANDOM" >> /tmp/1.log
-$ cat /tmp/1.log
-31079
-219
-$ strings /tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_
-default
-file_input.knownFiles1
-{"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
-default
-file_input.knownFiles1
-{"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
-default
-file_input.knownFiles1
-{"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
-```
-
-When a new log file is created, it also gets tracked in the `/tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_` file.
-
-```
-$ echo "$RANDOM" >> 2.log
-$ cat /tmp/2.log
-24403
-$ strings otelcol/file_storage/filelogreceiver/receiver_filelog_
-default
-file_input.knownFiles2
-{"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
-{"Fingerprint":{"first_bytes":"MjQ0MDMK"},"Offset":6,"FileAttributes":{"log.file.name":"2.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:39.96429-07:00","LastDataLength":0}}
-default
-file_input.knownFiles2
-{"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
-{"Fingerprint":{"first_bytes":"MjQ0MDMK"},"Offset":6,"FileAttributes":{"log.file.name":"2.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:39.96429-07:00","LastDataLength":0}}
-default
-file_input.knownFiles2
-{"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
-{"Fingerprint":{"first_bytes":"MjQ0MDMK"},"Offset":6,"FileAttributes":{"log.file.name":"2.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:39.96429-07:00","LastDataLength":0}}
-```
+Exactly how this information is serialized depends on the type of storage being used.
