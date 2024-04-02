@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickh
 go 1.21
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.22.4
+	github.com/ClickHouse/clickhouse-go/v2 v2.23.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.97.0
