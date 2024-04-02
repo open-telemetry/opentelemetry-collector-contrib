@@ -107,8 +107,7 @@ func csiPersistentVolumeDims(rb *metadata.ResourceBuilder, vs v1.CSIPersistentVo
 	rb.SetFsType(vs.FSType)
 
 	// CSI driver specific labels.
-	switch vs.Driver {
-	case csiDriverGCP:
+	if vs.Driver == csiDriverGCP {
 		// This is in one of two formats:
 		// projects/<project>/regions/<region>/disks/<disk>
 		// projects/<project>/zones/<zone>/disks/<disk>
