@@ -331,9 +331,9 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		return
 	}
 	var partitionID string
-	var err error
-	if partitionID, err = r.validateAndExtractChannelHeader(req); err != nil {
-		r.failRequest(ctx, resp, http.StatusBadRequest, []byte(err.Error()), 0, err)
+	var partitionErr error
+	if partitionID, partitionErr = r.validateAndExtractChannelHeader(req); partitionErr != nil {
+		r.failRequest(ctx, resp, http.StatusBadRequest, []byte(partitionErr.Error()), 0, partitionErr)
 		return
 	}
 
@@ -438,9 +438,9 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 
 	var partitionID string
-	var err error
-	if partitionID, err = r.validateAndExtractChannelHeader(req); err != nil {
-		r.failRequest(ctx, resp, http.StatusBadRequest, []byte(err.Error()), 0, err)
+	var partitionErr error
+	if partitionID, partitionErr = r.validateAndExtractChannelHeader(req); partitionErr != nil {
+		r.failRequest(ctx, resp, http.StatusBadRequest, []byte(partitionErr.Error()), 0, partitionErr)
 		return
 	}
 
