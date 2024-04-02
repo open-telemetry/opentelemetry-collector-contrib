@@ -1,13 +1,11 @@
 type: signalfx
+scope_name: otelcol/signalfxreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics, logs]
-  distributions: [contrib, splunk, sumo]
+  distributions: [contrib]
   codeowners:
     active: ["dmitryax"]
     emeritus:
-
-tests:
-  config:

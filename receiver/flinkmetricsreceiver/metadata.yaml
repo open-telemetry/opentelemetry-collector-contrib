@@ -1,10 +1,11 @@
 type: flinkmetrics
+scope_name: otelcol/flinkmetricsreceiver
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib,observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [JonathanWamsley, djaglowski]
     seeking_new: true

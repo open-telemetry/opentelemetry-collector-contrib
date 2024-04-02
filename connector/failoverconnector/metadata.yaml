@@ -1,4 +1,5 @@
 type: failover
+scope_name: otelcol/failover
 
 status:
   class: connector
@@ -7,3 +8,7 @@ status:
   distributions: []
   codeowners:
     active: [akats7, djaglowski, fatsheep9146]
+
+tests:
+    skip_lifecycle: true
+    skip_shutdown: true

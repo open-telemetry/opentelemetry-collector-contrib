@@ -1,10 +1,11 @@
 type: kubeletstats
+scope_name: otelcol/kubeletstatsreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, splunk, sumo, liatrio]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, TylerHelmuth]
 

@@ -94,8 +94,8 @@ func (w *WriterOperator) SetOutputs(operators []operator.Operator) error {
 }
 
 // SetOutputIDs will set the outputs of the operator.
-func (w *WriterOperator) SetOutputIDs(opIds []string) {
-	w.OutputIDs = opIds
+func (w *WriterOperator) SetOutputIDs(opIDs []string) {
+	w.OutputIDs = opIDs
 }
 
 // FindOperator will find an operator matching the supplied id.

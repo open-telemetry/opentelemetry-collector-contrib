@@ -1,10 +1,11 @@
 type: mongodbatlas
+scope_name: otelcol/mongodbatlasreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics, logs]
-  distributions: [contrib, splunk, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski, schmikei]
     seeking_new: true

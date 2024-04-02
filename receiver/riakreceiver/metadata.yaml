@@ -1,10 +1,11 @@
 type: riak
+scope_name: otelcol/riakreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski, armstrmi]
     seeking_new: true
@@ -81,6 +82,3 @@ metrics:
       value_type: int
     attributes: [operation]
     enabled: true
-
-tests:
-  config:

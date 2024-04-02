@@ -1,10 +1,11 @@
 type: pprof
+scope_name: otelcol/pprof
 
 status:
   class: extension
   stability:
     beta: [extension]
-  distributions: [core, contrib, splunk, observiq, sumo, aws, redhat, liatrio]
+  distributions: [core, contrib]
   codeowners:
     active: [MovieStoreGuy]
 

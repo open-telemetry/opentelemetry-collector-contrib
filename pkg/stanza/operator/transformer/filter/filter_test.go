@@ -47,6 +47,26 @@ func TestTransformer(t *testing.T) {
 			false,
 		},
 		{
+			"FilterOutRegexp",
+			&entry.Entry{
+				Body: map[string]any{
+					"message": "INFO: this is an info message",
+				},
+			},
+			`body.message matches "^INFO:"`,
+			true,
+		},
+		{
+			"FilterInRegexp",
+			&entry.Entry{
+				Body: map[string]any{
+					"message": "WARN: this is a warning message",
+				},
+			},
+			`body.message not matches "^WARN:"`,
+			false,
+		},
+		{
 			"MatchAttribute",
 			&entry.Entry{
 				Body: map[string]any{
@@ -164,7 +184,7 @@ func TestTransformer(t *testing.T) {
 
 			filtered := true
 			mockOutput := testutil.NewMockOperator("output")
-			mockOutput.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+			mockOutput.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(_ mock.Arguments) {
 				filtered = false
 			})
 
@@ -189,7 +209,7 @@ func TestFilterDropRatio(t *testing.T) {
 
 	processedEntries := 0
 	mockOutput := testutil.NewMockOperator("output")
-	mockOutput.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+	mockOutput.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(_ mock.Arguments) {
 		processedEntries++
 	})
 

@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
@@ -91,9 +90,12 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	default:
 	}
 
-	if len(t.externalLabels) != 0 {
-		ls = append(ls, t.externalLabels...)
-		sort.Sort(ls)
+	if t.externalLabels.Len() != 0 {
+		b := labels.NewBuilder(ls)
+		t.externalLabels.Range(func(l labels.Label) {
+			b.Set(l.Name, l.Value)
+		})
+		ls = b.Labels()
 	}
 
 	if t.isNew {
@@ -208,6 +210,11 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, _ labels.Labels, _ in
 	return 0, nil
 }
 
+func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, _ labels.Labels, _, _ int64) (storage.SeriesRef, error) {
+	//TODO: implement this func
+	return 0, nil
+}
+
 func (t *transaction) getSeriesRef(ls labels.Labels, mtype pmetric.MetricType) uint64 {
 	var hash uint64
 	hash, t.bufBytes = getSeriesRef(t.bufBytes, ls, mtype)
@@ -254,14 +261,14 @@ func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, er
 
 func getScopeID(ls labels.Labels) scopeID {
 	var scope scopeID
-	for _, lbl := range ls {
+	ls.Range(func(lbl labels.Label) {
 		if lbl.Name == scopeNameLabel {
 			scope.name = lbl.Value
 		}
 		if lbl.Name == scopeVersionLabel {
 			scope.version = lbl.Value
 		}
-	}
+	})
 	return scope
 }
 
@@ -320,33 +327,33 @@ func (t *transaction) UpdateMetadata(_ storage.SeriesRef, _ labels.Labels, _ met
 	return 0, nil
 }
 
-func (t *transaction) AddTargetInfo(labels labels.Labels) {
+func (t *transaction) AddTargetInfo(ls labels.Labels) {
 	attrs := t.nodeResource.Attributes()
-	for _, lbl := range labels {
+	ls.Range(func(lbl labels.Label) {
 		if lbl.Name == model.JobLabel || lbl.Name == model.InstanceLabel || lbl.Name == model.MetricNameLabel {
-			continue
+			return
 		}
 		attrs.PutStr(lbl.Name, lbl.Value)
-	}
+	})
 }
 
-func (t *transaction) addScopeInfo(labels labels.Labels) {
+func (t *transaction) addScopeInfo(ls labels.Labels) {
 	attrs := pcommon.NewMap()
 	scope := scopeID{}
-	for _, lbl := range labels {
+	ls.Range(func(lbl labels.Label) {
 		if lbl.Name == model.JobLabel || lbl.Name == model.InstanceLabel || lbl.Name == model.MetricNameLabel {
-			continue
+			return
 		}
 		if lbl.Name == scopeNameLabel {
 			scope.name = lbl.Value
-			continue
+			return
 		}
 		if lbl.Name == scopeVersionLabel {
 			scope.version = lbl.Value
-			continue
+			return
 		}
 		attrs.PutStr(lbl.Name, lbl.Value)
-	}
+	})
 	t.scopeAttributes[scope] = attrs
 }
 

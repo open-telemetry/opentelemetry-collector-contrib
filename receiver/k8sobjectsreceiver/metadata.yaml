@@ -1,10 +1,11 @@
 type: k8sobjects
+scope_name: otelcol/k8sobjectsreceiver
 
 status:
   class: receiver
   stability:
     beta: [logs]
-  distributions: [contrib, splunk, sumo]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, hvaghani221, TylerHelmuth]
 

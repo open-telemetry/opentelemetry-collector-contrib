@@ -1,10 +1,11 @@
 type: servicegraph
+scope_name: otelcol/servicegraph
 
 status:
   class: connector
   stability:
     alpha: [traces_to_metrics]
-  distributions: [contrib, sumo, grafana]
+  distributions: [contrib]
   codeowners:
     active: [jpkrohling, mapno]
 
