@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				AddrConfig: confignet.AddrConfig{
 					Endpoint:  "0.0.0.0:5678",
-					Transport: "udp",
+					Transport: confignet.TransportTypeUDP,
 				},
 				ProxyServer: &proxy.Config{
 					TCPAddrConfig: confignet.TCPAddrConfig{
@@ -51,6 +51,7 @@ func TestLoadConfig(t *testing.T) {
 					Region:      "",
 					RoleARN:     "",
 					AWSEndpoint: "",
+					ServiceName: "xray",
 				},
 			},
 		},
@@ -59,7 +60,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				AddrConfig: confignet.AddrConfig{
 					Endpoint:  "0.0.0.0:2000",
-					Transport: "udp",
+					Transport: confignet.TransportTypeUDP,
 				},
 				ProxyServer: &proxy.Config{
 					TCPAddrConfig: confignet.TCPAddrConfig{
@@ -74,6 +75,7 @@ func TestLoadConfig(t *testing.T) {
 					RoleARN:     "arn:aws:iam::123456789012:role/awesome_role",
 					AWSEndpoint: "https://another.aws.endpoint.com",
 					LocalMode:   true,
+					ServiceName: "xray",
 				},
 			}},
 	}
