@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 
@@ -21,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 )
 
@@ -39,6 +41,7 @@ type opampAgent struct {
 	capabilities Capabilities
 
 	agentDescription *protobufs.AgentDescription
+	extraNonIdent    []*protobufs.KeyValue
 
 	opampClient client.OpAMPClient
 }
@@ -160,14 +163,34 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 		}
 	}
 
+	// Construct extra non-identifying labels based on telemetry resource.
+	extraNonIdent := []*protobufs.KeyValue{}
+	res.Attributes().Range(func(k string, v pcommon.Value) bool {
+		switch k {
+		// Ignore identifying attributes, and also ignore
+		// non-identifying attributes that are determined based on the running environment.
+		case semconv.AttributeServiceInstanceID,
+			semconv.AttributeServiceName,
+			semconv.AttributeServiceVersion,
+			semconv.AttributeOSType,
+			semconv.AttributeHostArch,
+			semconv.AttributeHostName:
+			return true
+		}
+
+		extraNonIdent = append(extraNonIdent, stringKeyValue(k, v.AsString()))
+		return true
+	})
+
 	agent := &opampAgent{
-		cfg:          cfg,
-		logger:       logger,
-		agentType:    agentType,
-		agentVersion: agentVersion,
-		instanceID:   uid,
-		capabilities: cfg.Capabilities,
-		opampClient:  cfg.Server.GetClient(logger),
+		cfg:           cfg,
+		logger:        logger,
+		agentType:     agentType,
+		agentVersion:  agentVersion,
+		instanceID:    uid,
+		capabilities:  cfg.Capabilities,
+		extraNonIdent: extraNonIdent,
+		opampClient:   cfg.Server.GetClient(logger),
 	}
 
 	return agent, nil
@@ -194,10 +217,25 @@ func (o *opampAgent) createAgentDescription() error {
 		stringKeyValue(semconv.AttributeServiceVersion, o.agentVersion),
 	}
 
-	nonIdent := []*protobufs.KeyValue{
-		stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
-		stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
-		stringKeyValue(semconv.AttributeHostName, hostname),
+	// Initially construct using a map to properly deduplicate any keys that
+	// are both in the automatically determined and defined in the config
+	nonIdentifyingAttributeMap := map[string]string{}
+	nonIdentifyingAttributeMap[semconv.AttributeOSType] = runtime.GOOS
+	nonIdentifyingAttributeMap[semconv.AttributeHostArch] = runtime.GOARCH
+	nonIdentifyingAttributeMap[semconv.AttributeHostName] = hostname
+
+	for k, v := range o.cfg.AgentDescription.NonIdentifyingAttributes {
+		nonIdentifyingAttributeMap[k] = v
+	}
+
+	// Sort the non identifying attributes to give them a stable order for tests
+	keys := maps.Keys(nonIdentifyingAttributeMap)
+	sort.Strings(keys)
+
+	nonIdent := make([]*protobufs.KeyValue, 0, len(nonIdentifyingAttributeMap))
+	for _, k := range keys {
+		v := nonIdentifyingAttributeMap[k]
+		nonIdent = append(nonIdent, stringKeyValue(k, v))
 	}
 
 	o.agentDescription = &protobufs.AgentDescription{
