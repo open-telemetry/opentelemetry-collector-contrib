@@ -337,11 +337,6 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	if len(partitionID) > 0 && r.ackExt == nil {
-		// when channel id is provided in request but ackExt is not set up, fail the request.
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, 0, nil)
-	}
-
 	if req.ContentLength == 0 {
 		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, nil)
 		r.failRequest(ctx, resp, http.StatusBadRequest, noDataRespBody, 0, nil)
@@ -442,11 +437,6 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	if partitionID, partitionErr = r.validateAndExtractChannelHeader(req); partitionErr != nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, []byte(partitionErr.Error()), 0, partitionErr)
 		return
-	}
-
-	if len(partitionID) > 0 && r.ackExt == nil {
-		// when channel id is provided in request but ackExt is not set up, fail the request.
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, 0, nil)
 	}
 
 	bodyReader := req.Body
