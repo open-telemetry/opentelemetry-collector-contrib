@@ -189,7 +189,7 @@ Here is some of the information the `filelog` receiver stores:
 - For each file being tracked:
   - The fingerprint of the file (`Fingerprint.first_bytes`).
   - The byte offset from the start of the file, indicating the position in the file from where the
-    `filelog` receiver will continue reading the file (`Offset`).
+    `filelog` receiver continues reading the file (`Offset`).
   - An arbitrary set of file attributes, e.g. the name of the file (`FileAttributes`).
 
 Exactly how this information is serialized depends on the type of storage being used.
