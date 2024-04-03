@@ -157,7 +157,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, _, volumeClaim, namespace string) error {
+			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, _, _, _ string) error {
 				SetPersistentVolumeLabels(rb, v1.PersistentVolumeSource{
 					CSI: &v1.CSIPersistentVolumeSource{
 						Driver:       csiDriverGCP,
