@@ -56,10 +56,16 @@ func (c *Commander) Start(ctx context.Context) error {
 	}
 
 	if len(c.doneCh) > 0 {
-		<-c.doneCh
+		select {
+		case <-c.doneCh:
+		default:
+		}
 	}
 	if len(c.exitCh) > 0 {
-		<-c.exitCh
+		select {
+		case <-c.exitCh:
+		default:
+		}
 	}
 
 	c.logger.Debug("Starting agent", zap.String("agent", c.cfg.Executable))
@@ -76,8 +82,6 @@ func (c *Commander) Start(ctx context.Context) error {
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21072
 	c.cmd.Stdout = logFile
 	c.cmd.Stderr = logFile
-
-	c.doneCh = make(chan struct{})
 
 	if err := c.cmd.Start(); err != nil {
 		return err
