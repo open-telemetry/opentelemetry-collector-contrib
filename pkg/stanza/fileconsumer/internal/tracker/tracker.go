@@ -94,7 +94,7 @@ func (t *Tracker) EndPoll() {
 	// shift the filesets at end of every poll() call
 	// t.knownFiles[0] -> t.knownFiles[1] -> t.knownFiles[2]
 	copy(t.knownFiles[1:], t.knownFiles)
-	t.knownFiles[0] = fileset.New[*reader.Metadata](t.maxBatchFiles / 2)
+	t.knownFiles[0] = fileset.New[*reader.Metadata](t.maxBatchFiles)
 }
 
 func (t *Tracker) TotalReaders() int {

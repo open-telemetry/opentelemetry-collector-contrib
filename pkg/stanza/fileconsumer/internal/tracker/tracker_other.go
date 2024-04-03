@@ -15,7 +15,7 @@ import (
 func (t *Tracker) EndConsume() {
 	t.ClosePreviousFiles()
 
-	// m.currentPollFiles -> m.previousPollFiles
+	// t.currentPollFiles -> t.previousPollFiles
 	t.previousPollFiles = t.currentPollFiles
 	t.currentPollFiles = fileset.New[*reader.Reader](t.maxBatchFiles)
 }
