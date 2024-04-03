@@ -4,7 +4,7 @@ RUN_CONFIG?=local/config.yaml
 CMD?=
 
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
-COREVERSION=$(shell git describe --always --match "v[0-9]*" HEAD | grep -oP '(?<=[v])[^-]*')
+COREVERSION=$(shell git describe --always --match "v[0-9]*" HEAD | grep -o 'v[^-]*' | cut -c 2-)
 
 COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
