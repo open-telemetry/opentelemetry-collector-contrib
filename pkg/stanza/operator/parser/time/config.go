@@ -4,11 +4,8 @@
 package time // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/time"
 
 import (
-	"context"
-
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -53,15 +50,4 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		TransformerOperator: transformerOperator,
 		TimeParser:          c.TimeParser,
 	}, nil
-}
-
-// Parser is an operator that parses time from a field to an entry.
-type Parser struct {
-	helper.TransformerOperator
-	helper.TimeParser
-}
-
-// Process will parse time from an entry.
-func (t *Parser) Process(ctx context.Context, entry *entry.Entry) error {
-	return t.ProcessWith(ctx, entry, t.TimeParser.Parse)
 }
