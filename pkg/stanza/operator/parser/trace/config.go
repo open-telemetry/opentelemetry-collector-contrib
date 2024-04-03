@@ -1,60 +1,53 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package noop // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/noop"
+package trace // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/trace"
 
 import (
-	"context"
-
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-const operatorType = "noop"
+const operatorType = "trace_parser"
 
 func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
-// NewConfig creates a new noop operator config with default values
+// NewConfig creates a new trace parser config with default values
 func NewConfig() *Config {
 	return NewConfigWithID(operatorType)
 }
 
-// NewConfigWithID creates a new noop operator config with default values
+// NewConfigWithID creates a new trace parser config with default values
 func NewConfigWithID(operatorID string) *Config {
 	return &Config{
 		TransformerConfig: helper.NewTransformerConfig(operatorID, operatorType),
+		TraceParser:       helper.NewTraceParser(),
 	}
 }
 
-// Config is the configuration of a noop operator.
+// Config is the configuration of a trace parser operator.
 type Config struct {
 	helper.TransformerConfig `mapstructure:",squash"`
+	helper.TraceParser       `mapstructure:",omitempty,squash"`
 }
 
-// Build will build a noop operator.
+// Build will build a trace parser operator.
 func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Transformer{
+	if err := c.TraceParser.Validate(); err != nil {
+		return nil, err
+	}
+
+	return &Parser{
 		TransformerOperator: transformerOperator,
+		TraceParser:         c.TraceParser,
 	}, nil
-}
-
-// Transformer is an operator that performs no operations on an entry.
-type Transformer struct {
-	helper.TransformerOperator
-}
-
-// Process will forward the entry to the next output without any alterations.
-func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
-	p.Write(ctx, entry)
-	return nil
 }
