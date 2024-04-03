@@ -84,9 +84,7 @@ metrics:
   git.repository.pull_request.count:
     description: The number of pull requests in a repository, categorized by their state (either open or merged)
     enabled: true
-    sum:
-      aggregation_temporality: cumulative
-      monotonic: true
+    gauge:
       value_type: int
     unit: '{pull_request}'
     attributes: [pull_request.state, repository.name]
