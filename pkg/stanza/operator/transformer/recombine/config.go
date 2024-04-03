@@ -34,13 +34,14 @@ func NewConfig() *Config {
 // NewConfigWithID creates a new recombine config with default values
 func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		TransformerConfig: helper.NewTransformerConfig(operatorID, operatorType),
-		MaxBatchSize:      1000,
-		MaxSources:        1000,
-		CombineWith:       defaultCombineWith,
-		OverwriteWith:     "newest",
-		ForceFlushTimeout: 5 * time.Second,
-		SourceIdentifier:  entry.NewAttributeField("file.path"),
+		TransformerConfig:     helper.NewTransformerConfig(operatorID, operatorType),
+		MaxBatchSize:          1000,
+		MaxUnmatchedBatchSize: 100,
+		MaxSources:            1000,
+		CombineWith:           defaultCombineWith,
+		OverwriteWith:         "newest",
+		ForceFlushTimeout:     5 * time.Second,
+		SourceIdentifier:      entry.NewAttributeField("file.path"),
 	}
 }
 
@@ -50,6 +51,7 @@ type Config struct {
 	IsFirstEntry             string          `mapstructure:"is_first_entry"`
 	IsLastEntry              string          `mapstructure:"is_last_entry"`
 	MaxBatchSize             int             `mapstructure:"max_batch_size"`
+	MaxUnmatchedBatchSize    int             `mapstructure:"max_unmatched_batch_size"`
 	CombineField             entry.Field     `mapstructure:"combine_field"`
 	CombineWith              string          `mapstructure:"combine_with"`
 	SourceIdentifier         entry.Field     `mapstructure:"source_identifier"`
@@ -105,13 +107,14 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	return &Transformer{
-		TransformerOperator: transformer,
-		matchFirstLine:      matchesFirst,
-		prog:                prog,
-		maxBatchSize:        c.MaxBatchSize,
-		maxSources:          c.MaxSources,
-		overwriteWithOldest: overwriteWithOldest,
-		batchMap:            make(map[string]*sourceBatch),
+		TransformerOperator:   transformer,
+		matchFirstLine:        matchesFirst,
+		prog:                  prog,
+		maxBatchSize:          c.MaxBatchSize,
+		maxUnmatchedBatchSize: c.MaxUnmatchedBatchSize,
+		maxSources:            c.MaxSources,
+		overwriteWithOldest:   overwriteWithOldest,
+		batchMap:              make(map[string]*sourceBatch),
 		batchPool: sync.Pool{
 			New: func() any {
 				return &sourceBatch{
