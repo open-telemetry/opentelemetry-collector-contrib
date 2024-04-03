@@ -143,22 +143,40 @@ In addition, the processor defines a few of its own functions:
 `HasAttrKeyOnDatapoint(key)`
 
 Returns `true` if the given key appears in the attribute map of any datapoint on a metric.
-`key` must be a string.
+`key` and `value` must both be strings in the metric and function call. You must use the `metrics.metric` context.
 
 Examples:
 
 - `HasAttrKeyOnDatapoint("http.method")`
+
+```
+  # Drops everything except good metrics
+  filter/keep_good_metrics:
+    error_mode: ignore
+    metrics:
+      metric:
+        - 'HasAttrKeyOnDatapoint("good.metric") == false'
+```
 
 #### HasAttrOnDatapoint
 
 `HasAttrOnDatapoint(key, value)`
 
 Returns `true` if the given key and value appears in the attribute map of any datapoint on a metric.
-`key` and `value` must both be strings.
+`key` and `value` must both be strings in the metric and function call. You must use the `metrics.metric` context.
 
 Examples:
 
 - `HasAttrOnDatapoint("http.method", "GET")`
+
+```
+  # Drops everything except good metrics
+  filter/keep_good_metrics:
+    error_mode: ignore
+    metrics:
+      metric:
+        - 'HasAttrOnDatapoint("good.metric", "true") == false'
+```
 
 ## Warnings
 
