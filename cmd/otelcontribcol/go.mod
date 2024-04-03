@@ -8,6 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.97.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.97.0
@@ -1157,6 +1158,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/coun
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector => ../../connector/datadogconnector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector => ../../connector/exceptionsconnector
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector => ../../connector/grafanacloudconnector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector => ../../connector/routingconnector
 
