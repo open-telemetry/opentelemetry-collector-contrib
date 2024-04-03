@@ -149,13 +149,13 @@ Examples:
 
 - `HasAttrKeyOnDatapoint("http.method")`
 
-```
-  # Drops everything except good metrics
-  filter/keep_good_metrics:
-    error_mode: ignore
-    metrics:
-      metric:
-        - 'HasAttrKeyOnDatapoint("good.metric") == false'
+```yaml
+# Drops everything except good metrics
+filter/keep_good_metrics:
+  error_mode: ignore
+  metrics:
+    metric:
+      - 'HasAttrKeyOnDatapoint("good.metric") == false'
 ```
 
 #### HasAttrOnDatapoint
@@ -169,13 +169,13 @@ Examples:
 
 - `HasAttrOnDatapoint("http.method", "GET")`
 
-```
-  # Drops everything except good metrics
-  filter/keep_good_metrics:
-    error_mode: ignore
-    metrics:
-      metric:
-        - 'HasAttrOnDatapoint("good.metric", "true") == false'
+```yaml
+# Drops everything except good metrics
+filter/keep_good_metrics:
+  error_mode: ignore
+  metrics:
+    metric:
+      - 'HasAttrOnDatapoint("good.metric", "true") == false'
 ```
 
 ## Warnings
