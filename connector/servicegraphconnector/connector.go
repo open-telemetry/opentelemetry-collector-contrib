@@ -666,12 +666,6 @@ func (p *serviceGraphConnector) cleanCache() {
 	}
 	p.metricMutex.RUnlock()
 
-	p.metricMutex.Lock()
-	for _, key := range staleSeries {
-		delete(p.keyToMetric, key)
-	}
-	p.metricMutex.Unlock()
-
 	p.seriesMutex.Lock()
 	for _, key := range staleSeries {
 		delete(p.reqTotal, key)
@@ -684,6 +678,12 @@ func (p *serviceGraphConnector) cleanCache() {
 		delete(p.reqServerDurationSecondsBucketCounts, key)
 	}
 	p.seriesMutex.Unlock()
+
+	p.metricMutex.Lock()
+	for _, key := range staleSeries {
+		delete(p.keyToMetric, key)
+	}
+	p.metricMutex.Unlock()
 }
 
 // spanDuration returns the duration of the given span in seconds (legacy ms).

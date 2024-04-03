@@ -5,7 +5,7 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [rmfitzpatrick, jamesmoessis]
   unsupported_platforms: [darwin, windows]
@@ -150,6 +150,12 @@ metrics:
     enabled: false
     description: "CPU shares set for the container."
     unit: "1"
+    gauge:
+      value_type: int
+  container.cpu.logical.count:
+    enabled: false
+    description: "Number of cores available to the container."
+    unit: "{cpus}"
     gauge:
       value_type: int
 
@@ -465,6 +471,14 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+  container.memory.fails:
+    enabled: false
+    description: "Number of times the memory limit was hit."
+    unit: "{fails}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
 
 
   # BlockIO (cgroup v1) and IO (cgroup v2) controllers

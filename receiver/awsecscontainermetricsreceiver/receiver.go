@@ -34,10 +34,6 @@ func newAWSECSContainermetrics(
 	config *Config,
 	nextConsumer consumer.Metrics,
 	rest ecsutil.RestClient) (receiver.Metrics, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
 	r := &awsEcsContainerMetricsReceiver{
 		logger:       logger,
 		nextConsumer: nextConsumer,
