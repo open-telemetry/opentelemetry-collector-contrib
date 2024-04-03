@@ -81,6 +81,8 @@ type resourceMetrics struct {
 	attributes pcommon.Map
 	// startTimestamp captures when the first data points for this resource are recorded.
 	startTimestamp pcommon.Timestamp
+	// lastSeen captures when the last data points for this resource were recorded.
+	lastSeen time.Time
 }
 
 type dimension struct {
@@ -289,12 +291,25 @@ func (p *connectorImp) resetState() {
 		p.resourceMetrics.RemoveEvictedItems()
 		p.metricKeyToDimensions.RemoveEvictedItems()
 
-		// Exemplars are only relevant to this batch of traces, so must be cleared within the lock
-		if p.config.Histogram.Disable {
+		// If no histogram and no metrics expiration is configured, we can skip the remaining operations.
+		// Enabling either of these features requires to go over resource metrics and do operation on each.
+		if p.config.Histogram.Disable && p.config.MetricsExpiration == 0 {
 			return
 		}
-		p.resourceMetrics.ForEach(func(_ resourceKey, m *resourceMetrics) {
-			m.histograms.Reset(true)
+
+		now := time.Now()
+		p.resourceMetrics.ForEach(func(k resourceKey, m *resourceMetrics) {
+			// Exemplars are only relevant to this batch of traces, so must be cleared within the lock
+			if !p.config.Histogram.Disable {
+				m.histograms.Reset(true)
+			}
+
+			// If metrics expiration is configured, remove metrics that haven't been seen for longer than the expiration period.
+			if p.config.MetricsExpiration > 0 {
+				if now.Sub(m.lastSeen) >= p.config.MetricsExpiration {
+					p.resourceMetrics.Remove(k)
+				}
+			}
 		})
 
 	}
@@ -425,6 +440,12 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMet
 		}
 		p.resourceMetrics.Add(key, v)
 	}
+
+	// If expiration is enabled, track the last seen time.
+	if p.config.MetricsExpiration > 0 {
+		v.lastSeen = time.Now()
+	}
+
 	return v
 }
 

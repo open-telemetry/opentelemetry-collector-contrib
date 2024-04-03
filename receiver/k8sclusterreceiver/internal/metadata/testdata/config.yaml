@@ -102,6 +102,8 @@ all_set:
       enabled: true
     k8s.container.name:
       enabled: true
+    k8s.container.status.last_terminated_reason:
+      enabled: true
     k8s.cronjob.name:
       enabled: true
     k8s.cronjob.uid:
@@ -264,6 +266,8 @@ none_set:
     container.runtime.version:
       enabled: false
     k8s.container.name:
+      enabled: false
+    k8s.container.status.last_terminated_reason:
       enabled: false
     k8s.cronjob.name:
       enabled: false

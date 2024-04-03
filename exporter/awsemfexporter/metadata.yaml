@@ -1,10 +1,11 @@
 type: awsemf
+scope_name: otelcol/awsemf
 
 status:
   class: exporter
   stability:
     beta: [metrics]
-  distributions: [contrib, aws, observiq]
+  distributions: [contrib]
   codeowners:
     active: [Aneurysm9, shaochengwang, mxiamxia, bryan-aguilar]
 

@@ -1,4 +1,5 @@
 type: jaeger
+scope_name: otelcol/jaegerreceiver
 
 status:
   class: receiver
@@ -7,13 +8,6 @@ status:
   distributions:
   - core
   - contrib
-  - aws
-  - grafana
-  - observiq
-  - redhat
-  - splunk
-  - sumo
-  - liatrio
   codeowners:
     active: [yurishkuro]
 

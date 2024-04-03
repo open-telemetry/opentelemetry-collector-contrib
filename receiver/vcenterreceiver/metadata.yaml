@@ -1,12 +1,14 @@
 type: vcenter
+scope_name: otelcol/vcenterreceiver
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski, schmikei]
+    seeking_new: true
 
 resource_attributes:
   vcenter.cluster.name:
@@ -421,6 +423,3 @@ metrics:
     gauge:
       value_type: double
     attributes: []
-
-tests:
-  config:

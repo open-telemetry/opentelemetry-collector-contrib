@@ -163,7 +163,7 @@ func TestMetricsExporterShutdown(t *testing.T) {
 }
 
 func TestConsumeMetrics(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockMetricsExporter(), nil
 	}
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig(), componentFactory)
@@ -179,7 +179,7 @@ func TestConsumeMetrics(t *testing.T) {
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1", "endpoint-2"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
-		onResolve: func(ctx context.Context) ([]string, error) {
+		onResolve: func(_ context.Context) ([]string, error) {
 			return []string{"endpoint-1", "endpoint-2"}, nil
 		},
 	}
@@ -199,8 +199,60 @@ func TestConsumeMetrics(t *testing.T) {
 
 }
 
+// this test validates that exporter is can concurrently change the endpoints while consuming metrics.
+func TestConsumeMetrics_ConcurrentResolverChange(t *testing.T) {
+	consumeStarted := make(chan struct{})
+	consumeDone := make(chan struct{})
+
+	// imitate a slow exporter
+	te := &mockMetricsExporter{Component: mockComponent{}}
+	te.ConsumeMetricsFn = func(_ context.Context, _ pmetric.Metrics) error {
+		close(consumeStarted)
+		time.Sleep(50 * time.Millisecond)
+		return te.consumeErr
+	}
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return te, nil
+	}
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newMetricsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	endpoints := []string{"endpoint-1"}
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return endpoints, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	go func() {
+		assert.NoError(t, p.ConsumeMetrics(context.Background(), simpleMetricsWithResource()))
+		close(consumeDone)
+	}()
+
+	// update endpoint while consuming logs
+	<-consumeStarted
+	endpoints = []string{"endpoint-2"}
+	endpoint, err := lb.res.resolve(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, endpoints, endpoint)
+	<-consumeDone
+}
+
 func TestConsumeMetricsServiceBased(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockMetricsExporter(), nil
 	}
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig(), componentFactory)
@@ -216,7 +268,7 @@ func TestConsumeMetricsServiceBased(t *testing.T) {
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
-		onResolve: func(ctx context.Context) ([]string, error) {
+		onResolve: func(_ context.Context) ([]string, error) {
 			return []string{"endpoint-1"}, nil
 		},
 	}
@@ -236,7 +288,7 @@ func TestConsumeMetricsServiceBased(t *testing.T) {
 }
 
 func TestConsumeMetricsResourceBased(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockMetricsExporter(), nil
 	}
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), resourceBasedRoutingConfig(), componentFactory)
@@ -252,7 +304,7 @@ func TestConsumeMetricsResourceBased(t *testing.T) {
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
-		onResolve: func(ctx context.Context) ([]string, error) {
+		onResolve: func(_ context.Context) ([]string, error) {
 			return []string{"endpoint-1"}, nil
 		},
 	}
@@ -272,7 +324,7 @@ func TestConsumeMetricsResourceBased(t *testing.T) {
 }
 
 func TestConsumeMetricsMetricNameBased(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockMetricsExporter(), nil
 	}
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), metricNameBasedRoutingConfig(), componentFactory)
@@ -288,7 +340,7 @@ func TestConsumeMetricsMetricNameBased(t *testing.T) {
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
-		onResolve: func(ctx context.Context) ([]string, error) {
+		onResolve: func(_ context.Context) ([]string, error) {
 			return []string{"endpoint-1"}, nil
 		},
 	}
@@ -331,7 +383,7 @@ func TestServiceBasedRoutingForSameMetricName(t *testing.T) {
 }
 
 func TestConsumeMetricsExporterNoEndpoint(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockMetricsExporter(), nil
 	}
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig(), componentFactory)
@@ -344,7 +396,7 @@ func TestConsumeMetricsExporterNoEndpoint(t *testing.T) {
 
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
-		onResolve: func(ctx context.Context) ([]string, error) {
+		onResolve: func(_ context.Context) ([]string, error) {
 			return nil, nil
 		},
 	}
@@ -365,7 +417,7 @@ func TestConsumeMetricsExporterNoEndpoint(t *testing.T) {
 }
 
 func TestConsumeMetricsUnexpectedExporterType(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig(), componentFactory)
@@ -381,7 +433,7 @@ func TestConsumeMetricsUnexpectedExporterType(t *testing.T) {
 	lb.addMissingExporters(context.Background(), []string{"endpoint-2"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
-		onResolve: func(ctx context.Context) ([]string, error) {
+		onResolve: func(_ context.Context) ([]string, error) {
 			return []string{"endpoint-1", "endpoint-2"}, nil
 		},
 	}
@@ -431,7 +483,7 @@ func TestBuildExporterConfigUnknown(t *testing.T) {
 
 func TestBatchWithTwoMetrics(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newMockMetricsExporter(sink.ConsumeMetrics), nil
 	}
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig(), componentFactory)
@@ -593,7 +645,7 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
 		},
 	}
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockMetricsExporter(), nil
 	}
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, componentFactory)
@@ -609,19 +661,17 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 
 	counter1 := &atomic.Int64{}
 	counter2 := &atomic.Int64{}
-	defaultExporters := map[string]component.Component{
-		"127.0.0.1:4317": newMockMetricsExporter(func(ctx context.Context, td pmetric.Metrics) error {
+	defaultExporters := map[string]*wrappedExporter{
+		"127.0.0.1:4317": newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
 			counter1.Add(1)
 			// simulate an unreachable backend
 			time.Sleep(10 * time.Second)
 			return nil
-		},
-		),
-		"127.0.0.2:4317": newMockMetricsExporter(func(ctx context.Context, td pmetric.Metrics) error {
+		})),
+		"127.0.0.2:4317": newWrappedExporter(newMockMetricsExporter(func(_ context.Context, _ pmetric.Metrics) error {
 			counter2.Add(1)
 			return nil
-		},
-		),
+		})),
 	}
 
 	// test
@@ -634,7 +684,7 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 	lb.updateLock.Lock()
 	lb.exporters = defaultExporters
 	lb.updateLock.Unlock()
-	lb.res.onChange(func(endpoints []string) {
+	lb.res.onChange(func(_ []string) {
 		lb.updateLock.Lock()
 		lb.exporters = defaultExporters
 		lb.updateLock.Unlock()
@@ -687,7 +737,7 @@ func appendSimpleMetricWithServiceName(metric pmetric.Metrics, serviceName strin
 
 func benchConsumeMetrics(b *testing.B, endpointsCount int, metricsCount int) {
 	sink := new(consumertest.MetricsSink)
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newMockMetricsExporter(sink.ConsumeMetrics), nil
 	}
 
@@ -849,6 +899,7 @@ func appendSimpleMetricWithID(dest pmetric.ResourceMetrics, id string) {
 type mockMetricsExporter struct {
 	component.Component
 	ConsumeMetricsFn func(ctx context.Context, td pmetric.Metrics) error
+	consumeErr       error
 }
 
 func newMockMetricsExporter(consumeMetricsFn func(ctx context.Context, td pmetric.Metrics) error) exporter.Metrics {
@@ -859,21 +910,21 @@ func newMockMetricsExporter(consumeMetricsFn func(ctx context.Context, td pmetri
 }
 
 func newNopMockMetricsExporter() exporter.Metrics {
-	return &mockMetricsExporter{
-		Component: mockComponent{},
-		ConsumeMetricsFn: func(ctx context.Context, md pmetric.Metrics) error {
-			return nil
-		},
-	}
+	return &mockMetricsExporter{Component: mockComponent{}}
 }
 
 func (e *mockMetricsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
+func (e *mockMetricsExporter) Shutdown(context.Context) error {
+	e.consumeErr = errors.New("exporter is shut down")
+	return nil
+}
+
 func (e *mockMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	if e.ConsumeMetricsFn == nil {
-		return nil
+		return e.consumeErr
 	}
 	return e.ConsumeMetricsFn(ctx, md)
 }

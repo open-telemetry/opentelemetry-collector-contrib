@@ -191,7 +191,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
 			},
 			expectedNumResourceMetrics: 1,
-			setConnectionDeadline: func(conn net.Conn, t time.Time) error {
+			setConnectionDeadline: func(_ net.Conn, _ time.Time) error {
 				return errors.New("")
 			},
 		},
@@ -221,7 +221,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
 			},
 			expectedNumResourceMetrics: 1,
-			closeConnection: func(conn net.Conn) error {
+			closeConnection: func(_ net.Conn) error {
 				return errors.New("")
 			},
 		},
@@ -237,7 +237,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					level: zapcore.ErrorLevel,
 				},
 			},
-			sendCmd: func(conn net.Conn, s string) (*bufio.Scanner, error) {
+			sendCmd: func(_ net.Conn, _ string) (*bufio.Scanner, error) {
 				return nil, errors.New("")
 			},
 		},

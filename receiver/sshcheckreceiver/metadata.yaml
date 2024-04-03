@@ -1,10 +1,11 @@
 type: sshcheck
+scope_name: otelcol/sshcheckreceiver
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   codeowners:
     active: [nslaughter, codeboten]
   unsupported_platforms: [windows]
@@ -66,6 +67,3 @@ metrics:
       monotonic: false
     unit: "{error}"
     attributes: [error.message]
-
-tests:
-  config:

@@ -70,22 +70,6 @@ func TestDefaultBehaviors(t *testing.T) {
 	assert.Equal(t, tempName, attributes[attrs.LogFileName])
 }
 
-func TestCleanStop(t *testing.T) {
-	t.Parallel()
-	t.Skip(`Skipping due to goroutine leak in opencensus.
-See this issue for details: https://github.com/census-instrumentation/opencensus-go/issues/1191#issuecomment-610440163`)
-	// defer goleak.VerifyNone(t)
-
-	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	operator, _ := testManager(t, cfg)
-
-	_ = filetest.OpenTemp(t, tempDir)
-	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
-	require.NoError(t, operator.Stop())
-}
-
 // ReadExistingLogs tests that, when starting from beginning, we
 // read all the lines that are already there
 func TestReadExistingLogs(t *testing.T) {
@@ -713,6 +697,7 @@ func TestRestartOffsets(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -906,8 +891,8 @@ func TestEncodings(t *testing.T) {
 		{
 			"Nop",
 			[]byte{0xc5, '\n'},
-			"",
-			[][]byte{{0xc5}},
+			"nop",
+			[][]byte{{0xc5, '\n'}},
 		},
 		{
 			"InvalidUTFReplacement",
@@ -954,6 +939,7 @@ func TestEncodings(t *testing.T) {
 	}
 
 	for _, tc := range cases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -1170,7 +1156,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.NoError(t, longFile.Close())
 
 	// Verify we have no checkpointed files
-	require.Equal(t, 0, operator.totalReaders())
+	require.Equal(t, 0, operator.tracker.TotalReaders())
 
 	// Wait until the only line in the short file and
 	// at least one line from the long file have been consumed
@@ -1312,7 +1298,7 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	operator.wg.Wait()
 	if runtime.GOOS != "windows" {
 		// On windows, we never keep files in previousPollFiles, so we don't expect to see them here
-		require.Equal(t, operator.previousPollFiles.Len(), 1)
+		require.Equal(t, len(operator.tracker.PreviousPollFiles()), 1)
 	}
 
 	// keep append data to file1 and file2

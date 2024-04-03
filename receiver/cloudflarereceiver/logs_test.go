@@ -115,7 +115,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 			recv := newReceiver(t, &Config{
 				Logs: LogsConfig{
 					Endpoint:       "localhost:0",
-					TLS:            &configtls.TLSServerSetting{},
+					TLS:            &configtls.ServerConfig{},
 					TimestampField: "EdgeStartTimestamp",
 					Attributes: map[string]string{
 						"ClientIP": "http_request.client_ip",
@@ -310,7 +310,7 @@ func TestHandleRequest(t *testing.T) {
 					Attributes: map[string]string{
 						"ClientIP": "http_request.client_ip",
 					},
-					TLS: &configtls.TLSServerSetting{},
+					TLS: &configtls.ServerConfig{},
 				},
 			},
 				consumer,

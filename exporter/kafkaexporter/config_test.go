@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
-			option: func(conf *Config) {
+			option: func(_ *Config) {
 				// intentionally left blank so we use default config
 			},
 			expected: &Config{

@@ -253,21 +253,6 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	timestamp := convertTimeStamp(pt.Timestamp())
 	baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels)
 
-	createLabels := func(nameSuffix string, extras ...string) []prompb.Label {
-		extraLabelCount := len(extras) / 2
-		labels := make([]prompb.Label, len(baseLabels), len(baseLabels)+extraLabelCount+1) // +1 for name
-		copy(labels, baseLabels)
-
-		for extrasIdx := 0; extrasIdx < extraLabelCount; extrasIdx++ {
-			labels = append(labels, prompb.Label{Name: extras[extrasIdx], Value: extras[extrasIdx+1]})
-		}
-
-		// sum, count, and buckets of the histogram should append suffix to baseName
-		labels = append(labels, prompb.Label{Name: model.MetricNameLabel, Value: baseName + nameSuffix})
-
-		return labels
-	}
-
 	// If the sum is unset, it indicates the _sum metric point should be
 	// omitted
 	if pt.HasSum() {
@@ -280,7 +265,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 			sum.Value = math.Float64frombits(value.StaleNaN)
 		}
 
-		sumlabels := createLabels(sumStr)
+		sumlabels := createLabels(baseName+sumStr, baseLabels)
 		addSample(tsMap, sum, sumlabels, metric.Type().String())
 
 	}
@@ -294,7 +279,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 		count.Value = math.Float64frombits(value.StaleNaN)
 	}
 
-	countlabels := createLabels(countStr)
+	countlabels := createLabels(baseName+countStr, baseLabels)
 	addSample(tsMap, count, countlabels, metric.Type().String())
 
 	// cumulative count for conversion to cumulative histogram
@@ -316,7 +301,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 			bucket.Value = math.Float64frombits(value.StaleNaN)
 		}
 		boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
-		labels := createLabels(bucketStr, leStr, boundStr)
+		labels := createLabels(baseName+bucketStr, baseLabels, leStr, boundStr)
 		sig := addSample(tsMap, bucket, labels, metric.Type().String())
 
 		bucketBounds = append(bucketBounds, bucketBoundsData{sig: sig, bound: bound})
@@ -330,7 +315,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	} else {
 		infBucket.Value = float64(pt.Count())
 	}
-	infLabels := createLabels(bucketStr, leStr, pInfStr)
+	infLabels := createLabels(baseName+bucketStr, baseLabels, leStr, pInfStr)
 	sig := addSample(tsMap, infBucket, infLabels, metric.Type().String())
 
 	bucketBounds = append(bucketBounds, bucketBoundsData{sig: sig, bound: math.Inf(1)})
@@ -339,7 +324,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	// add _created time series if needed
 	startTimestamp := pt.StartTimestamp()
 	if settings.ExportCreatedMetric && startTimestamp != 0 {
-		labels := createLabels(createdSuffix)
+		labels := createLabels(baseName+createdSuffix, baseLabels)
 		addCreatedTimeSeriesIfNeeded(tsMap, labels, startTimestamp, pt.Timestamp(), metric.Type().String())
 	}
 }
@@ -452,20 +437,6 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 	timestamp := convertTimeStamp(pt.Timestamp())
 	baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels)
 
-	createLabels := func(name string, extras ...string) []prompb.Label {
-		extraLabelCount := len(extras) / 2
-		labels := make([]prompb.Label, len(baseLabels), len(baseLabels)+extraLabelCount+1) // +1 for name
-		copy(labels, baseLabels)
-
-		for extrasIdx := 0; extrasIdx < extraLabelCount; extrasIdx++ {
-			labels = append(labels, prompb.Label{Name: extras[extrasIdx], Value: extras[extrasIdx+1]})
-		}
-
-		labels = append(labels, prompb.Label{Name: model.MetricNameLabel, Value: name})
-
-		return labels
-	}
-
 	// treat sum as a sample in an individual TimeSeries
 	sum := &prompb.Sample{
 		Value:     pt.Sum(),
@@ -475,7 +446,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 		sum.Value = math.Float64frombits(value.StaleNaN)
 	}
 	// sum and count of the summary should append suffix to baseName
-	sumlabels := createLabels(baseName + sumStr)
+	sumlabels := createLabels(baseName+sumStr, baseLabels)
 	addSample(tsMap, sum, sumlabels, metric.Type().String())
 
 	// treat count as a sample in an individual TimeSeries
@@ -486,7 +457,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 	if pt.Flags().NoRecordedValue() {
 		count.Value = math.Float64frombits(value.StaleNaN)
 	}
-	countlabels := createLabels(baseName + countStr)
+	countlabels := createLabels(baseName+countStr, baseLabels)
 	addSample(tsMap, count, countlabels, metric.Type().String())
 
 	// process each percentile/quantile
@@ -500,16 +471,34 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 			quantile.Value = math.Float64frombits(value.StaleNaN)
 		}
 		percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
-		qtlabels := createLabels(baseName, quantileStr, percentileStr)
+		qtlabels := createLabels(baseName, baseLabels, quantileStr, percentileStr)
 		addSample(tsMap, quantile, qtlabels, metric.Type().String())
 	}
 
 	// add _created time series if needed
 	startTimestamp := pt.StartTimestamp()
 	if settings.ExportCreatedMetric && startTimestamp != 0 {
-		createdLabels := createLabels(baseName + createdSuffix)
+		createdLabels := createLabels(baseName+createdSuffix, baseLabels)
 		addCreatedTimeSeriesIfNeeded(tsMap, createdLabels, startTimestamp, pt.Timestamp(), metric.Type().String())
 	}
+}
+
+// createLabels returns a copy of baseLabels, adding to it the pair model.MetricNameLabel=name.
+// If extras are provided, corresponding label pairs are also added to the returned slice.
+// If extras is uneven length, the last (unpaired) extra will be ignored.
+func createLabels(name string, baseLabels []prompb.Label, extras ...string) []prompb.Label {
+	extraLabelCount := len(extras) / 2
+	labels := make([]prompb.Label, len(baseLabels), len(baseLabels)+extraLabelCount+1) // +1 for name
+	copy(labels, baseLabels)
+
+	n := len(extras)
+	n -= n % 2
+	for extrasIdx := 0; extrasIdx < n; extrasIdx += 2 {
+		labels = append(labels, prompb.Label{Name: extras[extrasIdx], Value: extras[extrasIdx+1]})
+	}
+
+	labels = append(labels, prompb.Label{Name: model.MetricNameLabel, Value: name})
+	return labels
 }
 
 // addCreatedTimeSeriesIfNeeded adds {name}_created time series with a single
