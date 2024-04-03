@@ -22,18 +22,17 @@ const DefaultSourceIdentifier = "DefaultSourceIdentifier"
 // Transformer is an operator that combines a field from consecutive log entries into a single
 type Transformer struct {
 	helper.TransformerOperator
-	matchFirstLine        bool
-	prog                  *vm.Program
-	maxBatchSize          int
-	maxUnmatchedBatchSize int
-	maxSources            int
-	overwriteWithOldest   bool
-	combineField          entry.Field
-	combineWith           string
-	ticker                *time.Ticker
-	forceFlushTimeout     time.Duration
-	chClose               chan struct{}
-	sourceIdentifier      entry.Field
+	matchFirstLine      bool
+	prog                *vm.Program
+	maxBatchSize        int
+	maxSources          int
+	overwriteWithOldest bool
+	combineField        entry.Field
+	combineWith         string
+	ticker              *time.Ticker
+	forceFlushTimeout   time.Duration
+	chClose             chan struct{}
+	sourceIdentifier    entry.Field
 
 	sync.Mutex
 	batchPool  sync.Pool
@@ -47,7 +46,6 @@ type sourceBatch struct {
 	numEntries             int
 	recombined             *bytes.Buffer
 	firstEntryObservedTime time.Time
-	matchDetected          bool
 }
 
 func (t *Transformer) Start(_ operator.Persister) error {
@@ -131,22 +129,22 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 		}
 
 		// Add the current log to the new batch
-		t.addToBatch(ctx, e, s, matches)
+		t.addToBatch(ctx, e, s)
 		return nil
 	// This is the last entry in a complete batch
 	case matches && !t.matchFirstLine:
-		t.addToBatch(ctx, e, s, matches)
+		t.addToBatch(ctx, e, s)
 		return t.flushSource(ctx, s)
 	}
 
 	// This is neither the first entry of a new log,
 	// nor the last entry of a log, so just add it to the batch
-	t.addToBatch(ctx, e, s, matches)
+	t.addToBatch(ctx, e, s)
 	return nil
 }
 
 // addToBatch adds the current entry to the current batch of entries that will be combined
-func (t *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source string, matches bool) {
+func (t *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source string) {
 	batch, ok := t.batchMap[source]
 	if !ok {
 		if len(t.batchMap) >= t.maxSources {
@@ -159,11 +157,6 @@ func (t *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source str
 		if t.overwriteWithOldest {
 			batch.baseEntry = e
 		}
-	}
-
-	// mark that match occurred to use max_unmatched_batch_size only when match didn't occur
-	if matches && !batch.matchDetected {
-		batch.matchDetected = true
 	}
 
 	// Combine the combineField of each entry in the batch,
@@ -179,9 +172,7 @@ func (t *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source str
 	}
 	batch.recombined.WriteString(s)
 
-	if (t.maxLogSize > 0 && int64(batch.recombined.Len()) > t.maxLogSize) ||
-		batch.numEntries >= t.maxBatchSize ||
-		(!batch.matchDetected && t.maxUnmatchedBatchSize > 0 && batch.numEntries >= t.maxUnmatchedBatchSize) {
+	if (t.maxLogSize > 0 && int64(batch.recombined.Len()) > t.maxLogSize) || batch.numEntries >= t.maxBatchSize {
 		if err := t.flushSource(ctx, source); err != nil {
 			t.Errorf("there was error flushing combined logs %s", err)
 		}
