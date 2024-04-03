@@ -41,7 +41,6 @@ type opampAgent struct {
 	capabilities Capabilities
 
 	agentDescription *protobufs.AgentDescription
-	extraNonIdent    []*protobufs.KeyValue
 
 	opampClient client.OpAMPClient
 }
@@ -163,34 +162,14 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 		}
 	}
 
-	// Construct extra non-identifying labels based on telemetry resource.
-	extraNonIdent := []*protobufs.KeyValue{}
-	res.Attributes().Range(func(k string, v pcommon.Value) bool {
-		switch k {
-		// Ignore identifying attributes, and also ignore
-		// non-identifying attributes that are determined based on the running environment.
-		case semconv.AttributeServiceInstanceID,
-			semconv.AttributeServiceName,
-			semconv.AttributeServiceVersion,
-			semconv.AttributeOSType,
-			semconv.AttributeHostArch,
-			semconv.AttributeHostName:
-			return true
-		}
-
-		extraNonIdent = append(extraNonIdent, stringKeyValue(k, v.AsString()))
-		return true
-	})
-
 	agent := &opampAgent{
-		cfg:           cfg,
-		logger:        logger,
-		agentType:     agentType,
-		agentVersion:  agentVersion,
-		instanceID:    uid,
-		capabilities:  cfg.Capabilities,
-		extraNonIdent: extraNonIdent,
-		opampClient:   cfg.Server.GetClient(logger),
+		cfg:          cfg,
+		logger:       logger,
+		agentType:    agentType,
+		agentVersion: agentVersion,
+		instanceID:   uid,
+		capabilities: cfg.Capabilities,
+		opampClient:  cfg.Server.GetClient(logger),
 	}
 
 	return agent, nil
@@ -218,7 +197,7 @@ func (o *opampAgent) createAgentDescription() error {
 	}
 
 	// Initially construct using a map to properly deduplicate any keys that
-	// are both in the automatically determined and defined in the config
+	// are both automatically determined and defined in the config
 	nonIdentifyingAttributeMap := map[string]string{}
 	nonIdentifyingAttributeMap[semconv.AttributeOSType] = runtime.GOOS
 	nonIdentifyingAttributeMap[semconv.AttributeHostArch] = runtime.GOARCH
