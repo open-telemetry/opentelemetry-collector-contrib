@@ -552,6 +552,33 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 		name = settings.Namespace + "_" + name
 	}
 	labels := createAttributes(resource, attributes, settings.ExternalLabels, model.MetricNameLabel, name)
+	haveJob := false
+	haveInstance := false
+	for _, l := range labels {
+		if l.Name == model.JobLabel {
+			haveJob = true
+		} else if l.Name == model.InstanceLabel {
+			haveInstance = true
+		}
+		if haveJob && haveInstance {
+			break
+		}
+	}
+
+	if !haveJob {
+		// The resource attribute service.name is mandatory according to OTel spec.
+		// If it's missing, don't generate target_info.
+		return
+	}
+	if !haveInstance {
+		// The resource attribute service.instance.id is optional, but let's just be explicit
+		// as ideally the target info should also be identified through the instance label.
+		labels = append(labels, prompb.Label{
+			Name:  model.InstanceLabel,
+			Value: "",
+		})
+	}
+
 	sample := &prompb.Sample{
 		Value: float64(1),
 		// convert ns to ms
