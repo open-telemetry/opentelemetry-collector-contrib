@@ -345,9 +345,9 @@ telemetrygen:
 
 .PHONY: update-otel
 update-otel:$(MULTIMOD)
-	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector-contrib -m stable 
+	$(MULTIMOD) sync -s=true -o $(SRC_ROOT) -m stable 
 	git add . && git commit -s -m "[chore] multimod update stable modules" ; \
-	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector-contrib -m beta 
+	$(MULTIMOD) sync -s=true -o $(SRC_ROOT) -m beta 
 	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
 	sed -i -E -e "s/v[0-9]+\.[0-9]+\.[0-9].*$\/v$(COREVERSION)/" -e "5,6s/[0-9]+\.[0-9]+\.[0-9]/$(COREVERSION)/" ./cmd/otelcontribcol/builder-config.yaml 
 	sed -i -E -e "s/v[0-9]+\.[0-9]+\.[0-9].*$\/v$(COREVERSION)/" -e "5,6s/[0-9]+\.[0-9]+\.[0-9]/$(COREVERSION)/" ./cmd/oteltestbedcol/builder-config.yaml 
