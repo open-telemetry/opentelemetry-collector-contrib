@@ -66,7 +66,7 @@ func TestCreateAgentDescription(t *testing.T) {
 	}{
 		{
 			name: "No extra attributes",
-			cfg:  func(c *Config) {},
+			cfg:  func(_ *Config) {},
 			expected: &protobufs.AgentDescription{
 				IdentifyingAttributes: []*protobufs.KeyValue{
 					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceULID),
