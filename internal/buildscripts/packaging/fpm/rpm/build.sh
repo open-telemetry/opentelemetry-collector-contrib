@@ -12,7 +12,7 @@ ARCH="${2:-"amd64"}"
 OUTPUT_DIR="${3:-"$REPO_DIR/dist/"}"
 OTELCONTRIBCOL_PATH="$REPO_DIR/bin/otelcontribcol_linux_$ARCH"
 
-."$SCRIPT_DIR"/../common.sh
+. "$SCRIPT_DIR"/../common.sh
 
 if [[ -z "$VERSION" ]]; then
     latest_tag="$( git describe --abbrev=0 --match v[0-9]* )"
