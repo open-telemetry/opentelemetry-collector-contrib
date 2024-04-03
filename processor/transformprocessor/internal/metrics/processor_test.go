@@ -37,7 +37,7 @@ func Test_ProcessMetrics_ResourceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where attributes["host.name"] == "wrong"`,
-			want: func(td pmetric.Metrics) {
+			want: func(_ pmetric.Metrics) {
 			},
 		},
 	}
@@ -72,7 +72,7 @@ func Test_ProcessMetrics_ScopeContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where version == 2`,
-			want: func(td pmetric.Metrics) {
+			want: func(_ pmetric.Metrics) {
 			},
 		},
 	}
@@ -163,7 +163,7 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				countMetric.SetName(histogramMetric.Name() + "_count")
 				countMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				countMetric.Sum().SetIsMonotonic(true)
-				countMetric.SetUnit(histogramMetric.Unit())
+				countMetric.SetUnit("1")
 
 				histogramDp0 := histogramMetric.Histogram().DataPoints().At(0)
 				countDp0 := countMetric.Sum().DataPoints().AppendEmpty()
@@ -547,7 +547,7 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 		},
 		{
 			statements: []string{`set(attributes["test"], Split(attributes["not_exist"], "|"))`},
-			want:       func(td pmetric.Metrics) {},
+			want:       func(_ pmetric.Metrics) {},
 		},
 		{
 			statements: []string{`set(attributes["test"], Substring(attributes["total.string"], 3, 3))`},
@@ -567,7 +567,7 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 		},
 		{
 			statements: []string{`set(attributes["test"], Substring(attributes["not_exist"], 3, 3))`},
-			want:       func(td pmetric.Metrics) {},
+			want:       func(_ pmetric.Metrics) {},
 		},
 		{
 			statements: []string{
@@ -610,8 +610,8 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 		{
 			statements: []string{`limit(attributes, 0, []) where metric.name == "operationA"`},
 			want: func(td pmetric.Metrics) {
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().RemoveIf(func(s string, v pcommon.Value) bool { return true })
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().RemoveIf(func(s string, v pcommon.Value) bool { return true })
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
 			},
 		},
 		{

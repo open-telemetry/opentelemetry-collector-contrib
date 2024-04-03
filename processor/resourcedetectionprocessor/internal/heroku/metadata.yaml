@@ -3,7 +3,7 @@ type: resourcedetectionprocessor/heroku
 parent: resourcedetection
 
 status:
-  class: processor
+  class: pkg
   codeowners:
     active: [atoulme]
 

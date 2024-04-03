@@ -1,10 +1,11 @@
 type: resource
+scope_name: otelcol/resource
 
 status:
   class: processor
   stability:
     beta: [traces, metrics, logs]
-  distributions: [core, contrib, splunk, observiq, sumo, aws, redhat, liatrio]
+  distributions: [core, contrib]
   codeowners:
     active: [dmitryax]
 

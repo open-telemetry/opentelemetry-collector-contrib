@@ -55,11 +55,6 @@ func TestCreateNewLogReceiver(t *testing.T) {
 			},
 			consumer: consumertest.NewNop(),
 		},
-		{
-			desc: "Missing consumer fails",
-			cfg:  *defaultConfig,
-			err:  errNilLogsConsumer,
-		},
 	}
 
 	for _, test := range tests {

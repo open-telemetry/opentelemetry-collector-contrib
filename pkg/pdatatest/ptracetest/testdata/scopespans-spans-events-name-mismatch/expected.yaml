@@ -14,7 +14,7 @@ resourceSpans:
                 value:
                   stringValue: value1
             events:
-              - name: event2
+              - name: event1
             parentSpanId: ""
             spanId: ""
             status: {}

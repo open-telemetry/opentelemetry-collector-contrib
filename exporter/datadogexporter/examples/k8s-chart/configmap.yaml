@@ -40,7 +40,7 @@ data:
         include:
           # This will ensure that logs from the following path are collected.
           - /var/log/**/*otel-collector*/*.log
-      # # Comment out this block below to get access to system metrics regarding
+      # # Uncomment this block below to get access to system metrics regarding
       # # the OpenTelemetry Collector and its environment, such as spans or metrics
       # # processed, running and sent, queue sizes, uptime, k8s information
       # # and much more.

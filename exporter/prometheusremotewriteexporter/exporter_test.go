@@ -180,8 +180,8 @@ func Test_Start(t *testing.T) {
 			returnErrorOnStartUp: true,
 			clientSettings: confighttp.ClientConfig{
 				Endpoint: "https://some.url:9411/api/prom/push",
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					Config: configtls.Config{
 						CAFile:   "non-existent file",
 						CertFile: "",
 						KeyFile:  "",
@@ -327,7 +327,7 @@ func Test_export(t *testing.T) {
 }
 
 func TestNoMetricsNoError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
@@ -370,6 +370,19 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	}
 
 	return prwe.handleExport(context.Background(), testmap, nil)
+}
+
+type mockPRWTelemetry struct {
+	failedTranslations   int
+	translatedTimeSeries int
+}
+
+func (m *mockPRWTelemetry) recordTranslationFailure(_ context.Context) {
+	m.failedTranslations++
+}
+
+func (m *mockPRWTelemetry) recordTranslatedTimeSeries(_ context.Context, numTs int) {
+	m.translatedTimeSeries += numTs
 }
 
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
@@ -420,6 +433,11 @@ func Test_PushMetrics(t *testing.T) {
 
 	emptySummaryBatch := getMetricsFromMetricList(invalidMetrics[emptySummary])
 
+	// partial success (or partial failure) cases
+
+	partialSuccess1 := getMetricsFromMetricList(validMetrics1[validSum], validMetrics2[validSum],
+		validMetrics1[validIntGauge], validMetrics2[validIntGauge], invalidMetrics[emptyGauge])
+
 	// staleNaN cases
 	staleNaNHistogramBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNHistogram])
 	staleNaNEmptyHistogramBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNEmptyHistogram])
@@ -457,20 +475,23 @@ func Test_PushMetrics(t *testing.T) {
 	}
 
 	tests := []struct {
-		name               string
-		metrics            pmetric.Metrics
-		reqTestFunc        func(t *testing.T, r *http.Request, expected int, isStaleMarker bool)
-		expectedTimeSeries int
-		httpResponseCode   int
-		returnErr          bool
-		isStaleMarker      bool
-		skipForWAL         bool
+		name                       string
+		metrics                    pmetric.Metrics
+		reqTestFunc                func(t *testing.T, r *http.Request, expected int, isStaleMarker bool)
+		expectedTimeSeries         int
+		httpResponseCode           int
+		returnErr                  bool
+		isStaleMarker              bool
+		skipForWAL                 bool
+		expectedFailedTranslations int
 	}{
 		{
-			name:             "invalid_type_case",
-			metrics:          invalidTypeBatch,
-			httpResponseCode: http.StatusAccepted,
-			returnErr:        true,
+			name:                       "invalid_type_case",
+			metrics:                    invalidTypeBatch,
+			httpResponseCode:           http.StatusAccepted,
+			reqTestFunc:                checkFunc,
+			expectedTimeSeries:         1, // the resource target metric.
+			expectedFailedTranslations: 1,
 		},
 		{
 			name:               "intSum_case",
@@ -567,32 +588,40 @@ func Test_PushMetrics(t *testing.T) {
 			skipForWAL: true,
 		},
 		{
-			name:             "emptyGauge_case",
-			metrics:          emptyDoubleGaugeBatch,
-			reqTestFunc:      checkFunc,
-			httpResponseCode: http.StatusAccepted,
-			returnErr:        true,
+			name:                       "emptyGauge_case",
+			metrics:                    emptyDoubleGaugeBatch,
+			reqTestFunc:                checkFunc,
+			httpResponseCode:           http.StatusAccepted,
+			expectedFailedTranslations: 1,
 		},
 		{
-			name:             "emptyCumulativeSum_case",
-			metrics:          emptyCumulativeSumBatch,
-			reqTestFunc:      checkFunc,
-			httpResponseCode: http.StatusAccepted,
-			returnErr:        true,
+			name:                       "emptyCumulativeSum_case",
+			metrics:                    emptyCumulativeSumBatch,
+			reqTestFunc:                checkFunc,
+			httpResponseCode:           http.StatusAccepted,
+			expectedFailedTranslations: 1,
 		},
 		{
-			name:             "emptyCumulativeHistogram_case",
-			metrics:          emptyCumulativeHistogramBatch,
-			reqTestFunc:      checkFunc,
-			httpResponseCode: http.StatusAccepted,
-			returnErr:        true,
+			name:                       "emptyCumulativeHistogram_case",
+			metrics:                    emptyCumulativeHistogramBatch,
+			reqTestFunc:                checkFunc,
+			httpResponseCode:           http.StatusAccepted,
+			expectedFailedTranslations: 1,
 		},
 		{
-			name:             "emptySummary_case",
-			metrics:          emptySummaryBatch,
-			reqTestFunc:      checkFunc,
-			httpResponseCode: http.StatusAccepted,
-			returnErr:        true,
+			name:                       "emptySummary_case",
+			metrics:                    emptySummaryBatch,
+			reqTestFunc:                checkFunc,
+			httpResponseCode:           http.StatusAccepted,
+			expectedFailedTranslations: 1,
+		},
+		{
+			name:                       "partialSuccess_case",
+			metrics:                    partialSuccess1,
+			reqTestFunc:                checkFunc,
+			httpResponseCode:           http.StatusAccepted,
+			expectedTimeSeries:         4,
+			expectedFailedTranslations: 1,
 		},
 		{
 			name:               "staleNaNIntGauge_case",
@@ -668,6 +697,7 @@ func Test_PushMetrics(t *testing.T) {
 				}
 				t.Run(tt.name, func(t *testing.T) {
 					t.Parallel()
+					mockTelemetry := &mockPRWTelemetry{}
 					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						if tt.reqTestFunc != nil {
 							tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker)
@@ -716,7 +746,10 @@ func Test_PushMetrics(t *testing.T) {
 					}
 					set := exportertest.NewNopCreateSettings()
 					set.BuildInfo = buildInfo
+
 					prwe, nErr := newPRWExporter(cfg, set)
+					prwe.telemetry = mockTelemetry
+
 					require.NoError(t, nErr)
 					ctx, cancel := context.WithCancel(context.Background())
 					defer cancel()
@@ -729,6 +762,9 @@ func Test_PushMetrics(t *testing.T) {
 						assert.Error(t, err)
 						return
 					}
+
+					assert.Equal(t, tt.expectedFailedTranslations, mockTelemetry.failedTranslations)
+					assert.Equal(t, tt.expectedTimeSeries, mockTelemetry.translatedTimeSeries)
 					assert.NoError(t, err)
 				})
 			}
@@ -856,7 +892,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	// receive the bytes uploaded to it by our exporter.
 	uploadedBytesCh := make(chan []byte, 1)
 	exiting := make(chan bool)
-	prweServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	prweServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
 		uploaded, err2 := io.ReadAll(req.Body)
 		assert.NoError(t, err2, "Error while reading from HTTP upload")
 		select {
@@ -1051,7 +1087,7 @@ func TestRetries(t *testing.T) {
 	for _, tt := range tts {
 		t.Run(tt.name, func(t *testing.T) {
 			totalAttempts := 0
-			mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				if totalAttempts < tt.serverErrorCount {
 					http.Error(w, http.StatusText(tt.httpStatus), tt.httpStatus)
 				} else {

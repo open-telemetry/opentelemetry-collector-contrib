@@ -1,12 +1,13 @@
 type: awss3
+scope_name: otelcol/awss3
 
 status:
   class: exporter
   stability:
     alpha: [traces, metrics, logs]
-  distributions: [contrib, observiq, sumo, splunk]
+  distributions: [contrib]
   codeowners:
     active: [atoulme, pdelewski]
+
 tests:
-  config:
   expect_consumer_error: true

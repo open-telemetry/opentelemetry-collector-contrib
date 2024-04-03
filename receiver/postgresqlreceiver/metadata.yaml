@@ -1,10 +1,11 @@
 type: postgresql
+scope_name: otelcol/postgresqlreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, splunk, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski]
 

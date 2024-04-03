@@ -1,14 +1,14 @@
 type: sapm
+scope_name: otelcol/sapm
 
 status:
   class: exporter
   stability:
     beta: [traces]
-  distributions: [contrib, splunk, observiq, aws]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, atoulme]
 
 
 tests:
-  config:
   expect_consumer_error: true

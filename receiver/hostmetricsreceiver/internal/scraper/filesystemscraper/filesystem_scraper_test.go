@@ -86,7 +86,7 @@ func TestScrape(t *testing.T) {
 				}
 				return paritions, err
 			},
-			usageFunc: func(_ context.Context, s string) (*disk.UsageStat, error) {
+			usageFunc: func(context.Context, string) (*disk.UsageStat, error) {
 				return &disk.UsageStat{}, nil
 			},
 			expectMetrics:            true,
@@ -115,12 +115,12 @@ func TestScrape(t *testing.T) {
 					MountPoints: []string{"mount_point_b", "mount_point_c"},
 				},
 			},
-			usageFunc: func(_ context.Context, s string) (*disk.UsageStat, error) {
+			usageFunc: func(context.Context, string) (*disk.UsageStat, error) {
 				return &disk.UsageStat{
 					Fstype: "fs_type_a",
 				}, nil
 			},
-			partitionsFunc: func(_ context.Context, b bool) ([]disk.PartitionStat, error) {
+			partitionsFunc: func(context.Context, bool) ([]disk.PartitionStat, error) {
 				return []disk.PartitionStat{
 					{
 						Device:     "device_a",
@@ -175,7 +175,7 @@ func TestScrape(t *testing.T) {
 					Fstype: "fs_type_a",
 				}, nil
 			},
-			partitionsFunc: func(_ context.Context, b bool) ([]disk.PartitionStat, error) {
+			partitionsFunc: func(context.Context, bool) ([]disk.PartitionStat, error) {
 				return []disk.PartitionStat{
 					{
 						Device:     "device_a",
@@ -265,12 +265,12 @@ func TestScrape(t *testing.T) {
 					FSTypes: []string{"fs_type_b"},
 				},
 			},
-			usageFunc: func(_ context.Context, s string) (*disk.UsageStat, error) {
+			usageFunc: func(context.Context, string) (*disk.UsageStat, error) {
 				return &disk.UsageStat{
 					Fstype: "fs_type_a",
 				}, nil
 			},
-			partitionsFunc: func(_ context.Context, b bool) ([]disk.PartitionStat, error) {
+			partitionsFunc: func(context.Context, bool) ([]disk.PartitionStat, error) {
 				return []disk.PartitionStat{
 					{
 						Device:     "device_a",

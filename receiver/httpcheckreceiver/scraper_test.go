@@ -22,7 +22,7 @@ import (
 )
 
 func newMockServer(t *testing.T, responseCode int) *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(responseCode)
 		// This could be expanded if the checks for the server include
 		// parsing the response content
@@ -45,8 +45,8 @@ func TestScraperStart(t *testing.T) {
 						{
 							ClientConfig: confighttp.ClientConfig{
 								Endpoint: "http://example.com",
-								TLSSetting: configtls.TLSClientSetting{
-									TLSSetting: configtls.TLSSetting{
+								TLSSetting: configtls.ClientConfig{
+									Config: configtls.Config{
 										CAFile: "/non/existent",
 									},
 								},
@@ -65,7 +65,7 @@ func TestScraperStart(t *testing.T) {
 					Targets: []*targetConfig{
 						{
 							ClientConfig: confighttp.ClientConfig{
-								TLSSetting: configtls.TLSClientSetting{},
+								TLSSetting: configtls.ClientConfig{},
 								Endpoint:   "http://example.com",
 							},
 						},

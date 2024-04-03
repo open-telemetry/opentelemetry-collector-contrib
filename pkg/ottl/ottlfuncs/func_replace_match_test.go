@@ -23,24 +23,30 @@ func Test_replaceMatch(t *testing.T) {
 		},
 		Fact: optionalFnTestFactory[pcommon.Value](),
 	}
+	passwdPrefix := ottl.StandardStringGetter[pcommon.Value]{
+		Getter: func(context.Context, pcommon.Value) (any, error) {
+			return "passwd=%s", nil
+		},
+	}
 	optionalArg := ottl.NewTestingOptional[ottl.FunctionGetter[pcommon.Value]](ottlValue)
 	target := &ottl.StandardGetSetter[pcommon.Value]{
-		Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+		Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
 			return tCtx.Str(), nil
 		},
-		Setter: func(ctx context.Context, tCtx pcommon.Value, val any) error {
+		Setter: func(_ context.Context, tCtx pcommon.Value, val any) error {
 			tCtx.SetStr(val.(string))
 			return nil
 		},
 	}
 
 	tests := []struct {
-		name        string
-		target      ottl.GetSetter[pcommon.Value]
-		pattern     string
-		replacement ottl.StringGetter[pcommon.Value]
-		function    ottl.Optional[ottl.FunctionGetter[pcommon.Value]]
-		want        func(pcommon.Value)
+		name              string
+		target            ottl.GetSetter[pcommon.Value]
+		pattern           string
+		replacement       ottl.StringGetter[pcommon.Value]
+		function          ottl.Optional[ottl.FunctionGetter[pcommon.Value]]
+		replacementFormat ottl.Optional[ottl.StringGetter[pcommon.Value]]
+		want              func(pcommon.Value)
 	}{
 		{
 			name:    "replace match (with hash function)",
@@ -51,9 +57,10 @@ func Test_replaceMatch(t *testing.T) {
 					return "hello {universe}", nil
 				},
 			},
-			function: optionalArg,
+			function:          optionalArg,
+			replacementFormat: ottl.NewTestingOptional[ottl.StringGetter[pcommon.Value]](passwdPrefix),
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStr("hash(hello {universe})")
+				expectedValue.SetStr("passwd=hash(hello {universe})")
 			},
 		},
 		{
@@ -65,7 +72,8 @@ func Test_replaceMatch(t *testing.T) {
 					return "hello {universe}", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
+			replacementFormat: ottl.Optional[ottl.StringGetter[pcommon.Value]]{},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("hello {universe}")
 			},
@@ -79,7 +87,8 @@ func Test_replaceMatch(t *testing.T) {
 					return "goodbye {universe}", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
+			replacementFormat: ottl.Optional[ottl.StringGetter[pcommon.Value]]{},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("hello world")
 			},
@@ -89,7 +98,7 @@ func Test_replaceMatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
 
-			exprFunc, err := replaceMatch(tt.target, tt.pattern, tt.replacement, tt.function)
+			exprFunc, err := replaceMatch(tt.target, tt.pattern, tt.replacement, tt.function, tt.replacementFormat)
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, scenarioValue)
 			assert.NoError(t, err)
@@ -106,10 +115,10 @@ func Test_replaceMatch(t *testing.T) {
 func Test_replaceMatch_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
 	target := &ottl.StandardGetSetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx any, val any) error {
+		Setter: func(_ context.Context, _ any, _ any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -120,8 +129,9 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 		},
 	}
 	function := ottl.Optional[ottl.FunctionGetter[any]]{}
+	replacementFormat := ottl.Optional[ottl.StringGetter[any]]{}
 
-	exprFunc, err := replaceMatch[any](target, "*", replacement, function)
+	exprFunc, err := replaceMatch[any](target, "*", replacement, function, replacementFormat)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -134,10 +144,10 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 func Test_replaceMatch_bad_function_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
 	target := &ottl.StandardGetSetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx any, val any) error {
+		Setter: func(_ context.Context, _ any, _ any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -148,8 +158,9 @@ func Test_replaceMatch_bad_function_input(t *testing.T) {
 		},
 	}
 	function := ottl.Optional[ottl.FunctionGetter[any]]{}
+	replacementFormat := ottl.Optional[ottl.StringGetter[any]]{}
 
-	exprFunc, err := replaceMatch[any](target, "regexp", replacement, function)
+	exprFunc, err := replaceMatch[any](target, "regexp", replacement, function, replacementFormat)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -161,10 +172,10 @@ func Test_replaceMatch_bad_function_input(t *testing.T) {
 func Test_replaceMatch_bad_function_result(t *testing.T) {
 	input := pcommon.NewValueInt(1)
 	target := &ottl.StandardGetSetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx any, val any) error {
+		Setter: func(_ context.Context, _ any, _ any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -181,8 +192,9 @@ func Test_replaceMatch_bad_function_result(t *testing.T) {
 		Fact: StandardConverters[any]()["IsString"],
 	}
 	function := ottl.NewTestingOptional[ottl.FunctionGetter[any]](ottlValue)
+	replacementFormat := ottl.Optional[ottl.StringGetter[any]]{}
 
-	exprFunc, err := replaceMatch[any](target, "regexp", replacement, function)
+	exprFunc, err := replaceMatch[any](target, "regexp", replacement, function, replacementFormat)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -193,10 +205,10 @@ func Test_replaceMatch_bad_function_result(t *testing.T) {
 
 func Test_replaceMatch_get_nil(t *testing.T) {
 	target := &ottl.StandardGetSetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx any, val any) error {
+		Setter: func(_ context.Context, _ any, _ any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
@@ -207,8 +219,9 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 		},
 	}
 	function := ottl.Optional[ottl.FunctionGetter[any]]{}
+	replacementFormat := ottl.Optional[ottl.StringGetter[any]]{}
 
-	exprFunc, err := replaceMatch[any](target, "*", replacement, function)
+	exprFunc, err := replaceMatch[any](target, "*", replacement, function, replacementFormat)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, nil)

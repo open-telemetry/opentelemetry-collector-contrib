@@ -1,9 +1,14 @@
 type: jmx
+scope_name: otelcol/jmxreceiver
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib, splunk, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [rmfitzpatrick]
+
+tests:
+  config:
+    endpoint: myendpoint:12345
