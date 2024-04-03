@@ -242,7 +242,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	err = srv.Start(newServerSettings(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", supervisorPort),
-		onConnectingFunc: func(request *http.Request) {
+		onConnectingFunc: func(_ *http.Request) {
 			connected.Store(true)
 
 		},
@@ -377,10 +377,6 @@ func (s *Supervisor) startOpAMP() error {
 			},
 			OnMessageFunc:                 s.onMessage,
 			OnOpampConnectionSettingsFunc: s.onOpampConnectionSettings,
-			OnOpampConnectionSettingsAcceptedFunc: func(_ context.Context, settings *protobufs.OpAMPConnectionSettings) {
-				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043
-				s.logger.Debug("ConnectionSettings accepted")
-			},
 			OnCommandFunc: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 				cmdType := command.GetType()
 				if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
@@ -389,7 +385,7 @@ func (s *Supervisor) startOpAMP() error {
 				}
 				return nil
 			},
-			SaveRemoteConfigStatusFunc: func(_ context.Context, status *protobufs.RemoteConfigStatus) {
+			SaveRemoteConfigStatusFunc: func(_ context.Context, _ *protobufs.RemoteConfigStatus) {
 				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
 			},
 			GetEffectiveConfigFunc: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
@@ -466,7 +462,7 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 			newServerConfig.TLSSetting.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
 		}
 	} else {
-		newServerConfig.TLSSetting = configtls.TLSClientSetting{Insecure: true}
+		newServerConfig.TLSSetting = configtls.ClientConfig{Insecure: true}
 	}
 
 	if err := s.stopOpAMP(); err != nil {

@@ -6,7 +6,6 @@ package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
@@ -42,18 +41,13 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			scrapeErrors = append(scrapeErrors, err)
 			continue
 		}
-		path, err := filepath.Abs(fileinfo.Name())
-		if err != nil {
-			scrapeErrors = append(scrapeErrors, err)
-			continue
-		}
 		s.mb.RecordFileSizeDataPoint(now, fileinfo.Size())
 		s.mb.RecordFileMtimeDataPoint(now, fileinfo.ModTime().Unix())
 		collectStats(now, fileinfo, s.mb, s.logger)
 
 		rb := s.mb.NewResourceBuilder()
 		rb.SetFileName(fileinfo.Name())
-		rb.SetFilePath(path)
+		rb.SetFilePath(match)
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 

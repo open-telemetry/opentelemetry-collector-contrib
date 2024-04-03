@@ -29,7 +29,7 @@ type Capabilities struct {
 type OpAMPServer struct {
 	Endpoint   string
 	Headers    http.Header
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
 }
 
 type Agent struct {

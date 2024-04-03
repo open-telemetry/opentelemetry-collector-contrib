@@ -1,12 +1,14 @@
 type: zookeeper
+scope_name: otelcol/zookeeperreceiver
 
 status:
   class: receiver
   stability:
     development: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski]
+    seeking_new: true
 
 resource_attributes:
   server.state:

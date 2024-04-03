@@ -18,7 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
-// NewFactory creates a factory for Elastic exporter.
+// NewFactory creates a factory for ClickHouse exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
@@ -47,7 +47,7 @@ func createDefaultConfig() component.Config {
 }
 
 // createLogsExporter creates a new exporter for logs.
-// Logs are directly insert into clickhouse.
+// Logs are directly inserted into ClickHouse.
 func createLogsExporter(
 	ctx context.Context,
 	set exporter.CreateSettings,
@@ -73,7 +73,7 @@ func createLogsExporter(
 }
 
 // createTracesExporter creates a new exporter for traces.
-// Traces are directly insert into clickhouse.
+// Traces are directly inserted into ClickHouse.
 func createTracesExporter(
 	ctx context.Context,
 	set exporter.CreateSettings,

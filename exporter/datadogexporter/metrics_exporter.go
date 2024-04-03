@@ -31,7 +31,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
 type metricsExporter struct {
@@ -86,9 +85,7 @@ func translatorFromConfig(set component.TelemetrySettings, cfg *Config, attrsTra
 	options = append(options, otlpmetrics.WithInitialCumulMonoValueMode(
 		otlpmetrics.InitialCumulMonoValueMode(cfg.Metrics.SumConfig.InitialCumulativeMonotonicMode)))
 
-	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
-		options = append(options, otlpmetrics.WithStatsOut(statsOut))
-	}
+	options = append(options, otlpmetrics.WithStatsOut(statsOut))
 	return otlpmetrics.NewTranslator(set, attrsTranslator, options...)
 }
 
@@ -129,14 +126,13 @@ func newMetricsExporter(
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
 			cfg.Metrics.TCPAddrConfig.Endpoint,
-			cfg.TimeoutSettings,
-			cfg.LimitedClientConfig.TLSSetting.InsecureSkipVerify)
+			cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
 		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
 		client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
-		client.HttpClient = clientutil.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedClientConfig.TLSSetting.InsecureSkipVerify)
+		client.HttpClient = clientutil.NewHTTPClient(cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
 		exporter.client = client
 	}

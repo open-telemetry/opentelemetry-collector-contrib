@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
@@ -36,7 +37,7 @@ func BenchmarkSamples(b *testing.B) {
 
 		for i := 0; i < dps.Len(); i++ {
 			dp := dps.At(i)
-			rid = streams.Identify(mid, dp.Attributes())
+			rid = identity.OfStream(mid, dp)
 			rdp = dp
 		}
 	})
@@ -48,7 +49,7 @@ func BenchmarkSamples(b *testing.B) {
 
 		for i := range dps.dps {
 			dp := dps.dps[i]
-			rid = streams.Identify(mid, dp.Attributes())
+			rid = identity.OfStream(mid, dp)
 			rdp = dp
 		}
 	})
@@ -75,7 +76,7 @@ func TestAggregate(t *testing.T) {
 	dps := generate(total)
 
 	// inv aggregator inverts each sample
-	inv := aggr(func(id streams.Ident, n data.Number) (data.Number, error) {
+	inv := aggr(func(_ streams.Ident, n data.Number) (data.Number, error) {
 		dp := n.Clone()
 		dp.SetIntValue(-dp.IntValue())
 		return dp, nil
