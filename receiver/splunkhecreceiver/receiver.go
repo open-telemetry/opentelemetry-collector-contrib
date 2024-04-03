@@ -396,20 +396,24 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 }
 
 func (r *splunkReceiver) validateAndExtractChannelHeader(req *http.Request) (string, error) {
-	// check channel header exists
-	partitionID := req.Header.Get(splunk.HTTPSplunkChannelHeader)
+	partitionID, ok := req.Header[splunk.HTTPSplunkChannelHeader]
 
-	if len(partitionID) == 0 {
+	// check channel header exists
+	if !ok {
 		return "", nil
 	}
 
+	if len(partitionID[0]) == 0 {
+		return "", errors.New(responseErrInvalidDataChannel)
+	}
+
 	// check validity of channel
-	_, err := uuid.Parse(partitionID)
+	_, err := uuid.Parse(partitionID[0])
 	if err != nil {
 		return "", errors.New(responseErrInvalidDataChannel)
 	}
 
-	return partitionID, nil
+	return partitionID[0], nil
 }
 
 func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {

@@ -1373,6 +1373,25 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			},
 		},
 		{
+			name: "empty_channel_header",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req.Header.Set("X-Splunk-Request-Channel", "")
+				return req
+			}(),
+			setupMockAckExtension: func() component.Component {
+				mockAckExtension := mocks.AckExtension{}
+				return &mockAckExtension
+			},
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, map[string]any{"text": "Invalid data channel", "code": float64(11)}, body)
+			},
+		},
+		{
 			name: "invalid_channel_header",
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
@@ -1477,6 +1496,28 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
 				assert.Equal(t, 1, len(sink.AllLogs()))
+			},
+		},
+		{
+			name: "empty_channel_header",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req.Header.Set("X-Splunk-Request-Channel", "")
+				return req
+			}(),
+			setupMockAckExtension: func() component.Component {
+				mockAckExtension := mocks.AckExtension{}
+				return &mockAckExtension
+			},
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, map[string]any{"text": "Invalid data channel", "code": float64(11)}, body)
+			},
+			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
+				assert.Equal(t, 0, len(sink.AllLogs()))
 			},
 		},
 		{
