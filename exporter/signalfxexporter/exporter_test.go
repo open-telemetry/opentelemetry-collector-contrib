@@ -1417,7 +1417,7 @@ func TestTLSIngestConnection(t *testing.T) {
 }
 
 func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
-	translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600)
+	translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600, make(chan struct{}))
 	require.NoError(t, err)
 	converter, err := translation.NewMetricsConverter(zap.NewNop(), translator, defaultExcludeMetrics, nil, "_-.", false, true)
 	require.NoError(t, err)

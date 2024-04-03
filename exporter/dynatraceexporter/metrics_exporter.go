@@ -45,7 +45,7 @@ func newMetricsExporter(params exporter.CreateSettings, cfg *config.Config) *met
 
 	staticDimensions := dimensions.NewNormalizedDimensionList(dimensions.NewDimension("dt.metrics.source", "opentelemetry"))
 
-	prevPts := ttlmap.New(cSweepIntervalSeconds, cMaxAgeSeconds)
+	prevPts := ttlmap.New(cSweepIntervalSeconds, cMaxAgeSeconds, make(chan struct{}))
 	prevPts.Start()
 
 	return &metricsExporter{

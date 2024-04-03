@@ -150,7 +150,7 @@ type DimensionClientConfig struct {
 	Timeout             time.Duration `mapstructure:"timeout"`
 }
 
-func (cfg *Config) getMetricTranslator(logger *zap.Logger) (*translation.MetricTranslator, error) {
+func (cfg *Config) getMetricTranslator(logger *zap.Logger, done chan struct{}) (*translation.MetricTranslator, error) {
 	rules := defaultTranslationRules
 	if cfg.TranslationRules != nil {
 		// Previous way to disable default translation rules.
@@ -166,7 +166,7 @@ func (cfg *Config) getMetricTranslator(logger *zap.Logger) (*translation.MetricT
 	if cfg.DisableDefaultTranslationRules {
 		rules = []translation.Rule{}
 	}
-	metricTranslator, err := translation.NewMetricTranslator(rules, cfg.DeltaTranslationTTL)
+	metricTranslator, err := translation.NewMetricTranslator(rules, cfg.DeltaTranslationTTL, done)
 	if err != nil {
 		return nil, fmt.Errorf("invalid \"%s\": %w", translationRulesConfigKey, err)
 	}

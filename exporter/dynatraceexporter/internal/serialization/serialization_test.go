@@ -30,7 +30,7 @@ func TestSerializeMetric(t *testing.T) {
 		gaugeDp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 		gaugeDp.SetIntValue(3)
 
-		prev := ttlmap.New(1, 1)
+		prev := ttlmap.New(1, 1, make(chan struct{}))
 
 		serialized, err := SerializeMetric(logger, "prefix", metric, defaultDims, staticDims, prev)
 		assert.NoError(t, err)
@@ -50,7 +50,7 @@ func TestSerializeMetric(t *testing.T) {
 		sumDp := sum.DataPoints().AppendEmpty()
 		sumDp.SetIntValue(4)
 
-		prev := ttlmap.New(1, 1)
+		prev := ttlmap.New(1, 1, make(chan struct{}))
 
 		serialized, err := SerializeMetric(logger, "prefix", metric, defaultDims, staticDims, prev)
 		assert.NoError(t, err)
@@ -71,7 +71,7 @@ func TestSerializeMetric(t *testing.T) {
 		dp.SetSum(6)
 		dp.SetCount(3)
 
-		prev := ttlmap.New(1, 1)
+		prev := ttlmap.New(1, 1, make(chan struct{}))
 
 		serialized, err := SerializeMetric(logger, "prefix", metric, defaultDims, staticDims, prev)
 		assert.NoError(t, err)
