@@ -136,7 +136,7 @@ The following settings can be optionally configured:
   - Default: `1m`
 - `store_expiration_loop`: the time to expire old entries from the store periodically.
   - Default: `2s`
-- `virtual_node_peer_attributes`: the list of attributes, ordered by priority, whose presence in a client span will result in the creation of a virtual server node.
+- `virtual_node_peer_attributes`: the list of attributes, ordered by priority, whose presence in a client span will result in the creation of a virtual server node. An empty list disables virtual node creation.
   - Default: `[peer.service, db.name, db.system]`
 - `metrics_flush_interval`: the interval at which metrics are flushed to the exporter.
   - Default: Metrics are flushed on every received batch of traces.

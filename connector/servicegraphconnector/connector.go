@@ -380,7 +380,7 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 
 	p.statExpiredEdges.Add(context.Background(), 1)
 
-	if virtualNodeFeatureGate.IsEnabled() {
+	if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
 		e.ConnectionType = store.VirtualNode
 		if len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"
