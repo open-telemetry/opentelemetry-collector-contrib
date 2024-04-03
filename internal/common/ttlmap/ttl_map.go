@@ -59,6 +59,12 @@ func (m *TTLMap) Get(k string) any {
 	return m.md.get(k)
 }
 
+func (m *TTLMap) Shutdown() {
+	if m.done != nil {
+		close(m.done)
+	}
+}
+
 type entry struct {
 	createTime int64
 	v          any
@@ -102,10 +108,4 @@ func (d *ttlMapData) sweep(currTime int64) {
 		}
 	}
 	d.mux.Unlock()
-}
-
-func (m *TTLMap) Shutdown() {
-	if m.done != nil {
-		close(m.done)
-	}
 }
