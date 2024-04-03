@@ -157,7 +157,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		return nil, fmt.Errorf("cannot start OpAMP client: %w", err)
 	}
 
-	if err := s.waitForOpAMPConnection(); err != nil {
+	if connErr := s.waitForOpAMPConnection(); connErr != nil {
 		return nil, fmt.Errorf("failed to connect to the OpAMP server: %w", err)
 	}
 
@@ -385,6 +385,7 @@ func (s *Supervisor) startOpAMP() error {
 			},
 			OnMessageFunc: s.onMessage,
 			OnOpampConnectionSettingsFunc: func(ctx context.Context, settings *protobufs.OpAMPConnectionSettings) error {
+				//nolint:errcheck
 				go s.onOpampConnectionSettings(ctx, settings)
 				return nil
 			},
