@@ -10,7 +10,7 @@ REPO_DIR="$( cd "$SCRIPT_DIR/../../../../" && pwd )"
 export REPO_DIR
 PKG_PATH="${1:-}"
 
-."$SCRIPT_DIR"/common.sh
+. "$SCRIPT_DIR"/common.sh
 
 if [[ -z "$PKG_PATH" ]]; then
     echo "usage: ${BASH_SOURCE[0]} DEB_OR_RPM_PATH" >&2
