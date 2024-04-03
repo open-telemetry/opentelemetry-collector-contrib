@@ -4,15 +4,12 @@
 package filter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/filter"
 
 import (
-	"context"
 	"crypto/rand"
 	"fmt"
 	"math/big"
 
-	"github.com/expr-lang/expr/vm"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -69,45 +66,4 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		expression:          compiledExpression,
 		dropCutoff:          big.NewInt(int64(c.DropRatio * 1000)),
 	}, nil
-}
-
-// Transformer is an operator that filters entries based on matching expressions
-type Transformer struct {
-	helper.TransformerOperator
-	expression *vm.Program
-	dropCutoff *big.Int // [0..1000)
-}
-
-// Process will drop incoming entries that match the filter expression
-func (f *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
-	env := helper.GetExprEnv(entry)
-	defer helper.PutExprEnv(env)
-
-	matches, err := vm.Run(f.expression, env)
-	if err != nil {
-		f.Errorf("Running expressing returned an error", zap.Error(err))
-		return nil
-	}
-
-	filtered, ok := matches.(bool)
-	if !ok {
-		f.Errorf("Expression did not compile as a boolean")
-		return nil
-	}
-
-	if !filtered {
-		f.Write(ctx, entry)
-		return nil
-	}
-
-	i, err := randInt(rand.Reader, upperBound)
-	if err != nil {
-		return err
-	}
-
-	if i.Cmp(f.dropCutoff) >= 0 {
-		f.Write(ctx, entry)
-	}
-
-	return nil
 }

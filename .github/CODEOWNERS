@@ -32,7 +32,7 @@ connector/failoverconnector/                             @open-telemetry/collect
 connector/grafanacloudconnector/                         @open-telemetry/collector-contrib-approvers @jpkrohling @rlankfo @jcreixell
 connector/routingconnector/                              @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 connector/servicegraphconnector/                         @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
-connector/spanmetricsconnector/                          @open-telemetry/collector-contrib-approvers @portertech
+connector/spanmetricsconnector/                          @open-telemetry/collector-contrib-approvers @portertech @Frapschen
 
 examples/demo/                                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 

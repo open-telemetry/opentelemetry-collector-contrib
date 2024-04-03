@@ -123,12 +123,12 @@ func TestTransformer(t *testing.T) {
 				return cfg
 			}(),
 			[]*entry.Entry{
-				entryWithBody(t1, "test1"),
-				entryWithBody(t2, "test2"),
-				entryWithBody(t2, "test1"),
+				entryWithBodyAttr(t1, "test1", map[string]string{"base": "false"}),
+				entryWithBodyAttr(t2, "test2", map[string]string{"base": "true"}),
+				entryWithBodyAttr(t2, "test1", map[string]string{"base": "false"}),
 			},
 			[]*entry.Entry{
-				entryWithBody(t1, "test1\ntest2"),
+				entryWithBodyAttr(t2, "test1\ntest2", map[string]string{"base": "true"}),
 			},
 		},
 		{
@@ -142,12 +142,12 @@ func TestTransformer(t *testing.T) {
 				return cfg
 			}(),
 			[]*entry.Entry{
-				entryWithBody(t1, "test1"),
-				entryWithBody(t2, "test2"),
-				entryWithBody(t2, "test1"),
+				entryWithBodyAttr(t1, "test1", map[string]string{"base": "true"}),
+				entryWithBodyAttr(t2, "test2", map[string]string{"base": "false"}),
+				entryWithBodyAttr(t2, "test1", map[string]string{"base": "true"}),
 			},
 			[]*entry.Entry{
-				entryWithBody(t2, "test1\ntest2"),
+				entryWithBodyAttr(t1, "test1\ntest2", map[string]string{"base": "true"}),
 			},
 		},
 		{
@@ -157,7 +157,7 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "$body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
+				cfg.OverwriteWith = "oldest"
 				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
@@ -177,7 +177,7 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "body == 'start'"
 				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "oldest"
+				cfg.OverwriteWith = "newest"
 				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
@@ -286,7 +286,7 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineField = entry.NewBodyField("message")
 				cfg.CombineWith = ""
 				cfg.IsLastEntry = "body.logtag == 'F'"
-				cfg.OverwriteWith = "oldest"
+				cfg.OverwriteWith = "newest"
 				cfg.OutputIDs = []string{"fake"}
 				return cfg
 			}(),
@@ -380,7 +380,7 @@ func TestTransformer(t *testing.T) {
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.MaxSources = 1
-				cfg.OverwriteWith = "oldest"
+				cfg.OverwriteWith = "newest"
 				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
