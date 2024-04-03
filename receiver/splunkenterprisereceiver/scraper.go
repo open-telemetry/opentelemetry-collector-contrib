@@ -56,26 +56,13 @@ func (s *splunkScraper) start(_ context.Context, h component.Host) (err error) {
 // listens to the error channel and combines errors sent from different metric scrape functions,
 // returning the combined error list should context timeout or a nil error value is sent in the
 // channel signifying the end of a scrape cycle
-func errorListener(ctx context.Context, eQueue <-chan error, eOut chan<- *scrapererror.ScrapeErrors) {
+func errorListener(eQueue <-chan error, eOut chan<- *scrapererror.ScrapeErrors) {
 	errs := &scrapererror.ScrapeErrors{}
 
-	for {
-		select {
-		// context timeout
-		case <-ctx.Done():
-			eOut <- errs
-			return
-		case err, ok := <-eQueue:
-			// shutdown
-			if err == nil || !ok {
-				eOut <- errs
-				return
-				// or add an error to errs
-			} else {
-				errs.Add(err)
-			}
-		}
+	for err := range eQueue {
+		errs.Add(err)
 	}
+	eOut <- errs
 }
 
 // The big one: Describes how all scraping tasks should be performed. Part of the scraper interface
@@ -109,7 +96,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	errChan := make(chan error, len(metricScrapes))
 
 	go func() {
-		errorListener(ctx, errChan, errOut)
+		errorListener(errChan, errOut)
 	}()
 
 	for _, fn := range metricScrapes {
@@ -126,7 +113,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	wg.Wait()
-	errChan <- nil
+	close(errChan)
 	errs = <-errOut
 	return s.mb.Emit(), errs.Combine()
 }
