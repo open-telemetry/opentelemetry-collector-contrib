@@ -107,6 +107,8 @@ type Supervisor struct {
 
 	agentHasStarted               bool
 	agentStartHealthCheckAttempts int
+
+	connectedToOpAMPServer chan struct{}
 }
 
 func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
@@ -116,6 +118,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		effectiveConfigFilePath:      "effective.yaml",
 		agentConfigOwnMetricsSection: &atomic.Value{},
 		effectiveConfig:              &atomic.Value{},
+		connectedToOpAMPServer:       make(chan struct{}),
 	}
 
 	if err := s.createTemplates(); err != nil {
@@ -152,6 +155,10 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 
 	if err = s.startOpAMP(); err != nil {
 		return nil, fmt.Errorf("cannot start OpAMP client: %w", err)
+	}
+
+	if err := s.waitForOpAMPConnection(); err != nil {
+		return nil, fmt.Errorf("failed to connect to the OpAMP server: %w", err)
 	}
 
 	s.commander, err = commander.NewCommander(
@@ -367,6 +374,7 @@ func (s *Supervisor) startOpAMP() error {
 		InstanceUid:    s.instanceID.String(),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func(_ context.Context) {
+				s.connectedToOpAMPServer <- struct{}{}
 				s.logger.Debug("Connected to the server.")
 			},
 			OnConnectFailedFunc: func(_ context.Context, err error) {
@@ -375,8 +383,11 @@ func (s *Supervisor) startOpAMP() error {
 			OnErrorFunc: func(_ context.Context, err *protobufs.ServerErrorResponse) {
 				s.logger.Error("Server returned an error response", zap.String("message", err.ErrorMessage))
 			},
-			OnMessageFunc:                 s.onMessage,
-			OnOpampConnectionSettingsFunc: s.onOpampConnectionSettings,
+			OnMessageFunc: s.onMessage,
+			OnOpampConnectionSettingsFunc: func(ctx context.Context, settings *protobufs.OpAMPConnectionSettings) error {
+				go s.onOpampConnectionSettings(ctx, settings)
+				return nil
+			},
 			OnCommandFunc: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 				cmdType := command.GetType()
 				if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
@@ -485,8 +496,17 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 			return err
 		}
 	}
+	return s.waitForOpAMPConnection()
+}
 
-	return nil
+func (s *Supervisor) waitForOpAMPConnection() error {
+	// wait for the OpAMP client to connect to the server or timeout
+	select {
+	case <-s.connectedToOpAMPServer:
+		return nil
+	case <-time.After(10 * time.Second):
+		return errors.New("timed out waiting for the server to connect")
+	}
 }
 
 // TODO: Persist instance ID. https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21073
