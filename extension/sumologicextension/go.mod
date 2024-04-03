@@ -6,7 +6,7 @@ require (
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/mitchellh/go-ps v1.0.0
-	github.com/shirou/gopsutil/v3 v3.24.2
+	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.97.1-0.20240327181407-1038b67c85a0
 	go.opentelemetry.io/collector/config/confighttp v0.97.1-0.20240327181407-1038b67c85a0
