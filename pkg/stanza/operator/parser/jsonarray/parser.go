@@ -6,70 +6,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/valyala/fastjson"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
-
-const operatorType = "json_array_parser"
-const headerDelimiter = ","
-
-var jsonArrayParserFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"logs.jsonParserArray",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, allows usage of `json_array_parser`."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30321"),
-)
-
-func init() {
-	if jsonArrayParserFeatureGate.IsEnabled() {
-		operator.Register(operatorType, func() operator.Builder { return NewConfig() })
-	}
-}
-
-// NewConfig creates a new json array parser config with default values
-func NewConfig() *Config {
-	return NewConfigWithID(operatorType)
-}
-
-// NewConfigWithID creates a new json array parser config with default values
-func NewConfigWithID(operatorID string) *Config {
-	return &Config{
-		ParserConfig: helper.NewParserConfig(operatorID, operatorType),
-	}
-}
-
-// Config is the configuration of a json array parser operator.
-type Config struct {
-	helper.ParserConfig `mapstructure:",squash"`
-	Header              string `mapstructure:"header"`
-}
-
-// Build will build a json array parser operator.
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	parserOperator, err := c.ParserConfig.Build(logger)
-	if err != nil {
-		return nil, err
-	}
-
-	if c.Header != "" {
-		return &Parser{
-			ParserOperator: parserOperator,
-			parse:          generateParseToMapFunc(new(fastjson.ParserPool), strings.Split(c.Header, headerDelimiter)),
-		}, nil
-	}
-
-	return &Parser{
-		ParserOperator: parserOperator,
-		parse:          generateParseToArrayFunc(new(fastjson.ParserPool)),
-	}, nil
-}
 
 // Parser is an operator that parses json array in an entry.
 type Parser struct {
@@ -80,8 +22,8 @@ type Parser struct {
 type parseFunc func(any) (any, error)
 
 // Process will parse an entry for json array.
-func (r *Parser) Process(ctx context.Context, e *entry.Entry) error {
-	return r.ParserOperator.ProcessWith(ctx, e, r.parse)
+func (p *Parser) Process(ctx context.Context, e *entry.Entry) error {
+	return p.ParserOperator.ProcessWith(ctx, e, p.parse)
 }
 
 func generateParseToArrayFunc(pool *fastjson.ParserPool) parseFunc {
