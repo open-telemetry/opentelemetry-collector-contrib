@@ -33,7 +33,7 @@ func TestTraceIsDispatchedAfterDuration(t *testing.T) {
 		NumWorkers:   4,
 	}
 	mockProcessor := &mockProcessor{
-		onTraces: func(ctx context.Context, received ptrace.Traces) error {
+		onTraces: func(_ context.Context, received ptrace.Traces) error {
 			assert.Equal(t, traces, received)
 			wgReceived.Done()
 			return nil
@@ -87,7 +87,7 @@ func TestInternalCacheLimit(t *testing.T) {
 
 	var receivedTraceIDs []pcommon.TraceID
 	mockProcessor := &mockProcessor{}
-	mockProcessor.onTraces = func(ctx context.Context, received ptrace.Traces) error {
+	mockProcessor.onTraces = func(_ context.Context, received ptrace.Traces) error {
 		traceID := received.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
 		receivedTraceIDs = append(receivedTraceIDs, traceID)
 		wg.Done()
@@ -303,7 +303,7 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 
 	var receivedTraces []ptrace.ResourceSpans
 	next := &mockProcessor{
-		onTraces: func(ctx context.Context, traces ptrace.Traces) error {
+		onTraces: func(_ context.Context, traces ptrace.Traces) error {
 			require.Equal(t, 2, traces.ResourceSpans().Len())
 			receivedTraces = append(receivedTraces, traces.ResourceSpans().At(0))
 			receivedTraces = append(receivedTraces, traces.ResourceSpans().At(1))

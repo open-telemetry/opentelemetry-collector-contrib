@@ -5,7 +5,7 @@ status:
   class: extension
   stability:
     beta: [extension]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [jpkrohling]
 

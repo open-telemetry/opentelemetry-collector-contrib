@@ -21,7 +21,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 	input.PutBool("test3", true)
 
 	target := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(ctx context.Context, tCtx pcommon.Map) (any, error) {
+		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -81,7 +81,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
 	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -95,7 +95,7 @@ func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 
 func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -108,7 +108,7 @@ func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 
 func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
 	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, _ any) (any, error) {
 			t.Errorf("nothing should be received in this scenario")
 			return nil, nil
 		},

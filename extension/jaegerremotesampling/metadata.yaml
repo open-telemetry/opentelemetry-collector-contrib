@@ -7,9 +7,6 @@ status:
     alpha: [extension]
   distributions:
   - contrib
-  - grafana
-  - redhat
-  - sumo
   codeowners:
     active: [yurishkuro, frzifus]
 
