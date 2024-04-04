@@ -497,6 +497,8 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/nginxinc/nginx-prometheus-exporter v0.11.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.97.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension v0.97.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.97.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.97.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.97.0 // indirect
@@ -1160,3 +1162,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlqu
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ./extension/encoding
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension => ./extension/encoding/otlpencodingextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension => ./extension/encoding/avrologencodingextension

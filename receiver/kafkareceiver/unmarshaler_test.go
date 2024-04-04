@@ -53,6 +53,7 @@ func TestDefaultLogsUnMarshaler(t *testing.T) {
 		"text",
 		"json",
 		"azure_resource_logs",
+		"avro",
 	}
 	marshalers := defaultLogsUnmarshalers("Test Version", zap.NewNop())
 	assert.Equal(t, len(expectedEncodings), len(marshalers))

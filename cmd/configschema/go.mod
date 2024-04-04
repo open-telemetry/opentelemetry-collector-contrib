@@ -494,6 +494,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.97.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.97.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.97.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.97.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension v0.97.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.97.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling v0.97.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.97.0 // indirect
@@ -1159,3 +1161,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/enco
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../../extension/encoding
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector => ../../connector/grafanacloudconnector
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension => ../../extension/encoding/avrologencodingextension

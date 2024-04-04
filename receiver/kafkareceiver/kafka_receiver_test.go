@@ -925,7 +925,7 @@ func TestGetLogsUnmarshaler_encoding_text(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := getLogsUnmarshaler(test.encoding, defaultLogsUnmarshalers("Test Version", zap.NewNop()))
+			_, err := getLogsUnmarshaler(Config{Encoding: test.encoding}, defaultLogsUnmarshalers("Test Version", zap.NewNop()))
 			assert.NoError(t, err)
 		})
 	}

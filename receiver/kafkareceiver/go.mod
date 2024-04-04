@@ -8,7 +8,10 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.55.0
 	github.com/json-iterator/go v1.1.12
+	github.com/linkedin/goavro/v2 v2.9.8
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.97.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.97.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.97.0
@@ -21,6 +24,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/confmap v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/consumer v0.97.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/extension v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/pdata v1.4.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/receiver v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/semconv v0.97.1-0.20240404121116-4f1a8936d26b
@@ -80,7 +84,6 @@ require (
 	go.opentelemetry.io/collector/config/configretry v0.97.1-0.20240404121116-4f1a8936d26b // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.97.1-0.20240404121116-4f1a8936d26b // indirect
 	go.opentelemetry.io/collector/exporter v0.97.1-0.20240404121116-4f1a8936d26b // indirect
-	go.opentelemetry.io/collector/extension v0.97.1-0.20240404121116-4f1a8936d26b // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.46.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
@@ -122,3 +125,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure => ../../pkg/translator/azure
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension => ../../extension/encoding/avrologencodingextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../../extension/encoding

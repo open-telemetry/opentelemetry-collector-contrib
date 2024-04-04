@@ -37,6 +37,11 @@ type HeaderExtraction struct {
 	Headers        []string `mapstructure:"headers"`
 }
 
+type Avro struct {
+	// AVRO schema used to decode messages
+	Schema string `mapstructure:"schema"`
+}
+
 // Config defines configuration for Kafka receiver.
 type Config struct {
 	// The list of kafka brokers (default localhost:9092)
@@ -74,6 +79,9 @@ type Config struct {
 
 	// Extract headers from kafka records
 	HeaderExtraction HeaderExtraction `mapstructure:"header_extraction"`
+
+	// AVRO encoder config when "encoding: avro"
+	Avro Avro `mapstructure:"avro"`
 }
 
 const (
