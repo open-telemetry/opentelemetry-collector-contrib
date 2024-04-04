@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/Khan/genqlient v0.7.0
 	github.com/google/go-cmp v0.6.0
-	github.com/google/go-github/v59 v59.0.0
+	github.com/google/go-github/v61 v61.0.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.97.1-0.20240327181407-1038b67c85a0
 	go.opentelemetry.io/collector/config/confighttp v0.97.1-0.20240327181407-1038b67c85a0
@@ -104,7 +104,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.24.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.1.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	gonum.org/v1/gonum v0.15.0 // indirect

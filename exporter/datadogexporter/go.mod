@@ -15,8 +15,8 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.4
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.4
 	github.com/DataDog/sketches-go v1.4.4
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0
-	github.com/aws/aws-sdk-go v1.51.12
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.22.0
+	github.com/aws/aws-sdk-go v1.51.13
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.97.0
@@ -223,7 +223,7 @@ require (
 	github.com/rs/cors v1.10.1 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.22 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.24.2 // indirect
+	github.com/shirou/gopsutil/v3 v3.24.3 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -271,7 +271,7 @@ require (
 	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
 	golang.org/x/mod v0.16.0 // indirect
-	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/oauth2 v0.18.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect

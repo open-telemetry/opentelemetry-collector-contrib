@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.97.0
 	github.com/prometheus/procfs v0.13.0
-	github.com/shirou/gopsutil/v3 v3.24.2
+	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/stretchr/testify v1.9.0
 	github.com/yusufpapurcu/wmi v1.2.4
 	go.opentelemetry.io/collector/component v0.97.1-0.20240327181407-1038b67c85a0
@@ -123,7 +123,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.1.0 // indirect
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
 	golang.org/x/mod v0.16.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.16.0 // indirect
 	gonum.org/v1/gonum v0.15.0 // indirect
