@@ -5,6 +5,7 @@ components:
     connector:
         - count
         - datadog
+        - exceptions
         - grafanacloud
         - routing
         - servicegraph

@@ -8,6 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.97.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.97.0
@@ -288,7 +289,7 @@ require (
 	github.com/DataDog/sketches-go v1.4.4 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.21.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.22.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.46.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.46.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.22.0 // indirect
@@ -305,13 +306,13 @@ require (
 	github.com/alecthomas/units v0.0.0-20231202071711-9a357b53e9c9 // indirect
 	github.com/aliyun/aliyun-log-go-sdk v0.1.72 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
-	github.com/apache/arrow/go/v14 v14.0.2 // indirect
+	github.com/apache/arrow/go/v15 v15.0.0 // indirect
 	github.com/apache/pulsar-client-go v0.8.1 // indirect
 	github.com/apache/pulsar-client-go/oauth2 v0.0.0-20220120090717-25e59572242e // indirect
 	github.com/apache/thrift v0.20.0 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.51.12 // indirect
+	github.com/aws/aws-sdk-go v1.51.13 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.26.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.2 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.27.10 // indirect
@@ -616,7 +617,7 @@ require (
 	github.com/signalfx/sapm-proto v0.14.0 // indirect
 	github.com/sijms/go-ora/v2 v2.8.10 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/snowflakedb/gosnowflake v1.8.0 // indirect
+	github.com/snowflakedb/gosnowflake v1.9.0 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
@@ -630,7 +631,7 @@ require (
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.891 // indirect
 	github.com/tg123/go-htpasswd v1.2.2 // indirect
-	github.com/tidwall/gjson v1.10.2 // indirect
+	github.com/tidwall/gjson v1.14.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/tinylru v1.1.0 // indirect
@@ -700,7 +701,7 @@ require (
 	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3 // indirect
 	golang.org/x/mod v0.16.0 // indirect
-	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/oauth2 v0.18.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
@@ -709,7 +710,7 @@ require (
 	golang.org/x/tools v0.17.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gonum.org/v1/gonum v0.15.0 // indirect
-	google.golang.org/api v0.171.0 // indirect
+	google.golang.org/api v0.172.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20240213162025-012b6fc9bca9 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240318140521-94a12d6c2237 // indirect
@@ -1157,6 +1158,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/coun
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector => ../../connector/datadogconnector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector => ../../connector/exceptionsconnector
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector => ../../connector/grafanacloudconnector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector => ../../connector/routingconnector
 

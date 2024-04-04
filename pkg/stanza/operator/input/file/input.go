@@ -25,30 +25,30 @@ type Input struct {
 }
 
 // Start will start the file monitoring process
-func (f *Input) Start(persister operator.Persister) error {
-	return f.fileConsumer.Start(persister)
+func (i *Input) Start(persister operator.Persister) error {
+	return i.fileConsumer.Start(persister)
 }
 
 // Stop will stop the file monitoring process
-func (f *Input) Stop() error {
-	return f.fileConsumer.Stop()
+func (i *Input) Stop() error {
+	return i.fileConsumer.Stop()
 }
 
-func (f *Input) emit(ctx context.Context, token []byte, attrs map[string]any) error {
+func (i *Input) emit(ctx context.Context, token []byte, attrs map[string]any) error {
 	if len(token) == 0 {
 		return nil
 	}
 
-	ent, err := f.NewEntry(f.toBody(token))
+	ent, err := i.NewEntry(i.toBody(token))
 	if err != nil {
 		return fmt.Errorf("create entry: %w", err)
 	}
 
 	for k, v := range attrs {
 		if err := ent.Set(entry.NewAttributeField(k), v); err != nil {
-			f.Errorf("set attribute: %w", err)
+			i.Errorf("set attribute: %w", err)
 		}
 	}
-	f.Write(ctx, ent)
+	i.Write(ctx, ent)
 	return nil
 }

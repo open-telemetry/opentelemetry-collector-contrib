@@ -4,11 +4,8 @@
 package severity // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/severity"
 
 import (
-	"context"
-
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -54,15 +51,4 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		TransformerOperator: transformerOperator,
 		SeverityParser:      severityParser,
 	}, nil
-}
-
-// Parser is an operator that parses severity from a field to an entry.
-type Parser struct {
-	helper.TransformerOperator
-	helper.SeverityParser
-}
-
-// Process will parse severity from an entry.
-func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
-	return p.ProcessWith(ctx, entry, p.Parse)
 }
