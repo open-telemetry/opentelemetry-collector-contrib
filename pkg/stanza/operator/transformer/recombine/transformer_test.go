@@ -503,15 +503,14 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
 				cfg.MaxUnmatchedBatchSize = 0
 				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
 				entryWithBody(t1, "test2"),
-				entryWithBody(t2, "test3"),
-				entryWithBody(t2, "test4"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
 			},
 			[]*entry.Entry{
 				entryWithBody(t1, "test2\ntest3\ntest4"),
@@ -524,20 +523,19 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
 				cfg.MaxUnmatchedBatchSize = 1
 				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
 				entryWithBody(t1, "test2"),
-				entryWithBody(t2, "test3"),
-				entryWithBody(t2, "test4"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
 			},
 			[]*entry.Entry{
 				entryWithBody(t1, "test2"),
-				entryWithBody(t2, "test3"),
-				entryWithBody(t2, "test4"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
 			},
 		},
 		{
@@ -547,7 +545,6 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
 				cfg.MaxUnmatchedBatchSize = 2
 				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
@@ -580,15 +577,14 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
 				cfg.MaxUnmatchedBatchSize = 0
 				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
 				entryWithBody(t1, "test2"),
-				entryWithBody(t2, "test3"),
-				entryWithBody(t2, "test4"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
 			},
 			[]*entry.Entry{
 				entryWithBody(t1, "test2\ntest3\ntest4"),
@@ -601,20 +597,19 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
 				cfg.MaxUnmatchedBatchSize = 1
 				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
 				entryWithBody(t1, "test2"),
-				entryWithBody(t2, "test3"),
-				entryWithBody(t2, "test4"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
 			},
 			[]*entry.Entry{
 				entryWithBody(t1, "test2"),
-				entryWithBody(t2, "test3"),
-				entryWithBody(t2, "test4"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
 			},
 		},
 		{
@@ -624,7 +619,6 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
 				cfg.MaxUnmatchedBatchSize = 2
 				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
@@ -651,7 +645,6 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
 				cfg.MaxUnmatchedBatchSize = 2
 				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
