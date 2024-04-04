@@ -304,7 +304,7 @@ jobs:
         if: startsWith( matrix.go-version, '1.21' ) # only upload artifact for one version
         with:
           name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
-          path: ${{ matrix.group }}-${{ matrix.runner }}-coverage.txt
+          path: ${{ matrix.group }}-coverage.txt
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-latest
