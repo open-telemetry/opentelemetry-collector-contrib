@@ -409,10 +409,12 @@ Available Converters:
 - [SHA256](#sha256)
 - [SpanID](#spanid)
 - [Split](#split)
+- [String](#string)
 - [Substring](#substring)
 - [Time](#time)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
+- [Unix](#unix)
 - [UnixMicro](#unixmicro)
 - [UnixMilli](#unixmilli)
 - [UnixNano](#unixnano)
@@ -1068,6 +1070,33 @@ Examples:
 
 - `Split("A|B|C", "|")`
 
+### String
+
+`String(value)`
+
+The `String` Converter converts the `value` to string type.
+
+The returned type is `string`.
+
+- string. The function returns the `value` without changes.
+- []byte. The function returns the `value` as a string encoded in hexadecimal.
+- map. The function returns the `value` as a key-value-pair of type string.
+- slice. The function returns the `value` as a list formatted string.
+- pcommon.Value. The function returns the `value` as a string type.
+
+If `value` is of another type it gets marshalled to string type.
+If `value` is empty, or parsing failed, nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+Examples:
+
+- `String("test")`
+- `String(attributes["http.method"])`
+- `String(span_id)`
+- `String([1,2,3])`
+- `String(false)`
+
 ### Substring
 
 `Substring(target, start, length)`
@@ -1120,6 +1149,21 @@ While some common paths can return a `time.Time` object, you will most like need
 Examples:
 
 - `TruncateTime(start_time, Duration("1s"))`
+
+### Unix
+
+`Unix(seconds, Optional[nanoseconds])`
+
+The `Unix` Converter returns an epoch timestamp as a Unix time. Similar to [Golang's Unix function](https://pkg.go.dev/time#Unix).
+
+`seconds` is `int64`. If `seconds` is another type an error is returned.
+`nanoseconds` is `int64`. It is optional and its default value is 0. If `nanoseconds` is another type an error is returned.
+
+The returned type is `time.Time`.
+
+Examples:
+
+- `Unix(1672527600)`
 
 ### UnixMicro
 

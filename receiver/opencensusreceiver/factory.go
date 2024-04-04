@@ -47,16 +47,10 @@ func createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-	var err error
 	r := receivers.GetOrAdd(cfg, func() component.Component {
 		rCfg := cfg.(*Config)
-		var recv *ocReceiver
-		recv, err = newOpenCensusReceiver(string(rCfg.NetAddr.Transport), rCfg.NetAddr.Endpoint, nil, nil, set, rCfg.buildOptions()...)
-		return recv
+		return newOpenCensusReceiver(rCfg, nil, nil, set, rCfg.buildOptions()...)
 	})
-	if err != nil {
-		return nil, err
-	}
 	r.Unwrap().(*ocReceiver).traceConsumer = nextConsumer
 
 	return r, nil
@@ -68,16 +62,10 @@ func createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	var err error
 	r := receivers.GetOrAdd(cfg, func() component.Component {
 		rCfg := cfg.(*Config)
-		var recv *ocReceiver
-		recv, err = newOpenCensusReceiver(string(rCfg.NetAddr.Transport), rCfg.NetAddr.Endpoint, nil, nil, set, rCfg.buildOptions()...)
-		return recv
+		return newOpenCensusReceiver(rCfg, nil, nil, set, rCfg.buildOptions()...)
 	})
-	if err != nil {
-		return nil, err
-	}
 	r.Unwrap().(*ocReceiver).metricsConsumer = nextConsumer
 
 	return r, nil

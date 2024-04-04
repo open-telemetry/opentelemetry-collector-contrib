@@ -5,7 +5,7 @@ status:
   class: receiver
   stability:
     beta: [traces]
-  distributions: [contrib, sumo, splunk]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski, mcardy]
 
