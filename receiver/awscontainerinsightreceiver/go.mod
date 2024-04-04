@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.21
 
 require (
-	github.com/aws/aws-sdk-go v1.51.8
+	github.com/aws/aws-sdk-go v1.51.13
 	github.com/google/cadvisor v0.49.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.97.0
@@ -11,7 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.97.0
-	github.com/shirou/gopsutil/v3 v3.24.2
+	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.97.1-0.20240327181407-1038b67c85a0
 	go.opentelemetry.io/collector/config/confighttp v0.97.1-0.20240327181407-1038b67c85a0
@@ -132,7 +132,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.24.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect

@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
 go 1.21
 
 require (
-	github.com/IBM/sarama v1.43.0
-	github.com/aws/aws-sdk-go v1.51.8
+	github.com/IBM/sarama v1.43.1
+	github.com/aws/aws-sdk-go v1.51.13
 	github.com/stretchr/testify v1.9.0
 	github.com/xdg-go/scram v1.1.2
 	go.opentelemetry.io/collector/config/configtls v0.97.1-0.20240327181407-1038b67c85a0
@@ -35,9 +35,9 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240327181407-1038b67c85a0 // indirect
-	golang.org/x/crypto v0.19.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/crypto v0.21.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

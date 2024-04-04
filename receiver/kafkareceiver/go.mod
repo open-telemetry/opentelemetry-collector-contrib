@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkar
 go 1.21
 
 require (
-	github.com/IBM/sarama v1.43.0
+	github.com/IBM/sarama v1.43.1
 	github.com/apache/thrift v0.20.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.55.0
@@ -31,7 +31,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.51.8 // indirect
+	github.com/aws/aws-sdk-go v1.51.13 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -86,9 +86,9 @@ require (
 	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.24.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.19.0 // indirect
+	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
-	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240123012728-ef4313101c80 // indirect

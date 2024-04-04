@@ -9,7 +9,7 @@ require (
 	github.com/knadh/koanf/providers/rawbytes v0.1.0
 	github.com/knadh/koanf/v2 v2.1.0
 	github.com/oklog/ulid/v2 v2.1.0
-	github.com/open-telemetry/opamp-go v0.12.0
+	github.com/open-telemetry/opamp-go v0.14.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/config/configtls v0.97.1-0.20240327181407-1038b67c85a0
 	go.opentelemetry.io/collector/semconv v0.97.1-0.20240327181407-1038b67c85a0
@@ -29,8 +29,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240327181407-1038b67c85a0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

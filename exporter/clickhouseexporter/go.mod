@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickh
 go 1.21
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.22.4
+	github.com/ClickHouse/clickhouse-go/v2 v2.23.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.97.0
@@ -97,7 +97,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230711023510-fffb14384f22 // indirect
 	golang.org/x/mod v0.16.0 // indirect
-	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.15.0 // indirect
