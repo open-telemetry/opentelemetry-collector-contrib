@@ -209,6 +209,7 @@ connectors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.97.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.97.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.97.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector v0.97.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.97.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.97.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.97.0
@@ -426,6 +427,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector => ../../connector/countconnector
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector => ../../connector/datadogconnector
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector => ../../connector/exceptionsconnector
+  - github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector => ../../connector/grafanacloudconnector
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector => ../../connector/routingconnector
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector => ../../connector/servicegraphconnector
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector => ../../connector/spanmetricsconnector
@@ -446,4 +448,3 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension => ../../extension/sumologicextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver => ../../receiver/namedpipereceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery => ../../internal/sqlquery
-
