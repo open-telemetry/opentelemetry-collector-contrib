@@ -351,8 +351,8 @@ update-otel:$(MULTIMOD)
 	git add . && git commit -s -m "[chore] multimod update stable modules" ; \
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
 	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
-	sed -i -E -e "s/v[0-9]+\.[0-9]+\.[0-9].*$\/v$(TRIMMED_VERSION)/" -e "5,6s/[0-9]+\.[0-9]+\.[0-9]/$(COREVERSION)/" ./cmd/otelcontribcol/builder-config.yaml 
-	sed -i -E -e "s/v[0-9]+\.[0-9]+\.[0-9].*$\/v$(TRIMMED_VERSION)/" -e "5,6s/[0-9]+\.[0-9]+\.[0-9]/$(COREVERSION)/" ./cmd/oteltestbedcol/builder-config.yaml 
+	sed -i -E -e "s/v[0-9]+\.[0-9]+\.[0-9].*$\/v$(TRIMMED_VERSION)/" -e "5,6s/[0-9]+\.[0-9]+\.[0-9]/$(TRIMMED_VERSION)/" ./cmd/otelcontribcol/builder-config.yaml 
+	sed -i -E -e "s/v[0-9]+\.[0-9]+\.[0-9].*$\/v$(TRIMMED_VERSION)/" -e "5,6s/[0-9]+\.[0-9]+\.[0-9]/$(TRIMMED_VERSION)/" ./cmd/oteltestbedcol/builder-config.yaml 
 	$(MAKE) gotidy
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
