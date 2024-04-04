@@ -30,8 +30,6 @@
   <strong>
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/vision.md">Vision</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/design.md">Design</a>
-    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/monitoring.md">Monitoring</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md">Security</a>
