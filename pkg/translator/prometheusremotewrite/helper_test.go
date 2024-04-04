@@ -515,11 +515,11 @@ func TestAddResourceTargetInfo(t *testing.T) {
 	resourceWithServiceAttrs.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	resourceWithOnlyServiceAttrs := pcommon.NewResource()
 	require.NoError(t, resourceWithOnlyServiceAttrs.Attributes().FromRaw(resourceAttrMap))
-	// service.name is the one mandatory resource attribute.
+	// service.name is an identifying resource attribute.
 	resourceWithOnlyServiceName := pcommon.NewResource()
 	resourceWithOnlyServiceName.Attributes().PutStr(conventions.AttributeServiceName, "service-name")
 	resourceWithOnlyServiceName.Attributes().PutStr("resource_attr", "resource-attr-val-1")
-	// service.instance.id is an identifying resource attribute, but not mandatory
+	// service.instance.id is an identifying resource attribute.
 	resourceWithOnlyServiceID := pcommon.NewResource()
 	resourceWithOnlyServiceID.Attributes().PutStr(conventions.AttributeServiceInstanceID, "service-instance-id")
 	resourceWithOnlyServiceID.Attributes().PutStr("resource_attr", "resource-attr-val-1")
@@ -548,17 +548,11 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			expected:  map[string]*prompb.TimeSeries{},
 		},
 		{
-			desc:      "with resource including service.instance.id, but missing service.name resource attribute",
+			desc:      "with resource including service.instance.id, and missing service.name resource attribute",
 			resource:  resourceWithOnlyServiceID,
 			timestamp: testdata.TestMetricStartTimestamp,
-			expected:  map[string]*prompb.TimeSeries{},
-		},
-		{
-			desc:      "with resource including service.name, and missing service.instance.id resource attribute",
-			resource:  resourceWithOnlyServiceName,
-			timestamp: testdata.TestMetricStartTimestamp,
 			expected: map[string]*prompb.TimeSeries{
-				"info-__name__-target_info-instance--job-service-name-resource_attr-resource-attr-val-1": {
+				"info-__name__-target_info-instance-service-instance-id-resource_attr-resource-attr-val-1": {
 					Labels: []prompb.Label{
 						{
 							Name:  model.MetricNameLabel,
@@ -566,7 +560,32 @@ func TestAddResourceTargetInfo(t *testing.T) {
 						},
 						{
 							Name:  model.InstanceLabel,
-							Value: "",
+							Value: "service-instance-id",
+						},
+						{
+							Name:  "resource_attr",
+							Value: "resource-attr-val-1",
+						},
+					},
+					Samples: []prompb.Sample{
+						{
+							Value:     1,
+							Timestamp: 1581452772000,
+						},
+					},
+				},
+			},
+		},
+		{
+			desc:      "with resource including service.name, and missing service.instance.id resource attribute",
+			resource:  resourceWithOnlyServiceName,
+			timestamp: testdata.TestMetricStartTimestamp,
+			expected: map[string]*prompb.TimeSeries{
+				"info-__name__-target_info-job-service-name-resource_attr-resource-attr-val-1": {
+					Labels: []prompb.Label{
+						{
+							Name:  model.MetricNameLabel,
+							Value: "target_info",
 						},
 						{
 							Name:  model.JobLabel,
@@ -592,15 +611,11 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			timestamp: testdata.TestMetricStartTimestamp,
 			settings:  Settings{Namespace: "foo"},
 			expected: map[string]*prompb.TimeSeries{
-				"info-__name__-foo_target_info-instance--job-service-name-resource_attr-resource-attr-val-1": {
+				"info-__name__-foo_target_info-job-service-name-resource_attr-resource-attr-val-1": {
 					Labels: []prompb.Label{
 						{
 							Name:  model.MetricNameLabel,
 							Value: "foo_target_info",
-						},
-						{
-							Name:  model.InstanceLabel,
-							Value: "",
 						},
 						{
 							Name:  model.JobLabel,

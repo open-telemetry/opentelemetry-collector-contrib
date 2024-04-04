@@ -565,18 +565,9 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 		}
 	}
 
-	if !haveJob {
-		// The resource attribute service.name is mandatory according to OTel spec.
-		// If it's missing, don't generate target_info.
+	if !haveJob && !haveInstance {
+		// We need at least one identifying label to generate target_info.
 		return
-	}
-	if !haveInstance {
-		// The resource attribute service.instance.id is optional, but let's just be explicit
-		// as ideally the target info should also be identified through the instance label.
-		labels = append(labels, prompb.Label{
-			Name:  model.InstanceLabel,
-			Value: "",
-		})
 	}
 
 	sample := &prompb.Sample{
