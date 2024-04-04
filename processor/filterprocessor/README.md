@@ -143,7 +143,7 @@ In addition, the processor defines a few of its own functions:
 `HasAttrKeyOnDatapoint(key)`
 
 Returns `true` if the given key appears in the attribute map of any datapoint on a metric.
-`key` and `value` must both be strings in the metric and function call. You must use the `metrics.metric` context.
+`key` must be a string. You must use the `metrics.metric` context.
 
 Examples:
 
