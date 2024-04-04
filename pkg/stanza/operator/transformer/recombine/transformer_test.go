@@ -598,7 +598,6 @@ func TestTransformer(t *testing.T) {
 				cfg.IsLastEntry = "body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.MaxUnmatchedBatchSize = 1
-				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -620,7 +619,6 @@ func TestTransformer(t *testing.T) {
 				cfg.IsLastEntry = "body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.MaxUnmatchedBatchSize = 2
-				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
@@ -646,7 +644,6 @@ func TestTransformer(t *testing.T) {
 				cfg.IsLastEntry = "body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.MaxUnmatchedBatchSize = 2
-				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
 			[]*entry.Entry{
