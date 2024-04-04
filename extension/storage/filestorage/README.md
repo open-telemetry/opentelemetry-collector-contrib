@@ -136,7 +136,7 @@ The schedule for this feature gate is:
 
 ## Reading File Storage files
 
-The simplest way to read files created by the File Storage extension is to use the strings utility ([Linux](https://linux.die.net/man/1/strings), 
+The simplest way to read files created by the File Storage extension is to use the strings utility ([Linux](https://linux.die.net/man/1/strings),
 [Windows](https://learn.microsoft.com/en-us/sysinternals/downloads/strings)).
 
 For example, here are the contents of the file created by the File Storage extension when it's configured as the storage
