@@ -163,7 +163,7 @@ filter/keep_good_metrics:
 `HasAttrOnDatapoint(key, value)`
 
 Returns `true` if the given key and value appears in the attribute map of any datapoint on a metric.
-`key` and `value` must both be strings in the metric and function call. You must use the `metrics.metric` context.
+`key` and `value` must both be strings. If the value of the attribute on the datapoint is not a string, `value` will be compared to `""`. You must use the `metrics.metric` context.
 
 Examples:
 
