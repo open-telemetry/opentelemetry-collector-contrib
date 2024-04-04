@@ -6,7 +6,7 @@ OTEL_VERSION=main
 OTEL_STABLE_VERSION=main
 
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
-COREVERSION=$(shell git describe --always --match "v[0-9]*" HEAD | grep -o 'v[^-]*' | cut -c 2-)
+TRIMMED_VERSION=$(shell grep -o 'v[^-]*' <<< "$(VERSION)" | cut -c 2-)
 
 COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
@@ -351,8 +351,8 @@ update-otel:$(MULTIMOD)
 	git add . && git commit -s -m "[chore] multimod update stable modules" ; \
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
 	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
-	sed -i -E -e "s/v[0-9]+\.[0-9]+\.[0-9].*$\/v$(COREVERSION)/" -e "5,6s/[0-9]+\.[0-9]+\.[0-9]/$(COREVERSION)/" ./cmd/otelcontribcol/builder-config.yaml 
-	sed -i -E -e "s/v[0-9]+\.[0-9]+\.[0-9].*$\/v$(COREVERSION)/" -e "5,6s/[0-9]+\.[0-9]+\.[0-9]/$(COREVERSION)/" ./cmd/oteltestbedcol/builder-config.yaml 
+	sed -i -E -e "s/v[0-9]+\.[0-9]+\.[0-9].*$\/v$(TRIMMED_VERSION)/" -e "5,6s/[0-9]+\.[0-9]+\.[0-9]/$(COREVERSION)/" ./cmd/otelcontribcol/builder-config.yaml 
+	sed -i -E -e "s/v[0-9]+\.[0-9]+\.[0-9].*$\/v$(TRIMMED_VERSION)/" -e "5,6s/[0-9]+\.[0-9]+\.[0-9]/$(COREVERSION)/" ./cmd/oteltestbedcol/builder-config.yaml 
 	$(MAKE) gotidy
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
