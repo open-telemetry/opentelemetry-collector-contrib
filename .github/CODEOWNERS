@@ -32,7 +32,7 @@ connector/failoverconnector/                             @open-telemetry/collect
 connector/grafanacloudconnector/                         @open-telemetry/collector-contrib-approvers @jpkrohling @rlankfo @jcreixell
 connector/routingconnector/                              @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 connector/servicegraphconnector/                         @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
-connector/spanmetricsconnector/                          @open-telemetry/collector-contrib-approvers @portertech
+connector/spanmetricsconnector/                          @open-telemetry/collector-contrib-approvers @portertech @Frapschen
 
 examples/demo/                                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 
@@ -89,6 +89,7 @@ extension/awsproxy/                                      @open-telemetry/collect
 extension/basicauthextension/                            @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
 extension/bearertokenauthextension/                      @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
 extension/encoding/                                      @open-telemetry/collector-contrib-approvers @atoulme @dao-jun @dmitryax @MovieStoreGuy @VihasMakwana
+extension/encoding/avrologencodingextension/             @open-telemetry/collector-contrib-approvers @thmshmm
 extension/encoding/jaegerencodingextension/              @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/jsonlogencodingextension/             @open-telemetry/collector-contrib-approvers @VihasMakwana @atoulme
 extension/encoding/otlpencodingextension/                @open-telemetry/collector-contrib-approvers @dao-jun @VihasMakwana
