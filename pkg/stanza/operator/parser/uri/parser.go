@@ -9,47 +9,9 @@ import (
 	"net/url"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
-
-const operatorType = "uri_parser"
-
-func init() {
-	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
-}
-
-// NewConfig creates a new uri parser config with default values.
-func NewConfig() *Config {
-	return NewConfigWithID(operatorType)
-}
-
-// NewConfigWithID creates a new uri parser config with default values.
-func NewConfigWithID(operatorID string) *Config {
-	return &Config{
-		ParserConfig: helper.NewParserConfig(operatorID, operatorType),
-	}
-}
-
-// Config is the configuration of a uri parser operator.
-type Config struct {
-	helper.ParserConfig `mapstructure:",squash"`
-}
-
-// Build will build a uri parser operator.
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	parserOperator, err := c.ParserConfig.Build(logger)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Parser{
-		ParserOperator: parserOperator,
-	}, nil
-}
 
 // Parser is an operator that parses a uri.
 type Parser struct {
@@ -57,12 +19,12 @@ type Parser struct {
 }
 
 // Process will parse an entry.
-func (u *Parser) Process(ctx context.Context, entry *entry.Entry) error {
-	return u.ParserOperator.ProcessWith(ctx, entry, u.parse)
+func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
+	return p.ParserOperator.ProcessWith(ctx, entry, p.parse)
 }
 
 // parse will parse a uri from a field and attach it to an entry.
-func (u *Parser) parse(value any) (any, error) {
+func (p *Parser) parse(value any) (any, error) {
 	switch m := value.(type) {
 	case string:
 		return parseURI(m)
