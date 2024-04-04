@@ -151,6 +151,10 @@ func timeSeriesSignature(datatype string, labels []prompb.Label) string {
 // logged. Resulting label names are sanitized.
 func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externalLabels map[string]string, extras ...string) []prompb.Label {
 	serviceName, haveServiceName := resource.Attributes().Get(conventions.AttributeServiceName)
+	// SDKs operate with a default service name prefixed with "unknown_service", we should treat such values as undefined.
+	if haveServiceName && strings.HasPrefix(serviceName.AsString(), "unknown_service") {
+		haveServiceName = false
+	}
 	instance, haveInstanceID := resource.Attributes().Get(conventions.AttributeServiceInstanceID)
 
 	// Calculate the maximum possible number of labels we could return so we can preallocate l

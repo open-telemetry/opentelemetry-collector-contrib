@@ -523,6 +523,10 @@ func TestAddResourceTargetInfo(t *testing.T) {
 	resourceWithOnlyServiceID := pcommon.NewResource()
 	resourceWithOnlyServiceID.Attributes().PutStr(conventions.AttributeServiceInstanceID, "service-instance-id")
 	resourceWithOnlyServiceID.Attributes().PutStr("resource_attr", "resource-attr-val-1")
+	// SDKs operate with a default service name prefixed with "unknown_service", we should treat such values as undefined.
+	resourceWithOnlyUnknownServiceName := pcommon.NewResource()
+	resourceWithOnlyUnknownServiceName.Attributes().PutStr(conventions.AttributeServiceName, "unknown_service: java")
+	resourceWithOnlyUnknownServiceName.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	for _, tc := range []struct {
 		desc      string
 		resource  pcommon.Resource
@@ -604,6 +608,12 @@ func TestAddResourceTargetInfo(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			desc:      "with resource including unknown_service: java for service.name, and missing service.instance.id resource attribute",
+			resource:  resourceWithOnlyUnknownServiceName,
+			timestamp: testdata.TestMetricStartTimestamp,
+			expected:  map[string]*prompb.TimeSeries{},
 		},
 		{
 			desc:      "with valid resource, with namespace",
