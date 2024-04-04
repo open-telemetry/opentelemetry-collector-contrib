@@ -7,7 +7,7 @@ status:
   class: receiver
   stability:
     development: [metrics]
-  distributions: [liatrio]
+  distributions: []
   codeowners:
     active: [adrielp, astencel-sumo]
 
