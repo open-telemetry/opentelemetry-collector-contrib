@@ -49,22 +49,14 @@ func (s *snowflakeMetricsScraper) shutdown(_ context.Context) (err error) {
 	return err
 }
 
-func errorListener(ctx context.Context, eQueue <-chan error, eOut chan<- *scrapererror.ScrapeErrors) {
+func errorListener(eQueue <-chan error, eOut chan<- *scrapererror.ScrapeErrors) {
 	errs := &scrapererror.ScrapeErrors{}
 
-	for {
-		select {
-		case <-ctx.Done():
-			eOut <- errs
-			return
-		case err, ok := <-eQueue:
-			if err == nil || !ok {
-				eOut <- errs
-				return
-			}
-			errs.Add(err)
-		}
+	for err := range eQueue {
+		errs.Add(err)
 	}
+
+	eOut <- errs
 }
 
 // wrapper for all of the sub-scraping tasks, implements the scraper interface for
@@ -88,7 +80,7 @@ func (s *snowflakeMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, 
 	errOut := make(chan *scrapererror.ScrapeErrors)
 
 	go func() {
-		errorListener(ctx, errChan, errOut)
+		errorListener(errChan, errOut)
 	}()
 
 	now := pcommon.NewTimestampFromTime(time.Now())
@@ -107,7 +99,7 @@ func (s *snowflakeMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, 
 	}
 
 	wg.Wait()
-	errChan <- nil
+	close(errChan)
 	errs = <-errOut
 	rb := s.mb.NewResourceBuilder()
 	rb.SetSnowflakeAccountName(s.conf.Account)
