@@ -198,6 +198,7 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 	if len(jmx.config.OTLPExporterConfig.Headers) > 0 {
 		config["otel.exporter.otlp.headers"] = jmx.config.OTLPExporterConfig.headersToString()
 	}
+	config["otel.jmx.remote.registry.ssl"] = strconv.FormatBool(jmx.config.JMXRegistrySSLEnabled)
 
 	var passwordMap map[string]string
 	if jmx.config.PasswordFile != "" {

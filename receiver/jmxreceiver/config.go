@@ -50,6 +50,8 @@ type Config struct {
 	TruststorePassword configopaque.String `mapstructure:"truststore_password,omitempty"`
 	// The truststore type for SSL
 	TruststoreType string `mapstructure:"truststore_type,omitempty"`
+	// Enable when jar with jmx registry is enabled with ssl configuration
+	JMXRegistrySSLEnabled bool `mapstructure:"jmx_registry_ssl_enabled,omitempty"`
 	// The JMX remote profile.  Should be one of:
 	// `"SASL/PLAIN"`, `"SASL/DIGEST-MD5"`, `"SASL/CRAM-MD5"`, `"TLS SASL/PLAIN"`, `"TLS SASL/DIGEST-MD5"`, or
 	// `"TLS SASL/CRAM-MD5"`, though no enforcement is applied.
