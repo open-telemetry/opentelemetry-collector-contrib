@@ -133,7 +133,8 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 
 func newSupervisor(t *testing.T, configType string, extraConfigData map[string]string) *supervisor.Supervisor {
 	cfgFile := getSupervisorConfig(t, configType, extraConfigData)
-	s, err := supervisor.NewSupervisor(zap.NewNop(), cfgFile.Name())
+	supervisorLogger, _ := zap.NewDevelopment()
+	s, err := supervisor.NewSupervisor(supervisorLogger, cfgFile.Name())
 	require.NoError(t, err)
 
 	return s
@@ -162,8 +163,13 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 	}
 	err = templ.Execute(&buf, configData)
 	require.NoError(t, err)
-	cfgFile, _ := os.CreateTemp(t.TempDir(), "config_*.yaml")
+	tempDir := t.TempDir()
+	cfgFile, _ := os.CreateTemp(tempDir, "config_*.yaml")
 	_, err = cfgFile.Write(buf.Bytes())
+	log.Println("TEmpdir being used: " + tempDir)
+	log.Println("Conffile name: " + cfgFile.Name())
+	log.Println("Supervisor config file: ")
+	log.Println(buf.String())
 	require.NoError(t, err)
 
 	return cfgFile
@@ -336,6 +342,40 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 
 		return cap == uint64(protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus)
 	}, 5*time.Second, 250*time.Millisecond)
+}
+
+func TestSupervisorUsesDefaultConfig(t *testing.T) {
+	// Note that this test validates that the base config provided will be used
+	// when the remote config server is not available (thus an invalid localhost
+	// address for the server).
+
+	// Make sure there's no effective config file left over from a previous test.
+	if _, err := os.Stat("effective.yaml"); err == nil {
+		os.Remove("effective.yaml")
+	}
+	if _, err := os.Stat("sampleOutputLogFile.log"); err == nil {
+		os.Remove("sampleOutputLogFile.log")
+	}
+	defer os.Remove("effective.yaml")
+	defer os.Remove("sampleOutputLogFile.log")
+	s := newSupervisor(t, "basic_with_default", map[string]string{"url": "http://localhost:12345",
+		"defaultConfig": "testdata/supervisor/supervisor_basic_with_default.yaml", "outputLogFile": "sampleLogfile.log"})
+	defer s.Shutdown()
+
+	require.Eventually(t, func() bool {
+		// We read in the default path for the effective config.
+		cfg, err := os.ReadFile(path.Join(".", "effective.yaml"))
+		if _, err := os.Stat("sampleOutputLogFile.log"); err != nil {
+			return false
+		}
+		if err == nil {
+			// The effective config should match the default config.
+			// Check that it includes some strings we know to be unique to the remote config.
+			return strings.Contains(string(cfg[:]), "filter/clear_passwords_in_simple_default_pipeline_config")
+		}
+
+		return false
+	}, 5*time.Second, 500*time.Millisecond, "Effective config for collector did not match base default config.")
 }
 
 func TestSupervisorBootstrapsCollector(t *testing.T) {

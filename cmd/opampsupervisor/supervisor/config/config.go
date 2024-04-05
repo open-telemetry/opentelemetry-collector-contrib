@@ -30,4 +30,8 @@ type OpAMPServer struct {
 
 type Agent struct {
 	Executable string
+	// The base configuration file that the supervisor will use to launch the collector.
+	// If the supervisor is unable to reach the OpAMP server, it will continue to use this
+	// configuration, or the latest known configuration to work.
+	BaseConfig string  `mapstructure:"base_config"`
 }

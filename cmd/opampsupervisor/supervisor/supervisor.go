@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -74,6 +75,7 @@ type Supervisor struct {
 	bootstrapTemplate    *template.Template
 	extraConfigTemplate  *template.Template
 	ownTelemetryTemplate *template.Template
+	userConfigTemplate   *template.Template
 
 	// A config section to be added to the Collector's config to fetch its own metrics.
 	// TODO: store this persistently so that when starting we can compose the effective
@@ -116,12 +118,14 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		effectiveConfig:              &atomic.Value{},
 	}
 
-	if err := s.createTemplates(); err != nil {
-		return nil, err
-	}
-
 	if err := s.loadConfig(configFile); err != nil {
 		return nil, fmt.Errorf("error loading config: %w", err)
+	}
+
+	// Load configuration templates. We load them after loading the config so that
+	// any template that depends on config will be able to use it.
+	if err := s.createTemplates(); err != nil {
+		return nil, err
 	}
 
 	id, err := s.createInstanceID()
@@ -184,6 +188,19 @@ func (s *Supervisor) createTemplates() error {
 	if s.ownTelemetryTemplate, err = template.New("owntelemetry").Parse(ownTelemetryTpl); err != nil {
 		return err
 	}
+	s.logger.Info("Agent config template has base config? ", zap.Any("config", s.config.Agent))
+	if s.config.Agent.BaseConfig != "" {
+		if baseConfigContents, err := os.ReadFile(s.config.Agent.BaseConfig); err != nil {
+			return err
+		} else {
+			if s.userConfigTemplate, err = template.New("userbaseconfig").Parse(string(baseConfigContents)); err != nil {
+				return err
+			}
+			s.logger.Info("Loaded user-provided base config file.")
+		}
+	} else {
+		s.userConfigTemplate = nil
+	}
 
 	return nil
 }
@@ -209,6 +226,11 @@ func (s *Supervisor) loadConfig(configFile string) error {
 	return nil
 }
 
+// getBootstrapInfo gets the initial information from the Collector to bootstrap the Supervisor.
+// It does this by starting a temporary server that the Collector will connect to and send its
+// first update. When it starts the agent for the first time, it uses a bootstrap config that
+// contains the endpoint of this temporary server.
+// If no errors occur, this function will start the agent and then stop it.
 func (s *Supervisor) getBootstrapInfo() (err error) {
 	port, err := s.findRandomPort()
 	if err != nil {
@@ -231,7 +253,10 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
-	s.writeEffectiveConfigToFile(cfg.String(), s.effectiveConfigFilePath)
+	// Do not overwrite the effective config file to avoid overwriting it on restarts of the host.
+	bootstrapConfigPath := path.Dir(s.effectiveConfigFilePath) + "/bootstrap.yaml"
+	s.writeEffectiveConfigToFile(cfg.String(), bootstrapConfigPath)
+	// defer os.Remove(bootstrapConfigPath)
 
 	srv := server.New(newLoggerFromZap(s.logger))
 
@@ -281,7 +306,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	cmd, err := commander.NewCommander(
 		s.logger,
 		s.config.Agent,
-		"--config", s.effectiveConfigFilePath,
+		"--config", bootstrapConfigPath,
 	)
 	if err != nil {
 		return err
@@ -425,9 +450,11 @@ func (s *Supervisor) createInstanceID() (ulid.ULID, error) {
 
 }
 
-func (s *Supervisor) composeExtraLocalConfig() []byte {
+func (s *Supervisor) composeDefaultLocalConfig() []byte {
 	var cfg bytes.Buffer
 	resourceAttrs := map[string]string{}
+	s.logger.Info("Identifying attributes", zap.Any("attributes", s.agentDescription.IdentifyingAttributes))
+	s.logger.Info("Non-identifying attributes", zap.Any("attributes", s.agentDescription.NonIdentifyingAttributes))
 	for _, attr := range s.agentDescription.IdentifyingAttributes {
 		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
 	}
@@ -438,7 +465,11 @@ func (s *Supervisor) composeExtraLocalConfig() []byte {
 		"Healthcheck":        s.agentHealthCheckEndpoint,
 		"ResourceAttributes": resourceAttrs,
 	}
-	err := s.extraConfigTemplate.Execute(
+	defaultConfigTemplate := s.extraConfigTemplate
+	if s.userConfigTemplate != nil {
+		defaultConfigTemplate = s.userConfigTemplate
+	}
+	err := defaultConfigTemplate.Execute(
 		&cfg,
 		tplVars,
 	)
@@ -456,10 +487,13 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 	effFromFile, err := os.ReadFile(s.effectiveConfigFilePath)
 	if err == nil {
 		// We have an effective config file.
+		s.logger.Info("Using effective config from file already in filesystem")
 		effectiveConfigBytes = effFromFile
 	} else {
 		// No effective config file, just use the initial config.
-		effectiveConfigBytes = s.composeExtraLocalConfig()
+		s.logger.Info("Composing default effective configuration for agent and writing to filesystem.")
+		effectiveConfigBytes = s.composeDefaultLocalConfig()
+		os.WriteFile(s.effectiveConfigFilePath, effectiveConfigBytes, 0644)
 	}
 
 	s.effectiveConfig.Store(string(effectiveConfigBytes))
@@ -573,7 +607,7 @@ func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig)
 	}
 
 	// Merge local config last since it has the highest precedence.
-	if err = k.Load(rawbytes.Provider(s.composeExtraLocalConfig()), yaml.Parser()); err != nil {
+	if err = k.Load(rawbytes.Provider(s.composeDefaultLocalConfig()), yaml.Parser()); err != nil {
 		return false, err
 	}
 
@@ -704,7 +738,7 @@ func (s *Supervisor) runAgentProcess() {
 				return
 			}
 
-			s.logger.Debug("Agent process exited unexpectedly. Will restart in a bit...", zap.Int("pid", s.commander.Pid()), zap.Int("exit_code", s.commander.ExitCode()))
+			// s.logger.Debug("Agent process exited unexpectedly. Will restart in a bit...", zap.Int("pid", s.commander.Pid()), zap.Int("exit_code", s.commander.ExitCode()))
 			errMsg := fmt.Sprintf(
 				"Agent process PID=%d exited unexpectedly, exit code=%d. Will restart in a bit...",
 				s.commander.Pid(), s.commander.ExitCode(),
