@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.97.0
 	github.com/prometheus/common v0.51.1
-	github.com/prometheus/prometheus v0.51.1
+	github.com/prometheus/prometheus v0.51.2-0.20240405174432-b4a973753c6e
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/config/confighttp v0.97.1-0.20240404121116-4f1a8936d26b
@@ -101,7 +101,7 @@ require (
 	github.com/knadh/koanf/v2 v2.1.0 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20220921171641-a4b6fa1dd06b // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/linode/linodego v1.29.0 // indirect
+	github.com/linode/linodego v1.30.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect

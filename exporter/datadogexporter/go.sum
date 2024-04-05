@@ -467,8 +467,8 @@ github.com/influxdata/go-syslog/v3 v3.0.1-0.20230911200830-875f5bc594a4 h1:2r2Wi
 github.com/influxdata/go-syslog/v3 v3.0.1-0.20230911200830-875f5bc594a4/go.mod h1:1yEQhaLb/cETXCqQmdh7lDjupNAReO7c83AHyK2dJ48=
 github.com/ionos-cloud/sdk-go/v6 v6.1.11 h1:J/uRN4UWO3wCyGOeDdMKv8LWRzKu6UIkLEaes38Kzh8=
 github.com/ionos-cloud/sdk-go/v6 v6.1.11/go.mod h1:EzEgRIDxBELvfoa/uBN0kOQaqovLjUWEB7iW4/Q+t4k=
-github.com/jarcoal/httpmock v1.3.0 h1:2RJ8GP0IIaWwcC9Fp2BmVi8Kog3v2Hn7VXM3fTd+nuc=
-github.com/jarcoal/httpmock v1.3.0/go.mod h1:3yb8rc4BI7TCBhFY8ng0gjuLKJNquuDNiPaZjnENuYg=
+github.com/jarcoal/httpmock v1.3.1 h1:iUx3whfZWVf3jT01hQTO/Eo5sAYtB2/rqaUuOtpInww=
+github.com/jarcoal/httpmock v1.3.1/go.mod h1:3yb8rc4BI7TCBhFY8ng0gjuLKJNquuDNiPaZjnENuYg=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=
 github.com/jmespath/go-jmespath v0.4.0/go.mod h1:T8mJZnbsbmF+m6zOOFylbeCJqk5+pHWvzYPziyZiYoo=
 github.com/jmespath/go-jmespath/internal/testify v1.5.1 h1:shLQSRRSCCPj3f2gpwzGwWFoC7ycTf1rcQZHOlsJ6N8=
@@ -521,8 +521,8 @@ github.com/leoluk/perflib_exporter v0.2.1 h1:/3/ut1k/jFt5p4ypjLZKDHDqlXAK6ERZPVW
 github.com/leoluk/perflib_exporter v0.2.1/go.mod h1:MinSWm88jguXFFrGsP56PtleUb4Qtm4tNRH/wXNXRTI=
 github.com/lightstep/go-expohisto v1.0.0 h1:UPtTS1rGdtehbbAF7o/dhkWLTDI73UifG8LbfQI7cA4=
 github.com/lightstep/go-expohisto v1.0.0/go.mod h1:xDXD0++Mu2FOaItXtdDfksfgxfV0z1TMPa+e/EUd0cs=
-github.com/linode/linodego v1.29.0 h1:gDSQWAbKMAQX8db9FDCXHhodQPrJmLcmthjx6m+PyV4=
-github.com/linode/linodego v1.29.0/go.mod h1:3k6WvCM10gillgYcnoLqIL23ST27BD9HhMsCJWb3Bpk=
+github.com/linode/linodego v1.30.0 h1:6HJli+LX7NGu+Sne2G+ux790EkVOWOV/SR4mK3jcs6k=
+github.com/linode/linodego v1.30.0/go.mod h1:/46h/XpmWi//oSA92GX2p3FIxb8HbX7grslPPQalR2o=
 github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0/go.mod h1:zJYVVT2jmtg6P3p1VtQj7WsuWi/y4VnjVBn7F8KPB3I=
 github.com/lufia/plan9stats v0.0.0-20220913051719-115f729f3c8c h1:VtwQ41oftZwlMnOEbMWQtSEUgU64U4s+GHk7hZK+jtY=
 github.com/lufia/plan9stats v0.0.0-20220913051719-115f729f3c8c/go.mod h1:JKx41uQRwqlTZabZc+kILPrO/3jlKnQ2Z8b7YiVw5cE=
@@ -678,8 +678,8 @@ github.com/prometheus/procfs v0.1.3/go.mod h1:lV6e/gmhEcM9IjHGsFOCxxuZ+z1YqCvr4O
 github.com/prometheus/procfs v0.6.0/go.mod h1:cz+aTbrPOrUb4q7XlbU9ygM+/jj0fzG6c1xBZuNvfVA=
 github.com/prometheus/procfs v0.13.0 h1:GqzLlQyfsPbaEHaQkO7tbDlriv/4o5Hudv6OXHGKX7o=
 github.com/prometheus/procfs v0.13.0/go.mod h1:cd4PFCR54QLnGKPaKGA6l+cfuNXtht43ZKY6tow0Y1g=
-github.com/prometheus/prometheus v0.51.1 h1:V2e7x2oiUC0Megp26+xjffxBf9EGkyP1iQuGd4VjUSU=
-github.com/prometheus/prometheus v0.51.1/go.mod h1:yv4MwOn3yHMQ6MZGHPg/U7Fcyqf+rxqiZfSur6myVtc=
+github.com/prometheus/prometheus v0.51.2-0.20240405174432-b4a973753c6e h1:UmqAuY2OyDoog8+l5FybViJE5B2r+UxVGCUwFTsY5AA=
+github.com/prometheus/prometheus v0.51.2-0.20240405174432-b4a973753c6e/go.mod h1:+0ld+ozir7zWFcHA2vVpWAKxXakIioEjPPNOqH+J3ZA=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.11.0 h1:cWPaGQEPrBb5/AsnsZesgZZ9yb1OQ+GOISoDNXVBh4M=
 github.com/rogpeppe/go-internal v1.11.0/go.mod h1:ddIwULY96R17DhadqLgMfk9H9tvdUzkipdSkR5nkCZA=

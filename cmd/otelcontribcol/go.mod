@@ -192,7 +192,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.97.0
-	github.com/prometheus/prometheus v0.51.1
+	github.com/prometheus/prometheus v0.51.2-0.20240405174432-b4a973753c6e
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/config/configgrpc v0.97.1-0.20240404121116-4f1a8936d26b
@@ -499,7 +499,7 @@ require (
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/lightstep/go-expohisto v1.0.0 // indirect
 	github.com/linkedin/goavro/v2 v2.9.8 // indirect
-	github.com/linode/linodego v1.29.0 // indirect
+	github.com/linode/linodego v1.30.0 // indirect
 	github.com/logicmonitor/lm-data-sdk-go v1.3.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20220913051719-115f729f3c8c // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
