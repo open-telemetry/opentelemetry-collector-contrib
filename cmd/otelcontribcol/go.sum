@@ -1700,6 +1700,8 @@ go.opentelemetry.io/collector/exporter v0.97.1-0.20240404121116-4f1a8936d26b h1:
 go.opentelemetry.io/collector/exporter v0.97.1-0.20240404121116-4f1a8936d26b/go.mod h1:Oq6SCLx9tQch5zeleIkhUw/e2g16+yQkyztCHsAHKNU=
 go.opentelemetry.io/collector/exporter/debugexporter v0.97.1-0.20240404121116-4f1a8936d26b h1:peaYUYJQuzSDBH0bbjDaFxep/qut+VY8eSa28OPOjsE=
 go.opentelemetry.io/collector/exporter/debugexporter v0.97.1-0.20240404121116-4f1a8936d26b/go.mod h1:bD14O9UdbCLRMllSqObkA1klraPHe0GWmw4QUBxNH2g=
+go.opentelemetry.io/collector/exporter/nopexporter v0.97.1-0.20240404121116-4f1a8936d26b h1:rZh/w8ojf9blIcWEhE0UHTVAEsJTLtrHJpWcNO9Nm6M=
+go.opentelemetry.io/collector/exporter/nopexporter v0.97.1-0.20240404121116-4f1a8936d26b/go.mod h1:qtQNvmDdzQZU2iPiVxcip8wnL1W13qIQSZ4wJeGR/3I=
 go.opentelemetry.io/collector/exporter/otlpexporter v0.97.1-0.20240404121116-4f1a8936d26b h1:jv6wp8Muswbz/iS62KGDNUZx2GSBsnL9zL2RAQDQTxw=
 go.opentelemetry.io/collector/exporter/otlpexporter v0.97.1-0.20240404121116-4f1a8936d26b/go.mod h1:d0SAS68CUbHU+GKOrzMlGMWCsRfn8a9Rh8AUOHxC+xk=
 go.opentelemetry.io/collector/exporter/otlphttpexporter v0.97.1-0.20240404121116-4f1a8936d26b h1:rkbtSTjRgfd9eR/UdSMJJr4QtMoRLGqD3AvLffcqIZg=
@@ -1726,6 +1728,8 @@ go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.97.1-0.2024040
 go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.97.1-0.20240404121116-4f1a8936d26b/go.mod h1:JVGUkc1eFmFDBGqr94dl+dqF2FFPe7LeBeWGvJiFWmM=
 go.opentelemetry.io/collector/receiver v0.97.1-0.20240404121116-4f1a8936d26b h1:d9xejxpSk5O46aM1X5nUb1qGQl1ToGQJy39csqnYl7c=
 go.opentelemetry.io/collector/receiver v0.97.1-0.20240404121116-4f1a8936d26b/go.mod h1:oj/eoc8Wf9u82gaPeRVdHmFbJ5e3m5F1v5CFTpjiVFU=
+go.opentelemetry.io/collector/receiver/nopreceiver v0.97.1-0.20240404121116-4f1a8936d26b h1:TUyh1x/8AOYlvVT+XdEaYgXFy6o0HblIpZI4DMqUoCU=
+go.opentelemetry.io/collector/receiver/nopreceiver v0.97.1-0.20240404121116-4f1a8936d26b/go.mod h1:9jA/NNzLD6vSc7DnvjSROsyXahyAP+KvBv00NfXDvus=
 go.opentelemetry.io/collector/receiver/otlpreceiver v0.97.1-0.20240404121116-4f1a8936d26b h1:2BGhGCTz/u8belzwCsUyvrCUd6LOq86Imhjs9KFLSIQ=
 go.opentelemetry.io/collector/receiver/otlpreceiver v0.97.1-0.20240404121116-4f1a8936d26b/go.mod h1:7iMRy+V3iGQS7Jg9YyN1SzIcE3QwNOF4hD32M6SgZ9s=
 go.opentelemetry.io/collector/semconv v0.97.1-0.20240404121116-4f1a8936d26b h1:2ApIgbCJPzABy6TDKlc9b55J/zo6ixAIMPvIUC2nB9U=
