@@ -38,6 +38,7 @@ var (
 	errJWTInvalid                        = errors.New("the JWT is invalid")
 	errInvalidAuthenticationHeaderFormat = errors.New("invalid authorization header format")
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
+	errInsufficientPermissions           = errors.New("authentication didn't succeed")
 )
 
 func newExtension(cfg *Config, logger *zap.Logger) (auth.Server, error) {
@@ -94,6 +95,11 @@ func (e *jwtExtension) authenticate(ctx context.Context, headers map[string][]st
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
 		cl := client.FromContext(ctx)
+
+		if claims["otel"] != true {
+			return ctx, errInsufficientPermissions
+		}
+
 		cl.Auth = &authData{
 			jwtClaims: claims,
 		}
