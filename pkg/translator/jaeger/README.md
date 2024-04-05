@@ -1,7 +1,7 @@
 # OpenTelemetry to Jaeger Transformation
 
 This document defines the transformation between OpenTelemetry and Jaeger Spans.
-The generic transformation [rules specified here](../../common/mapping-to-non-otlp.md) also apply. If a
+The generic transformation [rules specified here][common-mapping-rules] also apply. If a
 particular generic transformation rule and the rule in this document contradict
 then the rule in this document MUST be used.
 
@@ -14,7 +14,8 @@ Jaeger accepts spans in the following formats:
 See also:
 
 * [Jaeger APIs](https://www.jaegertracing.io/docs/latest/apis/)
-* [Reference implementation of this translation in the OpenTelemetry Collector Contrib repository](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/translator/jaeger/traces_to_jaegerproto.go)
+
+[common-mapping-rules]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/common/mapping-to-non-otlp.md
 
 ## Summary
 
@@ -32,12 +33,16 @@ and Jaeger.
 | Span.StartTime             | Span.startTime | Span.start_time | See [Unit of time](#unit-of-time) |
 | Span.EndTime               | Span.duration | same | Calculated as EndTime - StartTime. See also [Unit of time](#unit-of-time) |
 | Span.Attributes            | Span.tags | same | See [Attributes](#attributes) for data types for the mapping.            |
-| Span.DroppedAttributesCount| Add to Span.tags | same | See [Dropped Attributes Count](../../common/mapping-to-non-otlp.md#dropped-attributes-count) for tag name to use. |
+| Span.DroppedAttributesCount| Add to Span.tags | same | See [Dropped Attributes Count][dropped-attributes-count] for tag name to use. |
 | Span.Events                | Span.logs | same | See [Events](#events) for the mapping format. |
-| Span.DroppedEventsCount    | Add to Span.tags | same | See [Dropped Events Count](../../common/mapping-to-non-otlp.md#dropped-events-count) for tag name to use. |
+| Span.DroppedEventsCount    | Add to Span.tags | same | See [Dropped Events Count][dropped-events-count] for tag name to use. |
 | Span.Links                 | Span.references | same | See [Links](#links) |
-| Span.DroppedLinksCount     | Add to Span.tags | same | See [Dropped Links Count](../../common/mapping-to-non-otlp.md#dropped-links-count) for tag name to use. |
+| Span.DroppedLinksCount     | Add to Span.tags | same | See [Dropped Links Count][dropped-links-count] for tag name to use. |
 | Span.Status                | Add to Span.tags | same | See [Status](#status) for tag names to use. |
+
+[dropped-attributes-count]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/common/mapping-to-non-otlp.md#dropped-attributes-count
+[dropped-events-count]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/common/mapping-to-non-otlp.md#dropped-events-count
+[dropped-links-count]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/common/mapping-to-non-otlp.md#dropped-links-count
 
 ## Mappings
 
@@ -53,7 +58,9 @@ Critically, Jaeger backend depends on `Span.Process.ServiceName` to identify the
 that produced the spans. That field MUST be populated from the `service.name` attribute
 of the [`service` resource](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/README.md#service).
 If no `service.name` is contained in a Span's Resource, that field MUST be populated from the
-[default](../../resource/sdk.md#sdk-provided-resource-attributes) `Resource`.
+[default][default-resource] `Resource`.
+
+[default-resource]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/sdk.md#sdk-provided-resource-attributes
 
 ### IDs
 
@@ -118,8 +125,10 @@ with nanosecond precision using `google.protobuf.Timestamp` and
 
 ### Status
 
-The Status is recorded as Span tags. See [Status](../../common/mapping-to-non-otlp.md#span-status) for
+The Status is recorded as Span tags. See [Status][span-status] for
 tag names to use.
+
+[span-status]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/common/mapping-to-non-otlp.md#span-status
 
 #### Error flag
 
@@ -133,7 +142,9 @@ OpenTelemetry Span `Attribute`(s) MUST be reported as `tags` to Jaeger.
 Primitive types MUST be represented by the corresponding types of Jaeger tags.
 
 Array values MUST be serialized to string like a JSON list as mentioned in
-[semantic conventions](../../overview.md#semantic-conventions).
+[semantic conventions][semantic-conventions].
+
+[semantic-conventions]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/overview.md#semantic-conventions
 
 ### Links
 
