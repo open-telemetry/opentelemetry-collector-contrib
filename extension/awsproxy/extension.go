@@ -24,7 +24,7 @@ type xrayProxy struct {
 
 var _ extension.Extension = (*xrayProxy)(nil)
 
-func (x xrayProxy) Start(_ context.Context, _ component.Host) error {
+func (x *xrayProxy) Start(_ context.Context, _ component.Host) error {
 	srv, err := proxy.NewServer(&x.config.ProxyConfig, x.settings.Logger)
 
 	if err != nil {
@@ -40,7 +40,7 @@ func (x xrayProxy) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (x xrayProxy) Shutdown(ctx context.Context) error {
+func (x *xrayProxy) Shutdown(ctx context.Context) error {
 	if x.server != nil {
 		return x.server.Shutdown(ctx)
 	}
