@@ -1120,9 +1120,48 @@ The `Time` Converter takes a string representation of a time and converts it to 
 
 If either `time` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If the time and format do not follow the parsing rules used by this parser, an error is returned.
 
+`format` denotes a textual representation of the time value formatted according to ctime-like format string. It follows (standard Go Layout formatting)[https://pkg.go.dev/time#pkg-constants] with few additional substitutes:
+  - *%Y* - Year, zero-padded (0001, 0002, ..., 2019, 2020, ..., 9999)
+  - *%y* - Year, last two digits, zero-padded (01, ..., 99)
+  - *%m* - Month as a decimal number (01, 02, ..., 12)
+  - *%o* - Month as a space-padded number ( 1, 2, ..., 12)
+  - *%q* - Month as a unpadded number (1,2,...,12)
+  - *%b*, *%h* - Abbreviated month name (Jan, Feb, ...)
+  - *%B* - Full month name (January, February, ...)
+  - *%d* - Day of the month, zero-padded (01, 02, ..., 31)
+  - *%e* - Day of the month, space-padded ( 1, 2, ..., 31)
+  - *%g* - Day of the month, unpadded (1,2,...,31)
+  - *%a* - Abbreviated weekday name (Sun, Mon, ...)
+  - *%A* - Full weekday name (Sunday, Monday, ...)
+  - *%H* - Hour (24-hour clock) as a zero-padded decimal number (00, ..., 24)
+  - *%I* - Hour (12-hour clock) as a zero-padded decimal number (00, ..., 12)
+  - *%l* - Hour (12-hour clock: 0, ..., 12)
+  - *%p* - Locale’s equivalent of either AM or PM
+  - *%P* - Locale’s equivalent of either am or pm
+  - *%M* - Minute, zero-padded (00, 01, ..., 59)
+  - *%S* - Second as a zero-padded decimal number (00, 01, ..., 59)
+  - *%L* - Millisecond as a decimal number, zero-padded on the left (000, 001, ..., 999)
+  - *%f* - Microsecond as a decimal number, zero-padded on the left (000000, ..., 999999)
+  - *%s* - Nanosecond as a decimal number, zero-padded on the left (000000, ..., 999999)
+  - *%z* - UTC offset in the form ±HHMM[SS[.ffffff]] or empty(+0000, -0400)
+  - *%Z* - Timezone name or abbreviation or empty (UTC, EST, CST)
+  - *%D*, *%x* - Short MM/DD/YY date, equivalent to %m/%d/%y
+  - *%F* - Short YYYY-MM-DD date, equivalent to %Y-%m-%d
+  - *%T*, *%X* - ISO 8601 time format (HH:MM:SS), equivalent to %H:%M:%S
+  - *%r* - 12-hour clock time (02:55:02 pm)
+  - *%R* - 24-hour HH:MM time, equivalent to %H:%M
+  - *%n* - New-line character ('\n')
+  - *%t* - Horizontal-tab character ('\t')
+  - *%%* - A % sign
+  - *%c* - Date and time representation (Mon Jan 02 15:04:05 2006)
+
 Examples:
 
 - `Time("02/04/2023", "%m/%d/%Y")`
+- `Time("Feb 15, 2023", "%b %d, %Y")`
+- `Time("2023-05-26 12:34:56 HST", "%Y-%m-%d %H:%M:%S %Z")`
+- `Time("1986-10-01T00:17:33 MST", "%Y-%m-%dT%H:%M:%S %Z")`
+- `Time("2012-11-01T22:08:41+0000 EST", "%Y-%m-%dT%H:%M:%S%z %Z")`
 
 ### TraceID
 
