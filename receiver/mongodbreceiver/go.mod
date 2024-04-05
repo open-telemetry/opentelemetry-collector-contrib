@@ -11,15 +11,15 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.29.1
 	go.mongodb.org/mongo-driver v1.14.0
-	go.opentelemetry.io/collector/component v0.97.1-0.20240327181407-1038b67c85a0
-	go.opentelemetry.io/collector/config/confignet v0.97.1-0.20240327181407-1038b67c85a0
-	go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240327181407-1038b67c85a0
-	go.opentelemetry.io/collector/config/configtls v0.97.1-0.20240327181407-1038b67c85a0
-	go.opentelemetry.io/collector/confmap v0.97.1-0.20240327181407-1038b67c85a0
-	go.opentelemetry.io/collector/consumer v0.97.1-0.20240327181407-1038b67c85a0
-	go.opentelemetry.io/collector/featuregate v1.4.1-0.20240327181407-1038b67c85a0
-	go.opentelemetry.io/collector/pdata v1.4.1-0.20240327181407-1038b67c85a0
-	go.opentelemetry.io/collector/receiver v0.97.1-0.20240327181407-1038b67c85a0
+	go.opentelemetry.io/collector/component v0.97.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/config/confignet v0.97.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/config/configtls v0.97.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/confmap v0.97.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/consumer v0.97.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/featuregate v1.4.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/pdata v1.4.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/receiver v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
 	go.uber.org/goleak v1.3.0
@@ -80,7 +80,7 @@ require (
 	github.com/prometheus/client_model v0.6.0 // indirect
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.24.2 // indirect
+	github.com/shirou/gopsutil/v3 v3.24.3 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
@@ -91,8 +91,8 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/collector v0.97.1-0.20240327181407-1038b67c85a0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.97.1-0.20240327181407-1038b67c85a0 // indirect
+	go.opentelemetry.io/collector v0.97.1-0.20240404121116-4f1a8936d26b // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.97.1-0.20240404121116-4f1a8936d26b // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.45.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.46.0 // indirect

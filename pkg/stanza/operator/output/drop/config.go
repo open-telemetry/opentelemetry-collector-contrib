@@ -4,23 +4,22 @@
 package drop // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/output/drop"
 
 import (
-	"context"
-
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "drop_output"
+
 func init() {
-	operator.Register("drop_output", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig("") })
 }
 
 // NewConfig creates a new drop output config with default values
 func NewConfig(operatorID string) *Config {
 	return &Config{
-		OutputConfig: helper.NewOutputConfig(operatorID, "drop_output"),
+		OutputConfig: helper.NewOutputConfig(operatorID, operatorType),
 	}
 }
 
@@ -39,14 +38,4 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	return &Output{
 		OutputOperator: outputOperator,
 	}, nil
-}
-
-// Output is an operator that consumes and ignores incoming entries.
-type Output struct {
-	helper.OutputOperator
-}
-
-// Process will drop the incoming entry.
-func (p *Output) Process(_ context.Context, _ *entry.Entry) error {
-	return nil
 }
