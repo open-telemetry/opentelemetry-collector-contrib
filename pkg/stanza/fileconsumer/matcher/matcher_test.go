@@ -730,7 +730,22 @@ func TestMatcher(t *testing.T) {
 				"a/b/c/1.log",
 			},
 		},
-	}
+		{
+			name: "Recursive match - include and exclude",
+			files: []string{
+				"a/1.log",
+				"a/2.log",
+				"a/b/1.log",
+				"a/b/2.log",
+				"a/b/c/1.log",
+				"a/b/c/2.log",
+			},
+			include: []string{"**/1.log"},
+			exclude: []string{"**/b/**/1.log"},
+			expected: []string{
+				"a/1.log",
+			},
+		}}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
