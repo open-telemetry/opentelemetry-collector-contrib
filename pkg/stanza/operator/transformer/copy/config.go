@@ -4,7 +4,6 @@
 package copy // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/copy"
 
 import (
-	"context"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -59,25 +58,4 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		From:                c.From,
 		To:                  c.To,
 	}, nil
-}
-
-// Transformer copies a value from one field and creates a new field with that value
-type Transformer struct {
-	helper.TransformerOperator
-	From entry.Field
-	To   entry.Field
-}
-
-// Process will process an entry with a copy transformation.
-func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
-	return p.ProcessWith(ctx, entry, p.Transform)
-}
-
-// Transform will apply the copy operation to an entry
-func (p *Transformer) Transform(e *entry.Entry) error {
-	val, exist := p.From.Get(e)
-	if !exist {
-		return fmt.Errorf("copy: from field does not exist in this entry: %s", p.From.String())
-	}
-	return p.To.Set(e, val)
 }

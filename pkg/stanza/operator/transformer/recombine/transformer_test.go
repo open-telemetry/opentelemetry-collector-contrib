@@ -123,12 +123,12 @@ func TestTransformer(t *testing.T) {
 				return cfg
 			}(),
 			[]*entry.Entry{
-				entryWithBody(t1, "test1"),
-				entryWithBody(t2, "test2"),
-				entryWithBody(t2, "test1"),
+				entryWithBodyAttr(t1, "test1", map[string]string{"base": "false"}),
+				entryWithBodyAttr(t2, "test2", map[string]string{"base": "true"}),
+				entryWithBodyAttr(t2, "test1", map[string]string{"base": "false"}),
 			},
 			[]*entry.Entry{
-				entryWithBody(t1, "test1\ntest2"),
+				entryWithBodyAttr(t2, "test1\ntest2", map[string]string{"base": "true"}),
 			},
 		},
 		{
@@ -142,12 +142,12 @@ func TestTransformer(t *testing.T) {
 				return cfg
 			}(),
 			[]*entry.Entry{
-				entryWithBody(t1, "test1"),
-				entryWithBody(t2, "test2"),
-				entryWithBody(t2, "test1"),
+				entryWithBodyAttr(t1, "test1", map[string]string{"base": "true"}),
+				entryWithBodyAttr(t2, "test2", map[string]string{"base": "false"}),
+				entryWithBodyAttr(t2, "test1", map[string]string{"base": "true"}),
 			},
 			[]*entry.Entry{
-				entryWithBody(t2, "test1\ntest2"),
+				entryWithBodyAttr(t1, "test1\ntest2", map[string]string{"base": "true"}),
 			},
 		},
 		{
@@ -157,7 +157,7 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "$body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
+				cfg.OverwriteWith = "oldest"
 				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
@@ -177,7 +177,7 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "body == 'start'"
 				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "oldest"
+				cfg.OverwriteWith = "newest"
 				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
@@ -286,7 +286,7 @@ func TestTransformer(t *testing.T) {
 				cfg.CombineField = entry.NewBodyField("message")
 				cfg.CombineWith = ""
 				cfg.IsLastEntry = "body.logtag == 'F'"
-				cfg.OverwriteWith = "oldest"
+				cfg.OverwriteWith = "newest"
 				cfg.OutputIDs = []string{"fake"}
 				return cfg
 			}(),
@@ -380,7 +380,7 @@ func TestTransformer(t *testing.T) {
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.MaxSources = 1
-				cfg.OverwriteWith = "oldest"
+				cfg.OverwriteWith = "newest"
 				cfg.ForceFlushTimeout = 10 * time.Millisecond
 				return cfg
 			}(),
@@ -494,183 +494,6 @@ func TestTransformer(t *testing.T) {
 			[]*entry.Entry{
 				entryWithBodyAttr(t1, "start\ncontent1\ncontent2\ncontent3\ncontent4", map[string]string{"file.path": "file1"}),
 				entryWithBodyAttr(t1, "content5\ncontent6\ncontent7\ncontent8\ncontent9", map[string]string{"file.path": "file1"}),
-			},
-		},
-		{
-			"EntriesNonMatchingForFirstEntryWithMaxUnmatchedBatchSize=0",
-			func() *Config {
-				cfg := NewConfig()
-				cfg.CombineField = entry.NewBodyField()
-				cfg.IsFirstEntry = "body == 'test1'"
-				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
-				cfg.MaxUnmatchedBatchSize = 0
-				cfg.ForceFlushTimeout = 10 * time.Millisecond
-				return cfg
-			}(),
-			[]*entry.Entry{
-				entryWithBody(t1, "test2"),
-				entryWithBody(t2, "test3"),
-				entryWithBody(t2, "test4"),
-			},
-			[]*entry.Entry{
-				entryWithBody(t1, "test2\ntest3\ntest4"),
-			},
-		},
-		{
-			"EntriesNonMatchingForFirstEntryWithMaxUnmatchedBatchSize=1",
-			func() *Config {
-				cfg := NewConfig()
-				cfg.CombineField = entry.NewBodyField()
-				cfg.IsFirstEntry = "body == 'test1'"
-				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
-				cfg.MaxUnmatchedBatchSize = 1
-				cfg.ForceFlushTimeout = 10 * time.Millisecond
-				return cfg
-			}(),
-			[]*entry.Entry{
-				entryWithBody(t1, "test2"),
-				entryWithBody(t2, "test3"),
-				entryWithBody(t2, "test4"),
-			},
-			[]*entry.Entry{
-				entryWithBody(t1, "test2"),
-				entryWithBody(t2, "test3"),
-				entryWithBody(t2, "test4"),
-			},
-		},
-		{
-			"TestMaxUnmatchedBatchSizeForFirstEntry",
-			func() *Config {
-				cfg := NewConfig()
-				cfg.CombineField = entry.NewBodyField()
-				cfg.IsFirstEntry = "body == 'test1'"
-				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
-				cfg.MaxUnmatchedBatchSize = 2
-				cfg.ForceFlushTimeout = 10 * time.Millisecond
-				return cfg
-			}(),
-			[]*entry.Entry{
-				entryWithBody(t1, "test2"),
-				entryWithBody(t1, "test3"),
-				entryWithBody(t1, "test4"),
-				entryWithBody(t1, "test5"),
-				entryWithBody(t1, "test6"),
-				entryWithBody(t1, "test1"),
-				entryWithBody(t1, "test7"),
-				entryWithBody(t1, "test8"),
-				entryWithBody(t1, "test1"),
-				entryWithBody(t1, "test9"),
-				entryWithBody(t1, "test10"),
-			},
-			[]*entry.Entry{
-				entryWithBody(t1, "test2\ntest3"),
-				entryWithBody(t1, "test4\ntest5"),
-				entryWithBody(t1, "test6"),
-				entryWithBody(t1, "test1\ntest7\ntest8"),
-				entryWithBody(t1, "test1\ntest9\ntest10"),
-			},
-		},
-		{
-			"EntriesNonMatchingForLastEntryWithMaxUnmatchedBatchSize=0",
-			func() *Config {
-				cfg := NewConfig()
-				cfg.CombineField = entry.NewBodyField()
-				cfg.IsLastEntry = "body == 'test1'"
-				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
-				cfg.MaxUnmatchedBatchSize = 0
-				cfg.ForceFlushTimeout = 10 * time.Millisecond
-				return cfg
-			}(),
-			[]*entry.Entry{
-				entryWithBody(t1, "test2"),
-				entryWithBody(t2, "test3"),
-				entryWithBody(t2, "test4"),
-			},
-			[]*entry.Entry{
-				entryWithBody(t1, "test2\ntest3\ntest4"),
-			},
-		},
-		{
-			"EntriesNonMatchingForLastEntryWithMaxUnmatchedBatchSize=1",
-			func() *Config {
-				cfg := NewConfig()
-				cfg.CombineField = entry.NewBodyField()
-				cfg.IsLastEntry = "body == 'test1'"
-				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
-				cfg.MaxUnmatchedBatchSize = 1
-				cfg.ForceFlushTimeout = 10 * time.Millisecond
-				return cfg
-			}(),
-			[]*entry.Entry{
-				entryWithBody(t1, "test2"),
-				entryWithBody(t2, "test3"),
-				entryWithBody(t2, "test4"),
-			},
-			[]*entry.Entry{
-				entryWithBody(t1, "test2"),
-				entryWithBody(t2, "test3"),
-				entryWithBody(t2, "test4"),
-			},
-		},
-		{
-			"TestMaxUnmatchedBatchSizeForLastEntry",
-			func() *Config {
-				cfg := NewConfig()
-				cfg.CombineField = entry.NewBodyField()
-				cfg.IsLastEntry = "body == 'test1'"
-				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
-				cfg.MaxUnmatchedBatchSize = 2
-				cfg.ForceFlushTimeout = 10 * time.Millisecond
-				return cfg
-			}(),
-			[]*entry.Entry{
-				entryWithBody(t1, "test2"),
-				entryWithBody(t1, "test3"),
-				entryWithBody(t1, "test4"),
-				entryWithBody(t1, "test1"),
-				entryWithBody(t1, "test5"),
-				entryWithBody(t1, "test6"),
-				entryWithBody(t1, "test1"),
-			},
-			[]*entry.Entry{
-				entryWithBody(t1, "test2\ntest3"),
-				entryWithBody(t1, "test4\ntest1"),
-				entryWithBody(t1, "test5\ntest6\ntest1"),
-			},
-		},
-		{
-			"EntriesMatchingForLastEntryAfterMaxUnmatchedBatchSize",
-			func() *Config {
-				cfg := NewConfig()
-				cfg.CombineField = entry.NewBodyField()
-				cfg.IsLastEntry = "body == 'test1'"
-				cfg.OutputIDs = []string{"fake"}
-				cfg.OverwriteWith = "newest"
-				cfg.MaxUnmatchedBatchSize = 2
-				cfg.ForceFlushTimeout = 10 * time.Millisecond
-				return cfg
-			}(),
-			[]*entry.Entry{
-				entryWithBody(t1, "test2"),
-				entryWithBody(t1, "test3"),
-				entryWithBody(t1, "test4"),
-				entryWithBody(t1, "test5"),
-				entryWithBody(t1, "test1"),
-				entryWithBody(t1, "test6"),
-				entryWithBody(t1, "test7"),
-				entryWithBody(t1, "test1"),
-			},
-			[]*entry.Entry{
-				entryWithBody(t1, "test2\ntest3"),
-				entryWithBody(t1, "test4\ntest5"),
-				entryWithBody(t1, "test1"),
-				entryWithBody(t1, "test6\ntest7\ntest1"),
 			},
 		},
 	}
