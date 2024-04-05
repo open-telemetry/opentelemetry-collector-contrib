@@ -9,48 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
-
-func init() {
-	operator.Register("generate_input", func() operator.Builder { return NewConfig("") })
-}
-
-// NewConfig creates a new generate input config with default values
-func NewConfig(operatorID string) *Config {
-	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, "generate_input"),
-	}
-}
-
-// Config is the configuration of a generate input operator.
-type Config struct {
-	helper.InputConfig `mapstructure:",squash"`
-	Entry              entry.Entry `mapstructure:"entry"`
-	Count              int         `mapstructure:"count"`
-	Static             bool        `mapstructure:"static"`
-}
-
-// Build will build a generate input operator.
-func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(logger)
-	if err != nil {
-		return nil, err
-	}
-
-	c.Entry.Body = recursiveMapInterfaceToMapString(c.Entry.Body)
-
-	return &Input{
-		InputOperator: inputOperator,
-		entry:         c.Entry,
-		count:         c.Count,
-		static:        c.Static,
-	}, nil
-}
 
 // Input is an operator that generates log entries.
 type Input struct {
@@ -63,14 +25,14 @@ type Input struct {
 }
 
 // Start will start generating log entries.
-func (g *Input) Start(_ operator.Persister) error {
+func (i *Input) Start(_ operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
-	g.cancel = cancel
+	i.cancel = cancel
 
-	g.wg.Add(1)
+	i.wg.Add(1)
 	go func() {
-		defer g.wg.Done()
-		i := 0
+		defer i.wg.Done()
+		n := 0
 		for {
 			select {
 			case <-ctx.Done():
@@ -78,14 +40,14 @@ func (g *Input) Start(_ operator.Persister) error {
 			default:
 			}
 
-			entry := g.entry.Copy()
-			if !g.static {
+			entry := i.entry.Copy()
+			if !i.static {
 				entry.Timestamp = time.Now()
 			}
-			g.Write(ctx, entry)
+			i.Write(ctx, entry)
 
-			i++
-			if i == g.count {
+			n++
+			if n == i.count {
 				return
 			}
 		}
@@ -95,9 +57,9 @@ func (g *Input) Start(_ operator.Persister) error {
 }
 
 // Stop will stop generating logs.
-func (g *Input) Stop() error {
-	g.cancel()
-	g.wg.Wait()
+func (i *Input) Stop() error {
+	i.cancel()
+	i.wg.Wait()
 	return nil
 }
 

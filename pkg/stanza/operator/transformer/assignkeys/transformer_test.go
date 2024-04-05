@@ -132,7 +132,7 @@ func TestBuildAndProcess(t *testing.T) {
 			op, err := cfg.Build(testutil.Logger(t))
 			if tc.expectErr && err != nil {
 				require.Error(t, err)
-				t.SkipNow()
+				return
 			}
 			require.NoError(t, err)
 
