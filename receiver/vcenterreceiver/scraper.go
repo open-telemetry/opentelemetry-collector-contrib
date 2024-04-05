@@ -41,9 +41,8 @@ type vcenterMetricScraper struct {
 	logger *zap.Logger
 
 	// map of vm name => compute name
-	vmToComputeMap    map[string]string
-	vmToResourcePool  map[string]*object.ResourcePool
-	vmToResourcePool2 map[string]*mo.ResourcePool
+	vmToComputeMap   map[string]string
+	vmToResourcePool map[string]*object.ResourcePool
 }
 
 func newVmwareVcenterScraper(
@@ -53,13 +52,12 @@ func newVmwareVcenterScraper(
 ) *vcenterMetricScraper {
 	client := newVcenterClient(config)
 	return &vcenterMetricScraper{
-		client:            client,
-		config:            config,
-		logger:            logger,
-		mb:                metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		vmToComputeMap:    make(map[string]string),
-		vmToResourcePool:  make(map[string]*object.ResourcePool),
-		vmToResourcePool2: make(map[string]*mo.ResourcePool),
+		client:           client,
+		config:           config,
+		logger:           logger,
+		mb:               metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		vmToComputeMap:   make(map[string]string),
+		vmToResourcePool: make(map[string]*object.ResourcePool),
 	}
 }
 
@@ -90,7 +88,6 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 	// cleanup so any inventory moves are accounted for
 	v.vmToComputeMap = make(map[string]string)
 	v.vmToResourcePool = make(map[string]*object.ResourcePool)
-	v.vmToResourcePool2 = make(map[string]*mo.ResourcePool)
 
 	return v.mb.Emit(), err
 }
