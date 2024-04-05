@@ -134,9 +134,11 @@ The schedule for this feature gate is:
 
 [unicode_chars]: https://en.wikipedia.org/wiki/List_of_Unicode_characters
 
-## Reading File Storage files
+## Troubleshooting
 
-The simplest way to read files created by the File Storage extension is to use the strings utility ([Linux](https://linux.die.net/man/1/strings),
+When troubleshooting components that use file storage, it is sometimes helpful to read the raw contents of
+files created by the File Storage extension for the component that's using it.  The simplest way to read files
+created by the File Storage extension is to use the strings utility ([Linux](https://linux.die.net/man/1/strings),
 [Windows](https://learn.microsoft.com/en-us/sysinternals/downloads/strings)).
 
 For example, here are the contents of the file created by the File Storage extension when it's configured as the storage
