@@ -1,7 +1,5 @@
 # OpenTelemetry to Jaeger Transformation
 
-**Status**: [Stable](../../document-status.md)
-
 This document defines the transformation between OpenTelemetry and Jaeger Spans.
 The generic transformation [rules specified here](../../common/mapping-to-non-otlp.md) also apply. If a
 particular generic transformation rule and the rule in this document contradict
