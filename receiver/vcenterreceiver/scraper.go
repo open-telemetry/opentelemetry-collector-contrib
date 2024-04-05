@@ -5,6 +5,7 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -40,8 +41,9 @@ type vcenterMetricScraper struct {
 	logger *zap.Logger
 
 	// map of vm name => compute name
-	vmToComputeMap   map[string]string
-	vmToResourcePool map[string]*object.ResourcePool
+	vmToComputeMap    map[string]string
+	vmToResourcePool  map[string]*object.ResourcePool
+	vmToResourcePool2 map[string]*mo.ResourcePool
 }
 
 func newVmwareVcenterScraper(
@@ -51,12 +53,13 @@ func newVmwareVcenterScraper(
 ) *vcenterMetricScraper {
 	client := newVcenterClient(config)
 	return &vcenterMetricScraper{
-		client:           client,
-		config:           config,
-		logger:           logger,
-		mb:               metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		vmToComputeMap:   make(map[string]string),
-		vmToResourcePool: make(map[string]*object.ResourcePool),
+		client:            client,
+		config:            config,
+		logger:            logger,
+		mb:                metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		vmToComputeMap:    make(map[string]string),
+		vmToResourcePool:  make(map[string]*object.ResourcePool),
+		vmToResourcePool2: make(map[string]*mo.ResourcePool),
 	}
 }
 
@@ -82,12 +85,12 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 	if err := v.client.EnsureConnection(ctx); err != nil {
 		return pmetric.NewMetrics(), fmt.Errorf("unable to connect to vSphere SDK: %w", err)
 	}
-
 	err := v.collectDatacenters(ctx)
 
 	// cleanup so any inventory moves are accounted for
 	v.vmToComputeMap = make(map[string]string)
 	v.vmToResourcePool = make(map[string]*object.ResourcePool)
+	v.vmToResourcePool2 = make(map[string]*mo.ResourcePool)
 
 	return v.mb.Emit(), err
 }
@@ -306,32 +309,25 @@ func (v *vcenterMetricScraper) collectVMs(
 			continue
 		}
 
-		var moVM mo.VirtualMachine
-		err := vm.Properties(ctx, vm.Reference(), []string{
-			"config",
-			"runtime",
-			"summary",
-		}, &moVM)
-
-		if err != nil {
-			errs.AddPartial(1, err)
-			continue
-		}
-
-		if string(moVM.Runtime.PowerState) == "poweredOff" {
+		if string(vm.Runtime.PowerState) == "poweredOff" {
 			poweredOffVMs++
 		} else {
 			poweredOnVMs++
 		}
 
-		vmHost, err := vm.HostSystem(ctx)
-		if err != nil {
-			errs.AddPartial(1, err)
+		hostRef := vm.Summary.Runtime.Host
+		if hostRef == nil {
+			errs.AddPartial(1, errors.New("VM doesn't have a HostSystem"))
 			return
 		}
+		vmHost := object.NewHostSystem(v.client.vimDriver, *hostRef)
 
 		// vms are optional without a resource pool
-		rp, _ := vm.ResourcePool(ctx)
+		rpRef := vm.ResourcePool
+		var rp *object.ResourcePool
+		if rpRef != nil {
+			rp = object.NewResourcePool(v.client.vimDriver, *rpRef)
+		}
 
 		if rp != nil {
 			rpCompute, rpErr := rp.Owner(ctx)
@@ -349,12 +345,6 @@ func (v *vcenterMetricScraper) collectVMs(
 			}
 		}
 
-		hostname, err := vmHost.ObjectName(ctx)
-		if err != nil {
-			errs.AddPartial(1, err)
-			return
-		}
-
 		var hwSum mo.HostSystem
 		err = vmHost.Properties(ctx, vmHost.Reference(),
 			[]string{
@@ -368,20 +358,20 @@ func (v *vcenterMetricScraper) collectVMs(
 			return
 		}
 
-		if moVM.Config == nil {
-			errs.AddPartial(1, fmt.Errorf("vm config empty for %s", hostname))
+		if vm.Config == nil {
+			errs.AddPartial(1, fmt.Errorf("vm config empty for %s", hwSum.Name))
 			continue
 		}
-		vmUUID := moVM.Config.InstanceUuid
+		vmUUID := vm.Config.InstanceUuid
+		v.collectVM(ctx, colTime, vm, hwSum, errs)
 
-		v.collectVM(ctx, colTime, moVM, hwSum, errs)
 		rb := v.mb.NewResourceBuilder()
-		rb.SetVcenterVMName(vm.Name())
+		rb.SetVcenterVMName(vm.Summary.Config.Name)
 		rb.SetVcenterVMID(vmUUID)
 		if compute.Reference().Type == "ClusterComputeResource" {
 			rb.SetVcenterClusterName(compute.Name())
 		}
-		rb.SetVcenterHostName(hostname)
+		rb.SetVcenterHostName(hwSum.Name)
 		if rp != nil && rp.Name() != "" {
 			rb.SetVcenterResourcePoolName(rp.Name())
 			rb.SetVcenterResourcePoolInventoryPath(rp.InventoryPath)

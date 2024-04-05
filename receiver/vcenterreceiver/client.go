@@ -13,7 +13,9 @@ import (
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/property"
+	"github.com/vmware/govmomi/view"
 	"github.com/vmware/govmomi/vim25"
+	"github.com/vmware/govmomi/vim25/mo"
 	vt "github.com/vmware/govmomi/vim25/types"
 )
 
@@ -24,6 +26,7 @@ type vcenterClient struct {
 	finder    *find.Finder
 	pc        *property.Collector
 	pm        *performance.Manager
+	vm        *view.Manager
 	cfg       *Config
 }
 
@@ -69,6 +72,7 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	vc.pc = property.DefaultCollector(vc.vimDriver)
 	vc.finder = find.NewFinder(vc.vimDriver)
 	vc.pm = performance.NewManager(vc.vimDriver)
+	vc.vm = view.NewManager(vc.vimDriver)
 	return nil
 }
 
@@ -89,6 +93,7 @@ func (vc *vcenterClient) Datacenters(ctx context.Context) ([]*object.Datacenter,
 	return datacenters, nil
 }
 
+// Computes returns the ComputeResources (Hosts & Clusters) of the vSphere SDK for a given datacenter
 func (vc *vcenterClient) Computes(ctx context.Context, datacenter *object.Datacenter) ([]*object.ComputeResource, error) {
 	vc.finder = vc.finder.SetDatacenter(datacenter)
 	computes, err := vc.finder.ComputeResourceList(ctx, "*")
@@ -98,7 +103,7 @@ func (vc *vcenterClient) Computes(ctx context.Context, datacenter *object.Datace
 	return computes, nil
 }
 
-// ResourcePools returns the resourcePools in the vSphere SDK
+// ResourcePools returns the ResourcePools in the vSphere SDK
 func (vc *vcenterClient) ResourcePools(ctx context.Context) ([]*object.ResourcePool, error) {
 	rps, err := vc.finder.ResourcePoolList(ctx, "*")
 	if err != nil {
@@ -107,12 +112,26 @@ func (vc *vcenterClient) ResourcePools(ctx context.Context) ([]*object.ResourceP
 	return rps, err
 }
 
-func (vc *vcenterClient) VMs(ctx context.Context) ([]*object.VirtualMachine, error) {
-	vms, err := vc.finder.VirtualMachineList(ctx, "*")
+func (vc *vcenterClient) VMs(ctx context.Context) ([]mo.VirtualMachine, error) {
+	v, err := vc.vm.CreateContainerView(ctx, vc.vimDriver.ServiceContent.RootFolder, []string{"VirtualMachine"}, true)
 	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve vms: %w", err)
+		return nil, fmt.Errorf("unable to retrieve VMs: %w", err)
 	}
-	return vms, err
+
+	defer v.Destroy(ctx)
+
+	var vms []mo.VirtualMachine
+	err = v.Retrieve(ctx, []string{"VirtualMachine"}, []string{
+		"config",
+		"runtime",
+		"summary",
+		"resourcePool",
+	}, &vms)
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve VMs: %w", err)
+	}
+
+	return vms, nil
 }
 
 type perfSampleResult struct {
