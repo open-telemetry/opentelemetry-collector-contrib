@@ -118,8 +118,6 @@ func (vc *vcenterClient) VMs(ctx context.Context) ([]mo.VirtualMachine, error) {
 		return nil, fmt.Errorf("unable to retrieve VMs: %w", err)
 	}
 
-	defer v.Destroy(ctx)
-
 	var vms []mo.VirtualMachine
 	err = v.Retrieve(ctx, []string{"VirtualMachine"}, []string{
 		"config",
