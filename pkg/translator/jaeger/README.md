@@ -1,7 +1,3 @@
-<!--- Hugo front matter used to generate the website version of this page:
-linkTitle: Jaeger
---->
-
 # OpenTelemetry to Jaeger Transformation
 
 **Status**: [Stable](../../document-status.md)
