@@ -1131,6 +1131,7 @@ github.com/linkedin/goavro/v2 v2.9.8 h1:jN50elxBsGBDGVDEKqUlDuU1cFwJ11K/yrJCBMe/
 github.com/linkedin/goavro/v2 v2.9.8/go.mod h1:UgQUb2N/pmueQYH9bfqFioWxzYCZXSfF8Jw03O5sjqA=
 github.com/linode/linodego v1.29.0 h1:gDSQWAbKMAQX8db9FDCXHhodQPrJmLcmthjx6m+PyV4=
 github.com/linode/linodego v1.29.0/go.mod h1:3k6WvCM10gillgYcnoLqIL23ST27BD9HhMsCJWb3Bpk=
+github.com/linode/linodego v1.30.0/go.mod h1:/46h/XpmWi//oSA92GX2p3FIxb8HbX7grslPPQalR2o=
 github.com/logicmonitor/lm-data-sdk-go v1.3.0 h1:Obrexk35IKupFQezngkesR/kMfHQdAEUR1zYbJrOrzg=
 github.com/logicmonitor/lm-data-sdk-go v1.3.0/go.mod h1:nIHr4uOPfg6AM7mG1rewg3L4O3rfge34o7UYB7joBM4=
 github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0/go.mod h1:zJYVVT2jmtg6P3p1VtQj7WsuWi/y4VnjVBn7F8KPB3I=
@@ -1413,6 +1414,8 @@ github.com/prometheus/procfs v0.13.0 h1:GqzLlQyfsPbaEHaQkO7tbDlriv/4o5Hudv6OXHGK
 github.com/prometheus/procfs v0.13.0/go.mod h1:cd4PFCR54QLnGKPaKGA6l+cfuNXtht43ZKY6tow0Y1g=
 github.com/prometheus/prometheus v0.51.1 h1:V2e7x2oiUC0Megp26+xjffxBf9EGkyP1iQuGd4VjUSU=
 github.com/prometheus/prometheus v0.51.1/go.mod h1:yv4MwOn3yHMQ6MZGHPg/U7Fcyqf+rxqiZfSur6myVtc=
+github.com/prometheus/prometheus v0.51.2-0.20240405174432-b4a973753c6e h1:UmqAuY2OyDoog8+l5FybViJE5B2r+UxVGCUwFTsY5AA=
+github.com/prometheus/prometheus v0.51.2-0.20240405174432-b4a973753c6e/go.mod h1:+0ld+ozir7zWFcHA2vVpWAKxXakIioEjPPNOqH+J3ZA=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 h1:N/ElC8H3+5XpJzTSTfLsJV/mx9Q9g7kxmchpfZyxgzM=
 github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
