@@ -5,6 +5,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 go 1.21
 
 require (
+	github.com/multiplayer-app/opentelemetry-collector-contrib/extension/jwtauthextension v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.97.0
@@ -1200,3 +1201,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver => ../../receiver/namedpipereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery => ../../internal/sqlquery
+
+replace github.com/multiplayer-app/opentelemetry-collector-contrib/extension/jwtauthextension v0.0.0 => ../../extension/jwtauthextension

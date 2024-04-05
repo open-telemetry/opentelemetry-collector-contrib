@@ -204,6 +204,7 @@ import (
 	windowsperfcountersreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 	zipkinreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 	zookeeperreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
+	jwtauthextension "github.com/multiplayer-app/opentelemetry-collector-contrib/extension/jwtauthextension"
 )
 
 func components() (otelcol.Factories, error) {
@@ -241,6 +242,7 @@ func components() (otelcol.Factories, error) {
 		jsonlogencodingextension.NewFactory(),
 		textencodingextension.NewFactory(),
 		zipkinencodingextension.NewFactory(),
+		jwtauthextension.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err

@@ -2,7 +2,7 @@ dist:
   module: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol
   name: otelcontribcol
   description: Local OpenTelemetry Collector Contrib binary, testing only.
-  version: 0.97.0-dev
+  version: 0.97.0-dev-jwt-1
   otelcol_version: 0.97.0
 
 extensions:
@@ -41,6 +41,7 @@ extensions:
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension v0.97.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension
+  - gomod: github.com/multiplayer-app/opentelemetry-collector-contrib/extension/jwtauthextension v0.0.0
 
 exporters:
   - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.97.1-0.20240327181407-1038b67c85a0
@@ -448,3 +449,4 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension => ../../extension/sumologicextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver => ../../receiver/namedpipereceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery => ../../internal/sqlquery
+  - github.com/multiplayer-app/opentelemetry-collector-contrib/extension/jwtauthextension v0.0.0 => ../../extension/jwtauthextension
