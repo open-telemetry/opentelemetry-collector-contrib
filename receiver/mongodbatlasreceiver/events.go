@@ -34,6 +34,7 @@ type eventsClient interface {
 	GetProjectEvents(ctx context.Context, groupID string, opts *internal.GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error)
 	GetOrganization(ctx context.Context, orgID string) (*mongodbatlas.Organization, error)
 	GetOrganizationEvents(ctx context.Context, orgID string, opts *internal.GetEventsOptions) (ret []*mongodbatlas.Event, nextPage bool, err error)
+	Shutdown() error
 }
 
 type eventsReceiver struct {
@@ -97,6 +98,7 @@ func (er *eventsReceiver) Shutdown(ctx context.Context) error {
 	er.logger.Debug("Shutting down events receiver")
 	er.cancel()
 	er.wg.Wait()
+	er.client.Shutdown()
 	return er.checkpoint(ctx)
 }
 
