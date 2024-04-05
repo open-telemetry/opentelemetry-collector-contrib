@@ -6,6 +6,7 @@ package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -98,8 +99,12 @@ func (er *eventsReceiver) Shutdown(ctx context.Context) error {
 	er.logger.Debug("Shutting down events receiver")
 	er.cancel()
 	er.wg.Wait()
-	er.client.Shutdown()
-	return er.checkpoint(ctx)
+
+	var err []error
+	err = append(err, er.client.Shutdown())
+	err = append(err, er.checkpoint(ctx))
+
+	return errors.Join(err...)
 }
 
 func (er *eventsReceiver) startPolling(ctx context.Context) error {
