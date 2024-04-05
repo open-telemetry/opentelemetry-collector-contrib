@@ -373,10 +373,6 @@ func (s *Supervisor) startOpAMP() error {
 				s.logger.Debug("Received ConnectionSettings request")
 				return nil
 			},
-			OnOpampConnectionSettingsAcceptedFunc: func(_ context.Context, _ *protobufs.OpAMPConnectionSettings) {
-				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043
-				s.logger.Debug("ConnectionSettings accepted")
-			},
 			OnCommandFunc: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 				cmdType := command.GetType()
 				if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {

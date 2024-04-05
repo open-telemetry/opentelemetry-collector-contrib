@@ -5,7 +5,7 @@ status:
   class: extension
   stability:
     development: [extension]
-  distributions: [contrib, splunk]
+  distributions: [contrib]
   codeowners:
     active: [zpzhuSplunk, splunkericl]
 
