@@ -51,9 +51,6 @@ func (t *TimeParser) Unmarshal(component *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
-	if t.LayoutType == "" {
-		t.LayoutType = StrptimeKey
-	}
 	return nil
 }
 
