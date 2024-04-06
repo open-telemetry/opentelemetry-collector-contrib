@@ -3,9 +3,11 @@ package awss3receiver
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+
 	"github.com/stretchr/testify/require"
 	"io"
 	"testing"
@@ -105,6 +107,7 @@ func (m mockListObjectsAPI) NewListObjectsV2Paginator(params *s3.ListObjectsV2In
 type mockListObjectsV2Pager struct {
 	PageNum int
 	Pages   []*s3.ListObjectsV2Output
+	Error   error
 }
 
 func (m *mockListObjectsV2Pager) HasMorePages() bool {
@@ -112,6 +115,10 @@ func (m *mockListObjectsV2Pager) HasMorePages() bool {
 }
 
 func (m *mockListObjectsV2Pager) NextPage(ctx context.Context, f ...func(*s3.Options)) (output *s3.ListObjectsV2Output, err error) {
+	if m.Error != nil {
+		return nil, m.Error
+	}
+
 	if m.PageNum >= len(m.Pages) {
 		return nil, fmt.Errorf("no more pages")
 	}
@@ -121,7 +128,8 @@ func (m *mockListObjectsV2Pager) NextPage(ctx context.Context, f ...func(*s3.Opt
 }
 
 func Test_readTelemetryForTime(t *testing.T) {
-	testKey := "year=2021/month=02/day=01/hour=17/minute=32/traces_1"
+	testKey_1 := "year=2021/month=02/day=01/hour=17/minute=32/traces_1"
+	testKey_2 := "year=2021/month=02/day=01/hour=17/minute=32/traces_2"
 	reader := s3Reader{
 		listObjectsClient: mockListObjectsAPI(func(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
 			t.Helper()
@@ -129,6 +137,144 @@ func Test_readTelemetryForTime(t *testing.T) {
 			require.Equal(t, "year=2021/month=02/day=01/hour=17/minute=32/traces_", *params.Prefix)
 
 			return &mockListObjectsV2Pager{
+				Pages: []*s3.ListObjectsV2Output{
+					{
+						Contents: []types.Object{
+							{
+								Key: &testKey_1,
+							},
+						},
+					},
+					{
+						Contents: []types.Object{
+							{
+								Key: &testKey_2,
+							},
+						},
+					},
+				},
+			}
+		}),
+		getObjectClient: mockGetObjectAPI(func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+			t.Helper()
+			require.Equal(t, "bucket", *params.Bucket)
+			require.Contains(t, []string{testKey_1, testKey_2}, *params.Key)
+			return &s3.GetObjectOutput{
+				Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
+			}, nil
+		}),
+		s3Bucket:   "bucket",
+		s3Prefix:   "",
+		filePrefix: "",
+		startTime:  testTime,
+		endTime:    testTime.Add(time.Minute),
+		timeStep:   time.Minute,
+		getTimeKey: getTimeKeyPartitionMinute,
+	}
+
+	dataCallbackKeys := make([]string, 0)
+
+	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(ctx context.Context, key string, data []byte) error {
+		t.Helper()
+		require.Equal(t, "this is the body of the object", string(data))
+		dataCallbackKeys = append(dataCallbackKeys, key)
+		return nil
+	})
+	require.Contains(t, dataCallbackKeys, testKey_1)
+	require.Contains(t, dataCallbackKeys, testKey_2)
+	require.NoError(t, err)
+}
+
+func Test_readTelemetryForTime_GetObjectError(t *testing.T) {
+	testKey := "year=2021/month=02/day=01/hour=17/minute=32/traces_1"
+	testError := errors.New("test error")
+	reader := s3Reader{
+		listObjectsClient: mockListObjectsAPI(func(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
+			t.Helper()
+			require.Equal(t, "bucket", *params.Bucket)
+			require.Equal(t, "year=2021/month=02/day=01/hour=17/minute=32/traces_", *params.Prefix)
+
+			return &mockListObjectsV2Pager{
+				Pages: []*s3.ListObjectsV2Output{
+					{
+						Contents: []types.Object{
+							{
+								Key: &testKey,
+							},
+						},
+					},
+				},
+			}
+		}),
+		getObjectClient: mockGetObjectAPI(func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+			t.Helper()
+			require.Equal(t, "bucket", *params.Bucket)
+			require.Equal(t, testKey, *params.Key)
+			return nil, testError
+		}),
+		s3Bucket:   "bucket",
+		s3Prefix:   "",
+		filePrefix: "",
+		startTime:  testTime,
+		endTime:    testTime.Add(time.Minute),
+		timeStep:   time.Minute,
+		getTimeKey: getTimeKeyPartitionMinute,
+	}
+
+	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(ctx context.Context, key string, data []byte) error {
+		t.Helper()
+		t.Fail()
+		return nil
+	})
+	require.Error(t, err, "test error")
+}
+
+func Test_readTelemetryForTime_ListObjectsNoResults(t *testing.T) {
+	testKey := "year=2021/month=02/day=01/hour=17/minute=32/traces_1"
+	reader := s3Reader{
+		listObjectsClient: mockListObjectsAPI(func(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
+			t.Helper()
+			require.Equal(t, "bucket", *params.Bucket)
+			require.Equal(t, "year=2021/month=02/day=01/hour=17/minute=32/traces_", *params.Prefix)
+
+			return &mockListObjectsV2Pager{}
+		}),
+		getObjectClient: mockGetObjectAPI(func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+			t.Helper()
+			require.Equal(t, "bucket", *params.Bucket)
+			require.Equal(t, testKey, *params.Key)
+			return &s3.GetObjectOutput{
+				Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
+			}, nil
+		}),
+		s3Bucket:   "bucket",
+		s3Prefix:   "",
+		filePrefix: "",
+		startTime:  testTime,
+		endTime:    testTime.Add(time.Minute),
+		timeStep:   time.Minute,
+		getTimeKey: getTimeKeyPartitionMinute,
+	}
+
+	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(ctx context.Context, key string, data []byte) error {
+		t.Helper()
+		t.Fail()
+		return nil
+	})
+	require.NoError(t, err)
+}
+
+func Test_readTelemetryForTime_NextPageError(t *testing.T) {
+	testKey := "year=2021/month=02/day=01/hour=17/minute=32/traces_1"
+	testError := errors.New("test page error")
+	reader := s3Reader{
+		listObjectsClient: mockListObjectsAPI(func(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
+			t.Helper()
+			require.Equal(t, "bucket", *params.Bucket)
+			require.Equal(t, "year=2021/month=02/day=01/hour=17/minute=32/traces_", *params.Prefix)
+
+			return &mockListObjectsV2Pager{
+				Error: testError,
 				Pages: []*s3.ListObjectsV2Output{
 					{
 						Contents: []types.Object{
@@ -158,9 +304,56 @@ func Test_readTelemetryForTime(t *testing.T) {
 	}
 
 	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(ctx context.Context, key string, data []byte) error {
-		require.Equal(t, testKey, key)
+		t.Helper()
+		t.Fail()
+		return nil
+	})
+	require.Error(t, err)
+}
+
+func Test_readAll(t *testing.T) {
+	reader := s3Reader{
+		listObjectsClient: mockListObjectsAPI(func(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
+			t.Helper()
+			require.Equal(t, "bucket", *params.Bucket)
+			key := fmt.Sprintf("%s%s", *params.Prefix, "1")
+			return &mockListObjectsV2Pager{
+				Pages: []*s3.ListObjectsV2Output{
+					{
+						Contents: []types.Object{
+							{
+								Key: &key,
+							},
+						},
+					},
+				},
+			}
+		}),
+		getObjectClient: mockGetObjectAPI(func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+			t.Helper()
+			require.Equal(t, "bucket", *params.Bucket)
+			return &s3.GetObjectOutput{
+				Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
+			}, nil
+		}),
+		s3Bucket:   "bucket",
+		s3Prefix:   "",
+		filePrefix: "",
+		startTime:  testTime,
+		endTime:    testTime.Add(time.Minute * 2),
+		timeStep:   time.Minute,
+		getTimeKey: getTimeKeyPartitionMinute,
+	}
+
+	dataCallbackKeys := make([]string, 0)
+
+	err := reader.readAll(context.Background(), "traces", func(ctx context.Context, key string, data []byte) error {
+		t.Helper()
 		require.Equal(t, "this is the body of the object", string(data))
+		dataCallbackKeys = append(dataCallbackKeys, key)
 		return nil
 	})
 	require.NoError(t, err)
+	require.Contains(t, dataCallbackKeys, "year=2021/month=02/day=01/hour=17/minute=32/traces_1")
+	require.Contains(t, dataCallbackKeys, "year=2021/month=02/day=01/hour=17/minute=33/traces_1")
 }
