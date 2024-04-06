@@ -8,6 +8,7 @@ exceptions/full:
   # - span.name
   # - span.kind
   # - status.code
+  # - exception.stacktrace (Only for log records)
   dimensions:
     - name: exception.type
     - name: exception.message
