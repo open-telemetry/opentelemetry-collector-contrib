@@ -160,6 +160,7 @@ func buildDimensionKVs(dimensions []dimension, serviceName string, span ptrace.S
 	dims := pcommon.NewMap()
 	dims.EnsureCapacity(3 + len(dimensions))
 	dims.PutStr(serviceNameKey, serviceName)
+	dims.PutStr(spanNameKey, span.Name())
 	dims.PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
 	dims.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	for _, d := range dimensions {

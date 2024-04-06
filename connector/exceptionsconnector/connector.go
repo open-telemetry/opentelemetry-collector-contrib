@@ -15,6 +15,7 @@ const (
 	exceptionStacktraceKey = conventions.AttributeExceptionStacktrace
 	// TODO(marctc): formalize these constants in the OpenTelemetry specification.
 	spanKindKey   = "span.kind"   // OpenTelemetry non-standard constant.
+	spanNameKey   = "span.name"   // OpenTelemetry non-standard constant.
 	statusCodeKey = "status.code" // OpenTelemetry non-standard constant.
 	eventNameExc  = "exception"   // OpenTelemetry non-standard constant.
 )
