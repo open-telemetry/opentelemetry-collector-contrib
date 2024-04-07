@@ -357,3 +357,49 @@ func Test_readAll(t *testing.T) {
 	require.Contains(t, dataCallbackKeys, "year=2021/month=02/day=01/hour=17/minute=32/traces_1")
 	require.Contains(t, dataCallbackKeys, "year=2021/month=02/day=01/hour=17/minute=33/traces_1")
 }
+
+func Test_readAll_ContextDone(t *testing.T) {
+	reader := s3Reader{
+		listObjectsClient: mockListObjectsAPI(func(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
+			t.Helper()
+			require.Equal(t, "bucket", *params.Bucket)
+			key := fmt.Sprintf("%s%s", *params.Prefix, "1")
+			return &mockListObjectsV2Pager{
+				Pages: []*s3.ListObjectsV2Output{
+					{
+						Contents: []types.Object{
+							{
+								Key: &key,
+							},
+						},
+					},
+				},
+			}
+		}),
+		getObjectClient: mockGetObjectAPI(func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+			t.Helper()
+			require.Equal(t, "bucket", *params.Bucket)
+			return &s3.GetObjectOutput{
+				Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
+			}, nil
+		}),
+		s3Bucket:   "bucket",
+		s3Prefix:   "",
+		filePrefix: "",
+		startTime:  testTime,
+		endTime:    testTime.Add(time.Minute * 2),
+		timeStep:   time.Minute,
+		getTimeKey: getTimeKeyPartitionMinute,
+	}
+
+	dataCallbackKeys := make([]string, 0)
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	cancelFunc()
+	err := reader.readAll(ctx, "traces", func(ctx context.Context, key string, data []byte) error {
+		t.Helper()
+		dataCallbackKeys = append(dataCallbackKeys, key)
+		return nil
+	})
+	require.NoError(t, err)
+	require.Len(t, dataCallbackKeys, 0)
+}

@@ -4,11 +4,14 @@
 package awss3receiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+	"io"
 	"strings"
 )
 
@@ -49,6 +52,18 @@ func (r *awss3TraceReceiver) Shutdown(_ context.Context) error {
 
 func (r *awss3TraceReceiver) receiveBytes(ctx context.Context, key string, data []byte) error {
 	var unmarshaler ptrace.Unmarshaler
+	if strings.HasSuffix(key, ".gz") {
+		if reader, err := gzip.NewReader(bytes.NewReader(data)); err != nil {
+			return err
+		} else {
+			key = strings.TrimSuffix(key, ".gz")
+			data, err = io.ReadAll(reader)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	if strings.HasSuffix(key, ".json") {
 		unmarshaler = &ptrace.JSONUnmarshaler{}
 	}
