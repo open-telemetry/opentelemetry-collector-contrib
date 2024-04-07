@@ -37,7 +37,7 @@ type Config struct {
 	// Kafka to enforce ACLs, throttling quotas, and more.
 	ClientID string `mapstructure:"client_id"`
 
-	// The name of the kafka topic to export to (default otlp_resources for traces, otlp_metrics for metrics)
+	// The name of the kafka topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
 	Topic string `mapstructure:"topic"`
 
 	// TopicFromAttribute is the name of the attribute to use as the topic name.
