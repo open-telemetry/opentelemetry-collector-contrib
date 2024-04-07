@@ -23,6 +23,27 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
+          - name: traces_service_graph_request_total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: client
+                      value:
+                        stringValue: foo
+                    - key: connection_type
+                      value:
+                        stringValue: ""
+                    - key: failed
+                      value:
+                        boolValue: true
+                    - key: server
+                      value:
+                        stringValue: bar
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
           - name: traces_service_graph_request_failed_total
             sum:
               aggregationTemporality: 2

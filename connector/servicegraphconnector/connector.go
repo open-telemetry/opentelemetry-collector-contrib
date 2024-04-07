@@ -389,10 +389,9 @@ func (p *serviceGraphConnector) aggregateMetricsForEdge(e *store.Edge) {
 	p.seriesMutex.Lock()
 	defer p.seriesMutex.Unlock()
 	p.updateSeries(metricKey, dimensions)
+	p.updateCountMetrics(metricKey)
 	if e.Failed {
 		p.updateErrorMetrics(metricKey)
-	} else {
-		p.updateCountMetrics(metricKey)
 	}
 	p.updateDurationMetrics(metricKey, e.ServerLatencySec, e.ClientLatencySec)
 }

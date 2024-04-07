@@ -121,10 +121,11 @@ func TestConnectorConsume(t *testing.T) {
 		assert.NoError(t, err)
 
 		err = pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreResourceMetricsOrder(),
-			pmetrictest.IgnoreResourceMetricsOrder(), pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp())
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp(),
+		)
 		require.NoError(t, err)
 	})
 }
