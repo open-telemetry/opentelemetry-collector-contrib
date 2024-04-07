@@ -11,10 +11,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
@@ -129,48 +125,6 @@ func (cfg *Config) Validate() error {
 
 	return validateSASLConfig(cfg.Authentication.SASL)
 }
-func (cfg *Config) getTopic(resources interface{}) string {
-	if cfg.TopicFromAttribute == "" {
-		return cfg.Topic
-	}
-
-	topicFromResourceAttributes := func(attrs pcommon.Map) string {
-		rv, ok := attrs.Get(cfg.TopicFromAttribute)
-		if ok {
-			topic := rv.Str()
-			if topic != "" {
-				return topic
-			}
-		}
-		return ""
-	}
-
-	switch v := resources.(type) {
-	case pmetric.ResourceMetricsSlice:
-		for i := 0; i < v.Len(); i++ {
-			if topic := topicFromResourceAttributes(v.At(i).Resource().Attributes()); topic != "" {
-				return topic
-			}
-		}
-
-	case ptrace.ResourceSpansSlice:
-		for i := 0; i < v.Len(); i++ {
-			if topic := topicFromResourceAttributes(v.At(i).Resource().Attributes()); topic != "" {
-				return topic
-			}
-		}
-
-	case plog.ResourceLogsSlice:
-		for i := 0; i < v.Len(); i++ {
-			if topic := topicFromResourceAttributes(v.At(i).Resource().Attributes()); topic != "" {
-				return topic
-			}
-		}
-	}
-
-	return cfg.Topic
-}
-
 func validateSASLConfig(c *kafka.SASLConfig) error {
 	if c == nil {
 		return nil

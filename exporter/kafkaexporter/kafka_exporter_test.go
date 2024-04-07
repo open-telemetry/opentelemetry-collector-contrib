@@ -368,3 +368,72 @@ func (e logsErrorMarshaler) Marshal(_ plog.Logs, _ string) ([]*sarama.ProducerMe
 func (e logsErrorMarshaler) Encoding() string {
 	panic("implement me")
 }
+
+func Test_GetTopic(t *testing.T) {
+	tests := []struct {
+		name      string
+		cfg       Config
+		resource  interface{}
+		wantTopic string
+	}{
+		{
+			name: "Valid metric attribute, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "resource-attr",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateMetricsOneMetric().ResourceMetrics(),
+			wantTopic: "resource-attr-val-1",
+		},
+		{
+			name: "Valid trace attribute, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "resource-attr",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateTracesOneSpan().ResourceSpans(),
+			wantTopic: "resource-attr-val-1",
+		},
+		{
+			name: "Valid log attribute, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "resource-attr",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateLogsOneLogRecord().ResourceLogs(),
+			wantTopic: "resource-attr-val-1",
+		},
+		{
+			name: "Attribute not found",
+			cfg: Config{
+				TopicFromAttribute: "nonexistent_attribute",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateMetricsOneMetricNoAttributes().ResourceMetrics(),
+			wantTopic: "defaultTopic",
+		},
+		{
+			name: "TopicFromAttribute not set, return default topic",
+			cfg: Config{
+				Topic: "defaultTopic",
+			},
+			resource:  testdata.GenerateMetricsOneMetric().ResourceMetrics(),
+			wantTopic: "defaultTopic",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			topic := ""
+			switch r := tt.resource.(type) {
+			case pmetric.ResourceMetricsSlice:
+				topic = getTopic(&tt.cfg, r)
+			case ptrace.ResourceSpansSlice:
+				topic = getTopic(&tt.cfg, r)
+			case plog.ResourceLogsSlice:
+				topic = getTopic(&tt.cfg, r)
+			}
+			assert.Equal(t, tt.wantTopic, topic)
+		})
+	}
+}

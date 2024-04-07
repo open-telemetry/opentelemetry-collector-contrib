@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -40,10 +41,7 @@ func (ke kafkaErrors) Error() string {
 }
 
 func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) error {
-	topic := e.cfg.Topic
-	if td.ResourceSpans().Len() > 0 {
-		topic = e.cfg.getTopic(td.ResourceSpans())
-	}
+	topic := getTopic(&e.cfg, td.ResourceSpans())
 
 	messages, err := e.marshaler.Marshal(td, topic)
 	if err != nil {
@@ -87,10 +85,7 @@ type kafkaMetricsProducer struct {
 }
 
 func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pmetric.Metrics) error {
-	topic := e.cfg.Topic
-	if md.ResourceMetrics().Len() > 0 {
-		topic = e.cfg.getTopic(md.ResourceMetrics())
-	}
+	topic := getTopic(&e.cfg, md.ResourceMetrics())
 	messages, err := e.marshaler.Marshal(md, topic)
 	if err != nil {
 		return consumererror.NewPermanent(err)
@@ -133,10 +128,7 @@ type kafkaLogsProducer struct {
 }
 
 func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld plog.Logs) error {
-	topic := e.cfg.Topic
-	if ld.ResourceLogs().Len() > 0 {
-		topic = e.cfg.getTopic(ld.ResourceLogs())
-	}
+	topic := getTopic(&e.cfg, ld.ResourceLogs())
 
 	messages, err := e.marshaler.Marshal(ld, topic)
 	if err != nil {
@@ -261,4 +253,26 @@ func newLogsExporter(config Config, set exporter.CreateSettings, marshalers map[
 		logger:    set.Logger,
 	}, nil
 
+}
+
+type resourceSlice[T any] interface {
+	Len() int
+	At(int) T
+}
+
+type resource interface {
+	Resource() pcommon.Resource
+}
+
+func getTopic[T resource](cfg *Config, resources resourceSlice[T]) string {
+	if cfg.TopicFromAttribute == "" {
+		return cfg.Topic
+	}
+	for i := 0; i < resources.Len(); i++ {
+		rv, ok := resources.At(i).Resource().Attributes().Get(cfg.TopicFromAttribute)
+		if ok && rv.Str() != "" {
+			return rv.Str()
+		}
+	}
+	return cfg.Topic
 }
