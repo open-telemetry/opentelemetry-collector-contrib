@@ -1125,7 +1125,7 @@ If either `time` or `format` are nil, an error is returned. The parser used is t
   - *%y* - Year, last two digits, zero-padded (01, ..., 99)
   - *%m* - Month as a decimal number (01, 02, ..., 12)
   - *%o* - Month as a space-padded number ( 1, 2, ..., 12)
-  - *%q* - Month as a unpadded number (1,2,...,12)
+  - *%q* - Month as an unpadded number (1,2,...,12)
   - *%b*, *%h* - Abbreviated month name (Jan, Feb, ...)
   - *%B* - Full month name (January, February, ...)
   - *%d* - Day of the month, zero-padded (01, 02, ..., 31)
