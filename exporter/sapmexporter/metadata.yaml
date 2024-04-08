@@ -4,7 +4,7 @@ scope_name: otelcol/sapm
 status:
   class: exporter
   stability:
-    beta: [traces]
+    deprecated: [traces]
   distributions: [contrib]
   codeowners:
     active: [dmitryax, atoulme]
