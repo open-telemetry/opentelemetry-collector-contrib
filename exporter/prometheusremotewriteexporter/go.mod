@@ -7,7 +7,6 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.97.0
@@ -23,6 +22,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/exporter v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/pdata v1.4.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/pdata/testdata v0.0.0-20240408153657-fc289290613a
 	go.opentelemetry.io/otel v1.24.0
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0

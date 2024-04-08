@@ -19,8 +19,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestSendTraces(t *testing.T) {

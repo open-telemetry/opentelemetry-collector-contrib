@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 // Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized

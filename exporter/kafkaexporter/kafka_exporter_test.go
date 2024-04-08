@@ -20,8 +20,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestNewExporter_err_version(t *testing.T) {

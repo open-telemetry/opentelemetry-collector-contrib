@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetot
 go 1.21
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.97.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/consumer v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/exporter v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/pdata v1.4.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/pdata/testdata v0.0.0-20240408153657-fc289290613a
 	go.uber.org/goleak v1.3.0
 )
 

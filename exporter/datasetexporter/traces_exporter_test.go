@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestCreateTracesExporter(t *testing.T) {

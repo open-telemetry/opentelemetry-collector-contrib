@@ -161,6 +161,7 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.97.1-0.20240404121116-4f1a8936d26b // indirect
 	go.opentelemetry.io/collector/featuregate v1.4.1-0.20240404121116-4f1a8936d26b // indirect
 	go.opentelemetry.io/collector/pdata v1.4.1-0.20240404121116-4f1a8936d26b // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.0.0-20240408153657-fc289290613a // indirect
 	go.opentelemetry.io/collector/semconv v0.97.1-0.20240404121116-4f1a8936d26b // indirect
 	go.opentelemetry.io/collector/service v0.97.1-0.20240404121116-4f1a8936d26b // indirect
 	go.opentelemetry.io/contrib/config v0.4.0 // indirect

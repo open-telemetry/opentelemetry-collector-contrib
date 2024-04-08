@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/promet
 go 1.21
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.97.0
@@ -18,6 +17,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/exporter v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/pdata v1.4.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/pdata/testdata v0.0.0-20240408153657-fc289290613a
 	go.opentelemetry.io/collector/receiver v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/semconv v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/otel/metric v1.24.0
@@ -120,6 +120,7 @@ require (
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/moby/term v0.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect

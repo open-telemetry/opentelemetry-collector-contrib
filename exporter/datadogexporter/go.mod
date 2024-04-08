@@ -50,6 +50,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.4.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/otelcol v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/pdata v1.4.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/pdata/testdata v0.0.0-20240408153657-fc289290613a
 	go.opentelemetry.io/collector/processor v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/processor/batchprocessor v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.97.1-0.20240404121116-4f1a8936d26b

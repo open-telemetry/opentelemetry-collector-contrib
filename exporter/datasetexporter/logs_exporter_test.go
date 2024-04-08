@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestCreateLogsExporter(t *testing.T) {

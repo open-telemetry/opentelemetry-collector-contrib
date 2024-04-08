@@ -25,7 +25,7 @@ import (
 	v3 "skywalking.apache.org/repo/goapi/collect/common/v3"
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 var (

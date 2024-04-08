@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func buildUnCompressor(compressor string) func([]byte) ([]byte, error) {

@@ -6,7 +6,6 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/klauspost/compress v1.17.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.97.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.97.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.97.1-0.20240404121116-4f1a8936d26b
@@ -15,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/extension v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/pdata v1.4.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/pdata/testdata v0.0.0-20240408153657-fc289290613a
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
 	go.uber.org/goleak v1.3.0

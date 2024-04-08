@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestJThriftTagsToInternalAttributes(t *testing.T) {

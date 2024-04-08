@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanp
 go 1.21
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.97.0
@@ -12,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/consumer v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/pdata v1.4.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/pdata/testdata v0.0.0-20240408153657-fc289290613a
 	go.opentelemetry.io/collector/processor v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/semconv v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/otel/metric v1.24.0
@@ -42,6 +42,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.97.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.97.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
