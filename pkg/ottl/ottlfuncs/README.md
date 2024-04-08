@@ -1120,7 +1120,7 @@ The `Time` Converter takes a string representation of a time and converts it to 
 
 If either `time` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If the time and format do not follow the parsing rules used by this parser, an error is returned.
 
-`format` denotes a textual representation of the time value formatted according to ctime-like format string. It follows (standard Go Layout formatting)[https://pkg.go.dev/time#pkg-constants] with few additional substitutes:
+`format` denotes a textual representation of the time value formatted according to ctime-like format string. It follows [standard Go Layout formatting](https://pkg.go.dev/time#pkg-constants) with few additional substitutes:
   - *%Y* - Year, zero-padded (0001, 0002, ..., 2019, 2020, ..., 9999)
   - *%y* - Year, last two digits, zero-padded (01, ..., 99)
   - *%m* - Month as a decimal number (01, 02, ..., 12)
