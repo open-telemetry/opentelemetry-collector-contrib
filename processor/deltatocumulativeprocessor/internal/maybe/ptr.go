@@ -33,7 +33,7 @@ func None[T any]() Ptr[T] {
 
 // Some returns a pointer to the passed T.
 //
-// The ptr argument may be nil, in which case this represents "explictely set to
+// The ptr argument may be nil, in which case this represents "explicitly set to
 // nil".
 func Some[T any](ptr *T) Ptr[T] {
 	return Ptr[T]{to: ptr, ok: true}
@@ -42,11 +42,11 @@ func Some[T any](ptr *T) Ptr[T] {
 // Try attempts to de-reference the Ptr, giving one of three results:
 //
 //   - nil, false: not-set
-//   - nil, true: explicitely set to nil
+//   - nil, true: explicitly set to nil
 //   - non-nil, true: set to some value
 //
 // This provides extra safety over bare pointers, because callers are forced by
-// the compiler to either check or explicitely ignore the ok value.
+// the compiler to either check or explicitly ignore the ok value.
 func (ptr Ptr[T]) Try() (_ *T, ok bool) {
 	return ptr.to, ptr.ok
 }

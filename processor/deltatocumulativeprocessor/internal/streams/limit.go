@@ -35,7 +35,7 @@ func (m LimitMap[T]) Store(id identity.Stream, v T) error {
 		if err := m.Map.Store(id, v); err != nil {
 			return err
 		}
-		return ErrEvicted{ErrLimit: errl, id: gone}
+		return ErrEvicted{ErrLimit: errl, Ident: gone}
 	}
 	return errl
 }
@@ -53,9 +53,9 @@ func AtLimit(err error) bool {
 
 type ErrEvicted struct {
 	ErrLimit
-	id Ident
+	Ident Ident
 }
 
 func (e ErrEvicted) Error() string {
-	return fmt.Sprintf("%s. evicted stream %s", e.ErrLimit, e.id)
+	return fmt.Sprintf("%s. evicted stream %s", e.ErrLimit, e.Ident)
 }
