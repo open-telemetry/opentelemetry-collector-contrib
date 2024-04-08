@@ -131,7 +131,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "custom_delta_timestamp_cache_size"),
 			expected: &Config{
 				AggregationTemporality:   "AGGREGATION_TEMPORALITY_DELTA",
-				DeltaTemporalityConfig:   &DeltaTemporalityConfig{TimestampCacheSize: &customTimestampCacheSize},
+				TimestampCacheSize:       &customTimestampCacheSize,
 				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     15 * time.Second,
@@ -140,19 +140,6 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "default_delta_timestamp_cache_size"),
-			expected: &Config{
-				AggregationTemporality:   "AGGREGATION_TEMPORALITY_DELTA",
-				DimensionsCacheSize:      defaultDimensionsCacheSize,
-				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
-				MetricsFlushInterval:     15 * time.Second,
-				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
-			},
-			extraAssertions: func(config *Config) {
-				assert.Equal(t, defaultDeltaTimestampCacheSize, config.GetDeltaTimestampCacheSize())
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "default_delta_timestamp_cache_size2"),
 			expected: &Config{
 				AggregationTemporality:   "AGGREGATION_TEMPORALITY_DELTA",
 				DimensionsCacheSize:      defaultDimensionsCacheSize,

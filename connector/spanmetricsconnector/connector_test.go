@@ -452,7 +452,7 @@ func disabledHistogramsConfig() HistogramConfig {
 	}
 }
 
-func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramConfig, exemplarsConfig func() ExemplarsConfig, eventsConfig func() EventsConfig, temporality string, expiration time.Duration, resourceMetricsKeyAttributes []string, deltaTemporalityConfig *DeltaTemporalityConfig, excludedDimensions ...string) (*connectorImp, *clock.Mock, error) {
+func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramConfig, exemplarsConfig func() ExemplarsConfig, eventsConfig func() EventsConfig, temporality string, expiration time.Duration, resourceMetricsKeyAttributes []string, deltaTimestampCacheSize int, excludedDimensions ...string) (*connectorImp, *clock.Mock, error) {
 	cfg := &Config{
 		AggregationTemporality:       temporality,
 		Histogram:                    histogramConfig(),
@@ -477,9 +477,9 @@ func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramC
 			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
 			{regionResourceAttrName, nil},
 		},
-		Events:                 eventsConfig(),
-		MetricsExpiration:      expiration,
-		DeltaTemporalityConfig: deltaTemporalityConfig,
+		Events:             eventsConfig(),
+		MetricsExpiration:  expiration,
+		TimestampCacheSize: &deltaTimestampCacheSize,
 	}
 
 	mockClock := clock.NewMock(time.Now())
@@ -641,7 +641,7 @@ func TestConcurrentShutdown(t *testing.T) {
 	core, observedLogs := observer.New(zapcore.InfoLevel)
 
 	// Test
-	p, _, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, nil)
+	p, _, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000)
 	require.NoError(t, err)
 	// Override the default no-op consumer and logger for testing.
 	p.metricsConsumer = new(consumertest.MetricsSink)
@@ -719,7 +719,7 @@ func TestConsumeMetricsErrors(t *testing.T) {
 	logger := zap.New(core)
 
 	var wg sync.WaitGroup
-	p, mockClock, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, nil)
+	p, mockClock, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000)
 	require.NoError(t, err)
 	// Override the default no-op consumer and logger for testing.
 	p.metricsConsumer = &errConsumer{
@@ -884,7 +884,7 @@ func TestConsumeTraces(t *testing.T) {
 			// Prepare
 
 			mcon := &consumertest.MetricsSink{}
-			p, mockClock, err := newConnectorImp(stringp("defaultNullValue"), tc.histogramConfig, tc.exemplarConfig, disabledEventsConfig, tc.aggregationTemporality, 0, []string{}, nil)
+			p, mockClock, err := newConnectorImp(stringp("defaultNullValue"), tc.histogramConfig, tc.exemplarConfig, disabledEventsConfig, tc.aggregationTemporality, 0, []string{}, 1000)
 			require.NoError(t, err)
 			// Override the default no-op consumer with metrics sink for testing.
 			p.metricsConsumer = mcon
@@ -911,7 +911,7 @@ func TestConsumeTraces(t *testing.T) {
 }
 
 func TestMetricKeyCache(t *testing.T) {
-	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, nil)
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000)
 	require.NoError(t, err)
 	traces := buildSampleTrace()
 
@@ -940,7 +940,7 @@ func TestMetricKeyCache(t *testing.T) {
 }
 
 func TestResourceMetricsCache(t *testing.T) {
-	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, nil)
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000)
 	require.NoError(t, err)
 
 	// Test
@@ -977,7 +977,7 @@ func TestResourceMetricsCache(t *testing.T) {
 }
 
 func TestResourceMetricsExpiration(t *testing.T) {
-	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Millisecond, []string{}, nil)
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Millisecond, []string{}, 1000)
 	require.NoError(t, err)
 
 	// Test
@@ -1002,7 +1002,7 @@ func TestResourceMetricsKeyAttributes(t *testing.T) {
 		"service.name",
 	}
 
-	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, resourceMetricsKeyAttributes, nil)
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, resourceMetricsKeyAttributes, 1000)
 	require.NoError(t, err)
 
 	// Test
@@ -1040,7 +1040,7 @@ func TestResourceMetricsKeyAttributes(t *testing.T) {
 
 func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	// Prepare
-	conn, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, nil)
+	conn, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000)
 	require.NoError(b, err)
 
 	traces := buildSampleTrace()
@@ -1054,7 +1054,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 
 func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 	excludeDimensions := []string{"span.kind", "span.name", "totallyWrongNameDoesNotAffectAnything"}
-	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, nil, excludeDimensions...)
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, excludeDimensions...)
 	require.NoError(t, err)
 	traces := buildSampleTrace()
 
@@ -1184,7 +1184,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 	wg.Add(len(wantDataPointCounts))
 
 	// Note: default dimension key cache size is 2.
-	p, mockClock, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, nil)
+	p, mockClock, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000)
 	require.NoError(t, err)
 	// Override the default no-op consumer with metrics sink for testing.
 	p.metricsConsumer = mcon
@@ -1269,7 +1269,7 @@ func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
 	mcon := &consumertest.MetricsSink{}
 
 	// Creating a connector with a very short metricsTTL to ensure that the metrics are expired.
-	p, mockClock, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Nanosecond, []string{}, nil)
+	p, mockClock, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Nanosecond, []string{}, 1000)
 	require.NoError(t, err)
 	// Override the default no-op consumer with metrics sink for testing.
 	p.metricsConsumer = mcon
@@ -1521,7 +1521,7 @@ func TestSpanMetrics_Events(t *testing.T) {
 	}
 }
 func TestExemplarsForSumMetrics(t *testing.T) {
-	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, cumulative, 0, []string{}, nil)
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, cumulative, 0, []string{}, 1000)
 	require.NoError(t, err)
 	traces := buildSampleTrace()
 
@@ -1579,7 +1579,7 @@ func TestTimestampsForUninterruptedStream(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.temporality, func(t *testing.T) {
-			p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, nil)
+			p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, 1000)
 			require.NoError(t, err)
 			p.metricsConsumer = &consumertest.MetricsSink{}
 
@@ -1677,10 +1677,7 @@ func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start pc
 
 func TestDeltaTimestampCacheExpiry(t *testing.T) {
 	timestampCacheSize := 1
-	deltaConfig := &DeltaTemporalityConfig{
-		TimestampCacheSize: &timestampCacheSize,
-	}
-	p, _, err := newConnectorImp(stringp("defaultNullValue"), exponentialHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, delta, 0, []string{}, deltaConfig)
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), exponentialHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, delta, 0, []string{}, timestampCacheSize)
 	require.NoError(t, err)
 	p.metricsConsumer = &consumertest.MetricsSink{}
 

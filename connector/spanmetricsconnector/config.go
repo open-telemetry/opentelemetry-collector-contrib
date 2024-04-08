@@ -23,7 +23,7 @@ var defaultHistogramBucketsMs = []float64{
 	2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
 }
 
-var defaultDeltaTimestampCacheSize = 10000
+var defaultDeltaTimestampCacheSize = 1000
 
 // Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
 type Dimension struct {
@@ -73,6 +73,9 @@ type Config struct {
 	// Default value (0) means that the metrics will never expire.
 	MetricsExpiration time.Duration `mapstructure:"metrics_expiration"`
 
+	// TimestampCacheSize controls the size of the cache used to keep track of delta metrics' TimestampUnixNano the last time it was flushed
+	TimestampCacheSize *int `mapstructure:"metric_timestamp_cache_size"`
+
 	// Namespace is the namespace of the metrics emitted by the connector.
 	Namespace string `mapstructure:"namespace"`
 
@@ -81,9 +84,6 @@ type Config struct {
 
 	// Events defines the configuration for events section of spans.
 	Events EventsConfig `mapstructure:"events"`
-
-	// DeltaTemporalityConfig is configuration that's exclusive to generating delta span metrics
-	DeltaTemporalityConfig *DeltaTemporalityConfig `mapstructure:"delta_temporality"`
 }
 
 type HistogramConfig struct {
@@ -115,8 +115,6 @@ type EventsConfig struct {
 }
 
 type DeltaTemporalityConfig struct {
-	// TimestampCacheSize controls the size of the cache used to keep track of a metric's TimestampUnixNano the last time it was flushed
-	TimestampCacheSize *int `mapstructure:"metric_timestamp_cache_size"`
 }
 
 var _ component.ConfigValidator = (*Config)(nil)
@@ -169,8 +167,8 @@ func (c Config) GetAggregationTemporality() pmetric.AggregationTemporality {
 }
 
 func (c Config) GetDeltaTimestampCacheSize() int {
-	if c.DeltaTemporalityConfig != nil && c.DeltaTemporalityConfig.TimestampCacheSize != nil {
-		return *c.DeltaTemporalityConfig.TimestampCacheSize
+	if c.TimestampCacheSize != nil {
+		return *c.TimestampCacheSize
 	}
 	return defaultDeltaTimestampCacheSize
 }
