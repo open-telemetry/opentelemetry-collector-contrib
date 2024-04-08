@@ -41,9 +41,7 @@ func (ke kafkaErrors) Error() string {
 }
 
 func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) error {
-	topic := getTopic(&e.cfg, td.ResourceSpans())
-
-	messages, err := e.marshaler.Marshal(td, topic)
+	messages, err := e.marshaler.Marshal(td, getTopic(&e.cfg, td.ResourceSpans()))
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -85,8 +83,7 @@ type kafkaMetricsProducer struct {
 }
 
 func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pmetric.Metrics) error {
-	topic := getTopic(&e.cfg, md.ResourceMetrics())
-	messages, err := e.marshaler.Marshal(md, topic)
+	messages, err := e.marshaler.Marshal(md, getTopic(&e.cfg, md.ResourceMetrics()))
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -128,9 +125,7 @@ type kafkaLogsProducer struct {
 }
 
 func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld plog.Logs) error {
-	topic := getTopic(&e.cfg, ld.ResourceLogs())
-
-	messages, err := e.marshaler.Marshal(ld, topic)
+	messages, err := e.marshaler.Marshal(ld, getTopic(&e.cfg, ld.ResourceLogs()))
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
