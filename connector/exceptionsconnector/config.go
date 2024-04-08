@@ -41,7 +41,7 @@ func (c Config) Validate() error {
 // validateDimensions checks duplicates for reserved dimensions and additional dimensions.
 func validateDimensions(dimensions []Dimension) error {
 	labelNames := make(map[string]struct{})
-	for _, key := range []string{serviceNameKey, spanKindKey, statusCodeKey} {
+	for _, key := range []string{serviceNameKey, spanKindKey, spanNameKey, statusCodeKey} {
 		labelNames[key] = struct{}{}
 	}
 
