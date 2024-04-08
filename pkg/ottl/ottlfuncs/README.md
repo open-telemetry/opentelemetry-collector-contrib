@@ -1114,46 +1114,50 @@ Examples:
 
 ### Time
 
+`Time(target, format)`
+
 The `Time` Converter takes a string representation of a time and converts it to a Golang `time.Time`.
 
-`time` is a string. `format` is a string.
+`target` is a string. `format` is a string.
 
-If either `time` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If the time and format do not follow the parsing rules used by this parser, an error is returned.
+If either `target` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If the time and format do not follow the parsing rules used by this parser, an error is returned.
 
 `format` denotes a textual representation of the time value formatted according to ctime-like format string. It follows [standard Go Layout formatting](https://pkg.go.dev/time#pkg-constants) with few additional substitutes:
-  - *%Y* - Year, zero-padded (0001, 0002, ..., 2019, 2020, ..., 9999)
-  - *%y* - Year, last two digits, zero-padded (01, ..., 99)
-  - *%m* - Month as a decimal number (01, 02, ..., 12)
-  - *%o* - Month as a space-padded number ( 1, 2, ..., 12)
-  - *%q* - Month as an unpadded number (1,2,...,12)
-  - *%b*, *%h* - Abbreviated month name (Jan, Feb, ...)
-  - *%B* - Full month name (January, February, ...)
-  - *%d* - Day of the month, zero-padded (01, 02, ..., 31)
-  - *%e* - Day of the month, space-padded ( 1, 2, ..., 31)
-  - *%g* - Day of the month, unpadded (1,2,...,31)
-  - *%a* - Abbreviated weekday name (Sun, Mon, ...)
-  - *%A* - Full weekday name (Sunday, Monday, ...)
-  - *%H* - Hour (24-hour clock) as a zero-padded decimal number (00, ..., 24)
-  - *%I* - Hour (12-hour clock) as a zero-padded decimal number (00, ..., 12)
-  - *%l* - Hour (12-hour clock: 0, ..., 12)
-  - *%p* - Locale’s equivalent of either AM or PM
-  - *%P* - Locale’s equivalent of either am or pm
-  - *%M* - Minute, zero-padded (00, 01, ..., 59)
-  - *%S* - Second as a zero-padded decimal number (00, 01, ..., 59)
-  - *%L* - Millisecond as a decimal number, zero-padded on the left (000, 001, ..., 999)
-  - *%f* - Microsecond as a decimal number, zero-padded on the left (000000, ..., 999999)
-  - *%s* - Nanosecond as a decimal number, zero-padded on the left (000000, ..., 999999)
-  - *%z* - UTC offset in the form ±HHMM[SS[.ffffff]] or empty(+0000, -0400)
-  - *%Z* - Timezone name or abbreviation or empty (UTC, EST, CST)
-  - *%D*, *%x* - Short MM/DD/YY date, equivalent to %m/%d/%y
-  - *%F* - Short YYYY-MM-DD date, equivalent to %Y-%m-%d
-  - *%T*, *%X* - ISO 8601 time format (HH:MM:SS), equivalent to %H:%M:%S
-  - *%r* - 12-hour clock time (02:55:02 pm)
-  - *%R* - 24-hour HH:MM time, equivalent to %H:%M
-  - *%n* - New-line character ('\n')
-  - *%t* - Horizontal-tab character ('\t')
-  - *%%* - A % sign
-  - *%c* - Date and time representation (Mon Jan 02 15:04:05 2006)
+| substitution | description | examples |
+|-----|-----|-----|
+|`%Y` | Year as a zero-padded number | 0001, 0002, ..., 2019, 2020, ..., 9999 |
+|`%y` | Year, last two digits as a zero-padded number | 01, ..., 99 |
+|`%m` | Month as a zero-padded number | 01, 02, ..., 12 |
+|`%o` | Month as a space-padded number | 1, 2, ..., 12 |
+|`%q` | Month as an unpadded number | 1,2,...,12 |
+|`%b*` *%h* | Abbreviated month name | Jan, Feb, ... |
+|`%B` | Full month name | January, February, ... |
+|`%d` | Day of the month as a zero-padded number | 01, 02, ..., 31 |
+|`%e` | Day of the monthas a space-padded number| 1, 2, ..., 31 |
+|`%g` | Day of the month as a unpadded number | 1,2,...,31 |
+|`%a` | Abbreviated weekday name | Sun, Mon, ... |
+|`%A` | Full weekday name | Sunday, Monday, ... |
+|`%H` | Hour (24-hour clock) as a zero-padded number | 00, ..., 24 |
+|`%I` | Hour (12-hour clock) as a zero-padded number | 00, ..., 12 |
+|`%l` | Hour 12-hour clock | 0, ..., 24 |
+|`%p` | Locale’s equivalent of either AM or PM | AM, PM |
+|`%P` | Locale’s equivalent of either am or pm | am, pm |
+|`%M` | Minute, as a zero-padded number | 00, 01, ..., 59 |
+|`%S` | Second as a zero-padded number | 00, 01, ..., 59 |
+|`%L` | Millisecond as a zero-padded number | 000, 001, ..., 999 |
+|`%f` | Microsecond as a zero-padded number | 000000, ..., 999999 |
+|`%s` | Nanosecond as a zero-padded number | 000000, ..., 999999 |
+|`%z` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty | +0000, -0400 |
+|`%Z` | Timezone name or abbreviation or empty | UTC, EST, CST |
+|`%D`, `%x` | Short MM/DD/YY date, equivalent to %m/%d/%y | 01/21/2031 |
+|`%F` | Short YYYY-MM-DD date, equivalent to %Y-%m-%d | 2031-01-21 |
+|`%T`,`%X` | ISO 8601 time format (HH:MM:SS), equivalent to %H:%M:%S | 02:55:02 |
+|`%r` | 12-hour clock time | 02:55:02 pm |
+|`%R` | 24-hour HH:MM time, equivalent to %H:%M | 13:55 |
+|`%n` | New-line character ('\n') | |
+|`%t` | Horizontal-tab character ('\t') | |
+|`%%` | A % sign | |
+|`%c` | Date and time representation | Mon Jan 02 15:04:05 2006 |
 
 Examples:
 
