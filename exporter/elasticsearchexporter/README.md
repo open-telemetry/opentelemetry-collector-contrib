@@ -26,7 +26,7 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
 - `index`: The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
   or [data stream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
-  name to publish events to. The default value is `logs-generic-default`. Note: To better differentiate between log indices and traces indices, `index` option are deprecated and replaced with below `logs_index`
+  name to publish events to. The default value is `logs-generic-default`. Note: To better differentiate between log indices and traces indices, `index` option is deprecated and replaced with below `logs_index`
 - `logs_index`: The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
   or [data stream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
