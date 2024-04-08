@@ -18,7 +18,6 @@ import (
 	"github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.17.0"
@@ -173,11 +172,6 @@ func (c *traceToMetricConnector) populateContainerTagsCache(traces ptrace.Traces
 		rs := traces.ResourceSpans().At(i)
 		attrs := rs.Resource().Attributes()
 
-		ctags := make(map[string]string)
-		attrs.Range(func(k string, v pcommon.Value) bool {
-			ctags[k] = v.Str()
-			return true
-		})
 		containerID, ok := attrs.Get(semconv.AttributeContainerID)
 		if !ok {
 			continue
@@ -189,8 +183,8 @@ func (c *traceToMetricConnector) populateContainerTagsCache(traces ptrace.Traces
 				c.addToCache(containerID.AsString(), key)
 				continue
 
-			} else if incomingVal, ok := ctags[attr]; ok {
-				key := fmt.Sprintf("%s:%s", attr, incomingVal)
+			} else if incomingVal, ok := attrs.Get(attr); ok {
+				key := fmt.Sprintf("%s:%s", attr, incomingVal.Str())
 				c.addToCache(containerID.AsString(), key)
 			}
 		}
