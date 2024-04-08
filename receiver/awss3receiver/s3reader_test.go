@@ -1,17 +1,20 @@
-package awss3receiver
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package awss3receiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver"
 
 import (
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-
-	"github.com/stretchr/testify/require"
 	"io"
 	"testing"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/stretchr/testify/require"
 )
 
 var testTime = time.Date(2021, 02, 01, 17, 32, 00, 00, time.UTC)
@@ -114,7 +117,7 @@ func (m *mockListObjectsV2Pager) HasMorePages() bool {
 	return m.PageNum < len(m.Pages)
 }
 
-func (m *mockListObjectsV2Pager) NextPage(ctx context.Context, f ...func(*s3.Options)) (output *s3.ListObjectsV2Output, err error) {
+func (m *mockListObjectsV2Pager) NextPage(_ context.Context, _ ...func(*s3.Options)) (output *s3.ListObjectsV2Output, err error) {
 	if m.Error != nil {
 		return nil, m.Error
 	}
@@ -128,8 +131,8 @@ func (m *mockListObjectsV2Pager) NextPage(ctx context.Context, f ...func(*s3.Opt
 }
 
 func Test_readTelemetryForTime(t *testing.T) {
-	testKey_1 := "year=2021/month=02/day=01/hour=17/minute=32/traces_1"
-	testKey_2 := "year=2021/month=02/day=01/hour=17/minute=32/traces_2"
+	testKey1 := "year=2021/month=02/day=01/hour=17/minute=32/traces_1"
+	testKey2 := "year=2021/month=02/day=01/hour=17/minute=32/traces_2"
 	reader := s3Reader{
 		listObjectsClient: mockListObjectsAPI(func(params *s3.ListObjectsV2Input) ListObjectsV2Pager {
 			t.Helper()
@@ -141,24 +144,24 @@ func Test_readTelemetryForTime(t *testing.T) {
 					{
 						Contents: []types.Object{
 							{
-								Key: &testKey_1,
+								Key: &testKey1,
 							},
 						},
 					},
 					{
 						Contents: []types.Object{
 							{
-								Key: &testKey_2,
+								Key: &testKey2,
 							},
 						},
 					},
 				},
 			}
 		}),
-		getObjectClient: mockGetObjectAPI(func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+		getObjectClient: mockGetObjectAPI(func(_ context.Context, params *s3.GetObjectInput, _ ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 			t.Helper()
 			require.Equal(t, "bucket", *params.Bucket)
-			require.Contains(t, []string{testKey_1, testKey_2}, *params.Key)
+			require.Contains(t, []string{testKey1, testKey2}, *params.Key)
 			return &s3.GetObjectOutput{
 				Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
 			}, nil
@@ -174,14 +177,14 @@ func Test_readTelemetryForTime(t *testing.T) {
 
 	dataCallbackKeys := make([]string, 0)
 
-	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(ctx context.Context, key string, data []byte) error {
+	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(_ context.Context, key string, data []byte) error {
 		t.Helper()
 		require.Equal(t, "this is the body of the object", string(data))
 		dataCallbackKeys = append(dataCallbackKeys, key)
 		return nil
 	})
-	require.Contains(t, dataCallbackKeys, testKey_1)
-	require.Contains(t, dataCallbackKeys, testKey_2)
+	require.Contains(t, dataCallbackKeys, testKey1)
+	require.Contains(t, dataCallbackKeys, testKey2)
 	require.NoError(t, err)
 }
 
@@ -206,7 +209,7 @@ func Test_readTelemetryForTime_GetObjectError(t *testing.T) {
 				},
 			}
 		}),
-		getObjectClient: mockGetObjectAPI(func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+		getObjectClient: mockGetObjectAPI(func(_ context.Context, params *s3.GetObjectInput, _ ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 			t.Helper()
 			require.Equal(t, "bucket", *params.Bucket)
 			require.Equal(t, testKey, *params.Key)
@@ -221,7 +224,7 @@ func Test_readTelemetryForTime_GetObjectError(t *testing.T) {
 		getTimeKey: getTimeKeyPartitionMinute,
 	}
 
-	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(ctx context.Context, key string, data []byte) error {
+	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(_ context.Context, _ string, _ []byte) error {
 		t.Helper()
 		t.Fail()
 		return nil
@@ -239,7 +242,7 @@ func Test_readTelemetryForTime_ListObjectsNoResults(t *testing.T) {
 
 			return &mockListObjectsV2Pager{}
 		}),
-		getObjectClient: mockGetObjectAPI(func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+		getObjectClient: mockGetObjectAPI(func(_ context.Context, params *s3.GetObjectInput, _ ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 			t.Helper()
 			require.Equal(t, "bucket", *params.Bucket)
 			require.Equal(t, testKey, *params.Key)
@@ -256,7 +259,7 @@ func Test_readTelemetryForTime_ListObjectsNoResults(t *testing.T) {
 		getTimeKey: getTimeKeyPartitionMinute,
 	}
 
-	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(ctx context.Context, key string, data []byte) error {
+	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(_ context.Context, _ string, _ []byte) error {
 		t.Helper()
 		t.Fail()
 		return nil
@@ -286,7 +289,7 @@ func Test_readTelemetryForTime_NextPageError(t *testing.T) {
 				},
 			}
 		}),
-		getObjectClient: mockGetObjectAPI(func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+		getObjectClient: mockGetObjectAPI(func(_ context.Context, params *s3.GetObjectInput, _ ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 			t.Helper()
 			require.Equal(t, "bucket", *params.Bucket)
 			require.Equal(t, testKey, *params.Key)
@@ -303,7 +306,7 @@ func Test_readTelemetryForTime_NextPageError(t *testing.T) {
 		getTimeKey: getTimeKeyPartitionMinute,
 	}
 
-	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(ctx context.Context, key string, data []byte) error {
+	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(_ context.Context, _ string, _ []byte) error {
 		t.Helper()
 		t.Fail()
 		return nil
@@ -329,7 +332,7 @@ func Test_readAll(t *testing.T) {
 				},
 			}
 		}),
-		getObjectClient: mockGetObjectAPI(func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+		getObjectClient: mockGetObjectAPI(func(_ context.Context, params *s3.GetObjectInput, _ ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 			t.Helper()
 			require.Equal(t, "bucket", *params.Bucket)
 			return &s3.GetObjectOutput{
@@ -347,7 +350,7 @@ func Test_readAll(t *testing.T) {
 
 	dataCallbackKeys := make([]string, 0)
 
-	err := reader.readAll(context.Background(), "traces", func(ctx context.Context, key string, data []byte) error {
+	err := reader.readAll(context.Background(), "traces", func(_ context.Context, key string, data []byte) error {
 		t.Helper()
 		require.Equal(t, "this is the body of the object", string(data))
 		dataCallbackKeys = append(dataCallbackKeys, key)
@@ -376,7 +379,7 @@ func Test_readAll_ContextDone(t *testing.T) {
 				},
 			}
 		}),
-		getObjectClient: mockGetObjectAPI(func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+		getObjectClient: mockGetObjectAPI(func(_ context.Context, params *s3.GetObjectInput, _ ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 			t.Helper()
 			require.Equal(t, "bucket", *params.Bucket)
 			return &s3.GetObjectOutput{
@@ -395,7 +398,7 @@ func Test_readAll_ContextDone(t *testing.T) {
 	dataCallbackKeys := make([]string, 0)
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	cancelFunc()
-	err := reader.readAll(ctx, "traces", func(ctx context.Context, key string, data []byte) error {
+	err := reader.readAll(ctx, "traces", func(_ context.Context, key string, _ []byte) error {
 		t.Helper()
 		dataCallbackKeys = append(dataCallbackKeys, key)
 		return nil

@@ -5,14 +5,15 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"log"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"log"
 )
 
-var downloadManager *manager.Downloader
+var downloadManager *manager.Downloader //nolint:golint,unused
 
 type ListObjectsV2Pager interface {
 	HasMorePages() bool
@@ -38,7 +39,7 @@ func newS3Client(cfg S3DownloaderConfig) (ListObjectsAPI, GetObjectAPI, error) {
 	}
 
 	if cfg.Endpoint != "" {
-		customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+		customResolver := aws.EndpointResolverWithOptionsFunc(func(_, _ string, _ ...any) (aws.Endpoint, error) {
 			return aws.Endpoint{
 				PartitionID:   "aws",
 				URL:           cfg.Endpoint,

@@ -1,14 +1,18 @@
-package awss3receiver
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package awss3receiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver"
 
 import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.22.0"
-	"testing"
 )
 
 func generateTraceData() ptrace.Traces {
@@ -98,7 +102,7 @@ func Test_receiveBytes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tracesConsumer, _ := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
+			tracesConsumer, _ := consumer.NewTraces(func(_ context.Context, td ptrace.Traces) error {
 				t.Helper()
 				if !tt.wantTrace {
 					t.Errorf("receiveBytes() received unexpected trace")

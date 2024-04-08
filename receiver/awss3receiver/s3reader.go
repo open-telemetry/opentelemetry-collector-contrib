@@ -6,9 +6,10 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"io"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 type s3Reader struct {
@@ -90,12 +91,12 @@ func (s3Reader *s3Reader) readTelemetryForTime(ctx context.Context, t time.Time,
 			return err
 		}
 		for _, obj := range page.Contents {
-			if data, err := s3Reader.retrieveObject(*obj.Key); err != nil {
+			data, err := s3Reader.retrieveObject(*obj.Key)
+			if err != nil {
 				return err
-			} else {
-				if err := dataCallback(ctx, *obj.Key, data); err != nil {
-					return err
-				}
+			}
+			if err := dataCallback(ctx, *obj.Key, data); err != nil {
+				return err
 			}
 		}
 	}
@@ -106,9 +107,8 @@ func (s3Reader *s3Reader) getObjectPrefixForTime(t time.Time, telemetryType stri
 	timeKey := s3Reader.getTimeKey(t)
 	if s3Reader.s3Prefix != "" {
 		return fmt.Sprintf("%s/%s/%s%s_", s3Reader.s3Prefix, timeKey, s3Reader.filePrefix, telemetryType)
-	} else {
-		return fmt.Sprintf("%s/%s%s_", timeKey, s3Reader.filePrefix, telemetryType)
 	}
+	return fmt.Sprintf("%s/%s%s_", timeKey, s3Reader.filePrefix, telemetryType)
 }
 
 func (s3Reader *s3Reader) retrieveObject(key string) ([]byte, error) {
@@ -116,15 +116,15 @@ func (s3Reader *s3Reader) retrieveObject(key string) ([]byte, error) {
 		Bucket: &s3Reader.s3Bucket,
 		Key:    &key,
 	}
-	if output, err := s3Reader.getObjectClient.GetObject(context.TODO(), &params); err != nil {
+	output, err := s3Reader.getObjectClient.GetObject(context.TODO(), &params)
+	if err != nil {
 		return nil, err
-	} else {
-		contents, err := io.ReadAll(output.Body)
-		if err != nil {
-			return nil, err
-		}
-		return contents, nil
 	}
+	contents, err := io.ReadAll(output.Body)
+	if err != nil {
+		return nil, err
+	}
+	return contents, nil
 }
 
 func getTimeKeyPartitionHour(t time.Time) string {
