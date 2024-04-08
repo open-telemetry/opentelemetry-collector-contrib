@@ -16,7 +16,7 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
 
 ## Configuration options
 
-- `endpoints`: List of Elasticsearch URLs. If endpoints and cloudid is missing, the
+- `endpoints`: List of Elasticsearch URLs. If `endpoints` and `cloudid` are missing, the
   ELASTICSEARCH_URL environment variable will be used.
 - `cloudid` (optional):
   [ID](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html) of the
@@ -49,14 +49,12 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
                                 The last string appended belongs to the date when the data is being generated.
   - `prefix_separator`(default=`-`): Set a separator between logstash_prefix and date.
   - `date_format`(default=`%Y.%m.%d`): Time format (based on strftime) to generate the second part of the Index name.
-- `pipeline` (optional): Optional [Ingest Node](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html)
-  pipeline ID used for processing documents published by the exporter.
-- `flush`: Event bulk buffer flush settings
-  - `bytes` (default=5242880): Write buffer flush limit.
-  - `interval` (default=30s): Write buffer time limit.
-- `retry`: Event retry settings
-  - `enabled` (default=true): Enable/Disable event retry on error. Retry
-    support is enabled by default.
+- `pipeline` (optional): Optional [Ingest pipeline](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html) ID used for processing documents published by the exporter.
+- `flush`: Event bulk indexer buffer flush settings
+  - `bytes` (default=5242880): Write buffer flush size limit.
+  - `interval` (default=30s): Write buffer flush time limit.
+- `retry`: Elasticsearch bulk request retry settings
+  - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
   - `max_requests` (default=3): Number of HTTP request retries.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
@@ -81,19 +79,19 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
 - `sending_queue`
   - `enabled` (default = false)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-  - `queue_size` (default = 1000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`;
+  - `queue_size` (default = 1000): Maximum number of batches kept in queue; ignored if `enabled` is `false`;
 ### HTTP settings
 
-- `read_buffer_size` (default=0): Read buffer size.
-- `write_buffer_size` (default=0): Write buffer size used when.
+- `read_buffer_size` (default=0): Read buffer size of HTTP client.
+- `write_buffer_size` (default=0): Write buffer size of HTTP client.
 - `timeout` (default=90s): HTTP request time limit.
-- `headers` (optional): Headers to be send with each HTTP request.
+- `headers` (optional): Headers to be sent with each HTTP request.
 
 ### Security and Authentication settings
 
 - `user` (optional): Username used for HTTP Basic Authentication.
 - `password` (optional): Password used for HTTP Basic Authentication.
-- `api_key` (optional):  Authorization [API Key](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html).
+- `api_key` (optional):  Authorization [API Key](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html) in "encoded" format.
 
 ### TLS settings
 - `ca_file` (optional): Root Certificate Authority (CA) certificate, for
@@ -102,7 +100,6 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
 - `key_file` (optional): Client TLS key.
 - `insecure` (optional): In gRPC when set to true, this is used to disable the client transport security. In HTTP, this disables verifying the server's certificate chain and host name.
 - `insecure_skip_verify` (optional): Will enable TLS but not verify the certificate.
-  is enabled.
 
 ### Node Discovery
 
