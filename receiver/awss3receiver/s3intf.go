@@ -7,9 +7,12 @@ import (
 	"context"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"log"
 )
+
+var downloadManager *manager.Downloader
 
 type ListObjectsV2Pager interface {
 	HasMorePages() bool
@@ -56,6 +59,7 @@ func newS3Client(cfg S3DownloaderConfig) (ListObjectsAPI, GetObjectAPI, error) {
 		})
 	}
 	client := s3.NewFromConfig(awsCfg, s3OptionFuncs...)
+
 	return &s3ListObjectsAPIImpl{client: client}, client, nil
 }
 
