@@ -4,6 +4,7 @@
 package jmxreceiver
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -311,6 +312,96 @@ func TestClassPathParse(t *testing.T) {
 
 			actual := tc.cfg.parseClasspath()
 			require.Equal(t, tc.expected, actual)
+		})
+	}
+}
+
+func TestPasswordFileValidation(t *testing.T) {
+	testCases := []struct {
+		desc          string
+		cfg           *Config
+		passwordMap   map[string]string
+		expectedError error
+	}{
+		{
+			desc:          "no validation for default",
+			cfg:           &Config{},
+			passwordMap:   map[string]string{},
+			expectedError: nil,
+		},
+		{
+			desc: "all passwords set in file",
+			cfg: &Config{
+				Username:       "test-user",
+				TruststorePath: "trust-store-path",
+				KeystorePath:   "key-store-path",
+			},
+			passwordMap: map[string]string{
+				"test-user":        "XXXXXXX",
+				roleNameKeyStore:   "XXXXXXX",
+				roleNameTrustStore: "XXXXXXX",
+			},
+			expectedError: nil,
+		},
+		{
+			desc: "all passwords set in config",
+			cfg: &Config{
+				Username:           "test-user",
+				Password:           "XXXXXXXX",
+				TruststorePath:     "trust-store-path",
+				TruststorePassword: "XXXXXXX",
+				KeystorePath:       "key-store-path",
+				KeystorePassword:   "XXXXXXXX",
+			},
+			passwordMap:   map[string]string{},
+			expectedError: nil,
+		},
+		{
+			desc: "user password is missing",
+			cfg: &Config{
+				Username:       "test-user-wrong",
+				TruststorePath: "trust-store-path",
+				KeystorePath:   "key-store-path",
+			},
+			passwordMap: map[string]string{
+				"test-user":        "XXXXXXX",
+				roleNameKeyStore:   "XXXXXXX",
+				roleNameTrustStore: "XXXXXXX",
+			},
+			expectedError: fmt.Errorf("password for `username` (%s) not found in `password_file`", "test-user-wrong"),
+		},
+		{
+			desc: "key store password is missing",
+			cfg: &Config{
+				Username:       "test-user",
+				TruststorePath: "trust-store-path",
+				KeystorePath:   "key-store-path",
+			},
+			passwordMap: map[string]string{
+				"test-user":        "XXXXXXX",
+				roleNameTrustStore: "XXXXXXX",
+			},
+			expectedError: fmt.Errorf("password for %s not found in `password_file`", roleNameKeyStore),
+		},
+		{
+			desc: "trust store password is missing",
+			cfg: &Config{
+				Username:       "test-user",
+				TruststorePath: "trust-store-path",
+				KeystorePath:   "key-store-path",
+			},
+			passwordMap: map[string]string{
+				"test-user":      "XXXXXXX",
+				roleNameKeyStore: "XXXXXXX",
+			},
+			expectedError: fmt.Errorf("password for %s not found in `password_file`", roleNameTrustStore),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			actual := tc.cfg.validatePasswords(tc.passwordMap)
+			require.Equal(t, tc.expectedError, actual)
 		})
 	}
 }

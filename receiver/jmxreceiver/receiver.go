@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/magiconair/properties"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
@@ -27,11 +26,6 @@ import (
 const (
 	// jmxMainClass the class containing the main function for the JMX Metric Gatherer JAR
 	jmxMainClass = "io.opentelemetry.contrib.jmxmetrics.JmxMetrics"
-
-	// The role names can be used in conjunction with the password file to avoid configuring them directly in the
-	// receiver config.
-	roleNameKeyStore   = "keystore"
-	roleNameTrustStore = "truststore"
 )
 
 var _ receiver.Metrics = (*jmxMetricReceiver)(nil)
@@ -282,17 +276,4 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 	sort.Strings(content)
 
 	return strings.Join(content, "\n"), nil
-}
-
-func parsePasswordFile(path string) (map[string]string, error) {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	loader := properties.Loader{Encoding: properties.UTF8, DisableExpansion: true}
-	p, err := loader.LoadBytes(content)
-	if err != nil {
-		return nil, err
-	}
-	return p.Map(), nil
 }

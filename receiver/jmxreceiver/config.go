@@ -14,10 +14,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/magiconair/properties"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+)
+
+const (
+	// The role names can be used in conjunction with the password file to avoid configuring them directly in the
+	// receiver config.
+	roleNameKeyStore   = "keystore"
+	roleNameTrustStore = "truststore"
 )
 
 type Config struct {
@@ -278,9 +286,48 @@ func (c *Config) Validate() error {
 		default:
 			return fmt.Errorf("`password_file` read access must be restricted to owner-only: %s", c.PasswordFile)
 		}
+		passwordMap, err := parsePasswordFile(c.PasswordFile)
+		if err != nil {
+			return err
+		}
+		err = c.validatePasswords(passwordMap)
+		if err != nil {
+			return err
+		}
 	}
-
 	return nil
+}
+
+func (c *Config) validatePasswords(passwordMap map[string]string) error {
+	if c.Username != "" && c.Password == "" {
+		if _, ok := passwordMap[c.Username]; !ok {
+			return fmt.Errorf("password for `username` (%s) not found in `password_file`", c.Username)
+		}
+	}
+	if c.KeystorePath != "" && c.KeystorePassword == "" {
+		if _, ok := passwordMap[roleNameKeyStore]; !ok {
+			return fmt.Errorf("password for %s not found in `password_file`", roleNameKeyStore)
+		}
+	}
+	if c.TruststorePath != "" && c.TruststorePassword == "" {
+		if _, ok := passwordMap[roleNameTrustStore]; !ok {
+			return fmt.Errorf("password for %s not found in `password_file`", roleNameTrustStore)
+		}
+	}
+	return nil
+}
+
+func parsePasswordFile(path string) (map[string]string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	loader := properties.Loader{Encoding: properties.UTF8, DisableExpansion: true}
+	p, err := loader.LoadBytes(content)
+	if err != nil {
+		return nil, err
+	}
+	return p.Map(), nil
 }
 
 func listKeys(presenceMap map[string]struct{}) string {
