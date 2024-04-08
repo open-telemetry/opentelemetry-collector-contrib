@@ -18,6 +18,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.17.0"
@@ -81,7 +82,17 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 	for _, val := range cfg.(*Config).Traces.ResourceAttributesAsContainerTags {
 		ctags[val] = ""
 	}
-	ddtags := attributes.ContainerTagFromAttributes(ctags)
+	ddTags := attributes.ContainerTagFromAttributes(ctags)
+
+	for key := range ctags {
+		// TODO: we need to expose the container mappings from the attributes package
+		tags := attributes.ContainerTagFromAttributes(map[string]string{key: ""})
+		// It means there is no mapping for the resource attribute
+		if len(tags) == 0 {
+			ddTags[key] = ""
+		}
+
+	}
 
 	ctx := context.Background()
 	return &traceToMetricConnector{
@@ -90,7 +101,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 		translator:        trans,
 		in:                in,
 		metricsConsumer:   metricsConsumer,
-		resourceAttrs:     ddtags,
+		resourceAttrs:     ddTags,
 		containerTagCache: cache.New(cacheExpiration, cacheCleanupInterval),
 		exit:              make(chan struct{}),
 	}, nil
@@ -146,10 +157,27 @@ func (c *traceToMetricConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
+func (c *traceToMetricConnector) addToCache(containerID string, key string) {
+	if tags, ok := c.containerTagCache.Get(containerID); ok {
+		tagList := tags.(*sync.Map)
+		tagList.Store(key, struct{}{})
+	} else {
+		tagList := &sync.Map{}
+		tagList.Store(key, struct{}{})
+		c.containerTagCache.Set(containerID, tagList, cache.DefaultExpiration)
+	}
+}
+
 func (c *traceToMetricConnector) populateContainerTagsCache(traces ptrace.Traces) {
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rs := traces.ResourceSpans().At(i)
 		attrs := rs.Resource().Attributes()
+
+		ctags := make(map[string]string)
+		attrs.Range(func(k string, v pcommon.Value) bool {
+			ctags[k] = v.Str()
+			return true
+		})
 		containerID, ok := attrs.Get(semconv.AttributeContainerID)
 		if !ok {
 			continue
@@ -158,19 +186,12 @@ func (c *traceToMetricConnector) populateContainerTagsCache(traces ptrace.Traces
 		for attr := range c.resourceAttrs {
 			if val, ok := ddContainerTags[attr]; ok {
 				key := fmt.Sprintf("%s:%s", attr, val)
-				if v, ok := c.containerTagCache.Get(containerID.AsString()); ok {
-					cacheVal := v.(*sync.Map)
-					// check if the key already exists in the cache
-					if _, ok := cacheVal.Load(key); ok {
-						continue
-					}
-					cacheVal.Store(key, struct{}{})
-				} else {
-					cacheVal := &sync.Map{}
-					cacheVal.Store(key, struct{}{})
-					c.containerTagCache.Set(containerID.AsString(), cacheVal, cache.DefaultExpiration)
-				}
+				c.addToCache(containerID.AsString(), key)
+				continue
 
+			} else if incomingVal, ok := ctags[attr]; ok {
+				key := fmt.Sprintf("%s:%s", attr, incomingVal)
+				c.addToCache(containerID.AsString(), key)
 			}
 		}
 	}
