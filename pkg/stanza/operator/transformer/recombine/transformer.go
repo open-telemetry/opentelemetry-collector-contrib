@@ -233,6 +233,7 @@ func (t *Transformer) addNewBatch(source string, e *entry.Entry) *sourceBatch {
 	batch.numEntries = 1
 	batch.recombined.Reset()
 	batch.firstEntryObservedTime = e.ObservedTimestamp
+	batch.matchDetected = false
 	t.batchMap[source] = batch
 	return batch
 }

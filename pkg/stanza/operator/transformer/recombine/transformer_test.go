@@ -612,32 +612,7 @@ func TestTransformer(t *testing.T) {
 			},
 		},
 		{
-			"TestMaxUnmatchedBatchSizeForLastEntry",
-			func() *Config {
-				cfg := NewConfig()
-				cfg.CombineField = entry.NewBodyField()
-				cfg.IsLastEntry = "body == 'test1'"
-				cfg.OutputIDs = []string{"fake"}
-				cfg.MaxUnmatchedBatchSize = 2
-				return cfg
-			}(),
-			[]*entry.Entry{
-				entryWithBody(t1, "test2"),
-				entryWithBody(t1, "test3"),
-				entryWithBody(t1, "test4"),
-				entryWithBody(t1, "test1"),
-				entryWithBody(t1, "test5"),
-				entryWithBody(t1, "test6"),
-				entryWithBody(t1, "test1"),
-			},
-			[]*entry.Entry{
-				entryWithBody(t1, "test2\ntest3"),
-				entryWithBody(t1, "test4\ntest1"),
-				entryWithBody(t1, "test5\ntest6\ntest1"),
-			},
-		},
-		{
-			"EntriesMatchingForLastEntryAfterMaxUnmatchedBatchSize",
+			"EntriesMatchingForLastEntryMaxUnmatchedBatchSize=2",
 			func() *Config {
 				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
@@ -660,6 +635,33 @@ func TestTransformer(t *testing.T) {
 				entryWithBody(t1, "test2\ntest3"),
 				entryWithBody(t1, "test4\ntest5"),
 				entryWithBody(t1, "test1"),
+				entryWithBody(t1, "test6\ntest7"),
+				entryWithBody(t1, "test1"),
+			},
+		},
+		{
+			"EntriesMatchingForLastEntryMaxUnmatchedBatchSize=3",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsLastEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxUnmatchedBatchSize = 3
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+				entryWithBody(t1, "test5"),
+				entryWithBody(t1, "test1"),
+				entryWithBody(t1, "test6"),
+				entryWithBody(t1, "test7"),
+				entryWithBody(t1, "test1"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2\ntest3\ntest4"),
+				entryWithBody(t1, "test5\ntest1"),
 				entryWithBody(t1, "test6\ntest7\ntest1"),
 			},
 		},
