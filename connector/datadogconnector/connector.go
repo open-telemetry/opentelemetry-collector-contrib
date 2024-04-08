@@ -40,7 +40,7 @@ type traceToMetricConnector struct {
 	// from the agent to OTLP Metrics.
 	translator *metrics.Translator
 
-	resourceAttrs     map[string]string
+	enrichedTags      map[string]string
 	containerTagCache *cache.Cache
 
 	// in specifies the channel through which the agent will output Stats Payloads
@@ -100,7 +100,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 		translator:        trans,
 		in:                in,
 		metricsConsumer:   metricsConsumer,
-		resourceAttrs:     ddTags,
+		enrichedTags:      ddTags,
 		containerTagCache: cache.New(cacheExpiration, cacheCleanupInterval),
 		exit:              make(chan struct{}),
 	}, nil
@@ -177,12 +177,10 @@ func (c *traceToMetricConnector) populateContainerTagsCache(traces ptrace.Traces
 			continue
 		}
 		ddContainerTags := attributes.ContainerTagsFromResourceAttributes(attrs)
-		for attr := range c.resourceAttrs {
+		for attr := range c.enrichedTags {
 			if val, ok := ddContainerTags[attr]; ok {
 				key := fmt.Sprintf("%s:%s", attr, val)
 				c.addToCache(containerID.AsString(), key)
-				continue
-
 			} else if incomingVal, ok := attrs.Get(attr); ok {
 				key := fmt.Sprintf("%s:%s", attr, incomingVal.Str())
 				c.addToCache(containerID.AsString(), key)
@@ -229,7 +227,7 @@ func (c *traceToMetricConnector) run() {
 			var mx pmetric.Metrics
 			var err error
 			// Enrich the stats with container tags
-			if len(c.resourceAttrs) > 0 {
+			if len(c.enrichedTags) > 0 {
 				c.enrichStatsPayload(stats)
 			}
 
