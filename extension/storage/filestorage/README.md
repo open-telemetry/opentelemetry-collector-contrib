@@ -136,8 +136,12 @@ The schedule for this feature gate is:
 
 ## Troubleshooting
 
-When troubleshooting components that use file storage, it is sometimes helpful to read the raw contents of
-files created by the File Storage extension for the component that's using it.  The simplest way to read files
+_Currently, the File Storage extension uses [bbolt](https://github.com/etcd-io/bbolt) to store and read data on disk. The
+following troubleshooting method works for bbolt-managed files. As such, there is no guarantee that the following
+troubleshooting method will continue to work in the future, particularly if the extension switches away from bbolt._
+
+When troubleshooting components that use the File Storage extension, it is sometimes helpful to read the raw contents of
+files created by the extension for the component.  The simplest way to read files
 created by the File Storage extension is to use the strings utility ([Linux](https://linux.die.net/man/1/strings),
 [Windows](https://learn.microsoft.com/en-us/sysinternals/downloads/strings)).
 
