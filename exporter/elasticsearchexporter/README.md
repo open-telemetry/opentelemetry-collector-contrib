@@ -25,11 +25,11 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
 - `num_workers` (optional): Number of workers publishing bulk requests concurrently.
 - `index`: The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
-  or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
-  name to publish events to. The default value is `logs-generic-default`. Note: To better differentiate between log indexes and traces indexes, `index` option are deprecated and replaced with below `logs_index`
+  or [data stream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
+  name to publish events to. The default value is `logs-generic-default`. Note: To better differentiate between log indices and traces indices, `index` option are deprecated and replaced with below `logs_index`
 - `logs_index`: The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
-  or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
+  or [data stream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
   name to publish events to. The default value is `logs-generic-default`
 - `logs_dynamic_index` (optional): 
   takes resource or log record attribute named `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
@@ -37,7 +37,7 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
   - `enabled`(default=false): Enable/Disable dynamic index for log records
 - `traces_index`: The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
-  or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
+  or [data stream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
   name to publish traces to. The default value is `traces-generic-default`.
 - `traces_dynamic_index` (optional):
   takes resource or span attribute named `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
