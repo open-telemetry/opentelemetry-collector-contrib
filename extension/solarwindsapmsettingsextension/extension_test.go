@@ -23,15 +23,15 @@ func TestCreateExtension(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				Endpoint: "0.0.0.0:1234",
-				Interval: time.Duration(10) * time.Second,
+				Endpoint: DefaultEndpoint,
+				Interval: DefaultInterval,
 			},
 		},
 		{
 			name: "anything",
 			cfg: &Config{
-				Endpoint: "0.0.0.0:1234",
-				Key:      "something",
+				Endpoint: "apm.collector.na-02.cloud.solarwinds.com:443",
+				Key:      "something:name",
 				Interval: time.Duration(10) * time.Second,
 			},
 		},
