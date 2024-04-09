@@ -11,12 +11,12 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/vmware/govmomi v0.36.3
 	go.opentelemetry.io/collector/component v0.97.1-0.20240404121116-4f1a8936d26b
-	go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240409140257-792fac1b62d4
 	go.opentelemetry.io/collector/config/configtls v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/confmap v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/consumer v0.97.1-0.20240404121116-4f1a8936d26b
-	go.opentelemetry.io/collector/featuregate v1.4.1-0.20240404121116-4f1a8936d26b
-	go.opentelemetry.io/collector/pdata v1.4.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/featuregate v1.4.1-0.20240409140257-792fac1b62d4
+	go.opentelemetry.io/collector/pdata v1.4.1-0.20240409140257-792fac1b62d4
 	go.opentelemetry.io/collector/receiver v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
