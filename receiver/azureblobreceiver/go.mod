@@ -64,7 +64,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
-	github.com/prometheus/client_model v0.6.0 // indirect
+	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.3 // indirect
@@ -89,6 +89,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.97.1-0.20240409140257-792fac1b62d4 // indirect
 	go.opentelemetry.io/collector/extension v0.97.1-0.20240409140257-792fac1b62d4 // indirect
 	go.opentelemetry.io/collector/featuregate v1.4.1-0.20240409140257-792fac1b62d4 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.0.0-20240408153657-fc289290613a // indirect
 	go.opentelemetry.io/collector/processor v0.97.1-0.20240409140257-792fac1b62d4 // indirect
 	go.opentelemetry.io/collector/semconv v0.97.1-0.20240409140257-792fac1b62d4 // indirect
 	go.opentelemetry.io/collector/service v0.97.1-0.20240409140257-792fac1b62d4 // indirect
