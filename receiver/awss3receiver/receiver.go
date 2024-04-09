@@ -52,7 +52,10 @@ func (r *awss3TraceReceiver) Shutdown(_ context.Context) error {
 }
 
 func (r *awss3TraceReceiver) receiveBytes(ctx context.Context, key string, data []byte) error {
-	var unmarshaler ptrace.Unmarshaler
+	if data == nil {
+		return nil
+	}
+
 	if strings.HasSuffix(key, ".gz") {
 		reader, err := gzip.NewReader(bytes.NewReader(data))
 		if err != nil {
@@ -65,6 +68,7 @@ func (r *awss3TraceReceiver) receiveBytes(ctx context.Context, key string, data 
 		}
 	}
 
+	var unmarshaler ptrace.Unmarshaler
 	if strings.HasSuffix(key, ".json") {
 		unmarshaler = &ptrace.JSONUnmarshaler{}
 	}

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"go.uber.org/zap"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -53,6 +54,15 @@ func Test_receiveBytes(t *testing.T) {
 		wantErr   bool
 		wantTrace bool
 	}{
+		{
+			name: "nil data",
+			args: args{
+				key:  "test.json",
+				data: nil,
+			},
+			wantErr:   false,
+			wantTrace: false,
+		},
 		{
 			name: ".json",
 			args: args{
@@ -113,6 +123,7 @@ func Test_receiveBytes(t *testing.T) {
 			})
 			r := &awss3TraceReceiver{
 				consumer: tracesConsumer,
+				logger:   zap.NewNop(),
 			}
 			if err := r.receiveBytes(context.Background(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
 				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
