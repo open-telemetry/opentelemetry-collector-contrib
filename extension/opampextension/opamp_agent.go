@@ -47,6 +47,8 @@ type opampAgent struct {
 	customCapabilityRegistry *customCapabilityRegistry
 }
 
+var _ CustomCapabilityRegistry = (*opampAgent)(nil)
+
 func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
 	header := http.Header{}
 	for k, v := range o.cfg.Server.GetHeaders() {
