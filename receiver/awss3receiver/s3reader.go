@@ -31,11 +31,11 @@ func newS3Reader(cfg *Config) (*s3Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	startTime, err := parseTime(cfg.StartTime)
+	startTime, err := parseTime(cfg.StartTime, "starttime")
 	if err != nil {
 		return nil, err
 	}
-	endTime, err := parseTime(cfg.EndTime)
+	endTime, err := parseTime(cfg.EndTime, "endtime")
 	if err != nil {
 		return nil, err
 	}

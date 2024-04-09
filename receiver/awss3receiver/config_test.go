@@ -48,11 +48,11 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id:           component.NewIDWithName(metadata.Type, ""),
-			errorMessage: "bucket is required; start time is required; end time is required",
+			errorMessage: "bucket is required; starttime is required; endtime is required",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "1"),
-			errorMessage: "unable to parse start date; unable to parse end time",
+			errorMessage: "unable to parse starttime (a date), accepted formats: 2006-01-02 15:04, 2006-01-02; unable to parse endtime (2024-02-03a), accepted formats: 2006-01-02 15:04, 2006-01-02",
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),

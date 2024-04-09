@@ -5,6 +5,8 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -45,28 +47,29 @@ func (c Config) Validate() error {
 		errs = multierr.Append(errs, errors.New("bucket is required"))
 	}
 	if c.StartTime == "" {
-		errs = multierr.Append(errs, errors.New("start time is required"))
+		errs = multierr.Append(errs, errors.New("starttime is required"))
 	} else {
-		if _, err := parseTime(c.StartTime); err != nil {
-			errs = multierr.Append(errs, errors.New("unable to parse start date"))
+		if _, err := parseTime(c.StartTime, "starttime"); err != nil {
+			errs = multierr.Append(errs, err)
 		}
 	}
 	if c.EndTime == "" {
-		errs = multierr.Append(errs, errors.New("end time is required"))
+		errs = multierr.Append(errs, errors.New("endtime is required"))
 	} else {
-		if _, err := parseTime(c.EndTime); err != nil {
-			errs = multierr.Append(errs, errors.New("unable to parse end time"))
+		if _, err := parseTime(c.EndTime, "endtime"); err != nil {
+			errs = multierr.Append(errs, err)
 		}
 	}
 	return errs
 }
 
-func parseTime(str string) (time.Time, error) {
+func parseTime(timeStr, configName string) (time.Time, error) {
 	layouts := []string{"2006-01-02 15:04", time.DateOnly}
+
 	for _, layout := range layouts {
-		if t, err := time.Parse(layout, str); err == nil {
+		if t, err := time.Parse(layout, timeStr); err == nil {
 			return t, nil
 		}
 	}
-	return time.Time{}, errors.New("unable to parse time string")
+	return time.Time{}, fmt.Errorf("unable to parse %s (%s), accepted formats: %s", configName, timeStr, strings.Join(layouts, ", "))
 }
