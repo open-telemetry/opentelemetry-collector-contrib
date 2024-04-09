@@ -22,6 +22,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.97.1-0.20240409140257-792fac1b62d4
 	go.opentelemetry.io/collector/consumer v0.97.1-0.20240409140257-792fac1b62d4
 	go.opentelemetry.io/collector/pdata v1.4.1-0.20240409140257-792fac1b62d4
+	go.opentelemetry.io/collector/pdata/testdata v0.0.0-20240408153657-fc289290613a
 	go.opentelemetry.io/collector/receiver v0.97.1-0.20240409140257-792fac1b62d4
 	go.opentelemetry.io/collector/semconv v0.97.1-0.20240409140257-792fac1b62d4
 	go.opentelemetry.io/otel/metric v1.24.0
