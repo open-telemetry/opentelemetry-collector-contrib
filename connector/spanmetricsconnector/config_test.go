@@ -134,7 +134,7 @@ func TestLoadConfig(t *testing.T) {
 				TimestampCacheSize:       &customTimestampCacheSize,
 				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
-				MetricsFlushInterval:     15 * time.Second,
+				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
 			},
 		},
@@ -144,7 +144,7 @@ func TestLoadConfig(t *testing.T) {
 				AggregationTemporality:   "AGGREGATION_TEMPORALITY_DELTA",
 				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
-				MetricsFlushInterval:     15 * time.Second,
+				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
 			},
 			extraAssertions: func(config *Config) {
