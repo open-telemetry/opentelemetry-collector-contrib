@@ -137,8 +137,7 @@ The schedule for this feature gate is:
 ## Troubleshooting
 
 _Currently, the File Storage extension uses [bbolt](https://github.com/etcd-io/bbolt) to store and read data on disk. The
-following troubleshooting method works for bbolt-managed files. As such, there is no guarantee that the following
-troubleshooting method will continue to work in the future, particularly if the extension switches away from bbolt._
+following troubleshooting method works for bbolt-managed files. As such, there is no guarantee that this method will continue to work in the future, particularly if the extension switches away from bbolt._
 
 When troubleshooting components that use the File Storage extension, it is sometimes helpful to read the raw contents of
 files created by the extension for the component.  The simplest way to read files
