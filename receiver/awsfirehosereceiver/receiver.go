@@ -105,13 +105,13 @@ var _ http.Handler = (*firehoseReceiver)(nil)
 
 // Start spins up the receiver's HTTP server and makes the receiver start
 // its processing.
-func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error {
+func (fmr *firehoseReceiver) Start(ctx context.Context, host component.Host) error {
 	if host == nil {
 		return errMissingHost
 	}
 
 	var err error
-	fmr.server, err = fmr.config.ServerConfig.ToServer(host, fmr.settings.TelemetrySettings, fmr)
+	fmr.server, err = fmr.config.ServerConfig.ToServerContext(ctx, host, fmr.settings.TelemetrySettings, fmr)
 	if err != nil {
 		return err
 	}

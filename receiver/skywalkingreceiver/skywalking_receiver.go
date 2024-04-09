@@ -138,7 +138,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 
 		nr := mux.NewRouter()
 		nr.HandleFunc("/v3/segments", sr.traceReceiver.HTTPHandler).Methods(http.MethodPost)
-		sr.collectorServer, cerr = sr.config.CollectorHTTPSettings.ToServer(host, sr.settings.TelemetrySettings, nr)
+		sr.collectorServer, cerr = sr.config.CollectorHTTPSettings.ToServerContext(context.Background(), host, sr.settings.TelemetrySettings, nr)
 		if cerr != nil {
 			return cerr
 		}

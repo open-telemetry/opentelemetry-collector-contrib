@@ -82,7 +82,7 @@ func newLogsReceiver(params receiver.CreateSettings, cfg Config, consumer consum
 }
 
 // Start function manages receiver startup tasks. part of the receiver.Logs interface.
-func (er *eventReceiver) Start(_ context.Context, host component.Host) error {
+func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	// noop if not nil. if start has not been called before these values should be nil.
 	if er.server != nil && er.server.Handler != nil {
 		return nil
@@ -101,7 +101,7 @@ func (er *eventReceiver) Start(_ context.Context, host component.Host) error {
 	router.GET(er.cfg.HealthPath, er.handleHealthCheck)
 
 	// webhook server standup and configuration
-	er.server, err = er.cfg.ServerConfig.ToServer(host, er.settings.TelemetrySettings, router)
+	er.server, err = er.cfg.ServerConfig.ToServerContext(ctx, host, er.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}

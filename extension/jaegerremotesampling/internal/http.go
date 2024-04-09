@@ -54,9 +54,9 @@ func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.ServerCo
 	return srv, nil
 }
 
-func (h *SamplingHTTPServer) Start(_ context.Context, host component.Host) error {
+func (h *SamplingHTTPServer) Start(ctx context.Context, host component.Host) error {
 	var err error
-	h.srv, err = h.settings.ToServer(host, h.telemetry, h.mux)
+	h.srv, err = h.settings.ToServerContext(ctx, host, h.telemetry, h.mux)
 	if err != nil {
 		return err
 	}

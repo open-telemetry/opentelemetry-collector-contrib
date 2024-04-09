@@ -91,7 +91,7 @@ func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver
 func (r *lokiReceiver) startProtocolsServers(ctx context.Context, host component.Host) error {
 	var err error
 	if r.conf.HTTP != nil {
-		r.serverHTTP, err = r.conf.HTTP.ToServer(host, r.settings.TelemetrySettings, r.httpMux, confighttp.WithDecoder("snappy", func(body io.ReadCloser) (io.ReadCloser, error) { return body, nil }))
+		r.serverHTTP, err = r.conf.HTTP.ToServerContext(ctx, host, r.settings.TelemetrySettings, r.httpMux, confighttp.WithDecoder("snappy", func(body io.ReadCloser) (io.ReadCloser, error) { return body, nil }))
 		if err != nil {
 			return fmt.Errorf("failed create http server error: %w", err)
 		}
