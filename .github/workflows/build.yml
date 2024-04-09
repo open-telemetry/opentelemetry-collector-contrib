@@ -76,13 +76,13 @@ jobs:
           DOCKER_IMAGE_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
         run: |
           make docker-otelcontribcol
-          docker tag otelcontribcol:latest ${{DOCKER_IMAGE_REGISTRY}}/opentelemetry-collector-contrib:$RELEASE_TAG
+          docker tag otelcontribcol:latest ${DOCKER_IMAGE_REGISTRY}/opentelemetry-collector-contrib:$RELEASE_TAG
       - name: Validate Docker Image
         env:
           RELEASE_TAG: ${{ steps.release_meta.outputs.tag }}
         run: |
-            docker run ${{DOCKER_IMAGE_REGISTRY}}/opentelemetry-collector-contrib:$RELEASE_TAG --version
+            docker run ${DOCKER_IMAGE_REGISTRY}/opentelemetry-collector-contrib:$RELEASE_TAG --version
 
       - name: Push Docker Image
         run: |
-            docker push ${{DOCKER_IMAGE_REGISTRY}}/opentelemetry-collector-contrib:$GITHUB_SHA
+            docker push ${DOCKER_IMAGE_REGISTRY}/opentelemetry-collector-contrib:$GITHUB_SHA
