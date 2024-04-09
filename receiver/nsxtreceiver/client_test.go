@@ -36,6 +36,8 @@ func TestNewClientFailureToParse(t *testing.T) {
 
 func TestTransportNodes(t *testing.T) {
 	nsxMock := mockServer(t)
+	defer nsxMock.Close()
+
 	client, err := newClient(&Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -49,6 +51,8 @@ func TestTransportNodes(t *testing.T) {
 
 func TestClusterNodes(t *testing.T) {
 	nsxMock := mockServer(t)
+	defer nsxMock.Close()
+
 	client, err := newClient(&Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -62,6 +66,8 @@ func TestClusterNodes(t *testing.T) {
 
 func TestClusterNodeInterface(t *testing.T) {
 	nsxMock := mockServer(t)
+	defer nsxMock.Close()
+
 	client, err := newClient(&Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -75,6 +81,8 @@ func TestClusterNodeInterface(t *testing.T) {
 
 func TestTransportNodeInterface(t *testing.T) {
 	nsxMock := mockServer(t)
+	defer nsxMock.Close()
+
 	client, err := newClient(&Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -88,6 +96,8 @@ func TestTransportNodeInterface(t *testing.T) {
 
 func TestTransportNodeStatus(t *testing.T) {
 	nsxMock := mockServer(t)
+	defer nsxMock.Close()
+
 	client, err := newClient(&Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -101,6 +111,8 @@ func TestTransportNodeStatus(t *testing.T) {
 
 func TestClusterNodeStatus(t *testing.T) {
 	nsxMock := mockServer(t)
+	defer nsxMock.Close()
+
 	client, err := newClient(&Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -114,6 +126,8 @@ func TestClusterNodeStatus(t *testing.T) {
 
 func TestTransportNodeInterfaceStatus(t *testing.T) {
 	nsxMock := mockServer(t)
+	defer nsxMock.Close()
+
 	client, err := newClient(&Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -127,6 +141,8 @@ func TestTransportNodeInterfaceStatus(t *testing.T) {
 
 func TestManagerNodeInterfaceStatus(t *testing.T) {
 	nsxMock := mockServer(t)
+	defer nsxMock.Close()
+
 	client, err := newClient(&Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -140,6 +156,8 @@ func TestManagerNodeInterfaceStatus(t *testing.T) {
 
 func TestDoRequestBadUrl(t *testing.T) {
 	nsxMock := mockServer(t)
+	defer nsxMock.Close()
+
 	client, err := newClient(&Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -153,6 +171,8 @@ func TestDoRequestBadUrl(t *testing.T) {
 
 func TestPermissionDenied_ClusterNodes(t *testing.T) {
 	nsxMock := mockServer(t)
+	defer nsxMock.Close()
+
 	client, err := newClient(&Config{
 		Password: badPassword,
 		ClientConfig: confighttp.ClientConfig{
@@ -167,6 +187,8 @@ func TestPermissionDenied_ClusterNodes(t *testing.T) {
 
 func TestPermissionDenied_Interfaces(t *testing.T) {
 	nsxMock := mockServer(t)
+	defer nsxMock.Close()
+
 	client, err := newClient(&Config{
 		Password: badPassword,
 		ClientConfig: confighttp.ClientConfig{
@@ -181,6 +203,8 @@ func TestPermissionDenied_Interfaces(t *testing.T) {
 
 func TestPermissionDenied_InterfaceStatus(t *testing.T) {
 	nsxMock := mockServer(t)
+	defer nsxMock.Close()
+
 	client, err := newClient(&Config{
 		Password: badPassword,
 		ClientConfig: confighttp.ClientConfig{
@@ -195,6 +219,8 @@ func TestPermissionDenied_InterfaceStatus(t *testing.T) {
 
 func TestPermissionDenied_NodeStatus(t *testing.T) {
 	nsxMock := mockServer(t)
+	defer nsxMock.Close()
+
 	client, err := newClient(&Config{
 		Password: badPassword,
 		ClientConfig: confighttp.ClientConfig{
@@ -209,6 +235,8 @@ func TestPermissionDenied_NodeStatus(t *testing.T) {
 
 func TestPermissionDenied_TransportNodes(t *testing.T) {
 	nsxMock := mockServer(t)
+	defer nsxMock.Close()
+
 	client, err := newClient(&Config{
 		Password: badPassword,
 		ClientConfig: confighttp.ClientConfig{
@@ -223,6 +251,8 @@ func TestPermissionDenied_TransportNodes(t *testing.T) {
 
 func TestInternalServerError(t *testing.T) {
 	nsxMock := mockServer(t)
+	defer nsxMock.Close()
+
 	client, err := newClient(&Config{
 		Username: user500,
 		ClientConfig: confighttp.ClientConfig{
