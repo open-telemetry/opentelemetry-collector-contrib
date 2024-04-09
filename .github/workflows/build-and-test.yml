@@ -243,6 +243,7 @@ jobs:
     strategy:
       matrix:
         go-version: ["1.22.0", "1.21.9"] # 1.20 is interpreted as 1.2 without quotes
+        runner: [ubuntu-latest, actuated-arm64-4cpu-4gb]
         group:
           - receiver-0
           - receiver-1
@@ -258,9 +259,16 @@ jobs:
           - cmd-0
           - cmd-1
           - other
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     steps:
+      - name: Set up arkade
+        uses: alexellis/setup-arkade@v3
+      - name: Install vmmeter
+        run: |
+          sudo -E arkade oci install ghcr.io/openfaasltd/vmmeter:latest --path /usr/local/bin/
+      - name: Run vmmeter
+        uses: self-actuated/vmmeter-action@v1
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
@@ -274,7 +282,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -285,7 +293,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/go-build
-          key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+          key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
         if: startsWith( matrix.go-version, '1.21' ) != true
         run: make gotest GROUP=${{ matrix.group }}
@@ -295,7 +303,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: startsWith( matrix.go-version, '1.21' ) # only upload artifact for one version
         with:
-          name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.group }}
+          name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: ${{ matrix.group }}-coverage.txt
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
