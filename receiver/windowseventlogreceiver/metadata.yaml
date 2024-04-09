@@ -5,7 +5,7 @@ status:
   class: receiver
   stability:
     alpha: [logs]
-  distributions: [contrib, splunk, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski, armstrmi, pjanotti]
   unsupported_platforms: [darwin, linux]

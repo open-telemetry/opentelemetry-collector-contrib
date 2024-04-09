@@ -772,7 +772,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 					`Substring("", 0, 100) == "test"`,
 				},
 			},
-			want:      func(md pmetric.Metrics) {},
+			want:      func(_ pmetric.Metrics) {},
 			errorMode: ottl.IgnoreError,
 		},
 		{
