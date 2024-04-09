@@ -12,6 +12,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/awsmsk"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -100,11 +101,11 @@ func configurePlaintext(config PlainTextConfig, saramaConfig *sarama.Config) {
 
 func configureSASL(config SASLConfig, saramaConfig *sarama.Config) error {
 
-	if config.Username == "" {
+	if config.Username == "" && config.Mechanism != "AWS_MSK_IAM_V2" {
 		return fmt.Errorf("username have to be provided")
 	}
 
-	if config.Password == "" {
+	if config.Password == "" && config.Mechanism != "AWS_MSK_IAM_V2" {
 		return fmt.Errorf("password have to be provided")
 	}
 
@@ -121,12 +122,14 @@ func configureSASL(config SASLConfig, saramaConfig *sarama.Config) error {
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA256
 	case "PLAIN":
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
-
 	case "AWS_MSK_IAM":
+		saramaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
+			return awsmsk.NewIAMSASLClient(config.AWSMSK.BrokerAddr, config.AWSMSK.Region, saramaConfig.ClientID)
+		}
+		saramaConfig.Net.SASL.Mechanism = awsmsk.Mechanism
+	case "AWS_MSK_IAM_V2":
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
 		saramaConfig.Net.SASL.TokenProvider = &config.AWSMSK
-		saramaConfig.Net.SASL.User = ""
-		saramaConfig.Net.SASL.Password = ""
 		tlsConfig := tls.Config{}
 		saramaConfig.Net.TLS.Enable = true
 		saramaConfig.Net.TLS.Config = &tlsConfig
