@@ -1,7 +1,6 @@
 name: build
 on:
   push:
-    # branches: [ main ]
 env:
   AWS_REGION: us-east-1
   OCTOPUS_HOST: https://multiplayer.octopus.app
@@ -58,9 +57,9 @@ jobs:
           tags: |
             type=sha,prefix={{branch}}-
 
-      # - name: Login to AWS ECR
-      #   id: ecr-login
-      #   uses: aws-actions/amazon-ecr-login@v1
+      - name: Login to AWS ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v1
       
       - id: release_meta
         env:
@@ -72,8 +71,7 @@ jobs:
       - name: Build Docker Image
         env:
           RELEASE_TAG: ${{ steps.release_meta.outputs.tag }}
-          # DOCKER_IMAGE_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          DOCKER_IMAGE_REGISTRY: aws-ecr.com
+          DOCKER_IMAGE_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
         run: |
           make docker-otelcontribcol
           docker tag otelcontribcol:latest ${DOCKER_IMAGE_REGISTRY}/${DOCKER_IMAGE_NAME}:$RELEASE_TAG
@@ -81,16 +79,14 @@ jobs:
       - name: Validate Docker Image
         env:
           RELEASE_TAG: ${{ steps.release_meta.outputs.tag }}
-          # DOCKER_IMAGE_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          DOCKER_IMAGE_REGISTRY: aws-ecr.com
+          DOCKER_IMAGE_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
         run: |
           docker run ${DOCKER_IMAGE_REGISTRY}/${DOCKER_IMAGE_NAME}:$RELEASE_TAG --version
 
       - name: Push Docker Image
         env:
           RELEASE_TAG: ${{ steps.release_meta.outputs.tag }}
-          # DOCKER_IMAGE_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          DOCKER_IMAGE_REGISTRY: aws-ecr.com
+          DOCKER_IMAGE_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
         run: |
           docker push ${DOCKER_IMAGE_REGISTRY}/${DOCKER_IMAGE_NAME}:$RELEASE_TAG
 
