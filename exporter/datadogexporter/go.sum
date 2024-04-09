@@ -66,8 +66,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Code-Hex/go-generics-cache v1.3.1 h1:i8rLwyhoyhaerr7JpjtYjJZUcCbWOdiYO3fZXLiEC4g=
 github.com/Code-Hex/go-generics-cache v1.3.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
-github.com/DataDog/agent-payload/v5 v5.0.104 h1:uxTIaLthyKB4CxBKe+2FeMgL6ca3KVxpeYxlJGNcoJg=
-github.com/DataDog/agent-payload/v5 v5.0.104/go.mod h1:COngtbYYCncpIPiE5D93QlXDH/3VAKk10jDNwGHcMRE=
+github.com/DataDog/agent-payload/v5 v5.0.111 h1:mM+4OBkXF9tjKV0VjwnNO5As9aKcNAEsagvKDSBaTyc=
+github.com/DataDog/agent-payload/v5 v5.0.111/go.mod h1:COngtbYYCncpIPiE5D93QlXDH/3VAKk10jDNwGHcMRE=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.52.1-0.20240321095122-a3c5dbb936ae h1:aVo1Uh2WQ8TvgbjqlbDvfP5AcUtnqXUUrc9pVP8MvKc=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.52.1-0.20240321095122-a3c5dbb936ae/go.mod h1:AVPQWekk3h9AOC7+plBlNB68Sy6UIGFoMMVUDeSoNoI=
 github.com/DataDog/datadog-agent/pkg/proto v0.52.1-0.20240321095122-a3c5dbb936ae h1:b6lU79trCyadhkxhb51jXiqmZaHs1Z0fwWlWKFVCqJ4=
@@ -84,8 +84,8 @@ github.com/DataDog/datadog-agent/pkg/util/pointer v0.52.1-0.20240321095122-a3c5d
 github.com/DataDog/datadog-agent/pkg/util/pointer v0.52.1-0.20240321095122-a3c5dbb936ae/go.mod h1:HgJEYNmnFTKIuBhWxYe1coqmzoJXMxQTfK+4wIG5G1Q=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.52.1-0.20240321095122-a3c5dbb936ae h1:YZz6I8ym9P4MLytAdAJlafF3tgItgAGZrDqe4otbVUk=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.52.1-0.20240321095122-a3c5dbb936ae/go.mod h1:EVETfdJCkqy0YEvSpQd9LZdcYQ7vrUomCm+bQ6h3lc4=
-github.com/DataDog/datadog-api-client-go/v2 v2.22.0 h1:+DtWu4PjGxsJU8FESjPi7C2rTDMojNungejsIzNFe70=
-github.com/DataDog/datadog-api-client-go/v2 v2.22.0/go.mod h1:QKOu6vscsh87fMY1lHfLEmNSunyXImj8BUaUWJXOehc=
+github.com/DataDog/datadog-api-client-go/v2 v2.24.0 h1:7G+eyezFM8gHq5dOHcrQcGVxrXnwPqX2yYHxsLiq3iM=
+github.com/DataDog/datadog-api-client-go/v2 v2.24.0/go.mod h1:QKOu6vscsh87fMY1lHfLEmNSunyXImj8BUaUWJXOehc=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/datadog-go/v5 v5.5.0 h1:G5KHeB8pWBNXT4Jtw0zAkhdxEAWSpWH00geHI6LDrKU=
 github.com/DataDog/datadog-go/v5 v5.5.0/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
@@ -144,8 +144,8 @@ github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj
 github.com/armon/go-radix v1.0.0/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/aws/aws-sdk-go v1.38.35/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
-github.com/aws/aws-sdk-go v1.51.13 h1:j6lgtz9E/XFRiYYnGNrAfWvyyTsuYvWvo2RCt0zqAIs=
-github.com/aws/aws-sdk-go v1.51.13/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
+github.com/aws/aws-sdk-go v1.51.17 h1:Cfa40lCdjv9OxC3X1Ks3a6O1Tu3gOANSyKHOSw/zuWU=
+github.com/aws/aws-sdk-go v1.51.17/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
 github.com/bboreham/go-loser v0.0.0-20230920113527-fcc2c21820a3 h1:6df1vn4bBlDDo4tARvBm7l6KA9iVMnE3NWizDeWSrps=
 github.com/bboreham/go-loser v0.0.0-20230920113527-fcc2c21820a3/go.mod h1:CIWtjkly68+yqLPbvwwR/fjNJA/idrtULjZWh2v1ys0=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
