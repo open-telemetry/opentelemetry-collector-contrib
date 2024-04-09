@@ -1,0 +1,88 @@
+name: build
+on:
+  push:
+    # branches: [ main ]
+    # tags:
+    #   - 'v[0-9]+.[0-9]+.[0-9]+*'
+  merge_group:
+  pull_request:
+env:
+  # TEST_RESULTS: testbed/tests/results/junit/results.xml
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  # SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  setup-environment:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21.9"
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [setup-environment]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21.9"
+          cache: false
+      - name: Docker meta
+        id: docker_meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            name=app
+          tags: |
+            type=sha,prefix={{branch}}-
+      - name: Login to AWS ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v1
+      - id: release_meta
+        env:
+          DOCKER_META_TAGS: ${{ steps.docker_meta.outputs.tags }}
+        run: |
+          RELEASE_TAG=${DOCKER_META_TAGS//app:/}
+          echo "tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+      - name: Build Docker Image
+        env:
+          RELEASE_TAG: ${{ steps.release_meta.outputs.tag }}
+          DOCKER_IMAGE_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+        run: |
+          make docker-otelcontribcol
+          docker tag otelcontribcol:latest ${{DOCKER_IMAGE_REGISTRY}}/opentelemetry-collector-contrib:$RELEASE_TAG
+      - name: Validate Docker Image
+        env:
+          RELEASE_TAG: ${{ steps.release_meta.outputs.tag }}
+        run: |
+            docker run ${{DOCKER_IMAGE_REGISTRY}}/opentelemetry-collector-contrib:$RELEASE_TAG --version
+
+      - name: Push Docker Image
+        run: |
+            docker push ${{DOCKER_IMAGE_REGISTRY}}/opentelemetry-collector-contrib:$GITHUB_SHA
