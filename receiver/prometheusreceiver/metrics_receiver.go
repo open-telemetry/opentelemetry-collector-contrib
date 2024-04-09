@@ -233,6 +233,13 @@ func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config
 }
 
 func (r *pReceiver) applyCfg(cfg *PromConfig) error {
+	if !enableNativeHistogramsGate.IsEnabled() {
+		// Enforce scraping classic histograms to avoid dropping them.
+		for _, scrapeConfig := range cfg.ScrapeConfigs {
+			scrapeConfig.ScrapeClassicHistograms = true
+		}
+	}
+
 	if err := r.scrapeManager.ApplyConfig((*config.Config)(cfg)); err != nil {
 		return err
 	}
@@ -284,6 +291,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		r.cfg.UseStartTimeMetric,
 		startTimeMetricRegex,
 		useCreatedMetricGate.IsEnabled(),
+		enableNativeHistogramsGate.IsEnabled(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.cfg.TrimMetricSuffixes,
 	)
