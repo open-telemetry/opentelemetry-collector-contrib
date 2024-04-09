@@ -2,15 +2,11 @@ name: build
 on:
   push:
     # branches: [ main ]
-    # tags:
-    #   - 'v[0-9]+.[0-9]+.[0-9]+*'
-  merge_group:
-  pull_request:
 env:
   AWS_REGION: us-east-1
   OCTOPUS_HOST: https://multiplayer.octopus.app
   OCTOPUS_SPACE: multiplayer
-  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+  DOCKER_IMAGE_NAME: multiplayer-staging-opentelemetry-collector
 
 # Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
@@ -61,28 +57,59 @@ jobs:
             name=app
           tags: |
             type=sha,prefix={{branch}}-
-      - name: Login to AWS ECR
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v1
+
+      # - name: Login to AWS ECR
+      #   id: ecr-login
+      #   uses: aws-actions/amazon-ecr-login@v1
+      
       - id: release_meta
         env:
           DOCKER_META_TAGS: ${{ steps.docker_meta.outputs.tags }}
         run: |
           RELEASE_TAG=${DOCKER_META_TAGS//app:/}
           echo "tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+
       - name: Build Docker Image
         env:
           RELEASE_TAG: ${{ steps.release_meta.outputs.tag }}
-          DOCKER_IMAGE_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          # DOCKER_IMAGE_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          DOCKER_IMAGE_REGISTRY: aws-ecr.com
         run: |
           make docker-otelcontribcol
-          docker tag otelcontribcol:latest ${DOCKER_IMAGE_REGISTRY}/opentelemetry-collector-contrib:$RELEASE_TAG
+          docker tag otelcontribcol:latest ${DOCKER_IMAGE_REGISTRY}/{DOCKER_IMAGE_NAME}:$RELEASE_TAG
+
       - name: Validate Docker Image
         env:
           RELEASE_TAG: ${{ steps.release_meta.outputs.tag }}
+          # DOCKER_IMAGE_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          DOCKER_IMAGE_REGISTRY: aws-ecr.com
         run: |
-            docker run ${DOCKER_IMAGE_REGISTRY}/opentelemetry-collector-contrib:$RELEASE_TAG --version
+          docker run ${DOCKER_IMAGE_REGISTRY}/${DOCKER_IMAGE_NAME}:$RELEASE_TAG --version
 
       - name: Push Docker Image
+        env:
+          RELEASE_TAG: ${{ steps.release_meta.outputs.tag }}
+          # DOCKER_IMAGE_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          DOCKER_IMAGE_REGISTRY: aws-ecr.com
         run: |
-            docker push ${DOCKER_IMAGE_REGISTRY}/opentelemetry-collector-contrib:$GITHUB_SHA
+          docker push ${DOCKER_IMAGE_REGISTRY}/${DOCKER_IMAGE_NAME}:$RELEASE_TAG
+
+      - name: Get short commit hash
+        id: commit
+        uses: pr-mpt/actions-commit-hash@v2
+
+      - name: Create octopus release
+        env:
+          OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
+          OCTOPUS_HOST: ${{ env.OCTOPUS_HOST }}
+          OCTOPUS_SPACE: ${{ env.OCTOPUS_SPACE }}
+          COMMIT_SHORT: ${{ steps.commit.outputs.short }}
+          COMMIT_SHA: ${{ github.sha }}
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+          RELEASE_TAG: ${{ steps.release_meta.outputs.tag }}
+        run: |
+          RELEASE_NOTES="[GitHub commit: ${COMMIT_SHORT}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${COMMIT_SHA}) / [GitHub branch: ${BRANCH_NAME}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${BRANCH_NAME})"
+          SPACE_ID=$(curl --silent -H "X-Octopus-ApiKey:$OCTOPUS_API_KEY" -H "Content-Type:application/json" "$OCTOPUS_HOST/api/spaces/all?partialName=$OCTOPUS_SPACE" | jq -r -c '.[].Id')
+          PROJECT_ID=$(curl --silent -H "X-Octopus-ApiKey:$OCTOPUS_API_KEY" -H "Content-Type:application/json" "$OCTOPUS_HOST/api/projects/$SERVICE_NAME" | jq -r -c '.Id')
+          BODY='{"ProjectId":"'$PROJECT_ID'","SpaceId": "'$SPACE_ID'","Version":"'$RELEASE_TAG'","ReleaseNotes": "'$RELEASE_NOTES'"}'
+          curl -X POST --write-out %{http_code} --silent --output /dev/null -H "X-Octopus-ApiKey:$OCTOPUS_API_KEY" -H "Content-Type:application/json" -d "$BODY" "$OCTOPUS_HOST/api/releases"
