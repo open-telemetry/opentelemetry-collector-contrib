@@ -76,7 +76,7 @@ jobs:
           DOCKER_IMAGE_REGISTRY: aws-ecr.com
         run: |
           make docker-otelcontribcol
-          docker tag otelcontribcol:latest ${DOCKER_IMAGE_REGISTRY}/{DOCKER_IMAGE_NAME}:$RELEASE_TAG
+          docker tag otelcontribcol:latest ${DOCKER_IMAGE_REGISTRY}/${DOCKER_IMAGE_NAME}:$RELEASE_TAG
 
       - name: Validate Docker Image
         env:
