@@ -173,6 +173,10 @@ func (c *customCapabilityHandler) Unregister() {
 	c.unregisteredMux.Lock()
 	defer c.unregisteredMux.Unlock()
 
+	if c.unregistered {
+		return
+	}
+
 	c.unregistered = true
 	c.registry.RemoveCustomCapability(c.capability, c.selfElement)
 }
