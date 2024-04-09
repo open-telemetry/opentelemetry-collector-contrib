@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	github.com/stretchr/testify v1.9.0
+	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/component v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/config/confighttp v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/collector/config/configretry v0.97.1-0.20240404121116-4f1a8936d26b
@@ -26,6 +27,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
