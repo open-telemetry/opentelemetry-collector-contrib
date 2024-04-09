@@ -57,7 +57,7 @@ func TestReceiverTLS(t *testing.T) {
 						Secret:   testSecret,
 						Endpoint: testAddr,
 						TLS: &configtls.ServerConfig{
-							TLSSetting: configtls.Config{
+							Config: configtls.Config{
 								CertFile: filepath.Join("testdata", "cert", "server.crt"),
 								KeyFile:  filepath.Join("testdata", "cert", "server.key"),
 							},

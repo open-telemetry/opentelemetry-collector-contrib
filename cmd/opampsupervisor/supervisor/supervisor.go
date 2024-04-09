@@ -240,7 +240,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	err = srv.Start(newServerSettings(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", supervisorPort),
-		onConnectingFunc: func(request *http.Request) {
+		onConnectingFunc: func(_ *http.Request) {
 			connected.Store(true)
 
 		},
@@ -372,10 +372,6 @@ func (s *Supervisor) startOpAMP() error {
 				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043
 				s.logger.Debug("Received ConnectionSettings request")
 				return nil
-			},
-			OnOpampConnectionSettingsAcceptedFunc: func(_ context.Context, _ *protobufs.OpAMPConnectionSettings) {
-				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043
-				s.logger.Debug("ConnectionSettings accepted")
 			},
 			OnCommandFunc: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 				cmdType := command.GetType()

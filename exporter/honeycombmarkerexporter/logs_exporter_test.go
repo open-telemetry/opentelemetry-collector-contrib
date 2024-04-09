@@ -227,7 +227,7 @@ func TestExportMarkers_Error(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			markerServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			markerServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 				rw.WriteHeader(tt.responseCode)
 			}))
 			defer markerServer.Close()
@@ -277,7 +277,7 @@ func TestExportMarkers_NoAPICall(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			markerServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			markerServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 				assert.Fail(t, "should not call the markers api")
 				rw.WriteHeader(http.StatusBadRequest) // 400
 			}))

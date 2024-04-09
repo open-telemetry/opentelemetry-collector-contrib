@@ -33,7 +33,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.Encoding = "utf-8"
 					cfg.SplitConfig.LineStartPattern = "ABC"
 					cfg.TLS = &configtls.ServerConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CertFile: "foo",
 							KeyFile:  "foo2",
 							CAFile:   "foo3",
