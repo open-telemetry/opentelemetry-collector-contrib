@@ -383,7 +383,7 @@ func (f *factory) createTracesExporter(
 ) (exporter.Traces, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
 	if noAPMStatsFeatureGate.IsEnabled() {
-		set.Logger.Warn(
+		set.Logger.Info(
 			"Trace metrics are now disabled in the Datadog Exporter by default. To continue receiving Trace Metrics, configure the Datadog Connector or disable the feature gate.",
 			zap.String("documentation", "https://docs.datadoghq.com/opentelemetry/guide/migration/"),
 			zap.String("feature gate ID", noAPMStatsFeatureGate.ID()),

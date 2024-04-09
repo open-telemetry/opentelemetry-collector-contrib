@@ -48,11 +48,12 @@ type pReceiver struct {
 	configLoaded        chan struct{}
 	loadConfigOnce      sync.Once
 
-	settings         receiver.CreateSettings
-	scrapeManager    *scrape.Manager
-	discoveryManager *discovery.Manager
-	httpClient       *http.Client
-	registerer       prometheus.Registerer
+	settings          receiver.CreateSettings
+	scrapeManager     *scrape.Manager
+	discoveryManager  *discovery.Manager
+	httpClient        *http.Client
+	registerer        prometheus.Registerer
+	unregisterMetrics func()
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -245,11 +246,20 @@ func (r *pReceiver) applyCfg(cfg *PromConfig) error {
 }
 
 func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Logger) error {
-	sdMetrics, err := discovery.CreateAndRegisterSDMetrics(r.registerer)
+	// Some SD mechanisms use the "refresh" package, which has its own metrics.
+	refreshSdMetrics := discovery.NewRefreshMetrics(r.registerer)
+
+	// Register the metrics specific for each SD mechanism, and the ones for the refresh package.
+	sdMetrics, err := discovery.RegisterSDMetrics(r.registerer, refreshSdMetrics)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to register service discovery metrics: %w", err)
 	}
 	r.discoveryManager = discovery.NewManager(ctx, logger, r.registerer, sdMetrics)
+	if r.discoveryManager == nil {
+		// NewManager can sometimes return nil if it encountered an error, but
+		// the error message is logged separately.
+		return fmt.Errorf("failed to create discovery manager")
+	}
 
 	go func() {
 		r.settings.Logger.Info("Starting discovery manager")
@@ -293,6 +303,15 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 	}
 	r.scrapeManager = scrapeManager
 
+	r.unregisterMetrics = func() {
+		refreshSdMetrics.Unregister()
+		for _, sdMetric := range sdMetrics {
+			sdMetric.Unregister()
+		}
+		r.discoveryManager.UnregisterMetrics()
+		r.scrapeManager.UnregisterMetrics()
+	}
+
 	go func() {
 		// The scrape manager needs to wait for the configuration to be loaded before beginning
 		<-r.configLoaded
@@ -330,5 +349,8 @@ func (r *pReceiver) Shutdown(context.Context) error {
 		r.scrapeManager.Stop()
 	}
 	close(r.targetAllocatorStop)
+	if r.unregisterMetrics != nil {
+		r.unregisterMetrics()
+	}
 	return nil
 }
