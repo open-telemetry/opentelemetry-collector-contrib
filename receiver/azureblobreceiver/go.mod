@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/Azure/azure-event-hubs-go/v3 v3.6.2
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.1
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.97.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.97.1-0.20240404121116-4f1a8936d26b
@@ -22,7 +22,7 @@ require (
 require (
 	github.com/Azure/azure-amqp-common-go/v4 v4.2.0 // indirect
 	github.com/Azure/azure-sdk-for-go v65.0.0+incompatible // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.2 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.11.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.2 // indirect
 	github.com/Azure/go-amqp v1.0.2 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect

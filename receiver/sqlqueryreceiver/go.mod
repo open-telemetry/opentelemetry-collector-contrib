@@ -52,7 +52,7 @@ require (
 	github.com/aws/smithy-go v1.16.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/containerd v1.7.12 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
@@ -126,7 +126,7 @@ require (
 	github.com/prometheus/procfs v0.13.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.3 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
-	github.com/sijms/go-ora/v2 v2.8.10 // indirect
+	github.com/sijms/go-ora/v2 v2.8.11 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/snowflakedb/gosnowflake v1.9.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect

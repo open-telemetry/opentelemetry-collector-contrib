@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.97.0
 	github.com/prometheus/client_golang v1.19.0
-	github.com/prometheus/client_model v0.6.0
+	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.51.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.97.1-0.20240404121116-4f1a8936d26b
@@ -43,7 +43,7 @@ require (
 	github.com/aws/aws-sdk-go v1.50.32 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20231128003011-0fa0005c9caa // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dennwc/varint v1.0.0 // indirect

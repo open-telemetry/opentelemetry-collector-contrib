@@ -210,14 +210,14 @@ require (
 	github.com/Azure/azure-kusto-go v0.15.2 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.11.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.11.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.2 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5 v5.5.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor v0.11.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.2.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.2 // indirect
 	github.com/Azure/azure-storage-queue-go v0.0.0-20230531184854-c06a8eff66fe // indirect
 	github.com/Azure/go-amqp v1.0.5 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
@@ -308,7 +308,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/checkpoint-restore/go-criu/v5 v5.3.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/cilium/ebpf v0.11.0 // indirect
@@ -560,7 +560,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
-	github.com/prometheus/client_model v0.6.0 // indirect
+	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.51.1 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.13.0 // indirect
@@ -582,7 +582,7 @@ require (
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 // indirect
 	github.com/signalfx/sapm-proto v0.14.0 // indirect
-	github.com/sijms/go-ora/v2 v2.8.10 // indirect
+	github.com/sijms/go-ora/v2 v2.8.11 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/snowflakedb/gosnowflake v1.9.0 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
@@ -708,7 +708,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
 	k8s.io/kubelet v0.29.3 // indirect
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e // indirect
-	sigs.k8s.io/controller-runtime v0.17.2 // indirect
+	sigs.k8s.io/controller-runtime v0.17.3 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
