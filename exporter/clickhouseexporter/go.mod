@@ -3,19 +3,19 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickh
 go 1.21
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.22.2
-	github.com/cenkalti/backoff/v4 v4.2.1
+	github.com/ClickHouse/clickhouse-go/v2 v2.23.0
+	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/jmoiron/sqlx v1.3.5
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.96.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.97.0
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.29.1
-	go.opentelemetry.io/collector/component v0.96.1-0.20240315172937-3b5aee0c7a16
-	go.opentelemetry.io/collector/config/configopaque v1.3.1-0.20240315172937-3b5aee0c7a16
-	go.opentelemetry.io/collector/config/configretry v0.96.1-0.20240315172937-3b5aee0c7a16
-	go.opentelemetry.io/collector/confmap v0.96.1-0.20240315172937-3b5aee0c7a16
-	go.opentelemetry.io/collector/exporter v0.96.1-0.20240315172937-3b5aee0c7a16
-	go.opentelemetry.io/collector/pdata v1.3.1-0.20240315172937-3b5aee0c7a16
-	go.opentelemetry.io/collector/semconv v0.96.1-0.20240315172937-3b5aee0c7a16
+	go.opentelemetry.io/collector/component v0.97.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/config/configretry v0.97.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/confmap v0.97.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/exporter v0.97.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/pdata v1.4.1-0.20240404121116-4f1a8936d26b
+	go.opentelemetry.io/collector/semconv v0.97.1-0.20240404121116-4f1a8936d26b
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
 	go.uber.org/goleak v1.3.0
@@ -30,7 +30,7 @@ require (
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/containerd v1.7.12 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
@@ -77,18 +77,18 @@ require (
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.24.2 // indirect
+	github.com/shirou/gopsutil/v3 v3.24.3 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/collector v0.96.1-0.20240315172937-3b5aee0c7a16 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.96.1-0.20240315172937-3b5aee0c7a16 // indirect
-	go.opentelemetry.io/collector/consumer v0.96.1-0.20240315172937-3b5aee0c7a16 // indirect
-	go.opentelemetry.io/collector/extension v0.96.1-0.20240315172937-3b5aee0c7a16 // indirect
-	go.opentelemetry.io/collector/receiver v0.96.1-0.20240315172937-3b5aee0c7a16 // indirect
+	go.opentelemetry.io/collector v0.97.1-0.20240404121116-4f1a8936d26b // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.97.1-0.20240404121116-4f1a8936d26b // indirect
+	go.opentelemetry.io/collector/consumer v0.97.1-0.20240404121116-4f1a8936d26b // indirect
+	go.opentelemetry.io/collector/extension v0.97.1-0.20240404121116-4f1a8936d26b // indirect
+	go.opentelemetry.io/collector/receiver v0.97.1-0.20240404121116-4f1a8936d26b // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.45.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.46.0 // indirect
@@ -97,7 +97,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230711023510-fffb14384f22 // indirect
 	golang.org/x/mod v0.16.0 // indirect
-	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.15.0 // indirect

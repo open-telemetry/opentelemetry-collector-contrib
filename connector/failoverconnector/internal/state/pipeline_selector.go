@@ -119,7 +119,7 @@ func (p *PipelineSelector) checkContinueRetry(index int) bool {
 }
 
 func (p *PipelineSelector) exceededMaxRetries(idx int) bool {
-	return idx < len(p.pipelineRetries) && (p.loadRetryCount(idx) >= p.constants.MaxRetries)
+	return p.constants.MaxRetries > 0 && idx < len(p.pipelineRetries) && (p.loadRetryCount(idx) >= p.constants.MaxRetries)
 }
 
 // SetToStableIndex returns the CurrentIndex to the known Stable Index

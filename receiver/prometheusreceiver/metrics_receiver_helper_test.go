@@ -160,7 +160,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 	// update attributes value (will use for validation)
 	l := []labels.Label{{Name: "__scheme__", Value: "http"}}
 	for _, t := range tds {
-		t.attributes = internal.CreateResource(t.name, u.Host, l).Attributes()
+		t.attributes = internal.CreateResource(t.name, u.Host, labels.New(l...)).Attributes()
 	}
 	pCfg, err := promcfg.Load(string(cfg), false, gokitlog.NewNopLogger())
 	return mp, (*PromConfig)(pCfg), err
@@ -283,6 +283,12 @@ func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 					return false
 				}
 			}
+		case pmetric.MetricTypeExponentialHistogram:
+			for i := 0; i < m.ExponentialHistogram().DataPoints().Len(); i++ {
+				if !m.ExponentialHistogram().DataPoints().At(i).Flags().NoRecordedValue() {
+					return false
+				}
+			}
 		case pmetric.MetricTypeHistogram:
 			for i := 0; i < m.Histogram().DataPoints().Len(); i++ {
 				if !m.Histogram().DataPoints().At(i).Flags().NoRecordedValue() {
@@ -295,7 +301,7 @@ func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 					return false
 				}
 			}
-		case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
+		case pmetric.MetricTypeEmpty:
 		}
 	}
 	return true
@@ -362,11 +368,13 @@ type metricTypeComparator func(*testing.T, pmetric.Metric)
 type numberPointComparator func(*testing.T, pmetric.NumberDataPoint)
 type histogramPointComparator func(*testing.T, pmetric.HistogramDataPoint)
 type summaryPointComparator func(*testing.T, pmetric.SummaryDataPoint)
+type exponentialHistogramComparator func(*testing.T, pmetric.ExponentialHistogramDataPoint)
 
 type dataPointExpectation struct {
-	numberPointComparator    []numberPointComparator
-	histogramPointComparator []histogramPointComparator
-	summaryPointComparator   []summaryPointComparator
+	numberPointComparator          []numberPointComparator
+	histogramPointComparator       []histogramPointComparator
+	summaryPointComparator         []summaryPointComparator
+	exponentialHistogramComparator []exponentialHistogramComparator
 }
 
 type testExpectation func(*testing.T, pmetric.ResourceMetrics)
@@ -426,7 +434,12 @@ func assertMetricPresent(name string, metricTypeExpectations metricTypeComparato
 						require.Equal(t, m.Summary().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Summary metric '%s' does not match to testdata", name)
 						spc(t, m.Summary().DataPoints().At(i))
 					}
-				case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
+				case pmetric.MetricTypeExponentialHistogram:
+					for _, ehc := range de.exponentialHistogramComparator {
+						require.Equal(t, m.ExponentialHistogram().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Exponential Histogram metric '%s' does not match to testdata", name)
+						ehc(t, m.ExponentialHistogram().DataPoints().At(i))
+					}
+				case pmetric.MetricTypeEmpty:
 				}
 			}
 		}
@@ -521,6 +534,13 @@ func assertHistogramPointFlagNoRecordedValue() histogramPointComparator {
 	}
 }
 
+func assertExponentialHistogramPointFlagNoRecordedValue() exponentialHistogramComparator {
+	return func(t *testing.T, histogramDataPoint pmetric.ExponentialHistogramDataPoint) {
+		assert.True(t, histogramDataPoint.Flags().NoRecordedValue(),
+			"Datapoint flag for staleness marker not found as expected")
+	}
+}
+
 func assertSummaryPointFlagNoRecordedValue() summaryPointComparator {
 	return func(t *testing.T, summaryDataPoint pmetric.SummaryDataPoint) {
 		assert.True(t, summaryDataPoint.Flags().NoRecordedValue(),
@@ -583,6 +603,19 @@ func compareHistogram(count uint64, sum float64, upperBounds []float64, buckets 
 		assert.Equal(t, sum, histogramDataPoint.Sum(), "Histogram sum value does not match")
 		assert.Equal(t, upperBounds, histogramDataPoint.ExplicitBounds().AsRaw(), "Histogram upper bounds values do not match")
 		assert.Equal(t, buckets, histogramDataPoint.BucketCounts().AsRaw(), "Histogram bucket count values do not match")
+	}
+}
+
+func compareExponentialHistogram(scale int32, count uint64, sum float64, zeroCount uint64, negativeOffset int32, negativeBuckets []uint64, positiveOffset int32, positiveBuckets []uint64) exponentialHistogramComparator {
+	return func(t *testing.T, exponentialHistogramDataPoint pmetric.ExponentialHistogramDataPoint) {
+		assert.Equal(t, scale, exponentialHistogramDataPoint.Scale(), "Exponential Histogram scale value does not match")
+		assert.Equal(t, count, exponentialHistogramDataPoint.Count(), "Exponential Histogram count value does not match")
+		assert.Equal(t, sum, exponentialHistogramDataPoint.Sum(), "Exponential Histogram sum value does not match")
+		assert.Equal(t, zeroCount, exponentialHistogramDataPoint.ZeroCount(), "Exponential Histogram zero count value does not match")
+		assert.Equal(t, negativeOffset, exponentialHistogramDataPoint.Negative().Offset(), "Exponential Histogram negative offset value does not match")
+		assert.Equal(t, negativeBuckets, exponentialHistogramDataPoint.Negative().BucketCounts().AsRaw(), "Exponential Histogram negative bucket count values do not match")
+		assert.Equal(t, positiveOffset, exponentialHistogramDataPoint.Positive().Offset(), "Exponential Histogram positive offset value does not match")
+		assert.Equal(t, positiveBuckets, exponentialHistogramDataPoint.Positive().BucketCounts().AsRaw(), "Exponential Histogram positive bucket count values do not match")
 	}
 }
 
