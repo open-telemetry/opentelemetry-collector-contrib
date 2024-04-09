@@ -33,6 +33,7 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoint = defaultEndpoint
 
+	createSchema := true
 	storageID := component.MustNewIDWithName("file_storage", "clickhouse")
 
 	tests := []struct {
@@ -55,6 +56,7 @@ func TestLoadConfig(t *testing.T) {
 				LogsTableName:    "otel_logs",
 				TracesTableName:  "otel_traces",
 				MetricsTableName: "otel_metrics",
+				CreateSchema:     &createSchema,
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 5 * time.Second,
 				},
@@ -271,6 +273,48 @@ func TestConfig_buildDSN(t *testing.T) {
 				assert.Equalf(t, tt.want, got, "buildDSN(%v)", tt.args.database)
 			}
 
+		})
+	}
+}
+
+func TestShouldCreateSchema(t *testing.T) {
+	t.Parallel()
+
+	createSchemaTrue := true
+	createSchemaFalse := false
+
+	caseDefault := createDefaultConfig().(*Config)
+	caseCreateSchemaTrue := createDefaultConfig().(*Config)
+	caseCreateSchemaTrue.CreateSchema = &createSchemaTrue
+	caseCreateSchemaFalse := createDefaultConfig().(*Config)
+	caseCreateSchemaFalse.CreateSchema = &createSchemaFalse
+
+	tests := []struct {
+		name     string
+		input    *Config
+		expected bool
+	}{
+		{
+			name:     "default",
+			input:    caseDefault,
+			expected: true,
+		},
+		{
+			name:     "true",
+			input:    caseCreateSchemaTrue,
+			expected: true,
+		},
+		{
+			name:     "false",
+			input:    caseCreateSchemaFalse,
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("ShouldCreateSchema case %s", tt.name), func(t *testing.T) {
+			assert.NoError(t, component.ValidateConfig(tt))
+			assert.Equal(t, tt.expected, tt.input.ShouldCreateSchema())
 		})
 	}
 }

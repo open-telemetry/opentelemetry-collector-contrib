@@ -42,6 +42,10 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 }
 
 func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
+	if !e.cfg.ShouldCreateSchema() {
+		return nil
+	}
+
 	if err := createDatabase(ctx, e.cfg); err != nil {
 		return err
 	}
