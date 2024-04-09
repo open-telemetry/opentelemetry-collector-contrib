@@ -185,12 +185,12 @@ func TestExporter_PushEvent(t *testing.T) {
 		})(server.URL)
 		exporter := newTestExporter(t, server.URL, func(cfg *Config) { *cfg = *testConfig })
 		mustSendLogsWithAttributes(t, exporter,
-			// resource attrs
+			// record attrs
 			map[string]string{
 				"application":  "myapp",
 				"service.name": "myservice",
 			},
-			// record attrs
+			// resource attrs
 			map[string]string{
 				"attrKey1":             "abc",
 				"attrKey2":             "def",
