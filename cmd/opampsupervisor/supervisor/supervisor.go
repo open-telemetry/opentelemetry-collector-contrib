@@ -150,7 +150,9 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	logger.Debug("Supervisor starting",
 		zap.String("id", s.instanceID.String()))
 
-	s.loadAgentEffectiveConfig()
+	if err = s.loadAgentEffectiveConfig(); err != nil {
+		return nil, fmt.Errorf("Unable to load or write effective config file: %w", err)
+	}
 
 	if err = s.startOpAMP(); err != nil {
 		return nil, fmt.Errorf("cannot start OpAMP client: %w", err)
@@ -493,7 +495,10 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 		// No effective config file, just use the initial config.
 		s.logger.Info("Composing default effective configuration for agent and writing to filesystem.")
 		effectiveConfigBytes = s.composeDefaultLocalConfig()
-		os.WriteFile(s.effectiveConfigFilePath, effectiveConfigBytes, 0644)
+		err := os.WriteFile(s.effectiveConfigFilePath, effectiveConfigBytes, 0643)
+		if err != nil {
+			return err;
+		}
 	}
 
 	s.effectiveConfig.Store(string(effectiveConfigBytes))
