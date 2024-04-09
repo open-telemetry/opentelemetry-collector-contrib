@@ -80,5 +80,5 @@ type ErrGap struct {
 }
 
 func (e ErrGap) Error() string {
-	return fmt.Sprintf("gap in stream from %s to %s", e.From, e.To)
+	return fmt.Sprintf("gap in stream from %s to %s. samples were likely lost in transit", e.From, e.To)
 }
