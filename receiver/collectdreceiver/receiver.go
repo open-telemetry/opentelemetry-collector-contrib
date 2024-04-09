@@ -69,7 +69,7 @@ func (cdr *collectdReceiver) Start(ctx context.Context, host component.Host) err
 	if err != nil {
 		return err
 	}
-	l, err := cdr.config.ServerConfig.ToListener()
+	l, err := cdr.config.ServerConfig.ToListenerContext(ctx)
 	if err != nil {
 		return err
 	}

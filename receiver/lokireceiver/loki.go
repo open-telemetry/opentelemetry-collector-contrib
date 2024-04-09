@@ -95,7 +95,7 @@ func (r *lokiReceiver) startProtocolsServers(ctx context.Context, host component
 		if err != nil {
 			return fmt.Errorf("failed create http server error: %w", err)
 		}
-		err = r.startHTTPServer()
+		err = r.startHTTPServer(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to start http server error: %w", err)
 		}
@@ -118,9 +118,9 @@ func (r *lokiReceiver) startProtocolsServers(ctx context.Context, host component
 	return err
 }
 
-func (r *lokiReceiver) startHTTPServer() error {
+func (r *lokiReceiver) startHTTPServer(ctx context.Context) error {
 	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.conf.HTTP.Endpoint))
-	listener, err := r.conf.HTTP.ToListener()
+	listener, err := r.conf.HTTP.ToListenerContext(ctx)
 	if err != nil {
 		return err
 	}

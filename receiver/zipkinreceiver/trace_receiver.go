@@ -98,7 +98,7 @@ func (zr *zipkinReceiver) Start(ctx context.Context, host component.Host) error 
 	}
 
 	var listener net.Listener
-	listener, err = zr.config.ServerConfig.ToListener()
+	listener, err = zr.config.ServerConfig.ToListenerContext(ctx)
 	if err != nil {
 		return err
 	}

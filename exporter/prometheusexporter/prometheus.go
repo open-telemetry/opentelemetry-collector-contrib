@@ -58,7 +58,7 @@ func newPrometheusExporter(config *Config, set exporter.CreateSettings) (*promet
 }
 
 func (pe *prometheusExporter) Start(ctx context.Context, host component.Host) error {
-	ln, err := pe.config.ToListener()
+	ln, err := pe.config.ToListenerContext(ctx)
 	if err != nil {
 		return err
 	}

@@ -189,7 +189,7 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 
 	var ln net.Listener
 	// set up the listener
-	ln, err := r.config.ServerConfig.ToListener()
+	ln, err := r.config.ServerConfig.ToListenerContext(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
 	}

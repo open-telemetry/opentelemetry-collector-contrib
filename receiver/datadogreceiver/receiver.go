@@ -61,7 +61,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	if err != nil {
 		return fmt.Errorf("failed to create server definition: %w", err)
 	}
-	hln, err := ddr.config.ServerConfig.ToListener()
+	hln, err := ddr.config.ServerConfig.ToListenerContext(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create datadog listener: %w", err)
 	}

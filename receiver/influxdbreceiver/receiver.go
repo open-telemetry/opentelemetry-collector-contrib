@@ -65,7 +65,7 @@ func newMetricsReceiver(config *Config, settings receiver.CreateSettings, nextCo
 }
 
 func (r *metricsReceiver) Start(ctx context.Context, host component.Host) error {
-	ln, err := r.httpServerSettings.ToListener()
+	ln, err := r.httpServerSettings.ToListenerContext(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", r.httpServerSettings.Endpoint, err)
 	}

@@ -89,7 +89,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 
 	// create listener from config
-	ln, err := er.cfg.ServerConfig.ToListener()
+	ln, err := er.cfg.ServerConfig.ToListenerContext(ctx)
 	if err != nil {
 		return err
 	}

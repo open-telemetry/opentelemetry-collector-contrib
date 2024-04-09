@@ -62,7 +62,7 @@ func (h *SamplingHTTPServer) Start(ctx context.Context, host component.Host) err
 	}
 
 	var hln net.Listener
-	hln, err = h.settings.ToListener()
+	hln, err = h.settings.ToListenerContext(ctx)
 	if err != nil {
 		return err
 	}

@@ -117,7 +117,7 @@ func (fmr *firehoseReceiver) Start(ctx context.Context, host component.Host) err
 	}
 
 	var listener net.Listener
-	listener, err = fmr.config.ServerConfig.ToListener()
+	listener, err = fmr.config.ServerConfig.ToListenerContext(ctx)
 	if err != nil {
 		return err
 	}
