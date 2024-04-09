@@ -57,7 +57,10 @@ func TestScraperLoop(t *testing.T) {
 	client := make(mockClient)
 	consumer := make(mockConsumer)
 
-	r, err := newMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumer, client.factory)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	r, err := newMetricsReceiver(ctx, receivertest.NewNopCreateSettings(), cfg, consumer, client.factory)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 
@@ -71,14 +74,14 @@ func TestScraperLoop(t *testing.T) {
 		}
 	}()
 
-	assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	md := <-consumer
 	assert.Equal(t, 1, md.ResourceMetrics().Len())
 
 	assertStatsEqualToMetrics(t, genContainerStats(), md)
 
-	assert.NoError(t, r.Shutdown(context.Background()))
+	assert.NoError(t, r.Shutdown(ctx))
 }
 
 type mockClient chan containerStatsReport
