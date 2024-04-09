@@ -125,6 +125,7 @@ func (cfg *Config) Validate() error {
 
 	return validateSASLConfig(cfg.Authentication.SASL)
 }
+
 func validateSASLConfig(c *kafka.SASLConfig) error {
 	if c == nil {
 		return nil
