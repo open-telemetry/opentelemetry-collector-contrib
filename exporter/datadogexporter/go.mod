@@ -6,8 +6,16 @@ toolchain go1.22.1
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.111
-	github.com/DataDog/datadog-agent/pkg/proto v0.52.1-0.20240321095122-a3c5dbb936ae
-	github.com/DataDog/datadog-agent/pkg/trace v0.52.1-0.20240321095122-a3c5dbb936ae
+	github.com/DataDog/datadog-agent/comp/core/config v0.52.1
+	github.com/DataDog/datadog-agent/comp/core/log v0.52.1
+	github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder v0.52.1
+	github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.52.1
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.52.1
+	github.com/DataDog/datadog-agent/pkg/config/model v0.52.1
+	github.com/DataDog/datadog-agent/pkg/config/setup v0.52.1
+	github.com/DataDog/datadog-agent/pkg/proto v0.52.1
+	github.com/DataDog/datadog-agent/pkg/serializer v0.52.1
+	github.com/DataDog/datadog-agent/pkg/trace v0.52.1
 	github.com/DataDog/datadog-api-client-go/v2 v2.24.0
 	github.com/DataDog/datadog-go/v5 v5.5.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
@@ -80,12 +88,41 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.1 // indirect
 	github.com/Code-Hex/go-generics-cache v1.3.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.52.1-0.20240321095122-a3c5dbb936ae // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.52.1-0.20240321095122-a3c5dbb936ae // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.52.1-0.20240321095122-a3c5dbb936ae // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.52.1-0.20240321095122-a3c5dbb936ae // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.52.1-0.20240321095122-a3c5dbb936ae // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.52.1-0.20240321095122-a3c5dbb936ae // indirect
+	github.com/DataDog/datadog-agent/comp/core/secrets v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/comp/core/status v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/comp/core/telemetry v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/aggregator/ckey v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/env v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/utils v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/metrics v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/process/util/api v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/status/health v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/tagset v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/telemetry v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/backoff v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/buf v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/common v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/compression v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/executable v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/fxutil v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/http v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/json v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/optional v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/sort v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/system v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/winutil v0.52.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.52.1 // indirect
 	github.com/DataDog/go-sqllexer v0.0.9 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/DataDog/mmh3 v0.0.0-20210722141835-012dc69a9e49 // indirect
@@ -118,7 +155,7 @@ require (
 	github.com/envoyproxy/go-control-plane v0.12.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
 	github.com/expr-lang/expr v1.16.3 // indirect
-	github.com/fatih/color v1.15.0 // indirect
+	github.com/fatih/color v1.16.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
@@ -164,8 +201,10 @@ require (
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
+	github.com/hashicorp/hcl v1.0.1-vault-5 // indirect
 	github.com/hashicorp/nomad/api v0.0.0-20240306004928-3e7191ccb702 // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
+	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95 // indirect
 	github.com/hetznercloud/hcloud-go/v2 v2.6.0 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
@@ -191,7 +230,7 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.19 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/miekg/dns v1.1.58 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -230,6 +269,7 @@ require (
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.13.0 // indirect
 	github.com/prometheus/prometheus v0.51.2-0.20240405174432-b4a973753c6e // indirect
+	github.com/richardartoul/molecule v1.0.1-0.20221107223329-32cfee06a052 // indirect
 	github.com/rs/cors v1.10.1 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.25 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
