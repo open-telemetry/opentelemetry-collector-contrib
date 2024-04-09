@@ -104,7 +104,6 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 		document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
 		document.AddAttribute("Body", record.Body())
 		m.encodeAttributes(&document, record.Attributes())
-		document.AddAttributes("Attributes", record.Attributes())
 		document.AddAttributes("Resource", resource.Attributes())
 		document.AddAttributes("Scope", scopeToAttributes(scope))
 	}
