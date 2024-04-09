@@ -79,20 +79,12 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 
 	ctags := make(map[string]string, len(cfg.(*Config).Traces.ResourceAttributesAsContainerTags))
 	for _, val := range cfg.(*Config).Traces.ResourceAttributesAsContainerTags {
-		ctags[val] = ""
-	}
-	ddTags := attributes.ContainerTagFromAttributes(ctags)
-
-	for key := range ctags {
-		// TODO: we need to expose the container mappings from the attributes package
-		tags := attributes.ContainerTagFromAttributes(map[string]string{key: ""})
-		// It means there is no mapping for the resource attribute
-		if len(tags) == 0 {
-			ddTags[key] = ""
+		if v, ok := attributes.ContainerMappings[val]; ok {
+			ctags[v] = ""
+		} else {
+			ctags[val] = ""
 		}
-
 	}
-
 	ctx := context.Background()
 	return &traceToMetricConnector{
 		logger:            set.Logger,
@@ -100,7 +92,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 		translator:        trans,
 		in:                in,
 		metricsConsumer:   metricsConsumer,
-		enrichedTags:      ddTags,
+		enrichedTags:      ctags,
 		containerTagCache: cache.New(cacheExpiration, cacheCleanupInterval),
 		exit:              make(chan struct{}),
 	}, nil

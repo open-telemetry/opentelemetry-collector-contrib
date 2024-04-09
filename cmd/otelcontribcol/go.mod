@@ -284,7 +284,7 @@ require (
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.13.4 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.4 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.14.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.13.4 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.4 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.13.4 // indirect

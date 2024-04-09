@@ -6,7 +6,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.1-0.20240321095122-a3c5dbb936ae
 	github.com/DataDog/datadog-agent/pkg/trace v0.52.1-0.20240321095122-a3c5dbb936ae
 	github.com/DataDog/datadog-go/v5 v5.5.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.13.4
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.14.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.13.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.97.0
