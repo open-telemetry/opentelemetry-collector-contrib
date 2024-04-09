@@ -7,24 +7,29 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 )
 
+// customCapabilityClient is a subset of OpAMP client containing only the
+type customCapabilityClient interface {
+	SetCustomCapabilities(customCapabilities *protobufs.CustomCapabilities) error
+	SendCustomMessage(message *protobufs.CustomMessage) (messageSendingChannel chan struct{}, err error)
+}
+
 type customCapabilityRegistry struct {
 	mux                   *sync.Mutex
 	capabilityToCallbacks map[string]*list.List
-	opampClient           client.OpAMPClient
+	client                customCapabilityClient
 	logger                *zap.Logger
 }
 
-func newCustomCapabilityRegistry(logger *zap.Logger, opampClient client.OpAMPClient) *customCapabilityRegistry {
+func newCustomCapabilityRegistry(logger *zap.Logger, client customCapabilityClient) *customCapabilityRegistry {
 	return &customCapabilityRegistry{
 		mux:                   &sync.Mutex{},
 		capabilityToCallbacks: make(map[string]*list.List),
-		opampClient:           opampClient,
+		client:                client,
 		logger:                logger,
 	}
 }
@@ -39,7 +44,7 @@ func (cr *customCapabilityRegistry) Register(capability string, callback CustomM
 		capabilities = append(capabilities, capability)
 	}
 
-	err := cr.opampClient.SetCustomCapabilities(&protobufs.CustomCapabilities{
+	err := cr.client.SetCustomCapabilities(&protobufs.CustomCapabilities{
 		Capabilities: capabilities,
 	})
 	if err != nil {
@@ -54,7 +59,7 @@ func (cr *customCapabilityRegistry) Register(capability string, callback CustomM
 
 	callbackElem := capabilityList.PushBack(callback)
 
-	cc := newCustomCapability(cr, cr.opampClient, capability)
+	cc := newCustomCapability(cr, cr.client, capability)
 
 	// note: We'll have to set the self element in order for the custom capability to remove itself.
 	cc.selfElement = callbackElem
@@ -101,7 +106,7 @@ func (cr *customCapabilityRegistry) RemoveCustomCapability(capability string, ca
 	}
 
 	capabilities := cr.capabilities()
-	err := cr.opampClient.SetCustomCapabilities(&protobufs.CustomCapabilities{
+	err := cr.client.SetCustomCapabilities(&protobufs.CustomCapabilities{
 		Capabilities: capabilities,
 	})
 	if err != nil {
@@ -124,14 +129,14 @@ type customCapabilityHandler struct {
 
 	capability   string
 	selfElement  *list.Element
-	opampClient  client.OpAMPClient
+	opampClient  customCapabilityClient
 	registry     *customCapabilityRegistry
 	unregistered bool
 }
 
 func newCustomCapability(
 	registry *customCapabilityRegistry,
-	opampClient client.OpAMPClient,
+	opampClient customCapabilityClient,
 	capability string,
 ) *customCapabilityHandler {
 	return &customCapabilityHandler{
