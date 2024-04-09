@@ -3,9 +3,10 @@
 
 package filter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/filter"
 import (
-	"go.uber.org/multierr"
 	"os"
 	"time"
+
+	"go.uber.org/multierr"
 )
 
 type excludeOlderThanOption struct {
