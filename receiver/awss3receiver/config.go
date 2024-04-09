@@ -32,11 +32,16 @@ type Config struct {
 	EndTime      string             `mapstructure:"endtime"`
 }
 
+const (
+	S3PartitionMinute = "minute"
+	S3PartitionHour   = "hour"
+)
+
 func createDefaultConfig() component.Config {
 	return &Config{
 		S3Downloader: S3DownloaderConfig{
 			Region:      "us-east-1",
-			S3Partition: "minute",
+			S3Partition: S3PartitionMinute,
 		},
 	}
 }
@@ -45,6 +50,9 @@ func (c Config) Validate() error {
 	var errs error
 	if c.S3Downloader.S3Bucket == "" {
 		errs = multierr.Append(errs, errors.New("bucket is required"))
+	}
+	if c.S3Downloader.S3Partition != S3PartitionHour && c.S3Downloader.S3Partition != S3PartitionMinute {
+		errs = multierr.Append(errs, errors.New("s3_partition must be either 'hour' or 'minute'"))
 	}
 	if c.StartTime == "" {
 		errs = multierr.Append(errs, errors.New("starttime is required"))

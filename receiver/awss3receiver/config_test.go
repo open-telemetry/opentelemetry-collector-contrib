@@ -26,7 +26,7 @@ func TestConfig_Validate_Valid(t *testing.T) {
 			Region:           "",
 			S3Bucket:         "abucket",
 			S3Prefix:         "",
-			S3Partition:      "",
+			S3Partition:      "minute",
 			FilePrefix:       "",
 			Endpoint:         "",
 			S3ForcePathStyle: false,
@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "1"),
-			errorMessage: "unable to parse starttime (a date), accepted formats: 2006-01-02 15:04, 2006-01-02; unable to parse endtime (2024-02-03a), accepted formats: 2006-01-02 15:04, 2006-01-02",
+			errorMessage: "s3_partition must be either 'hour' or 'minute'; unable to parse starttime (a date), accepted formats: 2006-01-02 15:04, 2006-01-02; unable to parse endtime (2024-02-03a), accepted formats: 2006-01-02 15:04, 2006-01-02",
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),

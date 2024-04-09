@@ -77,6 +77,8 @@ func (r *awss3TraceReceiver) receiveBytes(ctx context.Context, key string, data 
 			return err
 		}
 		return r.consumer.ConsumeTraces(ctx, traces)
+	} else {
+		r.logger.Warn("Unsupported file format", zap.String("key", key))
 	}
 	return nil
 }

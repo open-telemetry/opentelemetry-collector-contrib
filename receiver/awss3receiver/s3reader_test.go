@@ -32,8 +32,8 @@ func Test_getTimeKeyPartitionMinute(t *testing.T) {
 func Test_s3Reader_getObjectPrefixForTime(t *testing.T) {
 	type args struct {
 		s3Prefix      string
+		s3Partition   string
 		filePrefix    string
-		getTimeKey    func(t time.Time) string
 		telemetryType string
 	}
 	tests := []struct {
@@ -45,8 +45,8 @@ func Test_s3Reader_getObjectPrefixForTime(t *testing.T) {
 			name: "hour, prefix and file prefix",
 			args: args{
 				s3Prefix:      "prefix",
+				s3Partition:   "hour",
 				filePrefix:    "file",
-				getTimeKey:    getTimeKeyPartitionHour,
 				telemetryType: "traces",
 			},
 			want: "prefix/year=2021/month=02/day=01/hour=17/filetraces_",
@@ -55,8 +55,8 @@ func Test_s3Reader_getObjectPrefixForTime(t *testing.T) {
 			name: "minute, prefix and file prefix",
 			args: args{
 				s3Prefix:      "prefix",
+				s3Partition:   "minute",
 				filePrefix:    "file",
-				getTimeKey:    getTimeKeyPartitionMinute,
 				telemetryType: "metrics",
 			},
 			want: "prefix/year=2021/month=02/day=01/hour=17/minute=32/filemetrics_",
@@ -65,8 +65,8 @@ func Test_s3Reader_getObjectPrefixForTime(t *testing.T) {
 			name: "hour, prefix and no file prefix",
 			args: args{
 				s3Prefix:      "prefix",
+				s3Partition:   "hour",
 				filePrefix:    "",
-				getTimeKey:    getTimeKeyPartitionHour,
 				telemetryType: "logs",
 			},
 			want: "prefix/year=2021/month=02/day=01/hour=17/logs_",
@@ -75,8 +75,8 @@ func Test_s3Reader_getObjectPrefixForTime(t *testing.T) {
 			name: "minute, no prefix and no file prefix",
 			args: args{
 				s3Prefix:      "",
+				s3Partition:   "minute",
 				filePrefix:    "",
-				getTimeKey:    getTimeKeyPartitionMinute,
 				telemetryType: "metrics",
 			},
 			want: "year=2021/month=02/day=01/hour=17/minute=32/metrics_",
@@ -85,9 +85,9 @@ func Test_s3Reader_getObjectPrefixForTime(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			reader := s3Reader{
-				s3Prefix:   test.args.s3Prefix,
-				filePrefix: test.args.filePrefix,
-				getTimeKey: test.args.getTimeKey,
+				s3Prefix:    test.args.s3Prefix,
+				s3Partition: test.args.s3Partition,
+				filePrefix:  test.args.filePrefix,
 			}
 			result := reader.getObjectPrefixForTime(testTime, test.args.telemetryType)
 			require.Equal(t, test.want, result)
@@ -166,13 +166,12 @@ func Test_readTelemetryForTime(t *testing.T) {
 				Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
 			}, nil
 		}),
-		s3Bucket:   "bucket",
-		s3Prefix:   "",
-		filePrefix: "",
-		startTime:  testTime,
-		endTime:    testTime.Add(time.Minute),
-		timeStep:   time.Minute,
-		getTimeKey: getTimeKeyPartitionMinute,
+		s3Bucket:    "bucket",
+		s3Partition: "minute",
+		s3Prefix:    "",
+		filePrefix:  "",
+		startTime:   testTime,
+		endTime:     testTime.Add(time.Minute),
 	}
 
 	dataCallbackKeys := make([]string, 0)
@@ -215,13 +214,12 @@ func Test_readTelemetryForTime_GetObjectError(t *testing.T) {
 			require.Equal(t, testKey, *params.Key)
 			return nil, testError
 		}),
-		s3Bucket:   "bucket",
-		s3Prefix:   "",
-		filePrefix: "",
-		startTime:  testTime,
-		endTime:    testTime.Add(time.Minute),
-		timeStep:   time.Minute,
-		getTimeKey: getTimeKeyPartitionMinute,
+		s3Bucket:    "bucket",
+		s3Partition: "minute",
+		s3Prefix:    "",
+		filePrefix:  "",
+		startTime:   testTime,
+		endTime:     testTime.Add(time.Minute),
 	}
 
 	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(_ context.Context, _ string, _ []byte) error {
@@ -250,13 +248,12 @@ func Test_readTelemetryForTime_ListObjectsNoResults(t *testing.T) {
 				Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
 			}, nil
 		}),
-		s3Bucket:   "bucket",
-		s3Prefix:   "",
-		filePrefix: "",
-		startTime:  testTime,
-		endTime:    testTime.Add(time.Minute),
-		timeStep:   time.Minute,
-		getTimeKey: getTimeKeyPartitionMinute,
+		s3Bucket:    "bucket",
+		s3Partition: "minute",
+		s3Prefix:    "",
+		filePrefix:  "",
+		startTime:   testTime,
+		endTime:     testTime.Add(time.Minute),
 	}
 
 	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(_ context.Context, _ string, _ []byte) error {
@@ -297,13 +294,12 @@ func Test_readTelemetryForTime_NextPageError(t *testing.T) {
 				Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
 			}, nil
 		}),
-		s3Bucket:   "bucket",
-		s3Prefix:   "",
-		filePrefix: "",
-		startTime:  testTime,
-		endTime:    testTime.Add(time.Minute),
-		timeStep:   time.Minute,
-		getTimeKey: getTimeKeyPartitionMinute,
+		s3Bucket:    "bucket",
+		s3Partition: "minute",
+		s3Prefix:    "",
+		filePrefix:  "",
+		startTime:   testTime,
+		endTime:     testTime.Add(time.Minute),
 	}
 
 	err := reader.readTelemetryForTime(context.Background(), testTime, "traces", func(_ context.Context, _ string, _ []byte) error {
@@ -339,13 +335,12 @@ func Test_readAll(t *testing.T) {
 				Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
 			}, nil
 		}),
-		s3Bucket:   "bucket",
-		s3Prefix:   "",
-		filePrefix: "",
-		startTime:  testTime,
-		endTime:    testTime.Add(time.Minute * 2),
-		timeStep:   time.Minute,
-		getTimeKey: getTimeKeyPartitionMinute,
+		s3Bucket:    "bucket",
+		s3Prefix:    "",
+		s3Partition: "minute",
+		filePrefix:  "",
+		startTime:   testTime,
+		endTime:     testTime.Add(time.Minute * 2),
 	}
 
 	dataCallbackKeys := make([]string, 0)
@@ -386,13 +381,12 @@ func Test_readAll_ContextDone(t *testing.T) {
 				Body: io.NopCloser(bytes.NewReader([]byte("this is the body of the object"))),
 			}, nil
 		}),
-		s3Bucket:   "bucket",
-		s3Prefix:   "",
-		filePrefix: "",
-		startTime:  testTime,
-		endTime:    testTime.Add(time.Minute * 2),
-		timeStep:   time.Minute,
-		getTimeKey: getTimeKeyPartitionMinute,
+		s3Bucket:    "bucket",
+		s3Prefix:    "",
+		s3Partition: "minute",
+		filePrefix:  "",
+		startTime:   testTime,
+		endTime:     testTime.Add(time.Minute * 2),
 	}
 
 	dataCallbackKeys := make([]string, 0)
