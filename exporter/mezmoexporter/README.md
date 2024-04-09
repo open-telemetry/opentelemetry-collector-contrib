@@ -27,10 +27,11 @@ that adds `hostname` detection support.
 
 # Configuration options:
 
-- `ingest_url` (optional): Specifies the URL to send ingested logs to.  If not 
+- `ingest_url` (optional): Specifies the URL to send ingested logs to.  If not
 specified, will default to `https://logs.mezmo.com/otel/ingest/rest`.
 - `ingest_key` (required): Ingestion key used to send log data to Mezmo.  See
 [Ingestion Keys](https://docs.mezmo.com/docs/ingestion-key) for more details.
+- `compression` (optional): Enables compression of requests.
 
 # Example:
 ## Simple Log Data

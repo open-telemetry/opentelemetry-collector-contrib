@@ -42,6 +42,9 @@ type Config struct {
 
 	// Token is the authentication token provided by Mezmo.
 	IngestKey configopaque.String `mapstructure:"ingest_key"`
+
+	// Compression is the flag to enable/disable compression of the payload. Default is false.
+	Compression bool `mapstructure:"compression"`
 }
 
 // returns default http client settings

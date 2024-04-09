@@ -4,13 +4,14 @@
 package mezmoexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -27,6 +28,7 @@ type mezmoExporter struct {
 	userAgentString string
 	log             *zap.Logger
 	wg              sync.WaitGroup
+	bytesPool       *sync.Pool
 }
 
 type mezmoLogLine struct {
@@ -47,6 +49,11 @@ func newLogsExporter(config *Config, settings component.TelemetrySettings, build
 		settings:        settings,
 		userAgentString: fmt.Sprintf("mezmo-otel-exporter/%s", buildInfo.Version),
 		log:             logger,
+		bytesPool: &sync.Pool{
+			New: func() any {
+				return bytes.NewBuffer(make([]byte, 1024))
+			},
+		},
 	}
 	return e
 }
@@ -136,20 +143,25 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 	}
 
 	// Send them to Mezmo in batches < 10MB in size
-	var b strings.Builder
+	b := m.bytesPool.Get().(*bytes.Buffer)
+	defer m.bytesPool.Put(b)
+	b.Reset()
 	b.WriteString("{\"lines\": [")
 
 	var lineBytes []byte
 	for i, line := range lines {
+		if i > 0 {
+			b.WriteRune(',')
+		}
 		if lineBytes, errs = json.Marshal(line); errs != nil {
 			return fmt.Errorf("error Creating JSON payload: %w", errs)
 		}
 
 		var newBufSize = b.Len() + len(lineBytes)
 		if newBufSize >= maxBodySize-2 {
-			str := b.String()
-			str = str[:len(str)-1] + "]}"
-			if errs = m.sendLinesToMezmo(str); errs != nil {
+			b.WriteString("]}")
+
+			if errs = m.sendLinesToMezmo(b); errs != nil {
 				return errs
 			}
 			b.Reset()
@@ -158,20 +170,35 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 
 		b.Write(lineBytes)
 
-		if i < len(lines)-1 {
-			b.WriteRune(',')
-		}
 	}
 
-	return m.sendLinesToMezmo(b.String() + "]}")
+	b.WriteString("]}")
+	return m.sendLinesToMezmo(b)
 }
 
-func (m *mezmoExporter) sendLinesToMezmo(post string) (errs error) {
-	req, _ := http.NewRequest("POST", m.config.IngestURL, strings.NewReader(post))
+func (m *mezmoExporter) sendLinesToMezmo(b *bytes.Buffer) (errs error) {
+	var r io.Reader
+	if m.config.Compression {
+		buf := m.bytesPool.Get().(*bytes.Buffer)
+		defer m.bytesPool.Put(buf)
+		buf.Reset()
+		w := gzip.NewWriter(buf)
+		if _, err := w.Write(b.Bytes()); err != nil {
+			return fmt.Errorf("failed to compress log data: %w", err)
+		}
+		_ = w.Close()
+		r = buf
+	} else {
+		r = b
+	}
+	req, _ := http.NewRequest("POST", m.config.IngestURL, r)
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", m.userAgentString)
 	req.Header.Add("apikey", string(m.config.IngestKey))
+	if m.config.Compression {
+		req.Header.Add("Content-Encoding", "gzip")
+	}
 
 	var res *http.Response
 	if res, errs = m.client.Do(req); errs != nil {

@@ -4,6 +4,7 @@
 package mezmoexporter
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -119,10 +120,19 @@ type testServerParams struct {
 // assertions through the assertCB function.
 func createHTTPServer(params *testServerParams) testServer {
 	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
+		var bodyReader io.Reader = r.Body
+		if r.Header.Get("Content-Encoding") == "gzip" {
+			gzipReader, err := gzip.NewReader(bodyReader)
+			if err != nil {
+				params.t.Fatal(err)
+			}
+			bodyReader = gzipReader
+		}
+		body, err := io.ReadAll(bodyReader)
 		if err != nil {
 			params.t.Fatal(err)
 		}
+		params.t.Logf("body: %s", string(body))
 
 		var logBody mezmoLogBody
 		if err = json.Unmarshal(body, &logBody); err != nil {
@@ -211,6 +221,7 @@ func TestAddsRequiredAttributes(t *testing.T) {
 			assert.Equal(t, "mezmo-otel-exporter/"+buildInfo.Version, req.Header.Get("User-Agent"))
 
 			lines := body.Lines
+			assert.Len(t, lines, 4)
 			for _, line := range lines {
 				assert.True(t, line.Timestamp > 0)
 				assert.Equal(t, line.Level, "info")
@@ -269,4 +280,31 @@ func Test404IngestError(t *testing.T) {
 	responseField := logLine.Context[0]
 	assert.Equal(t, responseField.Key, "response")
 	assert.Equal(t, responseField.String, `{"foo":"bar"}`)
+}
+
+func TestCompressionEnabled(t *testing.T) {
+	httpServerParams := testServerParams{
+		t: t,
+		assertionsCallback: func(req *http.Request, b mezmoLogBody) (int, string) {
+			assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
+			assert.Equal(t, "mezmo-otel-exporter/"+buildInfo.Version, req.Header.Get("User-Agent"))
+			assert.Equal(t, "gzip", req.Header.Get("Content-Encoding"))
+			assert.Len(t, b.Lines, 3)
+			return http.StatusOK, ""
+		},
+	}
+	server := createHTTPServer(&httpServerParams)
+	defer server.instance.Close()
+
+	log, _ := createLogger()
+	config := &Config{
+		IngestURL:   server.url,
+		Compression: true,
+	}
+	exporter := createExporter(t, config, log)
+
+	var logs = createSimpleLogData(3)
+	err := exporter.pushLogData(context.Background(), logs)
+	require.NoError(t, err)
+
 }
