@@ -93,7 +93,7 @@ func (vc *vcenterClient) Datacenters(ctx context.Context) ([]*object.Datacenter,
 	return datacenters, nil
 }
 
-// Computes returns the ComputeResources (Hosts & Clusters) of the vSphere SDK for a given datacenter
+// Computes returns the ComputeResources (and CLusterComputeResources) of the vSphere SDK for a given datacenter
 func (vc *vcenterClient) Computes(ctx context.Context, datacenter *object.Datacenter) ([]*object.ComputeResource, error) {
 	vc.finder = vc.finder.SetDatacenter(datacenter)
 	computes, err := vc.finder.ComputeResourceList(ctx, "*")

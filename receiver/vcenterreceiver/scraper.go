@@ -5,7 +5,6 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -314,7 +313,7 @@ func (v *vcenterMetricScraper) collectVMs(
 
 		hostRef := vm.Summary.Runtime.Host
 		if hostRef == nil {
-			errs.AddPartial(1, errors.New("VM doesn't have a HostSystem"))
+			errs.AddPartial(1, fmt.Errorf("VM %s doesn't have a HostSystem", vm.Name))
 			return
 		}
 		vmHost := object.NewHostSystem(v.client.vimDriver, *hostRef)
@@ -355,8 +354,10 @@ func (v *vcenterMetricScraper) collectVMs(
 			return
 		}
 
+		hostname := hwSum.Name
+
 		if vm.Config == nil {
-			errs.AddPartial(1, fmt.Errorf("vm config empty for %s", hwSum.Name))
+			errs.AddPartial(1, fmt.Errorf("vm config empty for %s", hostname))
 			continue
 		}
 		vmUUID := vm.Config.InstanceUuid
@@ -368,7 +369,7 @@ func (v *vcenterMetricScraper) collectVMs(
 		if compute.Reference().Type == "ClusterComputeResource" {
 			rb.SetVcenterClusterName(compute.Name())
 		}
-		rb.SetVcenterHostName(hwSum.Name)
+		rb.SetVcenterHostName(hostname)
 		if rp != nil && rp.Name() != "" {
 			rb.SetVcenterResourcePoolName(rp.Name())
 			rb.SetVcenterResourcePoolInventoryPath(rp.InventoryPath)
