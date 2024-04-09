@@ -46,8 +46,8 @@ func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 func TestNewReceiver_invalid_auth_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Authentication = kafka.Authentication{
-		TLS: &configtls.TLSClientSetting{
-			TLSSetting: configtls.TLSSetting{
+		TLS: &configtls.ClientConfig{
+			Config: configtls.Config{
 				CAFile: "/invalid",
 			},
 		},

@@ -44,7 +44,20 @@ type loadBalancer struct {
 func newLoadBalancer(params exporter.CreateSettings, cfg component.Config, factory componentFactory) (*loadBalancer, error) {
 	oCfg := cfg.(*Config)
 
-	if oCfg.Resolver.DNS != nil && oCfg.Resolver.Static != nil {
+	var count = 0
+	if oCfg.Resolver.DNS != nil {
+		count++
+	}
+	if oCfg.Resolver.Static != nil {
+		count++
+	}
+	if oCfg.Resolver.AWSCloudMap != nil {
+		count++
+	}
+	if oCfg.Resolver.K8sSvc != nil {
+		count++
+	}
+	if count > 1 {
 		return nil, errMultipleResolversProvided
 	}
 
@@ -72,7 +85,16 @@ func newLoadBalancer(params exporter.CreateSettings, cfg component.Config, facto
 		if err != nil {
 			return nil, err
 		}
-		res, err = newK8sResolver(clt, k8sLogger, oCfg.Resolver.K8sSvc.Service, oCfg.Resolver.K8sSvc.Ports)
+		res, err = newK8sResolver(clt, k8sLogger, oCfg.Resolver.K8sSvc.Service, oCfg.Resolver.K8sSvc.Ports, oCfg.Resolver.K8sSvc.Timeout)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if oCfg.Resolver.AWSCloudMap != nil {
+		awsCloudMapLogger := params.Logger.With(zap.String("resolver", "awsCloudMap"))
+		var err error
+		res, err = newCloudMapResolver(awsCloudMapLogger, &oCfg.Resolver.AWSCloudMap.NamespaceName, &oCfg.Resolver.AWSCloudMap.ServiceName, oCfg.Resolver.AWSCloudMap.Port, &oCfg.Resolver.AWSCloudMap.HealthStatus, oCfg.Resolver.AWSCloudMap.Interval, oCfg.Resolver.AWSCloudMap.Timeout)
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +170,11 @@ func (lb *loadBalancer) removeExtraExporters(ctx context.Context, endpoints []st
 	}
 	for existing := range lb.exporters {
 		if !endpointFound(existing, endpointsWithPort) {
-			_ = lb.exporters[existing].Shutdown(ctx)
+			exp := lb.exporters[existing]
+			// Shutdown the exporter asynchronously to avoid blocking the resolver
+			go func() {
+				_ = exp.Shutdown(ctx)
+			}()
 			delete(lb.exporters, existing)
 		}
 	}
@@ -164,9 +190,10 @@ func endpointFound(endpoint string, endpoints []string) bool {
 	return false
 }
 
-func (lb *loadBalancer) Shutdown(context.Context) error {
+func (lb *loadBalancer) Shutdown(ctx context.Context) error {
+	err := lb.res.shutdown(ctx)
 	lb.stopped = true
-	return nil
+	return err
 }
 
 // exporterAndEndpoint returns the exporter and the endpoint for the given identifier.

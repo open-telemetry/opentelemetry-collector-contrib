@@ -26,7 +26,7 @@ import (
 func TestNewReceiver(t *testing.T) {
 	config := &Config{
 		Endpoint: "unix:///run/some.sock",
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 1 * time.Second,
 			InitialDelay:       time.Second,
 		},
@@ -57,25 +57,31 @@ func TestScraperLoop(t *testing.T) {
 	client := make(mockClient)
 	consumer := make(mockConsumer)
 
-	r, err := newMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumer, client.factory)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	r, err := newMetricsReceiver(ctx, receivertest.NewNopCreateSettings(), cfg, consumer, client.factory)
 	require.NoError(t, err)
 	assert.NotNil(t, r)
 
 	go func() {
+		sampleStats := genContainerStats()
 		client <- containerStatsReport{
-			Stats: []containerStats{{
-				ContainerID: "c1",
-			}},
+			Stats: []containerStats{
+				*sampleStats,
+			},
 			Error: containerStatsReportError{},
 		}
 	}()
 
-	assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	md := <-consumer
-	assert.Equal(t, md.ResourceMetrics().Len(), 1)
+	assert.Equal(t, 1, md.ResourceMetrics().Len())
 
-	assert.NoError(t, r.Shutdown(context.Background()))
+	assertStatsEqualToMetrics(t, genContainerStats(), md)
+
+	assert.NoError(t, r.Shutdown(ctx))
 }
 
 type mockClient chan containerStatsReport
@@ -99,7 +105,7 @@ func (c mockClient) ping(context.Context) error {
 type mockConsumer chan pmetric.Metrics
 
 func (c mockClient) list(context.Context, url.Values) ([]container, error) {
-	return []container{{ID: "c1"}}, nil
+	return []container{{ID: "c1", Image: "localimage"}}, nil
 }
 
 func (c mockClient) events(context.Context, url.Values) (<-chan event, <-chan error) {

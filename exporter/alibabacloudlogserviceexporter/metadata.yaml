@@ -4,8 +4,8 @@ scope_name: otelcol/alibabacloudlogservice
 status:
   class: exporter
   stability:
-    unmaintained: [traces, metrics, logs]
-  distributions: [contrib, observiq]
+    beta: [traces, metrics, logs]
+  distributions: [contrib]
   codeowners:
     active: [shabicheng, kongluoxing, qiansheng91]
 

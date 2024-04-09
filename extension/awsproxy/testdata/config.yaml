@@ -8,3 +8,4 @@ awsproxy/1:
   region: "us-west-1"
   role_arn: "arn:aws:iam::123456789012:role/awesome_role"
   aws_endpoint: "https://another.aws.endpoint.com"
+  service_name: "es"

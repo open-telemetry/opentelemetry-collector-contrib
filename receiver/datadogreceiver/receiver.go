@@ -26,9 +26,6 @@ type datadogReceiver struct {
 }
 
 func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params receiver.CreateSettings) (receiver.Traces, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 
 	instance, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{LongLivedCtx: false, ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
 	if err != nil {

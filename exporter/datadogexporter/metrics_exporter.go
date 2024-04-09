@@ -126,14 +126,13 @@ func newMetricsExporter(
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
 			cfg.Metrics.TCPAddrConfig.Endpoint,
-			cfg.TimeoutSettings,
-			cfg.LimitedClientConfig.TLSSetting.InsecureSkipVerify)
+			cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
 		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
 		client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
-		client.HttpClient = clientutil.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedClientConfig.TLSSetting.InsecureSkipVerify)
+		client.HttpClient = clientutil.NewHTTPClient(cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
 		exporter.client = client
 	}

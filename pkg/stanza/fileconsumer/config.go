@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"runtime"
 	"time"
 
 	"go.opentelemetry.io/collector/featuregate"
@@ -16,11 +17,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -161,20 +162,15 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 		HeaderConfig:      hCfg,
 		DeleteAtEOF:       c.DeleteAfterRead,
 	}
-	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
-	for i := 0; i < len(knownFiles); i++ {
-		knownFiles[i] = fileset.New[*reader.Metadata](c.MaxConcurrentFiles / 2)
-	}
+
 	return &Manager{
-		SugaredLogger:     logger.With("component", "fileconsumer"),
-		readerFactory:     readerFactory,
-		fileMatcher:       fileMatcher,
-		pollInterval:      c.PollInterval,
-		maxBatchFiles:     c.MaxConcurrentFiles / 2,
-		maxBatches:        c.MaxBatches,
-		currentPollFiles:  fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
-		previousPollFiles: fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
-		knownFiles:        knownFiles,
+		SugaredLogger: logger.With("component", "fileconsumer"),
+		readerFactory: readerFactory,
+		fileMatcher:   fileMatcher,
+		pollInterval:  c.PollInterval,
+		maxBatchFiles: c.MaxConcurrentFiles / 2,
+		maxBatches:    c.MaxBatches,
+		tracker:       tracker.New(logger.With("component", "fileconsumer"), c.MaxConcurrentFiles/2),
 	}, nil
 }
 
@@ -220,9 +216,13 @@ func (c Config) validate() error {
 		if c.StartAt == "end" {
 			return fmt.Errorf("'header' cannot be specified with 'start_at: end'")
 		}
-		if _, err := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc); err != nil {
-			return fmt.Errorf("invalid config for 'header': %w", err)
+		if _, errConfig := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc); errConfig != nil {
+			return fmt.Errorf("invalid config for 'header': %w", errConfig)
 		}
+	}
+
+	if runtime.GOOS == "windows" && (c.Resolver.IncludeFileOwnerName || c.Resolver.IncludeFileOwnerGroupName) {
+		return fmt.Errorf("'include_file_owner_name' or 'include_file_owner_group_name' it's not supported for windows: %w", err)
 	}
 
 	return nil

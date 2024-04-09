@@ -6,7 +6,7 @@ status:
   stability:
     beta: [metrics]
     development: [logs]
-  distributions: [contrib, splunk, observiq, sumo, liatrio]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, TylerHelmuth, povilasv]
 
@@ -192,6 +192,11 @@ resource_attributes:
     description: The k8s ClusterResourceQuota name.
     type: string
     enabled: true
+
+  k8s.container.status.last_terminated_reason:
+    description: Last terminated reason of a container.
+    type: string
+    enabled: false
 
 attributes:
   k8s.namespace.name:

@@ -11,6 +11,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -124,9 +125,11 @@ func TestCreateMetricExporter(t *testing.T) {
 				exportertest.NewNopCreateSettings(),
 				tc.conf,
 			)
+			require.NoError(t, err)
+			assert.NotNil(t, exporter, "Must return valid exporter")
+			err = exporter.Start(context.Background(), componenttest.NewNopHost())
 			if tc.err != nil {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
-				assert.Nil(t, exporter, "Must return nil value for invalid exporter")
 				return
 			}
 			assert.NoError(t, err, "Must not error")
@@ -199,9 +202,11 @@ func TestCreateLogExporter(t *testing.T) {
 				exportertest.NewNopCreateSettings(),
 				tc.conf,
 			)
+			require.NoError(t, err)
+			assert.NotNil(t, exporter, "Must return valid exporter")
+			err = exporter.Start(context.Background(), componenttest.NewNopHost())
 			if tc.err != nil {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
-				assert.Nil(t, exporter, "Must return nil value for invalid exporter")
 				return
 			}
 			assert.NoError(t, err, "Must not error")
@@ -274,9 +279,11 @@ func TestCreateTraceExporter(t *testing.T) {
 				exportertest.NewNopCreateSettings(),
 				tc.conf,
 			)
+			require.NoError(t, err)
+			assert.NotNil(t, exporter, "Must return valid exporter")
+			err = exporter.Start(context.Background(), componenttest.NewNopHost())
 			if tc.err != nil {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
-				assert.Nil(t, exporter, "Must return nil value for invalid exporter")
 				return
 			}
 			assert.NoError(t, err, "Must not error")

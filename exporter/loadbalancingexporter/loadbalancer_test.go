@@ -134,6 +134,7 @@ func TestWithDNSResolverNoEndpoints(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
+	defer func() { assert.NoError(t, p.Shutdown(context.Background())) }()
 
 	// test
 	_, e, _ := p.exporterAndEndpoint([]byte{128, 128, 0, 0})
@@ -200,7 +201,7 @@ func TestLoadBalancerShutdown(t *testing.T) {
 func TestOnBackendChanges(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
 	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, componentFactory)
@@ -222,7 +223,7 @@ func TestOnBackendChanges(t *testing.T) {
 func TestRemoveExtraExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
 	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, componentFactory)
@@ -354,7 +355,7 @@ func TestFailedExporterInRing(t *testing.T) {
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
 		},
 	}
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
 	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, componentFactory)
@@ -387,6 +388,43 @@ func TestFailedExporterInRing(t *testing.T) {
 
 	// verify
 	assert.Error(t, err)
+}
+
+func TestNewLoadBalancerInvalidNamespaceAwsResolver(t *testing.T) {
+	// prepare
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			AWSCloudMap: &AWSCloudMapResolver{
+				NamespaceName: "",
+			},
+		},
+	}
+
+	// test
+	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, nil)
+
+	// verify
+	assert.Nil(t, p)
+	assert.True(t, clientcmd.IsConfigurationInvalid(err) || errors.Is(err, errNoNamespace))
+}
+
+func TestNewLoadBalancerInvalidServiceAwsResolver(t *testing.T) {
+	// prepare
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			AWSCloudMap: &AWSCloudMapResolver{
+				NamespaceName: "cloudmap",
+				ServiceName:   "",
+			},
+		},
+	}
+
+	// test
+	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, nil)
+
+	// verify
+	assert.Nil(t, p)
+	assert.True(t, clientcmd.IsConfigurationInvalid(err) || errors.Is(err, errNoServiceName))
 }
 
 func newNopMockExporter() *wrappedExporter {

@@ -7,7 +7,7 @@ status:
     alpha: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [hanjm, dmitryax, Frapschen]
+    active: [hanjm, dmitryax, Frapschen, SpencerTorres]
 
 # TODO: Update the exporter to pass the tests
 tests:

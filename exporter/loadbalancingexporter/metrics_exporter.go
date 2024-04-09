@@ -74,10 +74,11 @@ func (e *metricExporterImp) Start(ctx context.Context, host component.Host) erro
 	return e.loadBalancer.Start(ctx, host)
 }
 
-func (e *metricExporterImp) Shutdown(context.Context) error {
+func (e *metricExporterImp) Shutdown(ctx context.Context) error {
+	err := e.loadBalancer.Shutdown(ctx)
 	e.stopped = true
 	e.shutdownWg.Wait()
-	return nil
+	return err
 }
 
 func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
@@ -87,12 +88,12 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	endpoints := make(map[*wrappedExporter]string)
 
 	for _, batch := range batches {
-		routingIds, err := routingIdentifiersFromMetrics(batch, e.routingKey)
+		routingIDs, err := routingIdentifiersFromMetrics(batch, e.routingKey)
 		if err != nil {
 			return err
 		}
 
-		for rid := range routingIds {
+		for rid := range routingIDs {
 			exp, endpoint, err := e.loadBalancer.exporterAndEndpoint([]byte(rid))
 			if err != nil {
 				return err

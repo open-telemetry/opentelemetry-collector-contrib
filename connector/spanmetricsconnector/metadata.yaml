@@ -5,9 +5,9 @@ status:
   class: connector
   stability:
     alpha: [traces_to_metrics]
-  distributions: [contrib, sumo, grafana, splunk, liatrio]
+  distributions: [contrib]
   codeowners:
-    active: [portertech]
+    active: [portertech, Frapschen]
     emeritus: [albertteoh]
     seeking_new: true
 

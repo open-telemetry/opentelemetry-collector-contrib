@@ -28,7 +28,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  defaultGRPCBindEndpoint,
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	set := receivertest.NewNopCreateSettings()

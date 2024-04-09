@@ -351,7 +351,7 @@ func Test_SumMetrics(t *testing.T) {
 }
 
 func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		t.Fatal("Server should not be called")
 	}))
 	defer ts.Close()
@@ -383,7 +383,7 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 }
 
 func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		t.Fatal("Server should not be called")
 	}))
 	defer ts.Close()
@@ -421,7 +421,7 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 }
 
 func Test_exporter_send_BadRequest(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		body, _ := json.Marshal(metricsResponse{
 			Ok:      0,
@@ -450,7 +450,7 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 }
 
 func Test_exporter_send_Unauthorized(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte{})
 	}))
@@ -475,7 +475,7 @@ func Test_exporter_send_Unauthorized(t *testing.T) {
 }
 
 func Test_exporter_send_TooLarge(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusRequestEntityTooLarge)
 		_, _ = w.Write([]byte{})
 	}))
@@ -500,7 +500,7 @@ func Test_exporter_send_TooLarge(t *testing.T) {
 }
 
 func Test_exporter_send_NotFound(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(404)
 		_, _ = w.Write([]byte{})
 	}))
@@ -528,7 +528,7 @@ func Test_exporter_send_NotFound(t *testing.T) {
 }
 
 func Test_exporter_send_TooManyRequests(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusTooManyRequests)
 		_, _ = w.Write([]byte{})
 	}))
@@ -551,7 +551,7 @@ func Test_exporter_send_TooManyRequests(t *testing.T) {
 }
 
 func Test_exporter_send_MiscellaneousErrorCode(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusExpectationFailed)
 		_, _ = w.Write([]byte{})
 	}))
@@ -577,7 +577,7 @@ func Test_exporter_send_MiscellaneousErrorCode(t *testing.T) {
 func Test_exporter_send_chunking(t *testing.T) {
 	sentChunks := 0
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		body, _ := json.Marshal(metricsResponse{
 			Ok:      0,
@@ -617,7 +617,7 @@ func Test_exporter_send_chunking(t *testing.T) {
 }
 
 func Test_exporter_PushMetricsData_Error(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(200)
 	}))
 	ts.Close()
@@ -689,8 +689,8 @@ func Test_exporter_start_InvalidClientConfig(t *testing.T) {
 	cfg := &config.Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "localhost:9090",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.ClientConfig{
+				Config: configtls.Config{
 					CAFile: "/non/existent",
 				},
 			},

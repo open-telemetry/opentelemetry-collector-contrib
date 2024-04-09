@@ -96,21 +96,23 @@ func (s *bigipScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	// scrape metrics for pool members
-	poolMembers, err := s.client.GetPoolMembers(ctx, pools)
-	if errors.Is(err, errCollectedNoPoolMembers) {
-		scrapeErrors.AddPartial(1, err)
-		s.logger.Warn("Failed to scrape pool member metrics", zap.Error(err))
-	} else {
-		if err != nil {
-			scrapeErrors.AddPartial(1, err)
-			s.logger.Warn("Failed to scrape some pool member metrics", zap.Error(err))
-		}
+	if pools != nil {
+		// scrape metrics for pool members
+		poolMembers, err2 := s.client.GetPoolMembers(ctx, pools)
+		if errors.Is(err2, errCollectedNoPoolMembers) {
+			scrapeErrors.AddPartial(1, err2)
+			s.logger.Warn("Failed to scrape pool member metrics", zap.Error(err2))
+		} else {
+			if err2 != nil {
+				scrapeErrors.AddPartial(1, err2)
+				s.logger.Warn("Failed to scrape some pool member metrics", zap.Error(err2))
+			}
 
-		collectedMetrics = true
-		for key := range poolMembers.Entries {
-			poolMemberStats := poolMembers.Entries[key]
-			s.collectPoolMembers(&poolMemberStats, now)
+			collectedMetrics = true
+			for key := range poolMembers.Entries {
+				poolMemberStats := poolMembers.Entries[key]
+				s.collectPoolMembers(&poolMemberStats, now)
+			}
 		}
 	}
 

@@ -57,7 +57,7 @@ type SamplingGRPCServer struct {
 }
 
 func (s *SamplingGRPCServer) Start(ctx context.Context, host component.Host) error {
-	server, err := s.settings.ToServer(host, s.telemetry)
+	server, err := s.settings.ToServer(ctx, host, s.telemetry)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (s *SamplingGRPCServer) Shutdown(ctx context.Context) error {
 		return errGRPCServerNotRunning
 	}
 
-	ch := make(chan struct{})
+	ch := make(chan struct{}, 1)
 	go func() {
 		s.grpcServer.GracefulStop()
 		ch <- struct{}{}
