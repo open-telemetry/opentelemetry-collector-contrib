@@ -9,7 +9,7 @@ all_set:
       enabled: true
     git.repository.pull_request.count:
       enabled: true
-    git.repository.pull_request.open_time:
+    git.repository.pull_request.time_open:
       enabled: true
     git.repository.pull_request.time_to_approval:
       enabled: true
@@ -30,7 +30,7 @@ none_set:
       enabled: false
     git.repository.pull_request.count:
       enabled: false
-    git.repository.pull_request.open_time:
+    git.repository.pull_request.time_open:
       enabled: false
     git.repository.pull_request.time_to_approval:
       enabled: false

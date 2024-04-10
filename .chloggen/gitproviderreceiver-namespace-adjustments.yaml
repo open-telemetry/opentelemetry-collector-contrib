@@ -16,7 +16,7 @@ issues: [31985]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  - Renamed `git.repository.pull_request.open.time` to `git.repository.pull_request.open_time`
+  - Renamed `git.repository.pull_request.open.time` to `git.repository.pull_request.time_open`
   - Renamed `git.repository.pull_request.merged.time` to `git.repository.pull_request.time_to_merge`
   - Renamed `git.repository.pull_request.approved.time` to `git.repository.pull_request.time_to_approval`
   - Combined `git.repository.pull_request.merged.count` and `git.repository.pull_request.open.count` into `git.repository.pull_request.count` with an attribute of `pull_request.state` equal to `open` or `merged`

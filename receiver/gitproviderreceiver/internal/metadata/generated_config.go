@@ -29,7 +29,7 @@ type MetricsConfig struct {
 	GitRepositoryContributorCount          MetricConfig `mapstructure:"git.repository.contributor.count"`
 	GitRepositoryCount                     MetricConfig `mapstructure:"git.repository.count"`
 	GitRepositoryPullRequestCount          MetricConfig `mapstructure:"git.repository.pull_request.count"`
-	GitRepositoryPullRequestOpenTime       MetricConfig `mapstructure:"git.repository.pull_request.open_time"`
+	GitRepositoryPullRequestTimeOpen       MetricConfig `mapstructure:"git.repository.pull_request.time_open"`
 	GitRepositoryPullRequestTimeToApproval MetricConfig `mapstructure:"git.repository.pull_request.time_to_approval"`
 	GitRepositoryPullRequestTimeToMerge    MetricConfig `mapstructure:"git.repository.pull_request.time_to_merge"`
 }
@@ -48,7 +48,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		GitRepositoryPullRequestCount: MetricConfig{
 			Enabled: true,
 		},
-		GitRepositoryPullRequestOpenTime: MetricConfig{
+		GitRepositoryPullRequestTimeOpen: MetricConfig{
 			Enabled: true,
 		},
 		GitRepositoryPullRequestTimeToApproval: MetricConfig{
