@@ -93,7 +93,7 @@ func (vc *vcenterClient) Datacenters(ctx context.Context) ([]*object.Datacenter,
 	return datacenters, nil
 }
 
-// Computes returns the ComputeResources (and CLusterComputeResources) of the vSphere SDK for a given datacenter
+// Computes returns the ComputeResources (and ClusterComputeResources) of the vSphere SDK for a given datacenter
 func (vc *vcenterClient) Computes(ctx context.Context, datacenter *object.Datacenter) ([]*object.ComputeResource, error) {
 	vc.finder = vc.finder.SetDatacenter(datacenter)
 	computes, err := vc.finder.ComputeResourceList(ctx, "*")
@@ -120,9 +120,20 @@ func (vc *vcenterClient) VMs(ctx context.Context) ([]mo.VirtualMachine, error) {
 
 	var vms []mo.VirtualMachine
 	err = v.Retrieve(ctx, []string{"VirtualMachine"}, []string{
-		"config",
-		"runtime",
-		"summary",
+		"config.hardware.numCPU",
+		"config.instanceUuid",
+		"runtime.powerState",
+		"runtime.maxCpuUsage",
+		"summary.quickStats.guestMemoryUsage",
+		"summary.quickStats.balloonedMemory",
+		"summary.quickStats.swappedMemory",
+		"summary.quickStats.ssdSwappedMemory",
+		"summary.quickStats.overallCpuUsage",
+		"summary.config.memorySizeMB",
+		"summary.config.name",
+		"summary.storage.committed",
+		"summary.storage.uncommitted",
+		"summary.runtime.host",
 		"resourcePool",
 	}, &vms)
 	if err != nil {
@@ -135,6 +146,11 @@ func (vc *vcenterClient) VMs(ctx context.Context) ([]mo.VirtualMachine, error) {
 type perfSampleResult struct {
 	counters map[string]*vt.PerfCounterInfo
 	results  []performance.EntityMetric
+}
+
+type perfMetricsQueryResult struct {
+	counters       map[string]*vt.PerfCounterInfo
+	resultsByMoRef map[string]*performance.EntityMetric
 }
 
 func (vc *vcenterClient) performanceQuery(
@@ -162,5 +178,38 @@ func (vc *vcenterClient) performanceQuery(
 	return &perfSampleResult{
 		counters: counterInfoByName,
 		results:  result,
+	}, nil
+}
+
+func (vc *vcenterClient) perfMetricsQuery(
+	ctx context.Context,
+	spec vt.PerfQuerySpec,
+	names []string,
+	objs []vt.ManagedObjectReference,
+) (*perfMetricsQueryResult, error) {
+	if vc.pm == nil {
+		return &perfMetricsQueryResult{}, nil
+	}
+	vc.pm.Sort = true
+	sample, err := vc.pm.SampleByName(ctx, spec, names, objs)
+	if err != nil {
+		return nil, err
+	}
+	result, err := vc.pm.ToMetricSeries(ctx, sample)
+	if err != nil {
+		return nil, err
+	}
+	counterInfoByName, err := vc.pm.CounterInfoByName(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resultsByMoRef := map[string]*performance.EntityMetric{}
+	for i := range result {
+		resultsByMoRef[result[i].Entity.Value] = &result[i]
+	}
+	return &perfMetricsQueryResult{
+		counters:       counterInfoByName,
+		resultsByMoRef: resultsByMoRef,
 	}, nil
 }

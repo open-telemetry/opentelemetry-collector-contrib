@@ -3,7 +3,7 @@
     <soapenv:Body>
         <RetrievePropertiesResponse xmlns="urn:vim25">
             <returnval>
-                <obj type="VirtualMachine">vm-6005</obj>
+                <obj type="VirtualMachine">vm-1040</obj>
                 <propSet>
                     <name>summary.runtime.host</name>
                     <val type="HostSystem" xsi:type="ManagedObjectReference">host-1002</val>

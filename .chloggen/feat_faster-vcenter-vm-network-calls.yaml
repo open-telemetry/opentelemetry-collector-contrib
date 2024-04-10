@@ -7,7 +7,7 @@ change_type: enhancement
 component: vcenterreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Changes the method for collecting VMs used by the `vccenterreceiver` to the more time-efficient container view `retrieve` method."
+note: "Changes process for collecting VMs & VM perf metrics used by the `vccenterreceiver` to be more efficient (one call now for all VMs)"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [31837]
