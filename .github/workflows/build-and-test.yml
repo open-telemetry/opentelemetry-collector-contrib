@@ -333,10 +333,11 @@ jobs:
       - name: Upload coverage report
         uses: Wandalen/wretry.action@v3.2.0
         with:
-          action: codecov/codecov-action@v3
+          action: codecov/codecov-action@v4
           with: |
             fail_ci_if_error: true
             verbose: true
+            token: ${{ secrets.CODECOV_TOKEN }}
           attempt_limit: 10
           attempt_delay: 15000
 
