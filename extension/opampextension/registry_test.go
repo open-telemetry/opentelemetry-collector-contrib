@@ -41,7 +41,7 @@ func TestRegistry_Register(t *testing.T) {
 		capabilityErr := errors.New("network error")
 
 		client := mockCustomCapabilityClient{
-			setCustomCapabilites: func(customCapabilities *protobufs.CustomCapabilities) error {
+			setCustomCapabilites: func(_ *protobufs.CustomCapabilities) error {
 				return capabilityErr
 			},
 		}
@@ -192,7 +192,7 @@ func TestCustomCapability_Unregister(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		unregisteredCapability, err := registry.Register(capabilityString, func(c *protobufs.CustomMessage) {
+		unregisteredCapability, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {
 			t.Fatalf("Unregistered capability should not be called")
 		})
 		require.NotNil(t, unregisteredCapability)
@@ -217,13 +217,13 @@ func TestCustomCapability_Unregister(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		unregisteredCapability, err := registry.Register(capabilityString, func(c *protobufs.CustomMessage) {
+		unregisteredCapability, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {
 			t.Fatalf("Unregistered capability should not be called")
 		})
 		require.NotNil(t, unregisteredCapability)
 		require.NoError(t, err)
 
-		client.setCustomCapabilites = func(customCapabilities *protobufs.CustomCapabilities) error {
+		client.setCustomCapabilites = func(_ *protobufs.CustomCapabilities) error {
 			return fmt.Errorf("failed to set capabilities")
 		}
 
@@ -241,7 +241,7 @@ func TestCustomCapability_Unregister(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		unregisteredCapability, err := registry.Register(capabilityString, func(c *protobufs.CustomMessage) {
+		unregisteredCapability, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {
 			t.Fatalf("Unregistered capability should not be called")
 		})
 		require.NotNil(t, unregisteredCapability)
