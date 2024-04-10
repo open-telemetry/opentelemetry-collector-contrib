@@ -22,7 +22,7 @@ type exporter interface {
 	export(plog.Logs) error
 }
 
-func newExporter(ctx context.Context, cfg *Config) (exporter, error) {
+func newExporter(cfg *Config) (exporter, error) {
 
 	// Exporter with HTTP
 	if cfg.UseHTTP {
