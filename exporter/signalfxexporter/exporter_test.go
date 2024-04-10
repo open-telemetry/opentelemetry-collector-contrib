@@ -187,7 +187,7 @@ func TestConsumeMetrics(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
+			client, err := cfg.ToClientContext(context.Background(), componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, true)
@@ -699,7 +699,7 @@ func TestConsumeEventData(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
+			client, err := cfg.ToClientContext(context.Background(), componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
 			require.NoError(t, err)
 
 			eventClient := &sfxEventClient{
@@ -1808,7 +1808,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
+			client, err := cfg.ToClientContext(context.Background(), componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, false)
