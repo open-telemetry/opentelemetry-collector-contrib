@@ -266,15 +266,17 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 }
 
 func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
-	if msg.AgentIdentification == nil {
-		return
+	if msg.AgentIdentification != nil {
+		instanceID, err := ulid.Parse(msg.AgentIdentification.NewInstanceUid)
+		if err != nil {
+			o.logger.Error("Failed to parse a new agent identity", zap.Error(err))
+			return
+		}
+
+		o.updateAgentIdentity(instanceID)
 	}
 
-	instanceID, err := ulid.Parse(msg.AgentIdentification.NewInstanceUid)
-	if err != nil {
-		o.logger.Error("Failed to parse a new agent identity", zap.Error(err))
-		return
+	if msg.CustomMessage != nil {
+		o.customCapabilityRegistry.ProcessMessage(msg.CustomMessage)
 	}
-
-	o.updateAgentIdentity(instanceID)
 }
