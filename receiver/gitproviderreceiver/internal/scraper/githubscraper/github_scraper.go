@@ -32,9 +32,9 @@ type githubScraper struct {
 	rb       *metadata.ResourceBuilder
 }
 
-func (ghs *githubScraper) start(_ context.Context, host component.Host) (err error) {
+func (ghs *githubScraper) start(ctx context.Context, host component.Host) (err error) {
 	ghs.logger.Sugar().Info("starting the GitHub scraper")
-	ghs.client, err = ghs.cfg.ToClient(host, ghs.settings)
+	ghs.client, err = ghs.cfg.ToClientContext(ctx, host, ghs.settings)
 	return
 }
 
