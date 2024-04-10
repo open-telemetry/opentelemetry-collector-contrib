@@ -52,8 +52,8 @@ github.com/knadh/koanf/maps v0.1.1 h1:G5TjmUh2D7G2YWf5SQQqSiHRJEjaicvU0KpypqB3NI
 github.com/knadh/koanf/maps v0.1.1/go.mod h1:npD/QZY3V6ghQDdcQzl1W4ICNVTkohC8E73eI2xW4yI=
 github.com/knadh/koanf/providers/confmap v0.1.0 h1:gOkxhHkemwG4LezxxN8DMOFopOPghxRVp7JbIvdvqzU=
 github.com/knadh/koanf/providers/confmap v0.1.0/go.mod h1:2uLhxQzJnyHKfxG927awZC7+fyHFdQkd697K4MdLnIU=
-github.com/knadh/koanf/v2 v2.1.0 h1:eh4QmHHBuU8BybfIJ8mB8K8gsGCD/AUQTdwGq/GzId8=
-github.com/knadh/koanf/v2 v2.1.0/go.mod h1:4mnTRbZCK+ALuBXHZMjDfG9y714L7TykVnZkXbMU3Es=
+github.com/knadh/koanf/v2 v2.1.1 h1:/R8eXqasSTsmDCsAyYj+81Wteg8AqrV9CP6gvsTsOmM=
+github.com/knadh/koanf/v2 v2.1.1/go.mod h1:4mnTRbZCK+ALuBXHZMjDfG9y714L7TykVnZkXbMU3Es=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
@@ -87,11 +87,10 @@ github.com/xdg-go/scram v1.1.2/go.mod h1:RT/sEzTbU5y00aCK8UOx6R7YryM0iF1N2MOmC3k
 github.com/xdg-go/stringprep v1.0.4 h1:XLI/Ng3O1Atzq0oBs3TWm+5ZVgkq2aqdlvP9JtoZ6c8=
 github.com/xdg-go/stringprep v1.0.4/go.mod h1:mPGuuIYwz7CmR2bT9j4GbQqutWS1zV24gijq1dTyGkM=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
-go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240409140257-792fac1b62d4 h1:YYWytbJOhBQKt2NyCxc10Wk57kYs5i5jiZNftOu9Qw0=
-go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240409140257-792fac1b62d4/go.mod h1:U1IpLFisA6ChU2xBKSJfy7ivI/DaDSurgvoEFKfPVwo=
+go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240410162210-65cdb184f31d h1:KEAPyHGDK40LHTa8J2v+8cJRW1OGyphG3n6JwDIdAfM=
 go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240410162210-65cdb184f31d/go.mod h1:2/yPAqbcA53IH/9fmOn514vcLRfo5xft7EDIa8E7kqY=
-go.opentelemetry.io/collector/config/configtls v0.97.1-0.20240409140257-792fac1b62d4 h1:1rmikYza0o9sCLl1b0//YhSweWVxBNnON9fIV5c0Ca0=
-go.opentelemetry.io/collector/config/configtls v0.97.1-0.20240409140257-792fac1b62d4/go.mod h1:ev/fMI6hm1WTSHHEAEoVjF3RZj0qf38E/XO5itFku7k=
+go.opentelemetry.io/collector/config/configtls v0.97.1-0.20240410162210-65cdb184f31d h1:S08sTo2ctcywDwmfrbsXgU6ArqwMjk5A+/73AN0PbfM=
+go.opentelemetry.io/collector/config/configtls v0.97.1-0.20240410162210-65cdb184f31d/go.mod h1:ev/fMI6hm1WTSHHEAEoVjF3RZj0qf38E/XO5itFku7k=
 go.opentelemetry.io/collector/confmap v0.97.0 h1:0CGSk7YW9rPc6jCwJteJzHzN96HRoHTfuqI7J/EmZsg=
 go.opentelemetry.io/collector/confmap v0.97.0/go.mod h1:AnJmZcZoOLuykSXGiAf3shi11ZZk5ei4tZd9dDTTpWE=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
