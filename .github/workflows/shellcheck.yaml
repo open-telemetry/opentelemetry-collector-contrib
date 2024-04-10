@@ -2,7 +2,7 @@ name: shellcheck
 on:
   push:
     branches:
-      - main 
+      - main
   pull_request:
 permissions: {}
 
@@ -10,19 +10,23 @@ jobs:
   shellcheck:
     name: shellcheck
     runs-on: ubuntu-latest
+    env:
+      VERSION: v0.10.0
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: shellcheck workflow-scripts
         uses: ludeeus/action-shellcheck@master
         env:
           SHELLCHECK_OPTS: -x -e SC2059 -e SC2086
         with:
-          scandir: '.github/workflows/scripts'
+          scandir: ".github/workflows/scripts"
           severity: warning
+          version: ${{ env.VERSION }}
       - name: shellcheck buildscripts
         uses: ludeeus/action-shellcheck@master
         env:
           SHELLCHECK_OPTS: -x -e SC2059 -e SC2086
         with:
-          scandir: 'internal/buildscripts'
+          scandir: "internal/buildscripts"
           severity: warning
+          version: ${{ env.VERSION }}
