@@ -46,7 +46,7 @@ type splunkClient struct {
 	endpoint *url.URL
 }
 
-func newSplunkEntClient(cfg *Config, h component.Host, s component.TelemetrySettings) (*splunkEntClient, error) {
+func newSplunkEntClient(ctx context.Context, cfg *Config, h component.Host, s component.TelemetrySettings) (*splunkEntClient, error) {
 	var err error
 	var e *url.URL
 	var c *http.Client
@@ -56,7 +56,7 @@ func newSplunkEntClient(cfg *Config, h component.Host, s component.TelemetrySett
 	// we already checked that url.Parse does not fail in cfg.Validate()
 	if cfg.IdxEndpoint.Endpoint != "" {
 		e, _ = url.Parse(cfg.IdxEndpoint.Endpoint)
-		c, err = cfg.IdxEndpoint.ToClient(h, s)
+		c, err = cfg.IdxEndpoint.ToClientContext(ctx, h, s)
 		if err != nil {
 			return nil, err
 		}
@@ -67,7 +67,7 @@ func newSplunkEntClient(cfg *Config, h component.Host, s component.TelemetrySett
 	}
 	if cfg.SHEndpoint.Endpoint != "" {
 		e, _ = url.Parse(cfg.SHEndpoint.Endpoint)
-		c, err = cfg.SHEndpoint.ToClient(h, s)
+		c, err = cfg.SHEndpoint.ToClientContext(ctx, h, s)
 		if err != nil {
 			return nil, err
 		}
@@ -78,7 +78,7 @@ func newSplunkEntClient(cfg *Config, h component.Host, s component.TelemetrySett
 	}
 	if cfg.CMEndpoint.Endpoint != "" {
 		e, _ = url.Parse(cfg.CMEndpoint.Endpoint)
-		c, err = cfg.CMEndpoint.ToClient(h, s)
+		c, err = cfg.CMEndpoint.ToClientContext(ctx, h, s)
 		if err != nil {
 			return nil, err
 		}
