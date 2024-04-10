@@ -7,6 +7,89 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.98.0
+
+### 🛑 Breaking changes 🛑
+
+- `podmanreceiver`: Adds metrics and resources metadata and sets seconds precision for cpu metrics (#28640)
+- `clickhouseexporter`: Add ServiceName as `column` into Clickhouse metrics tables (#31670)
+  It's a breaking change. users who upgrade to the latest version need to alter the Clickhouse table:
+  ```sql
+  ALTER TABLE otel_metrics_exponential_histogram ADD COLUMN ServiceName LowCardinality(String) CODEC(ZSTD(1));
+  ALTER TABLE otel_metrics_gauge ADD COLUMN ServiceName LowCardinality(String) CODEC(ZSTD(1));
+  ALTER TABLE otel_metrics_histogram ADD COLUMN ServiceName LowCardinality(String) CODEC(ZSTD(1));
+  ALTER TABLE otel_metrics_sum ADD COLUMN ServiceName LowCardinality(String) CODEC(ZSTD(1));
+  ALTER TABLE otel_metrics_summary ADD COLUMN ServiceName LowCardinality(String) CODEC(ZSTD(1));
+  ```
+  
+- `elasticsearchexporter`: Initial pass in implementing the `ecs` mapping mode (#31553)
+  Breaking change if mapping `mode` is set to `ecs`, use `none` to maintain existing format
+- `pkg/stanza`: Revert recombine operator's 'overwrite_with' default value. (#30783)
+  Restores the previous the default value of `oldest`, meaning that the recombine operator will emit the
+  first entry from each batch (with the recombined field). This fixes the bug introduced by 30783 and restores
+  the default setting so as to effectively cancel out the bug for users who were not using this setting.
+  For users who were explicitly setting `overwrite_with`, this corrects the intended behavior.
+  
+- `processor/attributes, processor/resource`: Remove stable coreinternal.attraction.hash.sha256 feature gate. (#31997)
+- `receiver/dockerstats`: Remove stable receiver.dockerstats.useScraperV2 feature gate. (#31999)
+- `awsxrayexporter`: change x-ray exporter's translator to make "." split annotation pass as-is (#31732)
+  In the past, X-Ray doesn’t support “.”. So we have a translator in x-ray export to translates it to “_” before sending traces to X-Ray Service. | To match otel naming style, x-ray service team decide to change their service to support both "." type and "" type of naming. In this case the translator that translate "." to "" is no-longer needed. This PR change the way this translator work | X-Ray PMs agree on rolling out this change by using feature-gate
+
+### 🚩 Deprecations 🚩
+
+- `postgresqlreceiver`: Minimal supported PostgreSQL version will be updated from 9.6 to 12.0 in a future release. (#30923)
+  Aligning on the supported versions as can be seen [in the PostgreSQL releases section](https://www.postgresql.org/support/versioning)
+  
+
+### 🚀 New components 🚀
+
+- `avrologencodingextension`: Add new encoding extension to support mapping of AVRO messages to logs. (#21067)
+
+### 💡 Enhancements 💡
+
+- `ottl`: Add new Unix function to convert from epoch timestamp to time.Time (#27868)
+- `filelogreceiver`: When reading a file on filelogreceiver not on windows, if include_file_owner_name is true, it will add the file owner name as the attribute `log.file.owner.name` and if include_file_owner_group_name is true, it will add the file owner group name as the attribute `log.file.owner.group.name`. (#30775)
+- `awsproxyextension`: Make awsproxy extension more resilient by initiating the AWS client during Start. (#27849)
+- `deltatocumulativeprocessor`: self-instrumentation to observe key metrics of the stream accumulation (#30705)
+- `datadog/connector`: Enable connector to use any attribute from the resource as Container Tag (#32224)
+  This change allows the connector to use any attribute from the resource as a container tag. This is useful when you want to use a custom attribute from the resource as a container tag. For example, you can use the `namespace` attribute from the resource as a container tag.
+  
+- `exceptionsconnector`: change stability of exceptionsconnector from development to alpha (#31820)
+- `exceptionsconnector`: Copy span attributes to the generated log from exception. (#24410)
+- `prometheusreceiver`: Allows receiving prometheus native histograms (#26555)
+  - Native histograms are compatible with OTEL exponential histograms.
+  - The feature can be enabled via the feature gate `receiver.prometheusreceiver.EnableNativeHistograms`.
+    Run the collector with the command line option `--feature-gates=receiver.prometheusreceiver.EnableNativeHistograms`.
+  - Currently the feature also requires that targets are scraped via the ProtoBuf format.
+    To start scraping native histograms, set
+    `config.global.scrape_protocols` to `[ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]` in the
+    receiver configuration. This requirement will be lifted once Prometheus can scrape native histograms over text formats.
+  - For more up to date information see the README.md file of the receiver at
+    https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/prometheusreceiver/README.md#prometheus-native-histograms.
+  
+- `all`: Add support for ARM build (#12920)
+- `failoverconnector`: Support ignoring `max_retries` setting in failover connector (#9868)
+- `spanmetricsconnector`: Change default value of metrics_flush_interval from 15s to 60s (#31776)
+- `pkg/ottl`: Adding a string converter into pkg/ottl (#27867)
+- `cmd/opampsupervisor`: Handle OpAMP connection settings. (#21043)
+- `loadbalancingexporter`: Support the timeout period of k8s resolver list watch can be configured. (#31757)
+- `cmd/telemetrygen`: Add Support for specifying Log Severity (#26498)
+
+### 🧰 Bug fixes 🧰
+
+- `datadog/connector`: Fix data race in datadog metrics client (#31964)
+  The PR ensures mutex protects gauges map in every code path.
+- `exporter/awskinesisexporter`: Fixed issue with compression what was causing EOF exceptions when attempting to decompress the payload (#32081)
+- `filelogreceiver`: Fix missing scope name and group logs based on scope (#23387)
+- `jaegerremotesamplingextension`: Fix leaking goroutine on shutdown (#31157)
+- `jmxreceiver`: Fix memory leak during component shutdown (#32289)
+- `k8sobjectsreceiver`: Fix memory leak caused by the pull mode's interval ticker (#31919)
+- `kafkareceiver`: fix kafka receiver panic on shutdown (#31926)
+- `oracledbreceiver`: Fix incorrect values being set for oracledb.tablespace_size.limit and oracledb.tablespace_size.usage (#31451)
+- `prometheusreceiver`: Fix a bug where a new prometheus receiver with the same name cannot be created after the previous receiver is Shutdown (#32123)
+- `resourcedetectionprocessor`: Only attempt to detect Kubernetes node resource attributes when they're enabled. (#31941)
+- `syslogreceiver`: Fix issue where static resource and attributes were ignored (#31849)
+
 ## v0.97.0
 
 ### 🛑 Breaking changes 🛑
