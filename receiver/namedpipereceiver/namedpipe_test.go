@@ -58,11 +58,12 @@ func TestReadPipe(t *testing.T) {
 
 	converter := adapter.NewConverter(zap.NewNop())
 	converter.Start()
-	defer converter.Stop()
 
 	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	defer require.NoError(t, rcvr.Shutdown(context.Background()))
+	defer converter.Stop()
 
 	pipe, err := os.OpenFile("/tmp/pipe", os.O_WRONLY, 0o600)
 	require.NoError(t, err, "failed to open pipe")
