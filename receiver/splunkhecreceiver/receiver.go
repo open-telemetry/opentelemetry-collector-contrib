@@ -192,10 +192,17 @@ func newLogsReceiver(
 // Start tells the receiver to start its processing.
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
-func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
+func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 	// server.Handler will be nil on initial call, otherwise noop.
 	if r.server != nil && r.server.Handler != nil {
 		return nil
+	}
+
+	var ln net.Listener
+	// set up the listener
+	ln, err := r.config.ServerConfig.ToListenerContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
 	}
 
 	mx := mux.NewRouter()
@@ -223,7 +230,8 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
 	}
 
-	r.server, err = r.config.ServerConfig.ToServer(host, r.settings.TelemetrySettings, mx)
+	r.server, err = r.config.ServerConfig.ToServerContext(ctx, host, r.settings.TelemetrySettings, mx)
+
 	if err != nil {
 		return err
 	}
