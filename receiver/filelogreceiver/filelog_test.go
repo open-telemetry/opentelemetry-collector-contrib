@@ -388,7 +388,7 @@ func (g *fileLogGenerator) Generate() []receivertest.UniqueIDAttrVal {
 
 // TestSymlinkedLogs tests that the filelog receiver reading from a single
 // file that's actually a symlink to another file, while the symlink target
-// is changed frequently, reads all the logs from all the files ever targetted
+// is changed frequently, reads all the logs from all the files ever targeted
 // by that symlink.
 func TestSymlinkedLogs(t *testing.T) {
 	// Create 50 files with a predictable naming scheme, each containing
