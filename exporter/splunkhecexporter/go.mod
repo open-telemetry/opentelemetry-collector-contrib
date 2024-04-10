@@ -15,13 +15,13 @@ require (
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/component v0.97.1-0.20240409140257-792fac1b62d4
 	go.opentelemetry.io/collector/config/confighttp v0.97.1-0.20240409140257-792fac1b62d4
-	go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240409140257-792fac1b62d4
+	go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240410162210-65cdb184f31d
 	go.opentelemetry.io/collector/config/configretry v0.97.1-0.20240409140257-792fac1b62d4
 	go.opentelemetry.io/collector/config/configtls v0.97.1-0.20240409140257-792fac1b62d4
 	go.opentelemetry.io/collector/confmap v0.97.1-0.20240409140257-792fac1b62d4
 	go.opentelemetry.io/collector/consumer v0.97.1-0.20240409140257-792fac1b62d4
 	go.opentelemetry.io/collector/exporter v0.97.1-0.20240409140257-792fac1b62d4
-	go.opentelemetry.io/collector/pdata v1.4.1-0.20240409140257-792fac1b62d4
+	go.opentelemetry.io/collector/pdata v1.4.1-0.20240410162210-65cdb184f31d
 	go.opentelemetry.io/collector/semconv v0.97.1-0.20240409140257-792fac1b62d4
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
@@ -60,7 +60,7 @@ require (
 	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
-	github.com/knadh/koanf/v2 v2.1.0 // indirect
+	github.com/knadh/koanf/v2 v2.1.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -91,12 +91,12 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector v0.97.1-0.20240409140257-792fac1b62d4 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.97.1-0.20240409140257-792fac1b62d4 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.4.1-0.20240409140257-792fac1b62d4 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.4.1-0.20240410162210-65cdb184f31d // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.97.1-0.20240409140257-792fac1b62d4 // indirect
 	go.opentelemetry.io/collector/config/internal v0.97.1-0.20240409140257-792fac1b62d4 // indirect
 	go.opentelemetry.io/collector/extension v0.97.1-0.20240409140257-792fac1b62d4 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.97.1-0.20240409140257-792fac1b62d4 // indirect
-	go.opentelemetry.io/collector/featuregate v1.4.1-0.20240409140257-792fac1b62d4 // indirect
+	go.opentelemetry.io/collector/featuregate v1.4.1-0.20240410162210-65cdb184f31d // indirect
 	go.opentelemetry.io/collector/receiver v0.97.1-0.20240409140257-792fac1b62d4 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect

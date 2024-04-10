@@ -9,11 +9,11 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.29.1
 	go.opentelemetry.io/collector/component v0.97.1-0.20240409140257-792fac1b62d4
-	go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240409140257-792fac1b62d4
+	go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240410162210-65cdb184f31d
 	go.opentelemetry.io/collector/confmap v0.97.1-0.20240409140257-792fac1b62d4
 	go.opentelemetry.io/collector/consumer v0.97.1-0.20240409140257-792fac1b62d4
 	go.opentelemetry.io/collector/otelcol v0.97.1-0.20240409140257-792fac1b62d4
-	go.opentelemetry.io/collector/pdata v1.4.1-0.20240409140257-792fac1b62d4
+	go.opentelemetry.io/collector/pdata v1.4.1-0.20240410162210-65cdb184f31d
 	go.opentelemetry.io/collector/receiver v0.97.1-0.20240409140257-792fac1b62d4
 	go.opentelemetry.io/otel/metric v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0
@@ -53,7 +53,7 @@ require (
 	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
-	github.com/knadh/koanf/v2 v2.1.0 // indirect
+	github.com/knadh/koanf/v2 v2.1.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -96,7 +96,7 @@ require (
 	go.opentelemetry.io/collector/connector v0.97.1-0.20240409140257-792fac1b62d4 // indirect
 	go.opentelemetry.io/collector/exporter v0.97.1-0.20240409140257-792fac1b62d4 // indirect
 	go.opentelemetry.io/collector/extension v0.97.1-0.20240409140257-792fac1b62d4 // indirect
-	go.opentelemetry.io/collector/featuregate v1.4.1-0.20240409140257-792fac1b62d4 // indirect
+	go.opentelemetry.io/collector/featuregate v1.4.1-0.20240410162210-65cdb184f31d // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.0.0-20240408153657-fc289290613a // indirect
 	go.opentelemetry.io/collector/processor v0.97.1-0.20240409140257-792fac1b62d4 // indirect
 	go.opentelemetry.io/collector/semconv v0.97.1-0.20240409140257-792fac1b62d4 // indirect

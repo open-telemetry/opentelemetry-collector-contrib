@@ -22,6 +22,7 @@ github.com/knadh/koanf/providers/rawbytes v0.1.0 h1:dpzgu2KO6uf6oCb4aP05KDmKmAmI
 github.com/knadh/koanf/providers/rawbytes v0.1.0/go.mod h1:mMTB1/IcJ/yE++A2iEZbY1MLygX7vttU+C+S/YmPu9c=
 github.com/knadh/koanf/v2 v2.1.0 h1:eh4QmHHBuU8BybfIJ8mB8K8gsGCD/AUQTdwGq/GzId8=
 github.com/knadh/koanf/v2 v2.1.0/go.mod h1:4mnTRbZCK+ALuBXHZMjDfG9y714L7TykVnZkXbMU3Es=
+github.com/knadh/koanf/v2 v2.1.1/go.mod h1:4mnTRbZCK+ALuBXHZMjDfG9y714L7TykVnZkXbMU3Es=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
@@ -43,6 +44,7 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240409140257-792fac1b62d4 h1:YYWytbJOhBQKt2NyCxc10Wk57kYs5i5jiZNftOu9Qw0=
 go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240409140257-792fac1b62d4/go.mod h1:U1IpLFisA6ChU2xBKSJfy7ivI/DaDSurgvoEFKfPVwo=
+go.opentelemetry.io/collector/config/configopaque v1.4.1-0.20240410162210-65cdb184f31d/go.mod h1:2/yPAqbcA53IH/9fmOn514vcLRfo5xft7EDIa8E7kqY=
 go.opentelemetry.io/collector/config/configtls v0.97.1-0.20240409140257-792fac1b62d4 h1:1rmikYza0o9sCLl1b0//YhSweWVxBNnON9fIV5c0Ca0=
 go.opentelemetry.io/collector/config/configtls v0.97.1-0.20240409140257-792fac1b62d4/go.mod h1:ev/fMI6hm1WTSHHEAEoVjF3RZj0qf38E/XO5itFku7k=
 go.opentelemetry.io/collector/confmap v0.97.0 h1:0CGSk7YW9rPc6jCwJteJzHzN96HRoHTfuqI7J/EmZsg=

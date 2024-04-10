@@ -85,6 +85,7 @@ github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 go.opentelemetry.io/collector/pdata v1.4.1-0.20240409140257-792fac1b62d4 h1:0uZ71auKC4N2HywHOVmzdVdhKMhG1z58kwnAGyHnRMM=
 go.opentelemetry.io/collector/pdata v1.4.1-0.20240409140257-792fac1b62d4/go.mod h1:TYj8aKRWZyT/KuKQXKyqSEvK/GV+slFaDMEI+Ke64Yw=
+go.opentelemetry.io/collector/pdata v1.4.1-0.20240410162210-65cdb184f31d/go.mod h1:TYj8aKRWZyT/KuKQXKyqSEvK/GV+slFaDMEI+Ke64Yw=
 go.opentelemetry.io/collector/semconv v0.97.1-0.20240409140257-792fac1b62d4 h1:FeunlAbm0KAdqqsARoMWfrF8GNB1EqFVl3rzTXgYa/c=
 go.opentelemetry.io/collector/semconv v0.97.1-0.20240409140257-792fac1b62d4/go.mod h1:8ElcRZ8Cdw5JnvhTOQOdYizkJaQ10Z2fS+R6djOnj6A=
 go.opentelemetry.io/proto/otlp v0.7.0/go.mod h1:PqfVotwruBrMGOCsRd/89rSnXhoiJIqeYNgFYFoEGnI=

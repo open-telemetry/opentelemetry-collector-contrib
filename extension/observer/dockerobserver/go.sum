@@ -151,6 +151,7 @@ go.opentelemetry.io/collector/extension v0.97.1-0.20240409140257-792fac1b62d4 h1
 go.opentelemetry.io/collector/extension v0.97.1-0.20240409140257-792fac1b62d4/go.mod h1:l3tQCs5v5nB6KWYWcqxfTN8vmqY+PYPWFRHoLt/JVrc=
 go.opentelemetry.io/collector/pdata v1.4.1-0.20240409140257-792fac1b62d4 h1:0uZ71auKC4N2HywHOVmzdVdhKMhG1z58kwnAGyHnRMM=
 go.opentelemetry.io/collector/pdata v1.4.1-0.20240409140257-792fac1b62d4/go.mod h1:TYj8aKRWZyT/KuKQXKyqSEvK/GV+slFaDMEI+Ke64Yw=
+go.opentelemetry.io/collector/pdata v1.4.1-0.20240410162210-65cdb184f31d/go.mod h1:TYj8aKRWZyT/KuKQXKyqSEvK/GV+slFaDMEI+Ke64Yw=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 h1:jq9TW8u3so/bN+JPT166wjOI6/vQPF6Xe7nMNIltagk=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0/go.mod h1:p8pYQP+m5XfbZm9fxtSKAbM6oIllS7s2AfxrChvc7iw=
 go.opentelemetry.io/otel v1.24.0 h1:0LAOdjNmQeSTzGBzduGe/rU4tZhMwL5rWgtp9Ku5Jfo=

@@ -63,6 +63,7 @@ go.opentelemetry.io/collector/extension v0.97.1-0.20240409140257-792fac1b62d4 h1
 go.opentelemetry.io/collector/extension v0.97.1-0.20240409140257-792fac1b62d4/go.mod h1:l3tQCs5v5nB6KWYWcqxfTN8vmqY+PYPWFRHoLt/JVrc=
 go.opentelemetry.io/collector/pdata v1.4.1-0.20240409140257-792fac1b62d4 h1:0uZ71auKC4N2HywHOVmzdVdhKMhG1z58kwnAGyHnRMM=
 go.opentelemetry.io/collector/pdata v1.4.1-0.20240409140257-792fac1b62d4/go.mod h1:TYj8aKRWZyT/KuKQXKyqSEvK/GV+slFaDMEI+Ke64Yw=
+go.opentelemetry.io/collector/pdata v1.4.1-0.20240410162210-65cdb184f31d/go.mod h1:TYj8aKRWZyT/KuKQXKyqSEvK/GV+slFaDMEI+Ke64Yw=
 go.opentelemetry.io/otel v1.24.0 h1:0LAOdjNmQeSTzGBzduGe/rU4tZhMwL5rWgtp9Ku5Jfo=
 go.opentelemetry.io/otel v1.24.0/go.mod h1:W7b9Ozg4nkF5tWI5zsXkaKKDjdVjpD4oAt9Qi/MArHo=
 go.opentelemetry.io/otel/exporters/prometheus v0.46.0 h1:I8WIFXR351FoLJYuloU4EgXbtNX2URfU/85pUPheIEQ=
