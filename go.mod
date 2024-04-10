@@ -50,6 +50,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.97.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.97.0
@@ -1159,3 +1160,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlqu
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ./extension/encoding
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension => ./extension/encoding/otlpencodingextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ./extension/ackextension
