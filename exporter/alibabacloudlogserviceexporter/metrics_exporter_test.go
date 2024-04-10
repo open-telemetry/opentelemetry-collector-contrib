@@ -10,8 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestNewMetricsExporter(t *testing.T) {
@@ -24,7 +23,7 @@ func TestNewMetricsExporter(t *testing.T) {
 	require.NotNil(t, got)
 
 	// This will put trace data to send buffer and return success.
-	err = got.ConsumeMetrics(context.Background(), testdata.GenerateMetricsOneMetric())
+	err = got.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1))
 	assert.NoError(t, err)
 }
 
