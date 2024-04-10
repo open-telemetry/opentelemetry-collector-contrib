@@ -54,14 +54,14 @@ func Test_Server_ListenAndServe(t *testing.T) {
 
 			mc := new(consumertest.MetricsSink)
 			require.NoError(t, err)
-			mr := NewMockReporter(1)
+			nl := NewNoopLogger()
 			transferChan := make(chan Metric, 10)
 
 			wgListenAndServe := sync.WaitGroup{}
 			wgListenAndServe.Add(1)
 			go func() {
 				defer wgListenAndServe.Done()
-				assert.Error(t, srv.ListenAndServe(mc, mr, transferChan))
+				assert.Error(t, srv.ListenAndServe(mc, nl, transferChan))
 			}()
 
 			runtime.Gosched()

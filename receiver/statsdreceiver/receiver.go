@@ -6,7 +6,6 @@ package statsdreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"strings"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
@@ -29,11 +29,13 @@ type statsdReceiver struct {
 	settings receiver.CreateSettings
 	config   *Config
 
-	server       transport.Server
-	reporter     transport.Reporter
-	parser       protocol.Parser
-	nextConsumer consumer.Metrics
-	cancel       context.CancelFunc
+	trans           transport.Transport
+	server          transport.Server
+	reporter        *receiverhelper.ObsReport
+	transportLogger transport.Logger
+	parser          protocol.Parser
+	nextConsumer    consumer.Metrics
+	cancel          context.CancelFunc
 }
 
 // newReceiver creates the StatsD receiver with the given parameters.
@@ -42,21 +44,28 @@ func newReceiver(
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	if config.NetAddr.Endpoint == "" {
 		config.NetAddr.Endpoint = "localhost:8125"
 	}
 
-	rep, err := newReporter(set)
+	trans := transport.NewTransport(strings.ToLower(string(config.NetAddr.Transport)))
+
+	rep, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             set.ID,
+		Transport:              trans.String(),
+		ReceiverCreateSettings: set,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	r := &statsdReceiver{
-		settings:     set,
-		config:       &config,
-		nextConsumer: nextConsumer,
-		reporter:     rep,
+		settings:        set,
+		config:          &config,
+		nextConsumer:    nextConsumer,
+		trans:           trans,
+		reporter:        rep,
+		transportLogger: transport.NewZapLogger(set.Logger),
 		parser: &protocol.StatsDParser{
 			BuildInfo: set.BuildInfo,
 		},
@@ -64,23 +73,22 @@ func newReceiver(
 	return r, nil
 }
 
-func buildTransportServer(config Config) (transport.Server, error) {
+func buildTransportServer(trans transport.Transport, endpoint string) (transport.Server, error) {
 	// TODO: Add unix socket transport implementations
-	trans := transport.NewTransport(strings.ToLower(string(config.NetAddr.Transport)))
 	switch trans {
 	case transport.UDP, transport.UDP4, transport.UDP6:
-		return transport.NewUDPServer(trans, config.NetAddr.Endpoint)
+		return transport.NewUDPServer(trans, endpoint)
 	case transport.TCP, transport.TCP4, transport.TCP6:
-		return transport.NewTCPServer(trans, config.NetAddr.Endpoint)
+		return transport.NewTCPServer(trans, endpoint)
 	}
 
-	return nil, fmt.Errorf("unsupported transport %q", string(config.NetAddr.Transport))
+	return nil, transport.ErrUnsupportedTransport
 }
 
 // Start starts a UDP server that can process StatsD messages.
 func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 	ctx, r.cancel = context.WithCancel(ctx)
-	server, err := buildTransportServer(*r.config)
+	server, err := buildTransportServer(r.trans, r.config.NetAddr.Endpoint)
 	if err != nil {
 		return err
 	}
@@ -97,7 +105,7 @@ func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 	go func() {
-		if err := r.server.ListenAndServe(r.nextConsumer, r.reporter, transferChan); err != nil {
+		if err := r.server.ListenAndServe(r.nextConsumer, r.transportLogger, transferChan); err != nil {
 			if !errors.Is(err, net.ErrClosed) {
 				r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 			}
@@ -112,12 +120,12 @@ func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 					batchCtx := client.NewContext(ctx, batch.Info)
 
 					if err := r.Flush(batchCtx, batch.Metrics, r.nextConsumer); err != nil {
-						r.reporter.OnDebugf("Error flushing metrics", zap.Error(err))
+						r.settings.Logger.Debug("Error flushing metrics", zap.Error(err))
 					}
 				}
 			case metric := <-transferChan:
 				if err := r.parser.Aggregate(metric.Raw, metric.Addr); err != nil {
-					r.reporter.OnDebugf("Error aggregating metric", zap.Error(err))
+					r.settings.Logger.Debug("Error aggregating metric", zap.Error(err))
 				}
 			case <-ctx.Done():
 				ticker.Stop()
@@ -140,5 +148,8 @@ func (r *statsdReceiver) Shutdown(context.Context) error {
 }
 
 func (r *statsdReceiver) Flush(ctx context.Context, metrics pmetric.Metrics, nextConsumer consumer.Metrics) error {
-	return nextConsumer.ConsumeMetrics(ctx, metrics)
+	r.reporter.StartMetricsOp(ctx)
+	err := nextConsumer.ConsumeMetrics(ctx, metrics)
+	r.reporter.EndMetricsOp(ctx, r.settings.ID.Type().String(), metrics.DataPointCount(), err)
+	return err
 }

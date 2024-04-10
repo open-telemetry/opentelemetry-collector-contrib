@@ -42,10 +42,10 @@ func NewUDPServer(transport Transport, address string) (Server, error) {
 // ListenAndServe starts the server ready to receive metrics.
 func (u *udpServer) ListenAndServe(
 	nextConsumer consumer.Metrics,
-	reporter Reporter,
+	logger Logger,
 	transferChan chan<- Metric,
 ) error {
-	if nextConsumer == nil || reporter == nil {
+	if nextConsumer == nil || logger == nil {
 		return errNilListenAndServeParameters
 	}
 
@@ -58,7 +58,7 @@ func (u *udpServer) ListenAndServe(
 			u.handlePacket(bufCopy, addr, transferChan)
 		}
 		if err != nil {
-			reporter.OnDebugf("%s Transport (%s) - ReadFrom error: %v",
+			logger.OnDebugf("%s Transport (%s) - ReadFrom error: %v",
 				u.transport,
 				u.packetConn.LocalAddr(),
 				err)

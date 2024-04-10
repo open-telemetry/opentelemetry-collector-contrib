@@ -5,7 +5,6 @@ package statsdreceiver
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -44,7 +43,7 @@ func Test_statsdreceiver_Start(t *testing.T) {
 				},
 				nextConsumer: consumertest.NewNop(),
 			},
-			wantErr: errors.New("unsupported transport \"unknown\""),
+			wantErr: transport.ErrUnsupportedTransport,
 		},
 	}
 	for _, tt := range tests {
@@ -117,8 +116,8 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			require.NoError(t, err)
 			r := rcv.(*statsdReceiver)
 
-			mr := transport.NewMockReporter(1)
-			r.reporter = mr
+			nl := transport.NewNoopLogger()
+			r.transportLogger = nl
 
 			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {

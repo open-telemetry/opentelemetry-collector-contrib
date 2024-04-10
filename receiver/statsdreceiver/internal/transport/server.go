@@ -20,7 +20,7 @@ type Server interface {
 	// the Parser and passed to the next consumer.
 	ListenAndServe(
 		mc consumer.Metrics,
-		r Reporter,
+		l Logger,
 		transferChan chan<- Metric,
 	) error
 
@@ -34,11 +34,6 @@ type Metric struct {
 	Addr net.Addr
 }
 
-// Reporter is used to report (via zPages, logs, metrics, etc) the events
-// happening when the Server is receiving and processing data.
-type Reporter interface {
-	// OnDebugf allows less structured reporting for debugging scenarios.
-	OnDebugf(
-		template string,
-		args ...any)
+type Logger interface {
+	OnDebugf(template string, args ...any)
 }

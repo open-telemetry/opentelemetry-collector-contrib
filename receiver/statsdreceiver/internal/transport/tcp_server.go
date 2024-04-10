@@ -19,7 +19,7 @@ var errTCPServerDone = errors.New("server stopped")
 
 type tcpServer struct {
 	listener  net.Listener
-	reporter  Reporter
+	logger    Logger
 	wg        sync.WaitGroup
 	transport Transport
 	stopChan  chan struct{}
@@ -48,19 +48,19 @@ func NewTCPServer(transport Transport, address string) (Server, error) {
 }
 
 // ListenAndServe starts the server ready to receive metrics.
-func (t *tcpServer) ListenAndServe(nextConsumer consumer.Metrics, reporter Reporter, transferChan chan<- Metric) error {
-	if nextConsumer == nil || reporter == nil {
+func (t *tcpServer) ListenAndServe(nextConsumer consumer.Metrics, logger Logger, transferChan chan<- Metric) error {
+	if nextConsumer == nil || logger == nil {
 		return errNilListenAndServeParameters
 	}
 
-	t.reporter = reporter
+	t.logger = logger
 LOOP:
 	for {
 		connChan := make(chan net.Conn, 1)
 		go func() {
 			c, err := t.listener.Accept()
 			if err != nil {
-				t.reporter.OnDebugf("TCP Transport - Accept error: %v",
+				t.logger.OnDebugf("TCP Transport - Accept error: %v",
 					err)
 			} else {
 				connChan <- c
@@ -85,7 +85,7 @@ func (t *tcpServer) handleConn(c net.Conn, transferChan chan<- Metric) {
 	for {
 		n, err := c.Read(payload)
 		if err != nil {
-			t.reporter.OnDebugf("TCP transport (%s) Error reading payload: %v", c.LocalAddr(), err)
+			t.logger.OnDebugf("TCP transport (%s) Error reading payload: %v", c.LocalAddr(), err)
 			t.wg.Done()
 			return
 		}
