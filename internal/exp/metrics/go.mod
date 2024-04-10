@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.97.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/pdata v1.4.1-0.20240409140257-792fac1b62d4
+	go.opentelemetry.io/collector/pdata v1.5.0
 )
 
 require (
