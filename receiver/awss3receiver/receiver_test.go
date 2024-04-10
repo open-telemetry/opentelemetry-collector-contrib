@@ -7,13 +7,13 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"go.uber.org/zap"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.22.0"
+	"go.uber.org/zap"
 )
 
 func generateTraceData() ptrace.Traces {

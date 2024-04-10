@@ -75,14 +75,13 @@ func (r *awss3TraceReceiver) receiveBytes(ctx context.Context, key string, data 
 	if strings.HasSuffix(key, ".binpb") {
 		unmarshaler = &ptrace.ProtoUnmarshaler{}
 	}
-	if unmarshaler != nil {
-		traces, err := unmarshaler.UnmarshalTraces(data)
-		if err != nil {
-			return err
-		}
-		return r.consumer.ConsumeTraces(ctx, traces)
-	} else {
+	if unmarshaler == nil {
 		r.logger.Warn("Unsupported file format", zap.String("key", key))
+		return nil
 	}
-	return nil
+	traces, err := unmarshaler.UnmarshalTraces(data)
+	if err != nil {
+		return err
+	}
+	return r.consumer.ConsumeTraces(ctx, traces)
 }
