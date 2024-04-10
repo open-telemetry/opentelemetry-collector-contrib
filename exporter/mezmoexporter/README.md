@@ -31,7 +31,7 @@ that adds `hostname` detection support.
 specified, will default to `https://logs.mezmo.com/otel/ingest/rest`.
 - `ingest_key` (required): Ingestion key used to send log data to Mezmo.  See
 [Ingestion Keys](https://docs.mezmo.com/docs/ingestion-key) for more details.
-- `compression` (optional): Enables compression of requests.
+- `compression` (optional bool): Enables compression of requests, disabled by default. Set to `true` to enable.
 
 # Example:
 ## Simple Log Data
@@ -55,6 +55,7 @@ exporters:
   mezmo:
     ingest_url: "https://logs.mezmo.com/otel/ingest/rest"
     ingest_key: "00000000000000000000000000000000"
+    compression: true
 
 service:
   pipelines:
