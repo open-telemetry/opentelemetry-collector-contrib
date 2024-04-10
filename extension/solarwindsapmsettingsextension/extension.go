@@ -66,11 +66,11 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, _ comp
 
 func (extension *solarwindsapmSettingsExtension) Shutdown(_ context.Context) error {
 	extension.logger.Info("Shutting down solarwinds apm settings extension")
-	if extension.conn != nil {
-		return extension.conn.Close()
-	}
 	if extension.cancel != nil {
 		extension.cancel()
+	}
+	if extension.conn != nil {
+		return extension.conn.Close()
 	}
 	return nil
 }
