@@ -68,6 +68,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 	}
 
 	streamFactory, streamErr := newEnvelopeStreamFactory(
+		ctx,
 		cfr.settings,
 		tokenProvider,
 		cfr.config.RLPGateway.ClientConfig,

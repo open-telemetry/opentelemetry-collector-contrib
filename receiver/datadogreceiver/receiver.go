@@ -43,7 +43,7 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params rec
 	}, nil
 }
 
-func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error {
+func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) error {
 	ddmux := http.NewServeMux()
 	ddmux.HandleFunc("/v0.3/traces", ddr.handleTraces)
 	ddmux.HandleFunc("/v0.4/traces", ddr.handleTraces)
@@ -52,7 +52,8 @@ func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error 
 	ddmux.HandleFunc("/api/v0.2/traces", ddr.handleTraces)
 
 	var err error
-	ddr.server, err = ddr.config.ServerConfig.ToServer(
+	ddr.server, err = ddr.config.ServerConfig.ToServerContext(
+		ctx,
 		host,
 		ddr.params.TelemetrySettings,
 		ddmux,
@@ -60,7 +61,7 @@ func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error 
 	if err != nil {
 		return fmt.Errorf("failed to create server definition: %w", err)
 	}
-	hln, err := ddr.config.ServerConfig.ToListener()
+	hln, err := ddr.config.ServerConfig.ToListenerContext(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create datadog listener: %w", err)
 	}

@@ -417,7 +417,8 @@ processors:
     override: false
     aks:
       resource_attributes:
-        k8s.cluster.name: true
+        k8s.cluster.name:
+          enabled: true
 ```
 
 Azure AKS cluster name is derived from the Azure Instance Metadata Service's (IMDS) infrastructure resource group field. This field contains the resource group and name of the cluster, separated by underscores. e.g: `MC_<resource group>_<cluster name>_<location>`.

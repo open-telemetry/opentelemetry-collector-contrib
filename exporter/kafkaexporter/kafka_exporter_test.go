@@ -18,9 +18,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
@@ -145,7 +145,7 @@ func TestTracesPusher(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.tracesPusher(context.Background(), testdata.GenerateTracesTwoSpansSameResource())
+	err := p.tracesPusher(context.Background(), testdata.GenerateTraces(2))
 	require.NoError(t, err)
 }
 
@@ -163,7 +163,7 @@ func TestTracesPusher_err(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	td := testdata.GenerateTracesTwoSpansSameResource()
+	td := testdata.GenerateTraces(2)
 	err := p.tracesPusher(context.Background(), td)
 	assert.EqualError(t, err, expErr.Error())
 }
@@ -174,7 +174,7 @@ func TestTracesPusher_marshal_error(t *testing.T) {
 		marshaler: &tracesErrorMarshaler{err: expErr},
 		logger:    zap.NewNop(),
 	}
-	td := testdata.GenerateTracesTwoSpansSameResource()
+	td := testdata.GenerateTraces(2)
 	err := p.tracesPusher(context.Background(), td)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
@@ -192,7 +192,7 @@ func TestMetricsDataPusher(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.metricsDataPusher(context.Background(), testdata.GenerateMetricsTwoMetrics())
+	err := p.metricsDataPusher(context.Background(), testdata.GenerateMetrics(2))
 	require.NoError(t, err)
 }
 
@@ -210,7 +210,7 @@ func TestMetricsDataPusher_err(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	md := testdata.GenerateMetricsTwoMetrics()
+	md := testdata.GenerateMetrics(2)
 	err := p.metricsDataPusher(context.Background(), md)
 	assert.EqualError(t, err, expErr.Error())
 }
@@ -221,7 +221,7 @@ func TestMetricsDataPusher_marshal_error(t *testing.T) {
 		marshaler: &metricsErrorMarshaler{err: expErr},
 		logger:    zap.NewNop(),
 	}
-	md := testdata.GenerateMetricsTwoMetrics()
+	md := testdata.GenerateMetrics(2)
 	err := p.metricsDataPusher(context.Background(), md)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
@@ -239,7 +239,7 @@ func TestLogsDataPusher(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.logsDataPusher(context.Background(), testdata.GenerateLogsOneLogRecord())
+	err := p.logsDataPusher(context.Background(), testdata.GenerateLogs(1))
 	require.NoError(t, err)
 }
 
@@ -257,7 +257,7 @@ func TestLogsDataPusher_err(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	ld := testdata.GenerateLogsOneLogRecord()
+	ld := testdata.GenerateLogs(1)
 	err := p.logsDataPusher(context.Background(), ld)
 	assert.EqualError(t, err, expErr.Error())
 }
@@ -268,7 +268,7 @@ func TestLogsDataPusher_marshal_error(t *testing.T) {
 		marshaler: &logsErrorMarshaler{err: expErr},
 		logger:    zap.NewNop(),
 	}
-	ld := testdata.GenerateLogsOneLogRecord()
+	ld := testdata.GenerateLogs(1)
 	err := p.logsDataPusher(context.Background(), ld)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
