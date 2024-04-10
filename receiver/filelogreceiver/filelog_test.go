@@ -385,3 +385,78 @@ func (g *fileLogGenerator) Generate() []receivertest.UniqueIDAttrVal {
 	require.NoError(g.t, err)
 	return []receivertest.UniqueIDAttrVal{id}
 }
+
+// TestSymlinkedLogs tests that the filelog receiver reading from a single
+// file that's actually a symlink to another file, while the symlink target
+// is changed frequently, reads all the logs from all the files ever targetted
+// by that symlink.
+func TestSymlinkedLogs(t *testing.T) {
+	// Create 50 files with a predictable naming scheme, each containing
+	// 10 log lines.
+	const numFiles = 50
+	const logLinesPerFile = 10
+	tempDir := t.TempDir()
+	for i := 1; i <= numFiles; i++ {
+		symlinkTestCreateLogFile(t, tempDir, i, logLinesPerFile)
+	}
+
+	// Create the filelog receiver, configuring it to read from the single file
+	// that'll be a symlink to each of the 50 files over time.
+	symlinkFilePath := filepath.Join(tempDir, "sym.log")
+	const pollInterval = 10 * time.Millisecond
+	cfg := symlinkTestConfig(symlinkFilePath, pollInterval)
+	sink := new(consumertest.LogsSink)
+
+	rcvr, err := NewFactory().CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
+	require.NoError(t, err, "failed to create receiver")
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Create and update symlink to each of the 50 files over time.
+	for i := 1; i <= numFiles; i++ {
+		targetLogFilePath := fmt.Sprintf("%d.log", i)
+		require.NoError(t, os.Symlink(targetLogFilePath, symlinkFilePath))
+
+		// The sleep time here must be larger than the poll_interval value
+		// in the filelog receiver configuration.
+		time.Sleep(pollInterval + 1*time.Millisecond)
+
+		require.NoError(t, os.Remove(symlinkFilePath))
+	}
+
+	// Assert that all 50 * 10 = 500 log lines are read.
+	numLogs := numFiles * logLinesPerFile
+	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, 10*time.Millisecond,
+		"expected %d but got %d logs",
+		numLogs, sink.LogRecordCount(),
+	)
+	require.NoError(t, rcvr.Shutdown(context.Background()))
+}
+
+func symlinkTestConfig(symlinkFilePath string, pollInterval time.Duration) *FileLogConfig {
+	return &FileLogConfig{
+		//BaseConfig:  adapter.BaseConfig{},
+		InputConfig: func() file.Config {
+			c := file.NewConfig()
+			c.Include = []string{symlinkFilePath}
+			c.StartAt = "beginning"
+			c.PollInterval = pollInterval
+			c.IncludeFileName = false
+			return *c
+		}(),
+	}
+}
+
+func symlinkTestCreateLogFile(t *testing.T, tempDir string, fileIdx, numLogLines int) {
+	logFilePath := filepath.Join(tempDir, fmt.Sprintf("%d.log", fileIdx))
+	file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_RDWR, 0600)
+	defer func() {
+		require.NoError(t, file.Close())
+	}()
+	require.NoError(t, err)
+
+	for i := 0; i < numLogLines; i++ {
+		msg := fmt.Sprintf("[fileIdx %2d] This is a simple log line with the number %3d", fileIdx, i)
+		_, err := file.WriteString(fmt.Sprintf("2020-08-25 %s\n", msg))
+		require.NoError(t, err)
+	}
+}
