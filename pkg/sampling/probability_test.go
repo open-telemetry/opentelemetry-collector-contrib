@@ -171,7 +171,10 @@ func ExampleProbabilityToThreshold_verysmall() {
 		0x8p-56,                // Skip 8 out of 2**56
 		0x10p-56,               // Skip 0x10 out of 2**56
 	} {
-		tval, _ := ProbabilityToThreshold(prob)
+		// Note that precision is automatically raised for
+		// such small probabilities, because leading 'f' and
+		// '0' digits are discounted.
+		tval, _ := ProbabilityToThresholdWithPrecision(prob, 3)
 		fmt.Println(tval.TValue())
 	}
 
@@ -279,7 +282,7 @@ func TestProbabilityToThresholdWithPrecision(t *testing.T) {
 					for len(strip) > 0 && strip[0] == '0' {
 						strip = strip[1:]
 					}
-					rth, err := ProbabilityToThresholdWithPrecision(test.prob, uint8(len(strip)))
+					rth, err := ProbabilityToThresholdWithPrecision(test.prob, len(strip))
 					require.NoError(t, err)
 					require.Equal(t, round, rth.TValue())
 				})
