@@ -254,9 +254,11 @@ func (r *splunkReceiver) Shutdown(context.Context) error {
 }
 
 func (r *splunkReceiver) writeSuccessResponseWithAck(ctx context.Context, resp http.ResponseWriter, eventCount int, partitionID string) {
-	ackID := r.ackExt.ProcessEvent(partitionID)
-	r.ackExt.Ack(partitionID, ackID)
-	r.writeSuccessResponse(ctx, resp, eventCount, []byte(fmt.Sprintf(responseOKWithAckID, ackID)))
+	if r.ackExt != nil {
+		ackID := r.ackExt.ProcessEvent(partitionID)
+		r.ackExt.Ack(partitionID, ackID)
+		r.writeSuccessResponse(ctx, resp, eventCount, []byte(fmt.Sprintf(responseOKWithAckID, ackID)))
+	}
 }
 
 func (r *splunkReceiver) writeSuccessResponseWithoutAck(ctx context.Context, resp http.ResponseWriter, eventCount int) {
@@ -289,24 +291,22 @@ func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	// check that the channel exists
-	partitionID := req.Header.Get(splunk.HTTPSplunkChannelHeader)
-	if len(partitionID) == 0 {
+	var partitionID string
+	var extracted bool
+	if partitionID, extracted = r.extractChannelHeader(req); extracted {
+		if partitionErr := r.validateChannelHeader(partitionID); partitionErr != nil {
+			r.failRequest(ctx, resp, http.StatusBadRequest, []byte(partitionErr.Error()), 0, partitionErr)
+			return
+		}
+	} else {
 		r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
-		return
-	}
-
-	// check validity of channel
-	_, err := uuid.Parse(partitionID)
-	if err != nil {
-		r.failRequest(ctx, resp, http.StatusBadRequest, invalidDataChannelHeader, 0, err)
 		return
 	}
 
 	dec := json.NewDecoder(req.Body)
 	var ackRequest splunk.AckRequest
 
-	err = dec.Decode(&ackRequest)
+	err := dec.Decode(&ackRequest)
 	if err != nil || len(ackRequest.Acks) == 0 {
 		r.failRequest(ctx, resp, http.StatusBadRequest, invalidFormatRespBody, 0, err)
 		return
@@ -330,11 +330,14 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidEncodingRespBody, 0, errInvalidEncoding)
 		return
 	}
+
 	var partitionID string
-	var partitionErr error
-	if partitionID, partitionErr = r.validateAndExtractChannelHeader(req); partitionErr != nil {
-		r.failRequest(ctx, resp, http.StatusBadRequest, []byte(partitionErr.Error()), 0, partitionErr)
-		return
+	var extracted bool
+	if partitionID, extracted = r.extractChannelHeader(req); extracted {
+		if partitionErr := r.validateChannelHeader(partitionID); partitionErr != nil {
+			r.failRequest(ctx, resp, http.StatusBadRequest, []byte(partitionErr.Error()), 0, partitionErr)
+			return
+		}
 	}
 
 	if req.ContentLength == 0 {
@@ -395,25 +398,26 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	}
 }
 
-func (r *splunkReceiver) validateAndExtractChannelHeader(req *http.Request) (string, error) {
-	partitionID, ok := req.Header[splunk.HTTPSplunkChannelHeader]
-
-	// check channel header exists
-	if !ok {
-		return "", nil
+func (r *splunkReceiver) extractChannelHeader(req *http.Request) (string, bool) {
+	headers, ok := req.Header[splunk.HTTPSplunkChannelHeader]
+	if ok {
+		return headers[0], true
 	}
+	return "", false
+}
 
-	if len(partitionID[0]) == 0 {
-		return "", errors.New(responseErrInvalidDataChannel)
+func (r *splunkReceiver) validateChannelHeader(partitionID string) error {
+	if len(partitionID) == 0 {
+		return errors.New(responseErrDataChannelMissing)
 	}
 
 	// check validity of channel
-	_, err := uuid.Parse(partitionID[0])
+	_, err := uuid.Parse(partitionID)
 	if err != nil {
-		return "", errors.New(responseErrInvalidDataChannel)
+		return errors.New(responseErrInvalidDataChannel)
 	}
 
-	return partitionID[0], nil
+	return nil
 }
 
 func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
@@ -437,10 +441,12 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 
 	var partitionID string
-	var partitionErr error
-	if partitionID, partitionErr = r.validateAndExtractChannelHeader(req); partitionErr != nil {
-		r.failRequest(ctx, resp, http.StatusBadRequest, []byte(partitionErr.Error()), 0, partitionErr)
-		return
+	var extracted bool
+	if partitionID, extracted = r.extractChannelHeader(req); extracted {
+		if partitionErr := r.validateChannelHeader(partitionID); partitionErr != nil {
+			r.failRequest(ctx, resp, http.StatusBadRequest, []byte(partitionErr.Error()), 0, partitionErr)
+			return
+		}
 	}
 
 	bodyReader := req.Body
@@ -539,8 +545,8 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pcommon.Resource) {
 	if r.config.AccessTokenPassthrough {
 		accessToken := req.Header.Get("Authorization")
-		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
-			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
+		if strings.HasPrefix(accessToken, splunk.HecTokenHeader+" ") {
+			accessTokenValue := accessToken[len(splunk.HecTokenHeader)+1:]
 			return func(resource pcommon.Resource) {
 				resource.Attributes().PutStr(splunk.HecTokenLabel, accessTokenValue)
 			}

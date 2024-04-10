@@ -95,7 +95,7 @@ func (c *client) pushMetricsData(
 	if md.ResourceMetrics().Len() != 0 {
 		accessToken, found := md.ResourceMetrics().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
 		if found {
-			localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+			localHeaders["Authorization"] = splunk.HecTokenHeader + " " + accessToken.Str()
 		}
 	}
 
@@ -116,7 +116,7 @@ func (c *client) pushTraceData(
 	if td.ResourceSpans().Len() != 0 {
 		accessToken, found := td.ResourceSpans().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
 		if found {
-			localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+			localHeaders["Authorization"] = splunk.HecTokenHeader + " " + accessToken.Str()
 		}
 	}
 
@@ -136,7 +136,7 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 	// All logs in a batch have the same access token after batchperresourceattr, so we can just check the first one.
 	accessToken, found := ld.ResourceLogs().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
 	if found {
-		localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+		localHeaders["Authorization"] = splunk.HecTokenHeader + " " + accessToken.Str()
 	}
 
 	// All logs in a batch have only one type (regular or profiling logs) after perScopeBatcher,
@@ -677,7 +677,7 @@ func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]
 		"Connection":           "keep-alive",
 		"Content-Type":         "application/json",
 		"User-Agent":           config.SplunkAppName + "/" + appVersion,
-		"Authorization":        splunk.HECTokenHeader + " " + string(config.Token),
+		"Authorization":        splunk.HecTokenHeader + " " + string(config.Token),
 		"__splunk_app_name":    config.SplunkAppName,
 		"__splunk_app_version": config.SplunkAppVersion,
 	}

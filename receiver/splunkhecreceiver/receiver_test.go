@@ -1388,7 +1388,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, map[string]any{"text": "Invalid data channel", "code": float64(11)}, body)
+				assert.Equal(t, map[string]any{"code": float64(10), "text": "Data channel is missing"}, body)
 			},
 		},
 		{
@@ -1514,7 +1514,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, map[string]any{"text": "Invalid data channel", "code": float64(11)}, body)
+				assert.Equal(t, map[string]any{"code": float64(10), "text": "Data channel is missing"}, body)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
 				assert.Equal(t, 0, len(sink.AllLogs()))

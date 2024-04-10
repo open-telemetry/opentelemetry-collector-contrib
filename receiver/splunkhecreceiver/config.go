@@ -39,6 +39,6 @@ type Config struct {
 type Ack struct {
 	// Extension defines the extension to use for acking of events. Without specifying an extension, the ACK endpoint won't be exposed
 	Extension *component.ID `mapstructure:"ack_extension"`
-	// Path for Ack API, default is '/services/collector/ack'
+	// Path for Ack API, default is '/services/collector/ack'. Ignored if Extension is not provided.
 	Path string `mapstructure:"ack_path"`
 }

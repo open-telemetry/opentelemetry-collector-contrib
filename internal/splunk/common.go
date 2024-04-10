@@ -22,7 +22,7 @@ const (
 	DefaultNameLabel           = "otel.log.name"
 	DefaultSeverityTextLabel   = "otel.log.severity.text"
 	DefaultSeverityNumberLabel = "otel.log.severity.number"
-	HECTokenHeader             = "Splunk"
+	HecTokenHeader             = "Splunk"
 	HTTPSplunkChannelHeader    = "X-Splunk-Request-Channel"
 
 	HecTokenLabel = "com.splunk.hec.access_token" // #nosec
