@@ -4,8 +4,6 @@
 package data // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 
 import (
-	"fmt"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -15,8 +13,8 @@ import (
 // spec-compliant operation.
 // if spec-compliant assumptions are broken however, we want to fail loud
 // and clear. can be overwritten during testing
-var fail = func(format string, args ...any) {
-	panic(fmt.Sprintf(format, args...))
+var fail = func(msg string) {
+	panic(msg)
 }
 
 func (dp Number) Add(in Number) Number {
@@ -69,30 +67,32 @@ func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 	aggregate(dp.Positive(), in.Positive())
 	aggregate(dp.Negative(), in.Negative())
 
-	count, sum := dp.stats()
-	dp.SetCount(count)
-	dp.SetSum(sum)
 	dp.SetTimestamp(in.Timestamp())
-	if dp.HasMin() {
-		dp.SetMin(min(dp.Min(), in.Min()))
+	dp.SetCount(dp.Count() + in.Count())
+
+	type T = ExpHistogram
+	optionals := []field{
+		{get: T.Sum, set: T.SetSum, has: T.HasSum, del: T.RemoveSum, op: func(a, b float64) float64 { return a + b }},
+		{get: T.Min, set: T.SetMin, has: T.HasMin, del: T.RemoveMin, op: func(a, b float64) float64 { return min(a, b) }},
+		{get: T.Max, set: T.SetMax, has: T.HasMax, del: T.RemoveMax, op: func(a, b float64) float64 { return max(a, b) }},
 	}
-	if dp.HasMax() {
-		dp.SetMax(max(dp.Max(), in.Max()))
+	for _, f := range optionals {
+		if f.has(dp) && f.has(in) {
+			f.set(dp, f.op(f.get(dp), f.get(in)))
+		} else {
+			f.del(dp)
+		}
 	}
 
 	return dp
 }
 
-func (dp ExpHistogram) stats() (count uint64, sum float64) {
-	bkt := dp.Positive().BucketCounts()
-	for i := 0; i < bkt.Len(); i++ {
-		at := bkt.At(i)
-		if at != 0 {
-			count++
-			sum += float64(at)
-		}
-	}
-	return count, sum
+type field struct {
+	get func(ExpHistogram) float64
+	set func(ExpHistogram, float64)
+	has func(ExpHistogram) bool
+	del func(ExpHistogram)
+	op  func(a, b float64) float64
 }
 
 type Buckets struct {

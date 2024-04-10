@@ -1,6 +1,7 @@
 package data
 
 import (
+	"math"
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -9,39 +10,57 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
+// represents none/absent/unset in several tests
+const ø = math.MaxUint64
+
 func TestAdd(t *testing.T) {
 	type tcase struct {
 		name   string
-		dp, in exphist
-		want   exphist
+		dp, in expdp
+		want   expdp
 	}
 
 	cases := []tcase{{
 		name: "noop",
-		dp:   exphist{ts: 0, bkt: buckets([]uint64{0, 0, 0, 0, 0, 0, 0, 0, 0})},
-		in:   exphist{ts: 1, bkt: buckets([]uint64{0, 0, 0, 0, 0, 0, 0, 0, 0})},
-		want: exphist{ts: 1, bkt: buckets([]uint64{0, 0, 0, 0, 0, 0, 0, 0, 0})},
+		dp:   expdp{ts: 0, pos: buckets{0, 0, 0, 0, 0, 0, 0, 0, 0}, neg: buckets{0, 0, 0, 0, 0, 0, 0, 0, 0}, count: 0},
+		in:   expdp{ts: 1, pos: buckets{0, 0, 0, 0, 0, 0, 0, 0, 0}, neg: buckets{0, 0, 0, 0, 0, 0, 0, 0, 0}, count: 0},
+		want: expdp{ts: 1, pos: buckets{0, 0, 0, 0, 0, 0, 0, 0, 0}, neg: buckets{0, 0, 0, 0, 0, 0, 0, 0, 0}, count: 0},
 	}, {
 		name: "simple",
-		dp:   exphist{ts: 0, bkt: buckets([]uint64{0, 0, 0, 0, 0, 0, 0, 0, 0})},
-		in:   exphist{ts: 1, bkt: buckets([]uint64{1, 2, 3, 4, 5, 6, 7, 8, 9})},
-		want: exphist{ts: 1, bkt: buckets([]uint64{1, 2, 3, 4, 5, 6, 7, 8, 9})},
+		dp:   expdp{ts: 0, pos: buckets{0, 0, 0, 0, 0, 0, 0, 0, 0}, neg: buckets{0, 0, 0, 0, 0, 0, 0, 0, 0}, count: 0},
+		in:   expdp{ts: 1, pos: buckets{1, 2, 3, 4, 5, 6, 7, 8, 9}, neg: buckets{1, 2, 3, 4, 5, 6, 7, 8, 9}, count: 2 * 45},
+		want: expdp{ts: 1, pos: buckets{1, 2, 3, 4, 5, 6, 7, 8, 9}, neg: buckets{1, 2, 3, 4, 5, 6, 7, 8, 9}, count: 2 * (0 + 45)},
 	}, {
 		name: "lower+shorter",
-		dp:   exphist{ts: 0, bkt: buckets([]uint64{0, 0, 0, 0, 0, 1, 1, 1, 1}, 5)},
-		in:   exphist{ts: 1, bkt: buckets([]uint64{0, 0, 1, 1, 1, 1, 1}, 2)},
-		want: exphist{ts: 1, bkt: buckets([]uint64{0, 0, 1, 1, 1, 2, 2, 1, 1}, 2)},
+		dp:   expdp{ts: 0, pos: buckets{ø, ø, ø, ø, ø, 1, 1, 1, 1}, neg: buckets{ø, ø, ø, ø, ø, 1, 1, 1, 1}, count: 2 * 4},
+		in:   expdp{ts: 1, pos: buckets{ø, ø, 1, 1, 1, 1, 1, ø, ø}, neg: buckets{ø, ø, 1, 1, 1, 1, 1, ø, ø}, count: 2 * 5},
+		want: expdp{ts: 1, pos: buckets{ø, ø, 1, 1, 1, 2, 2, 1, 1}, neg: buckets{ø, ø, 1, 1, 1, 2, 2, 1, 1}, count: 2 * (4 + 5)},
 	}, {
 		name: "longer",
-		dp:   exphist{ts: 0, bkt: buckets([]uint64{1, 1, 1, 1, 1, 1})},
-		in:   exphist{ts: 1, bkt: buckets([]uint64{1, 1, 1, 1, 1, 1, 1, 1, 1})},
-		want: exphist{ts: 1, bkt: buckets([]uint64{2, 2, 2, 2, 2, 2, 1, 1, 1})},
+		dp:   expdp{ts: 0, pos: buckets{1, 1, 1, 1, 1, 1, ø, ø, ø}, neg: buckets{1, 1, 1, 1, 1, 1, ø, ø, ø}, count: 2 * 6},
+		in:   expdp{ts: 1, pos: buckets{1, 1, 1, 1, 1, 1, 1, 1, 1}, neg: buckets{1, 1, 1, 1, 1, 1, 1, 1, 1}, count: 2 * 9},
+		want: expdp{ts: 1, pos: buckets{2, 2, 2, 2, 2, 2, 1, 1, 1}, neg: buckets{2, 2, 2, 2, 2, 2, 1, 1, 1}, count: 2 * (6 + 9)},
+	}, {
+		name: "optional/missing-dp",
+		dp:   expdp{ts: 0, pos: zeros(5).observe0(0.6, 2.4) /*                                                 */, count: 2},
+		in:   expdp{ts: 1, pos: zeros(5).observe0(1.5, 3.2, 6.3), min: some(1.5), max: some(6.3), sum: some(11.0), count: 3},
+		want: expdp{ts: 1, pos: zeros(5).observe0(0.6, 2.4, 1.5, 3.2, 6.3) /*                                  */, count: 5},
+	}, {
+		name: "optional/missing-in",
+		dp:   expdp{ts: 0, pos: zeros(5).observe0(1.5, 3.2, 6.3), min: some(1.5), max: some(6.3), sum: some(11.0), count: 3},
+		in:   expdp{ts: 1, pos: zeros(5).observe0(0.6, 2.4) /*                                                 */, count: 2},
+		want: expdp{ts: 1, pos: zeros(5).observe0(0.6, 2.4, 1.5, 3.2, 6.3) /*                                  */, count: 5},
+	}, {
+		name: "min-max-sum",
+		dp:   expdp{ts: 0, pos: zeros(5).observe0(1.5, 5.3, 11.6) /*          */, min: some(1.5), max: some(11.6), sum: some(18.4), count: 3},
+		in:   expdp{ts: 1, pos: zeros(5).observe0(0.6, 3.3, 7.9) /*           */, min: some(0.6), max: some(07.9), sum: some(11.8), count: 3},
+		want: expdp{ts: 1, pos: zeros(5).observe0(1.5, 5.3, 11.6, 0.6, 3.3, 7.9), min: some(0.6), max: some(11.6), sum: some(30.2), count: 6},
 	}}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			dp, in := c.dp.Into(), c.in.Into()
-			want := c.want.Into()
+			dp, in := c.dp.into(), c.in.into()
+			want := c.want.into()
 
 			got := dp.Add(in)
 			if err := pmetrictest.CompareExponentialHistogramDataPoint(want.ExponentialHistogramDataPoint, got.ExponentialHistogramDataPoint); err != nil {
@@ -58,15 +77,14 @@ func TestBucketsIter(t *testing.T) {
 		want []uint64
 	}
 
-	var data = []uint64{1, 2, 3, 4, 5, 6, 7, 8, 9}
 	cases := []tcase{{
 		name: "full",
-		data: buckets(data, 0, len(data)),
-		want: []uint64{1, 2, 3, 4, 5, 6, 7, 8, 9},
+		data: buckets{1, 2, 3, 4, 5, 6, 7, 8, 9}.into(),
+		want: buckets{1, 2, 3, 4, 5, 6, 7, 8, 9},
 	}, {
 		name: "3-6",
-		data: buckets(data, 3, 6),
-		want: []uint64{0, 0, 0, 4, 5, 6},
+		data: buckets{ø, ø, ø, 4, 5, 6, ø, ø, ø, ø}.into(),
+		want: buckets{0, 0, 0, 4, 5, 6},
 	}}
 
 	for _, c := range cases {
@@ -83,22 +101,17 @@ func TestBucketsIter(t *testing.T) {
 
 func TestBucketsSet(t *testing.T) {
 	var (
-		ones = []uint64{1, 1, 1, 1, 1, 1, 1, 1, 1}
-		zero = []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0}
-		want = []uint64{0, 1, 1, 2, 2, 1, 1, 0, 0}
-	)
-
-	var (
-		aggr = buckets(zero, 0, len(zero))
-		bkt0 = buckets(ones, 1, 5)
-		bkt1 = buckets(ones, 3, 7)
+		aggr = buckets{0, 0, 0, 0, 0, 0, 0, 0, 0}.into()
+		bkt0 = buckets{ø, 1, 1, 1, 1, ø, ø, ø, ø}.into()
+		bkt1 = buckets{ø, ø, ø, 1, 1, 1, 1, ø, ø}.into()
+		want = buckets{0, 1, 1, 2, 2, 1, 1, 0, 0}
 	)
 
 	for i := 0; i < aggr.Len(); i++ {
 		aggr.SetAt(i, bkt0.At(i)+bkt1.At(i))
 	}
 
-	got := make([]uint64, aggr.Len())
+	got := make(buckets, aggr.Len())
 	for i := 0; i < aggr.Len(); i++ {
 		got[i] = aggr.At(i)
 	}
@@ -107,61 +120,58 @@ func TestBucketsSet(t *testing.T) {
 
 func TestBucketsEnsureLen(t *testing.T) {
 	var (
-		data = []uint64{1, 2, 3, 4}
-		want = []uint64{0, 0, 3, 4, 0, 0, 0}
+		data = buckets{ø, ø, 3, 4}
+		want = buckets{0, 0, 3, 4, 0, 0, 0}
 	)
-	bkt := buckets(data, 2, len(data))
+	bkt := data.into()
 	bkt.EnsureLen(len(want))
 
-	got := make([]uint64, bkt.Len())
+	got := make(buckets, bkt.Len())
 	for i := 0; i < bkt.Len(); i++ {
 		got[i] = bkt.At(i)
 	}
 	require.Equal(t, want, got)
 }
 
-func buckets(counts []uint64, bounds ...int) Buckets {
-	from, to := 0, len(counts)
-	if len(bounds) > 0 {
-		from = bounds[0]
-	}
-	if len(bounds) > 1 {
-		to = bounds[1]
-	}
-
-	data := pcommon.NewUInt64Slice()
-	data.FromRaw(counts[from:to])
-	return Buckets{data: data, offset: from}
-}
-
-type exphist struct {
+type expdp struct {
 	ts  int
-	bkt Buckets
+	pos buckets
+	neg buckets
+
+	scale int32
+	count uint64
+	sum   *float64
+
+	min, max *float64
 }
 
-func (e exphist) Into() ExpHistogram {
+func (e expdp) into() ExpHistogram {
 	dp := pmetric.NewExponentialHistogramDataPoint()
 	dp.SetTimestamp(pcommon.Timestamp(e.ts))
 
-	e.bkt.data.CopyTo(dp.Positive().BucketCounts())
-	dp.Positive().SetOffset(int32(e.bkt.offset))
-	e.bkt.data.CopyTo(dp.Negative().BucketCounts())
-	dp.Negative().SetOffset(int32(e.bkt.offset))
+	pos := e.pos.into()
+	pos.data.CopyTo(dp.Positive().BucketCounts())
+	dp.Positive().SetOffset(int32(pos.offset))
 
-	var (
-		count uint64
-		sum   float64
-	)
-	pos := dp.Positive().BucketCounts()
-	for i := 0; i < pos.Len(); i++ {
-		at := pos.At(i)
-		if at != 0 {
-			count++
-			sum += float64(pos.At(i))
-		}
+	neg := e.neg.into()
+	neg.data.CopyTo(dp.Negative().BucketCounts())
+	dp.Negative().SetOffset(int32(neg.offset))
+
+	dp.SetScale(e.scale)
+	dp.SetCount(e.count)
+	if e.sum != nil {
+		dp.SetSum(*e.sum)
 	}
-	dp.SetCount(count)
-	dp.SetSum(sum)
+	if e.min != nil {
+		dp.SetMin(*e.min)
+	}
+	if e.max != nil {
+		dp.SetMax(*e.max)
+	}
 
 	return ExpHistogram{ExponentialHistogramDataPoint: dp}
+}
+
+func some[T any](v T) *T {
+	return &v
 }
