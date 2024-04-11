@@ -132,7 +132,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 }
 
 // TimeSeries returns a slice of the prompb.TimeSeries that were converted from OTel format.
-func (c *prometheusConverter) TimeSeries() []prompb.TimeSeries {
+func (c *prometheusConverter) timeSeries() []prompb.TimeSeries {
 	conflicts := 0
 	for _, ts := range c.conflicts {
 		conflicts += len(ts)
