@@ -21,34 +21,34 @@ func Test_batchTimeSeries(t *testing.T) {
 	ts1 := getTimeSeries(labels, sample1, sample2)
 	ts2 := getTimeSeries(labels, sample1, sample2, sample3)
 
-	timeSeries1 := []prompb.TimeSeries{}
-	timeSeries2 := []prompb.TimeSeries{*ts1}
-	timeSeries3 := []prompb.TimeSeries{*ts1, *ts2}
+	tsMap1 := getTimeseriesMap([]*prompb.TimeSeries{})
+	tsMap2 := getTimeseriesMap([]*prompb.TimeSeries{ts1})
+	tsMap3 := getTimeseriesMap([]*prompb.TimeSeries{ts1, ts2})
 
 	tests := []struct {
 		name                string
-		timeSeries          []prompb.TimeSeries
+		tsMap               map[string]*prompb.TimeSeries
 		maxBatchByteSize    int
 		numExpectedRequests int
 		returnErr           bool
 	}{
 		{
 			"no_timeseries",
-			timeSeries1,
+			tsMap1,
 			100,
 			-1,
 			true,
 		},
 		{
 			"normal_case",
-			timeSeries2,
+			tsMap2,
 			300,
 			1,
 			false,
 		},
 		{
 			"two_requests",
-			timeSeries3,
+			tsMap3,
 			300,
 			2,
 			false,
@@ -57,7 +57,7 @@ func Test_batchTimeSeries(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requests, err := batchTimeSeries(tt.timeSeries, tt.maxBatchByteSize, nil)
+			requests, err := batchTimeSeries(tt.tsMap, tt.maxBatchByteSize, nil)
 			if tt.returnErr {
 				assert.Error(t, err)
 				return

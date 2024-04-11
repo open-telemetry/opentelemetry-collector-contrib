@@ -338,9 +338,9 @@ func TestNoMetricsNoError(t *testing.T) {
 
 func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	// First we will construct a TimeSeries array from the testutils package
-	var timeSeries []prompb.TimeSeries
+	testmap := make(map[string]*prompb.TimeSeries)
 	if ts != nil {
-		timeSeries = append(timeSeries, *ts)
+		testmap["test"] = ts
 	}
 
 	cfg := createDefaultConfig().(*Config)
@@ -369,7 +369,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 		return err
 	}
 
-	return prwe.handleExport(context.Background(), timeSeries, nil)
+	return prwe.handleExport(context.Background(), testmap, nil)
 }
 
 type mockPRWTelemetry struct {
@@ -944,16 +944,19 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	})
 	require.NotNil(t, prwe.wal)
 
-	ts1 := prompb.TimeSeries{
+	ts1 := &prompb.TimeSeries{
 		Labels:  []prompb.Label{{Name: "ts1l1", Value: "ts1k1"}},
 		Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
 	}
-	ts2 := prompb.TimeSeries{
+	ts2 := &prompb.TimeSeries{
 		Labels:  []prompb.Label{{Name: "ts2l1", Value: "ts2k1"}},
 		Samples: []prompb.Sample{{Value: 2, Timestamp: 200}},
 	}
-	timeSeries := []prompb.TimeSeries{ts1, ts2}
-	errs := prwe.handleExport(ctx, timeSeries, nil)
+	tsMap := map[string]*prompb.TimeSeries{
+		"timeseries1": ts1,
+		"timeseries2": ts2,
+	}
+	errs := prwe.handleExport(ctx, tsMap, nil)
 	assert.NoError(t, errs)
 	// Shutdown after we've written to the WAL. This ensures that our
 	// exported data in-flight will flushed flushed to the WAL before exiting.
@@ -985,12 +988,12 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		reqs = append(reqs, req)
 	}
 	assert.Equal(t, 1, len(reqs))
-	// We MUST have 2 time series as were passed into timeSeries.
+	// We MUST have 2 time series as were passed into tsMap.
 	gotFromWAL := reqs[0]
 	assert.Equal(t, 2, len(gotFromWAL.Timeseries))
 	want := &prompb.WriteRequest{
 		Timeseries: orderBySampleTimestamp([]prompb.TimeSeries{
-			ts1, ts2,
+			*ts1, *ts2,
 		}),
 	}
 
