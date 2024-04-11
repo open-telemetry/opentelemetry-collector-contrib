@@ -5,6 +5,7 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -331,6 +332,9 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 		"/resourceGroups/group1/resourceId3": 0,
 	}
 
+	aggregations := to.SliceOfPtrs(armmonitor.AggregationTypeAverage, armmonitor.AggregationTypeCount,
+		armmonitor.AggregationTypeMaximum, armmonitor.AggregationTypeMinimum, armmonitor.AggregationTypeTotal)
+
 	pages := map[string][]armmonitor.MetricDefinitionsClientListResponse{
 		"/resourceGroups/group1/resourceId1": {
 			{
@@ -345,6 +349,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 									TimeGrain: &timeGrain1,
 								},
 							},
+							SupportedAggregationTypes: aggregations,
 						},
 						{
 							Name: &armmonitor.LocalizableString{
@@ -355,6 +360,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 									TimeGrain: &timeGrain1,
 								},
 							},
+							SupportedAggregationTypes: aggregations,
 						},
 						{
 							Name: &armmonitor.LocalizableString{
@@ -365,6 +371,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 									TimeGrain: &timeGrain1,
 								},
 							},
+							SupportedAggregationTypes: aggregations,
 						},
 					},
 				},
@@ -383,6 +390,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 									TimeGrain: &timeGrain1,
 								},
 							},
+							SupportedAggregationTypes: aggregations,
 						},
 						{
 							Name: &armmonitor.LocalizableString{
@@ -401,6 +409,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 									Value: &dimension2,
 								},
 							},
+							SupportedAggregationTypes: aggregations,
 						},
 						{
 							Name: &armmonitor.LocalizableString{
@@ -416,6 +425,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 									Value: &dimension1,
 								},
 							},
+							SupportedAggregationTypes: aggregations,
 						},
 					},
 				},
@@ -439,6 +449,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 									Value: &dimension1,
 								},
 							},
+							SupportedAggregationTypes: aggregations,
 						},
 					},
 				},
@@ -477,6 +488,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									},
 								},
 							},
+							ErrorCode: to.Ptr("Success"),
 						},
 						{
 							Name: &armmonitor.LocalizableString{
@@ -496,6 +508,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									},
 								},
 							},
+							ErrorCode: to.Ptr("Success"),
 						},
 					},
 				},
@@ -521,6 +534,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									},
 								},
 							},
+							ErrorCode: to.Ptr("Success"),
 						},
 					},
 				},
@@ -548,6 +562,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									},
 								},
 							},
+							ErrorCode: to.Ptr("Success"),
 						},
 					},
 				},
@@ -587,6 +602,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									},
 								},
 							},
+							ErrorCode: to.Ptr("Success"),
 						},
 					},
 				},
@@ -620,6 +636,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									},
 								},
 							},
+							ErrorCode: to.Ptr("Success"),
 						},
 					},
 				},
@@ -651,6 +668,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									},
 								},
 							},
+							ErrorCode: to.Ptr("Success"),
 						},
 					},
 				},
