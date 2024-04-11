@@ -26,7 +26,7 @@ type Transformer struct {
 	prog                *vm.Program
 	maxBatchSize        int
 	maxSources          int
-	overwriteWithOldest bool
+	overwriteWithNewest bool
 	combineField        entry.Field
 	combineWith         string
 	ticker              *time.Ticker
@@ -154,7 +154,7 @@ func (t *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source str
 		batch = t.addNewBatch(source, e)
 	} else {
 		batch.numEntries++
-		if t.overwriteWithOldest {
+		if t.overwriteWithNewest {
 			batch.baseEntry = e
 		}
 	}

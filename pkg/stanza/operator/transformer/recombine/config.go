@@ -38,7 +38,7 @@ func NewConfigWithID(operatorID string) *Config {
 		MaxBatchSize:      1000,
 		MaxSources:        1000,
 		CombineWith:       defaultCombineWith,
-		OverwriteWith:     "newest",
+		OverwriteWith:     "oldest",
 		ForceFlushTimeout: 5 * time.Second,
 		SourceIdentifier:  entry.NewAttributeField("file.path"),
 	}
@@ -94,12 +94,12 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, fmt.Errorf("missing required argument 'combine_field'")
 	}
 
-	var overwriteWithOldest bool
+	var overwriteWithNewest bool
 	switch c.OverwriteWith {
 	case "newest":
-		overwriteWithOldest = false
+		overwriteWithNewest = true
 	case "oldest", "":
-		overwriteWithOldest = true
+		overwriteWithNewest = false
 	default:
 		return nil, fmt.Errorf("invalid value '%s' for parameter 'overwrite_with'", c.OverwriteWith)
 	}
@@ -110,7 +110,7 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		prog:                prog,
 		maxBatchSize:        c.MaxBatchSize,
 		maxSources:          c.MaxSources,
-		overwriteWithOldest: overwriteWithOldest,
+		overwriteWithNewest: overwriteWithNewest,
 		batchMap:            make(map[string]*sourceBatch),
 		batchPool: sync.Pool{
 			New: func() any {
