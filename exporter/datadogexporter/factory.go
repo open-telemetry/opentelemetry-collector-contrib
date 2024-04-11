@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
@@ -34,9 +35,16 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
+)
+
+var logsAgentExporterFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.logsagentexporter",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, logs export in datadogexporter uses the new logs agent exporter."),
 )
 
 var metricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -55,6 +63,10 @@ var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 // isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
 func isMetricExportV2Enabled() bool {
 	return metricExportNativeClientFeatureGate.IsEnabled()
+}
+
+func isLogsAgentExporterEnabled() bool {
+	return logsAgentExporterFeatureGate.IsEnabled()
 }
 
 // enableNativeMetricExport switches metric export to call native Datadog APIs instead of Zorkian APIs.
@@ -93,7 +105,8 @@ type factory struct {
 
 	wg sync.WaitGroup // waits for agent to exit
 
-	registry *featuregate.Registry
+	registry  *featuregate.Registry
+	logsAgent *logs.Agent
 }
 
 func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
@@ -501,7 +514,28 @@ func (f *factory) createLogsExporter(
 		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
 	}
 
-	if cfg.OnlyMetadata {
+	if isLogsAgentExporterEnabled() {
+		logComponent, _ := newLogComponent(set.TelemetrySettings)
+		cfgComponent, _ := newConfigComponent(set.TelemetrySettings, cfg)
+		hostname := logs.NewHostnameService(pcfg.ConfigHostname)
+		f.logsAgent = logs.NewLogsAgent(logComponent, cfgComponent, hostname)
+		err = f.logsAgent.Start(ctx)
+		if err != nil {
+			set.Logger.Error("Failed to create logs agent", zap.Error(err))
+			cancel()
+			f.wg.Wait() // then wait for shutdown
+			return nil, err
+		}
+		pipelineChan := f.logsAgent.GetPipelineProvider().NextPipelineChan()
+		logsAgentExporter, err := logsagentexporter.NewFactory(pipelineChan).CreateLogsExporter(ctx, set, cfg)
+		if err != nil {
+			set.Logger.Error("Failed to create logs agent exporter", zap.Error(err))
+			cancel()
+			f.wg.Wait() // then wait for shutdown
+			return nil, err
+		}
+		pusher = logsAgentExporter.ConsumeLogs
+	} else if cfg.OnlyMetadata {
 		// only host metadata needs to be sent, once.
 		pusher = func(_ context.Context, td plog.Logs) error {
 			f.onceMetadata.Do(func() {
@@ -535,6 +569,9 @@ func (f *factory) createLogsExporter(
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			f.StopReporter()
+			if f.logsAgent != nil {
+				f.logsAgent.Stop(ctx)
+			}
 			return nil
 		}),
 	)
