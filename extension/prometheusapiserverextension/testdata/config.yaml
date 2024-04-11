@@ -1,0 +1,4 @@
+prometheusui:
+prometheusui/1:
+  server:
+    endpoint: http://localhost:9090

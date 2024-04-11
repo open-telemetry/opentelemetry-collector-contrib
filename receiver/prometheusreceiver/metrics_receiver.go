@@ -27,6 +27,7 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
@@ -53,6 +54,7 @@ type pReceiver struct {
 	discoveryManager *discovery.Manager
 	httpClient       *http.Client
 	registerer       prometheus.Registerer
+	apiExtension     extension.Extension
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -85,6 +87,24 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	if err != nil {
 		r.settings.Logger.Error("Failed to initPrometheusComponents Prometheus components", zap.Error(err))
 		return err
+	}
+
+	prometheusAPIExtensionConf := r.cfg.PrometheusAPIServerExtension
+	if prometheusAPIExtensionConf != nil  && prometheusAPIExtensionConf.Enabled {
+		fmt.Println("Prometheus API Extension enabled")
+		extensions := host.GetExtensions()
+		for id, ext := range extensions {
+			fmt.Printf("Extension ID: %s\n", id.Name())
+			fmt.Printf("Extension Name: %s\n", prometheusAPIExtensionConf.ExtensionName)
+			fmt.Printf("%v\n", id.Type() == component.MustNewType("prometheus_api_server_extension"))
+			fmt.Printf("%v\n", prometheusAPIExtensionConf.ExtensionName == "" || prometheusAPIExtensionConf.ExtensionName == id.Name())
+			if id.Type() == component.MustNewType("prometheus_api_server_extension") && (prometheusAPIExtensionConf.ExtensionName == "" || prometheusAPIExtensionConf.ExtensionName == id.Name()) {
+				r.apiExtension = ext
+				fmt.Printf("apiExtension: %v\n", r.apiExtension)
+				extRegisterer := ext.(interface{ RegisterPrometheusReceiverComponents(*config.Config, *scrape.Manager, prometheus.Registerer) })
+				extRegisterer.RegisterPrometheusReceiverComponents((*config.Config)(baseCfg), r.scrapeManager, r.registerer)
+			}
+		}
 	}
 
 	err = r.applyCfg(baseCfg)
@@ -234,6 +254,11 @@ func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config
 func (r *pReceiver) applyCfg(cfg *PromConfig) error {
 	if err := r.scrapeManager.ApplyConfig((*config.Config)(cfg)); err != nil {
 		return err
+	}
+
+	if r.cfg.PrometheusAPIServerExtension != nil && r.apiExtension != nil && r.cfg.PrometheusAPIServerExtension.Enabled {
+		ext := r.apiExtension.(interface{ UpdatePrometheusConfig(*config.Config, *scrape.Manager) })
+		ext.UpdatePrometheusConfig((*config.Config)(cfg), r.scrapeManager)
 	}
 
 	discoveryCfg := make(map[string]discovery.Configs)

@@ -1,0 +1,18 @@
+type: prometheusui
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: []
+
+tests:
+  config:
+    server:
+      endpoint: localhost:9090

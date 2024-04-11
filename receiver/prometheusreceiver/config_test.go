@@ -328,3 +328,54 @@ func TestFileSDConfigWithoutSDFile(t *testing.T) {
 
 	require.NoError(t, component.ValidateConfig(cfg))
 }
+
+
+func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_prometheus_api_server_extension.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "withExtension").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
+
+	r0 := cfg.(*Config)
+	assert.NotNil(t, r0.PrometheusConfig)
+	assert.Equal(t, true, r0.PrometheusAPIServerExtension.Enabled)
+	assert.Equal(t, "extension1", r0.PrometheusAPIServerExtension.ExtensionName)
+
+	assert.Equal(t, 1, len(r0.PrometheusConfig.ScrapeConfigs))
+	assert.Equal(t, "demo", r0.PrometheusConfig.ScrapeConfigs[0].JobName)
+	assert.Equal(t, promModel.Duration(5*time.Second), r0.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withExtensionDisabled").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
+
+	r1 := cfg.(*Config)
+	assert.NotNil(t, r1.PrometheusConfig)
+	assert.Equal(t, false, r1.PrometheusAPIServerExtension.Enabled)
+	assert.Equal(t, "", r1.PrometheusAPIServerExtension.ExtensionName)
+
+	assert.Equal(t, 1, len(r1.PrometheusConfig.ScrapeConfigs))
+	assert.Equal(t, "demo", r1.PrometheusConfig.ScrapeConfigs[0].JobName)
+	assert.Equal(t, promModel.Duration(5*time.Second), r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withoutExtension").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
+
+	r2 := cfg.(*Config)
+	assert.NotNil(t, r2.PrometheusConfig)
+	assert.Equal(t, 1, len(r2.PrometheusConfig.ScrapeConfigs))
+	assert.Equal(t, "demo", r2.PrometheusConfig.ScrapeConfigs[0].JobName)
+	assert.Equal(t, promModel.Duration(5*time.Second), r2.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
+}
+

@@ -38,6 +38,11 @@ type Config struct {
 	ReportExtraScrapeMetrics bool `mapstructure:"report_extra_scrape_metrics"`
 
 	TargetAllocator *TargetAllocator `mapstructure:"target_allocator"`
+
+	// EnablePrometheusUIAPIServer enables the receiver to host the Prometheus UI
+	// API server in agent mode. This allows the user to view the config, service discovery,
+	// and targets for debugging purposes.
+	PrometheusAPIServerExtension *PrometheusAPIServerExtension `mapstructure:"prometheus_api_server_extension"`
 }
 
 // Validate checks the receiver configuration is valid.
@@ -176,4 +181,9 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 		return fmt.Errorf("error checking client key file %q: %w", tlsConfig.KeyFile, err)
 	}
 	return nil
+}
+
+type PrometheusAPIServerExtension struct {
+	Enabled 			bool		`mapstructure:"enabled"`
+	ExtensionName	string	`mapstructure:"extension_name"`
 }

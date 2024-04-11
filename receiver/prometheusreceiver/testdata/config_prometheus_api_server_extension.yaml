@@ -1,0 +1,20 @@
+prometheus/withExtension:
+  prometheus_api_server_extension:
+    enabled: true
+    extension_name: extension1
+  config:
+    scrape_configs:
+      - job_name: 'demo'
+        scrape_interval: 5s
+prometheus/withExtensionDisabled:
+  prometheus_api_server_extension:
+    enabled: false
+  config:
+    scrape_configs:
+      - job_name: 'demo'
+        scrape_interval: 5s
+prometheus/withoutExtension:
+  config:
+    scrape_configs:
+      - job_name: 'demo'
+        scrape_interval: 5s
