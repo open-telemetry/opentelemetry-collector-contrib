@@ -29,8 +29,8 @@ type Settings struct {
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.
 func FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.TimeSeries, error) {
 	c := newPrometheusConverter()
-	errs := c.FromMetrics(md, settings)
-	tss := c.TimeSeries()
+	errs := c.fromMetrics(md, settings)
+	tss := c.timeSeries()
 	out := make(map[string]*prompb.TimeSeries, len(tss))
 	for i := range tss {
 		out[strconv.Itoa(i)] = &tss[i]
@@ -52,8 +52,8 @@ func newPrometheusConverter() *prometheusConverter {
 	}
 }
 
-// FromMetrics converts pmetric.Metrics to Prometheus remote write format.
-func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings) errs error {
+// fromMetrics converts pmetric.Metrics to Prometheus remote write format.
+func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings) (errs error) {
 	resourceMetricsSlice := md.ResourceMetrics()
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
@@ -131,7 +131,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 	return
 }
 
-// TimeSeries returns a slice of the prompb.TimeSeries that were converted from OTel format.
+// timeSeries returns a slice of the prompb.TimeSeries that were converted from OTel format.
 func (c *prometheusConverter) timeSeries() []prompb.TimeSeries {
 	conflicts := 0
 	for _, ts := range c.conflicts {

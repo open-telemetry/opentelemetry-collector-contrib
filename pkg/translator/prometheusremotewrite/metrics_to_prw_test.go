@@ -73,8 +73,8 @@ func BenchmarkPrometheusConverter_FromMetrics(b *testing.B) {
 
 											for i := 0; i < b.N; i++ {
 												converter := newPrometheusConverter()
-												require.NoError(b, converter.FromMetrics(payload.Metrics(), Settings{}))
-												require.NotNil(b, converter.TimeSeries())
+												require.NoError(b, converter.fromMetrics(payload.Metrics(), Settings{}))
+												require.NotNil(b, converter.timeSeries())
 											}
 										})
 									}

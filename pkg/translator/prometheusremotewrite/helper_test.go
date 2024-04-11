@@ -618,7 +618,7 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, converter)
 
 			if len(tc.wantLabels) == 0 || tc.settings.DisableTargetInfo {
-				assert.Empty(t, converter.TimeSeries())
+				assert.Empty(t, converter.timeSeries())
 				return
 			}
 
