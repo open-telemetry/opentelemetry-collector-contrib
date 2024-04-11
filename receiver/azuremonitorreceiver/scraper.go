@@ -60,9 +60,9 @@ type azureResource struct {
 }
 
 type metricsCompositeKey struct {
-	dimensions  string // comma separated sorted dimensions
-	aggregation string
-	timeGrain   string
+	dimensions   string // comma separated sorted dimensions
+	aggregations string // comma separated sorted aggregations
+	timeGrain    string
 }
 
 type azureResourceMetrics struct {
@@ -314,7 +314,7 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 				aggregationSlice = append(aggregationSlice, string(*aggregation))
 			}
 			sort.Strings(aggregationSlice)
-			compositeKey.aggregation = strings.Join(aggregationSlice, ",")
+			compositeKey.aggregations = strings.Join(aggregationSlice, ",")
 
 			if len(v.Dimensions) > 0 {
 				var dimensionsSlice []string
@@ -364,7 +364,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 			opts := getResourceMetricsValuesRequestOptions(
 				metricsByGrain.metrics,
 				compositeKey.dimensions,
-				compositeKey.aggregation,
+				compositeKey.aggregations,
 				compositeKey.timeGrain,
 				start,
 				end,
