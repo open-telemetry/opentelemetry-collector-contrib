@@ -7,7 +7,7 @@ change_type: bug_fix
 component: prometheusremotewrite
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Change prometheusremotewrite.FromMetrics so that the target_info metric is only generated if either of the OTel resource attributes service.name and service.instance.id is defined.
+note: Change prometheusremotewrite.FromMetrics so that the target_info metric is only generated if at least one identifying OTel resource attribute (service.name and/or service.instance.id) is defined.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [32148]
