@@ -1127,6 +1127,13 @@ func Test_splunkhecReceiver_Start(t *testing.T) {
 		errorExpected bool
 	}{
 		{
+			name: "no_ack_extension_configured",
+			getConfig: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+			errorExpected: false,
+		},
+		{
 			name: "ack_extension_does_not_exist",
 			getConfig: func() *Config {
 				config := createDefaultConfig().(*Config)
@@ -1134,13 +1141,6 @@ func Test_splunkhecReceiver_Start(t *testing.T) {
 				return config
 			},
 			errorExpected: true,
-		},
-		{
-			name: "no_ack_extension_configured",
-			getConfig: func() *Config {
-				return createDefaultConfig().(*Config)
-			},
-			errorExpected: false,
 		},
 	}
 

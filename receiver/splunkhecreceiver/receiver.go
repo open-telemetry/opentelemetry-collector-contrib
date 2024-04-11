@@ -221,6 +221,10 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 		}
 	}
 
+	r.server, err = r.config.ServerConfig.ToServerContext(ctx, host, r.settings.TelemetrySettings, mx)
+	if err != nil {
+		return err
+	}
 	// TODO: Evaluate what properties should be configurable, for now
 	//		set some hard-coded values.
 	r.server.ReadHeaderTimeout = defaultServerTimeout
