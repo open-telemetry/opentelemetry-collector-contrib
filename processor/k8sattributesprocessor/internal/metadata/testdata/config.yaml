@@ -3,6 +3,8 @@ all_set:
   resource_attributes:
     container.id:
       enabled: true
+    container.image.id:
+      enabled: true
     container.image.name:
       enabled: true
     container.image.tag:
@@ -50,6 +52,8 @@ all_set:
 none_set:
   resource_attributes:
     container.id:
+      enabled: false
+    container.image.id:
       enabled: false
     container.image.name:
       enabled: false

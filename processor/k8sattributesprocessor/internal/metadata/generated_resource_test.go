@@ -14,6 +14,7 @@ func TestResourceBuilder(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, test)
 			rb := NewResourceBuilder(cfg)
 			rb.SetContainerID("container.id-val")
+			rb.SetContainerImageID("container.image.id-val")
 			rb.SetContainerImageName("container.image.name-val")
 			rb.SetContainerImageTag("container.image.tag-val")
 			rb.SetK8sClusterUID("k8s.cluster.uid-val")
@@ -44,7 +45,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 8, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 23, res.Attributes().Len())
+				assert.Equal(t, 24, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -56,6 +57,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.Equal(t, test == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "container.id-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("container.image.id")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "container.image.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.image.name")
 			assert.True(t, ok)

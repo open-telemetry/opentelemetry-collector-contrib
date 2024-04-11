@@ -28,6 +28,13 @@ func (rb *ResourceBuilder) SetContainerID(val string) {
 	}
 }
 
+// SetContainerImageID sets provided value as "container.image.id" attribute.
+func (rb *ResourceBuilder) SetContainerImageID(val string) {
+	if rb.config.ContainerImageID.Enabled {
+		rb.res.Attributes().PutStr("container.image.id", val)
+	}
+}
+
 // SetContainerImageName sets provided value as "container.image.name" attribute.
 func (rb *ResourceBuilder) SetContainerImageName(val string) {
 	if rb.config.ContainerImageName.Enabled {

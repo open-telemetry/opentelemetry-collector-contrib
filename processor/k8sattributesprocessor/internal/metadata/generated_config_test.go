@@ -26,6 +26,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "all_set",
 			want: ResourceAttributesConfig{
 				ContainerID:        ResourceAttributeConfig{Enabled: true},
+				ContainerImageID:   ResourceAttributeConfig{Enabled: true},
 				ContainerImageName: ResourceAttributeConfig{Enabled: true},
 				ContainerImageTag:  ResourceAttributeConfig{Enabled: true},
 				K8sClusterUID:      ResourceAttributeConfig{Enabled: true},
@@ -54,6 +55,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "none_set",
 			want: ResourceAttributesConfig{
 				ContainerID:        ResourceAttributeConfig{Enabled: false},
+				ContainerImageID:   ResourceAttributeConfig{Enabled: false},
 				ContainerImageName: ResourceAttributeConfig{Enabled: false},
 				ContainerImageTag:  ResourceAttributeConfig{Enabled: false},
 				K8sClusterUID:      ResourceAttributeConfig{Enabled: false},
