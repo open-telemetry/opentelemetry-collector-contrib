@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -242,4 +243,30 @@ func TestBuildCompliantNameWithoutSuffixes(t *testing.T) {
 	require.Equal(t, ":foo::bar", BuildCompliantName(createGauge(":foo::bar", ""), "", addUnitAndTypeSuffixes))
 	require.Equal(t, ":foo::bar", BuildCompliantName(createCounter(":foo::bar", ""), "", addUnitAndTypeSuffixes))
 
+}
+
+func TestAlreadyRegisteredNormalizeNameGate(t *testing.T) {
+
+	// Register() should return an error since it's already registered
+	var _, err = featuregate.GlobalRegistry().Register(
+		normalizeNameGate.ID(),
+		normalizeNameGate.Stage(),
+		featuregate.WithRegisterDescription(normalizeNameGate.Description()),
+		featuregate.WithRegisterReferenceURL(normalizeNameGate.ReferenceURL()),
+	)
+	require.NotNil(t, err)
+
+	// registerOrLoadGate() should return the already registered gate
+	var gate = registerOrLoadGate(
+		normalizeNameGate.ID(),
+		normalizeNameGate.Stage(),
+		featuregate.WithRegisterDescription(normalizeNameGate.Description()),
+		featuregate.WithRegisterReferenceURL(normalizeNameGate.ReferenceURL()),
+	)
+	require.NotNil(t, gate)
+	require.Equal(t, gate.ID(), normalizeNameGate.ID())
+	require.Equal(t, gate.Stage(), normalizeNameGate.Stage())
+	require.Equal(t, gate.Description(), normalizeNameGate.Description())
+	require.Equal(t, gate.ReferenceURL(), normalizeNameGate.ReferenceURL())
+	require.Equal(t, gate, normalizeNameGate)
 }

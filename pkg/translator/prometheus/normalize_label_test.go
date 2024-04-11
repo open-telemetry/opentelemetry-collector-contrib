@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
@@ -32,4 +33,30 @@ func TestSanitizeDropSanitization(t *testing.T) {
 	require.Equal(t, "key_0test", NormalizeLabel("0test"))
 	require.Equal(t, "test", NormalizeLabel("test"))
 	require.Equal(t, "__test", NormalizeLabel("__test"))
+}
+
+func TestAlreadyRegisteredDropSanitizationGate(t *testing.T) {
+
+	// Register() should return an error since it's already registered
+	var _, err = featuregate.GlobalRegistry().Register(
+		dropSanitizationGate.ID(),
+		dropSanitizationGate.Stage(),
+		featuregate.WithRegisterDescription(dropSanitizationGate.Description()),
+		featuregate.WithRegisterReferenceURL(dropSanitizationGate.ReferenceURL()),
+	)
+	require.NotNil(t, err)
+
+	// registerOrLoadGate() should return the already registered gate
+	var gate = registerOrLoadGate(
+		dropSanitizationGate.ID(),
+		dropSanitizationGate.Stage(),
+		featuregate.WithRegisterDescription(dropSanitizationGate.Description()),
+		featuregate.WithRegisterReferenceURL(dropSanitizationGate.ReferenceURL()),
+	)
+	require.NotNil(t, gate)
+	require.Equal(t, gate.ID(), dropSanitizationGate.ID())
+	require.Equal(t, gate.Stage(), dropSanitizationGate.Stage())
+	require.Equal(t, gate.Description(), dropSanitizationGate.Description())
+	require.Equal(t, gate.ReferenceURL(), dropSanitizationGate.ReferenceURL())
+	require.Equal(t, gate, dropSanitizationGate)
 }

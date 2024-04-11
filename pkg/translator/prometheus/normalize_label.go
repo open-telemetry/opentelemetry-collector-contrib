@@ -4,18 +4,45 @@
 package prometheus // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 
 import (
+	"fmt"
 	"strings"
 	"unicode"
 
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var dropSanitizationGate = featuregate.GlobalRegistry().MustRegister(
+var dropSanitizationGate = registerOrLoadGate(
 	"pkg.translator.prometheus.PermissiveLabelSanitization",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950"),
 )
+
+func registerOrLoadGate(id string, stage featuregate.Stage, opts ...featuregate.RegisterOption) *featuregate.Gate {
+
+	// Try to register
+	gate, err := featuregate.GlobalRegistry().Register(
+		id,
+		stage,
+		opts...,
+	)
+
+	// If registration failed, try to find existing gate
+	if err != nil {
+		featuregate.GlobalRegistry().VisitAll(func(g *featuregate.Gate) {
+			if g.ID() == id {
+				gate = g
+			}
+		})
+	}
+
+	// If gate is still nil, panic() like MustRegister() would
+	if gate == nil {
+		panic(fmt.Sprintf("failed to register or load feature gate %s", id))
+	}
+
+	return gate
+}
 
 // Normalizes the specified label to follow Prometheus label names standard
 //
