@@ -178,6 +178,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elast
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../../extension/storage
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage => ../../../extension/storage/filestorage
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver => ../../../receiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed => ../../../testbed

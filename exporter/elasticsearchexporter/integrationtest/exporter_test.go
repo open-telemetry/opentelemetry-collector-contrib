@@ -43,12 +43,10 @@ func runner(t *testing.T, restartCollector, mockESFailure bool) {
 		testbed.DefaultHost, testutil.GetAvailablePort(t),
 	)
 	receiver := NewElasticsearchDataReceiver()
-	loadOpts := testbed.LoadOptions{
-		DataItemsPerSecond: 1000,
+	provider := testbed.NewPerfTestDataProvider(testbed.LoadOptions{
+		DataItemsPerSecond: 10_000,
 		ItemsPerBatch:      10,
-		Parallel:           2,
-	}
-	provider := testbed.NewPerfTestDataProvider(loadOpts)
+	})
 
 	cfg := CreateConfigYaml(t, sender, receiver, nil, nil, "logs", getDebugFlag(t))
 	t.Log("test otel collector configuration:", cfg)
@@ -80,7 +78,7 @@ func runner(t *testing.T, restartCollector, mockESFailure bool) {
 	tc.StartAgent()
 
 	// Start sending load and send for some time before proceeding.
-	tc.StartLoad(loadOpts)
+	tc.StartLoad(testbed.LoadOptions{DataItemsPerSecond: 1_000})
 	tc.Sleep(2 * time.Second)
 
 	// Fail ES if required and send load.
