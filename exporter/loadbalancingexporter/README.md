@@ -72,7 +72,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `interval` resolver interval in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `30s` will be used.
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `5s` will be used.
   * `port` port to be used for exporting the traces to the addresses resolved from `service`. By default, the port is set in Cloud Map, but can be be overridden with a static value in this config
-  * `health_status` filter in AWS Cloud Map, you can specify the health status of the instances that you want to discover. The healthStatus filter is optional and allows you to query based on the health status of the instances. 
+  * `health_status` filter in AWS Cloud Map, you can specify the health status of the instances that you want to discover. The health_status filter is optional and allows you to query based on the health status of the instances. 
     * Available values are 
       * `HEALTHY`: Only return instances that are healthy.
       * `UNHEALTHY`: Only return instances that are unhealthy.
