@@ -130,7 +130,13 @@ func (s *Scraper) GetMetrics() []pmetric.Metrics {
 	var result []pmetric.Metrics
 
 	store := s.store
+	if store == nil || store.devices == nil {
+		return result
+	}
 	for deviceName, counters := range *store.devices {
+		if counters == nil {
+			continue
+		}
 		containerInfo := s.podResourcesStore.GetContainerInfo(string(deviceName), efaK8sResourceName)
 
 		nodeMetric := stores.NewCIMetric(ci.TypeNodeEFA, s.logger)

@@ -238,6 +238,16 @@ func TestGetMetrics(t *testing.T) {
 	checkExpectations(t, expectedMetrics, result)
 }
 
+func TestGetMetricsBeforeSuccessfulScrape(t *testing.T) {
+	s := NewEfaSyfsScraper(zap.NewNop(), mockDecorator{}, mockPodResourcesStore{})
+
+	result := s.GetMetrics()
+	assert.Empty(t, result)
+	result = s.GetMetrics()
+	assert.Empty(t, result)
+	checkExpectations(t, []expectation{}, result)
+}
+
 type mockPodResourcesStoreMissingOneDevice struct{}
 
 var _ podResourcesStore = (*mockPodResourcesStoreMissingOneDevice)(nil)
