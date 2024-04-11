@@ -48,11 +48,12 @@ type pReceiver struct {
 	configLoaded        chan struct{}
 	loadConfigOnce      sync.Once
 
-	settings         receiver.CreateSettings
-	scrapeManager    *scrape.Manager
-	discoveryManager *discovery.Manager
-	httpClient       *http.Client
-	registerer       prometheus.Registerer
+	settings          receiver.CreateSettings
+	scrapeManager     *scrape.Manager
+	discoveryManager  *discovery.Manager
+	httpClient        *http.Client
+	registerer        prometheus.Registerer
+	unregisterMetrics func()
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -72,7 +73,7 @@ func newPrometheusReceiver(set receiver.CreateSettings, cfg *Config, next consum
 
 // Start is the method that starts Prometheus scraping. It
 // is controlled by having previously defined a Configuration using perhaps New.
-func (r *pReceiver) Start(_ context.Context, host component.Host) error {
+func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 	discoveryCtx, cancel := context.WithCancel(context.Background())
 	r.cancelFunc = cancel
 
@@ -95,7 +96,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 
 	allocConf := r.cfg.TargetAllocator
 	if allocConf != nil {
-		r.httpClient, err = r.cfg.TargetAllocator.ToClient(host, r.settings.TelemetrySettings)
+		r.httpClient, err = r.cfg.TargetAllocator.ToClientContext(ctx, host, r.settings.TelemetrySettings)
 		if err != nil {
 			r.settings.Logger.Error("Failed to create http client", zap.Error(err))
 			return err
@@ -232,6 +233,13 @@ func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config
 }
 
 func (r *pReceiver) applyCfg(cfg *PromConfig) error {
+	if !enableNativeHistogramsGate.IsEnabled() {
+		// Enforce scraping classic histograms to avoid dropping them.
+		for _, scrapeConfig := range cfg.ScrapeConfigs {
+			scrapeConfig.ScrapeClassicHistograms = true
+		}
+	}
+
 	if err := r.scrapeManager.ApplyConfig((*config.Config)(cfg)); err != nil {
 		return err
 	}
@@ -245,11 +253,20 @@ func (r *pReceiver) applyCfg(cfg *PromConfig) error {
 }
 
 func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Logger) error {
-	sdMetrics, err := discovery.CreateAndRegisterSDMetrics(r.registerer)
+	// Some SD mechanisms use the "refresh" package, which has its own metrics.
+	refreshSdMetrics := discovery.NewRefreshMetrics(r.registerer)
+
+	// Register the metrics specific for each SD mechanism, and the ones for the refresh package.
+	sdMetrics, err := discovery.RegisterSDMetrics(r.registerer, refreshSdMetrics)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to register service discovery metrics: %w", err)
 	}
 	r.discoveryManager = discovery.NewManager(ctx, logger, r.registerer, sdMetrics)
+	if r.discoveryManager == nil {
+		// NewManager can sometimes return nil if it encountered an error, but
+		// the error message is logged separately.
+		return fmt.Errorf("failed to create discovery manager")
+	}
 
 	go func() {
 		r.settings.Logger.Info("Starting discovery manager")
@@ -274,6 +291,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		r.cfg.UseStartTimeMetric,
 		startTimeMetricRegex,
 		useCreatedMetricGate.IsEnabled(),
+		enableNativeHistogramsGate.IsEnabled(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.cfg.TrimMetricSuffixes,
 	)
@@ -292,6 +310,15 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		return err
 	}
 	r.scrapeManager = scrapeManager
+
+	r.unregisterMetrics = func() {
+		refreshSdMetrics.Unregister()
+		for _, sdMetric := range sdMetrics {
+			sdMetric.Unregister()
+		}
+		r.discoveryManager.UnregisterMetrics()
+		r.scrapeManager.UnregisterMetrics()
+	}
 
 	go func() {
 		// The scrape manager needs to wait for the configuration to be loaded before beginning
@@ -330,5 +357,8 @@ func (r *pReceiver) Shutdown(context.Context) error {
 		r.scrapeManager.Stop()
 	}
 	close(r.targetAllocatorStop)
+	if r.unregisterMetrics != nil {
+		r.unregisterMetrics()
+	}
 	return nil
 }
