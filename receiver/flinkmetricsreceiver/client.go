@@ -54,8 +54,8 @@ type flinkClient struct {
 	logger       *zap.Logger
 }
 
-func newClient(cfg *Config, host component.Host, settings component.TelemetrySettings, logger *zap.Logger) (client, error) {
-	httpClient, err := cfg.ToClient(host, settings)
+func newClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings, logger *zap.Logger) (client, error) {
+	httpClient, err := cfg.ToClientContext(ctx, host, settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
