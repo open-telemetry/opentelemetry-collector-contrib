@@ -242,7 +242,7 @@ jobs:
   unittest-matrix:
     strategy:
       matrix:
-        go-version: ["1.22.0", "1.21.9"] # 1.20 is interpreted as 1.2 without quotes
+        go-version: ["1.22.2", "1.21.9"] # 1.20 is interpreted as 1.2 without quotes
         runner: [ubuntu-latest, actuated-arm64-4cpu-4gb]
         group:
           - receiver-0
