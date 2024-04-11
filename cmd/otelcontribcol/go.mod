@@ -27,7 +27,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter v0.98.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.98.0
@@ -368,7 +367,6 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
-	github.com/dynatrace-oss/dynatrace-metric-utils-go v0.5.0 // indirect
 	github.com/eapache/go-resiliency v1.6.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
@@ -760,8 +758,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/obse
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver => ../../extension/observer/k8sobserver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter => ../../exporter/sentryexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter => ../../exporter/dynatraceexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver => ../../receiver/nsxtreceiver
 
