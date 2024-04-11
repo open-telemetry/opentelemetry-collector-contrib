@@ -9,7 +9,5 @@ status:
   codeowners:
     active: [aabmass, dashpole, jsuereth, punya, damemi, psx95]
 
-# TODO: Update the exporter to pass the tests
 tests:
   skip_lifecycle: true
-  skip_shutdown: true
