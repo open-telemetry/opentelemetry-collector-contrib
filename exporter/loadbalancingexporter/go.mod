@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.11
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.29.5
 	github.com/aws/smithy-go v1.20.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.97.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.98.0
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/component v0.98.0

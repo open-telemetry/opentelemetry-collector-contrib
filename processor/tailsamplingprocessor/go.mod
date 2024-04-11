@@ -5,9 +5,9 @@ go 1.21
 require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.97.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.97.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.97.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.98.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.98.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.98.0
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/component v0.98.0
