@@ -191,6 +191,7 @@ func Components() (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{}
 	extensions := []extension.Factory{
+		ackextension.NewFactory(),
 		asapauthextension.NewFactory(),
 		awsproxy.NewFactory(),
 		ballastextension.NewFactory(),
@@ -210,7 +211,6 @@ func Components() (otelcol.Factories, error) {
 		oidcauthextension.NewFactory(),
 		sigv4authextension.NewFactory(),
 		zpagesextension.NewFactory(),
-		ackextension.NewFactory(),
 	}
 	factories.Extensions, err = extension.MakeFactoryMap(extensions...)
 	if err != nil {
