@@ -68,7 +68,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `1s` will be used.
 * The `aws_cloud_map` node accepts the following properties:
   * `namespace` The CloudMap namespace where the service is register, e.g. `cloudmap`. If no `namespace` is specified, this will fail to start the Load Balancer exporter.
-  * `service_name` The name of the service that you specified when you registered the instance, e.g. `otelcollectors`.  If no `serviceName` is specified, this will fail to start the Load Balancer exporter.
+  * `service_name` The name of the service that you specified when you registered the instance, e.g. `otelcollectors`.  If no `service_name` is specified, this will fail to start the Load Balancer exporter.
   * `interval` resolver interval in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `30s` will be used.
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `5s` will be used.
   * `port` port to be used for exporting the traces to the addresses resolved from `service`. By default, the port is set in Cloud Map, but can be be overridden with a static value in this config
