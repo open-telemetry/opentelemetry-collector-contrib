@@ -192,9 +192,9 @@ exporters:
         # except the endpoint
         timeout: 3s
     resolver:
-      awsCloudMap:
+      aws_cloud_map:
         namespace: aws-namespace
-        serviceName: aws-otel-col-service-name
+        service_name: aws-otel-col-service-name
         interval: 30s
 
 service:
