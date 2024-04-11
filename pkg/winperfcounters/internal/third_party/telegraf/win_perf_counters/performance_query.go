@@ -5,6 +5,7 @@ package win_perf_counters // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"errors"
+	"fmt"
 	"syscall"
 	"time"
 	"unicode/utf16"
@@ -151,9 +152,15 @@ func (m *PerformanceQueryImpl) GetFormattedCounterArrayDouble(hCounter PDH_HCOUN
 		if ret = PdhGetFormattedCounterArrayDouble(hCounter, &buffSize, &itemCount, &buff[0]); ret == ERROR_SUCCESS {
 			items := unsafe.Slice((*PDH_FMT_COUNTERVALUE_ITEM_DOUBLE)(unsafe.Pointer(&buff[0])), itemCount)
 			values := make([]CounterValue, 0, itemCount)
-			for _, item := range items {
+			for i, item := range items {
 				if item.FmtValue.CStatus == PDH_CSTATUS_VALID_DATA || item.FmtValue.CStatus == PDH_CSTATUS_NEW_DATA {
-					val := CounterValue{UTF16PtrToString(item.SzName), item.FmtValue.DoubleValue}
+					var val CounterValue
+					if i == 0 { // Be consistent with perfmon output: instance 0 does not display index.
+						val = CounterValue{UTF16PtrToString(item.SzName), item.FmtValue.DoubleValue}
+					} else {
+						val = CounterValue{fmt.Sprintf("%s_%d", UTF16PtrToString(item.SzName), i), item.FmtValue.DoubleValue}
+					}
+
 					values = append(values, val)
 				}
 			}
