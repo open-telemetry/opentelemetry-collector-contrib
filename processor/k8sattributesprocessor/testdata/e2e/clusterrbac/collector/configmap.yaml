@@ -46,6 +46,7 @@ data:
           - k8s.node.name
           - k8s.cluster.uid
           - container.id
+          - container.image.id
           - container.image.name
           - container.image.tag
         pod_association:

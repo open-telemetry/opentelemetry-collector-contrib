@@ -45,6 +45,7 @@ data:
           - k8s.replicaset.uid
           - k8s.node.name
           - container.id
+          - container.image.id
           - container.image.name
           - container.image.tag
         pod_association:
