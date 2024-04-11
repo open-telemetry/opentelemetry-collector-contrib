@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -1065,7 +1065,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "container-id-only",
+			name: "container-id-with-runid",
 			op: func(kp *kubernetesprocessor) {
 				kp.kc.(*fakeClient).Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")] = &kube.Pod{
 					Containers: kube.PodContainers{
@@ -1074,6 +1074,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 								Statuses: map[int]kube.ContainerStatus{
 									0: {ContainerID: "fcd58c97330c1dc6615bd520031f6a703a7317cd92adc96013c4dd57daad0b5f"},
 									1: {ContainerID: "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e"},
+									2: {ContainerID: "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848"},
 								},
 							},
 						},
@@ -1117,6 +1118,33 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				kube.K8sIPLabelName:                   "1.1.1.1",
 				conventions.AttributeK8SContainerName: "app",
 				conventions.AttributeContainerID:      "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848",
+			},
+		},
+		{
+			name: "container-imageid",
+			op: func(kp *kubernetesprocessor) {
+				kp.kc.(*fakeClient).Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")] = &kube.Pod{
+					Containers: kube.PodContainers{
+						ByName: map[string]*kube.Container{
+							"app": {
+								Statuses: map[int]kube.ContainerStatus{
+									0: {ImageID: "test/app@sha256:deadbeef00"},
+									1: {ImageID: "test/app@sha256:deadbeef01"},
+									2: {ImageID: "test/app@sha256:deadbeef02"},
+								},
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPassthroughIP("1.1.1.1"),
+				withContainerName("app"),
+			},
+			wantAttrs: map[string]string{
+				kube.K8sIPLabelName:                   "1.1.1.1",
+				conventions.AttributeK8SContainerName: "app",
+				conventions.AttributeContainerImageID: "test/app@sha256:deadbeef02",
 			},
 		},
 		{

@@ -661,7 +661,7 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 			if container.Statuses == nil {
 				container.Statuses = map[int]ContainerStatus{}
 			}
-			container.Statuses[int(apiStatus.RestartCount)] = ContainerStatus{containerID}
+			container.Statuses[int(apiStatus.RestartCount)] = ContainerStatus{ContainerID: containerID}
 		}
 	}
 	return containers

@@ -8,7 +8,7 @@ import (
 	"os"
 	"regexp"
 
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -23,8 +23,6 @@ const (
 	filterOPDoesNotExist = "does-not-exist"
 	metadataPodStartTime = "k8s.pod.start_time"
 	specPodHostName      = "k8s.pod.hostname"
-	// TODO: use k8s.cluster.uid from semconv when available, and replace clusterUID with conventions.AttributeClusterUid
-	clusterUID = "k8s.cluster.uid"
 )
 
 // option represents a configuration option that can be passes.
@@ -53,10 +51,13 @@ func withPassthrough() option {
 func enabledAttributes() (attributes []string) {
 	defaultConfig := metadata.DefaultResourceAttributesConfig()
 	if defaultConfig.K8sClusterUID.Enabled {
-		attributes = append(attributes, clusterUID)
+		attributes = append(attributes, conventions.AttributeK8SClusterUID)
 	}
 	if defaultConfig.ContainerID.Enabled {
 		attributes = append(attributes, conventions.AttributeContainerID)
+	}
+	if defaultConfig.ContainerImageID.Enabled {
+		attributes = append(attributes, conventions.AttributeContainerImageID)
 	}
 	if defaultConfig.ContainerImageName.Enabled {
 		attributes = append(attributes, conventions.AttributeContainerImageName)
@@ -170,11 +171,13 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.NodeUID = true
 			case conventions.AttributeContainerID:
 				p.rules.ContainerID = true
+			case conventions.AttributeContainerImageID:
+				p.rules.ContainerImageID = true
 			case conventions.AttributeContainerImageName:
 				p.rules.ContainerImageName = true
 			case conventions.AttributeContainerImageTag:
 				p.rules.ContainerImageTag = true
-			case clusterUID:
+			case conventions.AttributeK8SClusterUID:
 				p.rules.ClusterUID = true
 			}
 		}

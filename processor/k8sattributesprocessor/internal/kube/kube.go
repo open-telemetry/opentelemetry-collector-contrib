@@ -141,6 +141,8 @@ type Container struct {
 // ContainerStatus stores resource attributes for a particular container run defined by k8s pod status.
 type ContainerStatus struct {
 	ContainerID string
+	// ImageID contains the post-truncation form of the image digest as wanted by Otel semantic conventions
+	ImageID string
 }
 
 // Namespace represents a kubernetes namespace.
@@ -216,6 +218,7 @@ type ExtractionRules struct {
 	ContainerID        bool
 	ContainerImageName bool
 	ContainerImageTag  bool
+	ContainerImageID   bool
 	ClusterUID         bool
 
 	Annotations []FieldExtractionRule
