@@ -41,13 +41,6 @@ var (
 		"PT12H": 43200,
 		"P1D":   86400,
 	}
-	aggregations = []string{
-		"Average",
-		"Count",
-		"Maximum",
-		"Minimum",
-		"Total",
-	}
 )
 
 const (
@@ -67,8 +60,9 @@ type azureResource struct {
 }
 
 type metricsCompositeKey struct {
-	dimensions string // comma separated sorted dimensions
-	timeGrain  string
+	dimensions  string // comma separated sorted dimensions
+	aggregation string
+	timeGrain   string
 }
 
 type azureResourceMetrics struct {
@@ -315,6 +309,13 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 			name := *v.Name.Value
 			compositeKey := metricsCompositeKey{timeGrain: timeGrain}
 
+			var aggregationSlice []string
+			for _, aggregation := range v.SupportedAggregationTypes {
+				aggregationSlice = append(aggregationSlice, string(*aggregation))
+			}
+			sort.Strings(aggregationSlice)
+			compositeKey.aggregation = strings.Join(aggregationSlice, ",")
+
 			if len(v.Dimensions) > 0 {
 				var dimensionsSlice []string
 				for _, dimension := range v.Dimensions {
@@ -363,6 +364,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 			opts := getResourceMetricsValuesRequestOptions(
 				metricsByGrain.metrics,
 				compositeKey.dimensions,
+				compositeKey.aggregation,
 				compositeKey.timeGrain,
 				start,
 				end,
@@ -380,6 +382,11 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 			}
 
 			for _, metric := range result.Value {
+				if *metric.ErrorCode != "Success" {
+					errorMsg := fmt.Errorf("loading value for metric %v failed with error %v", metric.Name.Value, metric.ErrorMessage)
+					s.settings.Logger.Error("failed to get Azure Metrics values data for metric", zap.Error(errorMsg))
+					continue
+				}
 
 				for _, timeseriesElement := range metric.Timeseries {
 
@@ -411,6 +418,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 func getResourceMetricsValuesRequestOptions(
 	metrics []string,
 	dimensionsStr string,
+	aggregations string,
 	timeGrain string,
 	start int,
 	end int,
@@ -420,7 +428,7 @@ func getResourceMetricsValuesRequestOptions(
 		Metricnames: &resType,
 		Interval:    to.Ptr(timeGrain),
 		Timespan:    to.Ptr(timeGrain),
-		Aggregation: to.Ptr(strings.Join(aggregations, ",")),
+		Aggregation: to.Ptr(aggregations),
 	}
 
 	if len(dimensionsStr) > 0 {
