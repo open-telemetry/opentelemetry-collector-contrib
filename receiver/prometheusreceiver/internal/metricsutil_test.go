@@ -78,6 +78,99 @@ func histogramMetric(name string, points ...pmetric.HistogramDataPoint) pmetric.
 	return metric
 }
 
+func exponentialHistogramMetric(name string, points ...pmetric.ExponentialHistogramDataPoint) pmetric.Metric {
+	metric := pmetric.NewMetric()
+	metric.SetName(name)
+	histogram := metric.SetEmptyExponentialHistogram()
+	histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+	destPointL := histogram.DataPoints()
+	// By default the AggregationTemporality is Cumulative until it'll be changed by the caller.
+	for _, point := range points {
+		destPoint := destPointL.AppendEmpty()
+		point.CopyTo(destPoint)
+	}
+
+	return metric
+}
+
+func exponentialHistogramPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.ExponentialHistogramDataPoint {
+	hdp := pmetric.NewExponentialHistogramDataPoint()
+	hdp.SetStartTimestamp(startTimestamp)
+	hdp.SetTimestamp(timestamp)
+
+	attrs := hdp.Attributes()
+	for _, kv := range attributes {
+		attrs.PutStr(kv.Key, kv.Value)
+	}
+
+	return hdp
+}
+
+func exponentialHistogramPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, scale int32, zeroCount uint64, negativeOffset int32, negativeBuckets []uint64, positiveOffset int32, positiveBuckets []uint64) pmetric.ExponentialHistogramDataPoint {
+	hdp := exponentialHistogramPointRaw(attributes, startTimestamp, timestamp)
+	hdp.SetScale(scale)
+	hdp.SetZeroCount(zeroCount)
+	hdp.Negative().SetOffset(negativeOffset)
+	hdp.Negative().BucketCounts().FromRaw(negativeBuckets)
+	hdp.Positive().SetOffset(positiveOffset)
+	hdp.Positive().BucketCounts().FromRaw(positiveBuckets)
+
+	count := uint64(0)
+	sum := float64(0)
+	for i, bCount := range positiveBuckets {
+		count += bCount
+		sum += float64(bCount) * float64(i)
+	}
+	for i, bCount := range negativeBuckets {
+		count += bCount
+		sum -= float64(bCount) * float64(i)
+	}
+	hdp.SetCount(count)
+	hdp.SetSum(sum)
+	return hdp
+}
+
+func exponentialHistogramPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.ExponentialHistogramDataPoint {
+	hdp := exponentialHistogramPointRaw(attributes, startTimestamp, timestamp)
+	hdp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+
+	return hdp
+}
+
+// exponentialHistogramPointSimplified let's you define an exponential
+// histogram with just a few parameters.
+// Scale and ZeroCount are set to the provided values.
+// Positive and negative buckets are generated using the offset and bucketCount
+// parameters by adding buckets from offset in both positive and negative
+// directions. Bucket counts start from 1 and increase by 1 for each bucket.
+// Sum and Count will be proportional to the bucket count.
+func exponentialHistogramPointSimplified(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, scale int32, zeroCount uint64, offset int32, bucketCount int) pmetric.ExponentialHistogramDataPoint {
+	hdp := exponentialHistogramPointRaw(attributes, startTimestamp, timestamp)
+	hdp.SetScale(scale)
+	hdp.SetZeroCount(zeroCount)
+
+	positive := hdp.Positive()
+	positive.SetOffset(offset)
+	positive.BucketCounts().EnsureCapacity(bucketCount)
+	negative := hdp.Negative()
+	negative.SetOffset(offset)
+	negative.BucketCounts().EnsureCapacity(bucketCount)
+
+	var sum float64
+	var count uint64
+	for i := 0; i < bucketCount; i++ {
+		positive.BucketCounts().Append(uint64(i + 1))
+		negative.BucketCounts().Append(uint64(i + 1))
+		count += uint64(i+1) + uint64(i+1)
+		sum += float64(i+1)*10 + float64(i+1)*10.0
+	}
+	hdp.SetCount(count)
+	hdp.SetSum(sum)
+
+	return hdp
+}
+
 func doublePointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
 	ndp := pmetric.NewNumberDataPoint()
 	ndp.SetStartTimestamp(startTimestamp)

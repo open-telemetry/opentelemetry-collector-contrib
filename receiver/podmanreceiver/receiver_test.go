@@ -65,10 +65,11 @@ func TestScraperLoop(t *testing.T) {
 	assert.NotNil(t, r)
 
 	go func() {
+		sampleStats := genContainerStats()
 		client <- containerStatsReport{
-			Stats: []containerStats{{
-				ContainerID: "c1",
-			}},
+			Stats: []containerStats{
+				*sampleStats,
+			},
 			Error: containerStatsReportError{},
 		}
 	}()
@@ -76,7 +77,9 @@ func TestScraperLoop(t *testing.T) {
 	assert.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	md := <-consumer
-	assert.Equal(t, md.ResourceMetrics().Len(), 1)
+	assert.Equal(t, 1, md.ResourceMetrics().Len())
+
+	assertStatsEqualToMetrics(t, genContainerStats(), md)
 
 	assert.NoError(t, r.Shutdown(ctx))
 }
@@ -102,7 +105,7 @@ func (c mockClient) ping(context.Context) error {
 type mockConsumer chan pmetric.Metrics
 
 func (c mockClient) list(context.Context, url.Values) ([]container, error) {
-	return []container{{ID: "c1"}}, nil
+	return []container{{ID: "c1", Image: "localimage"}}, nil
 }
 
 func (c mockClient) events(context.Context, url.Values) (<-chan event, <-chan error) {
