@@ -75,9 +75,11 @@ Additional container level attributes can be extracted provided that certain res
    - k8s.container.name
    - container.image.name
    - container.image.tag
+   - container.image.id
 2. If the `k8s.container.name` resource attribute is provided, the following additional attributes will be available:
    - container.image.name
    - container.image.tag
+   - container.image.id
 3. If the `k8s.container.restart_count` resource attribute is provided, it can be used to associate with a particular container
    instance. If it's not set, the latest container instance will be used:
    - container.id (not added by default, has to be specified in `metadata`)
