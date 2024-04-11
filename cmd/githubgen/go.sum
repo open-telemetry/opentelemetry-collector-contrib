@@ -13,8 +13,8 @@ github.com/knadh/koanf/maps v0.1.1 h1:G5TjmUh2D7G2YWf5SQQqSiHRJEjaicvU0KpypqB3NI
 github.com/knadh/koanf/maps v0.1.1/go.mod h1:npD/QZY3V6ghQDdcQzl1W4ICNVTkohC8E73eI2xW4yI=
 github.com/knadh/koanf/providers/confmap v0.1.0 h1:gOkxhHkemwG4LezxxN8DMOFopOPghxRVp7JbIvdvqzU=
 github.com/knadh/koanf/providers/confmap v0.1.0/go.mod h1:2uLhxQzJnyHKfxG927awZC7+fyHFdQkd697K4MdLnIU=
-github.com/knadh/koanf/v2 v2.1.0 h1:eh4QmHHBuU8BybfIJ8mB8K8gsGCD/AUQTdwGq/GzId8=
-github.com/knadh/koanf/v2 v2.1.0/go.mod h1:4mnTRbZCK+ALuBXHZMjDfG9y714L7TykVnZkXbMU3Es=
+github.com/knadh/koanf/v2 v2.1.1 h1:/R8eXqasSTsmDCsAyYj+81Wteg8AqrV9CP6gvsTsOmM=
+github.com/knadh/koanf/v2 v2.1.1/go.mod h1:4mnTRbZCK+ALuBXHZMjDfG9y714L7TykVnZkXbMU3Es=
 github.com/mitchellh/copystructure v1.2.0 h1:vpKXTN4ewci03Vljg/q9QvCGUDttBOGBIa15WveJJGw=
 github.com/mitchellh/copystructure v1.2.0/go.mod h1:qLl+cE2AmVv+CoeAwDPye/v+N2HKCj9FbZEVFJRxO9s=
 github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=
@@ -23,10 +23,10 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
-go.opentelemetry.io/collector/confmap v0.97.1-0.20240409140257-792fac1b62d4 h1:66aIqz1za7iONOam/MFy34022jW2RugCLu1ULadOtl0=
-go.opentelemetry.io/collector/confmap v0.97.1-0.20240409140257-792fac1b62d4/go.mod h1:U5bMvFybP/N7lvWWaLYRh7jKHEVQufdQTzHUXxvN+4o=
-go.opentelemetry.io/collector/confmap/provider/fileprovider v0.97.1-0.20240409140257-792fac1b62d4 h1:94sJQP37T2Q2B/k+ZoWtVFTtZsKD1Uf7WIm/8H6mLHM=
-go.opentelemetry.io/collector/confmap/provider/fileprovider v0.97.1-0.20240409140257-792fac1b62d4/go.mod h1:9b9v3kRkNPIV5wknD3nRRUv8IaGk9H6d5KPmKe3W0uk=
+go.opentelemetry.io/collector/confmap v0.98.0 h1:qQreBlrqio1y7uhrAvr+W86YbQ6fw7StgkbYpvJ2vVc=
+go.opentelemetry.io/collector/confmap v0.98.0/go.mod h1:BWKPIpYeUzSG6ZgCJMjF7xsLvyrvJCfYURl57E5vhiQ=
+go.opentelemetry.io/collector/confmap/provider/fileprovider v0.98.0 h1:SxDS+Yr8qE+ID58ELR5n0D+SUlqHKOZ72pK3YPFAelA=
+go.opentelemetry.io/collector/confmap/provider/fileprovider v0.98.0/go.mod h1:DEoB0d0k1iGt4KEABntL8AW9xYQ6E7fmgkM2/s8aXvM=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
