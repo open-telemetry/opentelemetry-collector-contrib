@@ -71,7 +71,6 @@ var (
 	eventRequiredRespBody         = []byte(responseErrEventRequired)
 	eventBlankRespBody            = []byte(responseErrEventBlank)
 	requiredDataChannelHeader     = []byte(responseErrDataChannelMissing)
-	invalidDataChannelHeader      = []byte(responseErrInvalidDataChannel)
 	invalidEncodingRespBody       = []byte(responseInvalidEncoding)
 	invalidFormatRespBody         = []byte(responseInvalidDataFormat)
 	invalidMethodRespBodyPostOnly = []byte(responseInvalidMethodPostOnly)
