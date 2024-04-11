@@ -38,6 +38,8 @@ Supports standard TLS settings as part of HTTP settings. See [TLS Configuration/
 
 ### Bulk Indexer Options
 - `bulk_action` (optional): the [action](https://opensearch.org/docs/2.9/api-reference/document-apis/bulk/) for ingesting data. Only `create` and `index` are allowed here. 
+- `pipeline` (optional): Optional [Ingest Node](https://opensearch.org/docs/latest/opensearch/rest-api/ingest-apis/get-ingest/) pipeline ID used for processing documents published by the exporter.
+
 ## Example
 
 ```yaml

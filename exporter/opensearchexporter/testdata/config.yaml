@@ -41,3 +41,8 @@ opensearch/trace:
     enabled: true
     initial_interval: 100000000
     randomization_factor: 0.5
+
+opensearch/pipeline:
+  http:
+    endpoint: https://opensearch.example.com:9200
+  pipeline: testpipeline

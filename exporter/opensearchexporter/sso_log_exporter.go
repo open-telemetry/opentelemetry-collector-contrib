@@ -21,6 +21,7 @@ type logExporter struct {
 	model        mappingModel
 	httpSettings confighttp.ClientConfig
 	telemetry    component.TelemetrySettings
+	pipeline     string
 }
 
 func newLogExporter(cfg *Config, set exporter.CreateSettings) (*logExporter, error) {
@@ -45,6 +46,7 @@ func newLogExporter(cfg *Config, set exporter.CreateSettings) (*logExporter, err
 		bulkAction:   cfg.BulkAction,
 		httpSettings: cfg.ClientConfig,
 		model:        model,
+                pipeline:     cfg.Pipeline,
 	}, nil
 }
 
@@ -64,7 +66,7 @@ func (l *logExporter) Start(ctx context.Context, host component.Host) error {
 }
 
 func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	indexer := newLogBulkIndexer(l.Index, l.bulkAction, l.model)
+	indexer := newLogBulkIndexer(l.Index, l.bulkAction, l.model, l.pipeline)
 	startErr := indexer.start(l.client)
 	if startErr != nil {
 		return startErr

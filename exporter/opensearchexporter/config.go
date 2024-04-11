@@ -47,6 +47,10 @@ type Config struct {
 	// BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here.
 	// If not specified, the default value `create` will be used.
 	BulkAction string `mapstructure:"bulk_action"`
+
+        // Pipeline configures the ingest node pipeline name that should be used to process the events.
+	// https://opensearch.org/docs/latest/opensearch/rest-api/ingest-apis/get-ingest/
+	Pipeline string `mapstructure:"pipeline"`
 }
 
 var (

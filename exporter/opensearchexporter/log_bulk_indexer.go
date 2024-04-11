@@ -19,17 +19,18 @@ type logBulkIndexer struct {
 	index       string
 	bulkAction  string
 	model       mappingModel
+	pipeline    string
 	errs        []error
 	bulkIndexer opensearchutil.BulkIndexer
 }
 
-func newLogBulkIndexer(index, bulkAction string, model mappingModel) *logBulkIndexer {
-	return &logBulkIndexer{index, bulkAction, model, nil, nil}
+func newLogBulkIndexer(index, bulkAction string, model mappingModel, pipeline string) *logBulkIndexer {
+	return &logBulkIndexer{index, bulkAction, model, pipeline, nil, nil}
 }
 
 func (lbi *logBulkIndexer) start(client *opensearch.Client) error {
 	var startErr error
-	lbi.bulkIndexer, startErr = newLogOpenSearchBulkIndexer(client, lbi.onIndexerError)
+	lbi.bulkIndexer, startErr = newLogOpenSearchBulkIndexer(client, lbi.pipeline, lbi.onIndexerError)
 	return startErr
 }
 
@@ -115,10 +116,11 @@ func (lbi *logBulkIndexer) newBulkIndexerItem(document []byte) opensearchutil.Bu
 	return item
 }
 
-func newLogOpenSearchBulkIndexer(client *opensearch.Client, onIndexerError func(context.Context, error)) (opensearchutil.BulkIndexer, error) {
+func newLogOpenSearchBulkIndexer(client *opensearch.Client, pipeline string, onIndexerError func(context.Context, error)) (opensearchutil.BulkIndexer, error) {
 	return opensearchutil.NewBulkIndexer(opensearchutil.BulkIndexerConfig{
 		NumWorkers: 1,
 		Client:     client,
+                Pipeline:   pipeline,
 		OnError:    onIndexerError,
 	})
 }
