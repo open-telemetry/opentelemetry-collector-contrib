@@ -26,7 +26,7 @@ func TestCancelStream(t *testing.T) {
 
 	var copts []option.ClientOption
 	var dialOpts []grpc.DialOption
-	conn, err := grpc.DialContext(ctx, srv.Addr, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
+	conn, err := grpc.NewClient(srv.Addr, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 	assert.NoError(t, err)
 	defer func() { assert.NoError(t, conn.Close()) }()
 	copts = append(copts, option.WithGRPCConn(conn))
