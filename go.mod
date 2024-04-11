@@ -49,6 +49,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.98.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.98.0
