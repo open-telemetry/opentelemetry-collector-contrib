@@ -10,9 +10,10 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
 func Test_composeEffectiveConfig(t *testing.T) {

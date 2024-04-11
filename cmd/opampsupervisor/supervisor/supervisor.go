@@ -33,13 +33,13 @@ import (
 	serverTypes "github.com/open-telemetry/opamp-go/server/types"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/healthchecker"
-	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
-	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 )
 
 var (
