@@ -20,7 +20,6 @@ body:
       # Start Collector components list
       - cmd/configschema
       - cmd/githubgen
-      - cmd/mdatagen
       - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
@@ -31,6 +30,7 @@ body:
       - connector/datadog
       - connector/exceptions
       - connector/failover
+      - connector/grafanacloud
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
@@ -52,7 +52,6 @@ body:
       - exporter/dataset
       - exporter/dynatrace
       - exporter/elasticsearch
-      - exporter/f5cloud
       - exporter/file
       - exporter/googlecloud
       - exporter/googlecloudpubsub
@@ -73,6 +72,7 @@ body:
       - exporter/prometheus
       - exporter/prometheusremotewrite
       - exporter/pulsar
+      - exporter/rabbitmq
       - exporter/sapm
       - exporter/sentry
       - exporter/signalfx
@@ -82,16 +82,19 @@ body:
       - exporter/syslog
       - exporter/tencentcloudlogservice
       - exporter/zipkin
+      - extension/ack
       - extension/asapauth
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
       - extension/encoding
+      - extension/encoding/avrologencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
       - extension/encoding/otlpencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
+      - extension/googleclientauth
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
@@ -172,7 +175,6 @@ body:
       - processor/routing
       - processor/schema
       - processor/span
-      - processor/spanmetrics
       - processor/sumologic
       - processor/tailsampling
       - processor/transform
@@ -185,6 +187,7 @@ body:
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
+      - receiver/awss3
       - receiver/awsxray
       - receiver/azureblob
       - receiver/azureeventhub

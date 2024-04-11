@@ -1,13 +1,13 @@
 type: dynatrace
+scope_name: otelcol/dynatrace
 
 status:
   class: exporter
   stability:
     deprecated: [metrics]
-  distributions: [contrib, aws, observiq]
+  distributions: [contrib]
   codeowners:
     active: [dyladan, arminru, evan-bradley]
 
 tests:
-  config:
   expect_consumer_error: true

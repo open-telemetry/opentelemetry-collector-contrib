@@ -1,13 +1,15 @@
 type: solace
+scope_name: otelcol/solacereceiver
 
 status:
   class: receiver
   stability:
     beta: [traces]
-  distributions: [contrib, sumo, splunk]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski, mcardy]
 
+# TODO: Update the receiver to pass the tests
 tests:
   config:
     auth:

@@ -1,11 +1,12 @@
 type: probabilistic_sampler
+scope_name: otelcol/probabilisticsampler
 
 status:
   class: processor
   stability:
     beta: [traces]
     alpha: [logs]
-  distributions: [core, contrib, observiq, splunk, sumo, aws, grafana]
+  distributions: [core, contrib]
   codeowners:
     active: [jpkrohling]
 

@@ -39,13 +39,13 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		context.Background(),
 		receivertest.NewNopCreateSettings(),
 		&Config{
-			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: 10 * time.Second,
 				InitialDelay:       time.Second,
 			},
 			Username: "otel",
 			Password: "otel",
-			NetAddr: confignet.NetAddr{
+			AddrConfig: confignet.AddrConfig{
 				Endpoint: "localhost:3306",
 			},
 		},

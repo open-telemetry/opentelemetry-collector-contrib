@@ -48,8 +48,8 @@ type defaultElasticsearchClient struct {
 
 var _ elasticsearchClient = (*defaultElasticsearchClient)(nil)
 
-func newElasticsearchClient(settings component.TelemetrySettings, c Config, h component.Host) (*defaultElasticsearchClient, error) {
-	client, err := c.ClientConfig.ToClient(h, settings)
+func newElasticsearchClient(ctx context.Context, settings component.TelemetrySettings, c Config, h component.Host) (*defaultElasticsearchClient, error) {
+	client, err := c.ClientConfig.ToClientContext(ctx, h, settings)
 	if err != nil {
 		return nil, err
 	}

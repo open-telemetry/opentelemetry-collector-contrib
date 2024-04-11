@@ -1,4 +1,5 @@
 type: attributes
+scope_name: otelcol/attributes
 
 status:
   class: processor
@@ -7,12 +8,6 @@ status:
   distributions:
   - core
   - contrib
-  - aws
-  - grafana
-  - observiq
-  - redhat
-  - splunk
-  - sumo
   warnings: [Identity Conflict]
   codeowners:
     active: [boostchicken]

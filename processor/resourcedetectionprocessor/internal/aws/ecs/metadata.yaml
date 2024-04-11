@@ -63,3 +63,7 @@ resource_attributes:
     description: The aws.log.stream.arns
     type: slice
     enabled: true
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

@@ -1,9 +1,10 @@
 type: datadog
+scope_name: otelcol/datadogreceiver
 
 status:
   class: receiver
   stability:
     alpha: [traces]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   codeowners:
     active: [boostchicken, gouthamve, jpkrohling, MovieStoreGuy]

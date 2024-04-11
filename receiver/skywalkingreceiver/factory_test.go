@@ -42,9 +42,9 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the skywalking receiver to be created
 	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:11800",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	traceSink := new(consumertest.TracesSink)
@@ -87,9 +87,9 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:11800",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	traceSink := new(consumertest.TracesSink)
@@ -105,12 +105,12 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:11800",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
-		TLSSetting: &configtls.TLSServerSetting{
-			TLSSetting: configtls.TLSSetting{
+		TLSSetting: &configtls.ServerConfig{
+			Config: configtls.Config{
 				CertFile: "./testdata/server.crt",
 				KeyFile:  "./testdata/server.key",
 			},
@@ -128,8 +128,8 @@ func TestCreateTLSHTTPEndpoint(t *testing.T) {
 
 	cfg.(*Config).Protocols.HTTP = &confighttp.ServerConfig{
 		Endpoint: "0.0.0.0:12800",
-		TLSSetting: &configtls.TLSServerSetting{
-			TLSSetting: configtls.TLSSetting{
+		TLSSetting: &configtls.ServerConfig{
+			Config: configtls.Config{
 				CertFile: "./testdata/server.crt",
 				KeyFile:  "./testdata/server.key",
 			},
