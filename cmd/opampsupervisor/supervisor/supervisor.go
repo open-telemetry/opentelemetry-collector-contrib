@@ -110,7 +110,7 @@ type Supervisor struct {
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
 
-	shuttingDown bool
+	shuttingDown *atomic.Bool
 	supervisorWG sync.WaitGroup
 
 	agentHasStarted               bool
@@ -128,6 +128,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		logger:                       logger,
 		hasNewConfig:                 make(chan struct{}, 1),
 		effectiveConfigFilePath:      "effective.yaml",
+		shuttingDown:                 &atomic.Bool{},
 		agentConfigOwnMetricsSection: &atomic.Value{},
 		mergedConfig:                 &atomic.Value{},
 		connectedToOpAMPServer:       make(chan struct{}),
@@ -893,7 +894,7 @@ func (s *Supervisor) runAgentProcess() {
 			s.startAgent()
 
 		case <-s.commander.Done():
-			if s.shuttingDown {
+			if s.shuttingDown.Load() {
 				return
 			}
 
@@ -952,7 +953,7 @@ func (s *Supervisor) writeEffectiveConfigToFile(cfg string, filePath string) {
 
 func (s *Supervisor) Shutdown() {
 	s.logger.Debug("Supervisor shutting down...")
-	s.shuttingDown = true
+	s.shuttingDown.Store(true)
 	if s.commander != nil {
 		err := s.commander.Stop(context.Background())
 
