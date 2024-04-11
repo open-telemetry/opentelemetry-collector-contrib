@@ -31,7 +31,7 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
   or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
   name to publish events to. The default value is `logs-generic-default`
-- `logs_dynamic_index` (optional): 
+- `logs_dynamic_index` (optional):
   takes resource or log record attribute named `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
   resulting dynamically prefixed / suffixed indexing based on `logs_index`. (priority: resource attribute > log record attribute)
   - `enabled`(default=false): Enable/Disable dynamic index for log records
@@ -62,11 +62,11 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
 - `mapping`: Events are encoded to JSON. The `mapping` allows users to
   configure additional mapping rules.
-  - `mode` (default=ecs): The fields naming mode. valid modes are:
+  - `mode` (default=none): The fields naming mode. valid modes are:
     - `none`: Use original fields and event structure from the OTLP event.
     - `ecs`: Try to map fields defined in the
              [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/semantic-conventions)
-             to [Elastic Common Schema (ECS)](https://www.elastic.co/guide/en/ecs/current/index.html).
+             to [Elastic Common Schema (ECS)](https://www.elastic.co/guide/en/ecs/current/index.html). :warning: This mode's behavior is unstable, it is currently undergoing changes
     - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
              span attributes as well as omit the `Events.` string prefixed to
              field names for span events. 
