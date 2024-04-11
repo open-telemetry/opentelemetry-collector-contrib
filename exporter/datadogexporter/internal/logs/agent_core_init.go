@@ -20,7 +20,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/status/health"
 )
 
-// NewAgent returns a new Logs Agent
+// SetupPipeline initializes the logs agent pipeline and its dependencies
 func (a *Agent) SetupPipeline(
 	processingRules []*config.ProcessingRule,
 ) {

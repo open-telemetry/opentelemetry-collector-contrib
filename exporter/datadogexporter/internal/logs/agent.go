@@ -59,7 +59,7 @@ func NewLogsAgent(log log.Component, cfg pkgconfigmodel.Reader, hostname hostnam
 }
 
 func (a *Agent) Start(context.Context) error {
-	a.log.Info("Starting logs-agent...")
+	a.log.Debug("Starting logs-agent...")
 
 	// setup the server config
 	endpoints, err := buildEndpoints(a.config)
@@ -79,7 +79,7 @@ func (a *Agent) Start(context.Context) error {
 	}
 
 	a.startPipeline()
-	a.log.Info("logs-agent started")
+	a.log.Debug("logs-agent started")
 
 	return nil
 }
@@ -114,7 +114,7 @@ func (a *Agent) startPipeline() {
 }
 
 func (a *Agent) Stop(context.Context) error {
-	a.log.Info("Stopping logs-agent")
+	a.log.Debug("Stopping logs-agent")
 
 	stopper := startstop.NewSerialStopper(
 		a.pipelineProvider,
@@ -136,7 +136,7 @@ func (a *Agent) Stop(context.Context) error {
 	select {
 	case <-c:
 	case <-time.After(timeout):
-		a.log.Info("Timed out when stopping logs-agent, forcing it to stop now")
+		a.log.Debug("Timed out when stopping logs-agent, forcing it to stop now")
 		// We force all destinations to read/flush all the messages they get without
 		// trying to write to the network.
 		a.destinationsCtx.Stop()
@@ -151,7 +151,7 @@ func (a *Agent) Stop(context.Context) error {
 			a.log.Warn("Force close of the Logs Agent.")
 		}
 	}
-	a.log.Info("logs-agent stopped")
+	a.log.Debug("logs-agent stopped")
 	return nil
 }
 

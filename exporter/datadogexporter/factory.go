@@ -514,7 +514,20 @@ func (f *factory) createLogsExporter(
 		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
 	}
 
-	if isLogsAgentExporterEnabled() {
+	if cfg.OnlyMetadata {
+		// only host metadata needs to be sent, once.
+		pusher = func(_ context.Context, td plog.Logs) error {
+			f.onceMetadata.Do(func() {
+				attrs := pcommon.NewMap()
+				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs, metadataReporter)
+			})
+			for i := 0; i < td.ResourceLogs().Len(); i++ {
+				res := td.ResourceLogs().At(i).Resource()
+				consumeResource(metadataReporter, res, set.Logger)
+			}
+			return nil
+		}
+	} else if isLogsAgentExporterEnabled() {
 		logComponent, _ := newLogComponent(set.TelemetrySettings)
 		cfgComponent, _ := newConfigComponent(set.TelemetrySettings, cfg)
 		hostname := logs.NewHostnameService(pcfg.ConfigHostname)
@@ -535,19 +548,6 @@ func (f *factory) createLogsExporter(
 			return nil, err
 		}
 		pusher = logsAgentExporter.ConsumeLogs
-	} else if cfg.OnlyMetadata {
-		// only host metadata needs to be sent, once.
-		pusher = func(_ context.Context, td plog.Logs) error {
-			f.onceMetadata.Do(func() {
-				attrs := pcommon.NewMap()
-				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs, metadataReporter)
-			})
-			for i := 0; i < td.ResourceLogs().Len(); i++ {
-				res := td.ResourceLogs().At(i).Resource()
-				consumeResource(metadataReporter, res, set.Logger)
-			}
-			return nil
-		}
 	} else {
 		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, attributesTranslator, hostProvider, metadataReporter)
 		if err != nil {
