@@ -622,6 +622,13 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			timestamp: testdata.TestMetricStartTimestamp,
 			expected:  map[string]*prompb.TimeSeries{},
 		},
+		{
+			// If there's no timestamp, target_info shouldn't be generated, since we don't know when the write is from.
+			desc:      "with resource, with service attributes, without timestamp",
+			resource:  resourceWithServiceAttrs,
+			timestamp: 0,
+			expected:  map[string]*prompb.TimeSeries{},
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			tsMap := map[string]*prompb.TimeSeries{}

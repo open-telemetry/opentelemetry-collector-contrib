@@ -526,7 +526,7 @@ func addCreatedTimeSeriesIfNeeded(
 
 // addResourceTargetInfo converts the resource to the target info metric
 func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp, tsMap map[string]*prompb.TimeSeries) {
-	if settings.DisableTargetInfo {
+	if settings.DisableTargetInfo || timestamp == 0 {
 		return
 	}
 	// Use resource attributes (other than those used for job+instance) as the
