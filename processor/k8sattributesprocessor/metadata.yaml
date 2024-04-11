@@ -94,6 +94,10 @@ resource_attributes:
     description: Container ID. Usually a UUID, as for example used to identify Docker containers. The UUID might be abbreviated. Requires k8s.container.restart_count.
     type: string
     enabled: false
+  container.image.id:
+    description: Container image digest. Requires container.id (??or k8s.container.name??).
+    type: string
+    enabled: false
   container.image.name:
     description: Name of the image the container was built on. Requires container.id or k8s.container.name.
     type: string
