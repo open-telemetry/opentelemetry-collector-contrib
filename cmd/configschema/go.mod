@@ -473,7 +473,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/nginxinc/nginx-prometheus-exporter v0.11.0 // indirect
-  github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.98.0 // indirect
@@ -490,6 +489,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.98.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.98.0 // indirect
