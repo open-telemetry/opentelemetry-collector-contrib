@@ -92,8 +92,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
 	defer func() {
 		for _, obj := range append(collectorObjs, telemetryGenObjs...) {
-			_ = obj
-			//require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
 		}
 	}()
 
@@ -500,7 +499,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				"k8s.annotations.workload": newExpectedValue(equal, "deployment"),
 				"k8s.labels.app":           newExpectedValue(equal, "telemetrygen-"+testID+"-traces-deployment"),
 				"k8s.container.name":       newExpectedValue(equal, "telemetrygen"),
-				"container.image.id":       newExpectedValue(exist, ""),
+				"container.image.id":       newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
@@ -524,7 +523,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				"k8s.annotations.workload": newExpectedValue(equal, "deployment"),
 				"k8s.labels.app":           newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-deployment"),
 				"k8s.container.name":       newExpectedValue(equal, "telemetrygen"),
-				"container.image.id":       newExpectedValue(exist, ""),
+				"container.image.id":       newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
@@ -548,7 +547,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				"k8s.annotations.workload": newExpectedValue(equal, "deployment"),
 				"k8s.labels.app":           newExpectedValue(equal, "telemetrygen-"+testID+"-logs-deployment"),
 				"k8s.container.name":       newExpectedValue(equal, "telemetrygen"),
-				"container.image.id":       newExpectedValue(exist, ""),
+				"container.image.id":       newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
 				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
@@ -657,7 +656,7 @@ func TestE2E_MixRBAC(t *testing.T) {
 				"k8s.annotations.workload":   newExpectedValue(equal, "deployment"),
 				"k8s.labels.app":             newExpectedValue(equal, "telemetrygen-"+testID+"-traces-deployment"),
 				"k8s.container.name":         newExpectedValue(equal, "telemetrygen"),
-				"container.image.id":         newExpectedValue(exist, ""),
+				"container.image.id":         newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
 				"container.image.name":       newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":        newExpectedValue(equal, "latest"),
 				"container.id":               newExpectedValue(exist, ""),
@@ -684,7 +683,7 @@ func TestE2E_MixRBAC(t *testing.T) {
 				"k8s.annotations.workload":   newExpectedValue(equal, "deployment"),
 				"k8s.labels.app":             newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-deployment"),
 				"k8s.container.name":         newExpectedValue(equal, "telemetrygen"),
-				"container.image.id":         newExpectedValue(exist, ""),
+				"container.image.id":         newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
 				"container.image.name":       newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":        newExpectedValue(equal, "latest"),
 				"container.id":               newExpectedValue(exist, ""),
@@ -711,6 +710,7 @@ func TestE2E_MixRBAC(t *testing.T) {
 				"k8s.annotations.workload":   newExpectedValue(equal, "deployment"),
 				"k8s.labels.app":             newExpectedValue(equal, "telemetrygen-"+testID+"-logs-deployment"),
 				"k8s.container.name":         newExpectedValue(equal, "telemetrygen"),
+				"container.image.id":         newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
 				"container.image.name":       newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":        newExpectedValue(equal, "latest"),
 				"container.id":               newExpectedValue(exist, ""),
