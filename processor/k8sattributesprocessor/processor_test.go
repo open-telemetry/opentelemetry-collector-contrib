@@ -1178,25 +1178,27 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		m := newMultiTest(
-			t,
-			NewFactory().CreateDefaultConfig(),
-			nil,
-		)
-		m.kubernetesProcessorOperation(tt.op)
-		m.testConsume(context.Background(),
-			generateTraces(tt.resourceGens...),
-			generateMetrics(tt.resourceGens...),
-			generateLogs(tt.resourceGens...),
-			nil,
-		)
+		t.Run(tt.name, func(t *testing.T) {
+			m := newMultiTest(
+				t,
+				NewFactory().CreateDefaultConfig(),
+				nil,
+			)
+			m.kubernetesProcessorOperation(tt.op)
+			m.testConsume(context.Background(),
+				generateTraces(tt.resourceGens...),
+				generateMetrics(tt.resourceGens...),
+				generateLogs(tt.resourceGens...),
+				nil,
+			)
 
-		m.assertBatchesLen(1)
-		m.assertResource(0, func(r pcommon.Resource) {
-			require.Equal(t, len(tt.wantAttrs), r.Attributes().Len())
-			for k, v := range tt.wantAttrs {
-				assertResourceHasStringAttribute(t, r, k, v)
-			}
+			m.assertBatchesLen(1)
+			m.assertResource(0, func(r pcommon.Resource) {
+				require.Equal(t, len(tt.wantAttrs), r.Attributes().Len())
+				for k, v := range tt.wantAttrs {
+					assertResourceHasStringAttribute(t, r, k, v)
+				}
+			})
 		})
 	}
 }
