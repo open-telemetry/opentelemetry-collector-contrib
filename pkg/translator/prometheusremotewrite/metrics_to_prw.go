@@ -53,7 +53,7 @@ func newPrometheusConverter() *prometheusConverter {
 }
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.
-func (c *prometheusConverter) FromMetrics(md pmetric.Metrics, settings Settings) (errs error) {
+func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings) errs error {
 	resourceMetricsSlice := md.ResourceMetrics()
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
