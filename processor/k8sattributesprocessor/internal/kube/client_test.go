@@ -1612,21 +1612,21 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				{
 					Name:         "container1",
 					ContainerID:  "docker://container1-id-123",
-					ImageID:      "docker://container1-id-123@sha256:123deadbeef123",
+					ImageID:      "container1-id-123@sha256:123deadbeef123",
 					RestartCount: 0,
 				},
 				{
 					Name:         "container2",
 					ContainerID:  "docker://container2-id-456",
-					ImageID:      "docker://container2-id-456@sha256:456deadbeef456",
+					ImageID:      "container2-id-456@sha256:456deadbeef456",
 					RestartCount: 2,
 				},
 			},
 			InitContainerStatuses: []api_v1.ContainerStatus{
 				{
 					Name:         "init_container",
-					ContainerID:  "containerd://init-container-id-789",
-					ImageID:      "containerd://init-container-id-789@sha256:789deadbeef789",
+					ContainerID:  "init-container-id-789",
+					ImageID:      "init-container-id-789@sha256:789deadbeef789",
 					RestartCount: 0,
 				},
 			},
@@ -1749,34 +1749,34 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				ByID: map[string]*Container{
 					"container1-id-123": {
 						Statuses: map[int]ContainerStatus{
-							0: {ImageID: "docker://container1-id-123@sha256:123deadbeef123"},
+							0: {ImageID: "container1-id-123@sha256:123deadbeef123"},
 						},
 					},
 					"container2-id-456": {
 						Statuses: map[int]ContainerStatus{
-							2: {ImageID: "docker://container2-id-456@sha256:456deadbeef456"},
+							2: {ImageID: "container2-id-456@sha256:456deadbeef456"},
 						},
 					},
 					"init-container-id-789": {
 						Statuses: map[int]ContainerStatus{
-							0: {ImageID: "containerd://init-container-id-789@sha256:789deadbeef789"},
+							0: {ImageID: "init-container-id-789@sha256:789deadbeef789"},
 						},
 					},
 				},
 				ByName: map[string]*Container{
 					"container1": {
 						Statuses: map[int]ContainerStatus{
-							0: {ImageID: "docker://container1-id-123@sha256:123deadbeef123"},
+							0: {ImageID: "container1-id-123@sha256:123deadbeef123"},
 						},
 					},
 					"container2": {
 						Statuses: map[int]ContainerStatus{
-							2: {ImageID: "docker://container2-id-456@sha256:456deadbeef456"},
+							2: {ImageID: "container2-id-456@sha256:456deadbeef456"},
 						},
 					},
 					"init_container": {
 						Statuses: map[int]ContainerStatus{
-							0: {ImageID: "containerd://init-container-id-789@sha256:789deadbeef789"},
+							0: {ImageID: "init-container-id-789@sha256:789deadbeef789"},
 						},
 					},
 				},
@@ -1797,21 +1797,21 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 						ImageName: "test/image1",
 						ImageTag:  "0.1.0",
 						Statuses: map[int]ContainerStatus{
-							0: {ContainerID: "container1-id-123", ImageID: "docker://container1-id-123@sha256:123deadbeef123"},
+							0: {ContainerID: "container1-id-123", ImageID: "container1-id-123@sha256:123deadbeef123"},
 						},
 					},
 					"container2-id-456": {
 						ImageName: "example.com:port1/image2",
 						ImageTag:  "0.2.0",
 						Statuses: map[int]ContainerStatus{
-							2: {ContainerID: "container2-id-456", ImageID: "docker://container2-id-456@sha256:456deadbeef456"},
+							2: {ContainerID: "container2-id-456", ImageID: "container2-id-456@sha256:456deadbeef456"},
 						},
 					},
 					"init-container-id-789": {
 						ImageName: "test/init-image",
 						ImageTag:  "1.0.2",
 						Statuses: map[int]ContainerStatus{
-							0: {ContainerID: "init-container-id-789", ImageID: "containerd://init-container-id-789@sha256:789deadbeef789"},
+							0: {ContainerID: "init-container-id-789", ImageID: "init-container-id-789@sha256:789deadbeef789"},
 						},
 					},
 				},
@@ -1820,21 +1820,21 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 						ImageName: "test/image1",
 						ImageTag:  "0.1.0",
 						Statuses: map[int]ContainerStatus{
-							0: {ContainerID: "container1-id-123", ImageID: "docker://container1-id-123@sha256:123deadbeef123"},
+							0: {ContainerID: "container1-id-123", ImageID: "container1-id-123@sha256:123deadbeef123"},
 						},
 					},
 					"container2": {
 						ImageName: "example.com:port1/image2",
 						ImageTag:  "0.2.0",
 						Statuses: map[int]ContainerStatus{
-							2: {ContainerID: "container2-id-456", ImageID: "docker://container2-id-456@sha256:456deadbeef456"},
+							2: {ContainerID: "container2-id-456", ImageID: "container2-id-456@sha256:456deadbeef456"},
 						},
 					},
 					"init_container": {
 						ImageName: "test/init-image",
 						ImageTag:  "1.0.2",
 						Statuses: map[int]ContainerStatus{
-							0: {ContainerID: "init-container-id-789", ImageID: "containerd://init-container-id-789@sha256:789deadbeef789"},
+							0: {ContainerID: "init-container-id-789", ImageID: "init-container-id-789@sha256:789deadbeef789"},
 						},
 					},
 				},
