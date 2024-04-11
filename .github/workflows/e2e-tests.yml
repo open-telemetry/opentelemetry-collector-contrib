@@ -113,6 +113,7 @@ jobs:
     env:
       KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
     strategy:
+      fail-fast: false
       matrix:
         k8s-version:
           - "v1.26.0"

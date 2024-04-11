@@ -8,11 +8,8 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-
 	"go.opentelemetry.io/collector/consumer"
-
 	"go.opentelemetry.io/collector/processor"
-
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
