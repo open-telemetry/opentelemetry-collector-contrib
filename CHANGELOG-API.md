@@ -6,6 +6,9 @@ This changelog includes only developer-facing changes.
 If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG.md).
 
 <!-- next version -->
+### 🧰 Bug fixes 🧰
+
+- `pkg/translator/prometheus`: Fix the collector crashing due to duplicate feature gate registration in both otel-collector and prometheus packages
 
 ## v0.98.0
 
