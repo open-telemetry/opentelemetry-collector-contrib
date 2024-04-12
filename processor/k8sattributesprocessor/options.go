@@ -8,7 +8,7 @@ import (
 	"os"
 	"regexp"
 
-	conventions "go.opentelemetry.io/collector/semconv/v1.21.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -23,6 +23,11 @@ const (
 	filterOPDoesNotExist = "does-not-exist"
 	metadataPodStartTime = "k8s.pod.start_time"
 	specPodHostName      = "k8s.pod.hostname"
+	// TODO: use k8s.cluster.uid, container.image.id from semconv when available,
+	//   replace clusterUID with conventions.AttributeK8SClusterUid
+	//   replace containerImageID with conventions.AttributeContainerImageID
+	clusterUID       = "k8s.cluster.uid"
+	containerImageID = "container.image.id"
 )
 
 // option represents a configuration option that can be passes.
@@ -51,13 +56,13 @@ func withPassthrough() option {
 func enabledAttributes() (attributes []string) {
 	defaultConfig := metadata.DefaultResourceAttributesConfig()
 	if defaultConfig.K8sClusterUID.Enabled {
-		attributes = append(attributes, conventions.AttributeK8SClusterUID)
+		attributes = append(attributes, clusterUID)
 	}
 	if defaultConfig.ContainerID.Enabled {
 		attributes = append(attributes, conventions.AttributeContainerID)
 	}
 	if defaultConfig.ContainerImageID.Enabled {
-		attributes = append(attributes, conventions.AttributeContainerImageID)
+		attributes = append(attributes, containerImageID)
 	}
 	if defaultConfig.ContainerImageName.Enabled {
 		attributes = append(attributes, conventions.AttributeContainerImageName)
@@ -171,13 +176,13 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.NodeUID = true
 			case conventions.AttributeContainerID:
 				p.rules.ContainerID = true
-			case conventions.AttributeContainerImageID:
+			case containerImageID:
 				p.rules.ContainerImageID = true
 			case conventions.AttributeContainerImageName:
 				p.rules.ContainerImageName = true
 			case conventions.AttributeContainerImageTag:
 				p.rules.ContainerImageTag = true
-			case conventions.AttributeK8SClusterUID:
+			case clusterUID:
 				p.rules.ClusterUID = true
 			}
 		}

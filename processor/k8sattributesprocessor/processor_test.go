@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.21.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -1144,7 +1144,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			wantAttrs: map[string]string{
 				kube.K8sIPLabelName:                   "1.1.1.1",
 				conventions.AttributeK8SContainerName: "app",
-				conventions.AttributeContainerImageID: "test/app@sha256:deadbeef02",
+				containerImageID:                      "test/app@sha256:deadbeef02",
 			},
 		},
 		{

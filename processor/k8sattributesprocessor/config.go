@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"regexp"
 
-	conventions "go.opentelemetry.io/collector/semconv/v1.21.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -94,8 +94,7 @@ func (cfg *Config) Validate() error {
 			conventions.AttributeK8SNodeName, conventions.AttributeK8SNodeUID,
 			conventions.AttributeK8SContainerName, conventions.AttributeContainerID,
 			conventions.AttributeContainerImageName, conventions.AttributeContainerImageTag,
-			conventions.AttributeContainerImageID,
-			conventions.AttributeK8SClusterUID:
+			containerImageID, clusterUID:
 		default:
 			return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 		}

@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.21.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -249,8 +249,8 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 			if _, found := attrs.Get(conventions.AttributeContainerID); !found && containerStatus.ContainerID != "" {
 				attrs.PutStr(conventions.AttributeContainerID, containerStatus.ContainerID)
 			}
-			if _, found := attrs.Get(conventions.AttributeContainerImageID); !found && containerStatus.ImageID != "" {
-				attrs.PutStr(conventions.AttributeContainerImageID, containerStatus.ImageID)
+			if _, found := attrs.Get(containerImageID); !found && containerStatus.ImageID != "" {
+				attrs.PutStr(containerImageID, containerStatus.ImageID)
 			}
 		}
 	}
