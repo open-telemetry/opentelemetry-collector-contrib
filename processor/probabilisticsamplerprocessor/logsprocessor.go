@@ -6,13 +6,14 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 type logsProcessor struct {
@@ -29,22 +30,23 @@ type recordCarrier struct {
 
 var _ samplingCarrier = &recordCarrier{}
 
-func newLogRecordCarrier(l plog.LogRecord) (samplingCarrier, error) {
-	carrier := &recordCarrier{
+func newLogRecordCarrier(l plog.LogRecord) samplingCarrier {
+	return &recordCarrier{
 		record: l,
 	}
-	return carrier, nil
 }
 
 func (*neverSampler) randomnessFromLogRecord(_ plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
-	return newMissingRandomnessMethod(), nil, nil
+	// We return a fake randomness value, since it will not be used.
+	// This avoids a consistency check error for missing randomness.
+	return newSamplingPriorityMethod(sampling.AllProbabilitiesRandomness), nil, nil
 }
 
 // randomnessFromLogRecord (hashingSampler) uses a hash function over
 // the TraceID
 func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
 	rnd := newMissingRandomnessMethod()
-	lrc, err := newLogRecordCarrier(l)
+	lrc := newLogRecordCarrier(l)
 
 	if th.logsTraceIDEnabled {
 		value := l.TraceID()
@@ -62,13 +64,7 @@ func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (randomnessN
 		}
 	}
 
-	if err != nil {
-		// The sampling.randomness or sampling.threshold attributes
-		// had a parse error, in this case.
-		lrc = nil
-	}
-
-	return rnd, lrc, err
+	return rnd, lrc, nil
 }
 
 // newLogsProcessor returns a processor.LogsProcessor that will perform head sampling according to the given

@@ -5,7 +5,6 @@ package probabilisticsamplerprocessor
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"math"
 	"math/rand"
@@ -481,31 +480,4 @@ func assertSampledData(t *testing.T, sampled []ptrace.Traces, serviceName string
 		}
 	}
 	return
-}
-
-// mustParseTID generates TraceIDs from their hex encoding, for
-// testing probability sampling.
-func mustParseTID(in string) pcommon.TraceID {
-	b, err := hex.DecodeString(in)
-	if err != nil {
-		panic(err)
-	}
-	if len(b) != len(pcommon.TraceID{}) {
-		panic("incorrect size input")
-	}
-	return pcommon.TraceID(b)
-}
-
-// makeSingleSpanWithAttrib is used to construct test data with
-// a specific TraceID and a single attribute.
-func makeSingleSpanWithAttrib(tid pcommon.TraceID, sid pcommon.SpanID, ts string, key string, attribValue pcommon.Value) ptrace.Traces {
-	traces := ptrace.NewTraces()
-	span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span.TraceState().FromRaw(ts)
-	span.SetTraceID(tid)
-	span.SetSpanID(sid)
-	if key != "" {
-		attribValue.CopyTo(span.Attributes().PutEmpty(key))
-	}
-	return traces
 }

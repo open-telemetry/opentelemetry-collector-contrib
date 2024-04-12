@@ -9,13 +9,14 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 const (
@@ -107,9 +108,9 @@ func newAttributeHashingMethod(attribute string, rnd sampling.Randomness) random
 	}
 }
 
-type samplingCarrier interface {
-	// TODO: Placeholder interface, see #31894 for its future contents.
-}
+// TODO: Placeholder interface, see #31894 for its future contents,
+// will become a non-empty interface.  (Linter forces us to write "any".)
+type samplingCarrier any
 
 type dataSampler interface {
 	// decide reports the result based on a probabilistic decision.
@@ -150,7 +151,7 @@ type hashingSampler struct {
 	logsTraceIDEnabled bool
 }
 
-func (th *hashingSampler) decide(carrier samplingCarrier) sampling.Threshold {
+func (th *hashingSampler) decide(_ samplingCarrier) sampling.Threshold {
 	return th.tvalueThreshold
 }
 
@@ -187,7 +188,7 @@ func randomnessFromBytes(b []byte, hashSeed uint32) sampling.Randomness {
 	//
 	// As a result, R' has the correct most-significant 14 bits to
 	// use in an R-value.
-	rprime14 := uint64(numHashBuckets - 1 - hashed)
+	rprime14 := numHashBuckets - 1 - hashed
 
 	// There are 18 unused bits from the FNV hash function.
 	unused18 := uint64(hashed32 >> (32 - numHashBucketsLg2))
@@ -210,7 +211,7 @@ func randomnessFromBytes(b []byte, hashSeed uint32) sampling.Randomness {
 // consistencyCheck checks for certain inconsistent inputs.
 //
 // if the randomness is missing, returns ErrMissingRandomness.
-func consistencyCheck(rnd randomnessNamer, carrier samplingCarrier) error {
+func consistencyCheck(rnd randomnessNamer, _ samplingCarrier) error {
 	if isMissing(rnd) {
 		return ErrMissingRandomness
 	}
@@ -234,14 +235,6 @@ func makeSampler(cfg *Config) dataSampler {
 
 	if pct == 0 {
 		return never
-	}
-	// Note: Convert to float64 before dividing by 100, otherwise loss of precision.
-	// If the probability is too small, round it up to the minimum.
-	ratio := float64(pct) / 100
-	// Like the pct > 100 test above, but for values too small to
-	// express in 14 bits of precision.
-	if ratio < sampling.MinSamplingProbability {
-		ratio = sampling.MinSamplingProbability
 	}
 
 	// Note: the original hash function used in this code

@@ -7,13 +7,14 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 // samplingPriority has the semantic result of parsing the "sampling.priority"
@@ -50,11 +51,10 @@ type tracestateCarrier struct {
 
 var _ samplingCarrier = &tracestateCarrier{}
 
-func newTracestateCarrier(s ptrace.Span) (samplingCarrier, error) {
-	tsc := &tracestateCarrier{
+func newTracestateCarrier(s ptrace.Span) samplingCarrier {
+	return &tracestateCarrier{
 		span: s,
 	}
-	return tsc, nil
 }
 
 // newTracesProcessor returns a processor.TracesProcessor that will
@@ -66,7 +66,6 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		failClosed: cfg.FailClosed,
 		logger:     set.Logger,
 	}
-
 	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
@@ -77,19 +76,18 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 }
 
 func (th *neverSampler) randomnessFromSpan(_ ptrace.Span) (randomnessNamer, samplingCarrier, error) {
-	return newMissingRandomnessMethod(), nil, nil
+	// We return a fake randomness value, since it will not be used.
+	// This avoids a consistency check error for missing randomness.
+	return newSamplingPriorityMethod(sampling.AllProbabilitiesRandomness), nil, nil
 }
 
 func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {
 	tid := s.TraceID()
 	// Note: this admits empty TraceIDs.
 	rnd := newTraceIDHashingMethod(randomnessFromBytes(tid[:], th.hashSeed))
-	tsc, err := newTracestateCarrier(s)
+	tsc := newTracestateCarrier(s)
 
-	if err != nil {
-		tsc = nil
-	}
-	return rnd, tsc, err
+	return rnd, tsc, nil
 }
 
 func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {

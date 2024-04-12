@@ -96,6 +96,7 @@ func TestLogsSampling(t *testing.T) {
 				SamplingPercentage: 0,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",
+				//FailClosed: true,
 			},
 
 			received: 0,
@@ -168,6 +169,8 @@ func TestLogsSampling(t *testing.T) {
 				record.SetTimestamp(pcommon.Timestamp(time.Unix(1649400860, 0).Unix()))
 				record.SetSeverityNumber(plog.SeverityNumberDebug)
 				ib := byte(i)
+				// Note this TraceID is invalid when i==0.  Since this test
+				// encodes historical behavior, we leave it as-is.
 				traceID := [16]byte{0, 0, 0, 0, 0, 0, 0, 0, ib, ib, ib, ib, ib, ib, ib, ib}
 				record.SetTraceID(traceID)
 				// set half of records with a foo (bytes) and a bar (string) attribute

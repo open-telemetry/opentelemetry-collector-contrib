@@ -27,6 +27,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				SamplingPercentage: 15.3,
 				AttributeSource:    "traceID",
+				FailClosed:         true,
 			},
 		},
 		{
@@ -37,6 +38,7 @@ func TestLoadConfig(t *testing.T) {
 				AttributeSource:    "record",
 				FromAttribute:      "foo",
 				SamplingPriority:   "bar",
+				FailClosed:         true,
 			},
 		},
 	}
