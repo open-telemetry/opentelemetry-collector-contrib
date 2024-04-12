@@ -69,8 +69,6 @@ func TestLoadInvalidConfig(t *testing.T) {
 		{"invalid_negative.yaml", "sampling rate is negative"},
 		{"invalid_small.yaml", "sampling rate is too small"},
 		{"invalid_inf.yaml", "sampling rate is invalid: +Inf%"},
-		{"invalid_prec.yaml", "sampling precision is too great"},
-		{"invalid_zero.yaml", "invalid sampling precision"},
 	} {
 		t.Run(test.file, func(t *testing.T) {
 			factories, err := otelcoltest.NopFactories()

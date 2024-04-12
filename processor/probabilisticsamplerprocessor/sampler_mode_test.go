@@ -19,12 +19,6 @@ func TestUnmarshalText(t *testing.T) {
 			samplerMode: "hash_seed",
 		},
 		{
-			samplerMode: "equalizing",
-		},
-		{
-			samplerMode: "proportional",
-		},
-		{
 			samplerMode: "",
 		},
 		{

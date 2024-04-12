@@ -293,6 +293,7 @@ func commonSamplingLogic[T any](
 		threshold = sampler.decide(carrier)
 	}
 
+	fmt.Printf("INPUT T %x %x fc=%v err=%v\n", rnd, threshold, failClosed, err)
 	rnd, threshold = priorityFunc(item, rnd, threshold)
 
 	sampled := threshold.ShouldSample(rnd.randomness())
