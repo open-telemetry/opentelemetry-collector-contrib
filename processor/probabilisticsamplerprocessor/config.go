@@ -5,11 +5,8 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 
 import (
 	"fmt"
-	"math"
 
 	"go.opentelemetry.io/collector/component"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 type AttributeSource string
@@ -29,15 +26,13 @@ var validAttributeSource = map[AttributeSource]bool{
 // Config has the configuration guiding the sampler processor.
 type Config struct {
 
-	// SamplingPercentage is the percentage rate at which traces or logs are going to be sampled. Defaults
-	// to zero, i.e.: no sample.  Values greater or equal 100 are treated as "sample all traces/logs".  This
-	// is treated as having four significant figures when conveying the sampling probability.
+	// SamplingPercentage is the percentage rate at which traces or logs are going to be sampled. Defaults to zero, i.e.: no sample.
+	// Values greater or equal 100 are treated as "sample all traces/logs".
 	SamplingPercentage float32 `mapstructure:"sampling_percentage"`
 
-	// HashSeed allows one to configure the hashing seed.  This is important in scenarios where multiple
-	// layers of collectors have different sampling rates: if they use the same seed all passing one layer
-	// may pass the other even if they have different sampling rates, configuring different seeds avoids
-	// that.
+	// HashSeed allows one to configure the hashing seed. This is important in scenarios where multiple layers of collectors
+	// have different sampling rates: if they use the same seed all passing one layer may pass the other even if they have
+	// different sampling rates, configuring different seeds avoids that.
 	HashSeed uint32 `mapstructure:"hash_seed"`
 
 	// FailClosed indicates to not sample data (the processor will
@@ -49,9 +44,6 @@ type Config struct {
 	// FailClosed is processed, making it possible to sample
 	// despite errors using priority.
 	FailClosed bool `mapstructure:"fail_closed"`
-
-	///////
-	// Logs only fields below.
 
 	// AttributeSource (logs only) defines where to look for the attribute in from_attribute. The allowed values are
 	// `traceID` or `record`. Default is `traceID`.
@@ -69,28 +61,11 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
-	pct := float64(cfg.SamplingPercentage)
-
-	if math.IsInf(pct, 0) || math.IsNaN(pct) {
-		return fmt.Errorf("sampling rate is invalid: %f%%", cfg.SamplingPercentage)
+	if cfg.SamplingPercentage < 0 {
+		return fmt.Errorf("negative sampling rate: %.2f", cfg.SamplingPercentage)
 	}
-	ratio := pct / 100.0
-
-	switch {
-	case ratio < 0:
-		return fmt.Errorf("sampling rate is negative: %f%%", cfg.SamplingPercentage)
-	case ratio == 0:
-		// Special case
-	case ratio < sampling.MinSamplingProbability:
-		// Too-small case
-		return fmt.Errorf("sampling rate is too small: %g%%", cfg.SamplingPercentage)
-	default:
-		// Note that ratio > 1 is specifically allowed by the README, taken to mean 100%
-	}
-
 	if cfg.AttributeSource != "" && !validAttributeSource[cfg.AttributeSource] {
 		return fmt.Errorf("invalid attribute source: %v. Expected: %v or %v", cfg.AttributeSource, traceIDAttributeSource, recordAttributeSource)
 	}
-
 	return nil
 }
