@@ -1156,7 +1156,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.NoError(t, longFile.Close())
 
 	// Verify we have no checkpointed files
-	require.Equal(t, 0, operator.totalReaders())
+	require.Equal(t, 0, operator.tracker.TotalReaders())
 
 	// Wait until the only line in the short file and
 	// at least one line from the long file have been consumed
@@ -1298,7 +1298,7 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	operator.wg.Wait()
 	if runtime.GOOS != "windows" {
 		// On windows, we never keep files in previousPollFiles, so we don't expect to see them here
-		require.Equal(t, operator.previousPollFiles.Len(), 1)
+		require.Equal(t, len(operator.tracker.PreviousPollFiles()), 1)
 	}
 
 	// keep append data to file1 and file2

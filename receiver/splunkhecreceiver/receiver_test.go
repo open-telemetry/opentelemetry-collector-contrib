@@ -443,7 +443,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	cfg.TLSSetting = &configtls.ServerConfig{
-		TLSSetting: configtls.Config{
+		Config: configtls.Config{
 			CertFile: "./testdata/server.crt",
 			KeyFile:  "./testdata/server.key",
 		},
@@ -495,14 +495,14 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	require.NoErrorf(t, err, "should have no errors with new request: %v", err)
 
 	tlscs := configtls.ClientConfig{
-		TLSSetting: configtls.Config{
+		Config: configtls.Config{
 			CAFile:   "./testdata/ca.crt",
 			CertFile: "./testdata/client.crt",
 			KeyFile:  "./testdata/client.key",
 		},
 		ServerName: "localhost",
 	}
-	tls, errTLS := tlscs.LoadTLSConfig()
+	tls, errTLS := tlscs.LoadTLSConfigContext(context.Background())
 	assert.NoError(t, errTLS)
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -945,7 +945,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				req.Header.Set("Content-Type", "application/not-json")
 				return req
 			}(),
-			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+			assertResponse: func(t *testing.T, resp *http.Response, _ any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusOK, status)
 			},
@@ -982,7 +982,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				req := httptest.NewRequest("POST", "http://localhost/foo", strings.NewReader("foo\nbar"))
 				return req
 			}(),
-			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+			assertResponse: func(t *testing.T, resp *http.Response, _ any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusOK, status)
 			},

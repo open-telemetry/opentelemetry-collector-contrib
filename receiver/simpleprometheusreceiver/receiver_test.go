@@ -87,6 +87,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),
@@ -116,7 +117,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "localhost:1234",
 					TLSSetting: configtls.ClientConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CAFile: "./testdata/test_cert.pem",
 						},
 						InsecureSkipVerify: true,
@@ -127,6 +128,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							JobName:         "prometheus_simple/localhost:1234",
@@ -169,6 +171,7 @@ func TestGetPrometheusConfig(t *testing.T) {
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							JobName:         "prometheus_simple/localhost:1234",
@@ -231,6 +234,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),
@@ -278,6 +282,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),
@@ -319,6 +324,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),
@@ -352,7 +358,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 					Endpoint: defaultEndpoint,
 					TLSSetting: configtls.ClientConfig{
 						Insecure: false,
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CAFile: "./testdata/test_cert.pem",
 						},
 					},
@@ -363,6 +369,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 			},
 			want: &prometheusreceiver.Config{
 				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),

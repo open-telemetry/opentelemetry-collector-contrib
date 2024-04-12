@@ -5,7 +5,6 @@ package exceptionsconnector // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
-	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -103,6 +102,9 @@ func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, s
 	eventAttrs := event.Attributes()
 	spanAttrs := span.Attributes()
 
+	// Copy span attributes to the log record.
+	spanAttrs.CopyTo(logRecord.Attributes())
+
 	// Add common attributes to the log record.
 	logRecord.Attributes().PutStr(spanKindKey, traceutil.SpanKindStr(span.Kind()))
 	logRecord.Attributes().PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
@@ -117,24 +119,7 @@ func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, s
 
 	// Add stacktrace to the log record.
 	logRecord.Attributes().PutStr(exceptionStacktraceKey, getValue(eventAttrs, exceptionStacktraceKey))
-
-	// Add HTTP context to the log record.
-	for k, v := range extractHTTP(spanAttrs) {
-		logRecord.Attributes().PutStr(k, v)
-	}
 	return logRecord
-}
-
-// extractHTTP extracts the HTTP context from span attributes.
-func extractHTTP(attr pcommon.Map) map[string]string {
-	http := make(map[string]string)
-	attr.Range(func(k string, v pcommon.Value) bool {
-		if strings.HasPrefix(k, "http.") {
-			http[k] = v.Str()
-		}
-		return true
-	})
-	return http
 }
 
 // getValue returns the value of the attribute with the given key.
