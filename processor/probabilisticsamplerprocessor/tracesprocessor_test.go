@@ -584,6 +584,9 @@ func TestHashingFunction(t *testing.T) {
 		{460, "60c3b9a2dde734d71ba5cca7eb164bce", true},
 	}
 
+	// Note the test data above was created by essentially a
+	// one-off rewrite of the test body below, where instead of
+	// verifying it printed the expected results.
 	for _, tc := range expect50PctData {
 		sink := new(consumertest.TracesSink)
 		tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), &Config{
