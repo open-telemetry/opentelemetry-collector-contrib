@@ -47,6 +47,10 @@ type Config struct {
 	TableEngine TableEngine `mapstructure:"table_engine"`
 	// ClusterName if set will append `ON CLUSTER` with the provided name when creating tables.
 	ClusterName string `mapstructure:"cluster_name"`
+	// AsyncInsert if true will enable async inserts. Default is `true`.
+	// Ignored if async inserts are configured in the `endpoint` or `connection_params`.
+	// Async inserts may still be overridden server-side.
+	AsyncInsert *bool `mapstructure:"async_insert"`
 }
 
 // TableEngine defines the ENGINE string value when creating the table.
@@ -63,6 +67,11 @@ var (
 	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
 	errConfigTTL             = errors.New("both 'ttl_days' and 'ttl' can not be provided. 'ttl_days' is deprecated, use 'ttl' instead")
 )
+
+// ConfigBool returns a pointer to a new bool.
+func ConfigBool(b bool) *bool {
+	return &b
+}
 
 // Validate the ClickHouse server configuration.
 func (cfg *Config) Validate() (err error) {
@@ -103,6 +112,15 @@ func (cfg *Config) buildDSN(database string) (string, error) {
 	// Enable TLS if scheme is https. This flag is necessary to support https connections.
 	if dsnURL.Scheme == "https" {
 		queryParams.Set("secure", "true")
+	}
+
+	// Default async_insert to true if not specified in DSN. Use config value if specified.
+	if !queryParams.Has("async_insert") {
+		if cfg.AsyncInsert != nil {
+			queryParams.Set("async_insert", fmt.Sprintf("%t", *cfg.AsyncInsert))
+		} else {
+			queryParams.Set("async_insert", "true")
+		}
 	}
 
 	// Override database if specified in config.

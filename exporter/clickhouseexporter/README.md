@@ -283,6 +283,7 @@ Connection options:
 - `ttl` (default = 0): The data time-to-live example 30m, 48h. Also, 0 means no ttl.
 - `database` (default = otel): The database name.
 - `connection_params` (default = {}). Params is the extra connection parameters with map format.
+- `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/en/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
 
 ClickHouse tables:
 
@@ -338,6 +339,7 @@ exporters:
   clickhouse:
     endpoint: tcp://127.0.0.1:9000?dial_timeout=10s&compress=lz4
     database: otel
+    async_insert: true
     ttl: 72h
     logs_table_name: otel_logs
     traces_table_name: otel_traces
