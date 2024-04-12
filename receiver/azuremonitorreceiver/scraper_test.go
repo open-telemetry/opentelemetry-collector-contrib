@@ -255,6 +255,7 @@ func TestAzureScraperScrape(t *testing.T) {
 				clientMetricsValues:      metricsValuesClientMock,
 				mb:                       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
 				mutex:                    &sync.Mutex{},
+				settings:                 receivertest.NewNopCreateSettings().TelemetrySettings,
 			}
 			s.resources = map[string]*azureResource{}
 
@@ -460,8 +461,8 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 }
 
 func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientListResponse {
-	name1, name2, name3, name4, name5, name6, name7, dimension1, dimension2, dimensionValue := "metric1", "metric2",
-		"metric3", "metric4", "metric5", "metric6", "metric7", "dimension1", "dimension2", "dimension value"
+	name1, name2, name3, name4, name5, name6, name7, dimension1, dimension2, dimensionValue, success := "metric1", "metric2",
+		"metric3", "metric4", "metric5", "metric6", "metric7", "dimension1", "dimension2", "dimension value", "Success"
 	var unit1 armmonitor.Unit = "unit1"
 	var value1 float64 = 1
 
@@ -488,7 +489,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									},
 								},
 							},
-							ErrorCode: to.Ptr("Success"),
+							ErrorCode: &success,
 						},
 						{
 							Name: &armmonitor.LocalizableString{
@@ -508,7 +509,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									},
 								},
 							},
-							ErrorCode: to.Ptr("Success"),
+							ErrorCode: &success,
 						},
 					},
 				},
@@ -534,7 +535,27 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									},
 								},
 							},
-							ErrorCode: to.Ptr("Success"),
+							ErrorCode: &success,
+						},
+						{
+							Name: &armmonitor.LocalizableString{
+								Value: &name5,
+							},
+							Unit: &unit1,
+							Timeseries: []*armmonitor.TimeSeriesElement{
+								{
+									Data: []*armmonitor.MetricValue{
+										{
+											Average: &value1,
+											Count:   &value1,
+											Maximum: &value1,
+											Minimum: &value1,
+											Total:   &value1,
+										},
+									},
+								},
+							},
+							ErrorCode: to.Ptr("Error"),
 						},
 					},
 				},
@@ -562,7 +583,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									},
 								},
 							},
-							ErrorCode: to.Ptr("Success"),
+							ErrorCode: &success,
 						},
 					},
 				},
@@ -602,7 +623,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									},
 								},
 							},
-							ErrorCode: to.Ptr("Success"),
+							ErrorCode: &success,
 						},
 					},
 				},
@@ -636,7 +657,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									},
 								},
 							},
-							ErrorCode: to.Ptr("Success"),
+							ErrorCode: &success,
 						},
 					},
 				},
@@ -668,7 +689,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									},
 								},
 							},
-							ErrorCode: to.Ptr("Success"),
+							ErrorCode: &success,
 						},
 					},
 				},

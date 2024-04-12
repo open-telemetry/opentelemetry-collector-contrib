@@ -383,7 +383,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 
 			for _, metric := range result.Value {
 				if *metric.ErrorCode != "Success" {
-					errorMsg := fmt.Errorf("loading value for metric %v failed with error %v", metric.Name.Value, metric.ErrorMessage)
+					errorMsg := fmt.Errorf("loading value for metric %v failed with error %v", &metric.Name.Value, &metric.ErrorMessage)
 					s.settings.Logger.Error("failed to get Azure Metrics values data for metric", zap.Error(errorMsg))
 					continue
 				}
