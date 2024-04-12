@@ -529,6 +529,7 @@ func (s *Supervisor) loadOrCreateInstanceID() (ulid.ULID, error) {
 		err = saveULIDToFile(s.instanceIDFile(), id)
 		return id, err
 	case err != nil:
+		// TODO: Should we actually just regenerate and write the file in this case?
 		return ulid.ULID{}, nil
 	}
 
