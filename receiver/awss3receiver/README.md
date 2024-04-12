@@ -27,6 +27,7 @@ The following exporter configuration parameters are supported.
 | `s3_partition`        | time granularity of S3 key: hour or minute                                                                                                 | "minute"    | Optional |
 | `file_prefix`         | file prefix defined by user                                                                                                                |             | Optional |
 | `endpoint`            | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                       |             | Optional |
+| `endpoint_partition_id` | partition id to use if `endpoint` is specified.                                                                                              | "aws"        | Optional |
 | `s3_force_path_style` | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       | Optional |
 
 ### Time format for `starttime` and `endtime`

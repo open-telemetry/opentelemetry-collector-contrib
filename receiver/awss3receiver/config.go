@@ -16,13 +16,14 @@ import (
 // S3DownloaderConfig contains aws s3 downloader related config to controls things
 // like bucket, prefix, batching, connections, retries, etc.
 type S3DownloaderConfig struct {
-	Region           string `mapstructure:"region"`
-	S3Bucket         string `mapstructure:"s3_bucket"`
-	S3Prefix         string `mapstructure:"s3_prefix"`
-	S3Partition      string `mapstructure:"s3_partition"`
-	FilePrefix       string `mapstructure:"file_prefix"`
-	Endpoint         string `mapstructure:"endpoint"`
-	S3ForcePathStyle bool   `mapstructure:"s3_force_path_style"`
+	Region              string `mapstructure:"region"`
+	S3Bucket            string `mapstructure:"s3_bucket"`
+	S3Prefix            string `mapstructure:"s3_prefix"`
+	S3Partition         string `mapstructure:"s3_partition"`
+	FilePrefix          string `mapstructure:"file_prefix"`
+	Endpoint            string `mapstructure:"endpoint"`
+	EndpointPartitionID string `mapstructure:"endpoint_partition_id"`
+	S3ForcePathStyle    bool   `mapstructure:"s3_force_path_style"`
 }
 
 // Config defines the configuration for the file receiver.
@@ -40,8 +41,9 @@ const (
 func createDefaultConfig() component.Config {
 	return &Config{
 		S3Downloader: S3DownloaderConfig{
-			Region:      "us-east-1",
-			S3Partition: S3PartitionMinute,
+			Region:              "us-east-1",
+			S3Partition:         S3PartitionMinute,
+			EndpointPartitionID: "aws",
 		},
 	}
 }

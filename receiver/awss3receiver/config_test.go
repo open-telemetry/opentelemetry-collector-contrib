@@ -23,13 +23,14 @@ func TestLoadConfig_Validate_Invalid(t *testing.T) {
 func TestConfig_Validate_Valid(t *testing.T) {
 	cfg := Config{
 		S3Downloader: S3DownloaderConfig{
-			Region:           "",
-			S3Bucket:         "abucket",
-			S3Prefix:         "",
-			S3Partition:      "minute",
-			FilePrefix:       "",
-			Endpoint:         "",
-			S3ForcePathStyle: false,
+			Region:              "",
+			S3Bucket:            "abucket",
+			S3Prefix:            "",
+			S3Partition:         "minute",
+			FilePrefix:          "",
+			Endpoint:            "",
+			EndpointPartitionID: "aws",
+			S3ForcePathStyle:    false,
 		},
 		StartTime: "2024-01-01",
 		EndTime:   "2024-01-01",
@@ -58,9 +59,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
 				S3Downloader: S3DownloaderConfig{
-					Region:      "us-east-1",
-					S3Bucket:    "abucket",
-					S3Partition: "minute",
+					Region:              "us-east-1",
+					S3Bucket:            "abucket",
+					S3Partition:         "minute",
+					EndpointPartitionID: "aws",
 				},
 				StartTime: "2024-01-31 15:00",
 				EndTime:   "2024-02-03",

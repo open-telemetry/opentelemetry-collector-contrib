@@ -41,7 +41,7 @@ func newS3Client(cfg S3DownloaderConfig) (ListObjectsAPI, GetObjectAPI, error) {
 	if cfg.Endpoint != "" {
 		customResolver := aws.EndpointResolverWithOptionsFunc(func(_, _ string, _ ...any) (aws.Endpoint, error) {
 			return aws.Endpoint{
-				PartitionID:   "aws",
+				PartitionID:   cfg.EndpointPartitionID,
 				URL:           cfg.Endpoint,
 				SigningRegion: cfg.Region,
 			}, nil
