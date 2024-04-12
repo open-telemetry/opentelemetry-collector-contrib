@@ -310,7 +310,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		},
 	}
 
-        // for testing only
+	// for testing only
 	if r.skipOffsetting {
 		optsValue := reflect.ValueOf(opts).Elem()
 		field := optsValue.FieldByName("skipOffsetting")
