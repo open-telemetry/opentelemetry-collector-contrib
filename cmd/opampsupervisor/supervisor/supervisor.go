@@ -6,15 +6,16 @@ package supervisor
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	_ "embed"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"text/template"
@@ -55,6 +56,8 @@ var (
 	lastRecvRemoteConfigFile     = "last_recv_remote_config.dat"
 	lastRecvOwnMetricsConfigFile = "last_recv_own_metrics_config.dat"
 )
+
+const instanceIDStorageFile = "instance_id"
 
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
@@ -135,7 +138,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		return nil, fmt.Errorf("error loading config: %w", err)
 	}
 
-	id, err := s.createInstanceID()
+	id, err := s.loadOrCreateInstanceID()
 	if err != nil {
 		return nil, err
 	}
@@ -513,17 +516,23 @@ func (s *Supervisor) waitForOpAMPConnection() error {
 	}
 }
 
-// TODO: Persist instance ID. https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21073
-func (s *Supervisor) createInstanceID() (ulid.ULID, error) {
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(0)), 0)
-	id, err := ulid.New(ulid.Timestamp(time.Now()), entropy)
+func (s *Supervisor) loadOrCreateInstanceID() (ulid.ULID, error) {
+	id, err := loadULIDFromFile(s.instanceIDFile())
 
-	if err != nil {
-		return ulid.ULID{}, err
+	switch {
+	case errors.Is(err, os.ErrNotExist):
+		id, err = generateNewULID()
+		if err != nil {
+			return id, err
+		}
+
+		err = saveULIDToFile(s.instanceIDFile(), id)
+		return id, err
+	case err != nil:
+		return ulid.ULID{}, nil
 	}
 
 	return id, nil
-
 }
 
 func (s *Supervisor) composeExtraLocalConfig() []byte {
@@ -1039,6 +1048,12 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		s.logger.Debug("Agent identity is changing",
 			zap.String("old_id", s.instanceID.String()),
 			zap.String("new_id", newInstanceID.String()))
+
+		err = saveULIDToFile(s.instanceIDFile(), newInstanceID)
+		if err != nil {
+			s.logger.Error("Failed to persist new instance ID, instance ID will revert on restart.", zap.String("new_id", newInstanceID.String()), zap.Error(err))
+		}
+
 		s.instanceID = newInstanceID
 		err = s.opampClient.SetAgentDescription(s.agentDescription)
 		if err != nil {
@@ -1063,6 +1078,10 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	}
 }
 
+func (s *Supervisor) instanceIDFile() string {
+	return filepath.Join(s.config.Storage.Directory, instanceIDStorageFile)
+}
+
 func (s *Supervisor) findRandomPort() (int, error) {
 	l, err := net.Listen("tcp", "localhost:0")
 
@@ -1079,4 +1098,29 @@ func (s *Supervisor) findRandomPort() (int, error) {
 	}
 
 	return port, nil
+}
+
+func loadULIDFromFile(file string) (ulid.ULID, error) {
+	by, err := os.ReadFile(file)
+	if err != nil {
+		return ulid.ULID{}, err
+	}
+
+	ulidAsString := string(by)
+	return ulid.Parse(strings.TrimSpace(ulidAsString))
+}
+
+func saveULIDToFile(file string, id ulid.ULID) error {
+	ulidAsString := id.String()
+	return os.WriteFile(file, []byte(ulidAsString), 0600)
+}
+
+func generateNewULID() (ulid.ULID, error) {
+	entropy := ulid.Monotonic(rand.Reader, 0)
+	id, err := ulid.New(ulid.Timestamp(time.Now()), entropy)
+	if err != nil {
+		return ulid.ULID{}, err
+	}
+
+	return id, nil
 }
