@@ -11,6 +11,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder v0.53.0-rc.2
 	github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.53.0-rc.2
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.54.0-devel.0.20240409133256-31c31e3f8818
+	github.com/DataDog/datadog-agent/comp/serializer/compression v0.0.0-20240409133256-31c31e3f8818
 	github.com/DataDog/datadog-agent/pkg/config/model v0.53.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/config/setup v0.53.0-rc.2
 	github.com/DataDog/datadog-agent/pkg/proto v0.53.0-rc.2
@@ -91,7 +92,6 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/secrets v0.53.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/comp/core/status v0.53.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.53.0-rc.2 // indirect
-	github.com/DataDog/datadog-agent/comp/serializer/compression v0.0.0-20240409133256-31c31e3f8818 // indirect
 	github.com/DataDog/datadog-agent/pkg/aggregator/ckey v0.53.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.53.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.53.0-rc.2 // indirect

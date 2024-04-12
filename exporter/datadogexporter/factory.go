@@ -64,6 +64,7 @@ func isMetricExportV2Enabled() bool {
 }
 
 func isMetricExportSerializerEnabled() bool {
+	fmt.Printf("### isMetricExportSerializerEnabled:%v\n", metricExportSerializerFeatureGate.IsEnabled())
 	return metricExportSerializerFeatureGate.IsEnabled()
 }
 
@@ -334,7 +335,9 @@ func (f *factory) createMetricsExporter(
 		fmt.Printf("### created new exporter\n")
 		exporter, err := exporterhelper.NewMetricsExporter(ctx, set, cfg, newExp.ConsumeMetrics,
 			exporterhelper.WithQueue(cfg.QueueSettings),
-			exporterhelper.WithTimeout(cfg.TimeoutSettings),
+			exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{
+				Timeout: cfg.ClientConfig.Timeout,
+			}),
 			// the metrics remapping code mutates data
 			exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		)

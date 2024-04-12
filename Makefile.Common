@@ -24,7 +24,7 @@ SRC_ROOT := $(shell git rev-parse --show-toplevel)
 SRC_PARENT_DIR :=  $(shell dirname $(SRC_ROOT))
 
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
-GO_BUILD_TAGS=""
+GO_BUILD_TAGS="zstd"
 GOTEST_TIMEOUT?= 300s
 GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
 GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4

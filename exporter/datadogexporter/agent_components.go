@@ -13,6 +13,8 @@ import (
 	"github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder"
 	"github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface"
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter"
+	"github.com/DataDog/datadog-agent/comp/serializer/compression"
+	"github.com/DataDog/datadog-agent/comp/serializer/compression/compressionimpl/strategy"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	pkgconfigsetup "github.com/DataDog/datadog-agent/pkg/config/setup"
 	"github.com/DataDog/datadog-agent/pkg/serializer"
@@ -20,6 +22,7 @@ import (
 	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
@@ -73,6 +76,10 @@ func newSerializer(set component.TelemetrySettings, cfg *Config) (*serializer.Se
 		}),
 		fx.Provide(NewOrchestratorinterfaceimpl),
 		fx.Provide(serializer.NewSerializer),
+		fx.Provide(strategy.NewZlibStrategy),
+		fx.Provide(func(s *strategy.ZlibStrategy) compression.Component {
+			return s
+		}),
 		defaultforwarder.Module(),
 		fx.Populate(&f),
 		fx.Populate(&c),
@@ -140,8 +147,10 @@ func newSerializerExporter(ctx context.Context, set exporter.CreateSettings, cfg
 			},
 		},
 	}
-	exporterConfig.TimeoutSettings = cfg.TimeoutSettings
 	exporterConfig.QueueSettings = cfg.QueueSettings
+	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
+		Timeout: cfg.Timeout,
+	}
 
 	// TODO: Ideally the attributes translator would be created once and reused
 	// across all signals. This would need unifying the logsagent and serializer
