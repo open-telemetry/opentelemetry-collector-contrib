@@ -11,7 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.98.0
 	github.com/stretchr/testify v1.9.0
-	github.com/testcontainers/testcontainers-go v0.29.1
+	github.com/testcontainers/testcontainers-go v0.30.0
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/component v0.98.0
 	go.opentelemetry.io/collector/config/confighttp v0.98.0
