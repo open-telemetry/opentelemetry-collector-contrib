@@ -36,13 +36,13 @@ as [ClickHouse document says:](https://clickhouse.com/docs/en/introduction/perfo
    dashboard.
    Support time-series graph, table and logs.
 
-2. Analyze logs via powerful clickhouse SQL.
+2. Analyze logs via powerful ClickHouse SQL.
 
 ### Logs
 
 - Get log severity count time series.
 
-```clickhouse
+```sql
 SELECT toDateTime(toStartOfInterval(Timestamp, INTERVAL 60 second)) as time, SeverityText, count() as count
 FROM otel_logs
 WHERE time >= NOW() - INTERVAL 1 HOUR
@@ -52,7 +52,7 @@ ORDER BY time;
 
 - Find any log.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE Timestamp >= NOW() - INTERVAL 1 HOUR
@@ -61,7 +61,7 @@ Limit 100;
 
 - Find log with specific service.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE ServiceName = 'clickhouse-exporter'
@@ -71,7 +71,7 @@ Limit 100;
 
 - Find log with specific attribute.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE LogAttributes['container_name'] = '/example_flog_1'
@@ -81,7 +81,7 @@ Limit 100;
 
 - Find log with body contain string token.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE hasToken(Body, 'http')
@@ -91,7 +91,7 @@ Limit 100;
 
 - Find log with body contain string.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE Body like '%http%'
@@ -101,7 +101,7 @@ Limit 100;
 
 - Find log with body regexp match string.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE match(Body, 'http')
@@ -111,7 +111,7 @@ Limit 100;
 
 - Find log with body json extract.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE JSONExtractFloat(Body, 'bytes') > 1000
@@ -123,7 +123,7 @@ Limit 100;
 
 - Find spans with specific attribute.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time,
        TraceId,
        SpanId,
@@ -147,7 +147,7 @@ Limit 100;
 
 - Find traces with traceID (using time primary index and TraceID skip index).
 
-```clickhouse
+```sql
 WITH
     '391dae938234560b16bb63f51501cb6f' as trace_id,
     (SELECT min(Start) FROM otel_traces_trace_id_ts WHERE TraceId = trace_id) as start,
@@ -175,7 +175,7 @@ Limit 100;
 
 - Find spans is error.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time,
        TraceId,
        SpanId,
@@ -199,7 +199,7 @@ Limit 100;
 
 - Find slow spans.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time,
        TraceId,
        SpanId,
@@ -240,13 +240,13 @@ Prometheus(or someone else uses OpenMetrics protocol), you also need to know the
 between Prometheus(OpenMetrics) and OTLP Metrics.
 
 - Find a sum metrics with name
-```clickhouse
+```sql
 select TimeUnix,MetricName,Attributes,Value from otel_metrics_sum
 where MetricName='calls_total' limit 100
 ```
 
 - Find a sum metrics with name, attribute.
-```clickhouse
+```sql
 select TimeUnix,MetricName,Attributes,Value from otel_metrics_sum
 where MetricName='calls_total' and Attributes['service_name']='featureflagservice'
 limit 100
