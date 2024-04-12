@@ -502,7 +502,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 		},
 		ServerName: "localhost",
 	}
-	tls, errTLS := tlscs.LoadTLSConfig()
+	tls, errTLS := tlscs.LoadTLSConfigContext(context.Background())
 	assert.NoError(t, errTLS)
 	client := &http.Client{
 		Transport: &http.Transport{

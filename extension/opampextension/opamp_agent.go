@@ -43,13 +43,13 @@ type opampAgent struct {
 	opampClient client.OpAMPClient
 }
 
-func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
+func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
 	header := http.Header{}
 	for k, v := range o.cfg.Server.GetHeaders() {
 		header.Set(k, string(v))
 	}
 
-	tls, err := o.cfg.Server.GetTLSSetting().LoadTLSConfig()
+	tls, err := o.cfg.Server.GetTLSSetting().LoadTLSConfigContext(ctx)
 	if err != nil {
 		return err
 	}

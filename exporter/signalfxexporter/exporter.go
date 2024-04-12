@@ -125,7 +125,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 		sendOTLPHistograms:     se.config.SendOTLPHistograms,
 	}
 
-	apiTLSCfg, err := se.config.APITLSSettings.LoadTLSConfig()
+	apiTLSCfg, err := se.config.APITLSSettings.LoadTLSConfigContext(ctx)
 	if err != nil {
 		return fmt.Errorf("could not load API TLS config: %w", err)
 	}
