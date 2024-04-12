@@ -191,7 +191,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
 			},
 			expectedNumResourceMetrics: 1,
-			setConnectionDeadline: func(conn net.Conn, t time.Time) error {
+			setConnectionDeadline: func(_ net.Conn, _ time.Time) error {
 				return errors.New("")
 			},
 		},
@@ -221,7 +221,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
 			},
 			expectedNumResourceMetrics: 1,
-			closeConnection: func(conn net.Conn) error {
+			closeConnection: func(_ net.Conn) error {
 				return errors.New("")
 			},
 		},
@@ -237,7 +237,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					level: zapcore.ErrorLevel,
 				},
 			},
-			sendCmd: func(conn net.Conn, s string) (*bufio.Scanner, error) {
+			sendCmd: func(_ net.Conn, _ string) (*bufio.Scanner, error) {
 				return nil, errors.New("")
 			},
 		},
@@ -270,13 +270,21 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			localAddr := testutil.GetAvailableLocalAddress(t)
 			if !tt.mockZKConnectionErr {
-				ms := mockedServer{ready: make(chan bool, 1)}
-				go ms.mockZKServer(t, localAddr, tt.mockedZKCmdToOutputFilename)
+				listener, err := net.Listen("tcp", localAddr)
+				require.NoError(t, err)
+				ms := mockedServer{
+					listener: listener,
+					ready:    make(chan bool, 1),
+					quit:     make(chan struct{}),
+				}
+
+				defer ms.shutdown()
+				go ms.mockZKServer(t, tt.mockedZKCmdToOutputFilename)
 				<-ms.ready
 			}
 
 			cfg := createDefaultConfig().(*Config)
-			cfg.TCPAddr.Endpoint = localAddr
+			cfg.TCPAddrConfig.Endpoint = localAddr
 			if tt.metricsConfig != nil {
 				cfg.MetricsBuilderConfig.Metrics = tt.metricsConfig()
 			}
@@ -337,19 +345,26 @@ func TestZookeeperShutdownBeforeScrape(t *testing.T) {
 }
 
 type mockedServer struct {
+	listener net.Listener
+
 	ready chan bool
+	quit  chan struct{}
 }
 
-func (ms *mockedServer) mockZKServer(t *testing.T, endpoint string, cmdToFileMap map[string]string) {
+func (ms *mockedServer) mockZKServer(t *testing.T, cmdToFileMap map[string]string) {
 	var cmd string
-	listener, err := net.Listen("tcp", endpoint)
-	require.NoError(t, err)
-	defer listener.Close()
 	ms.ready <- true
 
 	for {
-		conn, err := listener.Accept()
-		require.NoError(t, err)
+		conn, err := ms.listener.Accept()
+		if err != nil {
+			select {
+			case <-ms.quit:
+				return
+			default:
+				require.NoError(t, err)
+			}
+		}
 		reader := bufio.NewReader(conn)
 		scanner := bufio.NewScanner(reader)
 		scanner.Scan()
@@ -366,6 +381,10 @@ func (ms *mockedServer) mockZKServer(t *testing.T, endpoint string, cmdToFileMap
 		require.NoError(t, err)
 
 		conn.Close()
-
 	}
+}
+
+func (ms *mockedServer) shutdown() {
+	close(ms.quit)
+	ms.listener.Close()
 }

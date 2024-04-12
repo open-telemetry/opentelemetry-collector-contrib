@@ -22,7 +22,7 @@ import (
 func newCarbonExporter(ctx context.Context, cfg *Config, set exporter.CreateSettings) (exporter.Metrics, error) {
 	sender := carbonSender{
 		writeTimeout: cfg.Timeout,
-		conns:        newConnPool(cfg.TCPAddr, cfg.Timeout, cfg.MaxIdleConns),
+		conns:        newConnPool(cfg.TCPAddrConfig, cfg.Timeout, cfg.MaxIdleConns),
 	}
 
 	exp, err := exporterhelper.NewMetricsExporter(
@@ -104,7 +104,7 @@ type connPool interface {
 }
 
 func newConnPool(
-	tcpConfig confignet.TCPAddr,
+	tcpConfig confignet.TCPAddrConfig,
 	timeout time.Duration,
 	maxIdleConns int,
 ) connPool {
@@ -124,7 +124,7 @@ func newConnPool(
 // nopConnPool is a very simple implementation that does not cache any net.Conn.
 type nopConnPool struct {
 	timeout   time.Duration
-	tcpConfig confignet.TCPAddr
+	tcpConfig confignet.TCPAddrConfig
 }
 
 func (cp *nopConnPool) get() (net.Conn, error) {
@@ -149,7 +149,7 @@ type connPoolWithIdle struct {
 	maxIdleConns int
 	mtx          sync.Mutex
 	conns        []net.Conn
-	tcpConfig    confignet.TCPAddr
+	tcpConfig    confignet.TCPAddrConfig
 }
 
 func (cp *connPoolWithIdle) get() (net.Conn, error) {
@@ -195,7 +195,7 @@ func (cp *connPoolWithIdle) close() error {
 	return errs
 }
 
-func createTCPConn(tcpConfig confignet.TCPAddr, timeout time.Duration) (net.Conn, error) {
+func createTCPConn(tcpConfig confignet.TCPAddrConfig, timeout time.Duration) (net.Conn, error) {
 	c, err := net.DialTimeout("tcp", tcpConfig.Endpoint, timeout)
 	if err != nil {
 		return nil, err

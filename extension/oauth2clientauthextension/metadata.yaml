@@ -1,4 +1,5 @@
 type: oauth2client
+scope_name: otelcol/oauth2clientauth
 
 status:
   class: extension
@@ -6,9 +7,6 @@ status:
     beta: [extension]
   distributions:
   - contrib
-  - grafana
-  - redhat
-  - sumo
   codeowners:
     active: [pavankrish123, jpkrohling]
 

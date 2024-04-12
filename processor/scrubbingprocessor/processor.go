@@ -30,7 +30,6 @@ func (sp *scrubbingProcessor) ProcessLogs(_ context.Context, logs plog.Logs) (pl
 }
 
 func (sp *scrubbingProcessor) applyMasking(ld plog.Logs) {
-
 	// masking in resource attributes
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		resourceAttributes := ld.ResourceLogs().At(i).Resource().Attributes()

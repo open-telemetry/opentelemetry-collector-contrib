@@ -53,7 +53,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			[]*reader.Metadata{
 				{
 					FileAttributes: make(map[string]any),
-					Fingerprint:    &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
+					Fingerprint:    fingerprint.New([]byte("foo")),
 					Offset:         3,
 				},
 			},
@@ -63,12 +63,12 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			[]*reader.Metadata{
 				{
 					FileAttributes: make(map[string]any),
-					Fingerprint:    &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
+					Fingerprint:    fingerprint.New([]byte("foo")),
 					Offset:         3,
 				},
 				{
 					FileAttributes: make(map[string]any),
-					Fingerprint:    &fingerprint.Fingerprint{FirstBytes: []byte("barrrr")},
+					Fingerprint:    fingerprint.New([]byte("barrrr")),
 					Offset:         6,
 				},
 			},
@@ -77,7 +77,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			"other_fields",
 			[]*reader.Metadata{
 				{
-					Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
+					Fingerprint: fingerprint.New([]byte("foo")),
 					Offset:      3,
 					FileAttributes: map[string]any{
 						"hello": "world",
@@ -85,12 +85,12 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 				},
 				{
 					FileAttributes:  make(map[string]any),
-					Fingerprint:     &fingerprint.Fingerprint{FirstBytes: []byte("barrrr")},
+					Fingerprint:     fingerprint.New([]byte("barrrr")),
 					Offset:          6,
 					HeaderFinalized: true,
 				},
 				{
-					Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("ab")},
+					Fingerprint: fingerprint.New([]byte("ab")),
 					Offset:      2,
 					FileAttributes: map[string]any{
 						"hello2": "world2",
@@ -121,7 +121,7 @@ func TestMigrateHeaderAttributes(t *testing.T) {
 	p := testutil.NewUnscopedMockPersister()
 	saveDeprecated(t, p, &deprecatedMetadata{
 		Metadata: reader.Metadata{
-			Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
+			Fingerprint: fingerprint.New([]byte("foo")),
 			Offset:      3,
 			FileAttributes: map[string]any{
 				"HeaderAttributes": map[string]any{
@@ -134,7 +134,7 @@ func TestMigrateHeaderAttributes(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []*reader.Metadata{
 		{
-			Fingerprint: &fingerprint.Fingerprint{FirstBytes: []byte("foo")},
+			Fingerprint: fingerprint.New([]byte("foo")),
 			Offset:      3,
 			FileAttributes: map[string]any{
 				"hello": "world",

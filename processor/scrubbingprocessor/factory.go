@@ -3,25 +3,23 @@ package scrubbingprocessor
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/scrubbingprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "scrubbing"
-	// The stability level of the processor.
-	stability = component.StabilityLevelDevelopment
-)
-
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 func NewFactory() processor.Factory {
-	return processor.NewFactory(typeStr, createDefaultConfig,
-		processor.WithLogs(createLogsProcessor,
-			stability))
+	return processor.NewFactory(
+		metadata.Type, createDefaultConfig,
+		processor.WithLogs(
+			createLogsProcessor,
+			metadata.LogsStability,
+		),
+	)
 }
 
 func createDefaultConfig() component.Config {

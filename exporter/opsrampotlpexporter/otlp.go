@@ -167,7 +167,7 @@ func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (e
 		host,
 		e.settings,
 		grpc.WithUserAgent(e.userAgent),
-		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+		grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
 			if httpproxy.FromEnvironment().HTTPProxy == "" {
 				return (&net.Dialer{}).Dial("tcp", addr)
 			}

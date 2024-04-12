@@ -4,24 +4,16 @@ import (
 	"context"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/batchmemlimitprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "batchmemorylimit"
-	// The stability level of the processor.
-	stability = component.StabilityLevelDevelopment
-)
-
-var processorCapabilities = consumer.Capabilities{MutatesData: true}
-
 func NewFactory() processor.Factory {
-	return processor.NewFactory(typeStr, createDefaultConfig,
+	return processor.NewFactory(metadata.Type, createDefaultConfig,
 		processor.WithLogs(createMemoryLimiterProcessor,
-			stability))
+			metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {

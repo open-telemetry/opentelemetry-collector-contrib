@@ -142,7 +142,7 @@ type batchLogs struct {
 	limits       limits
 }
 
-func newBatchLogs(nextConsumer consumer.Logs, batchSize int, memorySize int) *batchLogs {
+func newBatchLogs(nextConsumer consumer.Logs, batchSize, memorySize int) *batchLogs {
 	return &batchLogs{
 		nextConsumer: nextConsumer,
 		logData:      plog.NewLogs(),

@@ -9,7 +9,6 @@ import (
 )
 
 func TestApplyMasking(t *testing.T) {
-
 	tests := []struct {
 		name        string
 		regexp      string
@@ -58,7 +57,6 @@ func TestApplyMasking(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ld := generateTestEntry(tt.input)
 			processor := &scrubbingProcessor{config: &Config{
-
 				Masking: []MaskingSettings{
 					{
 						Regexp:      tt.regexp,
@@ -70,7 +68,6 @@ func TestApplyMasking(t *testing.T) {
 			assert.Equal(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString(), tt.expected)
 		})
 	}
-
 }
 
 func generateTestEntry(body string) plog.Logs {
@@ -80,7 +77,6 @@ func generateTestEntry(body string) plog.Logs {
 	e1 := sc.LogRecords().AppendEmpty()
 	e1.Body().SetStr(body)
 	return ld
-
 }
 
 func Test_applyMasking(t *testing.T) {
@@ -232,7 +228,7 @@ func Test_applyMasking(t *testing.T) {
 	}
 }
 
-func generateLogs(body string, resourceAttributes map[string]string, recordAttributes map[string]string) plog.Logs {
+func generateLogs(body string, resourceAttributes, recordAttributes map[string]string) plog.Logs {
 	ld := plog.NewLogs()
 	resourceLogs := ld.ResourceLogs().AppendEmpty()
 	for k, v := range resourceAttributes {

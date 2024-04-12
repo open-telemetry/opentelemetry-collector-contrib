@@ -13,11 +13,13 @@ import (
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
+	"github.com/DataDog/datadog-agent/pkg/trace/timing"
 	"github.com/DataDog/datadog-agent/pkg/trace/writer"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
@@ -28,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -104,9 +105,6 @@ func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname
 
 func (f *factory) AttributesTranslator(set component.TelemetrySettings) (*attributes.Translator, error) {
 	f.onceAttributesTranslator.Do(func() {
-		// disable metrics for the translator
-		// Metrics are disabled until we figure out the details on how do we want to report the metric.
-		set.MeterProvider = noop.NewMeterProvider()
 		f.attributesTranslator, f.attributesErr = attributes.NewTranslator(set)
 	})
 	return f.attributesTranslator, f.attributesErr
@@ -140,9 +138,8 @@ func (f *factory) StopReporter() {
 	})
 }
 
-func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
-	datadog.InitializeMetricClient(params.MeterProvider)
-	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider)
+func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
+	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, datadog.InitializeMetricClient(params.MeterProvider, datadog.ExporterSourceTag), attrsTranslator)
 	if err != nil {
 		return nil, err
 	}
@@ -170,8 +167,9 @@ func NewFactory() exporter.Factory {
 	return newFactoryWithRegistry(featuregate.GlobalRegistry())
 }
 
-func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
-	return exporterhelper.TimeoutSettings{
+func defaultClientConfig() confighttp.ClientConfig {
+	// do not use NewDefaultClientConfig for backwards-compatibility
+	return confighttp.ClientConfig{
 		Timeout: 15 * time.Second,
 	}
 }
@@ -179,16 +177,16 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 // createDefaultConfig creates the default exporter configuration
 func (f *factory) createDefaultConfig() component.Config {
 	return &Config{
-		TimeoutSettings: defaulttimeoutSettings(),
-		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		ClientConfig:  defaultClientConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
 		},
 
 		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://api.datadoghq.com",
 			},
 			DeltaTTL: 3600,
@@ -210,14 +208,14 @@ func (f *factory) createDefaultConfig() component.Config {
 		},
 
 		Traces: TracesConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 			IgnoreResources: []string{},
 		},
 
 		Logs: LogsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://http-intake.logs.datadoghq.com",
 			},
 		},
@@ -240,7 +238,7 @@ func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
 	return cfg
 }
 
-func (f *factory) consumeStatsPayload(ctx context.Context, statsIn <-chan []byte, statsToAgent chan<- *pb.StatsPayload, tracerVersion string, logger *zap.Logger) {
+func (f *factory) consumeStatsPayload(ctx context.Context, statsIn <-chan []byte, statsToAgent chan<- *pb.StatsPayload, tracerVersion string, agentVersion string, logger *zap.Logger) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		f.wg.Add(1)
 		go func() {
@@ -262,6 +260,8 @@ func (f *factory) consumeStatsPayload(ctx context.Context, statsIn <-chan []byte
 							csp.TracerVersion = tracerVersion
 						}
 					}
+					// The DD Connector doesn't set the agent version, so we'll set it here
+					sp.AgentVersion = agentVersion
 					statsToAgent <- sp
 				}
 			}
@@ -283,35 +283,35 @@ func (f *factory) createMetricsExporter(
 
 	ctx, cancel := context.WithCancel(ctx)
 	// cancel() runs on shutdown
-	var pushMetricsFn consumer.ConsumeMetricsFunc
-	acfg, err := newTraceAgentConfig(ctx, set, cfg, hostProvider)
-	if err != nil {
-		cancel()
-		return nil, err
-	}
-	statsToAgent := make(chan *pb.StatsPayload)
-	statsWriter := writer.NewStatsWriter(acfg, statsToAgent, telemetry.NewNoopCollector())
-
-	set.Logger.Debug("Starting Datadog Trace-Agent StatsWriter")
-	go statsWriter.Run()
-
-	var statsIn chan []byte
-	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
-		statsIn = make(chan []byte, 1000)
-		statsv := set.BuildInfo.Command + set.BuildInfo.Version
-		f.consumeStatsPayload(ctx, statsIn, statsToAgent, statsv, set.Logger)
-	}
-	pcfg := newMetadataConfigfromConfig(cfg)
-	metadataReporter, err := f.Reporter(set, pcfg)
-	if err != nil {
-		cancel()
-		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
-	}
 
 	attrsTranslator, err := f.AttributesTranslator(set.TelemetrySettings)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
+	}
+
+	var pushMetricsFn consumer.ConsumeMetricsFunc
+	acfg, err := newTraceAgentConfig(ctx, set, cfg, hostProvider, attrsTranslator)
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+	statsToAgent := make(chan *pb.StatsPayload)
+	metricsClient := datadog.InitializeMetricClient(set.MeterProvider, datadog.ExporterSourceTag)
+	timingReporter := timing.New(metricsClient)
+	statsWriter := writer.NewStatsWriter(acfg, statsToAgent, telemetry.NewNoopCollector(), metricsClient, timingReporter)
+
+	set.Logger.Debug("Starting Datadog Trace-Agent StatsWriter")
+	go statsWriter.Run()
+
+	statsIn := make(chan []byte, 1000)
+	statsv := set.BuildInfo.Command + set.BuildInfo.Version
+	f.consumeStatsPayload(ctx, statsIn, statsToAgent, statsv, acfg.AgentVersion, set.Logger)
+	pcfg := newMetadataConfigfromConfig(cfg)
+	metadataReporter, err := f.Reporter(set, pcfg)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
 	}
 
 	if cfg.OnlyMetadata {
@@ -355,7 +355,8 @@ func (f *factory) createMetricsExporter(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
-			cancel()
+			cancel()    // first cancel context
+			f.wg.Wait() // then wait for shutdown
 			f.StopReporter()
 			statsWriter.Stop()
 			if statsIn != nil {
@@ -381,6 +382,13 @@ func (f *factory) createTracesExporter(
 	c component.Config,
 ) (exporter.Traces, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
+	if noAPMStatsFeatureGate.IsEnabled() {
+		set.Logger.Info(
+			"Trace metrics are now disabled in the Datadog Exporter by default. To continue receiving Trace Metrics, configure the Datadog Connector or disable the feature gate.",
+			zap.String("documentation", "https://docs.datadoghq.com/opentelemetry/guide/migration/"),
+			zap.String("feature gate ID", noAPMStatsFeatureGate.ID()),
+		)
+	}
 
 	var (
 		pusher consumer.ConsumeTracesFunc
@@ -393,7 +401,14 @@ func (f *factory) createTracesExporter(
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	// cancel() runs on shutdown
-	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider)
+
+	attrsTranslator, err := f.AttributesTranslator(set.TelemetrySettings)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
+	}
+
+	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider, attrsTranslator)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
