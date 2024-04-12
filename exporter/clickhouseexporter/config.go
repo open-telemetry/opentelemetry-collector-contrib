@@ -68,8 +68,8 @@ var (
 	errConfigTTL             = errors.New("both 'ttl_days' and 'ttl' can not be provided. 'ttl_days' is deprecated, use 'ttl' instead")
 )
 
-// ConfigBool returns a pointer to a new bool.
-func ConfigBool(b bool) *bool {
+// configBool returns a pointer to a new bool.
+func configBool(b bool) *bool {
 	return &b
 }
 

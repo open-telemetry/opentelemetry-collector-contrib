@@ -265,7 +265,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			fields: fields{
 				Endpoint:         "tcp://127.0.0.1:9000?async_insert=false",
 				ConnectionParams: map[string]string{"async_insert": "false"},
-				AsyncInsert:      ConfigBool(true),
+				AsyncInsert:      configBool(true),
 			},
 
 			want: "tcp://127.0.0.1:9000/default?async_insert=false",
@@ -275,7 +275,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			fields: fields{
 				Endpoint:         "tcp://127.0.0.1:9000?async_insert=false",
 				ConnectionParams: map[string]string{"async_insert": "true"},
-				AsyncInsert:      ConfigBool(false),
+				AsyncInsert:      configBool(false),
 			},
 
 			want: "tcp://127.0.0.1:9000/default?async_insert=true",
@@ -284,7 +284,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			name: "ignore config option when async_insert is present in DSN as false",
 			fields: fields{
 				Endpoint:    "tcp://127.0.0.1:9000?async_insert=false",
-				AsyncInsert: ConfigBool(true),
+				AsyncInsert: configBool(true),
 			},
 
 			want: "tcp://127.0.0.1:9000/default?async_insert=false",
@@ -293,7 +293,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			name: "use async_insert true config option when it is not present in DSN",
 			fields: fields{
 				Endpoint:    "tcp://127.0.0.1:9000",
-				AsyncInsert: ConfigBool(true),
+				AsyncInsert: configBool(true),
 			},
 
 			want: "tcp://127.0.0.1:9000/default?async_insert=true",
@@ -302,7 +302,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			name: "use async_insert false config option when it is not present in DSN",
 			fields: fields{
 				Endpoint:    "tcp://127.0.0.1:9000",
-				AsyncInsert: ConfigBool(false),
+				AsyncInsert: configBool(false),
 			},
 
 			want: "tcp://127.0.0.1:9000/default?async_insert=false",
