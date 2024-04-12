@@ -11,14 +11,16 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var dropSanitizationGate = registerOrLoadGate(
+var dropSanitizationGate = mustRegisterOrLoadGate(
 	"pkg.translator.prometheus.PermissiveLabelSanitization",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Controls whether to change labels starting with '_' to 'key_'."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950"),
 )
 
-func registerOrLoadGate(id string, stage featuregate.Stage, opts ...featuregate.RegisterOption) *featuregate.Gate {
+// mustRegisterOrLoadGate() is a temporary workaround for a featuregate collision.
+// Remove this after https://github.com/open-telemetry/opentelemetry-collector/issues/9859 is fixed.
+func mustRegisterOrLoadGate(id string, stage featuregate.Stage, opts ...featuregate.RegisterOption) *featuregate.Gate {
 
 	// Try to register
 	gate, err := featuregate.GlobalRegistry().Register(

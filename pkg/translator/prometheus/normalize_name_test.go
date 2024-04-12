@@ -256,8 +256,8 @@ func TestAlreadyRegisteredNormalizeNameGate(t *testing.T) {
 	)
 	require.NotNil(t, err)
 
-	// registerOrLoadGate() should return the already registered gate
-	var gate = registerOrLoadGate(
+	// mustRegisterOrLoadGate() should return the already registered gate
+	var gate = mustRegisterOrLoadGate(
 		normalizeNameGate.ID(),
 		normalizeNameGate.Stage(),
 		featuregate.WithRegisterDescription(normalizeNameGate.Description()),

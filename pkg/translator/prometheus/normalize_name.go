@@ -65,7 +65,7 @@ var perUnitMap = map[string]string{
 	"y":  "year",
 }
 
-var normalizeNameGate = registerOrLoadGate(
+var normalizeNameGate = mustRegisterOrLoadGate(
 	"pkg.translator.prometheus.NormalizeName",
 	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Controls whether metrics names are automatically normalized to follow Prometheus naming convention"),

@@ -46,8 +46,8 @@ func TestAlreadyRegisteredDropSanitizationGate(t *testing.T) {
 	)
 	require.NotNil(t, err)
 
-	// registerOrLoadGate() should return the already registered gate
-	var gate = registerOrLoadGate(
+	// mustRegisterOrLoadGate() should return the already registered gate
+	var gate = mustRegisterOrLoadGate(
 		dropSanitizationGate.ID(),
 		dropSanitizationGate.Stage(),
 		featuregate.WithRegisterDescription(dropSanitizationGate.Description()),
