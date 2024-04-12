@@ -42,13 +42,13 @@ func runner(t *testing.T, restartCollector, mockESFailure bool) {
 	sender := testbed.NewOTLPLogsDataSender(
 		testbed.DefaultHost, testutil.GetAvailablePort(t),
 	)
-	receiver := NewElasticsearchDataReceiver()
+	receiver := NewElasticsearchDataReceiver(t)
 	provider := testbed.NewPerfTestDataProvider(testbed.LoadOptions{
 		DataItemsPerSecond: 10_000,
 		ItemsPerBatch:      10,
 	})
 
-	cfg := CreateConfigYaml(t, sender, receiver, nil, nil, "logs", getDebugFlag(t))
+	cfg := createConfigYaml(t, sender, receiver, nil, nil, "logs", getDebugFlag(t))
 	t.Log("test otel collector configuration:", cfg)
 	collector := NewRecreatableOtelCol(t)
 	cleanup, err := collector.PrepareConfig(cfg)

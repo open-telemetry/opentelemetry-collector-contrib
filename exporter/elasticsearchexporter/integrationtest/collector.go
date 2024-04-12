@@ -31,8 +31,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// CreateConfigYaml creates a yaml config for an otel collector for testing.
-func CreateConfigYaml(
+// createConfigYaml creates a yaml config for an otel collector for testing.
+func createConfigYaml(
 	t testing.TB,
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,

@@ -6,38 +6,52 @@ package integrationtest
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
+	"testing"
 
 	"github.com/elastic/go-docappender/docappendertest"
 	"github.com/gorilla/mux"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 )
 
 type esDataReceiver struct {
 	testbed.DataReceiverBase
 	receiver receiver.Logs
+	endpoint string
 }
 
-func NewElasticsearchDataReceiver() testbed.DataReceiver {
+func NewElasticsearchDataReceiver(t testing.TB) testbed.DataReceiver {
 	return &esDataReceiver{
 		DataReceiverBase: testbed.DataReceiverBase{},
+		endpoint:         fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
 	}
 }
 
 func (es *esDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc consumer.Logs) error {
 	factory := receiver.NewFactory(
 		component.MustNewType("mockelasticsearch"),
-		nil,
+		createDefaultConfig,
 		receiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
 	)
+	cfg := factory.CreateDefaultConfig().(*config)
+	cfg.ESEndpoint = es.endpoint
+
 	var err error
-	es.receiver, err = factory.CreateLogsReceiver(context.Background(), receiver.CreateSettings{}, nil, lc)
+	set := receivertest.NewNopCreateSettings()
+	// Use an actual logger to log errors.
+	set.Logger = zap.Must(zap.NewDevelopment())
+	es.receiver, err = factory.CreateLogsReceiver(context.Background(), set, cfg, lc)
 	if err != nil {
 		return err
 	}
@@ -53,9 +67,9 @@ func (es *esDataReceiver) Stop() error {
 
 func (es *esDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
-	return `
+	cfgFormat := `
   elasticsearch:
-    endpoints: [http://127.0.0.1:9200]
+    endpoints: [%s]
     flush:
       interval: 1s
     sending_queue:
@@ -64,26 +78,39 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
       enabled: true
       max_requests: 10000
 `
+	return fmt.Sprintf(cfgFormat, es.endpoint)
 }
 
 func (es *esDataReceiver) ProtocolName() string {
 	return "elasticsearch"
 }
 
+type config struct {
+	ESEndpoint string
+}
+
+func createDefaultConfig() component.Config {
+	return &config{
+		ESEndpoint: "127.0.0.1:9200",
+	}
+}
+
 func createLogsReceiver(
 	_ context.Context,
-	_ receiver.CreateSettings,
-	_ component.Config,
+	params receiver.CreateSettings,
+	rawCfg component.Config,
 	next consumer.Logs,
 ) (receiver.Logs, error) {
-	return newMockESReceiver(next)
+	cfg := rawCfg.(*config)
+	return newMockESReceiver(params, cfg, next)
 }
 
 type mockESReceiver struct {
 	server *http.Server
+	params receiver.CreateSettings
 }
 
-func newMockESReceiver(next consumer.Logs) (receiver.Logs, error) {
+func newMockESReceiver(params receiver.CreateSettings, cfg *config, next consumer.Logs) (receiver.Logs, error) {
 	r := mux.NewRouter()
 	r.Use(mux.MiddlewareFunc(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -118,17 +145,24 @@ func newMockESReceiver(next consumer.Logs) (receiver.Logs, error) {
 		json.NewEncoder(w).Encode(response)
 	})
 
+	esURL, err := url.Parse(cfg.ESEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse Elasticsearch endpoint: %w", err)
+	}
 	return &mockESReceiver{
 		server: &http.Server{
-			Addr:    "127.0.0.1:9200",
+			Addr:    esURL.Host,
 			Handler: r,
 		},
+		params: params,
 	}, nil
 }
 
 func (es *mockESReceiver) Start(_ context.Context, host component.Host) error {
 	go func() {
-		es.server.ListenAndServe()
+		if err := es.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			es.params.Logger.Error("failed while running mock ES receiver", zap.Error(err))
+		}
 	}()
 	return nil
 }
