@@ -98,7 +98,7 @@ func TestOAuthClientSettings(t *testing.T) {
 			// test tls settings
 			transport := rc.client.Transport.(*http.Transport)
 			tlsClientConfig := transport.TLSClientConfig
-			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfig()
+			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfigContext(context.Background())
 			assert.NoError(t, err)
 			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
 		})
@@ -190,7 +190,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			// test tls settings
 			transport := rc.client.Transport.(*http.Transport)
 			tlsClientConfig := transport.TLSClientConfig
-			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfig()
+			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfigContext(context.Background())
 			assert.NoError(t, err)
 			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
 		})
