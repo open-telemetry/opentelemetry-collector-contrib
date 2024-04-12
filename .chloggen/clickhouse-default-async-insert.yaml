@@ -1,7 +1,7 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
 component: exporter/clickhouse
@@ -21,6 +21,8 @@ subtext: |
   The `async_insert` option can be set to `true` or `false` to enable or disable async inserts, respectively. The default value is `true`.
   Keep in mind this setting is added since the exporter now sets it to default.
   Async insert and its related settings can still be defined in `endpoint` and `connection_params`, which take priority over the new config option.
+
+  While this change won't immediately break deployments, it is a change that should be highlighted.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
