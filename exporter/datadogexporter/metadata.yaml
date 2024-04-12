@@ -6,7 +6,7 @@ status:
   stability:
     alpha: [logs]
     beta: [traces, metrics]
-  distributions: [contrib, aws, observiq]
+  distributions: [contrib]
   codeowners:
     active: [mx-psi, dineshg13, liustanley, songy23, mackjmr]
     emeritus: [gbbr]
