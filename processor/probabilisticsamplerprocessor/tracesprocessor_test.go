@@ -471,6 +471,9 @@ func mustParseTID(in string) pcommon.TraceID {
 	return pcommon.TraceID(b)
 }
 
+// TestHashingFunction verifies 100 examples of the legacy hash-seed
+// based trace sampling decision.  This test is made prior to refactoring
+// the hash calculation to ensure legacy behavior does not change.
 func TestHashingFunction(t *testing.T) {
 	type expect50PctHashed struct {
 		seed    uint32
