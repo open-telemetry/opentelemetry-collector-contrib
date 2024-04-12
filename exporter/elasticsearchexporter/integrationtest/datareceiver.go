@@ -112,12 +112,12 @@ type mockESReceiver struct {
 
 func newMockESReceiver(params receiver.CreateSettings, cfg *config, next consumer.Logs) (receiver.Logs, error) {
 	r := mux.NewRouter()
-	r.Use(mux.MiddlewareFunc(func(next http.Handler) http.Handler {
+	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Elastic-Product", "Elasticsearch")
 			next.ServeHTTP(w, r)
 		})
-	}))
+	})
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, `{"version":{"number":"1.2.3"}}`)
 	})
