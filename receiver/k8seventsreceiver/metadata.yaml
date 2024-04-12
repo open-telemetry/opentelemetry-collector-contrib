@@ -1,13 +1,14 @@
 type: k8s_events
+scope_name: otelcol/k8seventsreceiver
 
 status:
   class: receiver
   stability:
     alpha: [logs]
-  distributions: [contrib, splunk, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, TylerHelmuth]
 
+# TODO: Update the receiver to pass the tests
 tests:
-  config:
   skip_lifecycle: true

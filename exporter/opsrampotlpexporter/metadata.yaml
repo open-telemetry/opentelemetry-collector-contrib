@@ -1,0 +1,15 @@
+type: opsrampotlp
+scope_name: otelcol/opsrampotlp
+
+status:
+  class: exporter
+  stability:
+    stable: [logs, traces, metrics]
+  distributions:
+    - core
+    - contrib
+  codeowners:
+    active: [lokesh]
+tests:
+  config:
+    endpoint: otelcol:4317

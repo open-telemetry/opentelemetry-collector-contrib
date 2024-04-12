@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 				RLPGateway: RLPGatewayConfig{
 					ClientConfig: confighttp.ClientConfig{
 						Endpoint: "https://log-stream.sys.example.internal",
-						TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.ClientConfig{
 							InsecureSkipVerify: true,
 						},
 						Timeout: time.Second * 20,
@@ -106,7 +106,7 @@ func TestHTTPConfigurationStructConsistency(t *testing.T) {
 	// library does not support.
 	checkTypeFieldMatch(t, "Endpoint", reflect.TypeOf(LimitedClientConfig{}), reflect.TypeOf(confighttp.ClientConfig{}))
 	checkTypeFieldMatch(t, "TLSSetting", reflect.TypeOf(LimitedClientConfig{}), reflect.TypeOf(confighttp.ClientConfig{}))
-	checkTypeFieldMatch(t, "InsecureSkipVerify", reflect.TypeOf(LimitedTLSClientSetting{}), reflect.TypeOf(configtls.TLSClientSetting{}))
+	checkTypeFieldMatch(t, "InsecureSkipVerify", reflect.TypeOf(LimitedTLSClientSetting{}), reflect.TypeOf(configtls.ClientConfig{}))
 }
 
 func loadSuccessfulConfig(t *testing.T) *Config {
@@ -115,7 +115,7 @@ func loadSuccessfulConfig(t *testing.T) *Config {
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: "https://log-stream.sys.example.internal",
 				Timeout:  time.Second * 20,
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.ClientConfig{
 					InsecureSkipVerify: true,
 				},
 			},

@@ -1,0 +1,12 @@
+type: scrubbing
+scope_name: otelcol/scrubbing
+
+status:
+  class: processor
+  stability:
+    beta: [logs]
+  distributions:
+    - core
+    - contrib
+  codeowners:
+    active: [lokesh]

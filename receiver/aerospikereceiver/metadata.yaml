@@ -1,12 +1,14 @@
 type: aerospike
+scope_name: otelcol/aerospikereceiver
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski, antonblock]
+    seeking_new: true
 
 resource_attributes:
   aerospike.node.name:
@@ -248,6 +250,3 @@ metrics:
       input_type: string
       monotonic: true
       aggregation_temporality: cumulative
-
-tests:
-  config:

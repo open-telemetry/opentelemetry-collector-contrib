@@ -63,7 +63,7 @@ func TestCluster_DescribeTasksWithContext(t *testing.T) {
 	ctx := context.Background()
 	c := NewClusterWithName("c1")
 	count := 10
-	c.SetTasks(GenTasks("p", count, func(i int, task *ecs.Task) {
+	c.SetTasks(GenTasks("p", count, func(_ int, task *ecs.Task) {
 		task.LastStatus = aws.String("running")
 	}))
 
@@ -95,7 +95,7 @@ func TestCluster_DescribeTaskDefinitionWithContext(t *testing.T) {
 	ctx := context.Background()
 	c := NewClusterWithName("c1")
 	c.SetTaskDefinitions(GenTaskDefinitions("foo", 10, 1, nil)) // accept nil
-	c.SetTaskDefinitions(GenTaskDefinitions("foo", 10, 1, func(i int, def *ecs.TaskDefinition) {
+	c.SetTaskDefinitions(GenTaskDefinitions("foo", 10, 1, func(_ int, def *ecs.TaskDefinition) {
 		def.NetworkMode = aws.String(ecs.NetworkModeBridge)
 	}))
 
@@ -151,14 +151,14 @@ func TestCluster_DescribeInstancesWithContext(t *testing.T) {
 
 	t.Run("get by id", func(t *testing.T) {
 		var ids []*string
-		nIds := 100
-		for i := 0; i < nIds; i++ {
+		nIDs := 100
+		for i := 0; i < nIDs; i++ {
 			ids = append(ids, aws.String(fmt.Sprintf("i-%d", i*10)))
 		}
 		req := &ec2.DescribeInstancesInput{InstanceIds: ids}
 		res, err := c.DescribeInstancesWithContext(ctx, req)
 		require.NoError(t, err)
-		assert.Equal(t, nIds, len(res.Reservations[0].Instances))
+		assert.Equal(t, nIDs, len(res.Reservations[0].Instances))
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
@@ -191,14 +191,14 @@ func TestCluster_DescribeContainerInstancesWithContext(t *testing.T) {
 
 	t.Run("get by id", func(t *testing.T) {
 		var ids []*string
-		nIds := count
-		for i := 0; i < nIds; i++ {
+		nIDs := count
+		for i := 0; i < nIDs; i++ {
 			ids = append(ids, aws.String(fmt.Sprintf("foo%d", i)))
 		}
 		req := &ecs.DescribeContainerInstancesInput{ContainerInstances: ids}
 		res, err := c.DescribeContainerInstancesWithContext(ctx, req)
 		require.NoError(t, err)
-		assert.Equal(t, nIds, len(res.ContainerInstances))
+		assert.Equal(t, nIDs, len(res.ContainerInstances))
 		assert.Equal(t, 0, len(res.Failures))
 	})
 

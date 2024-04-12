@@ -37,7 +37,7 @@ spanmetrics/full:
   aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
 
   # The period on which all metrics (whose dimension keys remain in cache) will be emitted.
-  # Default: 15s.
+  # Default: 60s.
   metrics_flush_interval: 30s
 
 # default configuration with exponential buckets histogram
@@ -57,6 +57,9 @@ spanmetrics/exponential_and_explicit_histogram:
 spanmetrics/invalid_histogram_unit:
   histogram:
     unit: "h"
+
+spanmetrics/invalid_metrics_expiration:
+  metrics_expiration: -20s
 
 # exemplars enabled 
 spanmetrics/exemplars_enabled:

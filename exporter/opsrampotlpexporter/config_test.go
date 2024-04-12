@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opsrampotlpexporter/internal/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -36,14 +37,14 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
+	factories.Exporters[metadata.Type] = factory
 
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e := cfg.Exporters[component.NewID(typeStr)]
+	e := cfg.Exporters[component.NewID(metadata.Type)]
 
 	// e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
 	assert.Equal(t, e,
@@ -75,8 +76,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Endpoint:    "1.2.3.4:1234",
 				Compression: "gzip",
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					Config: configtls.Config{
 						CAFile: "/var/lib/mycert.pem",
 					},
 					Insecure: false,
@@ -88,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "round_robin",
-				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID("nop")},
+				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID(component.MustNewType("nop"))},
 			},
 		})
 }

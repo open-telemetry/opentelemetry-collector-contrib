@@ -17,7 +17,7 @@ import (
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	require.Equal(t, cfg.(*Config).ScraperControllerSettings.CollectionInterval, 3*time.Minute)
+	require.Equal(t, cfg.(*Config).ControllerConfig.CollectionInterval, 3*time.Minute)
 	recv, err := createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, recv, "receiver creation failed")

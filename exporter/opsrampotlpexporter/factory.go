@@ -17,6 +17,7 @@ package opsrampotlpexporter // import "go.opentelemetry.io/collector/exporter/ot
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opsrampotlpexporter/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -27,21 +28,14 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "opsrampotlp"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelStable
-)
-
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, stability),
-		exporter.WithMetrics(createMetricsExporter, stability),
-		exporter.WithLogs(createLogsExporter, stability))
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {

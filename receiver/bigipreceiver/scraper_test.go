@@ -38,8 +38,8 @@ func TestScraperStart(t *testing.T) {
 				cfg: &Config{
 					ClientConfig: confighttp.ClientConfig{
 						Endpoint: defaultEndpoint,
-						TLSSetting: configtls.TLSClientSetting{
-							TLSSetting: configtls.TLSSetting{
+						TLSSetting: configtls.ClientConfig{
+							Config: configtls.Config{
 								CAFile: "/non/existent",
 							},
 						},
@@ -54,7 +54,7 @@ func TestScraperStart(t *testing.T) {
 			scraper: &bigipScraper{
 				cfg: &Config{
 					ClientConfig: confighttp.ClientConfig{
-						TLSSetting: configtls.TLSClientSetting{},
+						TLSSetting: configtls.ClientConfig{},
 						Endpoint:   defaultEndpoint,
 					},
 				},
@@ -152,8 +152,8 @@ func TestScaperScrape(t *testing.T) {
 				err := json.Unmarshal(data, &virtualServers)
 				require.NoError(t, err)
 				mockClient.On("GetVirtualServers", mock.Anything).Return(virtualServers, nil)
-
 				mockClient.On("GetPools", mock.Anything).Return(nil, errors.New("some pool api error"))
+				// with GetPools returning an error GetPoolMembers should not be called, so this error should no appear
 				mockClient.On("GetPoolMembers", mock.Anything, mock.Anything).Return(nil, errCollectedNoPoolMembers)
 				mockClient.On("GetNodes", mock.Anything).Return(nil, errors.New("some node api error"))
 
@@ -165,7 +165,7 @@ func TestScaperScrape(t *testing.T) {
 				require.NoError(t, err)
 				return expectedMetrics
 			},
-			expectedErr: scrapererror.NewPartialScrapeError(errors.New("some pool api error; all pool member requests have failed; some node api error"), 0),
+			expectedErr: scrapererror.NewPartialScrapeError(errors.New("some pool api error; some node api error"), 0),
 		},
 		{
 			desc: "Successful Partial Collection With Partial Members",
@@ -181,13 +181,19 @@ func TestScaperScrape(t *testing.T) {
 				mockClient.On("GetVirtualServers", mock.Anything).Return(virtualServers, nil)
 
 				// use helper function from client tests
+				data = loadAPIResponseData(t, poolsStatsResponseFile)
+				var pools *models.Pools
+				err = json.Unmarshal(data, &pools)
+				require.NoError(t, err)
+				mockClient.On("GetPools", mock.Anything).Return(pools, nil)
+
+				// use helper function from client tests
 				data = loadAPIResponseData(t, poolMembersCombinedFile)
 				var poolMembers *models.PoolMembers
 				err = json.Unmarshal(data, &poolMembers)
 				require.NoError(t, err)
 				mockClient.On("GetPoolMembers", mock.Anything, mock.Anything).Return(poolMembers, errors.New("some member api error"))
 
-				mockClient.On("GetPools", mock.Anything).Return(nil, errors.New("some pool api error"))
 				mockClient.On("GetNodes", mock.Anything).Return(nil, errors.New("some node api error"))
 
 				return &mockClient
@@ -198,7 +204,7 @@ func TestScaperScrape(t *testing.T) {
 				require.NoError(t, err)
 				return expectedMetrics
 			},
-			expectedErr: scrapererror.NewPartialScrapeError(errors.New("some pool api error; some member api error; some node api error"), 0),
+			expectedErr: scrapererror.NewPartialScrapeError(errors.New("some member api error; some node api error"), 0),
 		},
 		{
 			desc: "Successful Full Collection",

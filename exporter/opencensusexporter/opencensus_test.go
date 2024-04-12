@@ -16,10 +16,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
 )
 
@@ -41,7 +41,7 @@ func TestSendTraces(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: endpoint,
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -55,7 +55,7 @@ func TestSendTraces(t *testing.T) {
 		assert.NoError(t, exp.Shutdown(context.Background()))
 	})
 
-	td := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTraces(1)
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), td))
 	assert.Eventually(t, func() bool {
 		return len(sink.AllTraces()) == 1
@@ -83,7 +83,7 @@ func TestSendTraces_NoBackend(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: "localhost:56569",
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -96,7 +96,7 @@ func TestSendTraces_NoBackend(t *testing.T) {
 		assert.NoError(t, exp.Shutdown(context.Background()))
 	})
 
-	td := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTraces(1)
 	for i := 0; i < 10000; i++ {
 		assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 	}
@@ -107,7 +107,7 @@ func TestSendTraces_AfterStop(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: "localhost:56569",
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -118,7 +118,7 @@ func TestSendTraces_AfterStop(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), host))
 	assert.NoError(t, exp.Shutdown(context.Background()))
 
-	td := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTraces(1)
 	assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 }
 
@@ -140,7 +140,7 @@ func TestSendMetrics(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: endpoint,
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -154,7 +154,7 @@ func TestSendMetrics(t *testing.T) {
 		assert.NoError(t, exp.Shutdown(context.Background()))
 	})
 
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetrics(1)
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 	assert.Eventually(t, func() bool {
 		return len(sink.AllMetrics()) == 1
@@ -180,7 +180,7 @@ func TestSendMetrics_NoBackend(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: "localhost:56569",
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -193,7 +193,7 @@ func TestSendMetrics_NoBackend(t *testing.T) {
 		assert.NoError(t, exp.Shutdown(context.Background()))
 	})
 
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetrics(1)
 	for i := 0; i < 10000; i++ {
 		assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
 	}
@@ -204,7 +204,7 @@ func TestSendMetrics_AfterStop(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: "localhost:56569",
-		TLSSetting: configtls.TLSClientSetting{
+		TLSSetting: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -215,6 +215,6 @@ func TestSendMetrics_AfterStop(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), host))
 	assert.NoError(t, exp.Shutdown(context.Background()))
 
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetrics(1)
 	assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
 }

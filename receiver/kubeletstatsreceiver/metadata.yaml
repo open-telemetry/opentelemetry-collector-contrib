@@ -1,10 +1,11 @@
 type: kubeletstats
+scope_name: otelcol/kubeletstatsreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, splunk, sumo, liatrio]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, TylerHelmuth]
 
@@ -499,3 +500,9 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+
+tests:
+  config:
+    ca_file: "testdata/testcert.crt"
+    key_file: "testdata/testkey.key"
+    cert_file: "testdata/testcert.crt"

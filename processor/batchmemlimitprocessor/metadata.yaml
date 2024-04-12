@@ -1,0 +1,12 @@
+type: batchmemorylimit
+scope_name: otelcol/batchmemorylimit
+
+status:
+  class: processor
+  stability:
+    beta: [logs]
+  distributions:
+    - core
+    - contrib
+  codeowners:
+    active: [lokesh]

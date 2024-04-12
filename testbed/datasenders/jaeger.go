@@ -98,7 +98,7 @@ func (cfg *jaegerConfig) Validate() error {
 func (je *jaegerGRPCDataSender) newTracesExporter(set exporter.CreateSettings) (exporter.Traces, error) {
 	cfg := jaegerConfig{}
 	cfg.Endpoint = je.GetEndpoint().String()
-	cfg.TLSSetting = configtls.TLSClientSetting{
+	cfg.TLSSetting = configtls.ClientConfig{
 		Insecure: true,
 	}
 

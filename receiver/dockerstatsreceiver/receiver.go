@@ -40,6 +40,7 @@ type metricsReceiver struct {
 	settings receiver.CreateSettings
 	client   *docker.Client
 	mb       *metadata.MetricsBuilder
+	cancel   context.CancelFunc
 }
 
 func newMetricsReceiver(set receiver.CreateSettings, config *Config) *metricsReceiver {
@@ -65,7 +66,17 @@ func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	go r.client.ContainerEventLoop(ctx)
+	cctx, cancel := context.WithCancel(ctx)
+	r.cancel = cancel
+
+	go r.client.ContainerEventLoop(cctx)
+	return nil
+}
+
+func (r *metricsReceiver) shutdown(context.Context) error {
+	if r.cancel != nil {
+		r.cancel()
+	}
 	return nil
 }
 
@@ -162,6 +173,8 @@ func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats
 
 	r.mb.RecordContainerMemoryUsageMaxDataPoint(now, int64(memoryStats.MaxUsage))
 
+	r.mb.RecordContainerMemoryFailsDataPoint(now, int64(memoryStats.Failcnt))
+
 	recorders := map[string]func(pcommon.Timestamp, int64){
 		"cache":                     r.mb.RecordContainerMemoryCacheDataPoint,
 		"total_cache":               r.mb.RecordContainerMemoryTotalCacheDataPoint,
@@ -256,6 +269,7 @@ func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *dtyp
 	r.mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.Periods))
 	r.mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledTime))
 	r.mb.RecordContainerCPUUtilizationDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
+	r.mb.RecordContainerCPULogicalCountDataPoint(now, int64(cpuStats.OnlineCPUs))
 
 	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {
 		r.mb.RecordContainerCPUUsagePercpuDataPoint(now, int64(v), fmt.Sprintf("cpu%s", strconv.Itoa(coreNum)))

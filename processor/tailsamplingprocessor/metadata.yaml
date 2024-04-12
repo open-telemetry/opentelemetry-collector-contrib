@@ -1,4 +1,5 @@
 type: tail_sampling
+scope_name: otelcol/tailsampling
 
 status:
   class: processor
@@ -6,11 +7,6 @@ status:
     beta: [traces]
   distributions:
   - contrib
-  - aws
-  - grafana
-  - observiq
-  - splunk
-  - sumo
   codeowners:
     active: [jpkrohling]
 

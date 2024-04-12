@@ -13,7 +13,7 @@ import (
 // Config has the configuration for the sumologic extension.
 type Config struct {
 	// squash ensures fields are correctly decoded in embedded struct.
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	confighttp.ClientConfig `mapstructure:",squash"`
 
 	// Credentials contains Installation Token for Sumo Logic service.
 	// Please refer to https://help.sumologic.com/docs/manage/security/installation-tokens
@@ -80,6 +80,10 @@ type Config struct {
 	// Exponential algorithm is being used.
 	// Please see following link for details: https://github.com/cenkalti/backoff
 	BackOff backOffConfig `mapstructure:"backoff"`
+
+	// StickySessionEnabled defines if sticky session support is enable.
+	// By default this is false.
+	StickySessionEnabled bool `mapstructure:"sticky_session_enabled"`
 }
 
 type accessCredentials struct {
