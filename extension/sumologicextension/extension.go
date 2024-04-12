@@ -187,7 +187,7 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	if err = se.injectCredentials(colCreds); err != nil {
+	if err = se.injectCredentials(ctx, colCreds); err != nil {
 		return err
 	}
 
@@ -229,7 +229,7 @@ func (se *SumologicExtension) validateCredentials(
 		zap.String(collectorIDField, colCreds.Credentials.CollectorID),
 	)
 
-	if err := se.injectCredentials(colCreds); err != nil {
+	if err := se.injectCredentials(ctx, colCreds); err != nil {
 		return err
 	}
 
@@ -267,14 +267,14 @@ func (se *SumologicExtension) validateCredentials(
 //   - into registration info that's stored in the extension and can be used by roundTripper
 //   - into http client and its transport so that each request is using collector
 //     credentials as authentication keys
-func (se *SumologicExtension) injectCredentials(colCreds credentials.CollectorCredentials) error {
+func (se *SumologicExtension) injectCredentials(ctx context.Context, colCreds credentials.CollectorCredentials) error {
 	se.credsNotifyLock.Lock()
 	defer se.credsNotifyLock.Unlock()
 
 	// Set the registration info so that it can be used in RoundTripper.
 	se.registrationInfo = colCreds.Credentials
 
-	httpClient, err := se.getHTTPClient(se.conf.ClientConfig, colCreds.Credentials)
+	httpClient, err := se.getHTTPClient(ctx, se.conf.ClientConfig, colCreds.Credentials)
 	if err != nil {
 		return err
 	}
@@ -289,10 +289,12 @@ func (se *SumologicExtension) injectCredentials(colCreds credentials.CollectorCr
 }
 
 func (se *SumologicExtension) getHTTPClient(
+	ctx context.Context,
 	httpClientSettings confighttp.ClientConfig,
 	_ api.OpenRegisterResponsePayload,
 ) (*http.Client, error) {
-	httpClient, err := httpClientSettings.ToClient(
+	httpClient, err := httpClientSettings.ToClientContext(
+		ctx,
 		se.host,
 		component.TelemetrySettings{},
 	)
@@ -444,7 +446,7 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 	se.logger.Info("Calling register API", zap.String("URL", u.String()))
 
 	client := *http.DefaultClient
-	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+	client.CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
 	res, err := client.Do(req)
@@ -591,7 +593,7 @@ func (se *SumologicExtension) heartbeatLoop() {
 					}
 
 					// Inject newly received credentials into extension's configuration.
-					if err = se.injectCredentials(colCreds); err != nil {
+					if err = se.injectCredentials(ctx, colCreds); err != nil {
 						se.logger.Error("Heartbeat error, cannot inject new collector credentials", zap.Error(err))
 						continue
 					}

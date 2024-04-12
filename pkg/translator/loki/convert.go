@@ -137,7 +137,7 @@ func parseAttributeNames(attrsToSelect pcommon.Value) []string {
 }
 
 func removeAttributes(attrs pcommon.Map, labels model.LabelSet) {
-	attrs.RemoveIf(func(s string, v pcommon.Value) bool {
+	attrs.RemoveIf(func(s string, _ pcommon.Value) bool {
 		if s == hintAttributes || s == hintResources || s == hintTenant || s == hintFormat {
 			return true
 		}

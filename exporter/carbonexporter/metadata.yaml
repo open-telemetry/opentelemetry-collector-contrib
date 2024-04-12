@@ -5,7 +5,7 @@ status:
   class: exporter
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [aboguszewski-sumo]
 

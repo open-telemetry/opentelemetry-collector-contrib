@@ -7,9 +7,6 @@ status:
     beta: [extension]
   distributions:
   - contrib
-  - grafana
-  - redhat
-  - sumo
   codeowners:
     active: [pavankrish123, jpkrohling]
 

@@ -5,6 +5,7 @@ package datadogconnector
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -19,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.17.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
@@ -67,6 +68,8 @@ func generateTrace() ptrace.Traces {
 	res.Attributes().PutStr("container.id", "my-container-id")
 	res.Attributes().PutStr("cloud.availability_zone", "my-zone")
 	res.Attributes().PutStr("cloud.region", "my-region")
+	// add a custom Resource attribute
+	res.Attributes().PutStr("az", "my-az")
 
 	ss := td.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans()
 	ss.EnsureCapacity(1)
@@ -97,19 +100,26 @@ func fillSpanOne(span ptrace.Span) {
 	status.SetMessage("status-cancelled")
 }
 
-func TestContainerTags(t *testing.T) {
+func creteConnector(t *testing.T) (*traceToMetricConnector, *consumertest.MetricsSink) {
 	factory := NewFactory()
 
 	creationParams := connectortest.NewNopCreateSettings()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Traces.ResourceAttributesAsContainerTags = []string{semconv.AttributeCloudAvailabilityZone, semconv.AttributeCloudRegion}
+	cfg.Traces.ResourceAttributesAsContainerTags = []string{semconv.AttributeCloudAvailabilityZone, semconv.AttributeCloudRegion, "az"}
+
 	metricsSink := &consumertest.MetricsSink{}
 
 	traceToMetricsConnector, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, metricsSink)
 	assert.NoError(t, err)
 
 	connector, ok := traceToMetricsConnector.(*traceToMetricConnector)
-	err = connector.Start(context.Background(), componenttest.NewNopHost())
+	require.True(t, ok)
+	return connector, metricsSink
+}
+
+func TestContainerTags(t *testing.T) {
+	connector, metricsSink := creteConnector(t)
+	err := connector.Start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("Error starting connector: %v", err)
 		return
@@ -118,7 +128,6 @@ func TestContainerTags(t *testing.T) {
 		_ = connector.Shutdown(context.Background())
 	}()
 
-	assert.True(t, ok) // checks if the created connector implements the connectorImp struct
 	trace1 := generateTrace()
 
 	err = connector.ConsumeTraces(context.Background(), trace1)
@@ -130,7 +139,12 @@ func TestContainerTags(t *testing.T) {
 	assert.NoError(t, err)
 	// check if the container tags are added to the cache
 	assert.Equal(t, 1, len(connector.containerTagCache.Items()))
-	assert.Equal(t, 2, len(connector.containerTagCache.Items()["my-container-id"].Object.(map[string]struct{})))
+	count := 0
+	connector.containerTagCache.Items()["my-container-id"].Object.(*sync.Map).Range(func(_, _ any) bool {
+		count++
+		return true
+	})
+	assert.Equal(t, 3, count)
 
 	for {
 		if len(metricsSink.AllMetrics()) > 0 {
@@ -154,8 +168,8 @@ func TestContainerTags(t *testing.T) {
 	require.NoError(t, err)
 
 	tags := sp.Stats[0].Tags
-	assert.Equal(t, 2, len(tags))
-	assert.ElementsMatch(t, []string{"region:my-region", "zone:my-zone"}, tags)
+	assert.Equal(t, 3, len(tags))
+	assert.ElementsMatch(t, []string{"region:my-region", "zone:my-zone", "az:my-az"}, tags)
 }
 
 func newTranslatorWithStatsChannel(t *testing.T, logger *zap.Logger, ch chan []byte) *otlpmetrics.Translator {
@@ -180,4 +194,45 @@ func newTranslatorWithStatsChannel(t *testing.T, logger *zap.Logger, ch chan []b
 
 	require.NoError(t, err)
 	return tr
+}
+
+func TestDataRace(t *testing.T) {
+	connector, _ := creteConnector(t)
+	trace1 := generateTrace()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				connector.populateContainerTagsCache(trace1)
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				sp := &pb.StatsPayload{
+					Stats: []*pb.ClientStatsPayload{
+						{
+							ContainerID: "my-container-id",
+						},
+					},
+				}
+				connector.enrichStatsPayload(sp)
+			}
+		}
+	}()
+	wg.Wait()
 }

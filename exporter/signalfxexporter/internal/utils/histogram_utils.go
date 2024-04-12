@@ -12,7 +12,7 @@ import (
 
 // removeAccessToken removes the SFX access token label if found in the give resource metric as a resource attribute
 func removeAccessToken(dest pmetric.ResourceMetrics) {
-	dest.Resource().Attributes().RemoveIf(func(k string, val pcommon.Value) bool {
+	dest.Resource().Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
 		return k == splunk.SFxAccessTokenLabel
 	})
 }
