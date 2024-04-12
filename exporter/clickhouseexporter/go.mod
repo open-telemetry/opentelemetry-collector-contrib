@@ -8,7 +8,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.98.0
 	github.com/stretchr/testify v1.9.0
-	github.com/testcontainers/testcontainers-go v0.29.1
+	github.com/testcontainers/testcontainers-go v0.30.0
 	go.opentelemetry.io/collector/component v0.98.0
 	go.opentelemetry.io/collector/config/configopaque v1.5.0
 	go.opentelemetry.io/collector/config/configretry v0.98.0
@@ -39,7 +39,7 @@ require (
 	github.com/docker/docker v25.0.5+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/felixge/httpsnoop v1.0.3 // indirect
+	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
@@ -89,7 +89,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.98.0 // indirect
 	go.opentelemetry.io/collector/extension v0.98.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.98.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.45.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.25.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.47.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.25.0 // indirect
