@@ -29,7 +29,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.98.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.98.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.98.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.5.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.5.1-0.20240412014414-62f589864e3d // indirect
 	go.opentelemetry.io/otel v1.25.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect

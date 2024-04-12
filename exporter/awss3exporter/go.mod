@@ -6,12 +6,12 @@ require (
 	github.com/aws/aws-sdk-go v1.51.19
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.98.0
-	go.opentelemetry.io/collector/config/configcompression v1.5.0
+	go.opentelemetry.io/collector/config/configcompression v1.5.1-0.20240412014414-62f589864e3d
 	go.opentelemetry.io/collector/confmap v0.98.0
 	go.opentelemetry.io/collector/consumer v0.98.0
 	go.opentelemetry.io/collector/exporter v0.98.0
 	go.opentelemetry.io/collector/otelcol v0.98.0
-	go.opentelemetry.io/collector/pdata v1.5.0
+	go.opentelemetry.io/collector/pdata v1.5.1-0.20240412014414-62f589864e3d
 	go.opentelemetry.io/otel/metric v1.25.0
 	go.opentelemetry.io/otel/trace v1.25.0
 	go.uber.org/multierr v1.11.0
@@ -68,7 +68,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.98.0 // indirect
 	go.opentelemetry.io/collector/connector v0.98.0 // indirect
 	go.opentelemetry.io/collector/extension v0.98.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.5.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240412014414-62f589864e3d // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.98.0 // indirect
 	go.opentelemetry.io/collector/processor v0.98.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.98.0 // indirect

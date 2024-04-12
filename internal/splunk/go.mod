@@ -6,7 +6,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/consumer v0.98.0
 	go.opentelemetry.io/collector/exporter v0.98.0
-	go.opentelemetry.io/collector/pdata v1.5.0
+	go.opentelemetry.io/collector/pdata v1.5.1-0.20240412014414-62f589864e3d
 	go.opentelemetry.io/collector/semconv v0.98.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0

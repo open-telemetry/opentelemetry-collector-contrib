@@ -9,10 +9,10 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	go.opentelemetry.io/collector/component v0.98.0
-	go.opentelemetry.io/collector/config/configopaque v1.5.0
+	go.opentelemetry.io/collector/config/configopaque v1.5.1-0.20240412014414-62f589864e3d
 	go.opentelemetry.io/collector/confmap v0.98.0
 	go.opentelemetry.io/collector/exporter v0.98.0
-	go.opentelemetry.io/collector/pdata v1.5.0
+	go.opentelemetry.io/collector/pdata v1.5.1-0.20240412014414-62f589864e3d
 	go.opentelemetry.io/otel/metric v1.25.0
 	go.opentelemetry.io/otel/trace v1.25.0
 	go.uber.org/multierr v1.11.0

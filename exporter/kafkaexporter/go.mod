@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.98.0
 	go.opentelemetry.io/collector/consumer v0.98.0
 	go.opentelemetry.io/collector/exporter v0.98.0
-	go.opentelemetry.io/collector/pdata v1.5.0
+	go.opentelemetry.io/collector/pdata v1.5.1-0.20240412014414-62f589864e3d
 	go.opentelemetry.io/collector/pdata/testdata v0.98.0
 	go.opentelemetry.io/collector/semconv v0.98.0
 	go.opentelemetry.io/otel/metric v1.25.0
@@ -75,7 +75,7 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/collector v0.98.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.5.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.5.1-0.20240412014414-62f589864e3d // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.98.0 // indirect
 	go.opentelemetry.io/collector/extension v0.98.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.98.0 // indirect
