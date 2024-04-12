@@ -5,6 +5,7 @@ package probabilisticsamplerprocessor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -33,6 +34,9 @@ const (
 	DefaultMode SamplerMode = HashSeed
 	modeUnset   SamplerMode = ""
 )
+
+// ErrMissingRandomness indicates no randomness source was found.
+var ErrMissingRandomness = errors.New("missing randomness")
 
 type randomnessNamer interface {
 	randomness() sampling.Randomness
@@ -203,6 +207,16 @@ func randomnessFromBytes(b []byte, hashSeed uint32) sampling.Randomness {
 	return rnd
 }
 
+// consistencyCheck checks for certain inconsistent inputs.
+//
+// if the randomness is missing, returns ErrMissingRandomness.
+func consistencyCheck(rnd randomnessNamer, carrier samplingCarrier) error {
+	if isMissing(rnd) {
+		return ErrMissingRandomness
+	}
+	return nil
+}
+
 // makeSample constructs a sampler. There are no errors, as the only
 // potential error, out-of-range probability, is corrected automatically
 // according to the README, which allows percents >100 to equal 100%.
@@ -281,6 +295,9 @@ func commonSamplingLogic[T any](
 ) bool {
 	rnd, carrier, err := randFunc(item)
 
+	if err == nil {
+		err = consistencyCheck(rnd, carrier)
+	}
 	var threshold sampling.Threshold
 	if err != nil {
 		logger.Error(description, zap.Error(err))
@@ -293,7 +310,6 @@ func commonSamplingLogic[T any](
 		threshold = sampler.decide(carrier)
 	}
 
-	fmt.Printf("INPUT T %x %x fc=%v err=%v\n", rnd, threshold, failClosed, err)
 	rnd, threshold = priorityFunc(item, rnd, threshold)
 
 	sampled := threshold.ShouldSample(rnd.randomness())
