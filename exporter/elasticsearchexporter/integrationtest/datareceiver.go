@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/elastic/go-docappender/docappendertest"
 	"github.com/gorilla/mux"
@@ -31,7 +32,7 @@ type esDataReceiver struct {
 	endpoint string
 }
 
-func NewElasticsearchDataReceiver(t testing.TB) testbed.DataReceiver {
+func newElasticsearchDataReceiver(t testing.TB) testbed.DataReceiver {
 	return &esDataReceiver{
 		DataReceiverBase: testbed.DataReceiverBase{},
 		endpoint:         fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
@@ -118,7 +119,7 @@ func newMockESReceiver(params receiver.CreateSettings, cfg *config, next consume
 			next.ServeHTTP(w, r)
 		})
 	})
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprintln(w, `{"version":{"number":"1.2.3"}}`)
 	})
 	r.HandleFunc("/_bulk", func(w http.ResponseWriter, r *http.Request) {
@@ -142,7 +143,9 @@ func newMockESReceiver(params receiver.CreateSettings, cfg *config, next consume
 				itemMap[k] = item
 			}
 		}
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 	})
 
 	esURL, err := url.Parse(cfg.ESEndpoint)
@@ -151,14 +154,15 @@ func newMockESReceiver(params receiver.CreateSettings, cfg *config, next consume
 	}
 	return &mockESReceiver{
 		server: &http.Server{
-			Addr:    esURL.Host,
-			Handler: r,
+			Addr:              esURL.Host,
+			Handler:           r,
+			ReadHeaderTimeout: 20 * time.Second,
 		},
 		params: params,
 	}, nil
 }
 
-func (es *mockESReceiver) Start(_ context.Context, host component.Host) error {
+func (es *mockESReceiver) Start(_ context.Context, _ component.Host) error {
 	go func() {
 		if err := es.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			es.params.Logger.Error("failed while running mock ES receiver", zap.Error(err))

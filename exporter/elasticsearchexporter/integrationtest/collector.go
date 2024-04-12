@@ -119,7 +119,7 @@ type recreatableOtelCol struct {
 	col *otelcol.Collector
 }
 
-func NewRecreatableOtelCol(t testing.TB) *recreatableOtelCol {
+func newRecreatableOtelCol(t testing.TB) *recreatableOtelCol {
 	var (
 		err       error
 		factories otelcol.Factories
