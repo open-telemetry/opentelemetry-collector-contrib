@@ -21,8 +21,7 @@ protocol](https://github.com/open-telemetry/opentelemetry-proto).
 The receiver will watch the directory and read files. If a file is updated or added,
 the receiver will read it in its entirety again.
 
-Please note that there is no guarantee that exact field names will remain stable.
-This intended for primarily for debugging Collector without setting up backends.
+The data is serialized according to the [OpenTelemetry Protocol File Exporter](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/file-exporter.md).
 
 ## Getting Started
 
