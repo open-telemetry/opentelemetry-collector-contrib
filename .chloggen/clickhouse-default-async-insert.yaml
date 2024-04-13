@@ -7,7 +7,7 @@ change_type: breaking
 component: exporter/clickhouse
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Enable async inserts by default, with added async_insert config option.
+note: "Add `async_insert` config option to enable inserting asynchronously by default."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [32340]
@@ -16,13 +16,12 @@ issues: [32340]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This change enables async inserts by default, and adds new `async_insert` config option.
+  Adds `async_insert` config option to enable inserting asynchronously by default.
+  To preserve the previous behavior, set `async_insert` to `false` in your config.
   When enabled, the exporter will insert asynchronously, which can improve performance for high-throughput deployments.
   The `async_insert` option can be set to `true` or `false` to enable or disable async inserts, respectively. The default value is `true`.
   Keep in mind this setting is added since the exporter now sets it to default.
   Async insert and its related settings can still be defined in `endpoint` and `connection_params`, which take priority over the new config option.
-
-  While this change won't immediately break deployments, it is a change that should be highlighted.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
