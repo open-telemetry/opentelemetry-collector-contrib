@@ -52,7 +52,7 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("unable to connect to vSphere SDK on listed endpoint: %w", err)
 	}
-	tlsCfg, err := vc.cfg.LoadTLSConfig()
+	tlsCfg, err := vc.cfg.LoadTLSConfigContext(ctx)
 	if err != nil {
 		return err
 	}
