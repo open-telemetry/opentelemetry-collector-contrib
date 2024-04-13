@@ -109,6 +109,8 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 			ptrace.NewSpan(),
 			pcommon.NewInstrumentationScope(),
 			rspans.Resource(),
+			rspans.ScopeSpans().At(i),
+			rspans,
 		)
 
 		matchCount := len(p.router.routes)

@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
@@ -17,6 +18,7 @@ import (
 func TestScopePathGetSetter(t *testing.T) {
 	refIS := createInstrumentationScope()
 
+	refISC := newInstrumentationScopeContext(refIS, s)
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
 	tests := []struct {
@@ -55,6 +57,17 @@ func TestScopePathGetSetter(t *testing.T) {
 			newVal: "next",
 			modified: func(is pcommon.InstrumentationScope) {
 				is.SetVersion("next")
+			},
+		},
+		{
+			name: "instrumentation_scope schema_url",
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "schema_url",
+			},
+			orig:   refISC.GetScopeSchemaURLItem(),
+			newVal: "new_schema_url",
+			modified: func(is pcommon.InstrumentationScope) {
+				refISC.GetScopeSchemaURLItem().SetSchemaUrl()
 			},
 		},
 		{
@@ -394,6 +407,10 @@ func createInstrumentationScope() pcommon.InstrumentationScope {
 	return is
 }
 
+func createSchemaURLItem() SchemaURLItem {
+	return plog.NewScopeLogs()
+}
+
 type instrumentationScopeContext struct {
 	is            pcommon.InstrumentationScope
 	schemaURLItem SchemaURLItem
@@ -407,10 +424,6 @@ func (r *instrumentationScopeContext) GetScopeSchemaURLItem() SchemaURLItem {
 	return r.schemaURLItem
 }
 
-func (r *instrumentationScopeContext) SetScopeSchemaURLItem(schema SchemaURLItem) {
-	r.schemaURLItem = schema
-}
-
-func newInstrumentationScopeContext(is pcommon.InstrumentationScope) *instrumentationScopeContext {
-	return &instrumentationScopeContext{is: is}
+func newInstrumentationScopeContext(is pcommon.InstrumentationScope, schemaURLItem SchemaURLItem) *instrumentationScopeContext {
+	return &instrumentationScopeContext{is: is, schemaURLItem: schemaURLItem}
 }

@@ -45,6 +45,16 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
+// [TODO]:
+func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
+	return nil
+}
+
+// [TODO]: Methods needs to be implemented for resource
+func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
+	return nil
+}
+
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
 	pep := pathExpressionParser{telemetrySettings}
 	p, err := ottl.NewParser[TransformContext](

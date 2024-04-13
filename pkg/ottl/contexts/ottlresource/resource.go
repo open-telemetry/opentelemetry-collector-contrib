@@ -38,6 +38,11 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
+// [TODO]: Find appropriate way to access schemaURLItem using resource
+func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
+	return nil
+}
+
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
 	pep := pathExpressionParser{telemetrySettings}
 	p, err := ottl.NewParser[TransformContext](

@@ -83,7 +83,7 @@ func (e *honeycombLogsExporter) exportMarkers(ctx context.Context, ld plog.Logs)
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				logRecord := logs.At(k)
-				tCtx := ottllog.NewTransformContext(logRecord, slogs.Scope(), rlogs.Resource())
+				tCtx := ottllog.NewTransformContext(logRecord, slogs.Scope(), rlogs.Resource(), slogs, rlogs)
 				for _, m := range e.markers {
 					match, err := m.logBoolExpr.Eval(ctx, tCtx)
 					if err != nil {

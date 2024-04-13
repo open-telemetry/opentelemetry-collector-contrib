@@ -28,6 +28,8 @@ func ResourcePathGetSetter[K ResourceContext](path ottl.Path[K]) (ottl.GetSetter
 		return accessResourceAttributesKey[K](path.Keys()), nil
 	case "dropped_attributes_count":
 		return accessResourceDroppedAttributesCount[K](), nil
+	case "schema_url":
+		return accessResourceSchemaURLItem[K](), nil
 	default:
 		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Resource", ResourceContextRef)
 	}

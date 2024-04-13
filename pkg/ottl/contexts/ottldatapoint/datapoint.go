@@ -30,11 +30,13 @@ type TransformContext struct {
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
 	cache                pcommon.Map
+	scopeMetrics         pmetric.ScopeMetrics
+	resourceMetrics      pmetric.ResourceMetrics
 }
 
 type Option func(*ottl.Parser[TransformContext])
 
-func NewTransformContext(dataPoint any, metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
+func NewTransformContext(dataPoint any, metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) TransformContext {
 	return TransformContext{
 		dataPoint:            dataPoint,
 		metric:               metric,
@@ -42,6 +44,8 @@ func NewTransformContext(dataPoint any, metric pmetric.Metric, metrics pmetric.M
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
 		cache:                pcommon.NewMap(),
+		scopeMetrics:         scopeMetrics,
+		resourceMetrics:      resourceMetrics,
 	}
 }
 
@@ -67,6 +71,14 @@ func (tCtx TransformContext) GetMetrics() pmetric.MetricSlice {
 
 func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
+}
+
+func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
+	return tCtx.scopeMetrics
+}
+
+func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
+	return tCtx.resourceMetrics
 }
 
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
