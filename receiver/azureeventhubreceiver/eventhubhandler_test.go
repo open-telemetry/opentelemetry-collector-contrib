@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -25,8 +24,8 @@ import (
 type mockHubWrapper struct {
 }
 
-func (m mockHubWrapper) GetRuntimeInformation(_ context.Context) (*eventhub.HubRuntimeInformation, error) {
-	return &eventhub.HubRuntimeInformation{
+func (m mockHubWrapper) GetRuntimeInformation(_ context.Context) (*eventhubs.HubRuntimeInformation, error) {
+	return &eventhubs.HubRuntimeInformation{
 		Path:           "foo",
 		CreatedAt:      time.Now(),
 		PartitionCount: 1,
@@ -34,7 +33,7 @@ func (m mockHubWrapper) GetRuntimeInformation(_ context.Context) (*eventhub.HubR
 	}, nil
 }
 
-func (m mockHubWrapper) Receive(ctx context.Context, _ string, _ eventhub.Handler, _ ...eventhub.ReceiveOption) (listerHandleWrapper, error) {
+func (m mockHubWrapper) Receive(ctx context.Context, _ string, _ eventhubs.Handler, _ ...eventhubs.ReceiveOption) (listerHandleWrapper, error) {
 	return &mockListenerHandleWrapper{
 		ctx: ctx,
 	}, nil
@@ -68,7 +67,7 @@ func (m *mockDataConsumer) setNextLogsConsumer(nextLogsConsumer consumer.Logs) {
 
 func (m *mockDataConsumer) setNextMetricsConsumer(_ consumer.Metrics) {}
 
-func (m *mockDataConsumer) consume(ctx context.Context, event *eventhub.Event) error {
+func (m *mockDataConsumer) consume(ctx context.Context, event *eventhubs.Event) error {
 
 	logsContext := m.obsrecv.StartLogsOp(ctx)
 
@@ -131,12 +130,12 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 	assert.NoError(t, err)
 
 	now := time.Now()
-	err = ehHandler.newMessageHandler(context.Background(), &eventhub.Event{
+	err = ehHandler.newMessageHandler(context.Background(), &eventhubs.Event{
 		Data:         []byte("hello"),
 		PartitionKey: nil,
 		Properties:   map[string]any{"foo": "bar"},
 		ID:           "11234",
-		SystemProperties: &eventhub.SystemProperties{
+		SystemProperties: &eventhubs.SystemProperties{
 			SequenceNumber: nil,
 			EnqueuedTime:   &now,
 			Offset:         nil,

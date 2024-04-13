@@ -4,7 +4,6 @@
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -32,7 +31,7 @@ func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.
 // log record appears as fields and attributes in the
 // OpenTelemetry representation; the bodies of the
 // OpenTelemetry log records are empty.
-func (r AzureResourceLogsEventUnmarshaler) UnmarshalLogs(event *eventhub.Event) (plog.Logs, error) {
+func (r AzureResourceLogsEventUnmarshaler) UnmarshalLogs(event *eventhubs.Event) (plog.Logs, error) {
 
 	return r.unmarshaler.UnmarshalLogs(event.Data)
 }

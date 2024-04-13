@@ -4,7 +4,6 @@
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -21,7 +20,7 @@ func newRawLogsUnmarshaler(logger *zap.Logger) eventLogsUnmarshaler {
 	}
 }
 
-func (r rawLogsUnmarshaler) UnmarshalLogs(event *eventhub.Event) (plog.Logs, error) {
+func (r rawLogsUnmarshaler) UnmarshalLogs(event *eventhubs.Event) (plog.Logs, error) {
 
 	l := plog.NewLogs()
 	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()

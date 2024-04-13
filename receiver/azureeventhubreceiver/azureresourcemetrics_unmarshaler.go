@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/component"
@@ -62,7 +61,7 @@ func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *z
 // an OpenTelemetry pmetric.Metrics object. The data in the Azure
 // metric record appears as fields and attributes in the
 // OpenTelemetry representation;
-func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event) (pmetric.Metrics, error) {
+func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhubs.Event) (pmetric.Metrics, error) {
 
 	md := pmetric.NewMetrics()
 
