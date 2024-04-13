@@ -282,7 +282,7 @@ Connection options:
 - `ttl_days` (default = 0): **Deprecated: Use 'ttl' instead.**  The data time-to-live in days, 0 means no ttl.
 - `ttl` (default = 0): The data time-to-live example 30m, 48h. Also, 0 means no ttl.
 - `database` (default = otel): The database name.
-- `connection_params` (default = {}). Params is the extra connection parameters with map format.
+- `connection_params` (default = {}). Params is the extra connection parameters with map format. Query parameters provided in `endpoint` will be individually overwritten if present in this map.
 - `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/en/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
 
 ClickHouse tables:

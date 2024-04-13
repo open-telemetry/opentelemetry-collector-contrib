@@ -315,6 +315,16 @@ func TestConfig_buildDSN(t *testing.T) {
 
 			want: "tcp://127.0.0.1:9000/default?async_insert=true",
 		},
+		{
+			name: "connection_params takes priority over endpoint and async_insert option.",
+			fields: fields{
+				Endpoint:         "tcp://127.0.0.1:9000?async_insert=false",
+				ConnectionParams: map[string]string{"async_insert": "true"},
+				AsyncInsert:      configBool(false),
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
