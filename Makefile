@@ -104,9 +104,17 @@ gogci:
 gotidy:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="tidy"
 
+.PHONY: goproxy
+goproxy:
+	@mkdir -p goproxy
+	@$(TOOLS_BIN_DIR)/goproxy server --insecure --address :60001 --cacher dir --cacher-dir goproxy/cache & echo "$$!" > goproxy/pid
+
 .PHONY: gomoddownload
 gomoddownload:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="moddownload"
+
+goproxystop:
+	@kill -9 $(shell cat goproxy/pid)
 
 .PHONY: gotest
 gotest:

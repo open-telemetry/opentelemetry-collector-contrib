@@ -37,12 +37,23 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+      - name: Cache goproxy
+        id: go-cache-goproxy
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            goproxy/cache
+          key: go-cache-goproxy
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: |
+          make goproxy
+          GOPROXY=http://localhost:60001 make -j2 gomoddownload
+          make goproxystop
   check-collector-module-version:
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -99,12 +110,23 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+      - name: Cache goproxy
+        id: go-cache-goproxy
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            goproxy/cache
+          key: go-cache-goproxy
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: |
+          make goproxy
+          GOPROXY=http://localhost:60001 make -j2 gomoddownload
+          make goproxystop
       - name: Cache Lint Build
         uses: actions/cache@v4
         with:
@@ -129,6 +151,7 @@ jobs:
             false
           fi
   govulncheck:
+    needs: [setup-environment]
     strategy:
       fail-fast: false
       matrix:
@@ -165,9 +188,23 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Cache goproxy
+        id: go-cache-goproxy
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            goproxy/cache
+          key: go-cache-goproxy
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: |
+          make goproxy
+          GOPROXY=http://localhost:60001 make -j2 gomoddownload
+          make goproxystop
       - name: Run `govulncheck`
         run: make -j2 gogovulncheck GROUP=${{ matrix.group }}
   checks:
@@ -188,12 +225,23 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+      - name: Cache goproxy
+        id: go-cache-goproxy
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            goproxy/cache
+          key: go-cache-goproxy
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: |
+          make goproxy
+          GOPROXY=http://localhost:60001 make -j2 gomoddownload
+          make goproxystop
       - name: CheckDoc
         run: make checkdoc
       - name: CheckMetadata
@@ -276,12 +324,23 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+      - name: Cache goproxy
+        id: go-cache-goproxy
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            goproxy/cache
+          key: go-cache-goproxy
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: |
+          make goproxy
+          GOPROXY=http://localhost:60001 make -j2 gomoddownload
+          make goproxystop
       - name: Cache Test Build
         uses: actions/cache@v4
         with:
@@ -406,12 +465,23 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+      - name: Cache goproxy
+        id: go-cache-goproxy
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            goproxy/cache
+          key: go-cache-goproxy
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: |
+          make goproxy
+          GOPROXY=http://localhost:60001 make -j2 gomoddownload
+          make goproxystop
       - name: Correctness
         run: make -C testbed run-correctness-traces-tests
   correctness-metrics:
@@ -432,12 +502,23 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+      - name: Cache goproxy
+        id: go-cache-goproxy
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            goproxy/cache
+          key: go-cache-goproxy
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: |
+          make goproxy
+          GOPROXY=http://localhost:60001 make -j2 gomoddownload
+          make goproxystop
       - name: Correctness
         run: make -C testbed run-correctness-metrics-tests
 
@@ -501,12 +582,23 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+      - name: Cache goproxy
+        id: go-cache-goproxy
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            goproxy/cache
+          key: go-cache-goproxy
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: |
+          make goproxy
+          GOPROXY=http://localhost:60001 make -j2 gomoddownload
+          make goproxystop
       - name: Build Collector ${{ matrix.binary }}
         run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
       - name: Upload Collector Binaries
@@ -641,12 +733,23 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-      - name: Install dependencies
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: make -j2 gomoddownload
+      - name: Cache goproxy
+        id: go-cache-goproxy
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            goproxy/cache
+          key: go-cache-goproxy
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: |
+          make goproxy
+          GOPROXY=http://localhost:60001 make -j2 gomoddownload
+          make goproxystop
       - name: Download Binaries
         uses: actions/download-artifact@v4
         with:

@@ -16,6 +16,7 @@ import (
 	_ "github.com/daixiang0/gci"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/google/addlicense"
+	_ "github.com/goproxy/goproxy/cmd/goproxy"
 	_ "github.com/jcchavezs/porto/cmd/porto"
 	_ "github.com/jstemmer/go-junit-report"
 	_ "go.opentelemetry.io/build-tools/checkfile"
