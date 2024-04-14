@@ -132,7 +132,10 @@ func SortTemporal(regexKey string, ascending bool, layout string, location strin
 	)
 }
 
-type mtimeSortOption struct{}
+type mtimeSortOption struct {
+	hasLimit bool
+	maxTime  time.Duration
+}
 
 type mtimeItem struct {
 	mtime time.Time
@@ -148,6 +151,12 @@ func (m mtimeSortOption) apply(items []*item) ([]*item, error) {
 		fi, err := os.Stat(path)
 		if err != nil {
 			errs = multierr.Append(errs, err)
+			continue
+		}
+
+		// drop all files that are older than max time
+		modTime := fi.ModTime()
+		if m.hasLimit && time.Since(modTime) >= m.maxTime {
 			continue
 		}
 
@@ -171,6 +180,9 @@ func (m mtimeSortOption) apply(items []*item) ([]*item, error) {
 	return filteredValues, errs
 }
 
-func SortMtime() Option {
-	return mtimeSortOption{}
+func SortMtime(duration time.Duration) Option {
+	return mtimeSortOption{
+		hasLimit: !(duration.Seconds() == 0),
+		maxTime:  duration,
+	}
 }

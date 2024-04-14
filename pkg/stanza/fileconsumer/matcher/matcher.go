@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"time"
 
 	"go.opentelemetry.io/collector/featuregate"
 
@@ -52,6 +53,9 @@ type Sort struct {
 	// Timestamp only
 	Layout   string `mapstructure:"layout,omitempty"`
 	Location string `mapstructure:"location,omitempty"`
+
+	// mtime only
+	MaxTime time.Duration `mapstructure:"max_time,omitempty"`
 }
 
 func New(c Criteria) (*Matcher, error) {
@@ -119,7 +123,7 @@ func New(c Criteria) (*Matcher, error) {
 			if !mtimeSortTypeFeatureGate.IsEnabled() {
 				return nil, fmt.Errorf("the %q feature gate must be enabled to use %q sort type", mtimeSortTypeFeatureGate.ID(), sortTypeMtime)
 			}
-			filterOpts = append(filterOpts, filter.SortMtime())
+			filterOpts = append(filterOpts, filter.SortMtime(sc.MaxTime))
 		default:
 			return nil, fmt.Errorf("'sort_type' must be specified")
 		}

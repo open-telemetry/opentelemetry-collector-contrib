@@ -221,7 +221,87 @@ func TestMTimeFilter(t *testing.T) {
 				items = append(items, it)
 			}
 
-			f := SortMtime()
+			f := SortMtime(0)
+			result, err := f.apply(items)
+			if tc.expectedErr != "" {
+				require.EqualError(t, err, tc.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+
+			relativeResult := []string{}
+			for _, r := range result {
+				rel, err := filepath.Rel(tmpDir, r.value)
+				require.NoError(t, err)
+				relativeResult = append(relativeResult, rel)
+			}
+
+			require.Equal(t, tc.expect, relativeResult)
+		})
+	}
+}
+
+func TestMTimeFilterWithLimit(t *testing.T) {
+	now := time.Now()
+	cases := []struct {
+		name        string
+		files       []string
+		fileMTimes  []time.Time
+		expectedErr string
+		expect      []string
+	}{
+		{
+			name:       "No files",
+			files:      []string{},
+			fileMTimes: []time.Time{},
+			expect:     []string{},
+		},
+		{
+			name:       "Single file",
+			files:      []string{"a.log"},
+			fileMTimes: []time.Time{now},
+			expect:     []string{"a.log"},
+		},
+		{
+			name:       "single file among Multiple files",
+			files:      []string{"a.log", "b.log"},
+			fileMTimes: []time.Time{now, now.Add(-time.Hour)},
+			expect:     []string{"a.log"},
+		},
+		{
+			name:       "Multiple files in less than 10 sec",
+			files:      []string{"a.log", "b.log", "c.log"},
+			fileMTimes: []time.Time{now.Add(-time.Second), now.Add(-time.Second * 2), now},
+			expect:     []string{"c.log", "a.log", "b.log"},
+		},
+		{
+			name:       "Multiple files with few less than 10 sec",
+			files:      []string{"a.log", "b.log", "c.log", "d.log", "e.log"},
+			fileMTimes: []time.Time{now.Add(-time.Second), now.Add(-time.Second * 2), now, now.Add(-time.Minute), now.Add(-time.Hour)},
+			expect:     []string{"c.log", "a.log", "b.log"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			items := []*item{}
+			// Create files with specified mtime
+			for i, file := range tc.files {
+				mtime := tc.fileMTimes[i]
+				fullPath := filepath.Join(tmpDir, file)
+
+				f, err := os.Create(fullPath)
+				require.NoError(t, err)
+				require.NoError(t, f.Close())
+				require.NoError(t, os.Chtimes(fullPath, now, mtime))
+
+				it, err := newItem(fullPath, nil)
+				require.NoError(t, err)
+
+				items = append(items, it)
+			}
+
+			f := SortMtime(time.Minute)
 			result, err := f.apply(items)
 			if tc.expectedErr != "" {
 				require.EqualError(t, err, tc.expectedErr)

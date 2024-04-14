@@ -131,12 +131,12 @@ func (p *Parser) shouldSkipPriorityValues(value []byte) bool {
 // parseRFC3164 will parse an RFC3164 syslog message.
 func (p *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage, skipPriHeaderValues bool) (map[string]any, error) {
 	value := map[string]any{
-		"timestamp":       syslogMessage.Timestamp,
-		"host":            syslogMessage.Hostname,
-		"syslog_appname":  syslogMessage.Appname,
-		"syslog_proc_id":  syslogMessage.ProcID,
-		"syslog_msg_id":   syslogMessage.MsgID,
-		"message":         syslogMessage.Message,
+		"timestamp": syslogMessage.Timestamp,
+		"hostname":  syslogMessage.Hostname,
+		"appname":   syslogMessage.Appname,
+		"proc_id":   syslogMessage.ProcID,
+		"msg_id":    syslogMessage.MsgID,
+		"message":   syslogMessage.Message,
 	}
 
 	if !skipPriHeaderValues {
@@ -151,14 +151,14 @@ func (p *Parser) parseRFC3164(syslogMessage *rfc3164.SyslogMessage, skipPriHeade
 // parseRFC5424 will parse an RFC5424 syslog message.
 func (p *Parser) parseRFC5424(syslogMessage *rfc5424.SyslogMessage, skipPriHeaderValues bool) (map[string]any, error) {
 	value := map[string]any{
-		"timestamp":              syslogMessage.Timestamp,
-		"host":                   syslogMessage.Hostname,
-		"syslog_appname":         syslogMessage.Appname,
-		"syslog_proc_id":         syslogMessage.ProcID,
-		"syslog_msg_id":          syslogMessage.MsgID,
-		"message":                syslogMessage.Message,
-		"syslog_structured_data": syslogMessage.StructuredData,
-		"syslog_version":         syslogMessage.Version,
+		"timestamp":       syslogMessage.Timestamp,
+		"hostname":        syslogMessage.Hostname,
+		"appname":         syslogMessage.Appname,
+		"proc_id":         syslogMessage.ProcID,
+		"msg_id":          syslogMessage.MsgID,
+		"message":         syslogMessage.Message,
+		"structured_data": syslogMessage.StructuredData,
+		"version":         syslogMessage.Version,
 	}
 
 	if !skipPriHeaderValues {
@@ -255,7 +255,7 @@ var severityText = [...]string{
 	7: "debug",
 }
 
-var severityField = entry.NewAttributeField("syslog_severity")
+var severityField = entry.NewAttributeField("severity")
 
 func cleanupTimestamp(e *entry.Entry) error {
 	_, ok := entry.NewAttributeField("timestamp").Delete(e)
