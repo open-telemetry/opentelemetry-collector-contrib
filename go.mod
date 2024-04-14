@@ -1,6 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib
 
-go 1.21.0
+go 1.21.3
+
+toolchain go1.22.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.98.0
@@ -488,7 +490,7 @@ require (
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/nginxinc/nginx-prometheus-exporter v0.11.0 // indirect
+	github.com/nginxinc/nginx-prometheus-exporter v1.0.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension v0.98.0 // indirect
