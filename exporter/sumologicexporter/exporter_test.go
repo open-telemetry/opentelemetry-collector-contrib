@@ -13,10 +13,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 )
 
 func logRecordsToLogs(records []plog.LogRecord) plog.Logs {
@@ -28,6 +31,14 @@ func logRecordsToLogs(records []plog.LogRecord) plog.Logs {
 	}
 
 	return logs
+}
+
+func createExporterCreateSettings() exporter.CreateSettings {
+	return exporter.CreateSettings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}
 }
 
 func TestInitExporter(t *testing.T) {
@@ -418,4 +429,67 @@ func TestPushMetricsFailedBatch(t *testing.T) {
 
 	err := test.exp.pushMetricsData(context.Background(), metrics)
 	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
+}
+
+func TestGetSignalUrl(t *testing.T) {
+	testCases := []struct {
+		description  string
+		signalType   component.Type
+		cfg          Config
+		endpointUrl  string
+		expected     string
+		errorMessage string
+	}{
+		{
+			description: "no change if log format not otlp",
+			signalType:  component.DataTypeLogs,
+			cfg:         Config{LogFormat: TextFormat},
+			endpointUrl: "http://localhost",
+			expected:    "http://localhost",
+		},
+		{
+			description: "no change if metric format not otlp",
+			signalType:  component.DataTypeMetrics,
+			cfg:         Config{MetricFormat: PrometheusFormat},
+			endpointUrl: "http://localhost",
+			expected:    "http://localhost",
+		},
+		{
+			description: "always add suffix for traces if not present",
+			signalType:  component.DataTypeTraces,
+			endpointUrl: "http://localhost",
+			expected:    "http://localhost/v1/traces",
+		},
+		{
+			description: "no change if suffix already present",
+			signalType:  component.DataTypeTraces,
+			endpointUrl: "http://localhost/v1/traces",
+			expected:    "http://localhost/v1/traces",
+		},
+		{
+			description:  "error if url invalid",
+			signalType:   component.DataTypeTraces,
+			endpointUrl:  ":",
+			errorMessage: `parse ":": missing protocol scheme`,
+		},
+		{
+			description:  "error if signal type is unknown",
+			signalType:   component.MustNewType("unknown"),
+			endpointUrl:  "http://localhost",
+			errorMessage: `unknown signal type: unknown`,
+		},
+	}
+	for _, tC := range testCases {
+		testCase := tC
+		t.Run(tC.description, func(t *testing.T) {
+			actual, err := getSignalURL(&testCase.cfg, testCase.endpointUrl, testCase.signalType)
+			if testCase.errorMessage != "" {
+				require.Error(t, err)
+				require.EqualError(t, err, testCase.errorMessage)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, testCase.expected, actual)
+		})
+	}
 }
