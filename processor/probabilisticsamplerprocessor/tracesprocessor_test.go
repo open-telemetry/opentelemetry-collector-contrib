@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 )
@@ -201,6 +203,72 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 				sink.Reset()
 			}
 
+		})
+	}
+}
+
+func Test_tracessamplerprocessor_MissingRandomness(t *testing.T) {
+	type test struct {
+		pct        float32
+		failClosed bool
+		sampled    bool
+	}
+
+	for _, tt := range []test{
+		// When the TraceID is empty and failClosed==true, the span is not sampled.
+		{0, true, false},
+		{62, true, false},
+		{100, true, false},
+
+		// When the TraceID is empty and failClosed==false, the span is sampled when pct != 0.
+		{0, false, false},
+		{62, false, true},
+		{100, false, true},
+	} {
+		t.Run(fmt.Sprint(tt.pct, "_", tt.failClosed), func(t *testing.T) {
+
+			ctx := context.Background()
+			traces := ptrace.NewTraces()
+			span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+			span.SetTraceID(pcommon.TraceID{})                     // invalid TraceID
+			span.SetSpanID(pcommon.SpanID{1, 2, 3, 4, 5, 6, 7, 8}) // valid SpanID
+			span.SetName("testing")
+
+			cfg := &Config{
+				SamplingPercentage: tt.pct,
+				HashSeed:           defaultHashSeed,
+				FailClosed:         tt.failClosed,
+			}
+
+			sink := new(consumertest.TracesSink)
+
+			set := processortest.NewNopCreateSettings()
+			logger, observed := observer.New(zap.InfoLevel)
+			set.Logger = zap.New(logger)
+
+			tsp, err := newTracesProcessor(ctx, set, cfg, sink)
+			require.NoError(t, err)
+
+			err = tsp.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+
+			sampledData := sink.AllTraces()
+			if tt.sampled {
+				require.Equal(t, 1, len(sampledData))
+				assert.Equal(t, 1, sink.SpanCount())
+			} else {
+				require.Equal(t, 0, len(sampledData))
+				assert.Equal(t, 0, sink.SpanCount())
+			}
+
+			if tt.pct != 0 {
+				// pct==0 bypasses the randomness check
+				require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+				require.Contains(t, observed.All()[0].Message, "traces sampler")
+				require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), "missing randomness")
+			} else {
+				require.Equal(t, 0, len(observed.All()), "should have no logs: %v", observed.All())
+			}
 		})
 	}
 }

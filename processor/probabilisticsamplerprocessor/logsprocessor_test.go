@@ -5,6 +5,7 @@ package probabilisticsamplerprocessor
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -15,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestNewLogsProcessor(t *testing.T) {
@@ -71,7 +74,6 @@ func TestLogsSampling(t *testing.T) {
 			name: "nothing",
 			cfg: &Config{
 				SamplingPercentage: 0,
-
 				// FailClosed because the test
 				// includes one empty TraceID which
 				// would otherwise fail open.
@@ -84,10 +86,12 @@ func TestLogsSampling(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 50,
 				AttributeSource:    traceIDAttributeSource,
+				FailClosed:         true,
 			},
-			// Note: This count includes the one empty TraceID
-			// that fails open, which the "nothing" test above excludes
-			// using FailClosed.
+			// Note: This count excludes one empty TraceID
+			// that fails closed.  If this test had been
+			// written for 63% or greater, it would have been
+			// counted.
 			received: 45,
 		},
 		{
@@ -192,6 +196,78 @@ func TestLogsSampling(t *testing.T) {
 				numReceived = sunk[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len()
 			}
 			assert.Equal(t, tt.received, numReceived)
+		})
+	}
+}
+
+func TestLogsMissingRandomness(t *testing.T) {
+	type test struct {
+		pct        float32
+		source     AttributeSource
+		failClosed bool
+		sampled    bool
+	}
+
+	for _, tt := range []test{
+		{0, recordAttributeSource, true, false},
+		{50, recordAttributeSource, true, false},
+		{100, recordAttributeSource, true, false},
+
+		{0, recordAttributeSource, false, false},
+		{50, recordAttributeSource, false, true},
+		{100, recordAttributeSource, false, true},
+
+		{0, traceIDAttributeSource, true, false},
+		{50, traceIDAttributeSource, true, false},
+		{100, traceIDAttributeSource, true, false},
+
+		{0, traceIDAttributeSource, false, false},
+		{50, traceIDAttributeSource, false, true},
+		{100, traceIDAttributeSource, false, true},
+	} {
+		t.Run(fmt.Sprint(tt.pct, "_", tt.source, "_", tt.failClosed), func(t *testing.T) {
+
+			ctx := context.Background()
+			logs := plog.NewLogs()
+			record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+			record.SetTraceID(pcommon.TraceID{}) // invalid TraceID
+
+			cfg := &Config{
+				SamplingPercentage: tt.pct,
+				HashSeed:           defaultHashSeed,
+				FailClosed:         tt.failClosed,
+				AttributeSource:    tt.source,
+				FromAttribute:      "unused",
+			}
+
+			sink := new(consumertest.LogsSink)
+			set := processortest.NewNopCreateSettings()
+			logger, observed := observer.New(zap.InfoLevel)
+			set.Logger = zap.New(logger)
+
+			lp, err := newLogsProcessor(ctx, set, sink, cfg)
+			require.NoError(t, err)
+
+			err = lp.ConsumeLogs(ctx, logs)
+			require.NoError(t, err)
+
+			sampledData := sink.AllLogs()
+			if tt.sampled {
+				require.Equal(t, 1, len(sampledData))
+				assert.Equal(t, 1, sink.LogRecordCount())
+			} else {
+				require.Equal(t, 0, len(sampledData))
+				assert.Equal(t, 0, sink.LogRecordCount())
+			}
+
+			if tt.pct != 0 {
+				// pct==0 bypasses the randomness check
+				require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+				require.Contains(t, observed.All()[0].Message, "logs sampler")
+				require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), "missing randomness")
+			} else {
+				require.Equal(t, 0, len(observed.All()), "should have no logs: %v", observed.All())
+			}
 		})
 	}
 }

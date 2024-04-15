@@ -287,7 +287,6 @@ func commonSamplingLogic[T any](
 	logger *zap.Logger,
 ) bool {
 	rnd, carrier, err := randFunc(item)
-
 	if err == nil {
 		err = consistencyCheck(rnd, carrier)
 	}

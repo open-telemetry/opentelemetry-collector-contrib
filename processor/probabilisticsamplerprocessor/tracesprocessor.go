@@ -83,13 +83,13 @@ func (th *neverSampler) randomnessFromSpan(_ ptrace.Span) (randomnessNamer, samp
 
 func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {
 	tid := s.TraceID()
-	// Note: this admits empty TraceIDs.
-	rnd := newTraceIDHashingMethod(randomnessFromBytes(tid[:], th.hashSeed))
 	tsc := newTracestateCarrier(s)
-
+	rnd := newMissingRandomnessMethod()
+	if !tid.IsEmpty() {
+		rnd = newTraceIDHashingMethod(randomnessFromBytes(tid[:], th.hashSeed))
+	}
 	return rnd, tsc, nil
 }
-
 func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		rs.ScopeSpans().RemoveIf(func(ils ptrace.ScopeSpans) bool {
