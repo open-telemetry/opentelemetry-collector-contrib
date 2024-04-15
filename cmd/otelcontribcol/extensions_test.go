@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -247,6 +248,12 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension:     "solarwindsapmsettings",
 			skipLifecycle: true, // Requires Solarwinds APM endpoint and token
+		},
+		{
+			extension: "ackextension",
+			getConfigFn: func() component.Config {
+				return extFactories["ackextension"].CreateDefaultConfig().(*ackextension.Config)
+			},
 		},
 	}
 

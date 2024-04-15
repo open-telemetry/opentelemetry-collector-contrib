@@ -67,7 +67,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
@@ -191,7 +190,6 @@ func Components() (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{}
 	extensions := []extension.Factory{
-		ackextension.NewFactory(),
 		asapauthextension.NewFactory(),
 		awsproxy.NewFactory(),
 		ballastextension.NewFactory(),
