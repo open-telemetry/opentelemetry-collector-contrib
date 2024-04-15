@@ -1,4 +1,5 @@
 type: snowflake
+scope_name: otelcol/snowflakereceiver
 
 status:
   class: receiver
@@ -313,3 +314,6 @@ metrics:
     gauge:
       value_type: int
     enabled: false 
+
+tests:
+  config:

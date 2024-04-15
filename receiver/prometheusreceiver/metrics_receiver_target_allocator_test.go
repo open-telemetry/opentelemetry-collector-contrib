@@ -18,7 +18,7 @@ import (
 
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
-	promConfig "github.com/prometheus/prometheus/config"
+	promconfig "github.com/prometheus/prometheus/config"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -218,11 +218,11 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				PrometheusConfig: &promConfig.Config{},
-				TargetAllocator: &targetAllocator{
+				PrometheusConfig: &PromConfig{GlobalConfig: promconfig.DefaultGlobalConfig},
+				TargetAllocator: &TargetAllocator{
 					Interval:    10 * time.Second,
 					CollectorID: "collector-1",
-					HTTPSDConfig: &promHTTP.SDConfig{
+					HTTPSDConfig: &PromHTTPSDConfig{
 						HTTPClientConfig: commonconfig.HTTPClientConfig{
 							BasicAuth: &commonconfig.BasicAuth{
 								Username: "user",
@@ -312,11 +312,11 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				PrometheusConfig: &promConfig.Config{},
-				TargetAllocator: &targetAllocator{
+				PrometheusConfig: &PromConfig{GlobalConfig: promconfig.DefaultGlobalConfig},
+				TargetAllocator: &TargetAllocator{
 					Interval:    10 * time.Second,
 					CollectorID: "collector-1",
-					HTTPSDConfig: &promHTTP.SDConfig{
+					HTTPSDConfig: &PromHTTPSDConfig{
 						HTTPClientConfig: commonconfig.HTTPClientConfig{},
 						RefreshInterval:  model.Duration(60 * time.Second),
 					},
@@ -424,11 +424,11 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				PrometheusConfig: &promConfig.Config{},
-				TargetAllocator: &targetAllocator{
+				PrometheusConfig: &PromConfig{GlobalConfig: promconfig.DefaultGlobalConfig},
+				TargetAllocator: &TargetAllocator{
 					Interval:    10 * time.Second,
 					CollectorID: "collector-1",
-					HTTPSDConfig: &promHTTP.SDConfig{
+					HTTPSDConfig: &PromHTTPSDConfig{
 						HTTPClientConfig: commonconfig.HTTPClientConfig{},
 						RefreshInterval:  model.Duration(60 * time.Second),
 					},
@@ -466,11 +466,11 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				PrometheusConfig: &promConfig.Config{},
-				TargetAllocator: &targetAllocator{
+				PrometheusConfig: &PromConfig{GlobalConfig: promconfig.DefaultGlobalConfig},
+				TargetAllocator: &TargetAllocator{
 					Interval:    50 * time.Millisecond,
 					CollectorID: "collector-1",
-					HTTPSDConfig: &promHTTP.SDConfig{
+					HTTPSDConfig: &PromHTTPSDConfig{
 						HTTPClientConfig: commonconfig.HTTPClientConfig{},
 						RefreshInterval:  model.Duration(60 * time.Second),
 					},

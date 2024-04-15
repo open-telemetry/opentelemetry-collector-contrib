@@ -33,7 +33,9 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	apitrace "go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
@@ -79,9 +81,6 @@ func TestIntegration(t *testing.T) {
 			for _, tps := range traces.TracerPayloads {
 				for _, chunks := range tps.Chunks {
 					spans = append(spans, chunks.Spans...)
-					for _, span := range chunks.Spans {
-						assert.Equal(t, span.Meta["_dd.stats_computed"], "true")
-					}
 				}
 			}
 
@@ -90,12 +89,15 @@ func TestIntegration(t *testing.T) {
 			var spl pb.StatsPayload
 			require.NoError(t, msgp.Decode(gz, &spl))
 			for _, csps := range spl.Stats {
+				assert.Equal(t, "datadogexporter-otelcol-tests", spl.AgentVersion)
 				for _, csbs := range csps.Stats {
 					stats = append(stats, csbs.Stats...)
 					for _, stat := range csbs.Stats {
 						assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan"))
-						assert.Equal(t, stat.Hits, uint64(1))
-						assert.Equal(t, stat.TopLevelHits, uint64(1))
+						assert.Equal(t, uint64(1), stat.Hits)
+						assert.Equal(t, uint64(1), stat.TopLevelHits)
+						assert.Equal(t, "client", stat.SpanKind)
+						assert.Equal(t, []string{"extra_peer_tag:tag_val", "peer.service:svc"}, stat.PeerTags)
 					}
 				}
 			}
@@ -167,6 +169,10 @@ processors:
 
 connectors:
   datadog/connector:
+    traces:
+      compute_stats_by_span_kind: true
+      peer_tags_aggregation: true
+      peer_tags: ["extra_peer_tag"]
 
 exporters:
   debug:
@@ -185,6 +191,9 @@ exporters:
       endpoint: %q
 
 service:
+  telemetry:
+    metrics:
+      level: none
   pipelines:
     traces:
       receivers: [otlp]
@@ -206,7 +215,7 @@ service:
 	_, err = otelcoltest.LoadConfigAndValidate(confFile.Name(), factories)
 	require.NoError(t, err, "All yaml config must be valid.")
 
-	fmp := fileprovider.New()
+	fmp := fileprovider.NewWithSettings(confmap.ProviderSettings{})
 	configProvider, err := otelcol.NewConfigProvider(
 		otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
@@ -250,22 +259,40 @@ func sendTraces(t *testing.T) {
 	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure())
 	require.NoError(t, err)
 	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
+	r1, _ := resource.New(ctx, resource.WithAttributes(attribute.String("k8s.node.name", "aaaa")))
+	r2, _ := resource.New(ctx, resource.WithAttributes(attribute.String("k8s.node.name", "bbbb")))
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithSpanProcessor(bsp),
+		sdktrace.WithResource(r1),
+	)
+	tracerProvider2 := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSpanProcessor(bsp),
+		sdktrace.WithResource(r2),
 	)
 	otel.SetTracerProvider(tracerProvider)
 	defer func() {
 		require.NoError(t, tracerProvider.Shutdown(ctx))
+		require.NoError(t, tracerProvider2.Shutdown(ctx))
 	}()
 
 	tracer := otel.Tracer("test-tracer")
 	for i := 0; i < 10; i++ {
-		_, span := tracer.Start(ctx, fmt.Sprintf("TestSpan%d", i))
+		_, span := tracer.Start(ctx, fmt.Sprintf("TestSpan%d", i), apitrace.WithSpanKind(apitrace.SpanKindClient))
+
+		if i == 3 {
+			// Send some traces from a different resource
+			// This verifies that stats from different hosts don't accidentally create extraneous empty stats buckets
+			otel.SetTracerProvider(tracerProvider2)
+			tracer = otel.Tracer("test-tracer2")
+		}
 		// Only sample 5 out of the 10 spans
 		if i < 5 {
 			span.SetAttributes(attribute.Bool("sampled", true))
 		}
+		span.SetAttributes(attribute.String("peer.service", "svc"))
+		span.SetAttributes(attribute.String("extra_peer_tag", "tag_val"))
 		span.End()
 	}
 	time.Sleep(1 * time.Second)

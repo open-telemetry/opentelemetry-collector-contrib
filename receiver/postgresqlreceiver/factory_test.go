@@ -13,12 +13,14 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	ft := factory.Type()
-	require.EqualValues(t, "postgresql", ft)
+	require.EqualValues(t, metadata.Type, ft)
 }
 
 func TestValidConfig(t *testing.T) {
@@ -35,7 +37,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		context.Background(),
 		receivertest.NewNopCreateSettings(),
 		&Config{
-			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: 10 * time.Second,
 				InitialDelay:       time.Second,
 			},

@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Deprecated: [v0.92.0] This package is deprecated and will be removed in a future release.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30187
 package configschema // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 
 import (
@@ -28,7 +30,7 @@ func commentsForStruct(v reflect.Value, dr DirResolver) (map[string]string, erro
 
 func searchDirsForComments(packageDir, typeName string) (map[string]string, error) {
 	out := map[string]string{}
-	err := filepath.WalkDir(packageDir, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(packageDir, func(path string, d fs.DirEntry, _ error) error {
 		if d.IsDir() {
 			commentsForStructName(out, path, typeName)
 		}

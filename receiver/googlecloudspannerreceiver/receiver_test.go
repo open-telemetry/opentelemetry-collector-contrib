@@ -313,9 +313,9 @@ func TestGoogleCloudSpannerReceiver_Shutdown(t *testing.T) {
 			err := receiver.Shutdown(ctx)
 
 			if testCase.expectError {
-				require.NotNil(t, err)
+				require.Error(t, err)
 			} else {
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

@@ -1,10 +1,11 @@
 type: expvar
+scope_name: otelcol/expvarreceiver
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   codeowners:
     active: [jamesmoessis, MovieStoreGuy]
 

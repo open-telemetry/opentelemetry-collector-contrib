@@ -10,6 +10,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -17,7 +18,7 @@ import (
 type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 
 	// Endpoint of pulsar broker (default "pulsar://localhost:6650")
 	Endpoint string `mapstructure:"endpoint"`

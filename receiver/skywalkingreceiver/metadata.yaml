@@ -1,10 +1,17 @@
 type: skywalking
+scope_name: otelcol/skywalkingreceiver
 
 status:
   class: receiver
   stability:
     development: [metrics]
     beta: [traces]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   codeowners:
     active: [JaredTan95]
+
+tests:
+  config:
+    protocols:
+      grpc:
+        endpoint: localhost:1234

@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
@@ -312,10 +313,8 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "prometheus",
 			getConfigFn: func() component.Config {
 				cfg := rcvrFactories["prometheus"].CreateDefaultConfig().(*prometheusreceiver.Config)
-				cfg.PrometheusConfig = &promconfig.Config{
-					ScrapeConfigs: []*promconfig.ScrapeConfig{
-						{JobName: "test"},
-					},
+				cfg.PrometheusConfig.ScrapeConfigs = []*promconfig.ScrapeConfig{
+					{JobName: "test"},
 				}
 				return cfg
 			},
@@ -459,6 +458,15 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:      "solace",
 			skipLifecycle: true, // Requires a solace broker to connect to
+		},
+		{
+			receiver:      "namedpipe",
+			skipLifecycle: runtime.GOOS != "linux",
+			getConfigFn: func() component.Config {
+				cfg := rcvrFactories["namedpipe"].CreateDefaultConfig().(*namedpipereceiver.NamedPipeConfig)
+				cfg.InputConfig.Path = "/tmp/foo"
+				return cfg
+			},
 		},
 	}
 

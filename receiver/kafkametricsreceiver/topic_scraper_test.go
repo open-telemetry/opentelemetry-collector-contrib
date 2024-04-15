@@ -60,25 +60,25 @@ func TestTopicScraper_createsScraper(t *testing.T) {
 }
 
 func TestTopicScraper_ScrapeHandlesError(t *testing.T) {
-	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
+	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
 		return nil, fmt.Errorf("no scraper here")
 	}
 	sc := sarama.NewConfig()
 	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
 	assert.NotNil(t, ms)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	_, err = ms.Scrape(context.Background())
 	assert.Error(t, err)
 }
 
 func TestTopicScraper_ShutdownHandlesNilClient(t *testing.T) {
-	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
+	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
 		return nil, fmt.Errorf("no scraper here")
 	}
 	sc := sarama.NewConfig()
 	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
 	assert.NotNil(t, ms)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	err = ms.Shutdown(context.Background())
 	assert.NoError(t, err)
 }

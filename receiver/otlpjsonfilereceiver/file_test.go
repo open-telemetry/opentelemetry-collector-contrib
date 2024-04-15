@@ -19,10 +19,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver/internal/metadata"
 )
@@ -46,7 +47,7 @@ func TestFileTracesReceiver(t *testing.T) {
 	err = receiver.Start(context.Background(), nil)
 	require.NoError(t, err)
 
-	td := testdata.GenerateTracesTwoSpansSameResource()
+	td := testdata.GenerateTraces(2)
 	marshaler := &ptrace.JSONMarshaler{}
 	b, err := marshaler.MarshalTraces(td)
 	assert.NoError(t, err)
@@ -73,7 +74,7 @@ func TestFileMetricsReceiver(t *testing.T) {
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
 
-	md := testdata.GenerateMetricsManyMetricsSameResource(5)
+	md := testdata.GenerateMetrics(5)
 	marshaler := &pmetric.JSONMarshaler{}
 	b, err := marshaler.MarshalMetrics(md)
 	assert.NoError(t, err)
@@ -100,7 +101,7 @@ func TestFileLogsReceiver(t *testing.T) {
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
 
-	ld := testdata.GenerateLogsManyLogRecordsSameResource(5)
+	ld := testdata.GenerateLogs(5)
 	marshaler := &plog.JSONMarshaler{}
 	b, err := marshaler.MarshalLogs(ld)
 	assert.NoError(t, err)
@@ -118,17 +119,19 @@ func TestFileLogsReceiver(t *testing.T) {
 func testdataConfigYamlAsMap() *Config {
 	return &Config{
 		Config: fileconsumer.Config{
-			IncludeFileName:         true,
-			IncludeFilePath:         false,
-			IncludeFileNameResolved: false,
-			IncludeFilePathResolved: false,
-			PollInterval:            200 * time.Millisecond,
-			Encoding:                "utf-8",
-			StartAt:                 "end",
-			FingerprintSize:         1000,
-			MaxLogSize:              1024 * 1024,
-			MaxConcurrentFiles:      1024,
-			FlushPeriod:             500 * time.Millisecond,
+			Resolver: attrs.Resolver{
+				IncludeFileName:         true,
+				IncludeFilePath:         false,
+				IncludeFileNameResolved: false,
+				IncludeFilePathResolved: false,
+			},
+			PollInterval:       200 * time.Millisecond,
+			Encoding:           "utf-8",
+			StartAt:            "end",
+			FingerprintSize:    1000,
+			MaxLogSize:         1024 * 1024,
+			MaxConcurrentFiles: 1024,
+			FlushPeriod:        500 * time.Millisecond,
 			Criteria: matcher.Criteria{
 				Include: []string{"/var/log/*.log"},
 				Exclude: []string{"/var/log/example.log"},
@@ -173,15 +176,15 @@ func TestFileMixedSignals(t *testing.T) {
 	err = lr.Start(context.Background(), nil)
 	assert.NoError(t, err)
 
-	md := testdata.GenerateMetricsManyMetricsSameResource(5)
+	md := testdata.GenerateMetrics(5)
 	marshaler := &pmetric.JSONMarshaler{}
 	b, err := marshaler.MarshalMetrics(md)
 	assert.NoError(t, err)
-	td := testdata.GenerateTracesTwoSpansSameResource()
+	td := testdata.GenerateTraces(2)
 	tmarshaler := &ptrace.JSONMarshaler{}
 	b2, err := tmarshaler.MarshalTraces(td)
 	assert.NoError(t, err)
-	ld := testdata.GenerateLogsManyLogRecordsSameResource(5)
+	ld := testdata.GenerateLogs(5)
 	lmarshaler := &plog.JSONMarshaler{}
 	b3, err := lmarshaler.MarshalLogs(ld)
 	assert.NoError(t, err)

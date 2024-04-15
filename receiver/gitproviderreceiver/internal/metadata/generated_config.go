@@ -15,7 +15,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
@@ -25,9 +25,13 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for gitprovider metrics.
 type MetricsConfig struct {
-	GitRepositoryBranchCount      MetricConfig `mapstructure:"git.repository.branch.count"`
-	GitRepositoryContributorCount MetricConfig `mapstructure:"git.repository.contributor.count"`
-	GitRepositoryCount            MetricConfig `mapstructure:"git.repository.count"`
+	GitRepositoryBranchCount               MetricConfig `mapstructure:"git.repository.branch.count"`
+	GitRepositoryContributorCount          MetricConfig `mapstructure:"git.repository.contributor.count"`
+	GitRepositoryCount                     MetricConfig `mapstructure:"git.repository.count"`
+	GitRepositoryPullRequestCount          MetricConfig `mapstructure:"git.repository.pull_request.count"`
+	GitRepositoryPullRequestTimeOpen       MetricConfig `mapstructure:"git.repository.pull_request.time_open"`
+	GitRepositoryPullRequestTimeToApproval MetricConfig `mapstructure:"git.repository.pull_request.time_to_approval"`
+	GitRepositoryPullRequestTimeToMerge    MetricConfig `mapstructure:"git.repository.pull_request.time_to_merge"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -39,6 +43,18 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		GitRepositoryCount: MetricConfig{
+			Enabled: true,
+		},
+		GitRepositoryPullRequestCount: MetricConfig{
+			Enabled: true,
+		},
+		GitRepositoryPullRequestTimeOpen: MetricConfig{
+			Enabled: true,
+		},
+		GitRepositoryPullRequestTimeToApproval: MetricConfig{
+			Enabled: true,
+		},
+		GitRepositoryPullRequestTimeToMerge: MetricConfig{
 			Enabled: true,
 		},
 	}
@@ -55,7 +71,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	err := parser.Unmarshal(rac)
 	if err != nil {
 		return err
 	}

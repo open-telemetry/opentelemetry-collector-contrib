@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -40,6 +41,12 @@ type baseLogsExporter struct {
 	consumer.Logs
 }
 
+// TODO: Find a place for this to be shared.
+type baseTracesExporter struct {
+	component.Component
+	consumer.Traces
+}
+
 // NewFactory creates a factory for Splunk HEC exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
@@ -56,7 +63,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		LogDataEnabled:       true,
 		ProfilingDataEnabled: true,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Timeout:              defaultHTTPTimeout,
 			IdleConnTimeout:      &defaultIdleConnTimeout,
 			MaxIdleConnsPerHost:  &defaultMaxConns,
@@ -65,7 +72,7 @@ func createDefaultConfig() component.Config {
 			HTTP2PingTimeout:     defaultHTTP2PingTimeout,
 		},
 		SplunkAppName:           defaultSplunkAppName,
-		RetrySettings:           exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:           configretry.NewDefaultBackOffConfig(),
 		QueueSettings:           exporterhelper.NewDefaultQueueSettings(),
 		DisableCompression:      false,
 		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
@@ -102,17 +109,28 @@ func createTracesExporter(
 
 	c := newTracesClient(set, cfg)
 
-	return exporterhelper.NewTracesExporter(
+	e, err := exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,
 		c.pushTraceData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop))
+
+	if err != nil {
+		return nil, err
+	}
+
+	wrapped := &baseTracesExporter{
+		Component: e,
+		Traces:    batchperresourceattr.NewMultiBatchPerResourceTraces([]string{splunk.HecTokenLabel, splunk.DefaultIndexLabel}, e),
+	}
+
+	return wrapped, nil
 }
 
 func createMetricsExporter(
@@ -124,14 +142,14 @@ func createMetricsExporter(
 
 	c := newMetricsClient(set, cfg)
 
-	exporter, err := exporterhelper.NewMetricsExporter(
+	e, err := exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
 		cfg,
 		c.pushMetricsData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop))
@@ -140,8 +158,8 @@ func createMetricsExporter(
 	}
 
 	wrapped := &baseMetricsExporter{
-		Component: exporter,
-		Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(splunk.HecTokenLabel, exporter),
+		Component: e,
+		Metrics:   batchperresourceattr.NewMultiBatchPerResourceMetrics([]string{splunk.HecTokenLabel, splunk.DefaultIndexLabel}, e),
 	}
 
 	return wrapped, nil
@@ -163,7 +181,7 @@ func createLogsExporter(
 		c.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop))
@@ -174,7 +192,7 @@ func createLogsExporter(
 
 	wrapped := &baseLogsExporter{
 		Component: logsExporter,
-		Logs: batchperresourceattr.NewBatchPerResourceLogs(splunk.HecTokenLabel, &perScopeBatcher{
+		Logs: batchperresourceattr.NewMultiBatchPerResourceLogs([]string{splunk.HecTokenLabel, splunk.DefaultIndexLabel}, &perScopeBatcher{
 			logsEnabled:      cfg.LogDataEnabled,
 			profilingEnabled: cfg.ProfilingDataEnabled,
 			logger:           set.Logger,

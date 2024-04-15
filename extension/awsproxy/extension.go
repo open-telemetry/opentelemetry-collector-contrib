@@ -16,38 +16,42 @@ import (
 )
 
 type xrayProxy struct {
-	logger *zap.Logger
-	config *Config
-	server proxy.Server
+	logger   *zap.Logger
+	config   *Config
+	server   proxy.Server
+	settings component.TelemetrySettings
 }
 
 var _ extension.Extension = (*xrayProxy)(nil)
 
-func (x xrayProxy) Start(_ context.Context, host component.Host) error {
+func (x *xrayProxy) Start(_ context.Context, _ component.Host) error {
+	srv, err := proxy.NewServer(&x.config.ProxyConfig, x.settings.Logger)
+
+	if err != nil {
+		return err
+	}
+	x.server = srv
 	go func() {
 		if err := x.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			host.ReportFatalError(err)
+			x.settings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	x.logger.Info("X-Ray proxy server started on " + x.config.ProxyConfig.Endpoint)
 	return nil
 }
 
-func (x xrayProxy) Shutdown(ctx context.Context) error {
-	return x.server.Shutdown(ctx)
+func (x *xrayProxy) Shutdown(ctx context.Context) error {
+	if x.server != nil {
+		return x.server.Shutdown(ctx)
+	}
+	return nil
 }
 
-func newXrayProxy(config *Config, logger *zap.Logger) (extension.Extension, error) {
-	srv, err := proxy.NewServer(&config.ProxyConfig, logger)
-
-	if err != nil {
-		return nil, err
-	}
-
+func newXrayProxy(config *Config, telemetrySettings component.TelemetrySettings) (extension.Extension, error) {
 	p := &xrayProxy{
-		config: config,
-		logger: logger,
-		server: srv,
+		config:   config,
+		logger:   telemetrySettings.Logger,
+		settings: telemetrySettings,
 	}
 
 	return p, nil

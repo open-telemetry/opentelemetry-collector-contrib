@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
@@ -26,32 +27,20 @@ type Manager struct {
 
 	readerFactory reader.Factory
 	fileMatcher   *matcher.Matcher
+	tracker       *tracker.Tracker
 
 	pollInterval  time.Duration
 	persister     operator.Persister
 	maxBatches    int
 	maxBatchFiles int
-
-	previousPollFiles []*reader.Reader
-	knownFiles        []*reader.Metadata
-
-	// This value approximates the expected number of files which we will find in a single poll cycle.
-	// It is updated each poll cycle using a simple moving average calculation which assigns 20% weight
-	// to the most recent poll cycle.
-	// It is used to regulate the size of knownFiles. The goal is to allow knownFiles
-	// to contain checkpoints from a few previous poll cycles, but not grow unbounded.
-	movingAverageMatches int
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.cancel = cancel
 
-	if matches, err := m.fileMatcher.MatchFiles(); err != nil {
+	if _, err := m.fileMatcher.MatchFiles(); err != nil {
 		m.Warnf("finding files: %v", err)
-	} else {
-		m.movingAverageMatches = len(matches)
-		m.knownFiles = make([]*reader.Metadata, 0, 4*len(matches))
 	}
 
 	if persister != nil {
@@ -63,7 +52,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 		if len(offsets) > 0 {
 			m.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
 			m.readerFactory.FromBeginning = true
-			m.knownFiles = append(m.knownFiles, offsets...)
+			m.tracker.LoadMetadata(offsets)
 		}
 	}
 
@@ -73,16 +62,6 @@ func (m *Manager) Start(persister operator.Persister) error {
 	return nil
 }
 
-func (m *Manager) closePreviousFiles() {
-	if len(m.knownFiles) > 4*m.movingAverageMatches {
-		m.knownFiles = m.knownFiles[m.movingAverageMatches:]
-	}
-	for _, r := range m.previousPollFiles {
-		m.knownFiles = append(m.knownFiles, r.Close())
-	}
-	m.previousPollFiles = nil
-}
-
 // Stop will stop the file monitoring process
 func (m *Manager) Stop() error {
 	if m.cancel != nil {
@@ -90,9 +69,9 @@ func (m *Manager) Stop() error {
 		m.cancel = nil
 	}
 	m.wg.Wait()
-	m.closePreviousFiles()
+	m.tracker.ClosePreviousFiles()
 	if m.persister != nil {
-		if err := checkpoint.Save(context.Background(), m.persister, m.knownFiles); err != nil {
+		if err := checkpoint.Save(context.Background(), m.persister, m.tracker.GetMetadata()); err != nil {
 			m.Errorw("save offsets", zap.Error(err))
 		}
 	}
@@ -129,10 +108,8 @@ func (m *Manager) poll(ctx context.Context) {
 	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
 		m.Debugf("finding files: %v", err)
-	} else {
-		m.movingAverageMatches = (m.movingAverageMatches*3 + len(matches)) / 4
 	}
-	m.Debugf("matched files", zap.Strings("paths", matches))
+	m.Debugw("matched files", zap.Strings("paths", matches))
 
 	for len(matches) > m.maxBatchFiles {
 		m.consume(ctx, matches[:m.maxBatchFiles])
@@ -152,26 +129,23 @@ func (m *Manager) poll(ctx context.Context) {
 	// Any new files that appear should be consumed entirely
 	m.readerFactory.FromBeginning = true
 	if m.persister != nil {
-		allCheckpoints := make([]*reader.Metadata, 0, len(m.knownFiles)+len(m.previousPollFiles))
-		allCheckpoints = append(allCheckpoints, m.knownFiles...)
-		for _, r := range m.previousPollFiles {
-			allCheckpoints = append(allCheckpoints, r.Metadata)
-		}
-		if err := checkpoint.Save(context.Background(), m.persister, allCheckpoints); err != nil {
+		if err := checkpoint.Save(context.Background(), m.persister, m.tracker.GetMetadata()); err != nil {
 			m.Errorw("save offsets", zap.Error(err))
 		}
 	}
+	// rotate at end of every poll()
+	m.tracker.EndPoll()
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.Debug("Consuming files", zap.Strings("paths", paths))
-	readers := m.makeReaders(paths)
+	m.makeReaders(paths)
 
-	m.preConsume(ctx, readers)
+	m.readLostFiles(ctx)
 
 	// read new readers to end
 	var wg sync.WaitGroup
-	for _, r := range readers {
+	for _, r := range m.tracker.CurrentPollFiles() {
 		wg.Add(1)
 		go func(r *reader.Reader) {
 			defer wg.Done()
@@ -180,7 +154,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	}
 	wg.Wait()
 
-	m.postConsume(readers)
+	m.tracker.EndConsume()
 }
 
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
@@ -198,7 +172,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 		return nil, nil
 	}
 
-	if len(fp.FirstBytes) == 0 {
+	if fp.Len() == 0 {
 		// Empty file, don't read it until we can compare its fingerprint
 		if err = file.Close(); err != nil {
 			m.Debugw("problem closing file", zap.Error(err))
@@ -211,9 +185,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 // makeReader take a file path, then creates reader,
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
-func (m *Manager) makeReaders(paths []string) []*reader.Reader {
-	readers := make([]*reader.Reader, 0, len(paths))
-OUTER:
+func (m *Manager) makeReaders(paths []string) {
 	for _, path := range paths {
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
@@ -222,13 +194,13 @@ OUTER:
 
 		// Exclude duplicate paths with the same content. This can happen when files are
 		// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
-		for _, r := range readers {
-			if fp.Equal(r.Fingerprint) {
-				if err := file.Close(); err != nil {
-					m.Debugw("problem closing file", zap.Error(err))
-				}
-				continue OUTER
+		if r := m.tracker.GetCurrentFile(fp); r != nil {
+			// re-add the reader as Match() removes duplicates
+			m.tracker.Add(r)
+			if err := file.Close(); err != nil {
+				m.Debugw("problem closing file", zap.Error(err))
 			}
+			continue
 		}
 
 		r, err := m.newReader(file, fp)
@@ -237,31 +209,19 @@ OUTER:
 			continue
 		}
 
-		readers = append(readers, r)
+		m.tracker.Add(r)
 	}
-	return readers
 }
 
 func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
 	// Check previous poll cycle for match
-	for i := 0; i < len(m.previousPollFiles); i++ {
-		oldReader := m.previousPollFiles[i]
-		if fp.StartsWith(oldReader.Fingerprint) {
-			// Keep the new reader and discard the old. This ensures that if the file was
-			// copied to another location and truncated, our handle is updated.
-			m.previousPollFiles = append(m.previousPollFiles[:i], m.previousPollFiles[i+1:]...)
-			return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
-		}
+	if oldReader := m.tracker.GetOpenFile(fp); oldReader != nil {
+		return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
 	}
 
-	// Iterate backwards to match newest first
-	for i := len(m.knownFiles) - 1; i >= 0; i-- {
-		oldMetadata := m.knownFiles[i]
-		if fp.StartsWith(oldMetadata.Fingerprint) {
-			// Remove the old metadata from the list. We will keep updating it and save it again later.
-			m.knownFiles = append(m.knownFiles[:i], m.knownFiles[i+1:]...)
-			return m.readerFactory.NewReaderFromMetadata(file, oldMetadata)
-		}
+	// Cleck for closed files for match
+	if oldMetadata := m.tracker.GetClosedFile(fp); oldMetadata != nil {
+		return m.readerFactory.NewReaderFromMetadata(file, oldMetadata)
 	}
 
 	// If we don't match any previously known files, create a new reader from scratch

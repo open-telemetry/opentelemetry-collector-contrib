@@ -39,7 +39,7 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 		LogsIndex:   "logs-generic-default",
 		TracesIndex: "traces-generic-default",
 		Pipeline:    "mypipeline",
-		HTTPClientSettings: HTTPClientSettings{
+		ClientConfig: ClientConfig{
 			Authentication: AuthenticationSettings{
 				User:     "elastic",
 				Password: "search",
@@ -63,7 +63,7 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 			MaxInterval:     1 * time.Minute,
 		},
 		Mapping: MappingsSettings{
-			Mode:  "ecs",
+			Mode:  "none",
 			Dedup: true,
 			Dedot: true,
 		},
@@ -84,6 +84,10 @@ func TestLoadConfig(t *testing.T) {
 	defaultLogstashFormatCfg := createDefaultConfig()
 	defaultLogstashFormatCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
 	defaultLogstashFormatCfg.(*Config).LogstashFormat.Enabled = true
+
+	defaultRawCfg := createDefaultConfig()
+	defaultRawCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
+	defaultRawCfg.(*Config).Mapping.Mode = "raw"
 
 	tests := []struct {
 		configFile string
@@ -110,7 +114,7 @@ func TestLoadConfig(t *testing.T) {
 				LogsIndex:   "logs-generic-default",
 				TracesIndex: "trace_index",
 				Pipeline:    "mypipeline",
-				HTTPClientSettings: HTTPClientSettings{
+				ClientConfig: ClientConfig{
 					Authentication: AuthenticationSettings{
 						User:     "elastic",
 						Password: "search",
@@ -134,7 +138,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:     1 * time.Minute,
 				},
 				Mapping: MappingsSettings{
-					Mode:  "ecs",
+					Mode:  "none",
 					Dedup: true,
 					Dedot: true,
 				},
@@ -160,7 +164,7 @@ func TestLoadConfig(t *testing.T) {
 				LogsIndex:   "my_log_index",
 				TracesIndex: "traces-generic-default",
 				Pipeline:    "mypipeline",
-				HTTPClientSettings: HTTPClientSettings{
+				ClientConfig: ClientConfig{
 					Authentication: AuthenticationSettings{
 						User:     "elastic",
 						Password: "search",
@@ -184,7 +188,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:     1 * time.Minute,
 				},
 				Mapping: MappingsSettings{
-					Mode:  "ecs",
+					Mode:  "none",
 					Dedup: true,
 					Dedot: true,
 				},
@@ -199,6 +203,11 @@ func TestLoadConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "logstash_format"),
 			configFile: "config.yaml",
 			expected:   defaultLogstashFormatCfg,
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "raw"),
+			configFile: "config.yaml",
+			expected:   defaultRawCfg,
 		},
 	}
 

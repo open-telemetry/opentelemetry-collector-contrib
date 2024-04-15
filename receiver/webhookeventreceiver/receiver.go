@@ -82,14 +82,14 @@ func newLogsReceiver(params receiver.CreateSettings, cfg Config, consumer consum
 }
 
 // Start function manages receiver startup tasks. part of the receiver.Logs interface.
-func (er *eventReceiver) Start(_ context.Context, host component.Host) error {
+func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	// noop if not nil. if start has not been called before these values should be nil.
 	if er.server != nil && er.server.Handler != nil {
 		return nil
 	}
 
 	// create listener from config
-	ln, err := er.cfg.HTTPServerSettings.ToListener()
+	ln, err := er.cfg.ServerConfig.ToListenerContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (er *eventReceiver) Start(_ context.Context, host component.Host) error {
 	router.GET(er.cfg.HealthPath, er.handleHealthCheck)
 
 	// webhook server standup and configuration
-	er.server, err = er.cfg.HTTPServerSettings.ToServer(host, er.settings.TelemetrySettings, router)
+	er.server, err = er.cfg.ServerConfig.ToServerContext(ctx, host, er.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,7 @@ func (er *eventReceiver) Start(_ context.Context, host component.Host) error {
 	go func() {
 		defer er.shutdownWG.Done()
 		if errHTTP := er.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			host.ReportFatalError(errHTTP)
+			er.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
@@ -170,7 +170,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 	}
 
 	if r.ContentLength == 0 {
-		er.obsrecv.EndLogsOp(ctx, metadata.Type, 0, nil)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, nil)
 		er.failBadReq(ctx, w, http.StatusBadRequest, errEmptyResponseBody)
 	}
 
@@ -199,10 +199,10 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 
 	if consumerErr != nil {
 		er.failBadReq(ctx, w, http.StatusInternalServerError, consumerErr)
-		er.obsrecv.EndLogsOp(ctx, metadata.Type, numLogs, nil)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numLogs, nil)
 	} else {
 		w.WriteHeader(http.StatusOK)
-		er.obsrecv.EndLogsOp(ctx, metadata.Type, numLogs, nil)
+		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numLogs, nil)
 	}
 }
 

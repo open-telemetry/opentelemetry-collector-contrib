@@ -71,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 				AggregationTemporality:   cumulative,
 				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
-				MetricsFlushInterval:     15 * time.Second,
+				MetricsFlushInterval:     60 * time.Second,
 				Histogram: HistogramConfig{
 					Unit: metrics.Milliseconds,
 					Exponential: &ExponentialHistogramConfig{
@@ -89,12 +89,16 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "unknown Unit \"h\"",
 		},
 		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_metrics_expiration"),
+			errorMessage: "the duration should be positive",
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "exemplars_enabled"),
 			expected: &Config{
 				AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
 				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
-				MetricsFlushInterval:     15 * time.Second,
+				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
 				Exemplars:                ExemplarsConfig{Enabled: true},
 			},
@@ -105,9 +109,20 @@ func TestLoadConfig(t *testing.T) {
 				AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
 				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
-				MetricsFlushInterval:     15 * time.Second,
+				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
 				Exemplars:                ExemplarsConfig{Enabled: true, MaxPerDataPoint: &defaultMaxPerDatapoint},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "resource_metrics_key_attributes"),
+			expected: &Config{
+				AggregationTemporality:       "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				DimensionsCacheSize:          defaultDimensionsCacheSize,
+				ResourceMetricsCacheSize:     defaultResourceMetricsCacheSize,
+				ResourceMetricsKeyAttributes: []string{"service.name", "telemetry.sdk.language", "telemetry.sdk.name"},
+				MetricsFlushInterval:         60 * time.Second,
+				Histogram:                    HistogramConfig{Disable: false, Unit: defaultUnit},
 			},
 		},
 	}

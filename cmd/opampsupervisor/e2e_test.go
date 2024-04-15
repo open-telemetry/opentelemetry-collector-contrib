@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build e2e
-// +build e2e
 
 package main
 
@@ -15,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path"
 	"runtime"
 	"strings"
@@ -23,24 +23,34 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/providers/rawbytes"
+	"github.com/knadh/koanf/v2"
+	clientTypes "github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/open-telemetry/opamp-go/server"
 	"github.com/open-telemetry/opamp-go/server/types"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
+
+var _ clientTypes.Logger = testLogger{}
 
 type testLogger struct {
 	t *testing.T
 }
 
-func (tl testLogger) Debugf(format string, args ...any) {
+func (tl testLogger) Debugf(_ context.Context, format string, args ...any) {
 	tl.t.Logf(format, args...)
 }
 
-func (tl testLogger) Errorf(format string, args ...any) {
+func (tl testLogger) Errorf(_ context.Context, format string, args ...any) {
 	tl.t.Logf(format, args...)
 }
 
@@ -71,13 +81,13 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 	connectedChan := make(chan bool)
 	s := server.New(testLogger{t: t})
 	onConnectedFunc := callbacks.OnConnectedFunc
-	callbacks.OnConnectedFunc = func(conn types.Connection) {
+	callbacks.OnConnectedFunc = func(ctx context.Context, conn types.Connection) {
+		if onConnectedFunc != nil {
+			onConnectedFunc(ctx, conn)
+		}
 		agentConn.Store(conn)
 		isAgentConnected.Store(true)
 		connectedChan <- true
-		if onConnectedFunc != nil {
-			onConnectedFunc(conn)
-		}
 	}
 	onConnectionCloseFunc := callbacks.OnConnectionCloseFunc
 	callbacks.OnConnectionCloseFunc = func(conn types.Connection) {
@@ -122,6 +132,14 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 }
 
 func newSupervisor(t *testing.T, configType string, extraConfigData map[string]string) *supervisor.Supervisor {
+	cfgFile := getSupervisorConfig(t, configType, extraConfigData)
+	s, err := supervisor.NewSupervisor(zap.NewNop(), cfgFile.Name())
+	require.NoError(t, err)
+
+	return s
+}
+
+func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[string]string) *os.File {
 	tpl, err := os.ReadFile(path.Join("testdata", "supervisor", "supervisor_"+configType+".yaml"))
 	require.NoError(t, err)
 
@@ -148,10 +166,7 @@ func newSupervisor(t *testing.T, configType string, extraConfigData map[string]s
 	_, err = cfgFile.Write(buf.Bytes())
 	require.NoError(t, err)
 
-	s, err := supervisor.NewSupervisor(zap.NewNop(), cfgFile.Name())
-	require.NoError(t, err)
-
-	return s
+	return cfgFile
 }
 
 func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
@@ -160,7 +175,7 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
-			OnMessageFunc: func(_ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				if message.EffectiveConfig != nil {
 					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
 					if config != nil {
@@ -220,7 +235,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
-			OnMessageFunc: func(_ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				if message.Health != nil {
 					healthReport.Store(message.Health)
 				}
@@ -304,7 +319,7 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 		t,
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
-			OnMessageFunc: func(_ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				capabilities.Store(message.Capabilities)
 
 				return &protobufs.ServerToAgent{}
@@ -320,6 +335,78 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 		cap := capabilities.Load()
 
 		return cap == uint64(protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus)
+	}, 5*time.Second, 250*time.Millisecond)
+}
+
+func TestSupervisorBootstrapsCollector(t *testing.T) {
+	agentDescription := atomic.Value{}
+
+	// Load the Supervisor config so we can get the location of
+	// the Collector that will be run.
+	var cfg config.Supervisor
+	cfgFile := getSupervisorConfig(t, "nocap", map[string]string{})
+	k := koanf.New("::")
+	err := k.Load(file.Provider(cfgFile.Name()), yaml.Parser())
+	require.NoError(t, err)
+	err = k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
+		Tag: "mapstructure",
+	})
+	require.NoError(t, err)
+
+	// Get the binary name and version from the Collector binary
+	// using the `components` command that prints a YAML-encoded
+	// map of information about the Collector build. Some of this
+	// information will be used as defaults for the telemetry
+	// attributes.
+	agentPath := cfg.Agent.Executable
+	componentsInfo, err := exec.Command(agentPath, "components").Output()
+	require.NoError(t, err)
+	k = koanf.New("::")
+	err = k.Load(rawbytes.Provider(componentsInfo), yaml.Parser())
+	require.NoError(t, err)
+	buildinfo := k.StringMap("buildinfo")
+	command := buildinfo["command"]
+	version := buildinfo["version"]
+
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.AgentDescription != nil {
+					agentDescription.Store(message.AgentDescription)
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	require.Eventually(t, func() bool {
+		ad, ok := agentDescription.Load().(*protobufs.AgentDescription)
+		if !ok {
+			return false
+		}
+
+		var agentName, agentVersion string
+		identAttr := ad.IdentifyingAttributes
+		for _, attr := range identAttr {
+			switch attr.Key {
+			case semconv.AttributeServiceName:
+				agentName = attr.Value.GetStringValue()
+			case semconv.AttributeServiceVersion:
+				agentVersion = attr.Value.GetStringValue()
+			}
+		}
+
+		// By default the Collector should report its name and version
+		// from the component.BuildInfo struct built into the Collector
+		// binary.
+		return agentName == command && agentVersion == version
 	}, 5*time.Second, 250*time.Millisecond)
 }
 
@@ -385,4 +472,49 @@ func waitForSupervisorConnection(connection chan bool, connected bool) {
 			break
 		}
 	}
+}
+
+func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
+	var connectedToNewServer atomic.Bool
+	initialServer := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{})
+
+	s := newSupervisor(t, "accepts_conn", map[string]string{"url": initialServer.addr})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(initialServer.supervisorConnected, true)
+
+	newServer := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnConnectedFunc: func(_ context.Context, _ types.Connection) {
+				connectedToNewServer.Store(true)
+			},
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	initialServer.sendToSupervisor(&protobufs.ServerToAgent{
+		ConnectionSettings: &protobufs.ConnectionSettingsOffers{
+			Opamp: &protobufs.OpAMPConnectionSettings{
+				DestinationEndpoint: "ws://" + newServer.addr + "/v1/opamp",
+				Headers: &protobufs.Headers{
+					Headers: []*protobufs.Header{
+						{
+							Key:   "x-foo",
+							Value: "bar",
+						},
+					},
+				},
+			},
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		return connectedToNewServer.Load() == true
+	}, 10*time.Second, 500*time.Millisecond, "Collector did not connect to new OpAMP server")
 }

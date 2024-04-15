@@ -85,7 +85,7 @@ func TestAzureScraperStart(t *testing.T) {
 			name: "service_principal",
 			testFunc: func(t *testing.T) {
 				customCfg := &Config{
-					ScraperControllerSettings:     cfg.ScraperControllerSettings,
+					ControllerConfig:              cfg.ControllerConfig,
 					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
 					CacheResources:                24 * 60 * 60,
 					CacheResourcesDefinitions:     24 * 60 * 60,
@@ -113,7 +113,7 @@ func TestAzureScraperStart(t *testing.T) {
 			name: "workload_identity",
 			testFunc: func(t *testing.T) {
 				customCfg := &Config{
-					ScraperControllerSettings:     cfg.ScraperControllerSettings,
+					ControllerConfig:              cfg.ControllerConfig,
 					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
 					CacheResources:                24 * 60 * 60,
 					CacheResourcesDefinitions:     24 * 60 * 60,
@@ -150,10 +150,10 @@ type armClientMock struct {
 
 func (acm *armClientMock) NewListPager(_ *armresources.ClientListOptions) *runtime.Pager[armresources.ClientListResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armresources.ClientListResponse]{
-		More: func(page armresources.ClientListResponse) bool {
+		More: func(armresources.ClientListResponse) bool {
 			return acm.current < len(acm.pages)
 		},
-		Fetcher: func(ctx context.Context, page *armresources.ClientListResponse) (armresources.ClientListResponse, error) {
+		Fetcher: func(context.Context, *armresources.ClientListResponse) (armresources.ClientListResponse, error) {
 			currentPage := acm.pages[acm.current]
 			acm.current++
 			return currentPage, nil
@@ -168,10 +168,10 @@ type metricsDefinitionsClientMock struct {
 
 func (mdcm *metricsDefinitionsClientMock) NewListPager(resourceURI string, _ *armmonitor.MetricDefinitionsClientListOptions) *runtime.Pager[armmonitor.MetricDefinitionsClientListResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armmonitor.MetricDefinitionsClientListResponse]{
-		More: func(page armmonitor.MetricDefinitionsClientListResponse) bool {
+		More: func(armmonitor.MetricDefinitionsClientListResponse) bool {
 			return mdcm.current[resourceURI] < len(mdcm.pages[resourceURI])
 		},
-		Fetcher: func(ctx context.Context, page *armmonitor.MetricDefinitionsClientListResponse) (armmonitor.MetricDefinitionsClientListResponse, error) {
+		Fetcher: func(context.Context, *armmonitor.MetricDefinitionsClientListResponse) (armmonitor.MetricDefinitionsClientListResponse, error) {
 			currentPage := mdcm.pages[resourceURI][mdcm.current[resourceURI]]
 			mdcm.current[resourceURI]++
 			return currentPage, nil

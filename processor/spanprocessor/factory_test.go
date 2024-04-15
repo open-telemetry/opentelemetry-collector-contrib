@@ -20,7 +20,7 @@ import (
 
 func TestFactory_Type(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, factory.Type(), component.Type(metadata.Type))
+	assert.Equal(t, factory.Type(), metadata.Type)
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
@@ -41,7 +41,7 @@ func TestFactory_CreateTracesProcessor(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"test-key"}
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tp)
 }
 

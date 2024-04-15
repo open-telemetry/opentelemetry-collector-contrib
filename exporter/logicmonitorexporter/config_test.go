@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -30,7 +31,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "empty endpoint",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "",
 				},
 			},
@@ -40,7 +41,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "missing http scheme",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "test.com/dummy",
 				},
 			},
@@ -50,7 +51,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "invalid endpoint format",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "invalid.com@#$%",
 				},
 			},
@@ -60,7 +61,7 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "valid config",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://validurl.com/rest",
 				},
 			},
@@ -101,9 +102,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "apitoken"),
 			expected: &Config{
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 				},
 				APIToken: APIToken{
@@ -115,9 +116,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "bearertoken"),
 			expected: &Config{
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 					Headers: map[string]configopaque.String{
 						"Authorization": "Bearer <token>",
@@ -128,9 +129,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "resource-mapping-op"),
 			expected: &Config{
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 					Headers: map[string]configopaque.String{
 						"Authorization": "Bearer <token>",

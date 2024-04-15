@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build tools
-// +build tools
 
 package tools // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools"
 
@@ -25,6 +24,8 @@ import (
 	_ "go.opentelemetry.io/build-tools/issuegenerator"
 	_ "go.opentelemetry.io/build-tools/multimod"
 	_ "go.opentelemetry.io/collector/cmd/builder"
+	_ "go.opentelemetry.io/collector/cmd/mdatagen"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "golang.org/x/vuln/cmd/govulncheck"
+	_ "gotest.tools/gotestsum"
 )

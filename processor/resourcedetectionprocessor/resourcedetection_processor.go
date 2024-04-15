@@ -21,13 +21,13 @@ type resourceDetectionProcessor struct {
 	resource           pcommon.Resource
 	schemaURL          string
 	override           bool
-	httpClientSettings confighttp.HTTPClientSettings
+	httpClientSettings confighttp.ClientConfig
 	telemetrySettings  component.TelemetrySettings
 }
 
 // Start is invoked during service startup.
 func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component.Host) error {
-	client, _ := rdp.httpClientSettings.ToClient(host, rdp.telemetrySettings)
+	client, _ := rdp.httpClientSettings.ToClientContext(ctx, host, rdp.telemetrySettings)
 	ctx = internal.ContextWithClient(ctx, client)
 	var err error
 	rdp.resource, rdp.schemaURL, err = rdp.provider.Get(ctx, client)

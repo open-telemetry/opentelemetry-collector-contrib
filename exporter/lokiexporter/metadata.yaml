@@ -1,4 +1,5 @@
 type: loki
+scope_name: otelcol/loki
 
 status:
   class: exporter
@@ -6,6 +7,8 @@ status:
     beta: [logs]
   distributions:
   - contrib
-  - observiq
   codeowners:
     active: [gramidt, gouthamve, jpkrohling, mar4uk]
+
+tests:
+  expect_consumer_error: true

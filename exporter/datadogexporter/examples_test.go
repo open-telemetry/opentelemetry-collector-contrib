@@ -25,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
@@ -41,6 +42,10 @@ func TestExamples(t *testing.T) {
 	files, err := os.ReadDir(folder)
 	require.NoError(t, err)
 	for _, f := range files {
+		if f.Name() == "kafka.yaml" {
+			// skip validation, as it requires jar file.
+			continue
+		}
 		if f.IsDir() {
 			continue
 		}
@@ -108,6 +113,7 @@ func newTestComponents(t *testing.T) otelcol.Factories {
 			k8sattributesprocessor.NewFactory(),
 			resourcedetectionprocessor.NewFactory(),
 			probabilisticsamplerprocessor.NewFactory(),
+			transformprocessor.NewFactory(),
 		}...,
 	)
 	require.NoError(t, err)

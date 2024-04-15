@@ -49,10 +49,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if test.configSet == testSetAll || test.configSet == testSetNone {
-				assert.Equal(t, "[WARNING] `k8s.kubeproxy.version` should not be configured: k8s.kubeproxy.version resource attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
 
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -237,7 +233,10 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetContainerID("container.id-val")
 			rb.SetContainerImageName("container.image.name-val")
 			rb.SetContainerImageTag("container.image.tag-val")
+			rb.SetContainerRuntime("container.runtime-val")
+			rb.SetContainerRuntimeVersion("container.runtime.version-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
+			rb.SetK8sContainerStatusLastTerminatedReason("k8s.container.status.last_terminated_reason-val")
 			rb.SetK8sCronjobName("k8s.cronjob.name-val")
 			rb.SetK8sCronjobUID("k8s.cronjob.uid-val")
 			rb.SetK8sDaemonsetName("k8s.daemonset.name-val")
@@ -249,7 +248,6 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sJobName("k8s.job.name-val")
 			rb.SetK8sJobUID("k8s.job.uid-val")
 			rb.SetK8sKubeletVersion("k8s.kubelet.version-val")
-			rb.SetK8sKubeproxyVersion("k8s.kubeproxy.version-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
 			rb.SetK8sNamespaceUID("k8s.namespace.uid-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
@@ -267,6 +265,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
 			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
 			rb.SetOpenshiftClusterquotaUID("openshift.clusterquota.uid-val")
+			rb.SetOsDescription("os.description-val")
+			rb.SetOsType("os.type-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 

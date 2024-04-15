@@ -13,7 +13,7 @@ import (
 // Config relating to Github Metric Scraper.
 type Config struct {
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	confighttp.ClientConfig       `mapstructure:",squash"`
 	internal.ScraperConfig
 	// GitHubOrg is the name of the GitHub organization to srape (github scraper only)
 	GitHubOrg string `mapstructure:"github_org"`

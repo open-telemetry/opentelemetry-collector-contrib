@@ -36,7 +36,7 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 		return nil, err
 	}
 
-	receiverID := component.NewID("test")
+	receiverID := component.MustNewID("test")
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             receiverID,
 		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
@@ -46,7 +46,7 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	}
 
 	return &receiver{
-		id:        component.NewID("testReceiver"),
+		id:        component.MustNewID("testReceiver"),
 		pipe:      pipe,
 		emitter:   emitter,
 		consumer:  nextConsumer,
@@ -96,6 +96,45 @@ func BenchmarkEmitterToConsumer(b *testing.B) {
 	}
 }
 
+func BenchmarkEmitterToConsumerScopeGroupping(b *testing.B) {
+	const (
+		entryCount  = 1_000_000
+		hostsCount  = 2
+		scopesCount = 2
+	)
+
+	var (
+		entries = complexEntriesForNDifferentHostsMDifferentScopes(entryCount, hostsCount, scopesCount)
+	)
+
+	cl := &consumertest.LogsSink{}
+	logsReceiver, err := createNoopReceiver(cl)
+	require.NoError(b, err)
+
+	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(b, err)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		cl.Reset()
+
+		go func() {
+			ctx := context.Background()
+			for _, e := range entries {
+				_ = logsReceiver.emitter.Process(ctx, e)
+			}
+		}()
+
+		require.Eventually(b,
+			func() bool {
+				return cl.LogRecordCount() == entryCount
+			},
+			30*time.Second, 5*time.Millisecond, "Did not receive all logs (only received %d)", cl.LogRecordCount(),
+		)
+	}
+}
+
 func TestEmitterToConsumer(t *testing.T) {
 	const (
 		entryCount = 1_000
@@ -110,6 +149,7 @@ func TestEmitterToConsumer(t *testing.T) {
 
 	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
+	defer func() { require.NoError(t, logsReceiver.Shutdown(context.Background())) }()
 
 	go func() {
 		ctx := context.Background()

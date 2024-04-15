@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PR_HEAD: ${{ github.event.pull_request.head.sha }}
-    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
       md: ${{ steps.changes.outputs.md }}
     steps:

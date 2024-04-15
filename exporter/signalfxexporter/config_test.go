@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -47,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				AccessToken: "testToken",
 				Realm:       "ap0",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout:              10 * time.Second,
 					Headers:              nil,
 					MaxIdleConns:         &hundred,
@@ -56,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 					HTTP2ReadIdleTimeout: 10 * time.Second,
 					HTTP2PingTimeout:     10 * time.Second,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     5 * time.Second,
 					MaxInterval:         30 * time.Second,
@@ -84,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 				DeltaTranslationTTL: 3600,
 				ExcludeProperties:   nil,
 				Correlation: &correlation.Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: "",
 						Timeout:  5 * time.Second,
 					},
@@ -103,6 +104,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				NonAlphanumericDimensionChars: "_-.",
+				SendOTLPHistograms:            false,
 			},
 		},
 		{
@@ -110,7 +112,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				AccessToken: "testToken",
 				Realm:       "us1",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Timeout: 2 * time.Second,
 					Headers: map[string]configopaque.String{
 						"added-entry": "added value",
@@ -122,7 +124,7 @@ func TestLoadConfig(t *testing.T) {
 					HTTP2ReadIdleTimeout: 10 * time.Second,
 					HTTP2PingTimeout:     10 * time.Second,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					MaxInterval:         1 * time.Minute,
@@ -243,7 +245,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Correlation: &correlation.Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
+					ClientConfig: confighttp.ClientConfig{
 						Endpoint: "",
 						Timeout:  5 * time.Second,
 					},
@@ -262,6 +264,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				NonAlphanumericDimensionChars: "_-.",
+				SendOTLPHistograms:            true,
 			},
 		},
 	}
@@ -493,9 +496,9 @@ func TestConfigValidateErrors(t *testing.T) {
 		{
 			name: "Negative Timeout",
 			cfg: &Config{
-				Realm:              "us0",
-				AccessToken:        "access_token",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: -1 * time.Second},
+				Realm:        "us0",
+				AccessToken:  "access_token",
+				ClientConfig: confighttp.ClientConfig{Timeout: -1 * time.Second},
 			},
 		},
 		{
@@ -549,7 +552,7 @@ func TestUnmarshalExcludeMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.NoError(t, tt.cfg.Unmarshal(confmap.NewFromStringMap(map[string]any{})))
+			require.NoError(t, component.UnmarshalConfig(confmap.NewFromStringMap(map[string]any{}), tt.cfg))
 			assert.Len(t, tt.cfg.ExcludeMetrics, tt.excludeMetricsLen)
 		})
 	}

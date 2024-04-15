@@ -28,7 +28,7 @@ func TestNewDatabase(t *testing.T) {
 
 	database, err := NewDatabase(ctx, databaseID, "../../testdata/serviceAccount.json")
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, database.Client())
 	assert.Equal(t, databaseID, database.DatabaseID())
 }
@@ -39,7 +39,7 @@ func TestNewDatabaseWithError(t *testing.T) {
 
 	database, err := NewDatabase(ctx, databaseID, "does not exist")
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, database)
 }
 
@@ -51,7 +51,7 @@ func TestNewDatabaseWithNoCredentialsFilePath(t *testing.T) {
 
 	database, err := NewDatabase(ctx, databaseID, "")
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, database.Client())
 	assert.Equal(t, databaseID, database.DatabaseID())
 }

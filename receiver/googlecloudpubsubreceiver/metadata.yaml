@@ -1,9 +1,20 @@
 type: googlecloudpubsub
+scope_name: otelcol/googlecloudpubsubreceiver
 
 status:
   class: receiver
   stability:
     beta: [traces, logs, metrics]
-  distributions: [observiq, sumo]
+  distributions: []
   codeowners:
     active: [alexvanboxel]
+
+tests:
+  config:
+    project: my-project
+    user_agent: user-agent
+    timeout: 20s
+    subscription: projects/my-project/subscriptions/otlp-subscription
+  skip_lifecycle: true
+  skip_shutdown: true
+

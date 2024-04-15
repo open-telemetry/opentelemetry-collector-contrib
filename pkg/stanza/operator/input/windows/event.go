@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
@@ -25,8 +24,8 @@ func (e *Event) RenderSimple(buffer Buffer) (EventXML, error) {
 		return EventXML{}, fmt.Errorf("event handle does not exist")
 	}
 
-	bufferUsed, _, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
-	if err == ErrorInsufficientBuffer {
+	bufferUsed, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
+	if errors.Is(err, ErrorInsufficientBuffer) {
 		buffer.UpdateSizeBytes(*bufferUsed)
 		return e.RenderSimple(buffer)
 	}
@@ -50,7 +49,7 @@ func (e *Event) RenderFormatted(buffer Buffer, publisher Publisher) (EventXML, e
 	}
 
 	bufferUsed, err := evtFormatMessage(publisher.handle, e.handle, 0, 0, 0, EvtFormatMessageXML, buffer.SizeWide(), buffer.FirstByte())
-	if err == ErrorInsufficientBuffer {
+	if errors.Is(err, ErrorInsufficientBuffer) {
 		// If the bufferUsed is 0 return an error as we don't want to make a recursive call with no buffer
 		if *bufferUsed == 0 {
 			return EventXML{}, errUnknownNextFrame
@@ -91,8 +90,8 @@ func (e *Event) RenderRaw(buffer Buffer) (EventRaw, error) {
 		return EventRaw{}, fmt.Errorf("event handle does not exist")
 	}
 
-	bufferUsed, _, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
-	if err == ErrorInsufficientBuffer {
+	bufferUsed, err := evtRender(0, e.handle, EvtRenderEventXML, buffer.SizeBytes(), buffer.FirstByte())
+	if errors.Is(err, ErrorInsufficientBuffer) {
 		// If the bufferUsed is 0 return an error as we don't want to make a recursive call with no buffer
 		if *bufferUsed == 0 {
 			return EventRaw{}, errUnknownNextFrame

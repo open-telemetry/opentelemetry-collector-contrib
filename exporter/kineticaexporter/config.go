@@ -18,7 +18,6 @@ type Config struct {
 	Username           string              `mapstructure:"username"`
 	Password           configopaque.String `mapstructure:"password"`
 	BypassSslCertCheck bool                `mapstructure:"bypasssslcertcheck"`
-	LogConfigFile      string              `mapstructure:"logconfigfile"`
 }
 
 // Validate the config

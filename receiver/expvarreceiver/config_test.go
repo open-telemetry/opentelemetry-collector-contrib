@@ -40,12 +40,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "custom"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 30 * time.Second,
 					InitialDelay:       time.Second,
 					Timeout:            time.Second * 5,
 				},
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost:8000/custom/path",
 					Timeout:  time.Second * 5,
 				},

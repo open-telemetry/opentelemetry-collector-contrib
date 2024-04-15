@@ -11,13 +11,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
-// NewFactory creates a factory for Elastic exporter.
+// NewFactory creates a factory for ClickHouse exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
@@ -35,7 +36,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		QueueSettings:    queueSettings,
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 		ConnectionParams: map[string]string{},
 		Database:         defaultDatabase,
 		LogsTableName:    "otel_logs",
@@ -46,7 +47,7 @@ func createDefaultConfig() component.Config {
 }
 
 // createLogsExporter creates a new exporter for logs.
-// Logs are directly insert into clickhouse.
+// Logs are directly inserted into ClickHouse.
 func createLogsExporter(
 	ctx context.Context,
 	set exporter.CreateSettings,
@@ -67,12 +68,12 @@ func createLogsExporter(
 		exporterhelper.WithShutdown(exporter.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithQueue(c.QueueSettings),
-		exporterhelper.WithRetry(c.RetrySettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
 	)
 }
 
 // createTracesExporter creates a new exporter for traces.
-// Traces are directly insert into clickhouse.
+// Traces are directly inserted into ClickHouse.
 func createTracesExporter(
 	ctx context.Context,
 	set exporter.CreateSettings,
@@ -93,7 +94,7 @@ func createTracesExporter(
 		exporterhelper.WithShutdown(exporter.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithQueue(c.QueueSettings),
-		exporterhelper.WithRetry(c.RetrySettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
 	)
 }
 
@@ -117,7 +118,7 @@ func createMetricExporter(
 		exporterhelper.WithShutdown(exporter.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithQueue(c.QueueSettings),
-		exporterhelper.WithRetry(c.RetrySettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
 	)
 }
 

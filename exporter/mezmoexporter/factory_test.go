@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
@@ -21,7 +21,7 @@ import (
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	pType := factory.Type()
-	assert.Equal(t, pType, component.Type(metadata.Type))
+	assert.Equal(t, pType, metadata.Type)
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -32,10 +32,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 		IngestURL: defaultIngestURL,
 		IngestKey: "",
 
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Timeout: 5 * time.Second,
 		},
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 	})
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))

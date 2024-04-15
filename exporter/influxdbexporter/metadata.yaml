@@ -1,9 +1,13 @@
 type: influxdb
+scope_name: otelcol/influxdb
 
 status:
   class: exporter
   stability:
     beta: [traces, metrics, logs]
-  distributions: [contrib, observiq, liatrio]
+  distributions: [contrib]
   codeowners:
     active: [jacobmarble]
+
+tests:
+  expect_consumer_error: true
