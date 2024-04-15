@@ -480,7 +480,6 @@ func (s *Supervisor) startOpAMPServer() error {
 			}
 			if message.EffectiveConfig != nil {
 				s.logger.Debug("Setting confmap")
-				fmt.Println(string(message.EffectiveConfig.ConfigMap.ConfigMap[""].Body))
 				s.effectiveConfig.Store(string(message.EffectiveConfig.ConfigMap.ConfigMap[""].Body))
 				err = s.opampClient.UpdateEffectiveConfig(context.Background())
 				if err != nil {
