@@ -132,6 +132,36 @@ func Test_IsList(t *testing.T) {
 			value:    ptrace.NewSpanSlice(),
 			expected: true,
 		},
+		{
+			name:     "[]string",
+			value:    []string{},
+			expected: true,
+		},
+		{
+			name:     "[]bool",
+			value:    []bool{},
+			expected: true,
+		},
+		{
+			name:     "[]int64",
+			value:    []int64{},
+			expected: true,
+		},
+		{
+			name:     "[]float64",
+			value:    []float64{},
+			expected: true,
+		},
+		{
+			name:     "[][]byte",
+			value:    [][]byte{},
+			expected: true,
+		},
+		{
+			name:     "[]any",
+			value:    []any{},
+			expected: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

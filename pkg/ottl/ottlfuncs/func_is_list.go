@@ -49,7 +49,7 @@ func isList[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
 			}
 			return false, nil
 
-		case pcommon.Slice, plog.LogRecordSlice, plog.ResourceLogsSlice, plog.ScopeLogsSlice, pmetric.ExemplarSlice, pmetric.ExponentialHistogramDataPointSlice, pmetric.HistogramDataPointSlice, pmetric.MetricSlice, pmetric.NumberDataPointSlice, pmetric.ResourceMetricsSlice, pmetric.ScopeMetricsSlice, pmetric.SummaryDataPointSlice, pmetric.SummaryDataPointValueAtQuantileSlice, ptrace.ResourceSpansSlice, ptrace.ScopeSpansSlice, ptrace.SpanEventSlice, ptrace.SpanLinkSlice, ptrace.SpanSlice:
+		case pcommon.Slice, plog.LogRecordSlice, plog.ResourceLogsSlice, plog.ScopeLogsSlice, pmetric.ExemplarSlice, pmetric.ExponentialHistogramDataPointSlice, pmetric.HistogramDataPointSlice, pmetric.MetricSlice, pmetric.NumberDataPointSlice, pmetric.ResourceMetricsSlice, pmetric.ScopeMetricsSlice, pmetric.SummaryDataPointSlice, pmetric.SummaryDataPointValueAtQuantileSlice, ptrace.ResourceSpansSlice, ptrace.ScopeSpansSlice, ptrace.SpanEventSlice, ptrace.SpanLinkSlice, ptrace.SpanSlice, []string, []bool, []int64, []float64, [][]byte, []any:
 			return true, nil
 		}
 
