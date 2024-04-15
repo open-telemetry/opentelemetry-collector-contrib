@@ -338,6 +338,7 @@ func TestUnixEndpoint(t *testing.T) {
 	receiver, err := newFluentReceiver(receivertest.NewNopCreateSettings(), conf, next)
 	require.NoError(t, err)
 	require.NoError(t, receiver.Start(ctx, nil))
+	defer func() { require.NoError(t, receiver.Shutdown(ctx)) }()
 
 	conn, err := net.Dial("unix", receiver.(*fluentReceiver).listener.Addr().String())
 	require.NoError(t, err)
