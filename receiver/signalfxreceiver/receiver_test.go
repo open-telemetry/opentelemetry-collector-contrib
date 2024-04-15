@@ -674,7 +674,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 		},
 		ServerName: "localhost",
 	}
-	tls, errTLS := tlscs.LoadTLSConfigContext(context.Background())
+	tls, errTLS := tlscs.LoadTLSConfig(context.Background())
 	assert.NoError(t, errTLS)
 	client := &http.Client{
 		Transport: &http.Transport{
