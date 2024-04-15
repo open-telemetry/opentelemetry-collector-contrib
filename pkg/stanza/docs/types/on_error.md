@@ -1,6 +1,6 @@
 # `on_error` parameter
 The `on_error` parameter determines the error handling strategy an operator should use when it fails to
-process an entry. There are 2 supported values: `drop`, `drop_quiet`, `send` and `send_quiet`.
+process an entry. There are 4 supported values: `drop`, `drop_quiet`, `send` and `send_quiet`.
 
 Regardless of the method selected, all processing errors will be logged by the operator.
 
