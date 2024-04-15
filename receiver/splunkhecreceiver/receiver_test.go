@@ -38,15 +38,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/mocks"
 )
 
-func assertHecSuccessResponse(t *testing.T, resp *http.Response, body any, ackID ...uint64) {
+func assertHecSuccessResponse(t *testing.T, resp *http.Response, body any) {
 	status := resp.StatusCode
 	assert.Equal(t, http.StatusOK, status)
 	assert.Equal(t, httpJSONTypeHeader, resp.Header.Get(httpContentTypeHeader))
-	if len(ackID) > 0 {
-		assert.Equal(t, map[string]any{"code": float64(0), "text": "Success", "ackId": float64(ackID[0])}, body)
-	} else {
-		assert.Equal(t, map[string]any{"code": float64(0), "text": "Success"}, body)
-	}
+	assert.Equal(t, map[string]any{"code": float64(0), "text": "Success"}, body)
+}
+
+func assertHecSuccessResponseWithAckId(t *testing.T, resp *http.Response, body any, ackID uint64) {
+	status := resp.StatusCode
+	assert.Equal(t, http.StatusOK, status)
+	assert.Equal(t, httpJSONTypeHeader, resp.Header.Get(httpContentTypeHeader))
+	assert.Equal(t, map[string]any{"code": float64(0), "text": "Success", "ackId": float64(ackID)}, body)
 }
 
 func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
@@ -909,11 +912,9 @@ func buildSplunkHecMsg(time float64, dimensions uint) *splunk.Event {
 }
 
 func buildSplunkHecAckMsg(acks []uint64) *splunk.AckRequest {
-	ar := &splunk.AckRequest{
+	return &splunk.AckRequest{
 		Acks: acks,
 	}
-
-	return ar
 }
 
 type badReqBody struct{}
@@ -1157,9 +1158,7 @@ func Test_splunkhecReceiver_Start(t *testing.T) {
 				assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 			}
 
-			defer func() {
-				assert.NoError(t, r.Shutdown(context.Background()))
-			}()
+			assert.NoError(t, r.Shutdown(context.Background()))
 		})
 	}
 }
@@ -1426,7 +1425,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 				return &mockAckExtension
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
-				assertHecSuccessResponse(t, resp, body, 1)
+				assertHecSuccessResponseWithAckId(t, resp, body, 1)
 			},
 		},
 	}
@@ -1558,7 +1557,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				return &mockAckExtension
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
-				assertHecSuccessResponse(t, resp, body, 1)
+				assertHecSuccessResponseWithAckId(t, resp, body, 1)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
 				assert.Equal(t, 1, len(sink.AllLogs()))
