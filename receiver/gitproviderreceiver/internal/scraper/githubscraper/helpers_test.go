@@ -649,6 +649,7 @@ func TestGetContributors(t *testing.T) {
 			ghs.cfg.GitHubOrg = tc.org
 
 			server := httptest.NewServer(tc.server)
+			defer func() { server.Close() }()
 
 			client := github.NewClient(nil)
 			url, _ := url.Parse(server.URL + "/api-v3" + "/")

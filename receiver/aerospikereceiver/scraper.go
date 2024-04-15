@@ -43,7 +43,7 @@ func newAerospikeReceiver(params receiver.CreateSettings, cfg *Config, consumer 
 	var err error
 	var tlsCfg *tls.Config
 	if cfg.TLS != nil {
-		tlsCfg, err = cfg.TLS.LoadTLSConfig()
+		tlsCfg, err = cfg.TLS.LoadTLSConfigContext(context.Background())
 		if err != nil {
 			return nil, fmt.Errorf("%w: %s", errFailedTLSLoad, err.Error())
 		}

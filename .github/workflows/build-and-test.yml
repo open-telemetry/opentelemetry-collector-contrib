@@ -8,6 +8,7 @@ on:
   pull_request:
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
+  GOPROXY: https://goproxy.cncf.actuated.dev,direct
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
