@@ -19,7 +19,7 @@ The probabilistic sampler processor supports several modes of sampling
 for spans and log records.  Sampling is performed on a per-request
 basis, considering individual items statelessly.  For whole trace
 sampling, see
-[tailsamplingprocessor](../tailsamplingprocessor/README.md/).
+[tailsamplingprocessor](../tailsamplingprocessor/README.md).
 
 For trace spans, this sampler supports probabilistic sampling based on
 a configured sampling percentage applied to the TraceID.  In addition,
