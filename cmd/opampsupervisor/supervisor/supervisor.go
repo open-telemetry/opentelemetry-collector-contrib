@@ -289,7 +289,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	defer func() {
 		if stopErr := srv.Stop(context.Background()); stopErr != nil {
-			err = errors.Join(err, fmt.Errorf("stop opamp server: %w", stopErr))
+			err = errors.Join(err, fmt.Errorf("error when stopping the opamp server: %w", stopErr))
 		}
 	}()
 
@@ -308,7 +308,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	defer func() {
 		if stopErr := cmd.Stop(context.Background()); stopErr != nil {
-			err = errors.Join(err, fmt.Errorf("stop collector command: %w", stopErr))
+			err = errors.Join(err, fmt.Errorf("error when stopping the collector: %w", stopErr))
 		}
 	}()
 
