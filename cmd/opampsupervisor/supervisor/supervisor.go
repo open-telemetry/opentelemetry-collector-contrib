@@ -251,9 +251,6 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}
 
 	var k = koanf.New(".")
-	if err = k.Load(rawbytes.Provider([]byte{}), yaml.Parser()); err != nil {
-		return err
-	}
 
 	var cfg bytes.Buffer
 	err = s.bootstrapTemplate.Execute(&cfg, map[string]any{
@@ -729,11 +726,6 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 // 3) the local override config that is hard-coded in the Supervisor.
 func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 	var k = koanf.New(".")
-
-	// Begin with empty config. We will merge received configs on top of it.
-	if err = k.Load(rawbytes.Provider([]byte{}), yaml.Parser()); err != nil {
-		return false, err
-	}
 
 	// Sort to make sure the order of merging is stable.
 	var names []string
