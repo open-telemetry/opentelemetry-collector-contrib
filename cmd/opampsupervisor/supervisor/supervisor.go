@@ -234,6 +234,11 @@ func (s *Supervisor) loadConfig(configFile string) error {
 	return nil
 }
 
+// getBootstrapInfo obtains the Collector's agent description by
+// starting a Collector with a specific config that only start's
+// an OpAMP extension, obtains the agent description, then
+// shuts down the Collector. This only needs to happen
+// once per Collector binary.
 func (s *Supervisor) getBootstrapInfo() (err error) {
 	port, err := s.findRandomPort()
 	if err != nil {
@@ -279,6 +284,8 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	done := make(chan error, 1)
 	var connected atomic.Bool
 
+	// Start a one-shot server to get the Collector's agent description
+	// using the Collector's OpAMP extension.
 	err = srv.Start(newServerSettings(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
 		onConnectingFunc: func(_ *http.Request) {
@@ -461,6 +468,12 @@ func (s *Supervisor) startOpAMP() error {
 	return nil
 }
 
+// startOpAMPServer starts an OpAMP server that will communicate
+// with an OpAMP extension running inside a Collector to receive
+// data from inside the Collector. The internal server's lifetime is not
+// matched to the Collector's process, but may be restarted
+// depending on information received by the Supervisor from the remote
+// OpAMP server.
 func (s *Supervisor) startOpAMPServer() error {
 	s.opampServer = server.New(newLoggerFromZap(s.logger))
 
@@ -659,8 +672,6 @@ func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
 			cfgStr = ""
 		}
 	}
-
-	fmt.Println("Reporting", cfgStr)
 
 	cfg := &protobufs.EffectiveConfig{
 		ConfigMap: &protobufs.AgentConfigMap{
