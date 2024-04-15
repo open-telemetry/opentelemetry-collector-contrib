@@ -496,6 +496,175 @@ func TestTransformer(t *testing.T) {
 				entryWithBodyAttr(t1, "content5\ncontent6\ncontent7\ncontent8\ncontent9", map[string]string{"file.path": "file1"}),
 			},
 		},
+		{
+			"EntriesNonMatchingForFirstEntryWithMaxUnmatchedBatchSize=0",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsFirstEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxUnmatchedBatchSize = 0
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2\ntest3\ntest4"),
+			},
+		},
+		{
+			"EntriesNonMatchingForFirstEntryWithMaxUnmatchedBatchSize=1",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsFirstEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxUnmatchedBatchSize = 1
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+			},
+		},
+		{
+			"TestMaxUnmatchedBatchSizeForFirstEntry",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsFirstEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxUnmatchedBatchSize = 2
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+				entryWithBody(t1, "test5"),
+				entryWithBody(t1, "test6"),
+				entryWithBody(t1, "test1"),
+				entryWithBody(t1, "test7"),
+				entryWithBody(t1, "test8"),
+				entryWithBody(t1, "test1"),
+				entryWithBody(t1, "test9"),
+				entryWithBody(t1, "test10"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2\ntest3"),
+				entryWithBody(t1, "test4\ntest5"),
+				entryWithBody(t1, "test6"),
+				entryWithBody(t1, "test1\ntest7\ntest8"),
+				entryWithBody(t1, "test1\ntest9\ntest10"),
+			},
+		},
+		{
+			"EntriesNonMatchingForLastEntryWithMaxUnmatchedBatchSize=0",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsLastEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxUnmatchedBatchSize = 0
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2\ntest3\ntest4"),
+			},
+		},
+		{
+			"EntriesNonMatchingForLastEntryWithMaxUnmatchedBatchSize=1",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsLastEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxUnmatchedBatchSize = 1
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+			},
+		},
+		{
+			"EntriesMatchingForLastEntryMaxUnmatchedBatchSize=2",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsLastEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxUnmatchedBatchSize = 2
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+				entryWithBody(t1, "test5"),
+				entryWithBody(t1, "test1"),
+				entryWithBody(t1, "test6"),
+				entryWithBody(t1, "test7"),
+				entryWithBody(t1, "test1"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2\ntest3"),
+				entryWithBody(t1, "test4\ntest5"),
+				entryWithBody(t1, "test1"),
+				entryWithBody(t1, "test6\ntest7"),
+				entryWithBody(t1, "test1"),
+			},
+		},
+		{
+			"EntriesMatchingForLastEntryMaxUnmatchedBatchSize=3",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsLastEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxUnmatchedBatchSize = 3
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+				entryWithBody(t1, "test5"),
+				entryWithBody(t1, "test1"),
+				entryWithBody(t1, "test6"),
+				entryWithBody(t1, "test7"),
+				entryWithBody(t1, "test1"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2\ntest3\ntest4"),
+				entryWithBody(t1, "test5\ntest1"),
+				entryWithBody(t1, "test6\ntest7\ntest1"),
+			},
+		},
 	}
 
 	for _, tc := range cases {
