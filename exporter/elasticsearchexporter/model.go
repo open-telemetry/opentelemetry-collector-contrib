@@ -41,16 +41,72 @@ const (
 
 func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) ([]byte, error) {
 	var document objmodel.Document
-	document.AddTimestamp("@timestamp", record.Timestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
-	document.AddTraceID("TraceId", record.TraceID())
-	document.AddSpanID("SpanId", record.SpanID())
-	document.AddInt("TraceFlags", int64(record.Flags()))
-	document.AddString("SeverityText", record.SeverityText())
-	document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
-	document.AddAttribute("Body", record.Body())
-	m.encodeAttributes(&document, record.Attributes())
-	document.AddAttributes("Resource", resource.Attributes())
-	document.AddAttributes("Scope", scopeToAttributes(scope))
+
+	switch m.mode {
+	case MappingECS:
+		if record.Timestamp() != 0 {
+			document.AddTimestamp("@timestamp", record.Timestamp())
+		} else {
+			document.AddTimestamp("@timestamp", record.ObservedTimestamp())
+		}
+
+		document.AddTraceID("trace.id", record.TraceID())
+		document.AddSpanID("span.id", record.SpanID())
+
+		if n := record.SeverityNumber(); n != plog.SeverityNumberUnspecified {
+			document.AddInt("event.severity", int64(record.SeverityNumber()))
+		}
+
+		document.AddString("log.level", record.SeverityText())
+
+		if record.Body().Type() == pcommon.ValueTypeStr {
+			document.AddAttribute("message", record.Body())
+		}
+
+		fieldMapper := func(k string) string {
+			switch k {
+			case "exception.type":
+				return "error.type"
+			case "exception.message":
+				return "error.message"
+			case "exception.stacktrace":
+				return "error.stack_trace"
+			default:
+				return k
+			}
+		}
+
+		resource.Attributes().Range(func(k string, v pcommon.Value) bool {
+			k = fieldMapper(k)
+			document.AddAttribute(k, v)
+			return true
+		})
+		scope.Attributes().Range(func(k string, v pcommon.Value) bool {
+			k = fieldMapper(k)
+			document.AddAttribute(k, v)
+			return true
+		})
+		record.Attributes().Range(func(k string, v pcommon.Value) bool {
+			k = fieldMapper(k)
+			document.AddAttribute(k, v)
+			return true
+		})
+	default:
+		docTimeStamp := record.Timestamp()
+		if docTimeStamp.AsTime().UnixNano() == 0 {
+			docTimeStamp = record.ObservedTimestamp()
+		}
+		document.AddTimestamp("@timestamp", docTimeStamp) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
+		document.AddTraceID("TraceId", record.TraceID())
+		document.AddSpanID("SpanId", record.SpanID())
+		document.AddInt("TraceFlags", int64(record.Flags()))
+		document.AddString("SeverityText", record.SeverityText())
+		document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
+		document.AddAttribute("Body", record.Body())
+		m.encodeAttributes(&document, record.Attributes())
+		document.AddAttributes("Resource", resource.Attributes())
+		document.AddAttributes("Scope", scopeToAttributes(scope))
+	}
 
 	if m.dedup {
 		document.Dedup()

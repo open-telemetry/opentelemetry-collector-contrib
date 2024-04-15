@@ -45,8 +45,8 @@ func TestScraperStart(t *testing.T) {
 						{
 							ClientConfig: confighttp.ClientConfig{
 								Endpoint: "http://example.com",
-								TLSSetting: configtls.TLSClientSetting{
-									TLSSetting: configtls.TLSSetting{
+								TLSSetting: configtls.ClientConfig{
+									Config: configtls.Config{
 										CAFile: "/non/existent",
 									},
 								},
@@ -65,7 +65,7 @@ func TestScraperStart(t *testing.T) {
 					Targets: []*targetConfig{
 						{
 							ClientConfig: confighttp.ClientConfig{
-								TLSSetting: configtls.TLSClientSetting{},
+								TLSSetting: configtls.ClientConfig{},
 								Endpoint:   "http://example.com",
 							},
 						},

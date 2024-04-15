@@ -38,11 +38,11 @@ func newRedisScraper(cfg *Config, settings receiver.CreateSettings) (scraperhelp
 		Addr:     cfg.Endpoint,
 		Username: cfg.Username,
 		Password: string(cfg.Password),
-		Network:  cfg.Transport,
+		Network:  string(cfg.Transport),
 	}
 
 	var err error
-	if opts.TLSConfig, err = cfg.TLS.LoadTLSConfig(); err != nil {
+	if opts.TLSConfig, err = cfg.TLS.LoadTLSConfigContext(context.Background()); err != nil {
 		return nil, err
 	}
 	return newRedisScraperWithClient(newRedisClient(opts), settings, cfg)

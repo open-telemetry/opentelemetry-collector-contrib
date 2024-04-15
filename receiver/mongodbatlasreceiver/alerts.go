@@ -63,7 +63,7 @@ type alertsReceiver struct {
 	secret      string
 	server      *http.Server
 	mode        string
-	tlsSettings *configtls.TLSServerSetting
+	tlsSettings *configtls.ServerConfig
 	consumer    consumer.Logs
 	wg          *sync.WaitGroup
 
@@ -89,7 +89,7 @@ func newAlertsReceiver(params rcvr.CreateSettings, baseConfig *Config, consumer 
 	if cfg.TLS != nil {
 		var err error
 
-		tlsConfig, err = cfg.TLS.LoadTLSConfig()
+		tlsConfig, err = cfg.TLS.LoadTLSConfigContext(context.Background())
 		if err != nil {
 			return nil, err
 		}

@@ -174,15 +174,15 @@ func sendSapm(
 	client := &http.Client{}
 
 	if tlsEnabled {
-		tlscs := configtls.TLSClientSetting{
-			TLSSetting: configtls.TLSSetting{
+		tlscs := configtls.ClientConfig{
+			Config: configtls.Config{
 				CAFile:   "./testdata/ca.crt",
 				CertFile: "./testdata/client.crt",
 				KeyFile:  "./testdata/client.key",
 			},
 			ServerName: "localhost",
 		}
-		tls, errTLS := tlscs.LoadTLSConfig()
+		tls, errTLS := tlscs.LoadTLSConfigContext(context.Background())
 		if errTLS != nil {
 			return nil, fmt.Errorf("failed to send request to receiver %w", err)
 		}
@@ -310,8 +310,8 @@ func TestReception(t *testing.T) {
 				config: &Config{
 					ServerConfig: confighttp.ServerConfig{
 						Endpoint: tlsAddress,
-						TLSSetting: &configtls.TLSServerSetting{
-							TLSSetting: configtls.TLSSetting{
+						TLSSetting: &configtls.ServerConfig{
+							Config: configtls.Config{
 								CAFile:   "./testdata/ca.crt",
 								CertFile: "./testdata/server.crt",
 								KeyFile:  "./testdata/server.key",

@@ -48,7 +48,7 @@ func NewTracker(cfg *Config, accessToken configopaque.String, params exporter.Cr
 	}
 }
 
-func newCorrelationClient(cfg *Config, accessToken configopaque.String, params exporter.CreateSettings, host component.Host) (
+func newCorrelationClient(ctx context.Context, cfg *Config, accessToken configopaque.String, params exporter.CreateSettings, host component.Host) (
 	*correlationContext, error,
 ) {
 	corrURL, err := url.Parse(cfg.ClientConfig.Endpoint)
@@ -56,12 +56,12 @@ func newCorrelationClient(cfg *Config, accessToken configopaque.String, params e
 		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %w", cfg.ClientConfig.Endpoint, err)
 	}
 
-	httpClient, err := cfg.ToClient(host, params.TelemetrySettings)
+	httpClient, err := cfg.ToClientContext(ctx, host, params.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create correlation API client: %w", err)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 
 	client, err := correlations.NewCorrelationClient(ctx, newZapShim(params.Logger), httpClient, correlations.ClientConfig{
 		Config:      cfg.Config,
@@ -123,8 +123,8 @@ func (cor *Tracker) ProcessTraces(ctx context.Context, traces ptrace.Traces) err
 }
 
 // Start correlation tracking.
-func (cor *Tracker) Start(_ context.Context, host component.Host) (err error) {
-	cor.correlation, err = newCorrelationClient(cor.cfg, cor.accessToken, cor.params, host)
+func (cor *Tracker) Start(ctx context.Context, host component.Host) (err error) {
+	cor.correlation, err = newCorrelationClient(ctx, cor.cfg, cor.accessToken, cor.params, host)
 	if err != nil {
 		return err
 	}
@@ -137,6 +137,7 @@ func (cor *Tracker) Shutdown(_ context.Context) error {
 	if cor != nil {
 		if cor.correlation != nil {
 			cor.correlation.cancel()
+			cor.correlation.CorrelationClient.Shutdown()
 		}
 
 		if cor.pTicker != nil {

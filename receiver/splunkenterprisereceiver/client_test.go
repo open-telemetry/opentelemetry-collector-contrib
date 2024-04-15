@@ -38,7 +38,7 @@ func TestClientCreation(t *testing.T) {
 			Endpoint: "https://localhost:8089",
 			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       1 * time.Second,
 			Timeout:            11 * time.Second,
@@ -51,7 +51,7 @@ func TestClientCreation(t *testing.T) {
 		},
 	}
 	// create a client from an example config
-	client, err := newSplunkEntClient(cfg, host, componenttest.NewNopTelemetrySettings())
+	client, err := newSplunkEntClient(context.Background(), cfg, host, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	testEndpoint, _ := url.Parse("https://localhost:8089")
@@ -67,7 +67,7 @@ func TestClientCreateRequest(t *testing.T) {
 			Endpoint: "https://localhost:8089",
 			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       1 * time.Second,
 			Timeout:            11 * time.Second,
@@ -80,7 +80,7 @@ func TestClientCreateRequest(t *testing.T) {
 		},
 	}
 	// create a client from an example config
-	client, err := newSplunkEntClient(cfg, host, componenttest.NewNopTelemetrySettings())
+	client, err := newSplunkEntClient(context.Background(), cfg, host, componenttest.NewNopTelemetrySettings())
 
 	require.NoError(t, err)
 
@@ -148,7 +148,7 @@ func TestAPIRequestCreate(t *testing.T) {
 			Endpoint: "https://localhost:8089",
 			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       1 * time.Second,
 			Timeout:            11 * time.Second,
@@ -161,7 +161,7 @@ func TestAPIRequestCreate(t *testing.T) {
 		},
 	}
 	// create a client from an example config
-	client, err := newSplunkEntClient(cfg, host, componenttest.NewNopTelemetrySettings())
+	client, err := newSplunkEntClient(context.Background(), cfg, host, componenttest.NewNopTelemetrySettings())
 
 	require.NoError(t, err)
 

@@ -51,10 +51,10 @@ func TestUnmarshalConfig(t *testing.T) {
 				GRPC: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:4317",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
-					TLSSetting: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: &configtls.ServerConfig{
+						Config: configtls.Config{
 							CertFile: "test.crt",
 							KeyFile:  "test.key",
 						},
@@ -100,7 +100,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 				GRPC: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "/tmp/grpc_otlp.sock",
-						Transport: "unix",
+						Transport: confignet.TransportTypeUnix,
 					},
 					ReadBufferSize: 512 * 1024,
 				},
@@ -121,5 +121,5 @@ func TestUnmarshalConfigInvalidProtocol(t *testing.T) {
 
 func TestUnmarshalConfigNoProtocols(t *testing.T) {
 	cfg := Config{}
-	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.Error(t, component.ValidateConfig(cfg))
 }

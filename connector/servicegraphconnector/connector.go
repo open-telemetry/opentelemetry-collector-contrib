@@ -42,7 +42,7 @@ var (
 	}
 
 	defaultPeerAttributes = []string{
-		semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeNetSockPeerName, semconv.AttributeNetPeerName, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget,
+		semconv.AttributePeerService, semconv.AttributeDBName, semconv.AttributeDBSystem,
 	}
 
 	defaultDatabaseNameAttribute = semconv.AttributeDBName
@@ -380,7 +380,7 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 
 	p.statExpiredEdges.Add(context.Background(), 1)
 
-	if virtualNodeFeatureGate.IsEnabled() {
+	if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
 		e.ConnectionType = store.VirtualNode
 		if len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"
@@ -666,12 +666,6 @@ func (p *serviceGraphConnector) cleanCache() {
 	}
 	p.metricMutex.RUnlock()
 
-	p.metricMutex.Lock()
-	for _, key := range staleSeries {
-		delete(p.keyToMetric, key)
-	}
-	p.metricMutex.Unlock()
-
 	p.seriesMutex.Lock()
 	for _, key := range staleSeries {
 		delete(p.reqTotal, key)
@@ -684,6 +678,12 @@ func (p *serviceGraphConnector) cleanCache() {
 		delete(p.reqServerDurationSecondsBucketCounts, key)
 	}
 	p.seriesMutex.Unlock()
+
+	p.metricMutex.Lock()
+	for _, key := range staleSeries {
+		delete(p.keyToMetric, key)
+	}
+	p.metricMutex.Unlock()
 }
 
 // spanDuration returns the duration of the given span in seconds (legacy ms).
