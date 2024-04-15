@@ -93,9 +93,6 @@ func (p *PipelineSelector) retryHighPriorityPipelines(ctx context.Context, retry
 	defer ticker.Stop()
 
 	for i := 0; i < len(p.pipelineRetries); i++ {
-		if i > p.loadStable() {
-			return
-		}
 		if p.maxRetriesUsed(i) {
 			continue
 		}
@@ -103,6 +100,9 @@ func (p *PipelineSelector) retryHighPriorityPipelines(ctx context.Context, retry
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
+			if i >= p.loadStable() {
+				return
+			}
 			p.currentIndex.Store(int32(i))
 		}
 	}
@@ -236,6 +236,10 @@ func (p *PipelineSelector) ChannelIndex(ch chan bool) int {
 
 func (p *PipelineSelector) TestStableIndex() int {
 	return p.loadStable()
+}
+
+func (p *PipelineSelector) TestCurrentIndex() int {
+	return p.loadCurrent()
 }
 
 func (p *PipelineSelector) TestSetStableIndex(idx int32) {

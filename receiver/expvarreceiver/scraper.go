@@ -40,8 +40,8 @@ func newExpVarScraper(cfg *Config, set receiver.CreateSettings) *expVarScraper {
 	}
 }
 
-func (e *expVarScraper) start(_ context.Context, host component.Host) error {
-	client, err := e.cfg.ClientConfig.ToClient(host, e.set.TelemetrySettings)
+func (e *expVarScraper) start(ctx context.Context, host component.Host) error {
+	client, err := e.cfg.ClientConfig.ToClientContext(ctx, host, e.set.TelemetrySettings)
 	if err != nil {
 		return err
 	}

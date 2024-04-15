@@ -82,12 +82,12 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 	s := server.New(testLogger{t: t})
 	onConnectedFunc := callbacks.OnConnectedFunc
 	callbacks.OnConnectedFunc = func(ctx context.Context, conn types.Connection) {
-		agentConn.Store(conn)
-		isAgentConnected.Store(true)
-		connectedChan <- true
 		if onConnectedFunc != nil {
 			onConnectedFunc(ctx, conn)
 		}
+		agentConn.Store(conn)
+		isAgentConnected.Store(true)
+		connectedChan <- true
 	}
 	onConnectionCloseFunc := callbacks.OnConnectionCloseFunc
 	callbacks.OnConnectionCloseFunc = func(conn types.Connection) {
@@ -472,4 +472,49 @@ func waitForSupervisorConnection(connection chan bool, connected bool) {
 			break
 		}
 	}
+}
+
+func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
+	var connectedToNewServer atomic.Bool
+	initialServer := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{})
+
+	s := newSupervisor(t, "accepts_conn", map[string]string{"url": initialServer.addr})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(initialServer.supervisorConnected, true)
+
+	newServer := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnConnectedFunc: func(_ context.Context, _ types.Connection) {
+				connectedToNewServer.Store(true)
+			},
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	initialServer.sendToSupervisor(&protobufs.ServerToAgent{
+		ConnectionSettings: &protobufs.ConnectionSettingsOffers{
+			Opamp: &protobufs.OpAMPConnectionSettings{
+				DestinationEndpoint: "ws://" + newServer.addr + "/v1/opamp",
+				Headers: &protobufs.Headers{
+					Headers: []*protobufs.Header{
+						{
+							Key:   "x-foo",
+							Value: "bar",
+						},
+					},
+				},
+			},
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		return connectedToNewServer.Load() == true
+	}, 10*time.Second, 500*time.Millisecond, "Collector did not connect to new OpAMP server")
 }

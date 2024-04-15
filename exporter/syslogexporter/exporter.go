@@ -30,7 +30,7 @@ func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*sysloge
 	var loadedTLSConfig *tls.Config
 	if cfg.Network == "tcp" {
 		var err error
-		loadedTLSConfig, err = cfg.TLSSetting.LoadTLSConfig()
+		loadedTLSConfig, err = cfg.TLSSetting.LoadTLSConfigContext(context.Background())
 		if err != nil {
 			return nil, err
 		}

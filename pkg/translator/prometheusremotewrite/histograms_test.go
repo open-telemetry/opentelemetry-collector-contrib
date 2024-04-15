@@ -597,11 +597,11 @@ func validateNativeHistogramCount(t *testing.T, h prompb.Histogram) {
 	assert.Equal(t, want, actualCount, "native histogram count mismatch")
 }
 
-func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {
+func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 	tests := []struct {
 		name       string
 		metric     func() pmetric.Metric
-		wantSeries func() map[string]*prompb.TimeSeries
+		wantSeries func() map[uint64]*prompb.TimeSeries
 	}{
 		{
 			name: "histogram data points with same labels",
@@ -628,13 +628,13 @@ func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {
 
 				return metric
 			},
-			wantSeries: func() map[string]*prompb.TimeSeries {
+			wantSeries: func() map[uint64]*prompb.TimeSeries {
 				labels := []prompb.Label{
 					{Name: model.MetricNameLabel, Value: "test_hist"},
 					{Name: "attr", Value: "test_attr"},
 				}
-				return map[string]*prompb.TimeSeries{
-					timeSeriesSignature(pmetric.MetricTypeExponentialHistogram.String(), labels): {
+				return map[uint64]*prompb.TimeSeries{
+					timeSeriesSignature(labels): {
 						Labels: labels,
 						Histograms: []prompb.Histogram{
 							{
@@ -687,7 +687,7 @@ func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {
 
 				return metric
 			},
-			wantSeries: func() map[string]*prompb.TimeSeries {
+			wantSeries: func() map[uint64]*prompb.TimeSeries {
 				labels := []prompb.Label{
 					{Name: model.MetricNameLabel, Value: "test_hist"},
 					{Name: "attr", Value: "test_attr"},
@@ -697,8 +697,8 @@ func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {
 					{Name: "attr", Value: "test_attr_two"},
 				}
 
-				return map[string]*prompb.TimeSeries{
-					timeSeriesSignature(pmetric.MetricTypeExponentialHistogram.String(), labels): {
+				return map[uint64]*prompb.TimeSeries{
+					timeSeriesSignature(labels): {
 						Labels: labels,
 						Histograms: []prompb.Histogram{
 							{
@@ -714,7 +714,7 @@ func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {
 							{Value: 1},
 						},
 					},
-					timeSeriesSignature(pmetric.MetricTypeExponentialHistogram.String(), labelsAnother): {
+					timeSeriesSignature(labelsAnother): {
 						Labels: labelsAnother,
 						Histograms: []prompb.Histogram{
 							{
@@ -738,20 +738,16 @@ func TestAddSingleExponentialHistogramDataPoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
 
-			gotSeries := make(map[string]*prompb.TimeSeries)
+			converter := newPrometheusConverter()
+			require.NoError(t, converter.addExponentialHistogramDataPoints(
+				metric.ExponentialHistogram().DataPoints(),
+				pcommon.NewResource(),
+				Settings{},
+				prometheustranslator.BuildCompliantName(metric, "", true),
+			))
 
-			for x := 0; x < metric.ExponentialHistogram().DataPoints().Len(); x++ {
-				err := addSingleExponentialHistogramDataPoint(
-					prometheustranslator.BuildCompliantName(metric, "", true),
-					metric.ExponentialHistogram().DataPoints().At(x),
-					pcommon.NewResource(),
-					Settings{},
-					gotSeries,
-				)
-				require.NoError(t, err)
-			}
-
-			assert.Equal(t, tt.wantSeries(), gotSeries)
+			assert.Equal(t, tt.wantSeries(), converter.unique)
+			assert.Empty(t, converter.conflicts)
 		})
 	}
 }
