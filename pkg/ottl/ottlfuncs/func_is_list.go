@@ -34,14 +34,13 @@ func createIsListFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 }
 
 func isList[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return false, err
 		}
 
 		switch valType := val.(type) {
-
 		case pcommon.Value:
 			switch valType.Type() {
 			case pcommon.ValueTypeSlice:
