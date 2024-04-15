@@ -23,10 +23,20 @@ var jsonArrayParserFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, allows usage of `json_array_parser`."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30321"),
+	featuregate.WithRegisterFeatureGateEnableFunc(func() {
+		register()
+	}),
 )
 
 func init() {
 	if jsonArrayParserFeatureGate.IsEnabled() {
+		register()
+	}
+}
+
+func register() {
+	_, ok := operator.Lookup(operatorType)
+	if !ok {
 		operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 	}
 }
