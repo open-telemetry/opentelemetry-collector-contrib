@@ -8,6 +8,7 @@ on:
   pull_request:
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
+  GOPROXY: https://goproxy.cncf.actuated.dev,direct
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
@@ -262,13 +263,6 @@ jobs:
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     steps:
-      - name: Set up arkade
-        uses: alexellis/setup-arkade@v3
-      - name: Install vmmeter
-        run: |
-          sudo -E arkade oci install ghcr.io/openfaasltd/vmmeter:latest --path /usr/local/bin/
-      - name: Run vmmeter
-        uses: self-actuated/vmmeter-action@v1
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:

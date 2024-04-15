@@ -57,7 +57,7 @@ func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.
 	}
 
 	if recv.cfg.TLS != nil {
-		tlsConfig, err := recv.cfg.TLS.LoadTLSConfig()
+		tlsConfig, err := recv.cfg.TLS.LoadTLSConfigContext(context.Background())
 		if err != nil {
 			return nil, err
 		}

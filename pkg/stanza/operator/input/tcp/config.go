@@ -5,6 +5,7 @@ package tcp // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"net"
 	"time"
@@ -139,7 +140,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	if c.TLS != nil {
-		tcpInput.tls, err = c.TLS.LoadTLSConfig()
+		tcpInput.tls, err = c.TLS.LoadTLSConfigContext(context.Background())
 		if err != nil {
 			return nil, err
 		}
