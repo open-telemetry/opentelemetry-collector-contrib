@@ -49,7 +49,7 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 
 	p.hub = hub
 
-	runtimeInfo, err := hub.GetRuntimeInformation(ctx)
+	runtimeInfo, err := hub.GetProperties(ctx)
 	if err != nil {
 		return err
 	}

@@ -4,6 +4,7 @@
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -20,12 +21,12 @@ func newRawLogsUnmarshaler(logger *zap.Logger) eventLogsUnmarshaler {
 	}
 }
 
-func (r rawLogsUnmarshaler) UnmarshalLogs(event *eventhubs.Event) (plog.Logs, error) {
+func (r rawLogsUnmarshaler) UnmarshalLogs(event *[]azeventhubs.ReceivedEventData) (plog.Logs, error) {
 
 	l := plog.NewLogs()
 	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	slice := lr.Body().SetEmptyBytes()
-	slice.Append(event.Data...)
+	slice.Append(event.EventData...)
 	if event.SystemProperties.EnqueuedTime != nil {
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(*event.SystemProperties.EnqueuedTime))
 	}

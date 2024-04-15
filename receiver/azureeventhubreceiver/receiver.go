@@ -16,21 +16,22 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
 type dataConsumer interface {
-	consume(ctx context.Context, event *eventhubs.Event) error
+	consume(ctx context.Context, event *azeventhubs.ReceivedEventData) error
 	setNextLogsConsumer(nextLogsConsumer consumer.Logs)
 	setNextMetricsConsumer(nextLogsConsumer consumer.Metrics)
 }
 
 type eventLogsUnmarshaler interface {
-	UnmarshalLogs(event *eventhubs.Event) (plog.Logs, error)
+	UnmarshalLogs(event *azeventhubs.EventData) (plog.Logs, error)
 }
 
 type eventMetricsUnmarshaler interface {
-	UnmarshalMetrics(event *eventhubs.Event) (pmetric.Metrics, error)
+	UnmarshalMetrics(event *azeventhubs.EventData) (pmetric.Metrics, error)
 }
 
 type eventhubReceiver struct {
@@ -65,7 +66,7 @@ func (receiver *eventhubReceiver) setNextMetricsConsumer(nextMetricsConsumer con
 	receiver.nextMetricsConsumer = nextMetricsConsumer
 }
 
-func (receiver *eventhubReceiver) consume(ctx context.Context, event *eventhubs.Event) error {
+func (receiver *eventhubReceiver) consume(ctx context.Context, event *azeventhubs.EventData) error {
 
 	switch receiver.dataType {
 	case component.DataTypeLogs:
@@ -79,7 +80,7 @@ func (receiver *eventhubReceiver) consume(ctx context.Context, event *eventhubs.
 	}
 }
 
-func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *eventhubs.Event) error {
+func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *azeventhubs.EventData) error {
 
 	if receiver.nextLogsConsumer == nil {
 		return nil
@@ -103,7 +104,7 @@ func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *eventh
 	return err
 }
 
-func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *eventhubs.Event) error {
+func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *azeventhubs.EventData) error {
 
 	if receiver.nextMetricsConsumer == nil {
 		return nil
