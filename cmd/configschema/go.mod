@@ -483,7 +483,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.98.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.98.0 // indirect
