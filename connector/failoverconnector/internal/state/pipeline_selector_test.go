@@ -72,6 +72,8 @@ func TestCurrentPipelineWithRetry(t *testing.T) {
 	_, ch := pS.SelectedPipeline()
 	ch <- false
 
+	pS.TestSetStableIndex(2)
+
 	require.Eventually(t, func() bool {
 		idx, _ := pS.SelectedPipeline()
 		return idx == 0
