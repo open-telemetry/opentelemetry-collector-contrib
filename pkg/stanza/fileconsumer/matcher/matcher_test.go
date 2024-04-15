@@ -10,13 +10,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestNew(t *testing.T) {
 	cases := []struct {
-		name        string
-		criteria    Criteria
-		expectedErr string
+		name                   string
+		criteria               Criteria
+		expectedErr            string
+		enableMtimeFeatureGate bool
 	}{
 		{
 			name: "IncludeEmpty",
@@ -179,9 +181,41 @@ func TestNew(t *testing.T) {
 			},
 			expectedErr: "timestamp sort: regex key must be specified",
 		},
+		{
+			name: "SortByMtime",
+			criteria: Criteria{
+				Include: []string{"*.log"},
+				OrderingCriteria: OrderingCriteria{
+					SortBy: []Sort{
+						{
+							SortType: "mtime",
+						},
+					},
+				},
+			},
+			enableMtimeFeatureGate: true,
+		},
+		{
+			name: "SortByMtimeGateDisabled",
+			criteria: Criteria{
+				Include: []string{"*.log"},
+				OrderingCriteria: OrderingCriteria{
+					SortBy: []Sort{
+						{
+							SortType: "mtime",
+						},
+					},
+				},
+			},
+			expectedErr: `the "filelog.mtimeSortType" feature gate must be enabled to use "mtime" sort type`,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.enableMtimeFeatureGate {
+				enableSortByMTimeFeature(t)
+			}
+
 			matcher, err := New(tc.criteria)
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)
@@ -678,7 +712,40 @@ func TestMatcher(t *testing.T) {
 			},
 			expected: []string{"err.b.1.2023020602.log"},
 		},
-	}
+		{
+			name: "Recursive match - include",
+			files: []string{
+				filepath.Join("a", "1.log"),
+				filepath.Join("a", "2.log"),
+				filepath.Join("a", "b", "1.log"),
+				filepath.Join("a", "b", "2.log"),
+				filepath.Join("a", "b", "c", "1.log"),
+				filepath.Join("a", "b", "c", "2.log"),
+			},
+			include: []string{filepath.Join("**", "1.log")},
+			exclude: []string{},
+			expected: []string{
+				filepath.Join("a", "1.log"),
+				filepath.Join("a", "b", "1.log"),
+				filepath.Join("a", "b", "c", "1.log"),
+			},
+		},
+		{
+			name: "Recursive match - include and exclude",
+			files: []string{
+				filepath.Join("a", "1.log"),
+				filepath.Join("a", "2.log"),
+				filepath.Join("a", "b", "1.log"),
+				filepath.Join("a", "b", "2.log"),
+				filepath.Join("a", "b", "c", "1.log"),
+				filepath.Join("a", "b", "c", "2.log"),
+			},
+			include: []string{filepath.Join("**", "1.log")},
+			exclude: []string{filepath.Join("**", "b", "**", "1.log")},
+			expected: []string{
+				filepath.Join("a", "1.log"),
+			},
+		}}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -711,6 +778,15 @@ func TestMatcher(t *testing.T) {
 				assert.NoError(t, err)
 			}
 			assert.Equal(t, tc.expected, files)
+		})
+	}
+}
+
+func enableSortByMTimeFeature(t *testing.T) {
+	if !mtimeSortTypeFeatureGate.IsEnabled() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(mtimeSortTypeFeatureGate.ID(), true))
+		t.Cleanup(func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set(mtimeSortTypeFeatureGate.ID(), false))
 		})
 	}
 }

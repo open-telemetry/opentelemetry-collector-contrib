@@ -12,25 +12,25 @@ import (
 
 func TestRead(t *testing.T) {
 	testEntry := &Entry{
-		Body: map[string]interface{}{
+		Body: map[string]any{
 			"string_field": "string_val",
 			"byte_field":   []byte(`test`),
-			"map_string_interface_field": map[string]interface{}{
+			"map_string_interface_field": map[string]any{
 				"nested": "interface_val",
 			},
-			"map_string_interface_nonstring_field": map[string]interface{}{
+			"map_string_interface_nonstring_field": map[string]any{
 				"nested": 111,
 			},
 			"map_string_string_field": map[string]string{
 				"nested": "string_val",
 			},
-			"map_interface_interface_field": map[interface{}]interface{}{
+			"map_interface_interface_field": map[any]any{
 				"nested": "interface_val",
 			},
-			"map_interface_interface_nonstring_key_field": map[interface{}]interface{}{
+			"map_interface_interface_nonstring_key_field": map[any]any{
 				100: "interface_val",
 			},
-			"map_interface_interface_nonstring_value_field": map[interface{}]interface{}{
+			"map_interface_interface_nonstring_value_field": map[any]any{
 				"nested": 100,
 			},
 		},
@@ -61,56 +61,56 @@ func TestRead(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("map[string]interface{}", func(t *testing.T) {
-		var m map[string]interface{}
+	t.Run("map[string]any", func(t *testing.T) {
+		var m map[string]any
 		err := testEntry.Read(NewBodyField("map_string_interface_field"), &m)
 		require.NoError(t, err)
-		require.Equal(t, map[string]interface{}{"nested": "interface_val"}, m)
+		require.Equal(t, map[string]any{"nested": "interface_val"}, m)
 	})
 
-	t.Run("map[string]interface{} error", func(t *testing.T) {
-		var m map[string]interface{}
+	t.Run("map[string]any error", func(t *testing.T) {
+		var m map[string]any
 		err := testEntry.Read(NewBodyField("string_field"), &m)
 		require.Error(t, err)
 	})
 
-	t.Run("map[string]string from map[string]interface{}", func(t *testing.T) {
+	t.Run("map[string]string from map[string]any", func(t *testing.T) {
 		var m map[string]string
 		err := testEntry.Read(NewBodyField("map_string_interface_field"), &m)
 		require.NoError(t, err)
 		require.Equal(t, map[string]string{"nested": "interface_val"}, m)
 	})
 
-	t.Run("map[string]string from map[string]interface{} err", func(t *testing.T) {
+	t.Run("map[string]string from map[string]any err", func(t *testing.T) {
 		var m map[string]string
 		err := testEntry.Read(NewBodyField("map_string_interface_nonstring_field"), &m)
 		require.Error(t, err)
 	})
 
-	t.Run("map[string]string from map[interface{}]interface{}", func(t *testing.T) {
+	t.Run("map[string]string from map[any]any", func(t *testing.T) {
 		var m map[string]string
 		err := testEntry.Read(NewBodyField("map_interface_interface_field"), &m)
 		require.NoError(t, err)
 		require.Equal(t, map[string]string{"nested": "interface_val"}, m)
 	})
 
-	t.Run("map[string]string from map[interface{}]interface{} nonstring key error", func(t *testing.T) {
+	t.Run("map[string]string from map[any]any nonstring key error", func(t *testing.T) {
 		var m map[string]string
 		err := testEntry.Read(NewBodyField("map_interface_interface_nonstring_key_field"), &m)
 		require.Error(t, err)
 	})
 
-	t.Run("map[string]string from map[interface{}]interface{} nonstring value error", func(t *testing.T) {
+	t.Run("map[string]string from map[any]any nonstring value error", func(t *testing.T) {
 		var m map[string]string
 		err := testEntry.Read(NewBodyField("map_interface_interface_nonstring_value_field"), &m)
 		require.Error(t, err)
 	})
 
-	t.Run("interface{} from any", func(t *testing.T) {
-		var i interface{}
+	t.Run("any from any", func(t *testing.T) {
+		var i any
 		err := testEntry.Read(NewBodyField("map_interface_interface_field"), &i)
 		require.NoError(t, err)
-		require.Equal(t, map[interface{}]interface{}{"nested": "interface_val"}, i)
+		require.Equal(t, map[any]any{"nested": "interface_val"}, i)
 	})
 
 	t.Run("string from []byte", func(t *testing.T) {
@@ -130,8 +130,8 @@ func TestCopy(t *testing.T) {
 	entry.ObservedTimestamp = now
 	entry.Timestamp = time.Time{}
 	entry.Body = "test"
-	entry.Attributes = map[string]interface{}{"label": "value"}
-	entry.Resource = map[string]interface{}{"resource": "value"}
+	entry.Attributes = map[string]any{"label": "value"}
+	entry.Resource = map[string]any{"resource": "value"}
 	entry.TraceID = []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f}
 	entry.SpanID = []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
 	entry.TraceFlags = []byte{0x01}
@@ -142,8 +142,8 @@ func TestCopy(t *testing.T) {
 	entry.SeverityText = "1"
 	entry.Timestamp = time.Now()
 	entry.Body = "new"
-	entry.Attributes = map[string]interface{}{"label": "new value"}
-	entry.Resource = map[string]interface{}{"resource": "new value"}
+	entry.Attributes = map[string]any{"label": "new value"}
+	entry.Resource = map[string]any{"resource": "new value"}
 	entry.TraceID[0] = 0xff
 	entry.SpanID[0] = 0xff
 	entry.TraceFlags[0] = 0xff
@@ -153,8 +153,8 @@ func TestCopy(t *testing.T) {
 	require.Equal(t, time.Time{}, cp.Timestamp)
 	require.Equal(t, Severity(0), cp.Severity)
 	require.Equal(t, "ok", cp.SeverityText)
-	require.Equal(t, map[string]interface{}{"label": "value"}, cp.Attributes)
-	require.Equal(t, map[string]interface{}{"resource": "value"}, cp.Resource)
+	require.Equal(t, map[string]any{"label": "value"}, cp.Attributes)
+	require.Equal(t, map[string]any{"resource": "value"}, cp.Resource)
 	require.Equal(t, "test", cp.Body)
 	require.Equal(t, []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f}, cp.TraceID)
 	require.Equal(t, []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}, cp.SpanID)
@@ -172,8 +172,8 @@ func TestCopyNil(t *testing.T) {
 	entry.SeverityText = "1"
 	entry.Timestamp = time.Now()
 	entry.Body = "new"
-	entry.Attributes = map[string]interface{}{"label": "new value"}
-	entry.Resource = map[string]interface{}{"resource": "new value"}
+	entry.Attributes = map[string]any{"label": "new value"}
+	entry.Resource = map[string]any{"resource": "new value"}
 	entry.TraceID = []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f}
 	entry.SpanID = []byte{0x04, 0x05, 0x06, 0x07, 0x08, 0x00, 0x01, 0x02, 0x03}
 	entry.TraceFlags = []byte{0x01}
@@ -183,8 +183,8 @@ func TestCopyNil(t *testing.T) {
 	require.Equal(t, time.Time{}, cp.Timestamp)
 	require.Equal(t, Severity(0), cp.Severity)
 	require.Equal(t, "", cp.SeverityText)
-	require.Equal(t, map[string]interface{}{}, cp.Attributes)
-	require.Equal(t, map[string]interface{}{}, cp.Resource)
+	require.Equal(t, map[string]any{}, cp.Attributes)
+	require.Equal(t, map[string]any{}, cp.Resource)
 	require.Equal(t, nil, cp.Body)
 	require.Equal(t, []byte{}, cp.TraceID)
 	require.Equal(t, []byte{}, cp.SpanID)
@@ -259,24 +259,24 @@ func TestFieldFromString(t *testing.T) {
 func TestAddAttribute(t *testing.T) {
 	entry := Entry{}
 	entry.AddAttribute("label", "value")
-	expected := map[string]interface{}{"label": "value"}
+	expected := map[string]any{"label": "value"}
 	require.Equal(t, expected, entry.Attributes)
 }
 
 func TestAddResourceKey(t *testing.T) {
 	entry := Entry{}
 	entry.AddResourceKey("key", "value")
-	expected := map[string]interface{}{"key": "value"}
+	expected := map[string]any{"key": "value"}
 	require.Equal(t, expected, entry.Resource)
 }
 
 func TestReadToInterfaceMapWithMissingField(t *testing.T) {
 	entry := Entry{}
 	field := NewAttributeField("label")
-	dest := map[string]interface{}{}
+	dest := map[string]any{}
 	err := entry.readToInterfaceMap(field, &dest)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "can not be read as a map[string]interface{}")
+	require.Contains(t, err.Error(), "can not be read as a map[string]any")
 }
 
 func TestReadToStringMapWithMissingField(t *testing.T) {
@@ -291,10 +291,10 @@ func TestReadToStringMapWithMissingField(t *testing.T) {
 func TestReadToInterfaceMissingField(t *testing.T) {
 	entry := Entry{}
 	field := NewAttributeField("label")
-	var dest interface{}
+	var dest any
 	err := entry.readToInterface(field, &dest)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "can not be read as a interface{}")
+	require.Contains(t, err.Error(), "can not be read as a any")
 }
 
 func TestDefaultTimestamps(t *testing.T) {

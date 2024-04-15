@@ -39,6 +39,9 @@ var newMetricsReceiver = func(
 ) (receiver.Metrics, error) {
 	sc := sarama.NewConfig()
 	sc.ClientID = config.ClientID
+	if config.ResolveCanonicalBootstrapServersOnly {
+		sc.Net.ResolveCanonicalBootstrapServers = true
+	}
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
@@ -63,7 +66,7 @@ var newMetricsReceiver = func(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&config.ScraperControllerSettings,
+		&config.ControllerConfig,
 		params,
 		consumer,
 		scraperControllerOptions...,

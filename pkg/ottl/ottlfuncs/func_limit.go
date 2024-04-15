@@ -47,7 +47,7 @@ func limit[K any](target ottl.PMapGetter[K], limit int64, priorityKeys []string)
 		keep[key] = struct{}{}
 	}
 
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
@@ -64,7 +64,7 @@ func limit[K any](target ottl.PMapGetter[K], limit int64, priorityKeys []string)
 			}
 		}
 
-		val.RemoveIf(func(key string, value pcommon.Value) bool {
+		val.RemoveIf(func(key string, _ pcommon.Value) bool {
 			if _, ok := keep[key]; ok {
 				return false
 			}

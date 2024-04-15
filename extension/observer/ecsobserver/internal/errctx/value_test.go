@@ -35,12 +35,12 @@ func TestWithValue(t *testing.T) {
 }
 
 func TestWithValues(t *testing.T) {
-	assert.Nil(t, WithValues(nil, map[string]interface{}{"a": "b"}))
+	assert.Nil(t, WithValues(nil, map[string]any{"a": "b"}))
 	assert.Panics(t, func() {
-		_ = WithValues(fmt.Errorf("base"), map[string]interface{}{"": "123"})
+		_ = WithValues(fmt.Errorf("base"), map[string]any{"": "123"})
 	})
 
-	e1 := WithValues(fmt.Errorf("base"), map[string]interface{}{"a": "b", "c": 123})
+	e1 := WithValues(fmt.Errorf("base"), map[string]any{"a": "b", "c": 123})
 	// NOTE: we sort the key in the impl so the test is not flaky
 	assert.Equal(t, "base a=b c=123", e1.Error())
 	v1, ok := ValueFrom(e1, "a")

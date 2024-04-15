@@ -19,6 +19,6 @@ func newPromLogger(zapLog *zap.Logger) *promLogger {
 	}
 }
 
-func (l *promLogger) Println(v ...interface{}) {
+func (l *promLogger) Println(v ...any) {
 	l.realLog.Error(fmt.Sprintln(v...))
 }

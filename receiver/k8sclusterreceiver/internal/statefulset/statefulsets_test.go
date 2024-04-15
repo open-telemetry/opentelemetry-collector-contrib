@@ -32,7 +32,7 @@ func TestStatefulsetMetrics(t *testing.T) {
 
 	rm := m.ResourceMetrics().At(0)
 	assert.Equal(t,
-		map[string]interface{}{
+		map[string]any{
 			"k8s.statefulset.uid":  "test-statefulset-1-uid",
 			"k8s.statefulset.name": "test-statefulset-1",
 			"k8s.namespace.name":   "test-namespace",

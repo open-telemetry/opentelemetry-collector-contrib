@@ -44,6 +44,7 @@ type CorrelationClient interface {
 	Delete(*Correlation, SuccessfulDeleteCB)
 	Get(dimName string, dimValue string, cb SuccessfulGetCB)
 	Start()
+	Shutdown()
 }
 
 type request struct {
@@ -146,7 +147,7 @@ func (cc *Client) putRequestOnChan(r *request) error {
 
 func (cc *Client) putRequestOnRetryChan(r *request) error {
 	// handle request counter
-	if requestcounter.GetRequestCount(r.ctx) == cc.maxAttempts {
+	if requestcounter.GetRequestCount(r.ctx) >= cc.maxAttempts {
 		return errMaxAttempts
 	}
 	requestcounter.IncrementRequestCount(r.ctx)
@@ -386,4 +387,10 @@ func (cc *Client) Start() {
 	cc.wg.Add(2)
 	go cc.processChan()
 	go cc.processRetryChan()
+}
+
+// Shutdown the client. This will block until the context's cancel
+// function is complete.
+func (cc *Client) Shutdown() {
+	cc.wg.Wait()
 }

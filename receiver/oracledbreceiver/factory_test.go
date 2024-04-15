@@ -13,8 +13,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/otel/metric/noop"
-	"go.opentelemetry.io/otel/trace"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -22,9 +24,10 @@ func TestNewFactory(t *testing.T) {
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
 		receiver.CreateSettings{
+			ID: component.NewID(metadata.Type),
 			TelemetrySettings: component.TelemetrySettings{
-				TracerProvider: trace.NewNoopTracerProvider(),
-				MeterProvider:  noop.NewMeterProvider(),
+				TracerProvider: nooptrace.NewTracerProvider(),
+				MeterProvider:  noopmetric.NewMeterProvider(),
 			},
 		},
 		factory.CreateDefaultConfig(),

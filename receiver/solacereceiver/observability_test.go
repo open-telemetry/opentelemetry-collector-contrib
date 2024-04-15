@@ -56,7 +56,7 @@ func TestRecordMetrics(t *testing.T) {
 	}
 }
 
-func validateMetric(t *testing.T, v *view.View, expected interface{}) {
+func validateMetric(t *testing.T, v *view.View, expected any) {
 	// hack to reset stats to 0
 	defer func() {
 		view.Unregister(v)

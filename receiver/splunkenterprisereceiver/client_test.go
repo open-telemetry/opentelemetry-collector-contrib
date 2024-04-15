@@ -34,13 +34,11 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 
 func TestClientCreation(t *testing.T) {
 	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
-			Auth: &configauth.Authentication{
-				AuthenticatorID: component.NewID("basicauth/client"),
-			},
+			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       1 * time.Second,
 			Timeout:            11 * time.Second,
@@ -49,29 +47,27 @@ func TestClientCreation(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.NewID("basicauth/client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
 		},
 	}
 	// create a client from an example config
-	client, err := newSplunkEntClient(cfg, host, componenttest.NewNopTelemetrySettings())
+	client, err := newSplunkEntClient(context.Background(), cfg, host, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	testEndpoint, _ := url.Parse("https://localhost:8089")
 
-	require.Equal(t, client.endpoint, testEndpoint)
+	require.Equal(t, testEndpoint, client.clients[typeIdx].endpoint)
 }
 
 // test functionality of createRequest which is used for building metrics out of
 // ad-hoc searches
 func TestClientCreateRequest(t *testing.T) {
 	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
-			Auth: &configauth.Authentication{
-				AuthenticatorID: component.NewID("basicauth/client"),
-			},
+			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       1 * time.Second,
 			Timeout:            11 * time.Second,
@@ -80,11 +76,11 @@ func TestClientCreateRequest(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.NewID("basicauth/client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
 		},
 	}
 	// create a client from an example config
-	client, err := newSplunkEntClient(cfg, host, componenttest.NewNopTelemetrySettings())
+	client, err := newSplunkEntClient(context.Background(), cfg, host, componenttest.NewNopTelemetrySettings())
 
 	require.NoError(t, err)
 
@@ -131,6 +127,7 @@ func TestClientCreateRequest(t *testing.T) {
 	}
 
 	ctx := context.Background()
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			req, err := test.client.createRequest(ctx, test.sr)
@@ -147,13 +144,11 @@ func TestClientCreateRequest(t *testing.T) {
 // createAPIRequest creates a request for api calls i.e. to introspection endpoint
 func TestAPIRequestCreate(t *testing.T) {
 	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		IdxEndpoint: confighttp.ClientConfig{
 			Endpoint: "https://localhost:8089",
-			Auth: &configauth.Authentication{
-				AuthenticatorID: component.NewID("basicauth/client"),
-			},
+			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       1 * time.Second,
 			Timeout:            11 * time.Second,
@@ -162,20 +157,21 @@ func TestAPIRequestCreate(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.NewID("basicauth/client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
 		},
 	}
 	// create a client from an example config
-	client, err := newSplunkEntClient(cfg, host, componenttest.NewNopTelemetrySettings())
+	client, err := newSplunkEntClient(context.Background(), cfg, host, componenttest.NewNopTelemetrySettings())
 
 	require.NoError(t, err)
 
 	ctx := context.Background()
+	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	req, err := client.createAPIRequest(ctx, "/test/endpoint")
 	require.NoError(t, err)
 
 	// build the expected request
-	expectedURL := client.endpoint.String() + "/test/endpoint"
+	expectedURL := client.clients[typeIdx].endpoint.String() + "/test/endpoint"
 	expected, _ := http.NewRequest(http.MethodGet, expectedURL, nil)
 
 	require.Equal(t, expected.URL, req.URL)

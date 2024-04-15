@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
 const (
@@ -19,13 +21,12 @@ const (
 )
 
 var (
-	_ component.Component = (*otlpExtension)(nil)
-	_ ptrace.Marshaler    = (*otlpExtension)(nil)
-	_ ptrace.Unmarshaler  = (*otlpExtension)(nil)
-	_ plog.Marshaler      = (*otlpExtension)(nil)
-	_ plog.Unmarshaler    = (*otlpExtension)(nil)
-	_ pmetric.Marshaler   = (*otlpExtension)(nil)
-	_ pmetric.Unmarshaler = (*otlpExtension)(nil)
+	_ encoding.TracesMarshalerExtension    = (*otlpExtension)(nil)
+	_ encoding.TracesUnmarshalerExtension  = (*otlpExtension)(nil)
+	_ encoding.LogsMarshalerExtension      = (*otlpExtension)(nil)
+	_ encoding.LogsUnmarshalerExtension    = (*otlpExtension)(nil)
+	_ encoding.MetricsMarshalerExtension   = (*otlpExtension)(nil)
+	_ encoding.MetricsUnmarshalerExtension = (*otlpExtension)(nil)
 )
 
 type otlpExtension struct {

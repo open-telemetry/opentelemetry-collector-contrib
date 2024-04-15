@@ -194,9 +194,9 @@ func Test_Matching_False(t *testing.T) {
 	}
 
 	attrs := pcommon.NewMap()
-	assert.NoError(t, attrs.FromRaw(map[string]interface{}{
+	assert.NoError(t, attrs.FromRaw(map[string]any{
 		"keyInt": 123,
-		"keyMap": map[string]interface{}{},
+		"keyMap": map[string]any{},
 	}))
 
 	library := pcommon.NewInstrumentationScope()
@@ -226,7 +226,7 @@ func Test_MatchingCornerCases(t *testing.T) {
 	}
 
 	mp, err := NewMatcher(cfg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 
 	assert.False(t, mp.Match(pcommon.NewMap(), resource("svcA"), pcommon.NewInstrumentationScope()))
@@ -349,7 +349,7 @@ func Test_Matching_True(t *testing.T) {
 	}
 
 	attrs := pcommon.NewMap()
-	assert.NoError(t, attrs.FromRaw(map[string]interface{}{
+	assert.NoError(t, attrs.FromRaw(map[string]any{
 		"keyString": "arithmetic",
 		"keyInt":    123,
 		"keyDouble": 3245.6,

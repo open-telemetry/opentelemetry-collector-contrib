@@ -38,7 +38,7 @@ func Time[K any](inputTime ottl.StringGetter[K], format string) (ottl.ExprFunc[K
 		return nil, err
 	}
 
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		t, err := inputTime.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

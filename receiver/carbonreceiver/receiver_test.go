@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/client"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport/client"
 )
 
 func Test_carbonreceiver_New(t *testing.T) {
@@ -48,7 +48,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "zero_value_parser",
 			args: args{
 				config: Config{
-					NetAddr: confignet.NetAddr{
+					AddrConfig: confignet.AddrConfig{
 						Endpoint:  defaultConfig.Endpoint,
 						Transport: defaultConfig.Transport,
 					},
@@ -56,13 +56,6 @@ func Test_carbonreceiver_New(t *testing.T) {
 				},
 				nextConsumer: consumertest.NewNop(),
 			},
-		},
-		{
-			name: "nil_nextConsumer",
-			args: args{
-				config: *defaultConfig,
-			},
-			wantErr: component.ErrNilNextConsumer,
 		},
 		{
 			name: "empty_endpoint",
@@ -76,9 +69,9 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "regex_parser",
 			args: args{
 				config: Config{
-					NetAddr: confignet.NetAddr{
+					AddrConfig: confignet.AddrConfig{
 						Endpoint:  "localhost:2003",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					Parser: &protocol.Config{
 						Type: "regex",
@@ -97,7 +90,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			got, err := newMetricsReceiver(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				require.NotNil(t, got)
@@ -123,7 +116,7 @@ func Test_carbonreceiver_Start(t *testing.T) {
 			name: "invalid_transport",
 			args: args{
 				config: Config{
-					NetAddr: confignet.NetAddr{
+					AddrConfig: confignet.AddrConfig{
 						Endpoint:  "localhost:2003",
 						Transport: "unknown_transp",
 					},
@@ -136,28 +129,10 @@ func Test_carbonreceiver_Start(t *testing.T) {
 			},
 			wantErr: errors.New("unsupported transport \"unknown_transp\""),
 		},
-		{
-			name: "negative_tcp_idle_timeout",
-			args: args{
-				config: Config{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "localhost:2003",
-						Transport: "tcp",
-					},
-					TCPIdleTimeout: -1 * time.Second,
-					Parser: &protocol.Config{
-						Type:   "plaintext",
-						Config: &protocol.PlaintextConfig{},
-					},
-				},
-				nextConsumer: consumertest.NewNop(),
-			},
-			wantErr: errors.New("invalid idle timeout: -1s"),
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
+			got, err := newMetricsReceiver(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
 			require.NoError(t, err)
 			err = got.Start(context.Background(), componenttest.NewNopHost())
 			assert.Equal(t, tt.wantErr, err)
@@ -199,7 +174,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			name: "default_config_udp",
 			configFn: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Transport = "udp"
+				cfg.Transport = confignet.TransportTypeUDP
 				return cfg
 			},
 			clientFn: func(t *testing.T) func(client.Metric) error {
@@ -218,7 +193,10 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			rt := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(recorder))
 			cs := receivertest.NewNopCreateSettings()
 			cs.TracerProvider = rt
-			rcv, err := New(cs, *cfg, sink)
+			cs.ReportStatus = func(event *component.StatusEvent) {
+				assert.NoError(t, event.Err())
+			}
+			rcv, err := newMetricsReceiver(cs, *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*carbonReceiver)
 

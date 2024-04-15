@@ -39,19 +39,19 @@ func (m *TTLMap) Start() {
 // Put adds the passed-in key and value to the underlying map. The current time
 // is attached to the entry for periodic expiration checking and eviction when
 // necessary.
-func (m *TTLMap) Put(k string, v interface{}) {
+func (m *TTLMap) Put(k string, v any) {
 	m.md.put(k, v, time.Now().Unix())
 }
 
 // Get returns the object in the underlying map at the given key. If there is no
 // value at that key, Get returns nil.
-func (m *TTLMap) Get(k string) interface{} {
+func (m *TTLMap) Get(k string) any {
 	return m.md.get(k)
 }
 
 type entry struct {
 	createTime int64
-	v          interface{}
+	v          any
 }
 
 type ttlMapData struct {
@@ -68,13 +68,13 @@ func newTTLMapData(maxAgeSeconds int64) *ttlMapData {
 	}
 }
 
-func (d *ttlMapData) put(k string, v interface{}, currTime int64) {
+func (d *ttlMapData) put(k string, v any, currTime int64) {
 	d.mux.Lock()
 	d.m[k] = entry{v: v, createTime: currTime}
 	d.mux.Unlock()
 }
 
-func (d *ttlMapData) get(k string) interface{} {
+func (d *ttlMapData) get(k string) any {
 	d.mux.Lock()
 	defer d.mux.Unlock()
 	entry, ok := d.m[k]

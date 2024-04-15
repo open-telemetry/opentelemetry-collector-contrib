@@ -146,6 +146,10 @@ all_set:
       enabled: true
     mongodb_atlas.project.name:
       enabled: true
+    mongodb_atlas.provider.name:
+      enabled: true
+    mongodb_atlas.region.name:
+      enabled: true
     mongodb_atlas.user.alias:
       enabled: true
 none_set:
@@ -294,6 +298,10 @@ none_set:
     mongodb_atlas.project.id:
       enabled: false
     mongodb_atlas.project.name:
+      enabled: false
+    mongodb_atlas.provider.name:
+      enabled: false
+    mongodb_atlas.region.name:
       enabled: false
     mongodb_atlas.user.alias:
       enabled: false

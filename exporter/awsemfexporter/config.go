@@ -137,8 +137,8 @@ func (config *Config) Validate() error {
 
 }
 
-func newEMFSupportedUnits() map[string]interface{} {
-	unitIndexer := map[string]interface{}{}
+func newEMFSupportedUnits() map[string]any {
+	unitIndexer := map[string]any{}
 	for _, unit := range []string{"Seconds", "Microseconds", "Milliseconds", "Bytes", "Kilobytes", "Megabytes",
 		"Gigabytes", "Terabytes", "Bits", "Kilobits", "Megabits", "Gigabits", "Terabits",
 		"Percent", "Count", "Bytes/Second", "Kilobytes/Second", "Megabytes/Second",

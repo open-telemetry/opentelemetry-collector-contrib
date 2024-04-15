@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis/v7"
+	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -23,11 +23,12 @@ import (
 // Runs intermittently, fetching info from Redis, creating metrics/datapoints,
 // and feeding them to a metricsConsumer.
 type redisScraper struct {
-	client   client
-	redisSvc *redisSvc
-	settings component.TelemetrySettings
-	mb       *metadata.MetricsBuilder
-	uptime   time.Duration
+	client     client
+	redisSvc   *redisSvc
+	settings   component.TelemetrySettings
+	mb         *metadata.MetricsBuilder
+	uptime     time.Duration
+	configInfo configInfo
 }
 
 const redisMaxDbs = 16 // Maximum possible number of redis databases
@@ -37,25 +38,30 @@ func newRedisScraper(cfg *Config, settings receiver.CreateSettings) (scraperhelp
 		Addr:     cfg.Endpoint,
 		Username: cfg.Username,
 		Password: string(cfg.Password),
-		Network:  cfg.Transport,
+		Network:  string(cfg.Transport),
 	}
 
 	var err error
-	if opts.TLSConfig, err = cfg.TLS.LoadTLSConfig(); err != nil {
+	if opts.TLSConfig, err = cfg.TLS.LoadTLSConfigContext(context.Background()); err != nil {
 		return nil, err
 	}
 	return newRedisScraperWithClient(newRedisClient(opts), settings, cfg)
 }
 
 func newRedisScraperWithClient(client client, settings receiver.CreateSettings, cfg *Config) (scraperhelper.Scraper, error) {
+	configInfo, err := newConfigInfo(cfg)
+	if err != nil {
+		return nil, err
+	}
 	rs := &redisScraper{
-		client:   client,
-		redisSvc: newRedisSvc(client),
-		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		client:     client,
+		redisSvc:   newRedisSvc(client),
+		settings:   settings.TelemetrySettings,
+		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		configInfo: configInfo,
 	}
 	return scraperhelper.NewScraper(
-		metadata.Type,
+		metadata.Type.String(),
 		rs.Scrape,
 		scraperhelper.WithShutdown(rs.shutdown),
 	)
@@ -96,6 +102,8 @@ func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 	rs.recordCmdMetrics(now, inf)
 	rb := rs.mb.NewResourceBuilder()
 	rb.SetRedisVersion(rs.getRedisVersion(inf))
+	rb.SetServerAddress(rs.configInfo.Address)
+	rb.SetServerPort(rs.configInfo.Port)
 	return rs.mb.Emit(metadata.WithResource(rb.Emit())), nil
 }
 

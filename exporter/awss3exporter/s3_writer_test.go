@@ -36,7 +36,49 @@ func TestS3Key(t *testing.T) {
 	require.NotNil(t, tm)
 
 	re := regexp.MustCompile(`keyprefix/year=2022/month=06/day=05/hour=00/minute=00/fileprefixlogs_([0-9]+).json`)
-	s3Key := getS3Key(tm, "keyprefix", "minute", "fileprefix", "logs", "json")
+	s3Key := getS3Key(tm, "keyprefix", "minute", "fileprefix", "logs", "json", "")
+	matched := re.MatchString(s3Key)
+	assert.Equal(t, true, matched)
+}
+
+func TestS3KeyEmptyFileFormat(t *testing.T) {
+	const layout = "2006-01-02"
+
+	tm, err := time.Parse(layout, "2022-06-05")
+
+	assert.NoError(t, err)
+	require.NotNil(t, tm)
+
+	re := regexp.MustCompile(`keyprefix/year=2022/month=06/day=05/hour=00/minute=00/fileprefixlogs_([0-9]+)`)
+	s3Key := getS3Key(tm, "keyprefix", "minute", "fileprefix", "logs", "", "")
+	matched := re.MatchString(s3Key)
+	assert.Equal(t, true, matched)
+}
+
+func TestS3KeyOfCompressedFile(t *testing.T) {
+	const layout = "2006-01-02"
+
+	tm, err := time.Parse(layout, "2022-06-05")
+
+	assert.NoError(t, err)
+	require.NotNil(t, tm)
+
+	re := regexp.MustCompile(`keyprefix/year=2022/month=06/day=05/hour=00/minute=00/fileprefixlogs_([0-9]+).json.gz`)
+	s3Key := getS3Key(tm, "keyprefix", "minute", "fileprefix", "logs", "json", "gzip")
+	matched := re.MatchString(s3Key)
+	assert.Equal(t, true, matched)
+}
+
+func TestS3KeyOfCompressedFileEmptyFileFormat(t *testing.T) {
+	const layout = "2006-01-02"
+
+	tm, err := time.Parse(layout, "2022-06-05")
+
+	assert.NoError(t, err)
+	require.NotNil(t, tm)
+
+	re := regexp.MustCompile(`keyprefix/year=2022/month=06/day=05/hour=00/minute=00/fileprefixlogs_([0-9]+).gz`)
+	s3Key := getS3Key(tm, "keyprefix", "minute", "fileprefix", "logs", "", "gzip")
 	matched := re.MatchString(s3Key)
 	assert.Equal(t, true, matched)
 }
@@ -65,4 +107,42 @@ func TestGetSessionConfigNoEndpoint(t *testing.T) {
 	sessionConfig := getSessionConfig(config)
 	assert.Empty(t, sessionConfig.Endpoint)
 	assert.Equal(t, sessionConfig.Region, aws.String(region))
+}
+
+func TestGetSessionConfigWithRoleArn(t *testing.T) {
+	const region = "region"
+	const roleArn = "arn:aws:iam::12345:role/s3-exportation-role"
+	config := &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:  region,
+			RoleArn: roleArn,
+		},
+	}
+
+	sessionConfig := getSessionConfig(config)
+	sess, err := getSession(config, sessionConfig)
+
+	creds, _ := sess.Config.Credentials.Get()
+
+	assert.NoError(t, err)
+	assert.Equal(t, sessionConfig.Region, aws.String(region))
+	assert.Equal(t, creds.ProviderName, "AssumeRoleProvider")
+}
+
+func TestGetSessionConfigWithoutRoleArn(t *testing.T) {
+	const region = "region"
+	config := &Config{
+		S3Uploader: S3UploaderConfig{
+			Region: region,
+		},
+	}
+
+	sessionConfig := getSessionConfig(config)
+	sess, err := getSession(config, sessionConfig)
+
+	creds, _ := sess.Config.Credentials.Get()
+
+	assert.NoError(t, err)
+	assert.Equal(t, sessionConfig.Region, aws.String(region))
+	assert.NotEqual(t, creds.ProviderName, "AssumeRoleProvider")
 }

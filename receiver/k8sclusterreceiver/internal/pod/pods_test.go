@@ -69,6 +69,7 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	mbc := metadata.DefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sPodStatusReason.Enabled = true
 	mbc.ResourceAttributes.K8sPodQosClass.Enabled = true
+	mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.Enabled = true
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopCreateSettings())
 	RecordMetrics(zap.NewNop(), mb, pod, ts)
@@ -287,7 +288,7 @@ func mockMetadataStore(to testCaseOptions) *metadata.Store {
 	}
 
 	store := &testutils.MockStore{
-		Cache:   map[string]interface{}{},
+		Cache:   map[string]any{},
 		WantErr: to.wantErrFromCache,
 	}
 

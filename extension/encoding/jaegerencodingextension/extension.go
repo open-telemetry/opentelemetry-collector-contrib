@@ -9,8 +9,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
+var _ encoding.TracesUnmarshalerExtension = &jaegerExtension{}
 var _ ptrace.Unmarshaler = &jaegerExtension{}
 
 type jaegerExtension struct {
@@ -26,6 +29,8 @@ func (e *jaegerExtension) Start(_ context.Context, _ component.Host) error {
 	switch e.config.Protocol {
 	case JaegerProtocolProtobuf:
 		e.unmarshaler = jaegerProtobufTrace{}
+	case JaegerProtocolJSON:
+		e.unmarshaler = jaegerJSONTrace{}
 	default:
 		return fmt.Errorf("unsupported protocol: %q", e.config.Protocol)
 	}

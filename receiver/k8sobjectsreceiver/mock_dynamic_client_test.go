@@ -57,12 +57,12 @@ func (c mockDynamicClient) deletePods(objects ...*unstructured.Unstructured) {
 	}
 }
 
-func generatePod(name, namespace string, labels map[string]interface{}, resourceVersion string) *unstructured.Unstructured {
+func generatePod(name, namespace string, labels map[string]any, resourceVersion string) *unstructured.Unstructured {
 	pod := unstructured.Unstructured{
-		Object: map[string]interface{}{
+		Object: map[string]any{
 			"apiVersion": "v1",
 			"kind":       "Pods",
-			"metadata": map[string]interface{}{
+			"metadata": map[string]any{
 				"namespace": namespace,
 				"name":      name,
 				"labels":    labels,

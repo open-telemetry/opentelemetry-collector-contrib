@@ -30,7 +30,7 @@ func createIsMapFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (o
 
 // nolint:errorlint
 func isMap[K any](target ottl.PMapGetter[K]) ottl.ExprFunc[K] {
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		_, err := target.Get(ctx, tCtx)
 		// Use type assertion because we don't want to check wrapped errors
 		switch err.(type) {

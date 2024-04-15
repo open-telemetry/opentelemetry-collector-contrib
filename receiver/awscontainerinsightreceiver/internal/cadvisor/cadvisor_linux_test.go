@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build linux
-// +build linux
 
 package cadvisor
 
@@ -51,22 +50,22 @@ func (m *mockCadvisorManager2) SubcontainersInfo(_ string, _ *info.ContainerInfo
 }
 
 func newMockCreateManager(t *testing.T) createCadvisorManager {
-	return func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
-		includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
-		perfEventsFile string) (cadvisorManager, error) {
+	return func(_ *memory.InMemoryCache, _ sysfs.SysFs, _ manager.HousekeepingConfig,
+		_ container.MetricSet, _ *http.Client, _ []string,
+		_ string) (cadvisorManager, error) {
 		return &mockCadvisorManager{t: t}, nil
 	}
 }
 
-var mockCreateManager2 = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
-	includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
-	perfEventsFile string) (cadvisorManager, error) {
+var mockCreateManager2 = func(_ *memory.InMemoryCache, _ sysfs.SysFs, _ manager.HousekeepingConfig,
+	_ container.MetricSet, _ *http.Client, _ []string,
+	_ string) (cadvisorManager, error) {
 	return &mockCadvisorManager2{}, nil
 }
 
-var mockCreateManagerWithError = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, houskeepingConfig manager.HouskeepingConfig,
-	includedMetricsSet container.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
-	perfEventsFile string) (cadvisorManager, error) {
+var mockCreateManagerWithError = func(_ *memory.InMemoryCache, _ sysfs.SysFs, _ manager.HousekeepingConfig,
+	_ container.MetricSet, _ *http.Client, _ []string,
+	_ string) (cadvisorManager, error) {
 	return nil, errors.New("error")
 }
 

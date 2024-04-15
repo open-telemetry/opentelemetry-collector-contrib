@@ -1,10 +1,11 @@
 type: filestats
+scope_name: otelcol/filestatsreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   codeowners:
     active: [atoulme]
 
@@ -57,3 +58,9 @@ metrics:
     gauge:
       value_type: int
     unit: "b"
+  file.count:
+    description: The number of files matched
+    enabled: false
+    gauge:
+      value_type: int
+    unit: "{file}"

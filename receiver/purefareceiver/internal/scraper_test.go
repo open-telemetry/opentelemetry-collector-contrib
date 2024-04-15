@@ -32,7 +32,7 @@ func TestToPrometheusConfig(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.NewIDWithName("bearertokenauth", "array01"): baExt,
+			component.MustNewIDWithName("bearertokenauth", "array01"): baExt,
 		},
 	}
 
@@ -42,7 +42,7 @@ func TestToPrometheusConfig(t *testing.T) {
 		{
 			Address: "array01",
 			Auth: configauth.Authentication{
-				AuthenticatorID: component.NewIDWithName("bearertokenauth", "array01"),
+				AuthenticatorID: component.MustNewIDWithName("bearertokenauth", "array01"),
 			},
 		},
 	}

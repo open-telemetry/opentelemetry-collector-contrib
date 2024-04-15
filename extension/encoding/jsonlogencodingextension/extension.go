@@ -12,6 +12,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+)
+
+var (
+	_ encoding.LogsMarshalerExtension   = (*jsonLogExtension)(nil)
+	_ encoding.LogsUnmarshalerExtension = (*jsonLogExtension)(nil)
 )
 
 type jsonLogExtension struct {
@@ -38,7 +45,7 @@ func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	p := plog.NewLogs()
 
 	// get json logs from the buffer
-	jsonVal := map[string]interface{}{}
+	jsonVal := map[string]any{}
 	if err := jsoniter.Unmarshal(buf, &jsonVal); err != nil {
 		return p, err
 	}

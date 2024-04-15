@@ -105,8 +105,7 @@ type MatchProperties struct {
 	MetricNames []string `mapstructure:"metric_names"`
 
 	// Attributes specifies the list of attributes to match against.
-	// All of these attributes must match exactly for a match to occur.
-	// Only match_type=strict is allowed if "attributes" are specified.
+	// All of these attributes must match for a match to occur.
 	// This is an optional field.
 	Attributes []Attribute `mapstructure:"attributes"`
 
@@ -198,7 +197,7 @@ type Attribute struct {
 
 	// Values specifies the value to match against.
 	// If it is not set, any value will match.
-	Value interface{} `mapstructure:"value"`
+	Value any `mapstructure:"value"`
 }
 
 // InstrumentationLibrary specifies the instrumentation library and optional version to match against.

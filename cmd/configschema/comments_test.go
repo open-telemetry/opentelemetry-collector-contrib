@@ -1,10 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
-//go:build !windows
-// +build !windows
-
 package configschema
 
 import (
@@ -39,7 +35,7 @@ func TestExternalType(t *testing.T) {
 }
 
 func TestSubPackage(t *testing.T) {
-	s := configtls.TLSClientSetting{}
+	s := configtls.ClientConfig{}
 	v := reflect.ValueOf(s)
 	_, err := commentsForStruct(v, testDR())
 	require.NoError(t, err)

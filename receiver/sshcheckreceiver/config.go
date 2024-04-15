@@ -20,15 +20,15 @@ var (
 	errMissingEndpoint           = errors.New(`"endpoint" not specified in config`)
 	errInvalidEndpoint           = errors.New(`"endpoint" is invalid`)
 	errMissingUsername           = errors.New(`"username" not specified in config`)
-	errMissingPasswordAndKeyFile = errors.New(`either "password" or "keyfile" is required`)
+	errMissingPasswordAndKeyFile = errors.New(`either "password" or "key_file" is required`)
 
 	errConfigNotSSHCheck  = errors.New("config was not a SSH check receiver config")
-	errWindowsUnsupported = errors.New(metadata.Type + " is unsupported on Windows.")
+	errWindowsUnsupported = errors.New(metadata.Type.String() + " is unsupported on Windows.")
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	configssh.SSHClientSettings             `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	configssh.SSHClientSettings    `mapstructure:",squash"`
 
 	CheckSFTP            bool                          `mapstructure:"check_sftp"`
 	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`

@@ -7,7 +7,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func GetValue(val pcommon.Value) interface{} {
+func GetValue(val pcommon.Value) any {
 	switch val.Type() {
 	case pcommon.ValueTypeStr:
 		return val.Str()

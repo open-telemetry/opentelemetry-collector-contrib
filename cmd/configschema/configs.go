@@ -26,7 +26,7 @@ type CfgInfo struct {
 	// the component type, e.g. "otlpreceiver.Config"
 	Type component.Type
 	// an instance of the component's configuration struct
-	CfgInstance interface{}
+	CfgInstance any
 }
 
 // GetAllCfgInfos accepts a Factories struct, then creates and returns a CfgInfo
@@ -81,7 +81,10 @@ func GetAllCfgInfos(components otelcol.Factories) []CfgInfo {
 // config for the component specified by the passed-in componentType and
 // componentName.
 func GetCfgInfo(components otelcol.Factories, componentType, componentName string) (CfgInfo, error) {
-	t := component.Type(componentName)
+	t, err := component.NewType(componentName)
+	if err != nil {
+		return CfgInfo{}, fmt.Errorf("failed to build component.Type: %w", err)
+	}
 	switch componentType {
 	case receiver:
 		f := components.Receivers[t]
@@ -105,6 +108,16 @@ func GetCfgInfo(components otelcol.Factories, componentType, componentName strin
 		}, nil
 	case exporter:
 		f := components.Exporters[t]
+		if f == nil {
+			return CfgInfo{}, fmt.Errorf("unknown %s name %q", componentType, componentName)
+		}
+		return CfgInfo{
+			Type:        f.Type(),
+			Group:       componentType,
+			CfgInstance: f.CreateDefaultConfig(),
+		}, nil
+	case connector:
+		f := components.Connectors[t]
 		if f == nil {
 			return CfgInfo{}, fmt.Errorf("unknown %s name %q", componentType, componentName)
 		}

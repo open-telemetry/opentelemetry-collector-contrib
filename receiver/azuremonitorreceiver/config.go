@@ -13,6 +13,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
 
+const (
+	azureCloud           = "AzureCloud"
+	azureGovernmentCloud = "AzureUSGovernment"
+)
+
 var (
 	// Predefined error responses for configuration validation failures
 	errMissingTenantID       = errors.New(`TenantID" is not specified in config`)
@@ -20,6 +25,7 @@ var (
 	errMissingClientID       = errors.New(`ClientID" is not specified in config`)
 	errMissingClientSecret   = errors.New(`ClientSecret" is not specified in config`)
 	errMissingFedTokenFile   = errors.New(`FederatedTokenFile is not specified in config`)
+	errInvalidCloud          = errors.New(`Cloud" is invalid`)
 
 	monitorServices = []string{
 		"Microsoft.EventGrid/eventSubscriptions",
@@ -223,20 +229,21 @@ var (
 
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	SubscriptionID                          string                        `mapstructure:"subscription_id"`
-	Authentication                          string                        `mapstructure:"auth"`
-	TenantID                                string                        `mapstructure:"tenant_id"`
-	ClientID                                string                        `mapstructure:"client_id"`
-	ClientSecret                            string                        `mapstructure:"client_secret"`
-	FederatedTokenFile                      string                        `mapstructure:"federated_token_file"`
-	ResourceGroups                          []string                      `mapstructure:"resource_groups"`
-	Services                                []string                      `mapstructure:"services"`
-	CacheResources                          float64                       `mapstructure:"cache_resources"`
-	CacheResourcesDefinitions               float64                       `mapstructure:"cache_resources_definitions"`
-	MaximumNumberOfMetricsInACall           int                           `mapstructure:"maximum_number_of_metrics_in_a_call"`
-	AppendTagsAsAttributes                  bool                          `mapstructure:"append_tags_as_attributes"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Cloud                          string                        `mapstructure:"cloud"`
+	SubscriptionID                 string                        `mapstructure:"subscription_id"`
+	Authentication                 string                        `mapstructure:"auth"`
+	TenantID                       string                        `mapstructure:"tenant_id"`
+	ClientID                       string                        `mapstructure:"client_id"`
+	ClientSecret                   string                        `mapstructure:"client_secret"`
+	FederatedTokenFile             string                        `mapstructure:"federated_token_file"`
+	ResourceGroups                 []string                      `mapstructure:"resource_groups"`
+	Services                       []string                      `mapstructure:"services"`
+	CacheResources                 float64                       `mapstructure:"cache_resources"`
+	CacheResourcesDefinitions      float64                       `mapstructure:"cache_resources_definitions"`
+	MaximumNumberOfMetricsInACall  int                           `mapstructure:"maximum_number_of_metrics_in_a_call"`
+	AppendTagsAsAttributes         bool                          `mapstructure:"append_tags_as_attributes"`
 }
 
 const (
@@ -277,6 +284,10 @@ func (c Config) Validate() (err error) {
 		}
 	default:
 		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v]", c.Authentication, servicePrincipal, workloadIdentity)
+	}
+
+	if c.Cloud != azureCloud && c.Cloud != azureGovernmentCloud {
+		err = multierr.Append(err, errInvalidCloud)
 	}
 
 	return

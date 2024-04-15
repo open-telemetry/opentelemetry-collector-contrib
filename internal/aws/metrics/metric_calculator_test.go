@@ -53,7 +53,7 @@ func TestFloat64RateCalculatorWithTooFrequentUpdate(t *testing.T) {
 }
 
 func newFloat64RateCalculator() MetricCalculator {
-	return NewMetricCalculator(func(prev *MetricValue, val interface{}, timestampMs time.Time) (interface{}, bool) {
+	return NewMetricCalculator(func(prev *MetricValue, val any, timestampMs time.Time) (any, bool) {
 		if prev != nil {
 			deltaTimestampMs := timestampMs.Sub(prev.Timestamp).Milliseconds()
 			deltaValue := val.(float64) - prev.RawValue.(float64)
@@ -125,7 +125,7 @@ func TestMapWithExpiryCleanup(t *testing.T) {
 	// the allotted sleep time.
 	store := &MapWithExpiry{
 		ttl:     time.Millisecond,
-		entries: make(map[interface{}]*MetricValue),
+		entries: make(map[any]*MetricValue),
 		lock:    &sync.Mutex{},
 	}
 	value1 := rand.Float64()

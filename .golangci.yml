@@ -87,6 +87,9 @@ linters-settings:
   gofmt:
     # simplify code: gofmt with `-s` option, true by default
     simplify: true
+    rewrite-rules:
+    - pattern: interface{}
+      replacement: any
 
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
@@ -167,3 +170,6 @@ issues:
     - text: "G402:"
       linters:
         - gosec
+    - text: "SA1019: \"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
+      linters:
+        - staticcheck

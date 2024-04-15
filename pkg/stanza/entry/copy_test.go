@@ -30,7 +30,7 @@ func TestCopyValueByte(t *testing.T) {
 }
 
 func TestCopyValueNil(t *testing.T) {
-	var value interface{}
+	var value any
 	require.Equal(t, nil, copyValue(value))
 }
 
@@ -50,7 +50,7 @@ func TestCopyValueByteArray(t *testing.T) {
 }
 
 func TestCopyValueInterfaceArray(t *testing.T) {
-	value := []interface{}{"test", true, 5}
+	value := []any{"test", true, 5}
 	require.Equal(t, value, copyValue(value))
 }
 
@@ -60,7 +60,7 @@ func TestCopyValueStringMap(t *testing.T) {
 }
 
 func TestCopyValueInterfaceMap(t *testing.T) {
-	value := map[string]interface{}{"test": 5}
+	value := map[string]any{"test": 5}
 	require.Equal(t, value, copyValue(value))
 }
 
@@ -72,7 +72,7 @@ func TestCopyValueUnknown(t *testing.T) {
 		Test: "value",
 	}
 	copiedValue := copyValue(unknownValue)
-	expectedValue := map[string]interface{}{
+	expectedValue := map[string]any{
 		"Test": "value",
 	}
 	require.Equal(t, expectedValue, copiedValue)
@@ -88,7 +88,7 @@ func TestCopyStringMap(t *testing.T) {
 }
 
 func TestCopyInterfaceMap(t *testing.T) {
-	stringMap := map[string]interface{}{
+	stringMap := map[string]any{
 		"message": "test",
 	}
 	copiedMap := copyInterfaceMap(stringMap)
@@ -118,10 +118,10 @@ func TestCopyIntArray(t *testing.T) {
 }
 
 func TestCopyInterfaceArray(t *testing.T) {
-	interfaceArray := []interface{}{"test", 0, true}
+	interfaceArray := []any{"test", 0, true}
 	copiedArray := copyInterfaceArray(interfaceArray)
 	interfaceArray[0] = "new"
-	require.Equal(t, []interface{}{"test", 0, true}, copiedArray)
+	require.Equal(t, []any{"test", 0, true}, copiedArray)
 }
 
 func TestCopyUnknownValueValid(t *testing.T) {
@@ -132,17 +132,17 @@ func TestCopyUnknownValueValid(t *testing.T) {
 		Test: "value",
 	}
 	copiedValue := copyUnknown(unknownValue)
-	expectedValue := map[string]interface{}{
+	expectedValue := map[string]any{
 		"Test": "value",
 	}
 	require.Equal(t, expectedValue, copiedValue)
 }
 
 func TestCopyUnknownValueInalid(t *testing.T) {
-	unknownValue := map[string]interface{}{
+	unknownValue := map[string]any{
 		"foo": make(chan int),
 	}
 	copiedValue := copyUnknown(unknownValue)
-	var expectedValue interface{}
+	var expectedValue any
 	require.Equal(t, expectedValue, copiedValue)
 }

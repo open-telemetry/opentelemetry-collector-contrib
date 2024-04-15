@@ -20,14 +20,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"go.opentelemetry.io/otel/metric/noop"
-	"go.opentelemetry.io/otel/trace"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 )
 
 var noopTelemetrySettings = component.TelemetrySettings{
-	TracerProvider: trace.NewNoopTracerProvider(),
-	MeterProvider:  noop.NewMeterProvider(),
+	TracerProvider: nooptrace.NewTracerProvider(),
+	MeterProvider:  noopmetric.NewMeterProvider(),
 	Logger:         zap.NewNop(),
 }
 
@@ -139,7 +139,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T) {
 	otlpExporterFactory := otlpexporter.NewFactory()
 	otlpConfig := &otlpexporter.Config{
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: "example.com:1234",
 		},
 	}
@@ -152,10 +152,10 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
 		component.DataTypeTraces: {
-			component.NewID("otlp/traces"): otlpTracesExporter,
+			component.MustNewIDWithName("otlp", "traces"): otlpTracesExporter,
 		},
 		component.DataTypeMetrics: {
-			component.NewID("otlp/metrics"): otlpMetricsExporter,
+			component.MustNewIDWithName("otlp", "metrics"): otlpMetricsExporter,
 		},
 	})
 
@@ -198,7 +198,7 @@ func TestShutdown(t *testing.T) {
 	}
 
 	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, exp)
 
 	// test

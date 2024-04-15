@@ -59,7 +59,7 @@ func TestTraceDataToLogService(t *testing.T) {
 	}
 }
 
-func loadFromJSON(file string, obj interface{}) error {
+func loadFromJSON(file string, obj any) error {
 	blob, err := os.ReadFile(file)
 	if err == nil {
 		err = json.Unmarshal(blob, obj)
@@ -97,7 +97,7 @@ func fillResource(resource pcommon.Resource) {
 }
 
 func fillHTTPClientSpan(span ptrace.Span) {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPStatusCode] = 200
@@ -129,7 +129,7 @@ func fillHTTPClientSpan(span ptrace.Span) {
 }
 
 func fillHTTPServerSpan(span ptrace.Span) {
-	attributes := make(map[string]interface{})
+	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
@@ -151,7 +151,7 @@ func fillHTTPServerSpan(span ptrace.Span) {
 	status.SetMessage("something error")
 }
 
-func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
+func constructSpanAttributes(attributes map[string]any) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {

@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -16,12 +18,12 @@ import (
 func TestConfigUnmarshalUnknownAttributes(t *testing.T) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
-	configMap := confmap.NewFromStringMap(map[string]interface{}{
+	configMap := confmap.NewFromStringMap(map[string]any{
 		"dataset_url":       "https://example.com",
 		"api_key":           "secret",
 		"unknown_attribute": "some value",
 	})
-	err := config.Unmarshal(configMap)
+	err := component.UnmarshalConfig(configMap, config)
 
 	unmarshalErr := fmt.Errorf("1 error(s) decoding:\n\n* '' has invalid keys: unknown_attribute")
 	expectedError := fmt.Errorf("cannot unmarshal config: %w", unmarshalErr)
@@ -32,12 +34,12 @@ func TestConfigUnmarshalUnknownAttributes(t *testing.T) {
 func TestConfigUseDefaults(t *testing.T) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
-	configMap := confmap.NewFromStringMap(map[string]interface{}{
+	configMap := confmap.NewFromStringMap(map[string]any{
 		"dataset_url": "https://example.com",
 		"api_key":     "secret",
 	})
 	err := config.Unmarshal(configMap)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t, "https://example.com", config.DatasetURL)
 	assert.Equal(t, "secret", string(config.APIKey))
@@ -108,9 +110,11 @@ func TestConfigString(t *testing.T) {
 	config := Config{
 		DatasetURL: "https://example.com",
 		APIKey:     "secret",
+		Debug:      true,
 		BufferSettings: BufferSettings{
-			MaxLifetime: 123,
-			GroupBy:     []string{"field1", "field2"},
+			MaxLifetime:    123,
+			PurgeOlderThan: 567,
+			GroupBy:        []string{"field1", "field2"},
 		},
 		TracesSettings: TracesSettings{
 			exportSettings: exportSettings{
@@ -134,13 +138,13 @@ func TestConfigString(t *testing.T) {
 			ServerHost:  "foo-bar",
 			UseHostName: false,
 		},
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 	}
 
 	assert.Equal(t,
-		"DatasetURL: https://example.com; BufferSettings: {MaxLifetime:123ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s}; LogsSettings: {ExportResourceInfo:true ExportResourcePrefix:AAA ExportScopeInfo:true ExportScopePrefix:BBB DecomposeComplexMessageField:true DecomposedComplexMessagePrefix:EEE exportSettings:{ExportSeparator:CCC ExportDistinguishingSuffix:DDD}}; TracesSettings: {exportSettings:{ExportSeparator:TTT ExportDistinguishingSuffix:UUU}}; ServerHostSettings: {UseHostName:false ServerHost:foo-bar}; RetrySettings: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
+		"DatasetURL: https://example.com; APIKey: [REDACTED] (6); Debug: true; BufferSettings: {MaxLifetime:123ns PurgeOlderThan:567ns GroupBy:[field1 field2] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s}; LogsSettings: {ExportResourceInfo:true ExportResourcePrefix:AAA ExportScopeInfo:true ExportScopePrefix:BBB DecomposeComplexMessageField:true DecomposedComplexMessagePrefix:EEE exportSettings:{ExportSeparator:CCC ExportDistinguishingSuffix:DDD}}; TracesSettings: {exportSettings:{ExportSeparator:TTT ExportDistinguishingSuffix:UUU}}; ServerHostSettings: {UseHostName:false ServerHost:foo-bar}; BackOffConfig: {Enabled:true InitialInterval:5s RandomizationFactor:0.5 Multiplier:1.5 MaxInterval:30s MaxElapsedTime:5m0s}; QueueSettings: {Enabled:true NumConsumers:10 QueueSize:1000 StorageID:<nil>}; TimeoutSettings: {Timeout:5s}",
 		config.String(),
 	)
 }
@@ -148,7 +152,7 @@ func TestConfigString(t *testing.T) {
 func TestConfigUseProvidedExportResourceInfoValue(t *testing.T) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
-	configMap := confmap.NewFromStringMap(map[string]interface{}{
+	configMap := confmap.NewFromStringMap(map[string]any{
 		"dataset_url": "https://example.com",
 		"api_key":     "secret",
 		"logs": map[string]any{
@@ -156,14 +160,14 @@ func TestConfigUseProvidedExportResourceInfoValue(t *testing.T) {
 		},
 	})
 	err := config.Unmarshal(configMap)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, true, config.LogsSettings.ExportResourceInfo)
 }
 
 func TestConfigUseProvidedExportScopeInfoValue(t *testing.T) {
 	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
-	configMap := confmap.NewFromStringMap(map[string]interface{}{
+	configMap := confmap.NewFromStringMap(map[string]any{
 		"dataset_url": "https://example.com",
 		"api_key":     "secret",
 		"logs": map[string]any{
@@ -171,6 +175,6 @@ func TestConfigUseProvidedExportScopeInfoValue(t *testing.T) {
 		},
 	})
 	err := config.Unmarshal(configMap)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, false, config.LogsSettings.ExportScopeInfo)
 }

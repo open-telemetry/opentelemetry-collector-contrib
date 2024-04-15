@@ -19,7 +19,7 @@ func TestValidStream(t *testing.T) {
 
 	uaa, err := newUAATokenProvider(
 		zap.NewNop(),
-		cfg.UAA.LimitedHTTPClientSettings,
+		cfg.UAA.LimitedClientConfig,
 		cfg.UAA.Username,
 		string(cfg.UAA.Password))
 
@@ -27,9 +27,10 @@ func TestValidStream(t *testing.T) {
 	require.NotNil(t, uaa)
 
 	streamFactory, streamErr := newEnvelopeStreamFactory(
+		context.Background(),
 		componenttest.NewNopTelemetrySettings(),
 		uaa,
-		cfg.RLPGateway.HTTPClientSettings,
+		cfg.RLPGateway.ClientConfig,
 		componenttest.NewNopHost())
 
 	require.NoError(t, streamErr)
@@ -55,7 +56,7 @@ func TestInvalidStream(t *testing.T) {
 
 	uaa, err := newUAATokenProvider(
 		zap.NewNop(),
-		cfg.UAA.LimitedHTTPClientSettings,
+		cfg.UAA.LimitedClientConfig,
 		cfg.UAA.Username,
 		string(cfg.UAA.Password))
 
@@ -64,9 +65,10 @@ func TestInvalidStream(t *testing.T) {
 
 	// Stream create should fail if given empty shard ID
 	streamFactory, streamErr := newEnvelopeStreamFactory(
+		context.Background(),
 		componenttest.NewNopTelemetrySettings(),
 		uaa,
-		cfg.RLPGateway.HTTPClientSettings,
+		cfg.RLPGateway.ClientConfig,
 		componenttest.NewNopHost())
 
 	require.NoError(t, streamErr)

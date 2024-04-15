@@ -45,11 +45,11 @@ func armClientFuncMock(string, azcore.TokenCredential, *arm.ClientOptions) (*arm
 	return &armresources.Client{}, nil
 }
 
-func armMonitorDefinitionsClientFuncMock(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error) {
+func armMonitorDefinitionsClientFuncMock(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error) {
 	return &armmonitor.MetricDefinitionsClient{}, nil
 }
 
-func armMonitorMetricsClientFuncMock(azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error) {
+func armMonitorMetricsClientFuncMock(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error) {
 	return &armmonitor.MetricsClient{}, nil
 }
 
@@ -85,7 +85,7 @@ func TestAzureScraperStart(t *testing.T) {
 			name: "service_principal",
 			testFunc: func(t *testing.T) {
 				customCfg := &Config{
-					ScraperControllerSettings:     cfg.ScraperControllerSettings,
+					ControllerConfig:              cfg.ControllerConfig,
 					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
 					CacheResources:                24 * 60 * 60,
 					CacheResourcesDefinitions:     24 * 60 * 60,
@@ -113,7 +113,7 @@ func TestAzureScraperStart(t *testing.T) {
 			name: "workload_identity",
 			testFunc: func(t *testing.T) {
 				customCfg := &Config{
-					ScraperControllerSettings:     cfg.ScraperControllerSettings,
+					ControllerConfig:              cfg.ControllerConfig,
 					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
 					CacheResources:                24 * 60 * 60,
 					CacheResourcesDefinitions:     24 * 60 * 60,
@@ -150,10 +150,10 @@ type armClientMock struct {
 
 func (acm *armClientMock) NewListPager(_ *armresources.ClientListOptions) *runtime.Pager[armresources.ClientListResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armresources.ClientListResponse]{
-		More: func(page armresources.ClientListResponse) bool {
+		More: func(armresources.ClientListResponse) bool {
 			return acm.current < len(acm.pages)
 		},
-		Fetcher: func(ctx context.Context, page *armresources.ClientListResponse) (armresources.ClientListResponse, error) {
+		Fetcher: func(context.Context, *armresources.ClientListResponse) (armresources.ClientListResponse, error) {
 			currentPage := acm.pages[acm.current]
 			acm.current++
 			return currentPage, nil
@@ -168,10 +168,10 @@ type metricsDefinitionsClientMock struct {
 
 func (mdcm *metricsDefinitionsClientMock) NewListPager(resourceURI string, _ *armmonitor.MetricDefinitionsClientListOptions) *runtime.Pager[armmonitor.MetricDefinitionsClientListResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armmonitor.MetricDefinitionsClientListResponse]{
-		More: func(page armmonitor.MetricDefinitionsClientListResponse) bool {
+		More: func(armmonitor.MetricDefinitionsClientListResponse) bool {
 			return mdcm.current[resourceURI] < len(mdcm.pages[resourceURI])
 		},
-		Fetcher: func(ctx context.Context, page *armmonitor.MetricDefinitionsClientListResponse) (armmonitor.MetricDefinitionsClientListResponse, error) {
+		Fetcher: func(context.Context, *armmonitor.MetricDefinitionsClientListResponse) (armmonitor.MetricDefinitionsClientListResponse, error) {
 			currentPage := mdcm.pages[resourceURI][mdcm.current[resourceURI]]
 			mdcm.current[resourceURI]++
 			return currentPage, nil
@@ -451,7 +451,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientListResponse {
 	name1, name2, name3, name4, name5, name6, name7, dimension1, dimension2, dimensionValue := "metric1", "metric2",
 		"metric3", "metric4", "metric5", "metric6", "metric7", "dimension1", "dimension2", "dimension value"
-	var unit1 armmonitor.MetricUnit = "unit1"
+	var unit1 armmonitor.Unit = "unit1"
 	var value1 float64 = 1
 
 	return map[string]map[string]armmonitor.MetricsClientListResponse{

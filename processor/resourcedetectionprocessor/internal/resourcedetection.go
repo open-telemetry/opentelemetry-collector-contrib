@@ -23,7 +23,7 @@ type Detector interface {
 	Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error)
 }
 
-type DetectorConfig interface{}
+type DetectorConfig any
 
 type ResourceDetectorConfig interface {
 	GetConfigFromType(DetectorType) DetectorConfig
@@ -163,7 +163,7 @@ func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {
 func filterAttributes(am pcommon.Map, attributesToKeep map[string]struct{}) []string {
 	if len(attributesToKeep) > 0 {
 		var droppedAttributes []string
-		am.RemoveIf(func(k string, v pcommon.Value) bool {
+		am.RemoveIf(func(k string, _ pcommon.Value) bool {
 			_, keep := attributesToKeep[k]
 			if !keep {
 				droppedAttributes = append(droppedAttributes, k)

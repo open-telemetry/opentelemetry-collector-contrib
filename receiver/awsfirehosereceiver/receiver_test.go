@@ -77,7 +77,7 @@ func TestStart(t *testing.T) {
 		})
 		cfg := &Config{
 			RecordType: defaultRecordType,
-			HTTPServerSettings: confighttp.HTTPServerSettings{
+			ServerConfig: confighttp.ServerConfig{
 				Endpoint: listener.Addr().String(),
 			},
 		}
@@ -102,7 +102,7 @@ func TestFirehoseRequest(t *testing.T) {
 	testCases := map[string]struct {
 		headers          map[string]string
 		commonAttributes map[string]string
-		body             interface{}
+		body             any
 		consumer         firehoseConsumer
 		wantStatusCode   int
 		wantErr          error

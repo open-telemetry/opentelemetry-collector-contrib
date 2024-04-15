@@ -13,7 +13,7 @@ type (
 	// EndpointID unique identifies an endpoint per-observer instance.
 	EndpointID string
 	// EndpointEnv is a map of endpoint attributes.
-	EndpointEnv map[string]interface{}
+	EndpointEnv map[string]any
 	// EndpointType is a type of an endpoint like a port or pod.
 	EndpointType string
 )
@@ -23,6 +23,8 @@ const (
 	PortType EndpointType = "port"
 	// PodType is a pod endpoint.
 	PodType EndpointType = "pod"
+	// K8sServiceType is a service endpoint.
+	K8sServiceType EndpointType = "k8s.service"
 	// K8sNodeType is a Kubernetes Node endpoint.
 	K8sNodeType EndpointType = "k8s.node"
 	// HostPortType is a hostport endpoint.
@@ -34,6 +36,7 @@ const (
 var (
 	_ EndpointDetails = (*Pod)(nil)
 	_ EndpointDetails = (*Port)(nil)
+	_ EndpointDetails = (*K8sService)(nil)
 	_ EndpointDetails = (*K8sNode)(nil)
 	_ EndpointDetails = (*HostPort)(nil)
 	_ EndpointDetails = (*Container)(nil)
@@ -92,6 +95,40 @@ func (e Endpoint) equals(other Endpoint) bool {
 	}
 }
 
+// K8sService is a discovered k8s service.
+type K8sService struct {
+	// Name of the service.
+	Name string
+	// UID is the unique ID in the cluster for the service.
+	UID string
+	// Labels is a map of user-specified metadata.
+	Labels map[string]string
+	// Annotations is a map of user-specified metadata.
+	Annotations map[string]string
+	// Namespace must be unique for services with same name.
+	Namespace string
+	// ClusterIP is the IP under which the service is reachable within the cluster.
+	ClusterIP string
+	// ServiceType is the type of the service: ClusterIP, NodePort, LoadBalancer, ExternalName
+	ServiceType string
+}
+
+func (s *K8sService) Env() EndpointEnv {
+	return map[string]any{
+		"uid":          s.UID,
+		"name":         s.Name,
+		"labels":       s.Labels,
+		"annotations":  s.Annotations,
+		"namespace":    s.Namespace,
+		"cluster_ip":   s.ClusterIP,
+		"service_type": s.ServiceType,
+	}
+}
+
+func (s *K8sService) Type() EndpointType {
+	return K8sServiceType
+}
+
 // Pod is a discovered k8s pod.
 type Pod struct {
 	// Name of the pod.
@@ -107,7 +144,7 @@ type Pod struct {
 }
 
 func (p *Pod) Env() EndpointEnv {
-	return map[string]interface{}{
+	return map[string]any{
 		"uid":         p.UID,
 		"name":        p.Name,
 		"labels":      p.Labels,
@@ -133,7 +170,7 @@ type Port struct {
 }
 
 func (p *Port) Env() EndpointEnv {
-	return map[string]interface{}{
+	return map[string]any{
 		"name":      p.Name,
 		"port":      p.Port,
 		"pod":       p.Pod.Env(),
@@ -162,7 +199,7 @@ type HostPort struct {
 }
 
 func (h *HostPort) Env() EndpointEnv {
-	return map[string]interface{}{
+	return map[string]any{
 		"process_name": h.ProcessName,
 		"command":      h.Command,
 		"is_ipv6":      h.IsIPv6,
@@ -201,7 +238,7 @@ type Container struct {
 }
 
 func (c *Container) Env() EndpointEnv {
-	return map[string]interface{}{
+	return map[string]any{
 		"name":           c.Name,
 		"image":          c.Image,
 		"tag":            c.Tag,
@@ -245,7 +282,7 @@ type K8sNode struct {
 }
 
 func (n *K8sNode) Env() EndpointEnv {
-	return map[string]interface{}{
+	return map[string]any{
 		"name":                  n.Name,
 		"uid":                   n.UID,
 		"annotations":           n.Annotations,

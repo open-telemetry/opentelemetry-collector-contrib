@@ -406,7 +406,7 @@ Number of active stages in this job.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| { task } | Sum | Int | Cumulative | false |
+| { stage } | Sum | Int | Cumulative | false |
 
 ### spark.job.stage.result
 
@@ -414,7 +414,7 @@ Number of stages with a specific result in this job.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| { task } | Sum | Int | Cumulative | true |
+| { stage } | Sum | Int | Cumulative | true |
 
 #### Attributes
 

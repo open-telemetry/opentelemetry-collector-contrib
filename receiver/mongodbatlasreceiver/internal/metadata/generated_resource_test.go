@@ -23,6 +23,8 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetMongodbAtlasProcessTypeName("mongodb_atlas.process.type_name-val")
 			rb.SetMongodbAtlasProjectID("mongodb_atlas.project.id-val")
 			rb.SetMongodbAtlasProjectName("mongodb_atlas.project.name-val")
+			rb.SetMongodbAtlasProviderName("mongodb_atlas.provider.name-val")
+			rb.SetMongodbAtlasRegionName("mongodb_atlas.region.name-val")
 			rb.SetMongodbAtlasUserAlias("mongodb_atlas.user.alias-val")
 
 			res := rb.Emit()
@@ -32,7 +34,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 9, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 11, res.Attributes().Len())
+				assert.Equal(t, 13, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -89,6 +91,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "mongodb_atlas.project.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("mongodb_atlas.provider.name")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "mongodb_atlas.provider.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("mongodb_atlas.region.name")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "mongodb_atlas.region.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.user.alias")
 			assert.Equal(t, test == "all_set", ok)

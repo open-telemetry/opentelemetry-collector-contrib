@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -48,11 +49,6 @@ func TestNew(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name:    "nil next Consumer",
-			args:    args{},
-			wantErr: component.ErrNilNextConsumer,
-		},
-		{
 			name: "happy path",
 			args: args{
 				nextConsumer: consumertest.NewNop(),
@@ -62,7 +58,7 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: tt.args.address,
 				},
 			}
@@ -84,7 +80,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	_, portStr, err := net.SplitHostPort(l.Addr().String())
 	require.NoError(t, err, "failed to split listener address: %v", err)
 	cfg := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:" + portStr,
 		},
 	}
@@ -132,12 +128,12 @@ func TestStartTraceReception(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			cfg := &Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:0",
 				},
 			}
 			zr, err := newReceiver(cfg, sink, receivertest.NewNopCreateSettings())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, zr)
 
 			err = zr.Start(context.Background(), tt.host)
@@ -225,7 +221,7 @@ func TestReceiverContentTypes(t *testing.T) {
 
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "",
 				},
 			}
@@ -252,7 +248,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "",
 		},
 	}
@@ -274,7 +270,7 @@ func TestReceiverConsumerError(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:9411",
 		},
 	}
@@ -286,6 +282,28 @@ func TestReceiverConsumerError(t *testing.T) {
 
 	require.Equal(t, 500, req.Code)
 	require.Equal(t, "\"Internal Server Error\"", req.Body.String())
+}
+
+func TestReceiverConsumerPermanentError(t *testing.T) {
+	body, err := os.ReadFile(zipkinV2Single)
+	require.NoError(t, err)
+
+	r := httptest.NewRequest("POST", "/api/v2/spans", bytes.NewBuffer(body))
+	r.Header.Add("content-type", "application/json")
+
+	cfg := &Config{
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: "localhost:9411",
+		},
+	}
+	zr, err := newReceiver(cfg, consumertest.NewErr(consumererror.NewPermanent(errors.New("consumer error"))), receivertest.NewNopCreateSettings())
+	require.NoError(t, err)
+
+	req := httptest.NewRecorder()
+	zr.ServeHTTP(req, r)
+
+	require.Equal(t, 400, req.Code)
+	require.Equal(t, "\"Bad Request\"", req.Body.String())
 }
 
 func thriftExample() []byte {
@@ -400,7 +418,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 
 	next := new(consumertest.TracesSink)
 	cfg := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "",
 		},
 		ParseStringTags: true,
@@ -420,7 +438,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	td := next.AllTraces()[0]
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 
-	expected := map[string]interface{}{
+	expected := map[string]any{
 		"cache_hit":            true,
 		"ping_count":           int64(25),
 		"timeout":              12.3,
@@ -441,7 +459,7 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 
 	cfg := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "",
 		},
 		ParseStringTags: true,

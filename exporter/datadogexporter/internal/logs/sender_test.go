@@ -12,7 +12,8 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
@@ -35,7 +36,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 1",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag1:true",
 					"hostname": "hostname",
@@ -48,7 +49,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 2",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag1:true",
 					"hostname": "hostname",
@@ -75,7 +76,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 1",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag1:true",
 					"hostname": "hostname",
@@ -88,7 +89,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 2",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag2:true",
 					"hostname": "hostname",
@@ -118,7 +119,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 1",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag1:true",
 					"hostname": "hostname",
@@ -131,7 +132,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 2",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag1:true",
 					"hostname": "hostname",
@@ -144,7 +145,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 3",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag2:true",
 					"hostname": "hostname",
@@ -157,7 +158,7 @@ func TestSubmitLogs(t *testing.T) {
 				Hostname: datadog.PtrString("hostname"),
 				Message:  "log 4",
 				Service:  datadog.PtrString("server"),
-				UnparsedObject: map[string]interface{}{
+				UnparsedObject: map[string]any{
 					"ddsource": "golang",
 					"ddtags":   "tag2:true",
 					"hostname": "hostname",
@@ -191,7 +192,7 @@ func TestSubmitLogs(t *testing.T) {
 				}
 			})
 			defer server.Close()
-			s := NewSender(server.URL, logger, exporterhelper.TimeoutSettings{Timeout: time.Second * 10}, true, true, "")
+			s := NewSender(server.URL, logger, confighttp.ClientConfig{Timeout: time.Second * 10, TLSSetting: configtls.ClientConfig{InsecureSkipVerify: true}}, true, "")
 			if err := s.SubmitLogs(context.Background(), tt.payload); err != nil {
 				t.Fatal(err)
 			}

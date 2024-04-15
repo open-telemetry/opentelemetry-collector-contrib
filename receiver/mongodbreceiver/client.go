@@ -18,7 +18,7 @@ import (
 
 // client is an interface that exposes functionality towards a mongo environment
 type client interface {
-	ListDatabaseNames(ctx context.Context, filters interface{}, opts ...*options.ListDatabasesOptions) ([]string, error)
+	ListDatabaseNames(ctx context.Context, filters any, opts ...*options.ListDatabasesOptions) ([]string, error)
 	ListCollectionNames(ctx context.Context, DBName string) ([]string, error)
 	Disconnect(context.Context) error
 	GetVersion(context.Context) (*version.Version, error)

@@ -122,9 +122,9 @@ func TestDimensionsFilter(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			f, err := newDimensionsFilter(test.filter)
 			if test.shouldError {
-				require.NotNil(t, err)
+				require.Error(t, err)
 			} else {
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 
 			require.Equal(t, test.shouldMatch, f.Matches(test.input))

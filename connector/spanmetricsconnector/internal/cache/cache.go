@@ -64,6 +64,11 @@ func (c *Cache[K, V]) Get(key K) (V, bool) {
 	return val, ok
 }
 
+// Remove removes a key from the cache if it exists.
+func (c *Cache[K, V]) Remove(key K) bool {
+	return c.lru.Remove(key)
+}
+
 // Len returns the number of items in the cache.
 func (c *Cache[K, V]) Len() int {
 	return c.lru.Len()
@@ -73,4 +78,18 @@ func (c *Cache[K, V]) Len() int {
 func (c *Cache[K, V]) Purge() {
 	c.lru.Purge()
 	c.RemoveEvictedItems()
+}
+
+// ForEach iterates over all the items within the cache, as well as the evicted items (if any).
+func (c *Cache[K, V]) ForEach(fn func(k K, v V)) {
+	for _, k := range c.lru.Keys() {
+		v, ok := c.lru.Get(k)
+		if ok {
+			fn(k.(K), v.(V))
+		}
+	}
+
+	for k, v := range c.evictedItems {
+		fn(k, v)
+	}
 }

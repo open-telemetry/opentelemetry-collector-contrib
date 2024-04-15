@@ -239,8 +239,8 @@ func createQueuedIngestor(config *Config, adxclient *kusto.Client, tablename str
 	return ingestor, err
 }
 
-func getScopeMap(sc pcommon.InstrumentationScope) map[string]interface{} {
-	scopeMap := make(map[string]interface{}, 2)
+func getScopeMap(sc pcommon.InstrumentationScope) map[string]any {
+	scopeMap := make(map[string]any, 2)
 
 	if sc.Name() != "" {
 		scopeMap[scopename] = sc.Name()

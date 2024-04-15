@@ -33,8 +33,8 @@ func (wme *wrapperMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetri
 }
 
 func (wme *wrapperMetricsExporter) Capabilities() consumer.Capabilities {
-	// Always return false since this wrapper clones the data.
-	return consumer.Capabilities{MutatesData: false}
+	// Always return true since this wrapper modifies data inplace.
+	return consumer.Capabilities{MutatesData: true}
 }
 
 // WrapMetricsExporter wraps a given exporter.Metrics and based on the given settings
@@ -47,9 +47,7 @@ func WrapMetricsExporter(set Settings, exporter exporter.Metrics) exporter.Metri
 }
 
 func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
-	cloneMd := pmetric.NewMetrics()
-	md.CopyTo(cloneMd)
-	rms := cloneMd.ResourceMetrics()
+	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		resource := rms.At(i).Resource()
 
@@ -62,7 +60,7 @@ func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
 			}
 		}
 	}
-	return cloneMd
+	return md
 }
 
 // addAttributesToMetric adds additional labels to the given metric
@@ -107,6 +105,7 @@ func addAttributesToExponentialHistogramDataPoints(ps pmetric.ExponentialHistogr
 }
 
 func joinAttributeMaps(from, to pcommon.Map) {
+	to.EnsureCapacity(from.Len() + to.Len())
 	from.Range(func(k string, v pcommon.Value) bool {
 		v.CopyTo(to.PutEmpty(k))
 		return true

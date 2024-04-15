@@ -2343,7 +2343,7 @@ type metricSparkJobStageActive struct {
 func (m *metricSparkJobStageActive) init() {
 	m.data.SetName("spark.job.stage.active")
 	m.data.SetDescription("Number of active stages in this job.")
-	m.data.SetUnit("{ task }")
+	m.data.SetUnit("{ stage }")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -2394,7 +2394,7 @@ type metricSparkJobStageResult struct {
 func (m *metricSparkJobStageResult) init() {
 	m.data.SetName("spark.job.stage.result")
 	m.data.SetDescription("Number of stages with a specific result in this job.")
-	m.data.SetUnit("{ task }")
+	m.data.SetUnit("{ stage }")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

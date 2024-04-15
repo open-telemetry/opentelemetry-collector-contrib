@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -29,12 +30,12 @@ func NewFactory() exporter.Factory {
 
 func newDefaultConfig() component.Config {
 	return &Config{
-		HTTPClientSettings: confighttp.NewDefaultHTTPClientSettings(),
-		Dataset:            defaultDataset,
-		Namespace:          defaultNamespace,
-		BulkAction:         defaultBulkAction,
-		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
-		MappingsSettings:   MappingsSettings{Mode: defaultMappingMode},
+		ClientConfig:     confighttp.NewDefaultClientConfig(),
+		Dataset:          defaultDataset,
+		Namespace:        defaultNamespace,
+		BulkAction:       defaultBulkAction,
+		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
+		MappingsSettings: MappingsSettings{Mode: defaultMappingMode},
 	}
 }
 
@@ -51,7 +52,7 @@ func createTracesExporter(ctx context.Context,
 		te.pushTraceData,
 		exporterhelper.WithStart(te.Start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithRetry(c.RetrySettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
 		exporterhelper.WithTimeout(c.TimeoutSettings))
 }
 
@@ -68,6 +69,6 @@ func createLogsExporter(ctx context.Context,
 		le.pushLogData,
 		exporterhelper.WithStart(le.Start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
-		exporterhelper.WithRetry(c.RetrySettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
 		exporterhelper.WithTimeout(c.TimeoutSettings))
 }

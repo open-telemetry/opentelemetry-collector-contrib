@@ -27,7 +27,7 @@ func TestNetStats(t *testing.T) {
 		cMetrics = extractor.GetValue(result2[0], nil, containerType)
 	}
 
-	expectedFields := []map[string]interface{}{
+	expectedFields := []map[string]any{
 		{
 			"node_interface_network_rx_bytes":    float64(382.28706877648807),
 			"node_interface_network_rx_dropped":  float64(0),

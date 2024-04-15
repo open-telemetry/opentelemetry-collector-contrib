@@ -15,8 +15,8 @@ import (
 func Test_Double(t *testing.T) {
 	tests := []struct {
 		name     string
-		value    interface{}
-		expected interface{}
+		value    any
+		expected any
 		err      bool
 	}{
 		{
@@ -75,9 +75,9 @@ func Test_Double(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			exprFunc := doubleFunc[interface{}](&ottl.StandardFloatLikeGetter[interface{}]{
+			exprFunc := doubleFunc[any](&ottl.StandardFloatLikeGetter[any]{
 
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return test.value, nil
 				},
 			})

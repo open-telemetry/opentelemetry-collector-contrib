@@ -24,7 +24,7 @@ import (
 // while also testing with exclusively mtest.
 type fakeClient struct{ mock.Mock }
 
-func (fc *fakeClient) ListDatabaseNames(ctx context.Context, filters interface{}, opts ...*options.ListDatabasesOptions) ([]string, error) {
+func (fc *fakeClient) ListDatabaseNames(ctx context.Context, filters any, opts ...*options.ListDatabasesOptions) ([]string, error) {
 	args := fc.Called(ctx, filters, opts)
 	return args.Get(0).([]string), args.Error(1)
 }
@@ -70,7 +70,6 @@ func (fc *fakeClient) IndexStats(ctx context.Context, dbName, collectionName str
 
 func TestListDatabaseNames(t *testing.T) {
 	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mont.Close()
 
 	mont.Run("list database names", func(mt *mtest.T) {
 		// mocking out a listdatabase call
@@ -106,7 +105,6 @@ const (
 
 func TestRunCommands(t *testing.T) {
 	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mont.Close()
 
 	loadedDbStats, err := loadDBStats()
 	require.NoError(t, err)
@@ -174,7 +172,6 @@ func TestRunCommands(t *testing.T) {
 
 func TestGetVersion(t *testing.T) {
 	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mont.Close()
 
 	buildInfo, err := loadBuildInfo()
 	require.NoError(t, err)
@@ -199,7 +196,6 @@ func TestGetVersion(t *testing.T) {
 
 func TestGetVersionFailures(t *testing.T) {
 	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mont.Close()
 
 	malformedBuildInfo := bson.D{
 		primitive.E{Key: "ok", Value: 1},

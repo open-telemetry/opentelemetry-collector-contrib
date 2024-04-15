@@ -26,7 +26,7 @@ func (m *testResultWrapper) Next() bool {
 	return m.current < len(m.contents)
 }
 
-func (m *testResultWrapper) Scan(dest ...interface{}) error {
+func (m *testResultWrapper) Scan(dest ...any) error {
 	for i, output := range dest {
 		d, _ := output.(*sql.NullString)
 		*d = m.contents[m.current][i]
@@ -136,16 +136,16 @@ func TestSimpleQueryOutput(t *testing.T) {
 		orderedStats: []queryStat{
 			{
 				key: "value",
-				addMetricFunction: func(mb *metadata.MetricsBuilder, t pcommon.Timestamp, val string,
-					m map[string]string) error {
+				addMetricFunction: func(*metadata.MetricsBuilder, pcommon.Timestamp, string,
+					map[string]string) error {
 					// Function is a no-op as it's not required for this test
 					return nil
 				},
 			},
 			{
 				key: "rate",
-				addMetricFunction: func(mb *metadata.MetricsBuilder, t pcommon.Timestamp, val string,
-					m map[string]string) error {
+				addMetricFunction: func(*metadata.MetricsBuilder, pcommon.Timestamp, string,
+					map[string]string) error {
 					// Function is a no-op as it's not required for this test
 					return nil
 				},
@@ -192,16 +192,16 @@ func TestNullOutput(t *testing.T) {
 		orderedStats: []queryStat{
 			{
 				key: "value",
-				addMetricFunction: func(mb *metadata.MetricsBuilder, t pcommon.Timestamp, val string,
-					m map[string]string) error {
+				addMetricFunction: func(*metadata.MetricsBuilder, pcommon.Timestamp, string,
+					map[string]string) error {
 					// Function is a no-op as it's not required for this test
 					return nil
 				},
 			},
 			{
 				key: "rate",
-				addMetricFunction: func(mb *metadata.MetricsBuilder, t pcommon.Timestamp, val string,
-					m map[string]string) error {
+				addMetricFunction: func(*metadata.MetricsBuilder, pcommon.Timestamp, string,
+					map[string]string) error {
 					// Function is a no-op as it's not required for this test
 					return nil
 				},

@@ -42,8 +42,8 @@ func TestLoadConfig(t *testing.T) {
 				HeartbeatInterval: 3 * time.Second,
 				InitialOffset:     "latest",
 				Authentication: kafka.Authentication{
-					TLS: &configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLS: &configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile:   "ca.pem",
 							CertFile: "cert.pem",
 							KeyFile:  "key.pem",
@@ -76,8 +76,8 @@ func TestLoadConfig(t *testing.T) {
 				SessionTimeout:    45 * time.Second,
 				HeartbeatInterval: 15 * time.Second,
 				Authentication: kafka.Authentication{
-					TLS: &configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLS: &configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile:   "ca.pem",
 							CertFile: "cert.pem",
 							KeyFile:  "key.pem",

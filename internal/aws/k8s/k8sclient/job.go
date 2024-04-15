@@ -137,7 +137,7 @@ func (c *jobClient) shutdown() {
 	c.stopped = true
 }
 
-func transformFuncJob(obj interface{}) (interface{}, error) {
+func transformFuncJob(obj any) (any, error) {
 	job, ok := obj.(*batchv1.Job)
 	if !ok {
 		return nil, fmt.Errorf("input obj %v is not Job type", obj)

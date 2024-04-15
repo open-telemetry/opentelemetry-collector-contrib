@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
@@ -30,7 +31,7 @@ func TestCreateReceiver(t *testing.T) {
 	// The default config does not provide scrape_config so we expect that metrics receiver
 	// creation must also fail.
 	creationSet := receivertest.NewNopCreateSettings()
-	mReceiver, _ := createMetricsReceiver(context.Background(), creationSet, cfg, nil)
+	mReceiver, _ := createMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, mReceiver)
 	assert.NotNil(t, mReceiver.(*pReceiver).cfg.PrometheusConfig.GlobalConfig)
 }
@@ -44,4 +45,20 @@ func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	assert.NoError(t, component.UnmarshalConfig(sub, cfg))
+}
+
+func TestMultipleCreate(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	set := receivertest.NewNopCreateSettings()
+	firstRcvr, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	host := componenttest.NewNopHost()
+	require.NoError(t, err)
+	require.NoError(t, firstRcvr.Start(context.Background(), host))
+	require.NoError(t, firstRcvr.Shutdown(context.Background()))
+	secondRcvr, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, secondRcvr.Start(context.Background(), host))
+	require.NoError(t, secondRcvr.Shutdown(context.Background()))
 }

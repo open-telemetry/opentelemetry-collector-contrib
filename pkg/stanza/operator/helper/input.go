@@ -62,7 +62,7 @@ type InputOperator struct {
 }
 
 // NewEntry will create a new entry using the `attributes`, and `resource` configuration.
-func (i *InputOperator) NewEntry(value interface{}) (*entry.Entry, error) {
+func (i *InputOperator) NewEntry(value any) (*entry.Entry, error) {
 	entry := entry.New()
 	entry.Body = value
 
@@ -83,8 +83,8 @@ func (i *InputOperator) CanProcess() bool {
 }
 
 // Process will always return an error if called.
-func (i *InputOperator) Process(_ context.Context, entry *entry.Entry) error {
-	i.Errorw("Operator received an entry, but can not process", zap.Any("entry", entry))
+func (i *InputOperator) Process(_ context.Context, _ *entry.Entry) error {
+	i.Errorw("Operator received an entry, but can not process")
 	return errors.NewError(
 		"Operator can not process logs.",
 		"Ensure that operator is not configured to receive logs from other operators",

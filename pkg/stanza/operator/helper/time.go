@@ -31,7 +31,7 @@ const NativeKey = "native" // provided for operator development
 // NewTimeParser creates a new time parser with default values
 func NewTimeParser() TimeParser {
 	return TimeParser{
-		LayoutType: "strptime",
+		LayoutType: StrptimeKey,
 	}
 }
 
@@ -48,7 +48,7 @@ type TimeParser struct {
 // Unmarshal starting from default settings
 func (t *TimeParser) Unmarshal(component *confmap.Conf) error {
 	cfg := NewTimeParser()
-	err := component.Unmarshal(&cfg, confmap.WithErrorUnused())
+	err := component.Unmarshal(&cfg, confmap.WithIgnoreUnused())
 	if err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func (t *TimeParser) Parse(entry *entry.Entry) error {
 	return nil
 }
 
-func (t *TimeParser) parseEpochTime(value interface{}) (time.Time, error) {
+func (t *TimeParser) parseEpochTime(value any) (time.Time, error) {
 	stamp, err := getEpochStamp(t.Layout, value)
 	if err != nil {
 		return time.Time{}, err
@@ -197,7 +197,7 @@ func (t *TimeParser) parseEpochTime(value interface{}) (time.Time, error) {
 	}
 }
 
-func getEpochStamp(layout string, value interface{}) (string, error) {
+func getEpochStamp(layout string, value any) (string, error) {
 	switch v := value.(type) {
 	case string:
 		return v, nil

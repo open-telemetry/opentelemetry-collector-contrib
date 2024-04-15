@@ -94,6 +94,9 @@ func enabledAttributes() (attributes []string) {
 	if defaultConfig.K8sNodeName.Enabled {
 		attributes = append(attributes, conventions.AttributeK8SNodeName)
 	}
+	if defaultConfig.K8sNodeUID.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SNodeUID)
+	}
 	if defaultConfig.K8sPodHostname.Enabled {
 		attributes = append(attributes, specPodHostName)
 	}
@@ -163,6 +166,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.CronJobName = true
 			case conventions.AttributeK8SNodeName:
 				p.rules.Node = true
+			case conventions.AttributeK8SNodeUID:
+				p.rules.NodeUID = true
 			case conventions.AttributeContainerID:
 				p.rules.ContainerID = true
 			case conventions.AttributeContainerImageName:
@@ -212,11 +217,7 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 
 		if name == "" && a.Key != "" {
 			// name for KeyRegex case is set at extraction time/runtime, skipped here
-			if a.From == kube.MetadataFromPod {
-				name = fmt.Sprintf("k8s.pod.%s.%s", fieldType, a.Key)
-			} else if a.From == kube.MetadataFromNamespace {
-				name = fmt.Sprintf("k8s.namespace.%s.%s", fieldType, a.Key)
-			}
+			name = fmt.Sprintf("k8s.%v.%v.%v", a.From, fieldType, a.Key)
 		}
 
 		var r *regexp.Regexp

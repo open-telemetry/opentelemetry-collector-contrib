@@ -1,9 +1,10 @@
 type: collectd
+scope_name: otelcol/collectdreceiver
 
 status:
   class: receiver
   stability:
-    alpha: [metrics]
-  distributions: [contrib, splunk, observiq, sumo]
+    beta: [metrics]
+  distributions: [contrib]
   codeowners:
     active: [atoulme]

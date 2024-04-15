@@ -37,7 +37,7 @@ func newAMQPMessagingServiceFactory(cfg *Config, logger *zap.Logger) (messagingS
 
 	// Use the default load config for TLS. Note that in the case where "insecure" is true and no
 	// ca file is provided, tlsConfig will be nil representing a plaintext connection.
-	loadedTLSConfig, err := cfg.TLS.LoadTLSConfig()
+	loadedTLSConfig, err := cfg.TLS.LoadTLSConfigContext(context.Background())
 	if err != nil {
 		return nil, err
 	}

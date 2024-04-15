@@ -15,19 +15,19 @@ import (
 // SharedComponents a map that keeps reference of all created instances for a given configuration,
 // and ensures that the shared state is started and stopped only once.
 type SharedComponents struct {
-	comps map[interface{}]*SharedComponent
+	comps map[any]*SharedComponent
 }
 
 // NewSharedComponents returns a new empty SharedComponents.
 func NewSharedComponents() *SharedComponents {
 	return &SharedComponents{
-		comps: make(map[interface{}]*SharedComponent),
+		comps: make(map[any]*SharedComponent),
 	}
 }
 
 // GetOrAdd returns the already created instance if exists, otherwise creates a new instance
 // and adds it to the map of references.
-func (scs *SharedComponents) GetOrAdd(key interface{}, create func() component.Component) *SharedComponent {
+func (scs *SharedComponents) GetOrAdd(key any, create func() component.Component) *SharedComponent {
 	if c, ok := scs.comps[key]; ok {
 		return c
 	}

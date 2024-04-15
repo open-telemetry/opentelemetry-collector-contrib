@@ -47,7 +47,7 @@ func TestPushRequestToLogs(t *testing.T) {
 				{
 					Timestamp: 1676888496000000000,
 					Body:      pcommon.NewValueStr("logline 1"),
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"foo":    "bar",
 						"label1": "value1",
 					},
@@ -71,7 +71,7 @@ func TestPushRequestToLogs(t *testing.T) {
 				{
 					Timestamp: 1676888496000000000,
 					Body:      pcommon.NewValueStr("logline 1"),
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"label1": "value1",
 					},
 				},
@@ -92,7 +92,7 @@ func TestPushRequestToLogs(t *testing.T) {
 type Log struct {
 	Timestamp  int64
 	Body       pcommon.Value
-	Attributes map[string]interface{}
+	Attributes map[string]any
 }
 
 func generateLogs(logs []Log) plog.Logs {

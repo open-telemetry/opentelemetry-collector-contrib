@@ -23,13 +23,13 @@ import (
 type ddExporter struct {
 	endpoint       string
 	client         *http.Client
-	clientSettings *confighttp.HTTPClientSettings
+	clientSettings *confighttp.ClientConfig
 }
 
 func createExporter(c *Config) *ddExporter {
 	dd := &ddExporter{
 		endpoint:       c.Endpoint,
-		clientSettings: &c.HTTPClientSettings,
+		clientSettings: &c.ClientConfig,
 		client:         nil,
 	}
 
@@ -37,8 +37,8 @@ func createExporter(c *Config) *ddExporter {
 }
 
 // start creates the http client
-func (dd *ddExporter) start(_ context.Context, host component.Host) (err error) {
-	dd.client, err = dd.clientSettings.ToClient(host, componenttest.NewNopTelemetrySettings())
+func (dd *ddExporter) start(ctx context.Context, host component.Host) (err error) {
+	dd.client, err = dd.clientSettings.ToClientContext(ctx, host, componenttest.NewNopTelemetrySettings())
 	return
 }
 

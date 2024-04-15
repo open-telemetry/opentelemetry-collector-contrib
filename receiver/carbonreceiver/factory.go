@@ -5,6 +5,7 @@ package carbonreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -13,7 +14,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
+)
+
+const (
+	// tcpIdleTimeoutDefault is the default timeout for idle TCP connections.
+	tcpIdleTimeoutDefault = 30 * time.Second
 )
 
 // This file implements factory for Carbon receiver.
@@ -28,11 +33,11 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		NetAddr: confignet.NetAddr{
+		AddrConfig: confignet.AddrConfig{
 			Endpoint:  "localhost:2003",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
-		TCPIdleTimeout: transport.TCPIdleTimeoutDefault,
+		TCPIdleTimeout: tcpIdleTimeoutDefault,
 		Parser: &protocol.Config{
 			Type:   "plaintext",
 			Config: &protocol.PlaintextConfig{},
@@ -48,5 +53,5 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 
 	rCfg := cfg.(*Config)
-	return New(params, *rCfg, consumer)
+	return newMetricsReceiver(params, *rCfg, consumer)
 }

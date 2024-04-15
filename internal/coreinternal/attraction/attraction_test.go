@@ -5,7 +5,6 @@ package attraction
 
 import (
 	"context"
-	"crypto/sha1" // #nosec
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
@@ -23,8 +22,8 @@ import (
 // Common structure for all the Tests
 type testCase struct {
 	name               string
-	inputAttributes    map[string]interface{}
-	expectedAttributes map[string]interface{}
+	inputAttributes    map[string]any
+	expectedAttributes map[string]any
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
@@ -42,18 +41,18 @@ func TestAttributes_InsertValue(t *testing.T) {
 		// Ensure `attribute1` is set for spans with no attributes.
 		{
 			name:            "InsertEmptyAttributes",
-			inputAttributes: map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{},
+			expectedAttributes: map[string]any{
 				"attribute1": int64(123),
 			},
 		},
 		// Ensure `attribute1` is set.
 		{
 			name: "InsertKeyNoExists",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"anotherkey": "bob",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"anotherkey": "bob",
 				"attribute1": int64(123),
 			},
@@ -61,10 +60,10 @@ func TestAttributes_InsertValue(t *testing.T) {
 		// Ensures no insert is performed because the keys `attribute1` already exists.
 		{
 			name: "InsertKeyExists",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"attribute1": "bob",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"attribute1": "bob",
 			},
 		},
@@ -77,7 +76,7 @@ func TestAttributes_InsertValue(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -91,26 +90,26 @@ func TestAttributes_InsertFromAttribute(t *testing.T) {
 		// Ensure no attribute is inserted because because attributes do not exist.
 		{
 			name:               "InsertEmptyAttributes",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		// Ensure no attribute is inserted because because from_attribute `string_key` does not exist.
 		{
 			name: "InsertMissingFromAttribute",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"bob": int64(1),
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"bob": int64(1),
 			},
 		},
 		// Ensure `string key` is set.
 		{
 			name: "InsertAttributeExists",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"anotherkey": int64(8892342),
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"anotherkey": int64(8892342),
 				"string key": int64(8892342),
 			},
@@ -118,11 +117,11 @@ func TestAttributes_InsertFromAttribute(t *testing.T) {
 		// Ensures no insert is performed because the keys `string key` already exist.
 		{
 			name: "InsertKeysExists",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"anotherkey": int64(8892342),
 				"string key": "here",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"anotherkey": int64(8892342),
 				"string key": "here",
 			},
@@ -135,7 +134,7 @@ func TestAttributes_InsertFromAttribute(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -149,26 +148,26 @@ func TestAttributes_UpdateValue(t *testing.T) {
 		// Ensure no changes to the span as there is no attributes map.
 		{
 			name:               "UpdateNoAttributes",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		// Ensure no changes to the span as the key does not exist.
 		{
 			name: "UpdateKeyNoExist",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"boo": "foo",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"boo": "foo",
 			},
 		},
 		// Ensure the attribute `db.secret` is updated.
 		{
 			name: "UpdateAttributes",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"db.secret": "password1234",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"db.secret": "redacted",
 			},
 		},
@@ -181,7 +180,7 @@ func TestAttributes_UpdateValue(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -195,37 +194,37 @@ func TestAttributes_UpdateFromAttribute(t *testing.T) {
 		// Ensure no changes to the span as there is no attributes map.
 		{
 			name:               "UpdateNoAttributes",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		// Ensure the attribute `boo` isn't updated because attribute `foo` isn't present in the span.
 		{
 			name: "UpdateKeyNoExistFromAttribute",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"boo": "bob",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"boo": "bob",
 			},
 		},
 		// Ensure no updates as the target key `boo` doesn't exists.
 		{
 			name: "UpdateKeyNoExistMainAttributed",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"foo": "over there",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"foo": "over there",
 			},
 		},
 		// Ensure no updates as the target key `boo` doesn't exists.
 		{
 			name: "UpdateKeyFromExistingAttribute",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"foo": "there is a party over here",
 				"boo": "not here",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"foo": "there is a party over here",
 				"boo": "there is a party over here",
 			},
@@ -239,7 +238,7 @@ func TestAttributes_UpdateFromAttribute(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -252,18 +251,18 @@ func TestAttributes_UpsertValue(t *testing.T) {
 		// Ensure `region` is set for spans with no attributes.
 		{
 			name:            "UpsertNoAttributes",
-			inputAttributes: map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{},
+			expectedAttributes: map[string]any{
 				"region": "planet-earth",
 			},
 		},
 		// Ensure `region` is inserted for spans with some attributes(the key doesn't exist).
 		{
 			name: "UpsertAttributeNoExist",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"mission": "to mars",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"mission": "to mars",
 				"region":  "planet-earth",
 			},
@@ -271,11 +270,11 @@ func TestAttributes_UpsertValue(t *testing.T) {
 		// Ensure `region` is updated for spans with the attribute key `region`.
 		{
 			name: "UpsertAttributeExists",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"mission": "to mars",
 				"region":  "solar system",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"mission": "to mars",
 				"region":  "planet-earth",
 			},
@@ -289,7 +288,7 @@ func TestAttributes_UpsertValue(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -302,27 +301,27 @@ func TestAttributes_Extract(t *testing.T) {
 		// Ensure `new_user_key` is not set for spans with no attributes.
 		{
 			name:               "UpsertEmptyAttributes",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		// Ensure `new_user_key` is not inserted for spans with missing attribute `user_key`.
 		{
 			name: "No extract with no target key",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"boo": "ghosts are scary",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"boo": "ghosts are scary",
 			},
 		},
 		// Ensure `new_user_key` is not inserted for spans with missing attribute `user_key`.
 		{
 			name: "No extract with non string target key",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"boo":      "ghosts are scary",
 				"user_key": int64(1234),
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"boo":      "ghosts are scary",
 				"user_key": int64(1234),
 			},
@@ -331,11 +330,11 @@ func TestAttributes_Extract(t *testing.T) {
 		// `user_key` because `user_key` does not match the regular expression.
 		{
 			name: "No extract with no pattern matching",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"user_key": "does not match",
 				"boo":      "ghosts are scary",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"user_key": "does not match",
 				"boo":      "ghosts are scary",
 			},
@@ -345,11 +344,11 @@ func TestAttributes_Extract(t *testing.T) {
 		// expression.
 		{
 			name: "No extract with no pattern matching",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"user_key": "/api/v1/document/12345678/update",
 				"boo":      "ghosts are scary",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"user_key": "/api/v1/document/12345678/update",
 				"boo":      "ghosts are scary",
 			},
@@ -357,11 +356,11 @@ func TestAttributes_Extract(t *testing.T) {
 		// Ensure `new_user_key` and `version` is inserted for spans with attribute `user_key`.
 		{
 			name: "Extract insert new values.",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"user_key": "/api/v1/document/12345678/update/v1",
 				"foo":      "casper the friendly ghost",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"user_key":     "/api/v1/document/12345678/update/v1",
 				"new_user_key": "12345678",
 				"version":      "v1",
@@ -371,13 +370,13 @@ func TestAttributes_Extract(t *testing.T) {
 		// Ensure `new_user_key` and `version` is updated for spans with attribute `user_key`.
 		{
 			name: "Extract updates existing values ",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"user_key":     "/api/v1/document/12345678/update/v1",
 				"new_user_key": "2321",
 				"version":      "na",
 				"foo":          "casper the friendly ghost",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"user_key":     "/api/v1/document/12345678/update/v1",
 				"new_user_key": "12345678",
 				"version":      "v1",
@@ -387,12 +386,12 @@ func TestAttributes_Extract(t *testing.T) {
 		// Ensure `new_user_key` is updated and `version` is inserted for spans with attribute `user_key`.
 		{
 			name: "Extract upserts values",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"user_key":     "/api/v1/document/12345678/update/v1",
 				"new_user_key": "2321",
 				"foo":          "casper the friendly ghost",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"user_key":     "/api/v1/document/12345678/update/v1",
 				"new_user_key": "12345678",
 				"version":      "v1",
@@ -409,7 +408,7 @@ func TestAttributes_Extract(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -423,27 +422,27 @@ func TestAttributes_UpsertFromAttribute(t *testing.T) {
 		// Ensure `new_user_key` is not set for spans with no attributes.
 		{
 			name:               "UpsertEmptyAttributes",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		// Ensure `new_user_key` is not inserted for spans with missing attribute `user_key`.
 		{
 			name: "UpsertFromAttributeNoExist",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"boo": "ghosts are scary",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"boo": "ghosts are scary",
 			},
 		},
 		// Ensure `new_user_key` is inserted for spans with attribute `user_key`.
 		{
 			name: "UpsertFromAttributeExistsInsert",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"user_key": int64(2245),
 				"foo":      "casper the friendly ghost",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"user_key":     int64(2245),
 				"new_user_key": int64(2245),
 				"foo":          "casper the friendly ghost",
@@ -452,12 +451,12 @@ func TestAttributes_UpsertFromAttribute(t *testing.T) {
 		// Ensure `new_user_key` is updated for spans with attribute `user_key`.
 		{
 			name: "UpsertFromAttributeExistsUpdate",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"user_key":     int64(2245),
 				"new_user_key": int64(5422),
 				"foo":          "casper the friendly ghost",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"user_key":     int64(2245),
 				"new_user_key": int64(2245),
 				"foo":          "casper the friendly ghost",
@@ -472,7 +471,7 @@ func TestAttributes_UpsertFromAttribute(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -485,41 +484,41 @@ func TestAttributes_Delete(t *testing.T) {
 		// Ensure the span contains no changes.
 		{
 			name:               "DeleteEmptyAttributes",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		// Ensure the span contains no changes because the key doesn't exist.
 		{
 			name: "DeleteAttributeNoExist",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"boo": "ghosts are scary",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"boo": "ghosts are scary",
 			},
 		},
 		// Ensure `duplicate_key` is deleted for spans with the attribute set.
 		{
 			name: "DeleteAttributeExists",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"duplicate_key": 3245.6,
 				"original_key":  3245.6,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"original_key": 3245.6,
 			},
 		},
 		// Ensure `duplicate_key` is deleted by regexp for spans with the attribute set.
 		{
 			name: "DeleteAttributeExists",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"duplicate_key_a":   3245.6,
 				"duplicate_key_b":   3245.6,
 				"duplicate_key_c":   3245.6,
 				"original_key":      3245.6,
 				"not_duplicate_key": 3246.6,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"original_key":      3245.6,
 				"not_duplicate_key": 3246.6,
 			},
@@ -533,7 +532,7 @@ func TestAttributes_Delete(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -546,27 +545,27 @@ func TestAttributes_Delete_Regexp(t *testing.T) {
 		// Ensure the span contains no changes.
 		{
 			name:               "DeleteEmptyAttributes",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		// Ensure the span contains no changes because the key doesn't exist.
 		{
 			name: "DeleteAttributeNoExist",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"boo": "ghosts are scary",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"boo": "ghosts are scary",
 			},
 		},
 		// Ensure `duplicate_key` is deleted for spans with the attribute set.
 		{
 			name: "DeleteAttributeExists",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"duplicate_key": 3245.6,
 				"original_key":  3245.6,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"original_key": 3245.6,
 			},
 		},
@@ -579,7 +578,7 @@ func TestAttributes_Delete_Regexp(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -600,77 +599,77 @@ func TestAttributes_HashValue(t *testing.T) {
 		// Ensure no changes to the span as there is no attributes map.
 		{
 			name:               "HashNoAttributes",
-			inputAttributes:    map[string]interface{}{},
-			expectedAttributes: map[string]interface{}{},
+			inputAttributes:    map[string]any{},
+			expectedAttributes: map[string]any{},
 		},
 		// Ensure no changes to the span as the key does not exist.
 		{
 			name: "HashKeyNoExist",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"boo": "foo",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"boo": "foo",
 			},
 		},
 		// Ensure string data types are hashed correctly
 		{
 			name: "HashString",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"updateme": "foo",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"updateme": hash([]byte("foo")),
 			},
 		},
 		// Ensure int data types are hashed correctly
 		{
 			name: "HashInt",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"updateme": intVal,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"updateme": hash(intBytes),
 			},
 		},
 		// Ensure double data types are hashed correctly
 		{
 			name: "HashDouble",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"updateme": doubleVal,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"updateme": hash(doubleBytes),
 			},
 		},
 		// Ensure bool data types are hashed correctly
 		{
 			name: "HashBoolTrue",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"updateme": true,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"updateme": hash([]byte{1}),
 			},
 		},
 		// Ensure bool data types are hashed correctly
 		{
 			name: "HashBoolFalse",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"updateme": false,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"updateme": hash([]byte{0}),
 			},
 		},
 		// Ensure regex pattern is being used
 		{
 			name: "HashRegex",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"updatemebyregexp":      false,
 				"donotupdatemebyregexp": false,
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"updatemebyregexp":      hash([]byte{0}),
 				"donotupdatemebyregexp": false,
 			},
@@ -684,7 +683,7 @@ func TestAttributes_HashValue(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -695,10 +694,10 @@ func TestAttributes_HashValue(t *testing.T) {
 func TestAttributes_FromAttributeNoChange(t *testing.T) {
 	tc := testCase{
 		name: "FromAttributeNoChange",
-		inputAttributes: map[string]interface{}{
+		inputAttributes: map[string]any{
 			"boo": "ghosts are scary",
 		},
-		expectedAttributes: map[string]interface{}{
+		expectedAttributes: map[string]any{
 			"boo": "ghosts are scary",
 		},
 	}
@@ -712,7 +711,7 @@ func TestAttributes_FromAttributeNoChange(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	runIndividualTestCase(t, tc, ap)
@@ -726,10 +725,10 @@ func TestAttributes_Ordering(t *testing.T) {
 		// 3. delete `operation`.
 		{
 			name: "OrderingApplyAllSteps",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"foo": "casper the friendly ghost",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"foo":           "casper the friendly ghost",
 				"svc.operation": "default",
 			},
@@ -740,11 +739,11 @@ func TestAttributes_Ordering(t *testing.T) {
 		// 3. delete `operation`.
 		{
 			name: "OrderingOperationExists",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"foo":       "casper the friendly ghost",
 				"operation": "arithmetic",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"foo":           "casper the friendly ghost",
 				"svc.operation": "arithmetic",
 			},
@@ -756,11 +755,11 @@ func TestAttributes_Ordering(t *testing.T) {
 		// 3. delete `operation`.
 		{
 			name: "OrderingSvcOperationExists",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"foo":           "casper the friendly ghost",
 				"svc.operation": "some value",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"foo":           "casper the friendly ghost",
 				"svc.operation": "default",
 			},
@@ -772,12 +771,12 @@ func TestAttributes_Ordering(t *testing.T) {
 		// 3. delete `operation`.
 		{
 			name: "OrderingBothAttributesExist",
-			inputAttributes: map[string]interface{}{
+			inputAttributes: map[string]any{
 				"foo":           "casper the friendly ghost",
 				"operation":     "arithmetic",
 				"svc.operation": "add",
 			},
-			expectedAttributes: map[string]interface{}{
+			expectedAttributes: map[string]any{
 				"foo":           "casper the friendly ghost",
 				"svc.operation": "arithmetic",
 			},
@@ -793,7 +792,7 @@ func TestAttributes_Ordering(t *testing.T) {
 	}
 
 	ap, err := NewAttrProc(cfg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, ap)
 
 	for _, tt := range testCases {
@@ -930,28 +929,14 @@ func TestValidConfiguration(t *testing.T) {
 }
 
 func hash(b []byte) string {
-	if enableSha256Gate.IsEnabled() {
-		return sha2Hash(b)
-	}
-	return sha1Hash(b)
-}
-
-func sha1Hash(b []byte) string {
-	// #nosec
-	h := sha1.New()
-	h.Write(b)
-	return fmt.Sprintf("%x", h.Sum(nil))
-}
-
-func sha2Hash(b []byte) string {
 	h := sha256.New()
 	h.Write(b)
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-type mockInfoAuth map[string]interface{}
+type mockInfoAuth map[string]any
 
-func (a mockInfoAuth) GetAttribute(name string) interface{} {
+func (a mockInfoAuth) GetAttribute(name string) any {
 	return a[name]
 }
 
@@ -978,49 +963,49 @@ func TestFromContext(t *testing.T) {
 	testCases := []struct {
 		name               string
 		ctx                context.Context
-		expectedAttributes map[string]interface{}
+		expectedAttributes map[string]any
 		action             *ActionKeyValue
 	}{
 		{
 			name:               "no_metadata",
 			ctx:                context.TODO(),
-			expectedAttributes: map[string]interface{}{},
+			expectedAttributes: map[string]any{},
 			action:             &ActionKeyValue{Key: "dest", FromContext: "source", Action: INSERT},
 		},
 		{
 			name:               "no_value",
 			ctx:                mdCtx,
-			expectedAttributes: map[string]interface{}{},
+			expectedAttributes: map[string]any{},
 			action:             &ActionKeyValue{Key: "dest", FromContext: "source", Action: INSERT},
 		},
 		{
 			name:               "single_value",
 			ctx:                mdCtx,
-			expectedAttributes: map[string]interface{}{"dest": "single_val"},
+			expectedAttributes: map[string]any{"dest": "single_val"},
 			action:             &ActionKeyValue{Key: "dest", FromContext: "source_single_val", Action: INSERT},
 		},
 		{
 			name:               "multiple_values",
 			ctx:                mdCtx,
-			expectedAttributes: map[string]interface{}{"dest": "first_val;second_val"},
+			expectedAttributes: map[string]any{"dest": "first_val;second_val"},
 			action:             &ActionKeyValue{Key: "dest", FromContext: "source_multiple_val", Action: INSERT},
 		},
 		{
 			name:               "with_metadata_prefix_single_value",
 			ctx:                mdCtx,
-			expectedAttributes: map[string]interface{}{"dest": "single_val"},
+			expectedAttributes: map[string]any{"dest": "single_val"},
 			action:             &ActionKeyValue{Key: "dest", FromContext: "metadata.source_single_val", Action: INSERT},
 		},
 		{
 			name:               "with_auth_prefix_single_value",
 			ctx:                mdCtx,
-			expectedAttributes: map[string]interface{}{"dest": "auth_val"},
+			expectedAttributes: map[string]any{"dest": "auth_val"},
 			action:             &ActionKeyValue{Key: "dest", FromContext: "auth.source_auth_val", Action: INSERT},
 		},
 		{
 			name:               "with_auth_prefix_no_value",
 			ctx:                mdCtx,
-			expectedAttributes: map[string]interface{}{},
+			expectedAttributes: map[string]any{},
 			action:             &ActionKeyValue{Key: "dest", FromContext: "auth.unknown_val", Action: INSERT},
 		},
 	}
@@ -1030,7 +1015,7 @@ func TestFromContext(t *testing.T) {
 			ap, err := NewAttrProc(&Settings{
 				Actions: []ActionKeyValue{*tc.action},
 			})
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, ap)
 			attrMap := pcommon.NewMap()
 			ap.Process(tc.ctx, nil, attrMap)

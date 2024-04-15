@@ -4,9 +4,9 @@
 package transport
 
 import (
+	"io"
 	"net"
 	"runtime"
-	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -16,65 +16,43 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport/client"
 )
 
 func Test_Server_ListenAndServe(t *testing.T) {
 	tests := []struct {
-		name          string
-		transport     string
-		buildServerFn func(addr string) (Server, error)
-		buildClientFn func(host string, port int) (*client.StatsD, error)
+		name              string
+		transport         Transport
+		buildServerFn     func(transport Transport, addr string) (Server, error)
+		getFreeEndpointFn func(t testing.TB, transport string) string
+		buildClientFn     func(transport string, address string) (*client.StatsD, error)
 	}{
 		{
-			name:          "udp",
-			transport:     "udp",
-			buildServerFn: NewUDPServer,
-			buildClientFn: func(host string, port int) (*client.StatsD, error) {
-				return client.NewStatsD(client.UDP, host, port)
-			},
+			name:              "udp",
+			transport:         UDP,
+			getFreeEndpointFn: testutil.GetAvailableLocalNetworkAddress,
+			buildServerFn:     NewUDPServer,
+			buildClientFn:     client.NewStatsD,
 		},
 		{
-			name:          "tcp",
-			transport:     "tcp",
-			buildServerFn: NewTCPServer,
-			buildClientFn: func(host string, port int) (*client.StatsD, error) {
-				return client.NewStatsD(client.TCP, host, port)
-			},
+			name:              "tcp",
+			transport:         TCP,
+			getFreeEndpointFn: testutil.GetAvailableLocalNetworkAddress,
+			buildServerFn:     NewTCPServer,
+			buildClientFn:     client.NewStatsD,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addr := testutil.GetAvailableLocalNetworkAddress(t, tt.transport)
+			addr := tt.getFreeEndpointFn(t, tt.name)
+			testFreeEndpoint(t, tt.name, addr)
 
-			if tt.transport == "udp" {
-				// Endpoint should be free.
-				ln0, err := net.ListenPacket("udp", addr)
-				require.NoError(t, err)
-				require.NotNil(t, ln0)
-
-				// Ensure that the endpoint wasn't something like ":0" by checking that a second listener will fail.
-				ln1, err := net.ListenPacket("udp", addr)
-				require.Error(t, err)
-				require.Nil(t, ln1)
-
-				// Unbind the local address so the mock UDP service can use it
-				err = ln0.Close()
-				require.NoError(t, err)
-			}
-
-			srv, err := tt.buildServerFn(addr)
+			srv, err := tt.buildServerFn(tt.transport, addr)
 			require.NoError(t, err)
 			require.NotNil(t, srv)
 
-			host, portStr, err := net.SplitHostPort(addr)
-			require.NoError(t, err)
-			port, err := strconv.Atoi(portStr)
-			require.NoError(t, err)
-
 			mc := new(consumertest.MetricsSink)
-			p := &protocol.StatsDParser{}
 			require.NoError(t, err)
 			mr := NewMockReporter(1)
 			transferChan := make(chan Metric, 10)
@@ -83,12 +61,12 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			wgListenAndServe.Add(1)
 			go func() {
 				defer wgListenAndServe.Done()
-				assert.Error(t, srv.ListenAndServe(p, mc, mr, transferChan))
+				assert.Error(t, srv.ListenAndServe(mc, mr, transferChan))
 			}()
 
 			runtime.Gosched()
 
-			gc, err := tt.buildClientFn(host, port)
+			gc, err := tt.buildClientFn(tt.transport.String(), addr)
 			require.NoError(t, err)
 			require.NotNil(t, gc)
 			err = gc.SendMetric(client.Metric{
@@ -114,4 +92,37 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			assert.Equal(t, 1, len(transferChan))
 		})
 	}
+}
+
+func testFreeEndpoint(t *testing.T, transport string, address string) {
+	t.Helper()
+
+	var ln0, ln1 io.Closer
+	var err0, err1 error
+
+	trans := NewTransport(transport)
+	require.NotEqual(t, trans, Transport(""))
+
+	if trans.IsPacketTransport() {
+		// Endpoint should be free.
+		ln0, err0 = net.ListenPacket(transport, address)
+		ln1, err1 = net.ListenPacket(transport, address)
+	}
+
+	if trans.IsStreamTransport() {
+		// Endpoint should be free.
+		ln0, err0 = net.Listen(transport, address)
+		ln1, err1 = net.Listen(transport, address)
+	}
+
+	// Endpoint should be free.
+	require.NoError(t, err0)
+	require.NotNil(t, ln0)
+
+	// Ensure that the endpoint wasn't something like ":0" by checking that a second listener will fail.
+	require.Error(t, err1)
+	require.Nil(t, ln1)
+
+	// Unbind the local address so the mock UDP service can use it
+	require.NoError(t, ln0.Close())
 }

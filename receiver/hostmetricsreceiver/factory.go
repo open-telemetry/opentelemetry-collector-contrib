@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -59,7 +61,7 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
-	return &Config{ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)}
+	return &Config{ControllerConfig: scraperhelper.NewDefaultControllerConfig()}
 }
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
@@ -76,8 +78,11 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
+	host.EnableBootTimeCache(true)
+	process.EnableBootTimeCache(true)
+
 	return scraperhelper.NewScraperControllerReceiver(
-		&oCfg.ScraperControllerSettings,
+		&oCfg.ControllerConfig,
 		set,
 		consumer,
 		addScraperOptions...,
@@ -123,16 +128,11 @@ func createHostMetricsScraper(ctx context.Context, set receiver.CreateSettings, 
 
 type environment interface {
 	Lookup(k string) (string, bool)
-	Set(k, v string) error
 }
 
 type osEnv struct{}
 
 var _ environment = (*osEnv)(nil)
-
-func (e *osEnv) Set(k, v string) error {
-	return os.Setenv(k, v)
-}
 
 func (e *osEnv) Lookup(k string) (string, bool) {
 	return os.LookupEnv(k)
