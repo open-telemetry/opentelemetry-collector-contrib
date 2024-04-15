@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/aws/aws-sdk-go v1.51.19
-	github.com/google/cadvisor v0.49.1
+	github.com/google/cadvisor v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.98.0
