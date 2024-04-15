@@ -21,6 +21,11 @@ var (
 	errOctetCounting       = errors.New("octet counting is only supported for rfc5424 protocol")
 )
 
+const (
+	networkTCP = "tcp"
+	networkUDP = "udp"
+)
+
 // Config defines configuration for Syslog exporter.
 type Config struct {
 	// Syslog server address
@@ -56,7 +61,7 @@ func (cfg *Config) Validate() error {
 		invalidFields = append(invalidFields, errInvalidEndpoint)
 	}
 
-	if strings.ToLower(cfg.Network) != "tcp" && strings.ToLower(cfg.Network) != "udp" {
+	if strings.ToLower(cfg.Network) != networkTCP && strings.ToLower(cfg.Network) != networkUDP {
 		invalidFields = append(invalidFields, errUnsupportedNetwork)
 	}
 
@@ -80,7 +85,7 @@ func (cfg *Config) Validate() error {
 
 const (
 	// Syslog Network
-	DefaultNetwork = "tcp"
+	DefaultNetwork = networkTCP
 	// Syslog Port
 	DefaultPort = 514
 	// Syslog Protocol

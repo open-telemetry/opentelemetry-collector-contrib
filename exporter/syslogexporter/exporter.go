@@ -28,7 +28,7 @@ func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*sysloge
 	cfg.Network = strings.ToLower(cfg.Network)
 
 	var loadedTLSConfig *tls.Config
-	if cfg.Network == "tcp" {
+	if cfg.Network == networkTCP {
 		var err error
 		loadedTLSConfig, err = cfg.TLSSetting.LoadTLSConfig(context.Background())
 		if err != nil {
@@ -74,7 +74,7 @@ func newLogsExporter(
 }
 
 func (se *syslogexporter) pushLogsData(_ context.Context, logs plog.Logs) error {
-	batchMessages := strings.ToLower(se.config.Network) == "tcp"
+	batchMessages := strings.ToLower(se.config.Network) == networkTCP
 	var err error
 	if batchMessages {
 		err = se.exportBatch(logs)
