@@ -3,7 +3,6 @@
 package main
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 	"go.opentelemetry.io/collector/connector"
 	forwardconnector "go.opentelemetry.io/collector/connector/forwardconnector"
 	"go.opentelemetry.io/collector/exporter"
@@ -243,7 +242,6 @@ func components() (otelcol.Factories, error) {
 		jsonlogencodingextension.NewFactory(),
 		textencodingextension.NewFactory(),
 		zipkinencodingextension.NewFactory(),
-		ackextension.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
