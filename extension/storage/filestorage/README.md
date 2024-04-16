@@ -129,7 +129,7 @@ The schedule for this feature gate is:
 
 - Introduced in v0.87.0 (October 2023) as `alpha` - disabled by default.
 - Moved to `beta` in v0.92.0 (January 2024) - enabled by default.
-- Moved to `stable` in April 2024 - cannot be disabled.
-- Removed three releases after `stable`.
+- Moved to `stable` in v0.99.0 (April 2024) - cannot be disabled.
+- Removed in v0.102.0 (three releases after `stable`).
 
 [unicode_chars]: https://en.wikipedia.org/wiki/List_of_Unicode_characters
