@@ -1130,10 +1130,10 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 |`%m` | Month as a zero-padded number | 01, 02, ..., 12 |
 |`%o` | Month as a space-padded number | 1, 2, ..., 12 |
 |`%q` | Month as an unpadded number | 1,2,...,12 |
-|`%b*` *%h* | Abbreviated month name | Jan, Feb, ... |
+|`%b`, `%h` | Abbreviated month name | Jan, Feb, ... |
 |`%B` | Full month name | January, February, ... |
 |`%d` | Day of the month as a zero-padded number | 01, 02, ..., 31 |
-|`%e` | Day of the monthas a space-padded number| 1, 2, ..., 31 |
+|`%e` | Day of the month as a space-padded number| 1, 2, ..., 31 |
 |`%g` | Day of the month as a unpadded number | 1,2,...,31 |
 |`%a` | Abbreviated weekday name | Sun, Mon, ... |
 |`%A` | Full weekday name | Sunday, Monday, ... |
