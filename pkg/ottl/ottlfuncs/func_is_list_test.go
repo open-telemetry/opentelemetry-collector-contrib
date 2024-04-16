@@ -19,7 +19,7 @@ import (
 func Test_IsList(t *testing.T) {
 	tests := []struct {
 		name     string
-		value    interface{}
+		value    any
 		expected bool
 	}{
 		{
@@ -166,7 +166,7 @@ func Test_IsList(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := isList[any](&ottl.StandardGetSetter[any]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
@@ -179,7 +179,7 @@ func Test_IsList(t *testing.T) {
 
 func Test_IsList_Error(t *testing.T) {
 	exprFunc := isList[any](&ottl.StandardGetSetter[any]{
-		Getter: func(context.Context, interface{}) (interface{}, error) {
+		Getter: func(context.Context, any) (any, error) {
 			return nil, ottl.TypeError("")
 		},
 	})
