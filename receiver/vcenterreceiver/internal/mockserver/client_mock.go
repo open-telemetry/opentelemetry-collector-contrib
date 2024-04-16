@@ -181,29 +181,8 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 
 		}
 
-	case content == "group-v4" && contentType == "Folder":
-		if propSetArray {
-			return loadResponse("vm-group.xml")
-		}
-		if propSet == nil {
-			return loadResponse("vm-folder.xml")
-		}
-		return loadResponse("vm-folder-parent.xml")
-
-	case content == "vm-1040" && contentType == "VirtualMachine":
-		if propSet["pathSet"] == "summary.runtime.host" {
-			return loadResponse("vm-host.xml")
-		}
-		if propSet["pathSet"] == "resourcePool" {
-			return loadResponse("vm-resource-pool.xml")
-		}
-		return loadResponse("vm-properties.xml")
-
 	case contentType == "ContainerView" && propSet["type"] == "VirtualMachine":
 		return loadResponse("vm-default-properties.xml")
-
-	case (content == "group-v1034" || content == "group-v1001") && contentType == "Folder":
-		return loadResponse("vm-empty-folder.xml")
 
 	case contentType == "ResourcePool":
 		if ps, ok := propSet["pathSet"].([]any); ok {
