@@ -61,11 +61,11 @@ func TestConfigValidation(t *testing.T) {
 			name:        "no endpoint and no auth extension specified",
 			expectedErr: "no endpoint and no auth extension specified",
 			cfg: &Config{
-				LogFormat:    "json",
-				MetricFormat: "carbon2",
+				LogFormat:        "json",
+				MetricFormat:     "carbon2",
 				CompressEncoding: "gzip",
 				ClientConfig: confighttp.ClientConfig{
-					Timeout:     defaultTimeout,
+					Timeout: defaultTimeout,
 				},
 			},
 		},

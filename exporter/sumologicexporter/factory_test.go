@@ -46,7 +46,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 				AuthenticatorID: component.NewID(Type),
 			},
 			Compression: "gzip",
-			Timeout:         5 * time.Second,
+			Timeout:     5 * time.Second,
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: qs,

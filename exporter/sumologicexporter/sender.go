@@ -40,9 +40,9 @@ type sender struct {
 	sources             sourceFormats
 	compressor          compressor
 	prometheusFormatter prometheusFormatter
-	dataUrlMetrics      string
-	dataUrlLogs         string
-	dataUrlTraces       string
+	dataURLMetrics      string
+	dataURLLogs         string
+	dataURLTraces       string
 	graphiteFormatter   graphiteFormatter
 }
 
@@ -81,9 +81,9 @@ func newSender(
 	s sourceFormats,
 	c compressor,
 	pf prometheusFormatter,
-	metricsUrl string,
-	logsUrl string,
-	tracesUrl string,
+	metricsURL string,
+	logsURL string,
+	tracesURL string,
 	gf graphiteFormatter,
 ) *sender {
 	return &sender{
@@ -93,9 +93,9 @@ func newSender(
 		sources:             s,
 		compressor:          c,
 		prometheusFormatter: pf,
-		dataUrlMetrics:      metricsUrl,
-		dataUrlLogs:         logsUrl,
-		dataUrlTraces:       tracesUrl,
+		dataURLMetrics:      metricsURL,
+		dataURLLogs:         logsURL,
+		dataURLTraces:       tracesURL,
 		graphiteFormatter:   gf,
 	}
 }
@@ -106,9 +106,9 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader
 
 	switch pipeline {
 	case MetricsPipeline:
-		url = s.dataUrlMetrics
+		url = s.dataURLMetrics
 	case LogsPipeline:
-		url = s.dataUrlLogs
+		url = s.dataURLLogs
 	default:
 		return fmt.Errorf("unknown pipeline type: %s", pipeline)
 	}

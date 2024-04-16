@@ -477,7 +477,7 @@ func TestInvalidEndpoint(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.dataUrlLogs = ":"
+	test.s.dataURLLogs = ":"
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
@@ -488,7 +488,7 @@ func TestInvalidPostRequest(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.dataUrlLogs = ""
+	test.s.dataURLLogs = ""
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
@@ -499,7 +499,7 @@ func TestLogsBufferOverflow(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.dataUrlLogs = ":"
+	test.s.dataURLLogs = ":"
 	log := exampleLog()
 	flds := newFields(pcommon.NewMap())
 
