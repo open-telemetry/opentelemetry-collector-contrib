@@ -110,7 +110,6 @@ func TestOAuthClientSettings(t *testing.T) {
 }
 
 func TestOAuthClientSettingsCredsConfig(t *testing.T) {
-	// test files for TLS testing
 	var (
 		testCredsFile        = "testdata/test-cred.txt"
 		testCredsEmptyFile   = "testdata/test-cred-empty.txt"
@@ -132,8 +131,6 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			settings: &Config{
 				ClientIDFile: testCredsFile,
 				ClientSecret: "testsecret",
-				TokenURL:     "https://example.com/v1/token",
-				Scopes:       []string{"resource.read"},
 			},
 			expectedClientConfig: &clientcredentials.Config{
 				ClientID:     "testcreds",
@@ -147,8 +144,6 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			settings: &Config{
 				ClientID:         "testclientid",
 				ClientSecretFile: testCredsFile,
-				TokenURL:         "https://example.com/v1/token",
-				Scopes:           []string{"resource.read"},
 			},
 			expectedClientConfig: &clientcredentials.Config{
 				ClientID:     "testclientid",
@@ -162,8 +157,6 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			settings: &Config{
 				ClientIDFile: testCredsEmptyFile,
 				ClientSecret: "testsecret",
-				TokenURL:     "https://example.com/v1/token",
-				Scopes:       []string{"resource.read"},
 			},
 			shouldError:   true,
 			expectedError: &errNoClientIDProvided,
@@ -173,8 +166,6 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			settings: &Config{
 				ClientID:         "testclientid",
 				ClientSecretFile: testCredsMissingFile,
-				TokenURL:         "https://example.com/v1/token",
-				Scopes:           []string{"resource.read"},
 			},
 			shouldError:   true,
 			expectedError: &errNoClientSecretProvided,
@@ -184,8 +175,6 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			settings: &Config{
 				ClientIDCmd:  testCredsCmd,
 				ClientSecret: "testsecret",
-				TokenURL:     "https://example.com/v1/token",
-				Scopes:       []string{"resource.read"},
 			},
 			expectedClientConfig: &clientcredentials.Config{
 				ClientID:     "testcreds",
@@ -199,8 +188,6 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			settings: &Config{
 				ClientID:        "testclientid",
 				ClientSecretCmd: testCredsCmd,
-				TokenURL:        "https://example.com/v1/token",
-				Scopes:          []string{"resource.read"},
 			},
 			expectedClientConfig: &clientcredentials.Config{
 				ClientID:     "testclientid",
@@ -214,8 +201,6 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			settings: &Config{
 				ClientIDCmd:  testCredsEmptyCmd,
 				ClientSecret: "testsecret",
-				TokenURL:     "https://example.com/v1/token",
-				Scopes:       []string{"resource.read"},
 			},
 			shouldError:   true,
 			expectedError: &errNoClientIDProvided,
@@ -225,8 +210,6 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			settings: &Config{
 				ClientID:        "testclientid",
 				ClientSecretCmd: testCredsErrorCmd,
-				TokenURL:        "https://example.com/v1/token",
-				Scopes:          []string{"resource.read"},
 			},
 			shouldError:   true,
 			expectedError: &errNoClientSecretProvided,
@@ -245,13 +228,6 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedClientConfig.ClientID, cfg.ClientID)
 			assert.Equal(t, test.expectedClientConfig.ClientSecret, cfg.ClientSecret)
-
-			// test tls settings
-			transport := rc.client.Transport.(*http.Transport)
-			tlsClientConfig := transport.TLSClientConfig
-			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfig(context.Background())
-			assert.NoError(t, err)
-			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
 		})
 	}
 }
