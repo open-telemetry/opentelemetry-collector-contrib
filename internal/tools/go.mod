@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/cmd/mdatagen v0.98.1-0.20240416174005-d0f15e2463f8
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.20.0
-	golang.org/x/vuln v1.0.4
+	golang.org/x/vuln v1.1.0
 	gotest.tools/gotestsum v1.11.0
 )
 
