@@ -106,7 +106,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 	}
 
 	headers := buildHeaders(se.config, se.version)
-	client, err := se.createClient(host)
+	client, err := se.createClient(ctx, host)
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 		sendOTLPHistograms:     se.config.SendOTLPHistograms,
 	}
 
-	apiTLSCfg, err := se.config.APITLSSettings.LoadTLSConfig()
+	apiTLSCfg, err := se.config.APITLSSettings.LoadTLSConfigContext(ctx)
 	if err != nil {
 		return fmt.Errorf("could not load API TLS config: %w", err)
 	}
@@ -188,14 +188,14 @@ func newEventExporter(config *Config, createSettings exporter.CreateSettings) (*
 
 }
 
-func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) error {
+func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) error {
 	ingestURL, err := se.config.getIngestURL()
 	if err != nil {
 		return err
 	}
 
 	headers := buildHeaders(se.config, se.version)
-	client, err := se.createClient(host)
+	client, err := se.createClient(ctx, host)
 	if err != nil {
 		return err
 	}
@@ -215,10 +215,10 @@ func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) er
 	return nil
 }
 
-func (se *signalfxExporter) createClient(host component.Host) (*http.Client, error) {
+func (se *signalfxExporter) createClient(ctx context.Context, host component.Host) (*http.Client, error) {
 	se.config.ClientConfig.TLSSetting = se.config.IngestTLSSettings
 
-	return se.config.ToClient(host, se.telemetrySettings)
+	return se.config.ToClientContext(ctx, host, se.telemetrySettings)
 }
 
 func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {

@@ -118,7 +118,7 @@ datasources:
 
 The following settings are required:
 
-- `metrics_exporter`: the name of the exporter that this processor will write metrics to. This exporter **must** be present in a pipeline.
+- `metrics_exporter`: the name of the exporter that this connector will write metrics to. This exporter **must** be present in a pipeline.
 - `latency_histogram_buckets`: the list of durations defining the latency histogram buckets.
     - Default: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
 - `dimensions`: the list of dimensions to add together with the default dimensions defined above.
@@ -134,8 +134,8 @@ The following settings can be optionally configured:
   - Default: `1m`
 - `store_expiration_loop`: the time to expire old entries from the store periodically.
   - Default: `2s`
-- `virtual_node_peer_attributes`: the list of attributes need to match for building virtual server node, the higher the front, the higher the priority.
-  - Default: `[db.name, net.sock.peer.addr, net.peer.name, rpc.service, net.sock.peer.name, net.peer.name, http.url, http.target]`
+- `virtual_node_peer_attributes`: the list of attributes, ordered by priority, whose presence in a client span will result in the creation of a virtual server node. An empty list disables virtual node creation.
+  - Default: `[peer.service, db.name, db.system]`
 - `metrics_flush_interval`: the interval at which metrics are flushed to the exporter.
   - Default: Metrics are flushed on every received batch of traces.
 - `database_name_attribute`: the attribute name used to identify the database name from span attributes.
