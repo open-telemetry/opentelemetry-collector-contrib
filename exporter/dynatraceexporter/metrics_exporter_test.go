@@ -302,7 +302,7 @@ func Test_SumMetrics(t *testing.T) {
 			// reset the export buffer for the HTTP client
 			sent = "nothing sent"
 
-			prevPts := ttlmap.New(cSweepIntervalSeconds, cMaxAgeSeconds, make(chan struct{}))
+			prevPts := ttlmap.New(cSweepIntervalSeconds, cMaxAgeSeconds)
 
 			// set up the exporter
 			exp := &metricsExporter{

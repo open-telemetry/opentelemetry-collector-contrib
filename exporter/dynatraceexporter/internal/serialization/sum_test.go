@@ -23,7 +23,7 @@ func Test_serializeSumPoint(t *testing.T) {
 		dp := pmetric.NewNumberDataPoint()
 		dp.SetIntValue(5)
 
-		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(), pmetric.AggregationTemporalityDelta, dp, ttlmap.New(1, 1, make(chan struct{})))
+		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(), pmetric.AggregationTemporalityDelta, dp, ttlmap.New(1, 1))
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.int_sum count,delta=5", got)
 	})
@@ -33,7 +33,7 @@ func Test_serializeSumPoint(t *testing.T) {
 		dp.SetDoubleValue(5.5)
 		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		prev := ttlmap.New(1, 1, make(chan struct{}))
+		prev := ttlmap.New(1, 1)
 
 		got, err := serializeSumPoint("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.AggregationTemporalityDelta, dp, prev)
 		assert.NoError(t, err)
@@ -45,7 +45,7 @@ func Test_serializeSumPoint(t *testing.T) {
 		dp.SetIntValue(5)
 		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.AggregationTemporalityDelta, dp, ttlmap.New(1, 1, make(chan struct{})))
+		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.AggregationTemporalityDelta, dp, ttlmap.New(1, 1))
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.int_sum,key=value count,delta=5 1626438600000", got)
 	})
@@ -59,7 +59,7 @@ func Test_serializeSumPoint(t *testing.T) {
 		dp2.SetDoubleValue(7.0)
 		dp2.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 31, 0, 0, time.UTC).UnixNano()))
 
-		prev := ttlmap.New(1, 1, make(chan struct{}))
+		prev := ttlmap.New(1, 1)
 
 		got, err := serializeSumPoint("double_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.AggregationTemporalityCumulative, dp, prev)
 		assert.NoError(t, err)
@@ -79,7 +79,7 @@ func Test_serializeSumPoint(t *testing.T) {
 		dp2.SetIntValue(10)
 		dp2.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 31, 0, 0, time.UTC).UnixNano()))
 
-		prev := ttlmap.New(1, 1, make(chan struct{}))
+		prev := ttlmap.New(1, 1)
 
 		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.AggregationTemporalityCumulative, dp, prev)
 		assert.NoError(t, err)
@@ -115,7 +115,7 @@ func Test_serializeSumPoint(t *testing.T) {
 		dp4.Attributes().PutStr("sort", "unstable")
 		dp4.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
-		prev := ttlmap.New(1, 1, make(chan struct{}))
+		prev := ttlmap.New(1, 1)
 
 		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "a")), pmetric.AggregationTemporalityCumulative, dp, prev)
 		got2, err2 := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "b")), pmetric.AggregationTemporalityCumulative, dp2, prev)
@@ -141,7 +141,7 @@ func Test_serializeSumPoint(t *testing.T) {
 		dp2.SetIntValue(5)
 		dp2.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 29, 0, 0, time.UTC).UnixNano()))
 
-		prev := ttlmap.New(1, 1, make(chan struct{}))
+		prev := ttlmap.New(1, 1)
 
 		got, err := serializeSumPoint("int_sum", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), pmetric.AggregationTemporalityCumulative, dp, prev)
 		assert.NoError(t, err)
@@ -165,7 +165,7 @@ func Test_serializeSum(t *testing.T) {
 		sum := metric.SetEmptySum()
 		sum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 		sum.SetIsMonotonic(false)
-		prev := ttlmap.New(10, 10, make(chan struct{}))
+		prev := ttlmap.New(10, 10)
 
 		zapCore, observedLogs := observer.New(zap.WarnLevel)
 		logger := zap.New(zapCore)
@@ -197,7 +197,7 @@ func Test_serializeSum(t *testing.T) {
 			// not checking Double, this is done in Test_serializeSumPoint
 			dp.SetIntValue(12)
 
-			prev := ttlmap.New(10, 10, make(chan struct{}))
+			prev := ttlmap.New(10, 10)
 
 			zapCore, observedLogs := observer.New(zap.WarnLevel)
 			logger := zap.New(zapCore)
@@ -214,7 +214,7 @@ func Test_serializeSum(t *testing.T) {
 		t.Run("with invalid value logs warning and returns no line", func(t *testing.T) {
 			dp.SetDoubleValue(math.NaN())
 
-			prev := ttlmap.New(10, 10, make(chan struct{}))
+			prev := ttlmap.New(10, 10)
 
 			zapCore, observedLogs := observer.New(zap.WarnLevel)
 			logger := zap.New(zapCore)
@@ -250,7 +250,7 @@ func Test_serializeSum(t *testing.T) {
 			// not checking Int here, this is done in Test_serializeSumPoint
 			dp.SetDoubleValue(12.3)
 
-			prev := ttlmap.New(10, 10, make(chan struct{}))
+			prev := ttlmap.New(10, 10)
 
 			zapCore, observedLogs := observer.New(zap.WarnLevel)
 			logger := zap.New(zapCore)
@@ -269,7 +269,7 @@ func Test_serializeSum(t *testing.T) {
 		t.Run("with invalid value logs warning and returns no line", func(t *testing.T) {
 			dp.SetDoubleValue(math.NaN())
 
-			prev := ttlmap.New(10, 10, make(chan struct{}))
+			prev := ttlmap.New(10, 10)
 
 			zapCore, observedLogs := observer.New(zap.WarnLevel)
 			logger := zap.New(zapCore)
@@ -310,7 +310,7 @@ func Test_serializeSum(t *testing.T) {
 			dp1.SetDoubleValue(5.2)
 			dp2.SetDoubleValue(5.7)
 
-			prev := ttlmap.New(10, 10, make(chan struct{}))
+			prev := ttlmap.New(10, 10)
 
 			zapCore, observedLogs := observer.New(zap.WarnLevel)
 			logger := zap.New(zapCore)
@@ -330,7 +330,7 @@ func Test_serializeSum(t *testing.T) {
 			dp1.SetDoubleValue(5.2)
 			dp2.SetDoubleValue(math.NaN())
 
-			prev := ttlmap.New(10, 10, make(chan struct{}))
+			prev := ttlmap.New(10, 10)
 
 			zapCore, observedLogs := observer.New(zap.WarnLevel)
 			logger := zap.New(zapCore)
@@ -357,7 +357,7 @@ func Test_serializeSum(t *testing.T) {
 			dp1.SetDoubleValue(5.2)
 			dp2.SetIntValue(5)
 
-			prev := ttlmap.New(10, 10, make(chan struct{}))
+			prev := ttlmap.New(10, 10)
 
 			zapCore, observedLogs := observer.New(zap.WarnLevel)
 			logger := zap.New(zapCore)
@@ -388,7 +388,7 @@ func Test_convertTotalCounterToDelta_notMutating(t *testing.T) {
 	dp.Attributes().PutStr("attr1", "val1")
 	orig := pmetric.NewNumberDataPoint()
 	dp.CopyTo(orig)
-	_, err := convertTotalCounterToDelta("m", "prefix", dimensions.NormalizedDimensionList{}, dp, ttlmap.New(1, 1, make(chan struct{})))
+	_, err := convertTotalCounterToDelta("m", "prefix", dimensions.NormalizedDimensionList{}, dp, ttlmap.New(1, 1))
 	assert.NoError(t, err)
 	assert.Equal(t, orig, dp) // make sure the original data point is not mutated
 }
