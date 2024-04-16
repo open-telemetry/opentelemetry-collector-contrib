@@ -2,6 +2,7 @@
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
 change_type: breaking
+changelog: [api]
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
 component: all
