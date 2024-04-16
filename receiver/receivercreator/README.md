@@ -310,7 +310,6 @@ receivers:
             - container
             - pod
             - node
-    receivers:
       httpcheck:
         # Configure probing if standard prometheus annotations are set on the pod.
         rule: type == "k8s.service" && annotations["prometheus.io/probe"] == "true"
