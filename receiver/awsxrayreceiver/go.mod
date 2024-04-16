@@ -12,14 +12,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.98.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.98.1-0.20240416135553-49cc9e05e3a9
-	go.opentelemetry.io/collector/config/confignet v0.98.1-0.20240416135553-49cc9e05e3a9
-	go.opentelemetry.io/collector/config/configtls v0.98.1-0.20240416135553-49cc9e05e3a9
-	go.opentelemetry.io/collector/confmap v0.98.1-0.20240416135553-49cc9e05e3a9
-	go.opentelemetry.io/collector/consumer v0.98.1-0.20240416135553-49cc9e05e3a9
-	go.opentelemetry.io/collector/pdata v1.5.1-0.20240416135553-49cc9e05e3a9
-	go.opentelemetry.io/collector/receiver v0.98.1-0.20240416135553-49cc9e05e3a9
-	go.opentelemetry.io/collector/semconv v0.98.1-0.20240416135553-49cc9e05e3a9
+	go.opentelemetry.io/collector/component v0.98.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/config/confignet v0.98.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/config/configtls v0.98.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/confmap v0.98.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/consumer v0.98.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/pdata v1.5.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/receiver v0.98.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/semconv v0.98.1-0.20240416174005-d0f15e2463f8
 	go.opentelemetry.io/otel/metric v1.25.0
 	go.opentelemetry.io/otel/trace v1.25.0
 	go.uber.org/goleak v1.3.0
@@ -52,10 +52,10 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.52.3 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	go.opentelemetry.io/collector v0.98.1-0.20240416135553-49cc9e05e3a9 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.5.1-0.20240416135553-49cc9e05e3a9 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.98.1-0.20240416135553-49cc9e05e3a9 // indirect
-	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240416135553-49cc9e05e3a9 // indirect
+	go.opentelemetry.io/collector v0.98.1-0.20240416174005-d0f15e2463f8 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.5.1-0.20240416174005-d0f15e2463f8 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.98.1-0.20240416174005-d0f15e2463f8 // indirect
+	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240416174005-d0f15e2463f8 // indirect
 	go.opentelemetry.io/otel v1.25.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.47.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.25.0 // indirect
