@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd v0.98.0

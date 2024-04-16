@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.98.0

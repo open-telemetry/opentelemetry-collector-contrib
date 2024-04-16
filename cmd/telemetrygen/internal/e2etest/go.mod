@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/e2etest
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen v0.98.0
