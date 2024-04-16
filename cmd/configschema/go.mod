@@ -176,8 +176,7 @@ require (
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.8.0 // indirect
 	cloud.google.com/go v0.112.1 // indirect
-	cloud.google.com/go/compute v1.24.0 // indirect
-	cloud.google.com/go/compute/metadata v0.2.4-0.20230617002413-005d2dfb6b68 // indirect
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
 	cloud.google.com/go/logging v1.9.0 // indirect
 	cloud.google.com/go/longrunning v0.5.5 // indirect

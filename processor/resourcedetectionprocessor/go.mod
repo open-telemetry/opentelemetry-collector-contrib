@@ -34,7 +34,6 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.24.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
