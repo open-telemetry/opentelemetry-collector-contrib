@@ -63,7 +63,7 @@ type Config struct {
 	Client string `mapstructure:"client"`
 }
 
-// CreateDefaultClientConfig returns default http client settings
+// createDefaultClientConfig returns default http client settings
 func createDefaultClientConfig() confighttp.ClientConfig {
 	return confighttp.ClientConfig{
 		Timeout: defaultTimeout,
