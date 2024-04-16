@@ -44,11 +44,11 @@ func newProcessor(settings processor.CreateSettings, config *Config) *wsprocesso
 func (w *wsprocessor) Start(ctx context.Context, host component.Host) error {
 	var err error
 	var ln net.Listener
-	ln, err = w.config.ServerConfig.ToListenerContext(ctx)
+	ln, err = w.config.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", w.config.Endpoint, err)
 	}
-	w.server, err = w.config.ServerConfig.ToServerContext(ctx, host, w.telemetrySettings, websocket.Handler(w.handleConn))
+	w.server, err = w.config.ServerConfig.ToServer(ctx, host, w.telemetrySettings, websocket.Handler(w.handleConn))
 	if err != nil {
 		return err
 	}

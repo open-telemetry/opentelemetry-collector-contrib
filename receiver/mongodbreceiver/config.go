@@ -50,7 +50,7 @@ func (c *Config) Validate() error {
 		err = multierr.Append(err, errors.New("password provided without user"))
 	}
 
-	if _, tlsErr := c.LoadTLSConfigContext(context.Background()); tlsErr != nil {
+	if _, tlsErr := c.LoadTLSConfig(context.Background()); tlsErr != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 
@@ -66,7 +66,7 @@ func (c *Config) ClientOptions() *options.ClientOptions {
 		clientOptions.SetConnectTimeout(c.Timeout)
 	}
 
-	tlsConfig, err := c.LoadTLSConfigContext(context.Background())
+	tlsConfig, err := c.LoadTLSConfig(context.Background())
 	if err == nil && tlsConfig != nil {
 		clientOptions.SetTLSConfig(tlsConfig)
 	}
