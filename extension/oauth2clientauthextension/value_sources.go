@@ -6,6 +6,7 @@ package oauth2clientauthextension // import "github.com/open-telemetry/opentelem
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -40,4 +41,31 @@ type fileSource struct {
 
 func (v fileSource) getValue() (string, error) {
 	return readCredentialsFile(v.path)
+}
+
+func executeCommand(cmdArgs ...string) (string, error) {
+	if len(cmdArgs) == 0 {
+		return "", fmt.Errorf("empty command provided")
+	}
+
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...) // #nosec G204
+	outBytes, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+
+	output := strings.TrimSpace(string(outBytes))
+	if output == "" {
+		return "", fmt.Errorf("command %q returned empty response", strings.Join(cmdArgs, " "))
+	}
+
+	return output, nil
+}
+
+type cmdGetter struct {
+	value []string
+}
+
+func (v cmdGetter) getValue() (string, error) {
+	return executeCommand(v.value...)
 }
