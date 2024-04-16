@@ -26,8 +26,8 @@ type s3Reader struct {
 
 type s3ReaderDataCallback func(context.Context, string, []byte) error
 
-func newS3Reader(cfg *Config) (*s3Reader, error) {
-	listObjectsClient, getObjectClient, err := newS3Client(cfg.S3Downloader)
+func newS3Reader(ctx context.Context, cfg *Config) (*s3Reader, error) {
+	listObjectsClient, getObjectClient, err := newS3Client(ctx, cfg.S3Downloader)
 	if err != nil {
 		return nil, err
 	}

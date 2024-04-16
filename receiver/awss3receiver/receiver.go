@@ -23,8 +23,8 @@ type awss3TraceReceiver struct {
 	cancel   context.CancelFunc
 }
 
-func newAWSS3TraceReceiver(cfg *Config, traces consumer.Traces, logger *zap.Logger) (*awss3TraceReceiver, error) {
-	reader, err := newS3Reader(cfg)
+func newAWSS3TraceReceiver(ctx context.Context, cfg *Config, traces consumer.Traces, logger *zap.Logger) (*awss3TraceReceiver, error) {
+	reader, err := newS3Reader(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}

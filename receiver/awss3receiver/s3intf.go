@@ -32,7 +32,7 @@ type s3ListObjectsAPIImpl struct {
 	client *s3.Client
 }
 
-func newS3Client(cfg S3DownloaderConfig) (ListObjectsAPI, GetObjectAPI, error) {
+func newS3Client(ctx context.Context, cfg S3DownloaderConfig) (ListObjectsAPI, GetObjectAPI, error) {
 	optionsFuncs := make([]func(*config.LoadOptions) error, 0)
 	if cfg.Region != "" {
 		optionsFuncs = append(optionsFuncs, config.WithRegion(cfg.Region))
@@ -48,7 +48,7 @@ func newS3Client(cfg S3DownloaderConfig) (ListObjectsAPI, GetObjectAPI, error) {
 		})
 		optionsFuncs = append(optionsFuncs, config.WithEndpointResolverWithOptions(customResolver))
 	}
-	awsCfg, err := config.LoadDefaultConfig(context.TODO(), optionsFuncs...)
+	awsCfg, err := config.LoadDefaultConfig(ctx, optionsFuncs...)
 	if err != nil {
 		log.Fatalf("unable to load SDK config, %v", err)
 		return nil, nil, err
