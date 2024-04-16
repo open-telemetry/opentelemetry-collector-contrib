@@ -45,7 +45,7 @@ func assertHecSuccessResponse(t *testing.T, resp *http.Response, body any) {
 	assert.Equal(t, map[string]any{"code": float64(0), "text": "Success"}, body)
 }
 
-func assertHecSuccessResponseWithAckId(t *testing.T, resp *http.Response, body any, ackID uint64) {
+func assertHecSuccessResponseWithAckID(t *testing.T, resp *http.Response, body any, ackID uint64) {
 	status := resp.StatusCode
 	assert.Equal(t, http.StatusOK, status)
 	assert.Equal(t, httpJSONTypeHeader, resp.Header.Get(httpContentTypeHeader))
@@ -1425,7 +1425,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 				return &mockAckExtension
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
-				assertHecSuccessResponseWithAckId(t, resp, body, 1)
+				assertHecSuccessResponseWithAckID(t, resp, body, 1)
 			},
 		},
 	}
@@ -1557,7 +1557,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				return &mockAckExtension
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
-				assertHecSuccessResponseWithAckId(t, resp, body, 1)
+				assertHecSuccessResponseWithAckID(t, resp, body, 1)
 			},
 			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
 				assert.Equal(t, 1, len(sink.AllLogs()))
