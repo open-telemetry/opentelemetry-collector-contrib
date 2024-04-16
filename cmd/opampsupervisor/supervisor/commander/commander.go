@@ -41,8 +41,8 @@ func NewCommander(logger *zap.Logger, cfg *config.Agent, args ...string) (*Comma
 		args:    args,
 		running: &atomic.Int64{},
 		// Buffer channels so we can send messages without blocking on listeners.
-		doneCh:  make(chan struct{}, 1),
-		exitCh:  make(chan struct{}, 1),
+		doneCh: make(chan struct{}, 1),
+		exitCh: make(chan struct{}, 1),
 	}, nil
 }
 
