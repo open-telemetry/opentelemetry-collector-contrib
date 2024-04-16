@@ -40,6 +40,7 @@ func NewCommander(logger *zap.Logger, cfg *config.Agent, args ...string) (*Comma
 		cfg:     cfg,
 		args:    args,
 		running: &atomic.Int64{},
+		// Buffer channels so we can send messages without blocking on listeners.
 		doneCh:  make(chan struct{}, 1),
 		exitCh:  make(chan struct{}, 1),
 	}, nil
@@ -55,6 +56,8 @@ func (c *Commander) Start(ctx context.Context) error {
 		return nil
 	}
 
+	// Drain channels in case there are no listeners that
+	// drained messages from previous runs.
 	if len(c.doneCh) > 0 {
 		select {
 		case <-c.doneCh:
