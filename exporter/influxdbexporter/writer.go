@@ -114,7 +114,7 @@ func composeWriteURL(config *Config) (string, error) {
 
 // Start implements component.StartFunc
 func (w *influxHTTPWriter) Start(ctx context.Context, host component.Host) error {
-	httpClient, err := w.httpClientSettings.ToClientContext(ctx, host, w.telemetrySettings)
+	httpClient, err := w.httpClientSettings.ToClient(ctx, host, w.telemetrySettings)
 	if err != nil {
 		return err
 	}

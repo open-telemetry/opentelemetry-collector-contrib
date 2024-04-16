@@ -96,7 +96,7 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 
 	allocConf := r.cfg.TargetAllocator
 	if allocConf != nil {
-		r.httpClient, err = r.cfg.TargetAllocator.ToClientContext(ctx, host, r.settings.TelemetrySettings)
+		r.httpClient, err = r.cfg.TargetAllocator.ToClient(ctx, host, r.settings.TelemetrySettings)
 		if err != nil {
 			r.settings.Logger.Error("Failed to create http client", zap.Error(err))
 			return err
