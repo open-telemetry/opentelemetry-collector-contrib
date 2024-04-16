@@ -9,6 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.98.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.98.1-0.20240412014414-62f589864e3d
+	go.opentelemetry.io/collector/config/configopaque v1.5.1-0.20240412014414-62f589864e3d
 	go.opentelemetry.io/collector/confmap v0.98.1-0.20240412014414-62f589864e3d
 	go.opentelemetry.io/collector/consumer v0.98.1-0.20240412014414-62f589864e3d
 	go.opentelemetry.io/collector/pdata v1.5.1-0.20240412014414-62f589864e3d
