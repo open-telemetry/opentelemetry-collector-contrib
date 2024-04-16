@@ -1142,7 +1142,7 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 |`%l` | Hour 12-hour clock | 0, ..., 24 |
 |`%p` | Locale’s equivalent of either AM or PM | AM, PM |
 |`%P` | Locale’s equivalent of either am or pm | am, pm |
-|`%M` | Minute, as a zero-padded number | 00, 01, ..., 59 |
+|`%M` | Minute as a zero-padded number | 00, 01, ..., 59 |
 |`%S` | Second as a zero-padded number | 00, 01, ..., 59 |
 |`%L` | Millisecond as a zero-padded number | 000, 001, ..., 999 |
 |`%f` | Microsecond as a zero-padded number | 000000, ..., 999999 |
