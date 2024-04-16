@@ -157,3 +157,31 @@ none_set:
       enabled: false
     server.port:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    redis.version:
+      enabled: true
+      include:
+        - regexp: ".*"
+    server.address:
+      enabled: true
+      include:
+        - regexp: ".*"
+    server.port:
+      enabled: true
+      include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    redis.version:
+      enabled: true
+      exclude:
+        - strict: "redis.version-val"
+    server.address:
+      enabled: true
+      exclude:
+        - strict: "server.address-val"
+    server.port:
+      enabled: true
+      exclude:
+        - strict: "server.port-val"
