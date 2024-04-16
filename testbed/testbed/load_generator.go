@@ -215,22 +215,16 @@ func (ps *ProviderSender) generate() {
 
 			var prevErr error
 			for {
-				var err error
 				select {
 				case <-t.C:
-					err = ps.generateFunc()
+					err := ps.generateFunc()
+					// log the error if it is different from the previous result
+					if err != nil && (prevErr == nil || err.Error() != prevErr.Error()) {
+						log.Printf("%v", err)
+					}
+					prevErr = err
 				case <-ps.stopSignal:
 					return
-				}
-
-				if err == nil {
-					prevErr = nil
-					continue
-				}
-				// update prevErr to err if it's different than last observed error
-				if prevErr == nil || err.Error() != prevErr.Error() {
-					prevErr = err
-					log.Printf("%v", err)
 				}
 			}
 		}()
