@@ -12,18 +12,29 @@ import (
 )
 
 // clientCredentialsConfig is a clientcredentials.Config wrapper to allow
-// values read from files in the ClientID and ClientSecret fields.
+// values read from files or retrieved by executing commands in the ClientID
+// and ClientSecret fields.
 //
 // Values from files can be retrieved by populating the ClientIDFile or
 // the ClientSecretFile fields with the path to the file.
+// Values from commands can be retrieved by populating the ClientIDCmd or
+// the ClientSecretCmd fields.
 //
-// Priority: File > Raw value
+// Priority: Command > File > Raw value
 //
 // Example - Retrieve secret from file:
 //
 //	cfg = newClientCredentialsConfig(&Config{
 //		ClientID: "clientID",
 //		ClientSecretFile: "/path/to/client/secret",
+//		...,
+//	})
+//
+// Example - Retrieve secret with command:
+//
+//	cfg = newClientCredentialsConfig(&Config{
+//		ClientID: "clientID",
+//		ClientSecretCmd: []string{"pass", "example.org/client/secret"},
 //		...,
 //	})
 type clientCredentialsConfig struct {
@@ -87,13 +98,17 @@ func (ts clientCredentialsTokenSource) Token() (*oauth2.Token, error) {
 func newClientCredentialsConfig(cfg *Config) *clientCredentialsConfig {
 	var clientIDSource valueSource
 	clientIDSource = rawSource{cfg.ClientID}
-	if len(cfg.ClientIDFile) > 0 {
+	if len(cfg.ClientIDCmd) > 0 {
+		clientIDSource = cmdSource{cfg.ClientIDCmd}
+	} else if len(cfg.ClientIDFile) > 0 {
 		clientIDSource = fileSource{cfg.ClientIDFile}
 	}
 
 	var clientSecretSource valueSource
 	clientSecretSource = rawSource{string(cfg.ClientSecret)}
-	if len(cfg.ClientSecretFile) > 0 {
+	if len(cfg.ClientSecretCmd) > 0 {
+		clientSecretSource = cmdSource{cfg.ClientSecretCmd}
+	} else if len(cfg.ClientSecretFile) > 0 {
 		clientSecretSource = fileSource{cfg.ClientSecretFile}
 	}
 

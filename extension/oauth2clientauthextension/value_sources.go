@@ -62,10 +62,10 @@ func executeCommand(cmdArgs ...string) (string, error) {
 	return output, nil
 }
 
-type cmdGetter struct {
-	value []string
+type cmdSource struct {
+	cmd []string
 }
 
-func (v cmdGetter) getValue() (string, error) {
-	return executeCommand(v.value...)
+func (v cmdSource) getValue() (string, error) {
+	return executeCommand(v.cmd...)
 }

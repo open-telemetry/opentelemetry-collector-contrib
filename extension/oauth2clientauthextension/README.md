@@ -75,10 +75,16 @@ Following are the configuration fields
 - **client_id_file** - The file path to retrieve the client identifier issued to the client.
   The extension reads this file and updates the client ID used whenever it needs to issue a new token. This enables dynamically changing the client credentials by modifying the file contents when, for example, they need to rotate. <!-- Intended whitespace for compact new line -->  
   This setting takes precedence over `client_id`.
+- **client_id_cmd** - The command to retrieve the client identifier issued to the client. Expects a list of strings.
+  The extension executes the command and updates the client ID used whenever it needs to issue a new token. This enables dynamically changing the client credentials when the command returns a different output. For example, when they are retrieved from a secret store which rotates them. <!-- Intended whitespace for compact new line -->  
+  This setting takes precedence over `client_id_file` and `client_id`.
 - [**client_secret**](https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1) - The secret string associated with above identifier.
 - **client_secret_file** - The file path to retrieve the secret string associated with above identifier.
   The extension reads this file and updates the client secret used whenever it needs to issue a new token. This enables dynamically changing the client credentials by modifying the file contents when, for example, they need to rotate. <!-- Intended whitespace for compact new line -->  
   This setting takes precedence over `client_secret`.
+- **client_secret_cmd** - The command to retrieve the secret string associated with above identifier. Expects a list of strings.
+  The extension executes the command and updates the client secret used whenever it needs to issue a new token. This enables dynamically changing the client credentials when the command returns a different output. For example, when they are retrieved from a secret store which rotates them. <!-- Intended whitespace for compact new line -->  
+  This setting takes precedence over `client_secret_file` and `client_secret`.
 - [**endpoint_params**](https://github.com/golang/oauth2/blob/master/clientcredentials/clientcredentials.go#L44) - Additional parameters that are sent to the token endpoint.
 - [**scopes**](https://datatracker.ietf.org/doc/html/rfc6749#section-3.3) - **Optional** optional requested permissions associated for the client.
 - [**timeout**](https://golang.org/src/net/http/client.go#L90) -  **Optional** specifies the timeout on the underlying client to authorization server for fetching the tokens (initial and while refreshing).
