@@ -115,6 +115,9 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 		testCredsFile        = "testdata/test-cred.txt"
 		testCredsEmptyFile   = "testdata/test-cred-empty.txt"
 		testCredsMissingFile = "testdata/test-cred-missing.txt"
+		testCredsCmd         = []string{"cat", testCredsFile}
+		testCredsEmptyCmd    = []string{"cat", testCredsEmptyFile}
+		testCredsErrorCmd    = []string{"cat", testCredsMissingFile}
 	)
 
 	tests := []struct {
@@ -172,6 +175,58 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 				ClientSecretFile: testCredsMissingFile,
 				TokenURL:         "https://example.com/v1/token",
 				Scopes:           []string{"resource.read"},
+			},
+			shouldError:   true,
+			expectedError: &errNoClientSecretProvided,
+		},
+		{
+			name: "client_id_cmd",
+			settings: &Config{
+				ClientIDCmd:  testCredsCmd,
+				ClientSecret: "testsecret",
+				TokenURL:     "https://example.com/v1/token",
+				Scopes:       []string{"resource.read"},
+			},
+			expectedClientConfig: &clientcredentials.Config{
+				ClientID:     "testcreds",
+				ClientSecret: "testsecret",
+			},
+			shouldError:   false,
+			expectedError: nil,
+		},
+		{
+			name: "client_secret_cmd",
+			settings: &Config{
+				ClientID:        "testclientid",
+				ClientSecretCmd: testCredsCmd,
+				TokenURL:        "https://example.com/v1/token",
+				Scopes:          []string{"resource.read"},
+			},
+			expectedClientConfig: &clientcredentials.Config{
+				ClientID:     "testclientid",
+				ClientSecret: "testcreds",
+			},
+			shouldError:   false,
+			expectedError: nil,
+		},
+		{
+			name: "empty_client_cmd",
+			settings: &Config{
+				ClientIDCmd:  testCredsEmptyCmd,
+				ClientSecret: "testsecret",
+				TokenURL:     "https://example.com/v1/token",
+				Scopes:       []string{"resource.read"},
+			},
+			shouldError:   true,
+			expectedError: &errNoClientIDProvided,
+		},
+		{
+			name: "error_client_creds_cmd",
+			settings: &Config{
+				ClientID:        "testclientid",
+				ClientSecretCmd: testCredsErrorCmd,
+				TokenURL:        "https://example.com/v1/token",
+				Scopes:          []string{"resource.read"},
 			},
 			shouldError:   true,
 			expectedError: &errNoClientSecretProvided,
