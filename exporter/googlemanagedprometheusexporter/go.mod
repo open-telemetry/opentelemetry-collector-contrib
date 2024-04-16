@@ -93,7 +93,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.98.1-0.20240416135553-49cc9e05e3a9 // indirect
 	go.opentelemetry.io/collector/semconv v0.98.1-0.20240416135553-49cc9e05e3a9 // indirect
 	go.opentelemetry.io/collector/service v0.98.1-0.20240416135553-49cc9e05e3a9 // indirect
-	go.opentelemetry.io/contrib/config v0.4.0 // indirect
+	go.opentelemetry.io/contrib/config v0.5.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.47.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.25.0 // indirect

@@ -27,7 +27,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.98.0 // indirect
 	go.opentelemetry.io/collector v0.98.1-0.20240416135553-49cc9e05e3a9 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.98.1-0.20240416135553-49cc9e05e3a9 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240227224415-6ceb2ff114de // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda // indirect
 )
 
 require (

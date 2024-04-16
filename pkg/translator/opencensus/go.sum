@@ -75,10 +75,10 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.opencensus.io v0.24.0 h1:y73uSU6J157QMP2kn2r30vwW1A2W2WFwSCGnAVxeaD0=
 go.opencensus.io v0.24.0/go.mod h1:vNK8G9p7aAivkbmorf4v+7Hgx+Zs0yY+0fOtgBfjQKo=
-go.opentelemetry.io/collector/pdata v1.5.1-0.20240412014414-62f589864e3d h1:06SBb1ZlVADbw2o1gP4tb/yHcdvXpev+s1hx0sutOmw=
-go.opentelemetry.io/collector/pdata v1.5.1-0.20240412014414-62f589864e3d/go.mod h1:pQv6AJO6wDUDxrPxhNaj3JdSzaOIo5glTGL1b4h4KTg=
-go.opentelemetry.io/collector/semconv v0.98.1-0.20240412014414-62f589864e3d h1:KA+FmCpUi/NSuzC8pYgbKXs501TsHbr9tlqqyrv60QI=
-go.opentelemetry.io/collector/semconv v0.98.1-0.20240412014414-62f589864e3d/go.mod h1:8ElcRZ8Cdw5JnvhTOQOdYizkJaQ10Z2fS+R6djOnj6A=
+go.opentelemetry.io/collector/pdata v1.5.1-0.20240416135553-49cc9e05e3a9 h1:jDLhh4acv1/gqYlgSZ6mWiVbKcSp7JcdlFoA1xikuL0=
+go.opentelemetry.io/collector/pdata v1.5.1-0.20240416135553-49cc9e05e3a9/go.mod h1:pQv6AJO6wDUDxrPxhNaj3JdSzaOIo5glTGL1b4h4KTg=
+go.opentelemetry.io/collector/semconv v0.98.1-0.20240416135553-49cc9e05e3a9 h1:OjVEW7tcSMOWXzd/NfTUHZBFI3P8JtboV3+7cx4RXgo=
+go.opentelemetry.io/collector/semconv v0.98.1-0.20240416135553-49cc9e05e3a9/go.mod h1:8ElcRZ8Cdw5JnvhTOQOdYizkJaQ10Z2fS+R6djOnj6A=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
@@ -140,8 +140,8 @@ google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de h1:F6qOa9AZTYJXOUE
 google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de/go.mod h1:VUhTRKeHn9wwcdrk73nvdC9gF178Tzhmt/qyaFcPLSo=
 google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de h1:jFNzHPIeuzhdRwVhbZdiym9q0ory/xY3sA+v2wPg8I0=
 google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de/go.mod h1:5iCWqnniDlqZHrd3neWVTOwvh/v6s3232omMecelax8=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20240227224415-6ceb2ff114de h1:cZGRis4/ot9uVm639a+rHCUaG0JJHEsdyzSQTMX+suY=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20240227224415-6ceb2ff114de/go.mod h1:H4O17MA/PE9BsGx3w+a+W2VOLLD1Qf7oJneAoU6WktY=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda h1:LI5DOvAxUPMv/50agcLLoo+AdWc1irS9Rzz4vPuD1V4=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda/go.mod h1:WtryC6hu0hhx87FDGxWCDptyssuo68sk10vYjF+T9fY=
 google.golang.org/grpc v1.19.0/go.mod h1:mqu4LbDTu4XGKhr4mRzUsmM4RtVoemTSY81AxZiDr8c=
 google.golang.org/grpc v1.23.0/go.mod h1:Y5yQAOtifL1yxbo5wqy6BxZv8vAUGQwXBOALyacEbxg=
 google.golang.org/grpc v1.25.1/go.mod h1:c3i+UQWmh7LiEpx4sFZnkU36qjEYZ0imhYfXVyQciAY=

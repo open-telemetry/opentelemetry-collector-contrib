@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.5.1-0.20240416135553-49cc9e05e3a9
 	go.opentelemetry.io/collector/pdata/testdata v0.98.1-0.20240416135553-49cc9e05e3a9
 	go.opentelemetry.io/collector/receiver v0.98.1-0.20240416135553-49cc9e05e3a9
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.50.0
 	go.opentelemetry.io/otel v1.25.0
 	go.opentelemetry.io/otel/metric v1.25.0
 	go.opentelemetry.io/otel/sdk v1.25.0
@@ -79,7 +79,7 @@ require (
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240227224415-6ceb2ff114de // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
