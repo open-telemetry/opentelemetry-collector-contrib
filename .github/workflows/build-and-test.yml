@@ -327,7 +327,7 @@ jobs:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: Wandalen/wretry.action@v3.2.0
+        uses: Wandalen/wretry.action@v3.4.0
         with:
           action: codecov/codecov-action@v4
           with: |
