@@ -215,6 +215,8 @@ func components() (otelcol.Factories, error) {
 	factories.Extensions, err = extension.MakeFactoryMap(
 		zpagesextension.NewFactory(),
 		ballastextension.NewFactory(),
+		zpagesextension.NewFactory(),
+		ballastextension.NewFactory(),
 		ackextension.NewFactory(),
 		asapauthextension.NewFactory(),
 		awsproxy.NewFactory(),
