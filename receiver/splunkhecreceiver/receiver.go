@@ -197,7 +197,7 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 
 	// set up the listener
-	ln, err := r.config.ServerConfig.ToListenerContext(ctx)
+	ln, err := r.config.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
 	}
@@ -220,8 +220,10 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 		}
 	}
 
-	r.server, err = r.config.ServerConfig.ToServerContext(ctx, host, r.settings.TelemetrySettings, mx)
-	if err != nil {
+
+	r.server, err = r.config.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, mx)
+
+  if err != nil {
 		return err
 	}
 	// TODO: Evaluate what properties should be configurable, for now
