@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
