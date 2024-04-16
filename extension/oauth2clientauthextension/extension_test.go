@@ -87,11 +87,15 @@ func TestOAuthClientSettings(t *testing.T) {
 				assert.Contains(t, err.Error(), test.expectedError)
 				return
 			}
+			// No errors expected since values are raw
+			clientID, _ := rc.clientCredentials.getClientID()
+			clientSecret, _ := rc.clientCredentials.getClientSecret()
+
 			assert.NoError(t, err)
 			assert.Equal(t, test.settings.Scopes, rc.clientCredentials.Scopes)
 			assert.Equal(t, test.settings.TokenURL, rc.clientCredentials.TokenURL)
-			assert.EqualValues(t, test.settings.ClientSecret, rc.clientCredentials.ClientSecret)
-			assert.Equal(t, test.settings.ClientID, rc.clientCredentials.ClientID)
+			assert.EqualValues(t, test.settings.ClientSecret, clientSecret)
+			assert.Equal(t, test.settings.ClientID, clientID)
 			assert.Equal(t, test.settings.Timeout, rc.client.Timeout)
 			assert.Equal(t, test.settings.EndpointParams, rc.clientCredentials.EndpointParams)
 

@@ -60,14 +60,6 @@ func readCredentialsFile(path string) (string, error) {
 	return credential, nil
 }
 
-func getActualValue(value, filepath string) (string, error) {
-	if len(filepath) > 0 {
-		return readCredentialsFile(filepath)
-	}
-
-	return value, nil
-}
-
 // getClientID returns the actual client ID and abstracts the interface
 func (c *clientCredentialsConfig) getClientID() (string, error) {
 	return c.clientIDSource.getValue()
@@ -78,15 +70,14 @@ func (c *clientCredentialsConfig) getClientSecret() (string, error) {
 	return c.clientSecretSource.getValue()
 }
 
-// createConfig creates a proper clientcredentials.Config with values retrieved
-// from files, if the user has specified '*_file' values
+// createConfig creates a proper clientcredentials.Config with the actual config values
 func (c *clientCredentialsConfig) createConfig() (*clientcredentials.Config, error) {
-	clientID, err := getActualValue(c.ClientID, c.ClientIDFile)
+	clientID, err := c.getClientID()
 	if err != nil {
 		return nil, multierr.Combine(errNoClientIDProvided, err)
 	}
 
-	clientSecret, err := getActualValue(c.ClientSecret, c.ClientSecretFile)
+	clientSecret, err := c.getClientSecret()
 	if err != nil {
 		return nil, multierr.Combine(errNoClientSecretProvided, err)
 	}
