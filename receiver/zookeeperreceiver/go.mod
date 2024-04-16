@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/config/confignet v0.98.1-0.20240416174005-d0f15e2463f8
 	go.opentelemetry.io/collector/confmap v0.98.1-0.20240416174005-d0f15e2463f8
 	go.opentelemetry.io/collector/consumer v0.98.1-0.20240416174005-d0f15e2463f8
-	go.opentelemetry.io/collector/filter v0.0.0-20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/filter v0.98.0
 	go.opentelemetry.io/collector/pdata v1.5.1-0.20240416174005-d0f15e2463f8
 	go.opentelemetry.io/collector/receiver v0.98.1-0.20240416174005-d0f15e2463f8
 	go.opentelemetry.io/otel/metric v1.25.0
