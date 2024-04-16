@@ -32,9 +32,6 @@ import (
 type clientCredentialsConfig struct {
 	clientcredentials.Config
 
-	ClientIDFile     string
-	ClientSecretFile string
-
 	clientIDSource     valueSource
 	clientSecretSource valueSource
 }
@@ -124,8 +121,6 @@ func newClientCredentialsConfig(cfg *Config) *clientCredentialsConfig {
 			Scopes:         cfg.Scopes,
 			EndpointParams: cfg.EndpointParams,
 		},
-		ClientIDFile:     cfg.ClientIDFile,
-		ClientSecretFile: cfg.ClientSecretFile,
 
 		clientIDSource:     clientIDSource,
 		clientSecretSource: clientSecretSource,
