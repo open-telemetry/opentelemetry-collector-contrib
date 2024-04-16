@@ -11,7 +11,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
-	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -67,8 +66,7 @@ type Config struct {
 // CreateDefaultClientConfig returns default http client settings
 func createDefaultClientConfig() confighttp.ClientConfig {
 	return confighttp.ClientConfig{
-		Timeout:     defaultTimeout,
-		Compression: configcompression.Type(DefaultCompressEncoding),
+		Timeout: defaultTimeout,
 		Auth: &configauth.Authentication{
 			AuthenticatorID: component.NewID(Type),
 		},
