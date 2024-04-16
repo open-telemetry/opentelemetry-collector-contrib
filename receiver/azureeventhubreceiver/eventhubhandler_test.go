@@ -84,6 +84,8 @@ func (m *mockDataConsumer) consume(ctx context.Context, event *eventhub.Event) e
 }
 
 func TestEventhubHandler_Start(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	config := createDefaultConfig()
 	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
@@ -95,14 +97,16 @@ func TestEventhubHandler_Start(t *testing.T) {
 	}
 	ehHandler.hub = &mockHubWrapper{}
 
-	err := ehHandler.run(context.Background(), componenttest.NewNopHost())
+	err := ehHandler.run(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
 
-	err = ehHandler.close(context.Background())
+	err = ehHandler.close(ctx)
 	assert.NoError(t, err)
 }
 
 func TestEventhubHandler_newMessageHandler(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	config := createDefaultConfig()
 	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
@@ -127,11 +131,11 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 	}
 	ehHandler.hub = &mockHubWrapper{}
 
-	err = ehHandler.run(context.Background(), componenttest.NewNopHost())
+	err = ehHandler.run(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	now := time.Now()
-	err = ehHandler.newMessageHandler(context.Background(), &eventhub.Event{
+	err = ehHandler.newMessageHandler(ctx, &eventhub.Event{
 		Data:         []byte("hello"),
 		PartitionKey: nil,
 		Properties:   map[string]any{"foo": "bar"},
