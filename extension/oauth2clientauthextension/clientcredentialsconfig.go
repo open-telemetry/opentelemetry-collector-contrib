@@ -24,13 +24,11 @@ import (
 //
 // Example - Retrieve secret from file:
 //
-//	cfg := clientCredentialsConfig{
-//		Config: clientcredentials.Config{
-//			ClientID:     "clientId",
-//			...
-//		},
+//	cfg = newClientCredentialsConfig(&Config{
+//		ClientID: "clientID",
 //		ClientSecretFile: "/path/to/client/secret",
-//	}
+//		...,
+//	})
 type clientCredentialsConfig struct {
 	clientcredentials.Config
 
@@ -99,4 +97,18 @@ func (ts clientCredentialsTokenSource) Token() (*oauth2.Token, error) {
 		return nil, err
 	}
 	return cfg.TokenSource(ts.ctx).Token()
+}
+
+func newClientCredentialsConfig(cfg *Config) *clientCredentialsConfig {
+	return &clientCredentialsConfig{
+		Config: clientcredentials.Config{
+			ClientID:       cfg.ClientID,
+			ClientSecret:   string(cfg.ClientSecret),
+			TokenURL:       cfg.TokenURL,
+			Scopes:         cfg.Scopes,
+			EndpointParams: cfg.EndpointParams,
+		},
+		ClientIDFile:     cfg.ClientIDFile,
+		ClientSecretFile: cfg.ClientSecretFile,
+	}
 }

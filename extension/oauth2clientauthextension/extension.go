@@ -11,7 +11,6 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/clientcredentials"
 	"google.golang.org/grpc/credentials"
 	grpcOAuth "google.golang.org/grpc/credentials/oauth"
 )
@@ -45,18 +44,8 @@ func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticat
 	transport.TLSClientConfig = tlsCfg
 
 	return &clientAuthenticator{
-		clientCredentials: &clientCredentialsConfig{
-			Config: clientcredentials.Config{
-				ClientID:       cfg.ClientID,
-				ClientSecret:   string(cfg.ClientSecret),
-				TokenURL:       cfg.TokenURL,
-				Scopes:         cfg.Scopes,
-				EndpointParams: cfg.EndpointParams,
-			},
-			ClientIDFile:     cfg.ClientIDFile,
-			ClientSecretFile: cfg.ClientSecretFile,
-		},
-		logger: logger,
+		clientCredentials: newClientCredentialsConfig(cfg),
+		logger:            logger,
 		client: &http.Client{
 			Transport: transport,
 			Timeout:   cfg.Timeout,
