@@ -57,7 +57,7 @@ func newAWSContainerInsightReceiver(
 func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, acir.cancel = context.WithCancel(ctx)
 
-	hostinfo, err := hostInfo.NewInfo(acir.config.ContainerOrchestrator, acir.config.CollectionInterval, acir.settings.Logger)
+	hostinfo, err := hostInfo.NewInfo(ctx, acir.config.ContainerOrchestrator, acir.config.CollectionInterval, acir.settings.Logger)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 	}
 	if acir.config.ContainerOrchestrator == ci.ECS {
 
-		ecsInfo, err := ecsinfo.NewECSInfo(acir.config.CollectionInterval, hostinfo, host, acir.settings)
+		ecsInfo, err := ecsinfo.NewECSInfo(ctx, acir.config.CollectionInterval, hostinfo, host, acir.settings)
 		if err != nil {
 			return err
 		}

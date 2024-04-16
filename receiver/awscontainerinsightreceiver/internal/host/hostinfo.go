@@ -43,8 +43,8 @@ type Info struct {
 type machineInfoOption func(*Info)
 
 // NewInfo creates a new Info struct
-func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger *zap.Logger, options ...machineInfoOption) (*Info, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+func NewInfo(ctx context.Context, containerOrchestrator string, refreshInterval time.Duration, logger *zap.Logger, options ...machineInfoOption) (*Info, error) {
+	ctx, cancel := context.WithCancel(ctx)
 	mInfo := &Info{
 		cancel:           cancel,
 		refreshInterval:  refreshInterval,

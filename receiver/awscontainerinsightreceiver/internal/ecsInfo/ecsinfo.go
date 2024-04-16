@@ -79,11 +79,11 @@ func (e *EcsInfo) GetClusterName() string {
 type ecsInfoOption func(*EcsInfo)
 
 // New creates a k8sApiServer which can generate cluster-level metrics
-func NewECSInfo(refreshInterval time.Duration, hostIPProvider hostIPProvider, host component.Host, settings component.TelemetrySettings, options ...ecsInfoOption) (*EcsInfo, error) {
+func NewECSInfo(ctx context.Context, refreshInterval time.Duration, hostIPProvider hostIPProvider, host component.Host, settings component.TelemetrySettings, options ...ecsInfoOption) (*EcsInfo, error) {
 	setting := confighttp.ClientConfig{
 		Timeout: defaultTimeout,
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 
 	client, err := setting.ToClientContext(ctx, host, settings)
 

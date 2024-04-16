@@ -18,8 +18,8 @@ import (
 )
 
 func TestECSTaskInfoSuccess(t *testing.T) {
-
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	taskReadyC := make(chan bool)
 	hostIPProvider := &MockHostInfo{}
@@ -48,11 +48,12 @@ func TestECSTaskInfoSuccess(t *testing.T) {
 	assert.Equal(t, int64(1), ecsTaskinfo.getRunningTaskCount())
 
 	assert.NotEmpty(t, ecsTaskinfo.getRunningTasksInfo())
-
 }
 
 func TestECSTaskInfoFail(t *testing.T) {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	err := errors.New("")
 	taskReadyC := make(chan bool)
 
