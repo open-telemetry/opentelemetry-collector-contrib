@@ -15,14 +15,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "saphana", NewFactory().Type().String())
-}
-
-func TestComponentConfigStruct(t *testing.T) {
-	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
-}
-
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
