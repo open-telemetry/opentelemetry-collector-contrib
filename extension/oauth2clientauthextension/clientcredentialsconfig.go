@@ -5,9 +5,6 @@ package oauth2clientauthextension // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"strings"
 
 	"go.uber.org/multierr"
 	"golang.org/x/oauth2"
@@ -43,19 +40,6 @@ type clientCredentialsTokenSource struct {
 
 // clientCredentialsTokenSource implements TokenSource
 var _ oauth2.TokenSource = (*clientCredentialsTokenSource)(nil)
-
-func readCredentialsFile(path string) (string, error) {
-	f, err := os.ReadFile(path)
-	if err != nil {
-		return "", fmt.Errorf("failed to read credentials file %q: %w", path, err)
-	}
-
-	credential := strings.TrimSpace(string(f))
-	if credential == "" {
-		return "", fmt.Errorf("empty credentials file %q", path)
-	}
-	return credential, nil
-}
 
 // getClientID returns the actual client ID and abstracts the interface
 func (c *clientCredentialsConfig) getClientID() (string, error) {
