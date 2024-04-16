@@ -34,6 +34,9 @@ type clientCredentialsConfig struct {
 
 	ClientIDFile     string
 	ClientSecretFile string
+
+	clientIDSource     valueSource
+	clientSecretSource valueSource
 }
 
 type clientCredentialsTokenSource struct {
@@ -63,6 +66,16 @@ func getActualValue(value, filepath string) (string, error) {
 	}
 
 	return value, nil
+}
+
+// getClientID returns the actual client ID and abstracts the interface
+func (c *clientCredentialsConfig) getClientID() (string, error) {
+	return c.clientIDSource.getValue()
+}
+
+// getClientSecret returns the actual client secret and abstracts the interface
+func (c *clientCredentialsConfig) getClientSecret() (string, error) {
+	return c.clientSecretSource.getValue()
 }
 
 // createConfig creates a proper clientcredentials.Config with values retrieved
@@ -100,6 +113,18 @@ func (ts clientCredentialsTokenSource) Token() (*oauth2.Token, error) {
 }
 
 func newClientCredentialsConfig(cfg *Config) *clientCredentialsConfig {
+	var clientIDSource valueSource
+	clientIDSource = rawSource{cfg.ClientID}
+	if len(cfg.ClientIDFile) > 0 {
+		clientIDSource = fileSource{cfg.ClientIDFile}
+	}
+
+	var clientSecretSource valueSource
+	clientSecretSource = rawSource{string(cfg.ClientSecret)}
+	if len(cfg.ClientSecretFile) > 0 {
+		clientSecretSource = fileSource{cfg.ClientSecretFile}
+	}
+
 	return &clientCredentialsConfig{
 		Config: clientcredentials.Config{
 			ClientID:       cfg.ClientID,
@@ -110,5 +135,8 @@ func newClientCredentialsConfig(cfg *Config) *clientCredentialsConfig {
 		},
 		ClientIDFile:     cfg.ClientIDFile,
 		ClientSecretFile: cfg.ClientSecretFile,
+
+		clientIDSource:     clientIDSource,
+		clientSecretSource: clientSecretSource,
 	}
 }
