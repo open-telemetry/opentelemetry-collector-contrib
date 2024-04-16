@@ -231,6 +231,8 @@ func (f *factory) createDefaultConfig() component.Config {
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://http-intake.logs.datadoghq.com",
 			},
+			UseCompression:   true,
+			CompressionLevel: 6,
 		},
 
 		HostMetadata: HostMetadataConfig{

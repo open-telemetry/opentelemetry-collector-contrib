@@ -25,6 +25,8 @@ func newConfigComponent(set component.TelemetrySettings, cfg *Config) (coreconfi
 	pkgconfig.Set("api_key", string(cfg.API.Key), pkgconfigmodel.SourceFile)
 	pkgconfig.Set("site", cfg.API.Site, pkgconfigmodel.SourceFile)
 	pkgconfig.Set("logs_enabled", true, pkgconfigmodel.SourceFile)
+	pkgconfig.Set("logs_config.use_compression", cfg.Logs.UseCompression, pkgconfigmodel.SourceFile)
+	pkgconfig.Set("logs_config.compression_level", cfg.Logs.CompressionLevel, pkgconfigmodel.SourceFile)
 	pkgconfig.Set("log_level", set.Logger.Level().String(), pkgconfigmodel.SourceFile)
 	pkgconfig.Set("forwarder_timeout", 10, pkgconfigmodel.SourceDefault)
 	pkgconfig.Set("apm_config.enabled", true, pkgconfigmodel.SourceFile)

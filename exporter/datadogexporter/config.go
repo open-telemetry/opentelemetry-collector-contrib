@@ -315,6 +315,13 @@ type LogsConfig struct {
 
 	// DumpPayloads report whether payloads should be dumped when logging level is debug.
 	DumpPayloads bool `mapstructure:"dump_payloads"`
+
+	// UseCompression enables the logs agent to compress logs before sending them.
+	UseCompression bool `mapstructure:"use_compression"`
+
+	// CompressionLevel accepts values from 0 (no compression) to 9 (maximum compression but higher resource usage).
+	// Only takes effect if UseCompression is set to true.
+	CompressionLevel int `mapstructure:"compression_level"`
 }
 
 // TagsConfig defines the tag-related configuration

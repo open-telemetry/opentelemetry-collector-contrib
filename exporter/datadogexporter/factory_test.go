@@ -107,6 +107,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://http-intake.logs.datadoghq.com",
 			},
+			UseCompression:   true,
+			CompressionLevel: 6,
 		},
 
 		HostMetadata: HostMetadataConfig{
@@ -169,6 +171,8 @@ func TestLoadConfig(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.com",
 					},
+					UseCompression:   true,
+					CompressionLevel: 6,
 				},
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,
@@ -224,6 +228,8 @@ func TestLoadConfig(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.eu",
 					},
+					UseCompression:   true,
+					CompressionLevel: 6,
 				},
 				OnlyMetadata: false,
 				HostMetadata: HostMetadataConfig{
@@ -277,6 +283,8 @@ func TestLoadConfig(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.test",
 					},
+					UseCompression:   true,
+					CompressionLevel: 6,
 				},
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,

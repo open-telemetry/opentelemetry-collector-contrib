@@ -222,6 +222,8 @@ func TestLogsExporter(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: server.URL,
 					},
+					UseCompression:   true,
+					CompressionLevel: 6,
 				},
 			}
 
