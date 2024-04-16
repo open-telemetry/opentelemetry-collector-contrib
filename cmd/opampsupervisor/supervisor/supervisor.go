@@ -287,6 +287,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
+	defer func() {
+		if stopErr := srv.Stop(context.Background()); stopErr != nil {
+			err = errors.Join(err, fmt.Errorf("error when stopping the opamp server: %w", stopErr))
+		}
+	}()
+
 	cmd, err := commander.NewCommander(
 		s.logger,
 		s.config.Agent,
@@ -300,6 +306,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
+	defer func() {
+		if stopErr := cmd.Stop(context.Background()); stopErr != nil {
+			err = errors.Join(err, fmt.Errorf("error when stopping the collector: %w", stopErr))
+		}
+	}()
+
 	select {
 	// TODO make timeout configurable
 	case <-time.After(3 * time.Second):
@@ -309,20 +321,8 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 			return errors.New("collector's OpAMP client never connected to the Supervisor")
 		}
 	case err = <-done:
-		if err != nil {
-			return err
-		}
-	}
-
-	if err = cmd.Stop(context.Background()); err != nil {
 		return err
 	}
-
-	if err = srv.Stop(context.Background()); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
