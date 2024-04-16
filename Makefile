@@ -353,8 +353,8 @@ telemetrygen:
 # $(2) = path/to/go.mod (where it greps the package-versions)
 # $(3) = path/to/builder-config.yaml (where we want to update the versions)
 define updatehelper
-	if [ ! -f $(1) ] || [ ! -f $$BUILDER_CONFIG ]; then \
-			echo "Usage: make update GOMOD=path/to/go.mod BUILDER_CONFIG=path/to/BUILDER-CONFIG"; \
+	if [ ! -f $(1) ] || [ ! -f $(2) ] || [ ! -f $(3) ]; then \
+			echo "Usage: updatehelper <versions.yaml> <go.mod> <builder-config.yaml>"; \
 			exit 1; \
 	fi
 	grep "go\.opentelemetry\.io" $(1) | sed 's/^\s*-\s*//' | while IFS= read -r line; do \
@@ -369,8 +369,9 @@ define updatehelper
 						echo "[$(3)]: $$package updated to $$version"; \
 					fi; \
 			fi; \
-	done; \
+	done
 endef
+
 
 .PHONY: update-otel
 update-otel:$(MULTIMOD)
@@ -378,10 +379,10 @@ update-otel:$(MULTIMOD)
 	git add . && git commit -s -m "[chore] multimod update stable modules" ; \
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
 	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
-	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/otelcontribcol/builder-config.yaml)
+	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/otelcontribcol/builder-config.yaml) 
 	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/oteltestbedcol/builder-config.yaml)
 	sed -i -E -e "5,6s/[0-9]+\.[0-9]+\.[0-9]/$(TRIMMED_VERSION)/" ./cmd/otelcontribcol/builder-config.yaml 
-	sed -i -E  -e "5,6s/[0-9]+\.[0-9]+\.[0-9]/$(TRIMMED_VERSION)/" ./cmd/oteltestbedcol/builder-config.yaml 
+	sed -i -E -e "5,6s/[0-9]+\.[0-9]+\.[0-9]/$(TRIMMED_VERSION)/" ./cmd/oteltestbedcol/builder-config.yaml 
 	$(MAKE) gotidy
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
