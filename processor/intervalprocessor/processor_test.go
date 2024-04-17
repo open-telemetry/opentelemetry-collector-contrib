@@ -422,6 +422,92 @@ func TestAggregation(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "ExpHistogramsAreAggregated",
+			inputs: []testMetric{
+				{
+					Name:        "test_metric_total",
+					Type:        pmetric.MetricTypeExponentialHistogram,
+					Temporality: pmetric.AggregationTemporalityCumulative,
+					DataPoints: []any{
+						testExpHistogramDataPoint{
+							Timestamp: 50,
+							Scale:     4,
+							ZeroCount: 5,
+							Positive: testExpHistogramBucket{
+								Offset:       2,
+								BucketCounts: []uint64{4, 7, 9, 6, 25},
+							},
+							Negative: testExpHistogramBucket{
+								Offset:       6,
+								BucketCounts: []uint64{2, 13, 7, 12, 4},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testExpHistogramDataPoint{
+							Timestamp: 20,
+							Scale:     4,
+							ZeroCount: 2,
+							Positive: testExpHistogramBucket{
+								Offset:       2,
+								BucketCounts: []uint64{2, 3, 7, 4, 20},
+							},
+							Negative: testExpHistogramBucket{
+								Offset:       7,
+								BucketCounts: []uint64{8, 3, 9, 1},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testExpHistogramDataPoint{
+							Timestamp: 80,
+							Scale:     4,
+							ZeroCount: 5,
+							Positive: testExpHistogramBucket{
+								Offset:       2,
+								BucketCounts: []uint64{9, 12, 17, 8, 34},
+							},
+							Negative: testExpHistogramBucket{
+								Offset:       6,
+								BucketCounts: []uint64{6, 21, 9, 19, 7},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+					},
+				},
+			},
+			next: []testMetric{},
+			outputs: []testMetric{
+				{
+					Name:        "test_metric_total",
+					Type:        pmetric.MetricTypeExponentialHistogram,
+					Temporality: pmetric.AggregationTemporalityCumulative,
+					DataPoints: []any{
+						testExpHistogramDataPoint{
+							Timestamp: 80,
+							Scale:     4,
+							ZeroCount: 5,
+							Positive: testExpHistogramBucket{
+								Offset:       2,
+								BucketCounts: []uint64{9, 12, 17, 8, 34},
+							},
+							Negative: testExpHistogramBucket{
+								Offset:       6,
+								BucketCounts: []uint64{6, 21, 9, 19, 7},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -599,6 +685,23 @@ type testHistogramDataPoint struct {
 	Attributes     map[string]any
 }
 
+type testExpHistogramDataPoint struct {
+	StartTimestamp pcommon.Timestamp
+	Timestamp      pcommon.Timestamp
+
+	Scale     int32
+	ZeroCount uint64
+	Positive  testExpHistogramBucket
+	Negative  testExpHistogramBucket
+
+	Attributes map[string]any
+}
+
+type testExpHistogramBucket struct {
+	Offset       int32
+	BucketCounts []uint64
+}
+
 func generateTestMetrics(t *testing.T, tmd testMetrics) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 
@@ -701,6 +804,42 @@ func generateTestMetrics(t *testing.T, tmd testMetrics) pmetric.Metrics {
 						dp.SetCount(bucketSum)
 						dp.BucketCounts().FromRaw(tdpp.BucketCounts)
 						dp.ExplicitBounds().FromRaw(tdpp.ExplicitBounds)
+
+						err = dp.Attributes().FromRaw(tdpp.Attributes)
+						require.NoError(t, err)
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					expHistogram := m.SetEmptyExponentialHistogram()
+					expHistogram.SetAggregationTemporality(tm.Temporality)
+
+					for _, tdp := range tm.DataPoints {
+						require.IsType(t, testExpHistogramDataPoint{}, tdp)
+						tdpp := tdp.(testExpHistogramDataPoint)
+
+						dp := expHistogram.DataPoints().AppendEmpty()
+
+						dp.SetStartTimestamp(tdpp.StartTimestamp)
+						dp.SetTimestamp(tdpp.Timestamp)
+
+						bucketSum := tdpp.ZeroCount
+						for _, bucketCount := range tdpp.Positive.BucketCounts {
+							bucketSum += bucketCount
+						}
+						for _, bucketCount := range tdpp.Negative.BucketCounts {
+							bucketSum += bucketCount
+						}
+						dp.SetCount(bucketSum)
+
+						dp.SetScale(tdpp.Scale)
+						dp.SetZeroCount(tdpp.ZeroCount)
+
+						positiveBuckets := dp.Positive()
+						positiveBuckets.SetOffset(tdpp.Positive.Offset)
+						positiveBuckets.BucketCounts().FromRaw(tdpp.Positive.BucketCounts)
+
+						negativeBuckets := dp.Negative()
+						negativeBuckets.SetOffset(tdpp.Negative.Offset)
+						negativeBuckets.BucketCounts().FromRaw(tdpp.Negative.BucketCounts)
 
 						err = dp.Attributes().FromRaw(tdpp.Attributes)
 						require.NoError(t, err)
@@ -843,6 +982,40 @@ func convertMetricsToTestData(t *testing.T, md pmetric.Metrics) testMetrics {
 							ExplicitBounds: dp.ExplicitBounds().AsRaw(),
 							BucketCounts:   dp.BucketCounts().AsRaw(),
 							Attributes:     dp.Attributes().AsRaw(),
+						}
+
+						tm.DataPoints = append(tm.DataPoints, tdp)
+					}
+
+					tsm.Metrics = append(tsm.Metrics, tm)
+				case pmetric.MetricTypeExponentialHistogram:
+					expHistogram := m.ExponentialHistogram()
+
+					tm := testMetric{
+						Name:        m.Name(),
+						Type:        pmetric.MetricTypeExponentialHistogram,
+						Temporality: expHistogram.AggregationTemporality(),
+						DataPoints:  []any{},
+					}
+
+					for r := 0; r < expHistogram.DataPoints().Len(); r++ {
+						dp := expHistogram.DataPoints().At(r)
+
+						tdp := testExpHistogramDataPoint{
+							StartTimestamp: dp.StartTimestamp(),
+							Timestamp:      dp.Timestamp(),
+
+							Scale:     dp.Scale(),
+							ZeroCount: dp.ZeroCount(),
+							Positive: testExpHistogramBucket{
+								Offset:       dp.Positive().Offset(),
+								BucketCounts: dp.Positive().BucketCounts().AsRaw(),
+							},
+							Negative: testExpHistogramBucket{
+								Offset:       dp.Negative().Offset(),
+								BucketCounts: dp.Negative().BucketCounts().AsRaw(),
+							},
+							Attributes: dp.Attributes().AsRaw(),
 						}
 
 						tm.DataPoints = append(tm.DataPoints, tdp)
