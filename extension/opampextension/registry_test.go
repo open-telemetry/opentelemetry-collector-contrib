@@ -30,13 +30,10 @@ func TestRegistry_Register(t *testing.T) {
 		}
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
-		defer registry.Stop()
 
-		l := newMockCustomCapabilityListener(func(_ *protobufs.CustomMessage) {})
-
-		sender, err := registry.Register(capabilityString, l)
+		capability, err := registry.Register(capabilityString, func(*protobufs.CustomMessage) {})
 		require.NoError(t, err)
-		require.NotNil(t, sender)
+		require.NotNil(t, capability)
 	})
 
 	t.Run("Setting capabilities fails", func(t *testing.T) {
@@ -50,14 +47,11 @@ func TestRegistry_Register(t *testing.T) {
 		}
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
-		defer registry.Stop()
 
-		l := newMockCustomCapabilityListener(func(_ *protobufs.CustomMessage) {})
-
-		sender, err := registry.Register(capabilityString, l)
-		require.Nil(t, sender)
+		capability, err := registry.Register(capabilityString, func(*protobufs.CustomMessage) {})
+		require.Nil(t, capability)
 		require.ErrorIs(t, err, capabilityErr)
-		require.Len(t, registry.capabilityToListeners, 0, "Setting capability failed, but callback ended up in the map anyways")
+		require.Len(t, registry.capabilityToCallbacks, 0, "Setting capability failed, but callback ended up in the map anyways")
 	})
 }
 
@@ -75,18 +69,14 @@ func TestRegistry_ProcessMessage(t *testing.T) {
 		client := mockCustomCapabilityClient{}
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
-		defer registry.Stop()
 
 		callbackCalledChan := make(chan struct{})
-
-		l := newMockCustomCapabilityListener(func(c *protobufs.CustomMessage) {
+		capability, err := registry.Register(capabilityString, func(c *protobufs.CustomMessage) {
 			require.Equal(t, customMessage, c)
 
 			close(callbackCalledChan)
 		})
-
-		sender, err := registry.Register(capabilityString, l)
-		require.NotNil(t, sender)
+		require.NotNil(t, capability)
 		require.NoError(t, err)
 
 		registry.ProcessMessage(customMessage)
@@ -123,30 +113,23 @@ func TestRegistry_ProcessMessage(t *testing.T) {
 		client := mockCustomCapabilityClient{}
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
-		defer registry.Stop()
 
 		teapotCalledChan := make(chan struct{})
-
-		teapotListener := newMockCustomCapabilityListener(func(c *protobufs.CustomMessage) {
+		capabilityTeapot, err := registry.Register(teapotCapabilityString1, func(c *protobufs.CustomMessage) {
 			require.Equal(t, customMessageSteep, c)
 
 			close(teapotCalledChan)
 		})
-
-		teapotSender, err := registry.Register(teapotCapabilityString1, teapotListener)
-		require.NotNil(t, teapotSender)
+		require.NotNil(t, capabilityTeapot)
 		require.NoError(t, err)
 
 		coffeeMakerCalledChan := make(chan struct{})
-
-		coffeeMakerListener := newMockCustomCapabilityListener(func(c *protobufs.CustomMessage) {
+		capabilityCoffeeMaker, err := registry.Register(coffeeMakerCapabilityString2, func(c *protobufs.CustomMessage) {
 			require.Equal(t, customMessageBrew, c)
 
 			close(coffeeMakerCalledChan)
 		})
-
-		coffeeMakerSender, err := registry.Register(coffeeMakerCapabilityString2, coffeeMakerListener)
-		require.NotNil(t, coffeeMakerSender)
+		require.NotNil(t, capabilityCoffeeMaker)
 		require.NoError(t, err)
 
 		registry.ProcessMessage(customMessageSteep)
@@ -183,15 +166,12 @@ func TestCustomCapability_SendMesage(t *testing.T) {
 		}
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
-		defer registry.Stop()
 
-		l := newMockCustomCapabilityListener(func(_ *protobufs.CustomMessage) {})
-
-		sender, err := registry.Register(capabilityString, l)
+		capability, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {})
 		require.NoError(t, err)
-		require.NotNil(t, sender)
+		require.NotNil(t, capability)
 
-		channel, err := sender.SendMessage(messageType, mesageBytes)
+		channel, err := capability.SendMessage(messageType, mesageBytes)
 		require.NoError(t, err)
 		require.Nil(t, channel, nil)
 	})
@@ -200,70 +180,77 @@ func TestCustomCapability_SendMesage(t *testing.T) {
 func TestCustomCapability_Unregister(t *testing.T) {
 	t.Run("Unregistered capability callback is no longer called", func(t *testing.T) {
 		capabilityString := "io.opentelemetry.teapot"
+		messageType := "steep"
+		mesageBytes := []byte("blackTea")
+		customMessage := &protobufs.CustomMessage{
+			Capability: capabilityString,
+			Type:       messageType,
+			Data:       mesageBytes,
+		}
 
-		client := &mockCustomCapabilityClient{}
+		client := mockCustomCapabilityClient{}
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
-		defer registry.Stop()
 
-		l := newMockCustomCapabilityListener(func(_ *protobufs.CustomMessage) {})
-
-		client.setCustomCapabilites = func(cc *protobufs.CustomCapabilities) error {
-			require.Equal(t, &protobufs.CustomCapabilities{
-				Capabilities: []string{capabilityString},
-			}, cc)
-
-			return nil
-		}
-
-		sender, err := registry.Register(capabilityString, l)
-		require.NotNil(t, sender)
+		unregisteredCapability, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {
+			t.Fatalf("Unregistered capability should not be called")
+		})
+		require.NotNil(t, unregisteredCapability)
 		require.NoError(t, err)
 
-		client.setCustomCapabilites = func(cc *protobufs.CustomCapabilities) error {
-			require.Equal(t, &protobufs.CustomCapabilities{
-				Capabilities: []string{},
-			}, cc)
+		unregisteredCapability.Unregister()
 
-			return nil
-		}
-
-		close(l.doneChan)
-
-		require.Eventually(t, func() bool {
-			registry.mux.Lock()
-			defer registry.mux.Unlock()
-
-			return len(registry.capabilityToListeners) == 0
-		}, 2*time.Second, 100*time.Millisecond)
+		registry.ProcessMessage(customMessage)
 	})
 
 	t.Run("Unregister is successful even if set capabilities fails", func(t *testing.T) {
 		capabilityString := "io.opentelemetry.teapot"
+		messageType := "steep"
+		mesageBytes := []byte("blackTea")
+		customMessage := &protobufs.CustomMessage{
+			Capability: capabilityString,
+			Type:       messageType,
+			Data:       mesageBytes,
+		}
 
 		client := &mockCustomCapabilityClient{}
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
-		defer registry.Stop()
 
-		l := newMockCustomCapabilityListener(func(_ *protobufs.CustomMessage) {})
-
-		sender, err := registry.Register(capabilityString, l)
-		require.NotNil(t, sender)
+		unregisteredCapability, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {
+			t.Fatalf("Unregistered capability should not be called")
+		})
+		require.NotNil(t, unregisteredCapability)
 		require.NoError(t, err)
 
 		client.setCustomCapabilites = func(_ *protobufs.CustomCapabilities) error {
 			return fmt.Errorf("failed to set capabilities")
 		}
 
-		close(l.doneChan)
+		unregisteredCapability.Unregister()
 
-		require.Eventually(t, func() bool {
-			registry.mux.Lock()
-			defer registry.mux.Unlock()
+		registry.ProcessMessage(customMessage)
+	})
 
-			return len(registry.capabilityToListeners) == 0
-		}, 2*time.Second, 100*time.Millisecond)
+	t.Run("Does not send if unregistered", func(t *testing.T) {
+		capabilityString := "io.opentelemetry.teapot"
+		messageType := "steep"
+		mesageBytes := []byte("blackTea")
+
+		client := mockCustomCapabilityClient{}
+
+		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
+
+		unregisteredCapability, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {
+			t.Fatalf("Unregistered capability should not be called")
+		})
+		require.NotNil(t, unregisteredCapability)
+		require.NoError(t, err)
+
+		unregisteredCapability.Unregister()
+
+		_, err = unregisteredCapability.SendMessage(messageType, mesageBytes)
+		require.ErrorContains(t, err, "capability has already been unregistered")
 	})
 }
 
@@ -285,24 +272,4 @@ func (m mockCustomCapabilityClient) SendCustomMessage(message *protobufs.CustomM
 	}
 
 	return make(chan struct{}), nil
-}
-
-type mockCustomCapabilityListener struct {
-	doneChan    chan struct{}
-	receiveFunc func(*protobufs.CustomMessage)
-}
-
-func newMockCustomCapabilityListener(recieveFunc func(*protobufs.CustomMessage)) *mockCustomCapabilityListener {
-	return &mockCustomCapabilityListener{
-		doneChan:    make(chan struct{}),
-		receiveFunc: recieveFunc,
-	}
-}
-
-func (m *mockCustomCapabilityListener) ReceiveMessage(cm *protobufs.CustomMessage) {
-	m.receiveFunc(cm)
-}
-
-func (m *mockCustomCapabilityListener) Done() <-chan struct{} {
-	return m.doneChan
 }
