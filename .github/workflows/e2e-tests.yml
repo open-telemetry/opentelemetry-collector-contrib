@@ -6,7 +6,11 @@ on:
       - main
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
+    paths-ignore:
+      - '**/README.md'
   pull_request:
+    paths-ignore:
+      - '**/README.md'
   merge_group:
 
 env:
