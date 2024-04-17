@@ -132,7 +132,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 	ctx := context.Background()
 
 	if sr.collectorHTTPEnabled() {
-		cln, cerr := sr.config.CollectorHTTPSettings.ToListenerContext(ctx)
+		cln, cerr := sr.config.CollectorHTTPSettings.ToListener(ctx)
 		if cerr != nil {
 			return fmt.Errorf("failed to bind to Collector address %q: %w",
 				sr.config.CollectorHTTPSettings.Endpoint, cerr)
@@ -140,7 +140,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 
 		nr := mux.NewRouter()
 		nr.HandleFunc("/v3/segments", sr.traceReceiver.HTTPHandler).Methods(http.MethodPost)
-		sr.collectorServer, cerr = sr.config.CollectorHTTPSettings.ToServerContext(ctx, host, sr.settings.TelemetrySettings, nr)
+		sr.collectorServer, cerr = sr.config.CollectorHTTPSettings.ToServer(ctx, host, sr.settings.TelemetrySettings, nr)
 		if cerr != nil {
 			return cerr
 		}
