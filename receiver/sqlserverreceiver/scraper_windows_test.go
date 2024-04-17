@@ -83,7 +83,7 @@ func TestSqlServerScraper(t *testing.T) {
 	logger, obsLogs := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = zap.New(logger)
-	s := newSQLServerScraper(settings, cfg)
+	s := newSQLServerPCScraper(settings, cfg)
 
 	assert.NoError(t, s.start(context.Background(), nil))
 	assert.Equal(t, 0, len(s.watcherRecorders))
@@ -114,7 +114,7 @@ func TestScrape(t *testing.T) {
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
 		settings := receivertest.NewNopCreateSettings()
-		scraper := newSQLServerScraper(settings, cfg)
+		scraper := newSQLServerPCScraper(settings, cfg)
 
 		for i, rec := range perfCounterRecorders {
 			perfCounterWatcher := &mockPerfCounterWatcher{}
@@ -158,7 +158,7 @@ func TestScrape(t *testing.T) {
 		cfg.InstanceName = "CustomInstance"
 
 		settings := receivertest.NewNopCreateSettings()
-		scraper := newSQLServerScraper(settings, cfg)
+		scraper := newSQLServerPCScraper(settings, cfg)
 
 		for i, rec := range perfCounterRecorders {
 			perfCounterWatcher := &mockPerfCounterWatcher{}
