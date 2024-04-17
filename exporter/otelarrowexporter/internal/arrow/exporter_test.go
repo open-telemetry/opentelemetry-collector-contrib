@@ -76,7 +76,7 @@ func newSingleStreamDowngradeDisabledTestCase(t *testing.T, pname PrioritizerNam
 
 func newSingleStreamMetadataTestCase(t *testing.T) *exporterTestCase {
 	var count int
-	return newExporterTestCaseCommon(t, DefaultPrioritizer, NotNoisy, defaultMaxStreamLifetime, 1, false, func(ctx context.Context) (map[string]string, error) {
+	return newExporterTestCaseCommon(t, DefaultPrioritizer, NotNoisy, defaultMaxStreamLifetime, 1, false, func(_ context.Context) (map[string]string, error) {
 		defer func() { count++ }()
 		if count%2 == 0 {
 			return nil, nil
@@ -164,13 +164,6 @@ func statusOKFor(id int64) *arrowpb.BatchStatus {
 	return &arrowpb.BatchStatus{
 		BatchId:    id,
 		StatusCode: arrowpb.StatusCode_OK,
-	}
-}
-
-func statusCanceledFor(id int64) *arrowpb.BatchStatus {
-	return &arrowpb.BatchStatus{
-		BatchId:    id,
-		StatusCode: arrowpb.StatusCode_CANCELED,
 	}
 }
 
