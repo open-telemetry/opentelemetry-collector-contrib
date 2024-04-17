@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
@@ -247,6 +248,12 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension:     "solarwindsapmsettings",
 			skipLifecycle: true, // Requires Solarwinds APM endpoint and token
+		},
+		{
+			extension: "ackextension",
+			getConfigFn: func() component.Config {
+				return extFactories["ackextension"].CreateDefaultConfig().(*ackextension.Config)
+			},
 		},
 	}
 

@@ -145,3 +145,55 @@ none_set:
       enabled: false
     host.name:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    flink.job.name:
+      enabled: true
+      include:
+        - regexp: ".*"
+    flink.resource.type:
+      enabled: true
+      include:
+        - regexp: ".*"
+    flink.subtask.index:
+      enabled: true
+      include:
+        - regexp: ".*"
+    flink.task.name:
+      enabled: true
+      include:
+        - regexp: ".*"
+    flink.taskmanager.id:
+      enabled: true
+      include:
+        - regexp: ".*"
+    host.name:
+      enabled: true
+      include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    flink.job.name:
+      enabled: true
+      exclude:
+        - strict: "flink.job.name-val"
+    flink.resource.type:
+      enabled: true
+      exclude:
+        - strict: "jobmanager"
+    flink.subtask.index:
+      enabled: true
+      exclude:
+        - strict: "flink.subtask.index-val"
+    flink.task.name:
+      enabled: true
+      exclude:
+        - strict: "flink.task.name-val"
+    flink.taskmanager.id:
+      enabled: true
+      exclude:
+        - strict: "flink.taskmanager.id-val"
+    host.name:
+      enabled: true
+      exclude:
+        - strict: "host.name-val"
