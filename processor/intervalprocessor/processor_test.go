@@ -508,6 +508,244 @@ func TestAggregation(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "AllDeltaMetricsArePassedThrough",
+			inputs: []testMetric{
+				{
+					Name:        "test_metric_sum",
+					Type:        pmetric.MetricTypeSum,
+					IsMonotonic: true,
+					Temporality: pmetric.AggregationTemporalityDelta,
+					DataPoints: []any{
+						testNumberDataPoint{
+							Timestamp: 50,
+							Value:     75,
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testNumberDataPoint{
+							Timestamp: 20,
+							Value:     111,
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testNumberDataPoint{
+							Timestamp: 80,
+							Value:     200,
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+					},
+				},
+				{
+					Name:        "test_metric_histogram",
+					Type:        pmetric.MetricTypeHistogram,
+					Temporality: pmetric.AggregationTemporalityDelta,
+					DataPoints: []any{
+						testHistogramDataPoint{
+							Timestamp:      50,
+							ExplicitBounds: []float64{0.01, 0.1, 1, 10, 100},
+							BucketCounts:   []uint64{2, 4, 2, 2, 5},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testHistogramDataPoint{
+							Timestamp:      20,
+							ExplicitBounds: []float64{0.01, 0.1, 1, 10, 100},
+							BucketCounts:   []uint64{2, 3, 7, 4, 20},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testHistogramDataPoint{
+							Timestamp:      80,
+							ExplicitBounds: []float64{0.01, 0.1, 1, 10, 100},
+							BucketCounts:   []uint64{5, 5, 6, 2, 14},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+					},
+				},
+				{
+					Name:        "test_metric_exp_histogram",
+					Type:        pmetric.MetricTypeExponentialHistogram,
+					Temporality: pmetric.AggregationTemporalityDelta,
+					DataPoints: []any{
+						testExpHistogramDataPoint{
+							Timestamp: 50,
+							Scale:     4,
+							ZeroCount: 5,
+							Positive: testExpHistogramBucket{
+								Offset:       2,
+								BucketCounts: []uint64{2, 4, 2, 2, 5},
+							},
+							Negative: testExpHistogramBucket{
+								Offset:       6,
+								BucketCounts: []uint64{2, 13, 7, 12, 4},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testExpHistogramDataPoint{
+							Timestamp: 20,
+							Scale:     4,
+							ZeroCount: 2,
+							Positive: testExpHistogramBucket{
+								Offset:       2,
+								BucketCounts: []uint64{2, 3, 7, 4, 20},
+							},
+							Negative: testExpHistogramBucket{
+								Offset:       7,
+								BucketCounts: []uint64{8, 3, 9, 1},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testExpHistogramDataPoint{
+							Timestamp: 80,
+							Scale:     4,
+							ZeroCount: 5,
+							Positive: testExpHistogramBucket{
+								Offset:       2,
+								BucketCounts: []uint64{5, 5, 6, 2, 14},
+							},
+							Negative: testExpHistogramBucket{
+								Offset:       6,
+								BucketCounts: []uint64{6, 21, 9, 19, 7},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+					},
+				},
+			},
+			next: []testMetric{
+				{
+					Name:        "test_metric_sum",
+					Type:        pmetric.MetricTypeSum,
+					IsMonotonic: true,
+					Temporality: pmetric.AggregationTemporalityDelta,
+					DataPoints: []any{
+						testNumberDataPoint{
+							Timestamp: 50,
+							Value:     75,
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testNumberDataPoint{
+							Timestamp: 20,
+							Value:     111,
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testNumberDataPoint{
+							Timestamp: 80,
+							Value:     200,
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+					},
+				},
+				{
+					Name:        "test_metric_histogram",
+					Type:        pmetric.MetricTypeHistogram,
+					Temporality: pmetric.AggregationTemporalityDelta,
+					DataPoints: []any{
+						testHistogramDataPoint{
+							Timestamp:      50,
+							ExplicitBounds: []float64{0.01, 0.1, 1, 10, 100},
+							BucketCounts:   []uint64{2, 4, 2, 2, 5},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testHistogramDataPoint{
+							Timestamp:      20,
+							ExplicitBounds: []float64{0.01, 0.1, 1, 10, 100},
+							BucketCounts:   []uint64{2, 3, 7, 4, 20},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testHistogramDataPoint{
+							Timestamp:      80,
+							ExplicitBounds: []float64{0.01, 0.1, 1, 10, 100},
+							BucketCounts:   []uint64{5, 5, 6, 2, 14},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+					},
+				},
+				{
+					Name:        "test_metric_exp_histogram",
+					Type:        pmetric.MetricTypeExponentialHistogram,
+					Temporality: pmetric.AggregationTemporalityDelta,
+					DataPoints: []any{
+						testExpHistogramDataPoint{
+							Timestamp: 50,
+							Scale:     4,
+							ZeroCount: 5,
+							Positive: testExpHistogramBucket{
+								Offset:       2,
+								BucketCounts: []uint64{2, 4, 2, 2, 5},
+							},
+							Negative: testExpHistogramBucket{
+								Offset:       6,
+								BucketCounts: []uint64{2, 13, 7, 12, 4},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testExpHistogramDataPoint{
+							Timestamp: 20,
+							Scale:     4,
+							ZeroCount: 2,
+							Positive: testExpHistogramBucket{
+								Offset:       2,
+								BucketCounts: []uint64{2, 3, 7, 4, 20},
+							},
+							Negative: testExpHistogramBucket{
+								Offset:       7,
+								BucketCounts: []uint64{8, 3, 9, 1},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testExpHistogramDataPoint{
+							Timestamp: 80,
+							Scale:     4,
+							ZeroCount: 5,
+							Positive: testExpHistogramBucket{
+								Offset:       2,
+								BucketCounts: []uint64{5, 5, 6, 2, 14},
+							},
+							Negative: testExpHistogramBucket{
+								Offset:       6,
+								BucketCounts: []uint64{6, 21, 9, 19, 7},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+					},
+				},
+			},
+			outputs: []testMetric{},
+		},
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
