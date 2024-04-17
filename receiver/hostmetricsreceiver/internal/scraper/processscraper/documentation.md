@@ -186,4 +186,3 @@ Process threads count.
 | process.owner | The username of the user that owns the process. | Any Str | true |
 | process.parent_pid | Parent Process identifier (PPID). | Any Int | true |
 | process.pid | Process identifier (PID). | Any Int | true |
-
