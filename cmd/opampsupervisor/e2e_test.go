@@ -158,9 +158,10 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 		extension = ".exe"
 	}
 	configData := map[string]string{
-		"goos":      runtime.GOOS,
-		"goarch":    runtime.GOARCH,
-		"extension": extension,
+		"goos":        runtime.GOOS,
+		"goarch":      runtime.GOARCH,
+		"extension":   extension,
+		"storage_dir": t.TempDir(),
 	}
 
 	for key, val := range extraConfigData {

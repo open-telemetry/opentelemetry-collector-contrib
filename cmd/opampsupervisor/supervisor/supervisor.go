@@ -1078,7 +1078,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 }
 
 func (s *Supervisor) instanceIDFile() string {
-	return filepath.Join(s.config.Storage.Directory, instanceIDStorageFile)
+	return filepath.Join(s.config.Storage.DirectoryOrDefault(), instanceIDStorageFile)
 }
 
 func (s *Supervisor) findRandomPort() (int, error) {
