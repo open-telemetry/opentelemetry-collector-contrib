@@ -98,7 +98,7 @@ func TestOAuthClientSettings(t *testing.T) {
 			// test tls settings
 			transport := rc.client.Transport.(*http.Transport)
 			tlsClientConfig := transport.TLSClientConfig
-			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfigContext(context.Background())
+			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfig(context.Background())
 			assert.NoError(t, err)
 			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
 		})
@@ -190,7 +190,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			// test tls settings
 			transport := rc.client.Transport.(*http.Transport)
 			tlsClientConfig := transport.TLSClientConfig
-			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfigContext(context.Background())
+			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfig(context.Background())
 			assert.NoError(t, err)
 			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
 		})
@@ -323,7 +323,7 @@ func TestFailContactingOAuth(t *testing.T) {
 		},
 	}
 
-	client, _ := setting.ToClientContext(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	client, _ := setting.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	req, err := http.NewRequest("POST", setting.Endpoint, nil)
 	assert.NoError(t, err)
 	_, err = client.Do(req)
