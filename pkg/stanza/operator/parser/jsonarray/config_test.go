@@ -6,9 +6,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestConfig(t *testing.T) {
@@ -64,4 +67,17 @@ func TestConfig(t *testing.T) {
 			},
 		},
 	}.Run(t)
+}
+
+func TestLookup(t *testing.T) {
+	builder, ok := operator.DefaultRegistry.Lookup(operatorType)
+	assert.False(t, ok)
+	assert.Nil(t, builder)
+
+	err := featuregate.GlobalRegistry().Set("logs.jsonParserArray", true)
+	assert.Nil(t, err)
+
+	builder2, ok2 := operator.DefaultRegistry.Lookup(operatorType)
+	assert.True(t, ok2)
+	assert.NotNil(t, builder2)
 }

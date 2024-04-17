@@ -18,17 +18,16 @@ const (
 	headerDelimiter = ","
 )
 
-var jsonArrayParserFeatureGate = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"logs.jsonParserArray",
 	featuregate.StageAlpha,
+	featuregate.WithRegisterOperatorType(operatorType),
 	featuregate.WithRegisterDescription("When enabled, allows usage of `json_array_parser`."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30321"),
 )
 
 func init() {
-	if jsonArrayParserFeatureGate.IsEnabled() {
-		operator.Register(operatorType, func() operator.Builder { return NewConfig() })
-	}
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new json array parser config with default values
