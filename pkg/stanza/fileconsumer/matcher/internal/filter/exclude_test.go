@@ -6,6 +6,7 @@ package filter
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -21,8 +22,9 @@ func TestExcludeOlderThanFilter(t *testing.T) {
 		fileMTimes       []time.Time
 		excludeOlderThan time.Duration
 
-		expect      []string
-		expectedErr string
+		expect             []string
+		expectedErr        string
+		expectedWindowsErr string
 	}{
 		"no_files": {
 			files:            []string{},
@@ -61,8 +63,9 @@ func TestExcludeOlderThanFilter(t *testing.T) {
 			fileMTimes:       []time.Time{twoHoursAgo, {}},
 			excludeOlderThan: 3 * time.Hour,
 
-			expect:      []string{"a.log"},
-			expectedErr: "b.log: no such file or directory",
+			expect:             []string{"a.log"},
+			expectedErr:        "b.log: no such file or directory",
+			expectedWindowsErr: "b.log: The system cannot find the file specified.",
 		},
 	}
 
@@ -92,7 +95,11 @@ func TestExcludeOlderThanFilter(t *testing.T) {
 			f := ExcludeOlderThan(tc.excludeOlderThan)
 			result, err := f.apply(items)
 			if tc.expectedErr != "" {
-				require.ErrorContains(t, err, tc.expectedErr)
+				if runtime.GOOS == "windows" {
+					require.ErrorContains(t, err, tc.expectedWindowsErr)
+				} else {
+					require.ErrorContains(t, err, tc.expectedErr)
+				}
 			} else {
 				require.NoError(t, err)
 			}
