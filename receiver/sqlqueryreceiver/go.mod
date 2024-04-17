@@ -11,12 +11,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.98.0
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.30.0
-	go.opentelemetry.io/collector/component v0.98.1-0.20240416135553-49cc9e05e3a9
-	go.opentelemetry.io/collector/confmap v0.98.1-0.20240416135553-49cc9e05e3a9
-	go.opentelemetry.io/collector/consumer v0.98.1-0.20240416135553-49cc9e05e3a9
-	go.opentelemetry.io/collector/extension v0.98.1-0.20240416135553-49cc9e05e3a9
-	go.opentelemetry.io/collector/pdata v1.5.1-0.20240416135553-49cc9e05e3a9
-	go.opentelemetry.io/collector/receiver v0.98.1-0.20240416135553-49cc9e05e3a9
+	go.opentelemetry.io/collector/component v0.98.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/confmap v0.98.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/consumer v0.98.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/extension v0.98.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/pdata v1.5.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/receiver v0.98.1-0.20240416174005-d0f15e2463f8
 	go.opentelemetry.io/otel/metric v1.25.0
 	go.opentelemetry.io/otel/trace v1.25.0
 	go.uber.org/goleak v1.3.0
@@ -35,7 +35,7 @@ require (
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
-	github.com/SAP/go-hdb v1.8.12 // indirect
+	github.com/SAP/go-hdb v1.8.15 // indirect
 	github.com/apache/arrow/go/v15 v15.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.22.2 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
@@ -62,7 +62,7 @@ require (
 	github.com/docker/docker v25.0.5+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
-	github.com/expr-lang/expr v1.16.4 // indirect
+	github.com/expr-lang/expr v1.16.5 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
@@ -133,9 +133,9 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.opentelemetry.io/collector v0.98.1-0.20240416135553-49cc9e05e3a9 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.98.1-0.20240416135553-49cc9e05e3a9 // indirect
-	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240416135553-49cc9e05e3a9 // indirect
+	go.opentelemetry.io/collector v0.98.1-0.20240416174005-d0f15e2463f8 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.98.1-0.20240416174005-d0f15e2463f8 // indirect
+	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240416174005-d0f15e2463f8 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.25.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.47.0 // indirect
