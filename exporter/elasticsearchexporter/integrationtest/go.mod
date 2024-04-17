@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasti
 go 1.21
 
 require (
-	github.com/elastic/go-docappender v1.1.0
+	github.com/elastic/go-docappender v1.1.1-0.20240417115630-b1a51d43a8cb
 	github.com/gorilla/mux v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.98.0
@@ -24,7 +24,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.98.1-0.20240412014414-62f589864e3d
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.98.1-0.20240412014414-62f589864e3d
 	go.uber.org/zap v1.27.0
-	golang.org/x/sync v0.6.0
+	golang.org/x/sync v0.7.0
 )
 
 require (
@@ -35,11 +35,11 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/elastic/elastic-transport-go/v8 v8.4.0 // indirect
+	github.com/elastic/elastic-transport-go/v8 v8.5.0 // indirect
 	github.com/elastic/go-elasticsearch/v7 v7.17.10 // indirect
-	github.com/elastic/go-elasticsearch/v8 v8.12.1 // indirect
+	github.com/elastic/go-elasticsearch/v8 v8.13.1 // indirect
 	github.com/elastic/go-structform v0.0.10 // indirect
-	github.com/elastic/go-sysinfo v1.13.1 // indirect
+	github.com/elastic/go-sysinfo v1.14.0 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
 	github.com/expr-lang/expr v1.16.3 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -59,7 +59,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20230911200830-875f5bc594a4 // indirect
 	github.com/jaegertracing/jaeger v1.55.0 // indirect
-	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
@@ -107,9 +106,10 @@ require (
 	github.com/tklauser/numcpus v0.7.0 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.elastic.co/apm/module/apmelasticsearch/v2 v2.5.0 // indirect
-	go.elastic.co/apm/module/apmhttp/v2 v2.5.0 // indirect
-	go.elastic.co/apm/v2 v2.5.0 // indirect
+	go.elastic.co/apm/module/apmelasticsearch/v2 v2.6.0 // indirect
+	go.elastic.co/apm/module/apmhttp/v2 v2.6.0 // indirect
+	go.elastic.co/apm/module/apmzap/v2 v2.6.0 // indirect
+	go.elastic.co/apm/v2 v2.6.0 // indirect
 	go.elastic.co/fastjson v1.3.0 // indirect
 	go.etcd.io/bbolt v1.3.9 // indirect
 	go.opencensus.io v0.24.0 // indirect
