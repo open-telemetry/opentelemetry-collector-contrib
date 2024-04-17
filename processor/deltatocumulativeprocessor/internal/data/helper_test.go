@@ -3,84 +3,131 @@ package data
 import (
 	"math"
 	"sort"
+	"strconv"
+	"strings"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-type buckets []uint64
+type bins []uint64
 
-func (b buckets) into() Buckets {
+func (bins bins) into() expo.Buckets {
+	off, counts := bins.split()
+	return buckets(counts, offset(len(off)))
+}
+
+func (bins bins) split() (offset, counts []uint64) {
 	start := 0
-	for i := 0; i < len(b); i++ {
-		if b[i] != ø {
+	for i := 0; i < len(bins); i++ {
+		if bins[i] != ø {
 			start = i
 			break
 		}
 	}
 
-	end := len(b)
-	for i := start; i < len(b); i++ {
-		if b[i] == ø {
+	end := len(bins)
+	for i := start; i < len(bins); i++ {
+		if bins[i] == ø {
 			end = i
 			break
 		}
 	}
 
-	data := pcommon.NewUInt64Slice()
-	data.FromRaw([]uint64(b[start:end]))
-	return Buckets{
-		data:   data,
-		offset: start,
+	return bins[0:start], bins[start:end]
+}
+
+func (bins bins) String() string {
+	var b strings.Builder
+	b.WriteString("[")
+	for i, v := range bins {
+		if i != 0 {
+			b.WriteString(", ")
+		}
+		if v == ø {
+			b.WriteString("_")
+			continue
+		}
+		b.WriteString(strconv.FormatUint(v, 10))
 	}
+	b.WriteString("]")
+	return b.String()
+}
+
+func from(buckets expo.Buckets) bins {
+	counts := pmetric.ExponentialHistogramDataPointBuckets(buckets).BucketCounts()
+	off := buckets.Offset()
+	if off < 0 {
+		off = -off
+	}
+	bs := make(bins, counts.Len()+off)
+	for i := 0; i < off; i++ {
+		bs[i] = ø
+	}
+	for i := 0; i < counts.Len(); i++ {
+		bs[i+off] = counts.At(i)
+	}
+	return bs
 }
 
 func TestBucketsHelper(t *testing.T) {
-	uints := func(data ...uint64) pcommon.UInt64Slice {
-		us := pcommon.NewUInt64Slice()
-		us.FromRaw(data)
-		return us
-	}
-
 	cases := []struct {
-		bkts buckets
-		want Buckets
+		bins bins
+		want expo.Buckets
 	}{{
-		bkts: buckets{},
-		want: Buckets{data: uints(), offset: 0},
+		bins: bins{},
+		want: buckets(nil, offset(0)),
 	}, {
-		bkts: buckets{1, 2, 3, 4},
-		want: Buckets{data: uints(1, 2, 3, 4), offset: 0},
+		bins: bins{1, 2, 3, 4},
+		want: buckets([]uint64{1, 2, 3, 4}, offset(0)),
 	}, {
-		bkts: buckets{ø, ø, 3, 4},
-		want: Buckets{data: uints(3, 4), offset: 2},
+		bins: bins{ø, ø, 3, 4},
+		want: buckets([]uint64{3, 4}, offset(2)),
 	}, {
-		bkts: buckets{ø, ø, 3, 4, ø, ø},
-		want: Buckets{data: uints(3, 4), offset: 2},
+		bins: bins{ø, ø, 3, 4, ø, ø},
+		want: buckets([]uint64{3, 4}, offset(2)),
 	}, {
-		bkts: buckets{1, 2, ø, ø},
-		want: Buckets{data: uints(1, 2), offset: 0},
+		bins: bins{1, 2, ø, ø},
+		want: buckets([]uint64{1, 2}, offset(0)),
 	}}
 
 	for _, c := range cases {
-		got := c.bkts.into()
+		got := c.bins.into()
 		require.Equal(t, c.want, got)
 	}
 }
 
-func zeros(size int) buckets {
-	return make(buckets, size)
+type offset int
+
+func buckets(data []uint64, offset offset) expo.Buckets {
+	if data == nil {
+		data = make([]uint64, 0)
+	}
+	bs := pmetric.NewExponentialHistogramDataPointBuckets()
+	bs.BucketCounts().FromRaw(data)
+	bs.SetOffset(int32(offset))
+	return expo.Buckets(bs)
+}
+
+func zeros(size int) bins {
+	return make(bins, size)
 }
 
 // observe some points with scale 0
-func (dps buckets) observe0(pts ...float64) buckets {
+func (dps bins) observe0(pts ...float64) bins {
 	if len(pts) == 0 {
 		return dps
 	}
 
+	// https://opentelemetry.io/docs/specs/otel/metrics/data-model/#scale-zero-extract-the-exponent
 	idx := func(v float64) int {
-		return int(math.Ceil(math.Log2(v)))
+		frac, exp := math.Frexp(v)
+		if frac == 0.5 {
+			exp--
+		}
+		return exp
 	}
 
 	sort.Float64s(pts)
@@ -101,13 +148,13 @@ func (dps buckets) observe0(pts ...float64) buckets {
 func TestObserve0(t *testing.T) {
 	cases := []struct {
 		pts  []float64
-		want buckets
+		want bins
 	}{{
 		pts:  []float64{1.5, 5.3, 11.6},
-		want: buckets{0, 1, 0, 1, 1},
+		want: bins{0, 1, 0, 1, 1},
 	}, {
 		pts:  []float64{0.6, 3.3, 7.9},
-		want: buckets{1, 0, 1, 1, 0},
+		want: bins{1, 0, 1, 1, 0},
 	}}
 
 	for _, c := range cases {

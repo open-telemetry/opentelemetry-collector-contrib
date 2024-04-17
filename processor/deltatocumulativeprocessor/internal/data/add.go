@@ -4,18 +4,11 @@
 package data // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 
 import (
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"math"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
-
-// failure handler
-// operations of this package are expected to have no failure cases during
-// spec-compliant operation.
-// if spec-compliant assumptions are broken however, we want to fail loud
-// and clear. can be overwritten during testing
-var fail = func(msg string) {
-	panic(msg)
-}
 
 func (dp Number) Add(in Number) Number {
 	switch in.ValueType() {
@@ -38,43 +31,28 @@ func (dp Histogram) Add(in Histogram) Histogram {
 func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 	switch {
 	case dp.Timestamp() >= in.Timestamp():
-		fail("out of order")
+		panic("out of order")
 	case dp.Scale() != in.Scale():
-		fail("scale changed")
-	case dp.ZeroCount() != in.ZeroCount():
-		fail("zero count changed")
+		panic("scale changed")
 	}
 
-	aggregate := func(dpBuckets, inBuckets pmetric.ExponentialHistogramDataPointBuckets) {
-		var (
-			dp   = Buckets{data: dpBuckets.BucketCounts(), offset: int(dpBuckets.Offset())}
-			in   = Buckets{data: inBuckets.BucketCounts(), offset: int(inBuckets.Offset())}
-			aggr = Buckets{data: pcommon.NewUInt64Slice()}
-		)
-		aggr.offset = int(min(dpBuckets.Offset(), inBuckets.Offset()))
-		if aggr.offset == dp.offset {
-			aggr.data = dp.data
-		}
-		aggr.EnsureLen(max(dp.Len(), in.Len()))
-
-		for i := 0; i < aggr.Len(); i++ {
-			aggr.SetAt(i, dp.At(i)+in.At(i))
-		}
-
-		aggr.CopyTo(dpBuckets)
+	if dp.ZeroThreshold() != in.ZeroThreshold() {
+		hi, lo := expo.HiLo(dp, in, ExpHistogram.ZeroThreshold)
+		expo.RaiseZero(lo.ExponentialHistogramDataPoint, hi.ZeroThreshold())
 	}
 
-	aggregate(dp.Positive(), in.Positive())
-	aggregate(dp.Negative(), in.Negative())
+	expo.Merge(dp.Positive(), in.Positive())
+	expo.Merge(dp.Negative(), in.Negative())
 
 	dp.SetTimestamp(in.Timestamp())
 	dp.SetCount(dp.Count() + in.Count())
+	dp.SetZeroCount(dp.ZeroCount() + in.ZeroCount())
 
 	type T = ExpHistogram
 	optionals := []field{
 		{get: T.Sum, set: T.SetSum, has: T.HasSum, del: T.RemoveSum, op: func(a, b float64) float64 { return a + b }},
-		{get: T.Min, set: T.SetMin, has: T.HasMin, del: T.RemoveMin, op: func(a, b float64) float64 { return min(a, b) }},
-		{get: T.Max, set: T.SetMax, has: T.HasMax, del: T.RemoveMax, op: func(a, b float64) float64 { return max(a, b) }},
+		{get: T.Min, set: T.SetMin, has: T.HasMin, del: T.RemoveMin, op: math.Min},
+		{get: T.Max, set: T.SetMax, has: T.HasMax, del: T.RemoveMax, op: math.Max},
 	}
 	for _, f := range optionals {
 		if f.has(dp) && f.has(in) {
@@ -95,43 +73,9 @@ type field struct {
 	op  func(a, b float64) float64
 }
 
-type Buckets struct {
-	data   pcommon.UInt64Slice
-	offset int
-}
-
-func (o Buckets) Len() int {
-	return o.data.Len() + o.offset
-}
-
-func (o Buckets) At(i int) uint64 {
-	idx, ok := o.idx(i)
-	if !ok {
-		return 0
+func pos(i int) int {
+	if i < 0 {
+		i = -i
 	}
-	return o.data.At(idx)
-}
-
-func (o Buckets) SetAt(i int, v uint64) {
-	idx, ok := o.idx(i)
-	if !ok {
-		return
-	}
-	o.data.SetAt(idx, v)
-}
-
-func (o Buckets) EnsureLen(n int) {
-	sz := n - o.offset
-	o.data.EnsureCapacity(sz)
-	o.data.Append(make([]uint64, sz-o.data.Len())...)
-}
-
-func (o Buckets) idx(i int) (int, bool) {
-	idx := i - o.offset
-	return idx, idx >= 0 && idx < o.data.Len()
-}
-
-func (o Buckets) CopyTo(dst pmetric.ExponentialHistogramDataPointBuckets) {
-	o.data.CopyTo(dst.BucketCounts())
-	dst.SetOffset(int32(o.offset))
+	return i
 }
