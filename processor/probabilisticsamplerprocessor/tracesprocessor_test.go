@@ -577,5 +577,4 @@ func (a *assertTraces) onSampledData(sampled []ptrace.Traces) {
 			}
 		}
 	}
-	return
 }
