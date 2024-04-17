@@ -34,6 +34,9 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `receiver/dockerstats`: Remove stable receiver.dockerstats.useScraperV2 feature gate. (#31999)
 - `awsxrayexporter`: change x-ray exporter's translator to make "." split annotation pass as-is (#31732)
   In the past, X-Ray doesn’t support “.”. So we have a translator in x-ray export to translates it to “_” before sending traces to X-Ray Service. | To match otel naming style, x-ray service team decide to change their service to support both "." type and "" type of naming. In this case the translator that translate "." to "" is no-longer needed. This PR change the way this translator work | X-Ray PMs agree on rolling out this change by using feature-gate
+- `oracledbreceiver`: Fix incorrect values being set for oracledb.tablespace_size.limit and oracledb.tablespace_size.usage (#31451)
+  Please grant the `DBA_TABLESPACE_USAGE_METRICS` permission to the user connecting to the Oracle DB instance to ensure all enabled
+  metrics are properly ingested.
 
 ### 🚩 Deprecations 🚩
 
@@ -85,7 +88,6 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `jmxreceiver`: Fix memory leak during component shutdown (#32289)
 - `k8sobjectsreceiver`: Fix memory leak caused by the pull mode's interval ticker (#31919)
 - `kafkareceiver`: fix kafka receiver panic on shutdown (#31926)
-- `oracledbreceiver`: Fix incorrect values being set for oracledb.tablespace_size.limit and oracledb.tablespace_size.usage (#31451)
 - `prometheusreceiver`: Fix a bug where a new prometheus receiver with the same name cannot be created after the previous receiver is Shutdown (#32123)
 - `resourcedetectionprocessor`: Only attempt to detect Kubernetes node resource attributes when they're enabled. (#31941)
 - `syslogreceiver`: Fix issue where static resource and attributes were ignored (#31849)

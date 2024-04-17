@@ -19,14 +19,16 @@ import (
 )
 
 func TestCancelStream(t *testing.T) {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	srv := pstest.NewServer()
 	defer srv.Close()
 
 	var copts []option.ClientOption
 	var dialOpts []grpc.DialOption
-	conn, err := grpc.Dial(srv.Addr, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
+	conn, err := grpc.NewClient(srv.Addr, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 	assert.NoError(t, err)
+	defer func() { assert.NoError(t, conn.Close()) }()
 	copts = append(copts, option.WithGRPCConn(conn))
 	_, err = srv.GServer.CreateTopic(ctx, &pubsubpb.Topic{
 		Name: "projects/my-project/topics/otlp",
@@ -42,7 +44,7 @@ func TestCancelStream(t *testing.T) {
 	client, err := pubsub.NewSubscriberClient(ctx, copts...)
 	assert.NoError(t, err)
 
-	handler, err := NewHandler(context.Background(), zaptest.NewLogger(t), client, "client-id", "projects/my-project/subscriptions/otlp",
+	handler, err := NewHandler(ctx, zaptest.NewLogger(t), client, "client-id", "projects/my-project/subscriptions/otlp",
 		func(context.Context, *pubsubpb.ReceivedMessage) error {
 			return nil
 		})

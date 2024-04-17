@@ -13,6 +13,14 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
+func TestComponentFactoryType(t *testing.T) {
+	require.Equal(t, "googleclientauth", NewFactory().Type().String())
+}
+
+func TestComponentConfigStruct(t *testing.T) {
+	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
@@ -27,16 +35,5 @@ func TestComponentLifecycle(t *testing.T) {
 		require.NoError(t, err)
 		err = e.Shutdown(context.Background())
 		require.NoError(t, err)
-	})
-	t.Run("lifecycle", func(t *testing.T) {
-		firstExt, err := factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
-		require.NoError(t, err)
-		require.NoError(t, firstExt.Start(context.Background(), componenttest.NewNopHost()))
-		require.NoError(t, firstExt.Shutdown(context.Background()))
-
-		secondExt, err := factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
-		require.NoError(t, err)
-		require.NoError(t, secondExt.Start(context.Background(), componenttest.NewNopHost()))
-		require.NoError(t, secondExt.Shutdown(context.Background()))
 	})
 }
