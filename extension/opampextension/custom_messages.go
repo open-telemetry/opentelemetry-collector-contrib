@@ -16,13 +16,13 @@ type CustomCapabilityRegistry interface {
 	// will be received by the given callback asynchronously.
 	// It returns a handle to a CustomCapability, which can be used to unregister, or send
 	// a message to the OpAMP server.
-	Register(capability string, callback CustomMessageCallback) (CustomCapability, error)
+	// It also returns a function that can be used to unregister the capability.
+	Register(capability string, callback CustomMessageCallback) (sender CustomMessageSender, unregister func(), err error)
 }
 
-// CustomCapability represents a handle to a custom capability.
-// This can be used to send a custom message to an OpAMP server, or to unregister
-// the capability from the registry.
-type CustomCapability interface {
+// CustomMessageSender represents a handle to a custom capability.
+// This can be used to send a custom message to an OpAMP server.
+type CustomMessageSender interface {
 	// SendMessage sends a custom message to the OpAMP server.
 	//
 	// Only one message can be sent at a time. If SendCustomMessage has been already called
@@ -35,7 +35,4 @@ type CustomCapability interface {
 	// If no error is returned, the channel returned will be closed after the specified
 	// message is sent.
 	SendMessage(messageType string, message []byte) (messageSendingChannel chan struct{}, err error)
-
-	// Unregister unregisters the custom capability.
-	Unregister()
 }

@@ -125,7 +125,7 @@ func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 	return nil
 }
 
-func (o *opampAgent) Register(capability string, callback CustomMessageCallback) (CustomCapability, error) {
+func (o *opampAgent) Register(capability string, callback CustomMessageCallback) (CustomMessageSender, func(), error) {
 	return o.customCapabilityRegistry.Register(capability, callback)
 }
 
