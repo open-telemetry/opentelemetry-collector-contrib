@@ -93,41 +93,40 @@ func (w *wsprocessor) Shutdown(ctx context.Context) error {
 }
 
 func (w *wsprocessor) ConsumeMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
-	b, err := metricMarshaler.MarshalMetrics(md)
-	if err != nil {
-		w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
-	} else {
-		w.writeToChannelSet(b)
+	if w.limiter.Allow() {
+		b, err := metricMarshaler.MarshalMetrics(md)
+		if err != nil {
+			w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
+		} else {
+			w.cs.writeBytes(b)
+		}
 	}
+
 	return md, nil
 }
 
 func (w *wsprocessor) ConsumeLogs(_ context.Context, ld plog.Logs) (plog.Logs, error) {
-	b, err := logMarshaler.MarshalLogs(ld)
-	if err != nil {
-		w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
-	} else {
-		w.writeToChannelSet(b)
+	if w.limiter.Allow() {
+		b, err := logMarshaler.MarshalLogs(ld)
+		if err != nil {
+			w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
+		} else {
+			w.cs.writeBytes(b)
+		}
 	}
+
 	return ld, nil
 }
 
 func (w *wsprocessor) ConsumeTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	b, err := traceMarshaler.MarshalTraces(td)
-	if err != nil {
-		w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
-	} else {
-		w.writeToChannelSet(b)
-	}
-	return td, nil
-}
-
-func (w *wsprocessor) writeToChannelSet(b []byte) {
-	if len(b) == 0 {
-		return
-	}
-
 	if w.limiter.Allow() {
-		w.cs.writeBytes(b)
+		b, err := traceMarshaler.MarshalTraces(td)
+		if err != nil {
+			w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
+		} else {
+			w.cs.writeBytes(b)
+		}
 	}
+
+	return td, nil
 }
