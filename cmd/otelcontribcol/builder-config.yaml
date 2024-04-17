@@ -450,3 +450,4 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver => ../../receiver/namedpipereceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery => ../../internal/sqlquery
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ../../extension/ackextension
+  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
