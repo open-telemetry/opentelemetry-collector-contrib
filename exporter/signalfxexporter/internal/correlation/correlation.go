@@ -56,7 +56,7 @@ func newCorrelationClient(ctx context.Context, cfg *Config, accessToken configop
 		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %w", cfg.ClientConfig.Endpoint, err)
 	}
 
-	httpClient, err := cfg.ToClientContext(ctx, host, params.TelemetrySettings)
+	httpClient, err := cfg.ToClient(ctx, host, params.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create correlation API client: %w", err)
 	}
