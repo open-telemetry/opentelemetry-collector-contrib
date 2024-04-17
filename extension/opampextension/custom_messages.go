@@ -7,22 +7,29 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 )
 
-// CustomMessageCallback is a callback that handles a custom message from opamp.
+// CustomMessageCallback is a callback that handles a custom message from OpAMP.
 type CustomMessageCallback func(*protobufs.CustomMessage)
 
 // CustomCapabilityRegistry allows for registering a custom capability that can receive custom messages.
 type CustomCapabilityRegistry interface {
 	// Register registers a new custom capability. Any messages for the capability
 	// will be received by the given callback asynchronously.
-	// It returns a handle to a CustomCapability, which can be used to unregister, or send
-	// a message to the OpAMP server.
-	Register(capability string, callback CustomMessageCallback) (CustomCapability, error)
+	// It returns a a CustomCapabilitySender, which can be used to send a message to the OpAMP server using the capability.
+	Register(capability string, listener CustomCapabilityListener) (CustomMessageSender, error)
 }
 
-// CustomCapability represents a handle to a custom capability.
-// This can be used to send a custom message to an OpAMP server, or to unregister
-// the capability from the registry.
-type CustomCapability interface {
+// CustomCapabilityListener is an interface that receives custom messages.
+type CustomCapabilityListener interface {
+	// ReceiveMessage is called whenever a message for the capability is received from the OpAMP server.
+	ReceiveMessage(msg *protobufs.CustomMessage)
+	// Done returns a channel signaling that the listener is done listening. Some time after a signal is emitted on the channel,
+	// messages will no longer be received by ReceiveMessage for this listener.
+	Done() <-chan struct{}
+}
+
+// CustomMessageSender can be used to send a custom message to an OpAMP server.
+// The capability the message is sent for is the capability that was used in CustomCapabilityRegistry.Register.
+type CustomMessageSender interface {
 	// SendMessage sends a custom message to the OpAMP server.
 	//
 	// Only one message can be sent at a time. If SendCustomMessage has been already called
@@ -35,7 +42,4 @@ type CustomCapability interface {
 	// If no error is returned, the channel returned will be closed after the specified
 	// message is sent.
 	SendMessage(messageType string, message []byte) (messageSendingChannel chan struct{}, err error)
-
-	// Unregister unregisters the custom capability.
-	Unregister()
 }

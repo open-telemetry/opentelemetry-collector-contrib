@@ -5,6 +5,7 @@ package opampextension // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"runtime"
@@ -102,19 +103,25 @@ func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (o *opampAgent) Shutdown(ctx context.Context) error {
+func (o *opampAgent) Shutdown(ctx context.Context) (returnedErr error) {
 	o.logger.Debug("OpAMP agent shutting down...")
-	if o.opampClient == nil {
-		return nil
+
+	if o.opampClient != nil {
+		o.logger.Debug("Stopping OpAMP client...")
+		err := o.opampClient.Stop(ctx)
+		// Opamp-go considers this an error, but the collector does not.
+		// https://github.com/open-telemetry/opamp-go/issues/255
+		if err != nil && !strings.EqualFold(err.Error(), "cannot stop because not started") {
+			returnedErr = errors.Join(returnedErr, err)
+		}
 	}
-	o.logger.Debug("Stopping OpAMP client...")
-	err := o.opampClient.Stop(ctx)
-	// Opamp-go considers this an error, but the collector does not.
-	// https://github.com/open-telemetry/opamp-go/issues/255
-	if err != nil && strings.EqualFold(err.Error(), "cannot stop because not started") {
-		return nil
+
+	if o.customCapabilityRegistry != nil {
+		o.logger.Debug("Stopping custom message registry...")
+		o.customCapabilityRegistry.Stop()
 	}
-	return err
+
+	return returnedErr
 }
 
 func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
@@ -125,8 +132,8 @@ func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 	return nil
 }
 
-func (o *opampAgent) Register(capability string, callback CustomMessageCallback) (CustomCapability, error) {
-	return o.customCapabilityRegistry.Register(capability, callback)
+func (o *opampAgent) Register(capability string, listener CustomCapabilityListener) (CustomMessageSender, error) {
+	return o.customCapabilityRegistry.Register(capability, listener)
 }
 
 func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
