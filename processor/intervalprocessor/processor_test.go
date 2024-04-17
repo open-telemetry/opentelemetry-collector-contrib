@@ -204,6 +204,224 @@ func TestAggregation(t *testing.T) {
 			},
 			outputs: []testMetric{},
 		},
+		{
+			name: "SummariesArePassedThrough",
+			inputs: []testMetric{
+				{
+					Name: "test_metric_value",
+					Type: pmetric.MetricTypeSummary,
+					DataPoints: []any{
+						testSummaryDataPoint{
+							Timestamp: 50,
+							QuantileValues: []testValueAtQuantile{
+								{
+									Quantile: 0.25,
+									Value:    50,
+								},
+								{
+									Quantile: 0.5,
+									Value:    20,
+								},
+								{
+									Quantile: 0.75,
+									Value:    75,
+								},
+								{
+									Quantile: 0.95,
+									Value:    10,
+								},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testSummaryDataPoint{
+							Timestamp: 20,
+							QuantileValues: []testValueAtQuantile{
+								{
+									Quantile: 0.25,
+									Value:    40,
+								},
+								{
+									Quantile: 0.5,
+									Value:    10,
+								},
+								{
+									Quantile: 0.75,
+									Value:    60,
+								},
+								{
+									Quantile: 0.95,
+									Value:    5,
+								},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testSummaryDataPoint{
+							Timestamp: 80,
+							QuantileValues: []testValueAtQuantile{
+								{
+									Quantile: 0.25,
+									Value:    80,
+								},
+								{
+									Quantile: 0.5,
+									Value:    35,
+								},
+								{
+									Quantile: 0.75,
+									Value:    90,
+								},
+								{
+									Quantile: 0.95,
+									Value:    15,
+								},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+					},
+				},
+			},
+			next: []testMetric{
+				{
+					Name: "test_metric_value",
+					Type: pmetric.MetricTypeSummary,
+					DataPoints: []any{
+						testSummaryDataPoint{
+							Timestamp: 50,
+							QuantileValues: []testValueAtQuantile{
+								{
+									Quantile: 0.25,
+									Value:    50,
+								},
+								{
+									Quantile: 0.5,
+									Value:    20,
+								},
+								{
+									Quantile: 0.75,
+									Value:    75,
+								},
+								{
+									Quantile: 0.95,
+									Value:    10,
+								},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testSummaryDataPoint{
+							Timestamp: 20,
+							QuantileValues: []testValueAtQuantile{
+								{
+									Quantile: 0.25,
+									Value:    40,
+								},
+								{
+									Quantile: 0.5,
+									Value:    10,
+								},
+								{
+									Quantile: 0.75,
+									Value:    60,
+								},
+								{
+									Quantile: 0.95,
+									Value:    5,
+								},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testSummaryDataPoint{
+							Timestamp: 80,
+							QuantileValues: []testValueAtQuantile{
+								{
+									Quantile: 0.25,
+									Value:    80,
+								},
+								{
+									Quantile: 0.5,
+									Value:    35,
+								},
+								{
+									Quantile: 0.75,
+									Value:    90,
+								},
+								{
+									Quantile: 0.95,
+									Value:    15,
+								},
+							},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+					},
+				},
+			},
+			outputs: []testMetric{},
+		},
+		{
+			name: "HistogramsAreAggregated",
+			inputs: []testMetric{
+				{
+					Name:        "test_metric_total",
+					Type:        pmetric.MetricTypeHistogram,
+					Temporality: pmetric.AggregationTemporalityCumulative,
+					DataPoints: []any{
+						testHistogramDataPoint{
+							Timestamp:      50,
+							ExplicitBounds: []float64{0.01, 0.1, 1, 10, 100},
+							BucketCounts:   []uint64{4, 7, 9, 6, 25},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testHistogramDataPoint{
+							Timestamp:      20,
+							ExplicitBounds: []float64{0.01, 0.1, 1, 10, 100},
+							BucketCounts:   []uint64{2, 3, 7, 4, 20},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+						testHistogramDataPoint{
+							Timestamp:      80,
+							ExplicitBounds: []float64{0.01, 0.1, 1, 10, 100},
+							BucketCounts:   []uint64{9, 12, 17, 8, 34},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+					},
+				},
+			},
+			next: []testMetric{},
+			outputs: []testMetric{
+				{
+					Name:        "test_metric_total",
+					Type:        pmetric.MetricTypeHistogram,
+					Temporality: pmetric.AggregationTemporalityCumulative,
+					DataPoints: []any{
+						testHistogramDataPoint{
+							Timestamp:      80,
+							ExplicitBounds: []float64{0.01, 0.1, 1, 10, 100},
+							BucketCounts:   []uint64{9, 12, 17, 8, 34},
+							Attributes: map[string]any{
+								"aaa": "bbb",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -225,7 +443,7 @@ func TestAggregation(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			md := generateTestSumMetrics(t, testMetrics{
+			md := generateTestMetrics(t, testMetrics{
 				{
 					SchemaURL: "https://test-res-schema.com/schema",
 					Attributes: map[string]any{
@@ -381,7 +599,7 @@ type testHistogramDataPoint struct {
 	Attributes     map[string]any
 }
 
-func generateTestSumMetrics(t *testing.T, tmd testMetrics) pmetric.Metrics {
+func generateTestMetrics(t *testing.T, tmd testMetrics) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 
 	for _, trm := range tmd {
