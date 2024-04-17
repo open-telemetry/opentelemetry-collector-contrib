@@ -1196,3 +1196,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/named
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery => ../../internal/sqlquery
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ../../extension/ackextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
