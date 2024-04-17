@@ -79,7 +79,13 @@ func enableZorkianMetricExport() error {
 	return featuregate.GlobalRegistry().Set(metricExportNativeClientFeatureGate.ID(), false)
 }
 
-const metadataReporterPeriod = 30 * time.Minute
+const (
+	metadataReporterPeriod = 30 * time.Minute
+	// logSourceName specifies the Datadog source tag value to be added to logs sent from the Datadog exporter.
+	logSourceName = "OTLP log ingestion"
+	// otelSource specifies a source to be added to all logs sent from the Datadog exporter. The tag has key `otel_source` and the value specified on this constant.
+	otelSource = "datadog_exporter"
+)
 
 func consumeResource(metadataReporter *inframetadata.Reporter, res pcommon.Resource, logger *zap.Logger) {
 	if err := metadataReporter.ConsumeResource(res); err != nil {
@@ -532,6 +538,10 @@ func (f *factory) createLogsExporter(
 	} else if isLogsAgentExporterEnabled() {
 		logComponent, _ := newLogComponent(set.TelemetrySettings)
 		cfgComponent, _ := newConfigComponent(set.TelemetrySettings, cfg)
+		logsAgentConfig := logsagentexporter.Config{
+			OtelSource:    otelSource,
+			LogSourceName: logSourceName,
+		}
 		hostname := logs.NewHostnameService(pcfg.ConfigHostname)
 		f.logsAgent = logs.NewLogsAgent(logComponent, cfgComponent, hostname)
 		err = f.logsAgent.Start(ctx)
@@ -542,7 +552,7 @@ func (f *factory) createLogsExporter(
 			return nil, err
 		}
 		pipelineChan := f.logsAgent.GetPipelineProvider().NextPipelineChan()
-		logsAgentExporter, err := logsagentexporter.NewFactory(pipelineChan).CreateLogsExporter(ctx, set, cfg)
+		logsAgentExporter, err := logsagentexporter.NewFactory(pipelineChan).CreateLogsExporter(ctx, set, logsAgentConfig)
 		if err != nil {
 			set.Logger.Error("Failed to create logs agent exporter", zap.Error(err))
 			cancel()

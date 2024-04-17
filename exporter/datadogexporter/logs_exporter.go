@@ -23,10 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 )
 
-// otelSource specifies a source to be added to all logs sent from the Datadog exporter
-// The tag has key `otel_source` and the value specified on this constant.
-const otelSource = "datadog_exporter"
-
 type logsExporter struct {
 	params           exporter.CreateSettings
 	cfg              *Config
