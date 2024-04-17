@@ -23,7 +23,7 @@ type Config struct {
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 
-	Ack `mapstructure:",squash"`
+	Ack `mapstructure:"ack"`
 
 	// RawPath for raw data collection, default is '/services/collector/raw'
 	RawPath string `mapstructure:"raw_path"`
@@ -38,7 +38,7 @@ type Config struct {
 // Ack defines configuration for the ACK functionality of the HEC receiver
 type Ack struct {
 	// Extension defines the extension to use for acking of events. Without specifying an extension, the ACK endpoint won't be exposed
-	Extension *component.ID `mapstructure:"ack_extension"`
+	Extension *component.ID `mapstructure:"extension"`
 	// Path for Ack API, default is '/services/collector/ack'. Ignored if Extension is not provided.
-	Path string `mapstructure:"ack_path"`
+	Path string `mapstructure:"path"`
 }

@@ -22,7 +22,7 @@ const (
 	DefaultNameLabel           = "otel.log.name"
 	DefaultSeverityTextLabel   = "otel.log.severity.text"
 	DefaultSeverityNumberLabel = "otel.log.severity.number"
-	HecTokenHeader             = "Splunk"
+	HECTokenHeader             = "Splunk"
 	HTTPSplunkChannelHeader    = "X-Splunk-Request-Channel"
 
 	HecTokenLabel = "com.splunk.hec.access_token" // #nosec
@@ -39,7 +39,7 @@ type AccessTokenPassthroughConfig struct {
 	AccessTokenPassthrough bool `mapstructure:"access_token_passthrough"`
 }
 
-// Event represents a metric in Splunk HEC format
+// Event represents a metric in Splunk HEC receiver/splunkhecreceiver/receiver.goformat
 type Event struct {
 	Time       float64        `json:"time,omitempty"`       // optional epoch time - set to zero if the event timestamp is missing or unknown (will be added at indexing time)
 	Host       string         `json:"host"`                 // hostname
