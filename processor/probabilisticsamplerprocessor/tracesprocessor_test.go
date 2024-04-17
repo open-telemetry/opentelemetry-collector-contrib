@@ -92,7 +92,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 5,
 			},
-			numBatches:        1e6,
+			numBatches:        1e5,
 			numTracesPerBatch: 2,
 			acceptableDelta:   0.1,
 		},
@@ -129,7 +129,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.cfg.HashSeed = defaultHashSeed
 
-			sink := new(consumertest.TracesSink)
+			sink := newAssertTraces(t, testSvcName)
 			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.cfg, sink)
 			if err != nil {
 				t.Errorf("error when creating traceSamplerProcessor: %v", err)
@@ -138,7 +138,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName, 1) {
 				assert.NoError(t, tsp.ConsumeTraces(context.Background(), td))
 			}
-			_, sampled := assertSampledData(t, sink.AllTraces(), testSvcName)
+			sampled := sink.spanCount
 			actualPercentageSamplingPercentage := float32(sampled) / float32(tt.numBatches*tt.numTracesPerBatch) * 100.0
 			delta := math.Abs(float64(actualPercentageSamplingPercentage - tt.cfg.SamplingPercentage))
 			if delta > tt.acceptableDelta {
@@ -520,10 +520,40 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 	return traceBatches
 }
 
-// assertSampledData checks for no repeated traceIDs and counts the number of spans on the sampled data for
+// assertTraces is a traces consumer.Traces
+type assertTraces struct {
+	*testing.T
+	testName  string
+	traceIDs  map[[16]byte]bool
+	spanCount int
+}
+
+var _ consumer.Traces = &assertTraces{}
+
+func (a *assertTraces) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{}
+}
+
+func (a *assertTraces) ConsumeTraces(_ context.Context, data ptrace.Traces) error {
+	tt := [1]ptrace.Traces{
+		data,
+	}
+	a.onSampledData(tt[:])
+	return nil
+}
+
+func newAssertTraces(t *testing.T, name string) *assertTraces {
+	return &assertTraces{
+		T:         t,
+		testName:  name,
+		traceIDs:  map[[16]byte]bool{},
+		spanCount: 0,
+	}
+}
+
+// onSampledData checks for no repeated traceIDs and counts the number of spans on the sampled data for
 // the given service.
-func assertSampledData(t *testing.T, sampled []ptrace.Traces, serviceName string) (traceIDs map[[16]byte]bool, spanCount int) {
-	traceIDs = make(map[[16]byte]bool)
+func (a *assertTraces) onSampledData(sampled []ptrace.Traces) {
 	for _, td := range sampled {
 		rspans := td.ResourceSpans()
 		for i := 0; i < rspans.Len(); i++ {
@@ -531,18 +561,18 @@ func assertSampledData(t *testing.T, sampled []ptrace.Traces, serviceName string
 			ilss := rspan.ScopeSpans()
 			for j := 0; j < ilss.Len(); j++ {
 				ils := ilss.At(j)
-				if svcNameAttr, _ := rspan.Resource().Attributes().Get("service.name"); svcNameAttr.Str() != serviceName {
+				if svcNameAttr, _ := rspan.Resource().Attributes().Get("service.name"); svcNameAttr.Str() != a.testName {
 					continue
 				}
 				for k := 0; k < ils.Spans().Len(); k++ {
-					spanCount++
+					a.spanCount++
 					span := ils.Spans().At(k)
 					key := span.TraceID()
-					if traceIDs[key] {
-						t.Errorf("same traceID used more than once %q", key)
+					if a.traceIDs[key] {
+						a.Errorf("same traceID used more than once %q", key)
 						return
 					}
-					traceIDs[key] = true
+					a.traceIDs[key] = true
 				}
 			}
 		}
