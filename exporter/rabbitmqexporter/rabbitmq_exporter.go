@@ -28,7 +28,7 @@ type rabbitmqExporter struct {
 }
 
 type publisherFactory = func(publisher.DialConfig) (publisher.Publisher, error)
-type tlsFactory = func() (*tls.Config, error)
+type tlsFactory = func(context.Context) (*tls.Config, error)
 
 func newRabbitmqExporter(cfg *Config, set component.TelemetrySettings, publisherFactory publisherFactory, tlsFactory tlsFactory, routingKey string, connectionName string) *rabbitmqExporter {
 	exporter := &rabbitmqExporter{
@@ -42,7 +42,7 @@ func newRabbitmqExporter(cfg *Config, set component.TelemetrySettings, publisher
 	return exporter
 }
 
-func (e *rabbitmqExporter) start(_ context.Context, host component.Host) error {
+func (e *rabbitmqExporter) start(ctx context.Context, host component.Host) error {
 	m, err := newMarshaler(e.config.EncodingExtensionID, host)
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func (e *rabbitmqExporter) start(_ context.Context, host component.Host) error {
 		PublishConfirmationTimeout: e.config.Connection.PublishConfirmationTimeout,
 	}
 
-	tlsConfig, err := e.tlsFactory()
+	tlsConfig, err := e.tlsFactory(ctx)
 	if err != nil {
 		return err
 	}

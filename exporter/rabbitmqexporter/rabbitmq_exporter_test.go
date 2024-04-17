@@ -86,7 +86,7 @@ func TestStart_TLSError(t *testing.T) {
 	var pubFactory = func(publisher.DialConfig) (publisher.Publisher, error) {
 		return &pub, nil
 	}
-	tlsFactory := func() (*tls.Config, error) {
+	tlsFactory := func(context.Context) (*tls.Config, error) {
 		return nil, errors.New("simulating tls config error")
 	}
 	exporter := newRabbitmqExporter(cfg, exportertest.NewNopCreateSettings().TelemetrySettings, pubFactory, tlsFactory, routingKey, connectionName)

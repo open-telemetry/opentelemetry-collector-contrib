@@ -141,7 +141,7 @@ func newTLSFactory(config *Config) tlsFactory {
 	if config.Connection.TLSConfig != nil {
 		return config.Connection.TLSConfig.LoadTLSConfig
 	}
-	return func() (*tls.Config, error) {
+	return func(context.Context) (*tls.Config, error) {
 		return nil, nil
 	}
 }
