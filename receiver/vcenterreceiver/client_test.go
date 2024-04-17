@@ -13,6 +13,7 @@ import (
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/session"
 	"github.com/vmware/govmomi/simulator"
+	"github.com/vmware/govmomi/view"
 	"github.com/vmware/govmomi/vim25"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -48,10 +49,12 @@ func TestGetResourcePools(t *testing.T) {
 
 func TestGetVMs(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
+		viewManager := view.NewManager(c)
 		finder := find.NewFinder(c)
 		client := vcenterClient{
 			vimDriver: c,
 			finder:    finder,
+			vm:        viewManager,
 		}
 		vms, err := client.VMs(ctx)
 		require.NoError(t, err)
