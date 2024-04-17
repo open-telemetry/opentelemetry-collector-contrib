@@ -173,58 +173,34 @@ var vmPerfMetricList = []string{
 	"virtualDisk.totalReadLatency.average",
 }
 
-func (v *vcenterMetricScraper) recordVMPerformance(
-	ctx context.Context,
-	vm mo.VirtualMachine,
-	errs *scrapererror.ScrapeErrors,
-) {
-	spec := types.PerfQuerySpec{
-		Entity: vm.Reference(),
-		Format: string(types.PerfFormatNormal),
-		// Just grabbing real time performance metrics of the current
-		// supported metrics by this receiver. If more are added we may need
-		// a system of making this user customizable or adapt to use a 5 minute interval per metric
-		IntervalId: int32(20),
-	}
+func (v *vcenterMetricScraper) recordVMPerformanceMetrics(entityMetric *performance.EntityMetric) {
+	for _, val := range entityMetric.Value {
+		for j, nestedValue := range val.Value {
+			si := entityMetric.SampleInfo[j]
+			switch val.Name {
+			// Performance monitoring level 1 metrics
+			case "net.bytesTx.average":
+				v.mb.RecordVcenterVMNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
+			case "net.bytesRx.average":
+				v.mb.RecordVcenterVMNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived, val.Instance)
+			case "net.usage.average":
+				v.mb.RecordVcenterVMNetworkUsageDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, val.Instance)
+			case "net.packetsTx.summation":
+				v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
+			case "net.packetsRx.summation":
+				v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived, val.Instance)
 
-	info, err := v.client.performanceQuery(ctx, spec, vmPerfMetricList, []types.ManagedObjectReference{vm.Reference()})
-	if err != nil {
-		errs.AddPartial(1, err)
-		return
-	}
-	v.processVMPerformanceMetrics(info)
-}
-
-func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResult) {
-	for _, m := range info.results {
-		for _, val := range m.Value {
-			for j, nestedValue := range val.Value {
-				si := m.SampleInfo[j]
-				switch val.Name {
-				// Performance monitoring level 1 metrics
-				case "net.bytesTx.average":
-					v.mb.RecordVcenterVMNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
-				case "net.bytesRx.average":
-					v.mb.RecordVcenterVMNetworkThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived, val.Instance)
-				case "net.usage.average":
-					v.mb.RecordVcenterVMNetworkUsageDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, val.Instance)
-				case "net.packetsTx.summation":
-					v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
-				case "net.packetsRx.summation":
-					v.mb.RecordVcenterVMNetworkPacketCountDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeThroughputDirectionReceived, val.Instance)
-
-				// Performance monitoring level 2 metrics required
-				case "disk.totalReadLatency.average":
-					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead, metadata.AttributeDiskTypePhysical, val.Instance)
-				case "virtualDisk.totalReadLatency.average":
-					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead, metadata.AttributeDiskTypeVirtual, val.Instance)
-				case "disk.totalWriteLatency.average":
-					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, metadata.AttributeDiskTypePhysical, val.Instance)
-				case "virtualDisk.totalWriteLatency.average":
-					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, metadata.AttributeDiskTypeVirtual, val.Instance)
-				case "disk.maxTotalLatency.latest":
-					v.mb.RecordVcenterVMDiskLatencyMaxDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, val.Instance)
-				}
+			// Performance monitoring level 2 metrics required
+			case "disk.totalReadLatency.average":
+				v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead, metadata.AttributeDiskTypePhysical, val.Instance)
+			case "virtualDisk.totalReadLatency.average":
+				v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead, metadata.AttributeDiskTypeVirtual, val.Instance)
+			case "disk.totalWriteLatency.average":
+				v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, metadata.AttributeDiskTypePhysical, val.Instance)
+			case "virtualDisk.totalWriteLatency.average":
+				v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, metadata.AttributeDiskTypeVirtual, val.Instance)
+			case "disk.maxTotalLatency.latest":
+				v.mb.RecordVcenterVMDiskLatencyMaxDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, val.Instance)
 			}
 		}
 	}
