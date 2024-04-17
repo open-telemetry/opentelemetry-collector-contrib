@@ -31,9 +31,9 @@ func TestRegistry_Register(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		capability, unregister, err := registry.Register(capabilityString, func(*protobufs.CustomMessage) {})
+		sender, unregister, err := registry.Register(capabilityString, func(*protobufs.CustomMessage) {})
 		require.NoError(t, err)
-		require.NotNil(t, capability)
+		require.NotNil(t, sender)
 		require.NotNil(t, unregister)
 	})
 
@@ -49,8 +49,8 @@ func TestRegistry_Register(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		capability, unregister, err := registry.Register(capabilityString, func(*protobufs.CustomMessage) {})
-		require.Nil(t, capability)
+		sender, unregister, err := registry.Register(capabilityString, func(*protobufs.CustomMessage) {})
+		require.Nil(t, sender)
 		require.ErrorIs(t, err, capabilityErr)
 		require.Nil(t, unregister)
 		require.Len(t, registry.capabilityToCallbacks, 0, "Setting capability failed, but callback ended up in the map anyways")
@@ -73,12 +73,12 @@ func TestRegistry_ProcessMessage(t *testing.T) {
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
 		callbackCalledChan := make(chan struct{})
-		capability, unregister, err := registry.Register(capabilityString, func(c *protobufs.CustomMessage) {
+		sender, unregister, err := registry.Register(capabilityString, func(c *protobufs.CustomMessage) {
 			require.Equal(t, customMessage, c)
 
 			close(callbackCalledChan)
 		})
-		require.NotNil(t, capability)
+		require.NotNil(t, sender)
 		require.NoError(t, err)
 		require.NotNil(t, unregister)
 
@@ -118,22 +118,22 @@ func TestRegistry_ProcessMessage(t *testing.T) {
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
 		teapotCalledChan := make(chan struct{})
-		capabilityTeapot, unregisterTeapot, err := registry.Register(teapotCapabilityString1, func(c *protobufs.CustomMessage) {
+		teapotSender, unregisterTeapot, err := registry.Register(teapotCapabilityString1, func(c *protobufs.CustomMessage) {
 			require.Equal(t, customMessageSteep, c)
 
 			close(teapotCalledChan)
 		})
-		require.NotNil(t, capabilityTeapot)
+		require.NotNil(t, teapotSender)
 		require.NoError(t, err)
 		require.NotNil(t, unregisterTeapot)
 
 		coffeeMakerCalledChan := make(chan struct{})
-		capabilityCoffeeMaker, unregisterCoffeeMaker, err := registry.Register(coffeeMakerCapabilityString2, func(c *protobufs.CustomMessage) {
+		coffeeMakerSender, unregisterCoffeeMaker, err := registry.Register(coffeeMakerCapabilityString2, func(c *protobufs.CustomMessage) {
 			require.Equal(t, customMessageBrew, c)
 
 			close(coffeeMakerCalledChan)
 		})
-		require.NotNil(t, capabilityCoffeeMaker)
+		require.NotNil(t, coffeeMakerSender)
 		require.NoError(t, err)
 		require.NotNil(t, unregisterCoffeeMaker)
 
@@ -172,12 +172,12 @@ func TestCustomCapability_SendMesage(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		capability, unregister, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {})
+		sender, unregister, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {})
 		require.NoError(t, err)
-		require.NotNil(t, capability)
+		require.NotNil(t, sender)
 		require.NotNil(t, unregister)
 
-		channel, err := capability.SendMessage(messageType, mesageBytes)
+		channel, err := sender.SendMessage(messageType, mesageBytes)
 		require.NoError(t, err)
 		require.Nil(t, channel, nil)
 	})
@@ -198,10 +198,10 @@ func TestCustomCapability_Unregister(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		unregisteredCapability, unregister, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {
+		unregisteredSender, unregister, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {
 			t.Fatalf("Unregistered capability should not be called")
 		})
-		require.NotNil(t, unregisteredCapability)
+		require.NotNil(t, unregisteredSender)
 		require.NoError(t, err)
 		require.NotNil(t, unregister)
 
@@ -224,10 +224,10 @@ func TestCustomCapability_Unregister(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		unregisteredCapability, unregister, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {
+		unregisteredSender, unregister, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {
 			t.Fatalf("Unregistered capability should not be called")
 		})
-		require.NotNil(t, unregisteredCapability)
+		require.NotNil(t, unregisteredSender)
 		require.NoError(t, err)
 		require.NotNil(t, unregister)
 
@@ -250,16 +250,16 @@ func TestCustomCapability_Unregister(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		unregisteredCapability, unregister, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {
+		unregisteredSender, unregister, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {
 			t.Fatalf("Unregistered capability should not be called")
 		})
-		require.NotNil(t, unregisteredCapability)
+		require.NotNil(t, unregisteredSender)
 		require.NoError(t, err)
 		require.NotNil(t, unregister)
 
 		unregister()
 
-		_, err = unregisteredCapability.SendMessage(messageType, mesageBytes)
+		_, err = unregisteredSender.SendMessage(messageType, mesageBytes)
 		require.ErrorContains(t, err, "capability has already been unregistered")
 	})
 }

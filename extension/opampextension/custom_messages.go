@@ -7,14 +7,14 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 )
 
-// CustomMessageCallback is a callback that handles a custom message from opamp.
+// CustomMessageCallback is a callback that handles a custom message from an OpAMP server.
 type CustomMessageCallback func(*protobufs.CustomMessage)
 
 // CustomCapabilityRegistry allows for registering a custom capability that can receive custom messages.
 type CustomCapabilityRegistry interface {
 	// Register registers a new custom capability. Any messages for the capability
 	// will be received by the given callback asynchronously.
-	// It returns a handle to a CustomCapability, which can be used to unregister, or send
+	// It returns a handle to a CustomCapability, which can be used to send
 	// a message to the OpAMP server.
 	// It also returns a function that can be used to unregister the capability.
 	Register(capability string, callback CustomMessageCallback) (sender CustomMessageSender, unregister func(), err error)
