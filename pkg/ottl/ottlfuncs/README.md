@@ -1131,11 +1131,11 @@ Examples:
 
 ### Time
 
-`Time(target, format)`
+`Time(target, format, Optional[location])`
 
 The `Time` Converter takes a string representation of a time and converts it to a Golang `time.Time`.
 
-`target` is a string. `format` is a string.
+`target` is a string. `format` is a string, `location` is an optional string.
 
 If either `target` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If the `target` and `format` do not follow the parsing rules used by this parser, an error is returned.
 
@@ -1176,6 +1176,8 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 |`%%` | A % sign | |
 |`%c` | Date and time representation | Mon Jan 02 15:04:05 2006 |
 
+`location` specifies a time zone canonical ID to be used for date parsing
+
 Examples:
 
 - `Time("02/04/2023", "%m/%d/%Y")`
@@ -1183,6 +1185,7 @@ Examples:
 - `Time("2023-05-26 12:34:56 HST", "%Y-%m-%d %H:%M:%S %Z")`
 - `Time("1986-10-01T00:17:33 MST", "%Y-%m-%dT%H:%M:%S %Z")`
 - `Time("2012-11-01T22:08:41+0000 EST", "%Y-%m-%dT%H:%M:%S%z %Z")`
+- `Time("2023-05-26 12:34:56", "%Y-%m-%d %H:%M:%S", "America/New_York")`
 
 ### TraceID
 
