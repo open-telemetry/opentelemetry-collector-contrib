@@ -1176,7 +1176,7 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 |`%%` | A % sign | |
 |`%c` | Date and time representation | Mon Jan 02 15:04:05 2006 |
 
-`location` specifies a time zone canonical ID to be used for date parsing
+`location` specifies a time zone canonical ID to be used for date parsing.
 
 Examples:
 
