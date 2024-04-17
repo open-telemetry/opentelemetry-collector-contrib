@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension"
 )
 
 // Config defines configuration for Sumo Logic exporter.
@@ -68,7 +70,7 @@ func createDefaultClientConfig() confighttp.ClientConfig {
 	return confighttp.ClientConfig{
 		Timeout: defaultTimeout,
 		Auth: &configauth.Authentication{
-			AuthenticatorID: component.NewID(Type),
+			AuthenticatorID: component.NewID(sumologicextension.NewFactory().Type()),
 		},
 	}
 }

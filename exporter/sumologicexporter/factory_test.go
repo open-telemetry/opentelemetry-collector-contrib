@@ -43,7 +43,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 		ClientConfig: confighttp.ClientConfig{
 			Auth: &configauth.Authentication{
-				AuthenticatorID: component.NewID(Type),
+				AuthenticatorID: component.NewID(metadata.Type),
 			},
 			Timeout: 5 * time.Second,
 		},
