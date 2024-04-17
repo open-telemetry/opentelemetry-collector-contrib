@@ -213,7 +213,6 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 		mx.NewRoute().Path(r.config.RawPath).HandlerFunc(r.handleRawReq)
 	}
 	mx.NewRoute().HandlerFunc(r.handleReq)
-
 	// set up the listener
 	ln, err := r.config.ServerConfig.ToListener(ctx)
 	if err != nil {
