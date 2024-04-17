@@ -192,9 +192,11 @@ func extractRawAttributes(log azureLogRecord) map[string]any {
 	}
 	attrs[azureOperationName] = log.OperationName
 	setIf(attrs, azureOperationVersion, log.OperationVersion)
+
 	if log.Properties != nil {
-		attrs[azureProperties] = *log.Properties
+		copyProperties(log.Category, log.Properties, attrs)
 	}
+
 	setIf(attrs, azureResultDescription, log.ResultDescription)
 	setIf(attrs, azureResultSignature, log.ResultSignature)
 	setIf(attrs, azureResultType, log.ResultType)
@@ -205,6 +207,22 @@ func extractRawAttributes(log azureLogRecord) map[string]any {
 
 	setIf(attrs, conventions.AttributeNetSockPeerAddr, log.CallerIPAddress)
 	return attrs
+}
+
+func copyProperties(category string, properties *any, attrs map[string]any) {
+	pmap := (*properties).(map[string]any)
+	var attrsProps map[string]any = nil
+	for k, v := range pmap {
+		if otelKey, found := ResourceLogKeyToSemConvKey(k, category); found {
+			attrs[otelKey] = v
+		} else {
+			if attrsProps == nil {
+				attrsProps = map[string]any{}
+				attrs["azure.properties"] = attrsProps
+			}
+			attrsProps[k] = v
+		}
+	}
 }
 
 func setIf(attrs map[string]any, key string, value *string) {
