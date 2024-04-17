@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
 	"github.com/open-telemetry/otel-arrow/pkg/config"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -73,6 +74,10 @@ type ArrowConfig struct {
 	// to standard OTLP.  If the Arrow service is unavailable, it
 	// will retry and/or fail.
 	DisableDowngrade bool `mapstructure:"disable_downgrade"`
+
+	// Prioritizer is a policy name for how load is distributed
+	// across streams.
+	Prioritizer arrow.PrioritizerName `mapstructure:"prioritizer"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -91,6 +96,10 @@ func (cfg *ArrowConfig) Validate() error {
 
 	if err := cfg.Zstd.Validate(); err != nil {
 		return fmt.Errorf("zstd encoder: invalid configuration: %w", err)
+	}
+
+	if err := cfg.Prioritizer.Validate(); err != nil {
+		return fmt.Errorf("invalid prioritizer: %w", err)
 	}
 
 	// The cfg.PayloadCompression field is validated by the underlying library,

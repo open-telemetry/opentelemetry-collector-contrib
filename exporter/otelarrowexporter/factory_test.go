@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
 	"github.com/open-telemetry/otel-arrow/collector/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,6 +42,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		MaxStreamLifetime:  time.Hour,
 		PayloadCompression: "",
 		Zstd:               zstd.DefaultEncoderConfig(),
+		Prioritizer:        arrow.DefaultPrioritizer,
 	})
 }
 

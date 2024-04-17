@@ -6,6 +6,7 @@ package otelarrowexporter
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -506,6 +507,7 @@ func TestSendMetrics(t *testing.T) {
 	// Disable queuing to ensure that we execute the request when calling ConsumeMetrics
 	// otherwise we will not see any errors.
 	cfg.QueueSettings.Enabled = false
+	cfg.RetryConfig.Enabled = false
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLSSetting: configtls.ClientConfig{
@@ -559,8 +561,8 @@ func TestSendMetrics(t *testing.T) {
 	expectedHeader := []string{"header-value"}
 
 	// Verify received metrics.
-	assert.EqualValues(t, 2, rcv.requestCount.Load())
-	assert.EqualValues(t, 4, rcv.totalItems.Load())
+	assert.EqualValues(t, uint32(2), rcv.requestCount.Load())
+	assert.EqualValues(t, uint32(4), rcv.totalItems.Load())
 	assert.EqualValues(t, md, rcv.getLastRequest())
 
 	mdata := rcv.getMetadata()
@@ -1023,7 +1025,12 @@ func (r *mockTracesReceiver) startStreamMockArrowTraces(t *testing.T, statusFor 
 			if status, ok := status.FromError(err); ok && status.Code() == codes.Canceled {
 				break
 			}
-			require.NoError(t, err)
+			if err != nil {
+				// No errors are allowed, except EOF.
+				require.Equal(t, io.EOF, err)
+				break
+			}
+
 			got, err := consumer.TracesFrom(records)
 			require.NoError(t, err)
 

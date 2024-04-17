@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
 	"github.com/open-telemetry/otel-arrow/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,6 +33,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	assert.Equal(t, "round_robin", cfg.(*Config).ClientConfig.BalancerName)
+	assert.Equal(t, arrow.DefaultPrioritizer, cfg.(*Config).Arrow.Prioritizer)
 }
 
 func TestUnmarshalConfig(t *testing.T) {
@@ -86,6 +88,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxStreamLifetime:  2 * time.Hour,
 				PayloadCompression: configcompression.TypeZstd,
 				Zstd:               zstd.DefaultEncoderConfig(),
+				Prioritizer:        "leastloaded8",
 			},
 		}, cfg)
 }

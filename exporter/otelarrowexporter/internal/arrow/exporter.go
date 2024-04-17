@@ -14,6 +14,10 @@ import (
 	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -25,6 +29,12 @@ type Exporter struct {
 	// numStreams is the number of streams that will be used.
 	numStreams int
 
+	// prioritizerName the name of a balancer policy.
+	prioritizerName PrioritizerName
+
+	// maxStreamLifetime is a limit on duration for streams.  A
+	// slight "jitter" is applied relative to this value on a
+	// per-stream basis.
 	maxStreamLifetime time.Duration
 
 	// disableDowngrade prevents downgrade from occurring, supports
@@ -53,13 +63,13 @@ type Exporter struct {
 	returning chan *Stream
 
 	// ready prioritizes streams that are ready to send
-	ready *streamPrioritizer
+	ready streamPrioritizer
 
-	// cancel cancels the background context of this
-	// Exporter, used for shutdown.
-	cancel context.CancelFunc
+	// doneCancel refers to and cancels the background context of
+	// this exporter.
+	doneCancel
 
-	// wg counts one per active goroutine belonging to all strings
+	// wg counts one per active goroutine belonging to all streams
 	// of this exporter.  The wait group has Add(1) called before
 	// starting goroutines so that they can be properly waited for
 	// in shutdown(), so the pattern is:
@@ -73,6 +83,13 @@ type Exporter struct {
 
 	// netReporter measures network traffic.
 	netReporter netstats.Interface
+}
+
+// doneCancel is used to store the done signal and cancelation
+// function for a context returned by context.WithCancel.
+type doneCancel struct {
+	done   <-chan struct{}
+	cancel context.CancelFunc
 }
 
 // AnyStreamClient is the interface supported by all Arrow streams.
@@ -102,6 +119,7 @@ func MakeAnyStreamClient[T AnyStreamClient](method string, clientFunc func(ctx c
 func NewExporter(
 	maxStreamLifetime time.Duration,
 	numStreams int,
+	prioritizerName PrioritizerName,
 	disableDowngrade bool,
 	telemetry component.TelemetrySettings,
 	grpcOptions []grpc.CallOption,
@@ -113,6 +131,7 @@ func NewExporter(
 	return &Exporter{
 		maxStreamLifetime: maxStreamLifetime,
 		numStreams:        numStreams,
+		prioritizerName:   prioritizerName,
 		disableDowngrade:  disableDowngrade,
 		telemetry:         telemetry,
 		grpcOptions:       grpcOptions,
@@ -127,40 +146,52 @@ func NewExporter(
 // Start creates the background context used by all streams and starts
 // a stream controller, which initializes the initial set of streams.
 func (e *Exporter) Start(ctx context.Context) error {
-	ctx, cancel := context.WithCancel(ctx)
+	// this is the background context
+	ctx, e.doneCancel = newDoneCancel(ctx)
 
-	e.cancel = cancel
+	// Starting N+1 goroutines
 	e.wg.Add(1)
-	e.ready = newStreamPrioritizer(ctx, e.numStreams)
 
-	go e.runStreamController(ctx)
+	// this is the downgradeable context
+	downCtx, downDc := newDoneCancel(ctx)
+
+	var sws []*streamWorkState
+	e.ready, sws = newStreamPrioritizer(downDc, e.prioritizerName, e.numStreams)
+
+	for _, ws := range sws {
+		e.startArrowStream(downCtx, ws)
+	}
+
+	go e.runStreamController(ctx, downCtx, downDc)
 
 	return nil
+}
+
+func (e *Exporter) startArrowStream(ctx context.Context, ws *streamWorkState) {
+	// this is the new stream context
+	ctx, dc := newDoneCancel(ctx)
+
+	e.wg.Add(1)
+
+	go e.runArrowStream(ctx, dc, ws)
 }
 
 // runStreamController starts the initial set of streams, then waits for streams to
 // terminate one at a time and restarts them.  If streams come back with a nil
 // client (meaning that OTel-Arrow was not supported by the endpoint), it will
 // not be restarted.
-func (e *Exporter) runStreamController(bgctx context.Context) {
+func (e *Exporter) runStreamController(exportCtx, downCtx context.Context, downDc doneCancel) {
 	defer e.cancel()
 	defer e.wg.Done()
 
 	running := e.numStreams
-
-	// Start the initial number of streams
-	for i := 0; i < running; i++ {
-		e.wg.Add(1)
-		go e.runArrowStream(bgctx)
-	}
 
 	for {
 		select {
 		case stream := <-e.returning:
 			if stream.client != nil || e.disableDowngrade {
 				// The stream closed or broken.  Restart it.
-				e.wg.Add(1)
-				go e.runArrowStream(bgctx)
+				e.startArrowStream(downCtx, stream.workState)
 				continue
 			}
 			// Otherwise, the stream never got started.  It was
@@ -171,10 +202,14 @@ func (e *Exporter) runStreamController(bgctx context.Context) {
 			// an Arrow endpoint.
 			if running == 0 {
 				e.telemetry.Logger.Info("could not establish arrow streams, downgrading to standard OTLP export")
-				e.ready.downgrade()
+				downDc.cancel()
+				// this call is allowed to block indefinitely,
+				// as to call drain().
+				e.ready.downgrade(exportCtx)
+				return
 			}
 
-		case <-bgctx.Done():
+		case <-exportCtx.Done():
 			// We are shutting down.
 			return
 		}
@@ -196,10 +231,11 @@ func addJitter(v time.Duration) time.Duration {
 // If the stream connection is successful, this goroutine starts another goroutine
 // to call writeStream() and performs readStream() itself.  When the stream shuts
 // down this call synchronously waits for and unblocks the consumers.
-func (e *Exporter) runArrowStream(ctx context.Context) {
+func (e *Exporter) runArrowStream(ctx context.Context, dc doneCancel, state *streamWorkState) {
+	defer dc.cancel()
 	producer := e.newProducer()
 
-	stream := newStream(producer, e.ready, e.telemetry, e.perRPCCredentials, e.netReporter)
+	stream := newStream(producer, e.ready, e.telemetry, e.netReporter, state)
 	stream.maxStreamLifetime = addJitter(e.maxStreamLifetime)
 
 	defer func() {
@@ -210,7 +246,7 @@ func (e *Exporter) runArrowStream(ctx context.Context) {
 		e.returning <- stream
 	}()
 
-	stream.run(ctx, e.streamClient, e.grpcOptions)
+	stream.run(ctx, dc, e.streamClient, e.grpcOptions)
 }
 
 // SendAndWait tries to send using an Arrow stream.  The results are:
@@ -222,23 +258,63 @@ func (e *Exporter) runArrowStream(ctx context.Context) {
 //
 // consumer should fall back to standard OTLP, (true, nil)
 func (e *Exporter) SendAndWait(ctx context.Context, data any) (bool, error) {
-	for {
-		var stream *Stream
-		var err error
-		select {
-		case <-ctx.Done():
-			err = ctx.Err()
-		case stream = <-e.ready.readyChannel():
-		}
+	errCh := make(chan error, 1)
 
+	// Note that if the OTLP exporter's gRPC Headers field was
+	// set, those (static) headers were used to establish the
+	// stream.  The caller's context was returned by
+	// baseExporter.enhanceContext() includes the static headers
+	// plus optional client metadata.  Here, get whatever
+	// headers that gRPC would have transmitted for a unary RPC
+	// and convey them via the Arrow batch.
+
+	// Note that the "uri" parameter to GetRequestMetadata is
+	// not used by the headersetter extension and is not well
+	// documented.  Since it's an optional list, we omit it.
+	var md map[string]string
+	if e.perRPCCredentials != nil {
+		var err error
+		md, err = e.perRPCCredentials.GetRequestMetadata(ctx)
 		if err != nil {
-			return false, err // a Context error
+			return false, err
 		}
-		if stream == nil {
+	}
+
+	// Note that the uncompressed size as measured by the receiver
+	// will be different than uncompressed size as measured by the
+	// exporter, because of the optimization phase performed in the
+	// conversion to Arrow.
+	var uncompSize int
+	if e.telemetry.MetricsLevel > configtelemetry.LevelNormal {
+		switch data := data.(type) {
+		case ptrace.Traces:
+			var sizer ptrace.ProtoMarshaler
+			uncompSize = sizer.TracesSize(data)
+		case plog.Logs:
+			var sizer plog.ProtoMarshaler
+			uncompSize = sizer.LogsSize(data)
+		case pmetric.Metrics:
+			var sizer pmetric.ProtoMarshaler
+			uncompSize = sizer.MetricsSize(data)
+		}
+	}
+
+	wri := writeItem{
+		records:     data,
+		md:          md,
+		uncompSize:  uncompSize,
+		errCh:       errCh,
+		producerCtx: ctx,
+	}
+
+	for {
+		writer := e.ready.nextWriter(ctx)
+
+		if writer == nil {
 			return false, nil // a downgraded connection
 		}
 
-		err = stream.SendAndWait(ctx, data)
+		err := writer.sendAndWait(ctx, errCh, wri)
 		if err != nil && errors.Is(err, ErrStreamRestarting) {
 			continue // an internal retry
 
@@ -254,4 +330,31 @@ func (e *Exporter) Shutdown(_ context.Context) error {
 	e.cancel()
 	e.wg.Wait()
 	return nil
+}
+
+// waitForWrite waits for the first of the following:
+// 1. This context timeout
+// 2. Completion with err == nil or err != nil
+// 3. Downgrade
+func waitForWrite(ctx context.Context, errCh <-chan error, down <-chan struct{}) error {
+	select {
+	case <-ctx.Done():
+		// This caller's context timed out.
+		return ctx.Err()
+	case <-down:
+		return ErrStreamRestarting
+	case err := <-errCh:
+		// Note: includes err == nil and err != nil cases.
+		return err
+	}
+}
+
+// newDoneCancel returns a doneCancel, which is a new context with
+// type that carries its done and cancel function.
+func newDoneCancel(ctx context.Context) (context.Context, doneCancel) {
+	ctx, cancel := context.WithCancel(ctx)
+	return ctx, doneCancel{
+		done:   ctx.Done(),
+		cancel: cancel,
+	}
 }

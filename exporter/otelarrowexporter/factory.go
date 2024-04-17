@@ -57,7 +57,8 @@ func createDefaultConfig() component.Config {
 			NumStreams:        runtime.NumCPU(),
 			MaxStreamLifetime: time.Hour,
 
-			Zstd: zstd.DefaultEncoderConfig(),
+			Zstd:        zstd.DefaultEncoderConfig(),
+			Prioritizer: arrow.DefaultPrioritizer,
 
 			// PayloadCompression is off by default because gRPC
 			// compression is on by default, above.

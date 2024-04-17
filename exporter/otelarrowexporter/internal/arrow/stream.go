@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 	"sync"
 	"time"
 
@@ -17,7 +16,6 @@ import (
 	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -31,7 +29,6 @@ import (
 	"golang.org/x/net/http2/hpack"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 )
 
@@ -47,10 +44,7 @@ type Stream struct {
 	producer arrowRecord.ProducerAPI
 
 	// prioritizer has a reference to the stream, this allows it to be severed.
-	prioritizer *streamPrioritizer
-
-	// perRPCCredentials from the auth extension, or nil.
-	perRPCCredentials credentials.PerRPCCredentials
+	prioritizer streamPrioritizer
 
 	// telemetry are a copy of the exporter's telemetry settings
 	telemetry component.TelemetrySettings
@@ -66,18 +60,28 @@ type Stream struct {
 	// method the gRPC method name, used for additional instrumentation.
 	method string
 
-	// toWrite is passes a batch from the sender to the stream writer, which
-	// includes a dedicated channel for the response.
+	// netReporter provides network-level metrics.
+	netReporter netstats.Interface
+
+	// streamWorkState is the interface to prioritizer/balancer, contains
+	// outstanding request (by batch ID) and the write channel used by
+	// the stream.  All of this state will be inherited by the successor
+	// stream.
+	workState *streamWorkState
+}
+
+// streamWorkState contains the state assigned to an Arrow stream.  When
+// a stream shuts down, the work state is handed to the replacement stream.
+type streamWorkState struct {
+	// toWrite is used to pass pending data between a caller, the
+	// prioritizer and a stream.
 	toWrite chan writeItem
 
-	// lock protects waiters.
+	// lock protects waiters
 	lock sync.Mutex
 
 	// waiters is the response channel for each active batch.
-	waiters map[int64]chan error
-
-	// netReporter provides network-level metrics.
-	netReporter netstats.Interface
+	waiters map[int64]chan<- error
 }
 
 // writeItem is passed from the sender (a pipeline consumer) to the
@@ -88,70 +92,80 @@ type writeItem struct {
 	// md is the caller's metadata, derived from its context.
 	md map[string]string
 	// errCh is used by the stream reader to unblock the sender
-	errCh chan error
+	// to the stream side, this is a `chan<-`. to the send side,
+	// this is a `<-chan`.
+	errCh chan<- error
 	// uncompSize is computed by the appropriate sizer (in the
 	// caller's goroutine)
 	uncompSize int
-	// parent will be used to create a span around the stream request.
-	parent context.Context
+	// producerCtx is used for tracing purposes.
+	producerCtx context.Context
 }
 
 // newStream constructs a stream
 func newStream(
 	producer arrowRecord.ProducerAPI,
-	prioritizer *streamPrioritizer,
+	prioritizer streamPrioritizer,
 	telemetry component.TelemetrySettings,
-	perRPCCredentials credentials.PerRPCCredentials,
 	netReporter netstats.Interface,
+	workState *streamWorkState,
 ) *Stream {
 	tracer := telemetry.TracerProvider.Tracer("otel-arrow-exporter")
 	return &Stream{
-		producer:          producer,
-		prioritizer:       prioritizer,
-		perRPCCredentials: perRPCCredentials,
-		telemetry:         telemetry,
-		tracer:            tracer,
-		toWrite:           make(chan writeItem, 1),
-		waiters:           map[int64]chan error{},
-		netReporter:       netReporter,
+		producer:    producer,
+		prioritizer: prioritizer,
+		telemetry:   telemetry,
+		tracer:      tracer,
+		netReporter: netReporter,
+		workState:   workState,
 	}
 }
 
 // setBatchChannel places a waiting consumer's batchID into the waiters map, where
 // the stream reader may find it.
-func (s *Stream) setBatchChannel(batchID int64, errCh chan error) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+func (s *Stream) setBatchChannel(batchID int64, errCh chan<- error) {
+	s.workState.lock.Lock()
+	defer s.workState.lock.Unlock()
 
-	s.waiters[batchID] = errCh
+	s.workState.waiters[batchID] = errCh
 }
 
-func (s *Stream) logStreamError(err error) {
-	isEOF := errors.Is(err, io.EOF)
-	isCanceled := errors.Is(err, context.Canceled)
-
-	switch {
-	case !isEOF && !isCanceled:
-		s.telemetry.Logger.Error("arrow stream error", zap.Error(err))
-	case isEOF:
-		s.telemetry.Logger.Debug("arrow stream end")
-	case isCanceled:
-		s.telemetry.Logger.Debug("arrow stream canceled")
+// logStreamError decides how to log an error.  `which` indicates the
+// stream direction, will be "reader" or "writer".
+func (s *Stream) logStreamError(which string, err error) {
+	var code codes.Code
+	var msg string
+	// gRPC tends to supply status-wrapped errors, so we always
+	// unpack them.  A wrapped Canceled code indicates intentional
+	// shutdown, which can be due to normal causes (EOF, e.g.,
+	// max-stream-lifetime reached) or unusual causes (Canceled,
+	// e.g., because the other stream direction reached an error).
+	if status, ok := status.FromError(err); ok {
+		code = status.Code()
+		msg = status.Message()
+	} else if errors.Is(err, io.EOF) || errors.Is(err, context.Canceled) {
+		code = codes.Canceled
+		msg = err.Error()
+	} else {
+		code = codes.Internal
+		msg = err.Error()
+	}
+	if code == codes.Canceled {
+		s.telemetry.Logger.Debug("arrow stream shutdown", zap.String("which", which), zap.String("message", msg))
+	} else {
+		s.telemetry.Logger.Error("arrow stream error", zap.String("which", which), zap.String("message", msg), zap.Int("code", int(code)))
 	}
 }
 
 // run blocks the calling goroutine while executing stream logic.  run
 // will return when the reader and writer are finished.  errors will be logged.
-func (s *Stream) run(bgctx context.Context, streamClient StreamClientFunc, grpcOptions []grpc.CallOption) {
-	ctx, cancel := context.WithCancel(bgctx)
-	defer cancel()
-
+func (s *Stream) run(ctx context.Context, dc doneCancel, streamClient StreamClientFunc, grpcOptions []grpc.CallOption) {
 	sc, method, err := streamClient(ctx, grpcOptions...)
 	if err != nil {
 		// Returning with stream.client == nil signals the
 		// lack of an Arrow stream endpoint.  When all the
 		// streams return with .client == nil, the ready
-		// channel will be closed.
+		// channel will be closed, which causes downgrade.
 		//
 		// Note: These are gRPC server internal errors and
 		// will cause downgrade to standard OTLP.  These
@@ -161,8 +175,6 @@ func (s *Stream) run(bgctx context.Context, streamClient StreamClientFunc, grpcO
 		// gRPC server the first Unimplemented code is
 		// generally delivered to the Recv() call below, so
 		// this code path is not taken for an ordinary downgrade.
-		//
-		// TODO: a more graceful recovery strategy?
 		s.telemetry.Logger.Error("cannot start arrow stream", zap.Error(err))
 		return
 	}
@@ -182,7 +194,7 @@ func (s *Stream) run(bgctx context.Context, streamClient StreamClientFunc, grpcO
 		defer ww.Done()
 		writeErr = s.write(ctx)
 		if writeErr != nil {
-			cancel()
+			dc.cancel()
 		}
 	}()
 
@@ -191,103 +203,52 @@ func (s *Stream) run(bgctx context.Context, streamClient StreamClientFunc, grpcO
 	err = s.read(ctx)
 
 	// Wait for the writer to ensure that all waiters are known.
-	cancel()
+	dc.cancel()
 	ww.Wait()
 
 	if err != nil {
 		// This branch is reached with an unimplemented status
 		// with or without the WaitForReady flag.
-		status, ok := status.FromError(err)
-
-		if ok {
-			switch status.Code() {
-			case codes.Unimplemented:
-				// This (client == nil) signals the controller
-				// to downgrade when all streams have returned
-				// in that status.
-				//
-				// TODO: Note there are partial failure modes
-				// that will continue to function in a
-				// degraded mode, such as when half of the
-				// streams are successful and half of streams
-				// take this return path.  Design a graceful
-				// recovery mechanism?
-				s.client = nil
-				s.telemetry.Logger.Info("arrow is not supported",
-					zap.String("message", status.Message()),
-				)
-
-			case codes.Unavailable, codes.Internal:
-				// gRPC returns this when max connection age is reached.
-				// The message string will contain NO_ERROR if it's a
-				// graceful shutdown.
-				//
-				// Having seen:
-				//
-				//     arrow stream unknown {"kind": "exporter",
-				//     "data_type": "traces", "name": "otlp/traces",
-				//     "code": 13, "message": "stream terminated by
-				//     RST_STREAM with error code: NO_ERROR"}
-				//
-				// from the default case below print `"code": 13`, this
-				// branch is now used for both Unavailable (witnessed
-				// in local testing) and Internal (witnessed in
-				// production); in both cases "NO_ERROR" is the key
-				// signifier.
-				if strings.Contains(status.Message(), "NO_ERROR") {
-					s.telemetry.Logger.Error("arrow stream reset (consider lowering max_stream_lifetime)",
-						zap.String("message", status.Message()),
-					)
-				} else {
-					s.telemetry.Logger.Error("arrow stream unavailable",
-						zap.String("message", status.Message()),
-					)
-				}
-
-			case codes.Canceled:
-				// Note that when the writer encounters a local error (such
-				// as a panic in the encoder) it will cancel the context and
-				// writeErr will be set to an actual error, while the error
-				// returned from read() will be the cancellation by the
-				// writer. So if the reader's error is canceled and the
-				// writer's error is non-nil, use it instead.
-				if writeErr != nil {
-					s.telemetry.Logger.Error("arrow stream internal error",
-						zap.Error(writeErr),
-					)
-					// reset the writeErr so it doesn't print below.
-					writeErr = nil
-				} else {
-					s.telemetry.Logger.Error("arrow stream canceled",
-						zap.String("message", status.Message()),
-					)
-				}
-			default:
-				s.telemetry.Logger.Error("arrow stream unknown",
-					zap.Uint32("code", uint32(status.Code())),
-					zap.String("message", status.Message()),
-				)
-			}
+		if status, ok := status.FromError(err); ok && status.Code() == codes.Unimplemented {
+			// This (client == nil) signals the controller to
+			// downgrade when all streams have returned in that
+			// status.
+			//
+			// This is a special case because we reset s.client,
+			// which sets up a downgrade after the streams return.
+			s.client = nil
+			s.telemetry.Logger.Info("arrow is not supported",
+				zap.String("message", status.Message()),
+			)
 		} else {
-			s.logStreamError(err)
+			// All other cases, use the standard log handler.
+			s.logStreamError("reader", err)
 		}
 	}
 	if writeErr != nil {
-		s.logStreamError(writeErr)
+		s.logStreamError("writer", writeErr)
 	}
+
+	s.workState.lock.Lock()
+	defer s.workState.lock.Unlock()
 
 	// The reader and writer have both finished; respond to any
 	// outstanding waiters.
-	for _, ch := range s.waiters {
+	for _, ch := range s.workState.waiters {
 		// Note: the top-level OTLP exporter will retry.
 		ch <- ErrStreamRestarting
 	}
+
+	s.workState.waiters = map[int64]chan<- error{}
 }
 
 // write repeatedly places this stream into the next-available queue, then
 // performs a blocking send().  This returns when the data is in the write buffer,
 // the caller waiting on its error channel.
-func (s *Stream) write(ctx context.Context) error {
+func (s *Stream) write(ctx context.Context) (retErr error) {
+	// always close send()
+	defer s.client.CloseSend()
+
 	// headers are encoding using hpack, reusing a buffer on each call.
 	var hdrsBuf bytes.Buffer
 	hdrsEnc := hpack.NewEncoder(&hdrsBuf)
@@ -300,29 +261,14 @@ func (s *Stream) write(ctx context.Context) error {
 	}
 
 	for {
-		// Note: this can't block b/c stream has capacity &
-		// individual streams shut down synchronously.
-		s.prioritizer.setReady(s)
-
 		// this can block, and if the context is canceled we
 		// wait for the reader to find this stream.
 		var wri writeItem
-		var ok bool
 		select {
 		case <-timerCh:
-			// If timerCh is nil, this will never happen.
-			s.prioritizer.removeReady(s)
-			return s.client.CloseSend()
-		case wri, ok = <-s.toWrite:
-			// channel is closed
-			if !ok {
-				return nil
-			}
+			return nil
+		case wri = <-s.workState.toWrite:
 		case <-ctx.Done():
-			// Because we did not <-stream.toWrite, there
-			// is a potential sender race since the stream
-			// is currently in the ready set.
-			s.prioritizer.removeReady(s)
 			return ctx.Err()
 		}
 
@@ -337,7 +283,7 @@ func (s *Stream) write(ctx context.Context) error {
 }
 
 func (s *Stream) encodeAndSend(wri writeItem, hdrsBuf *bytes.Buffer, hdrsEnc *hpack.Encoder) (retErr error) {
-	ctx, span := s.tracer.Start(wri.parent, "otel_arrow_stream_send")
+	ctx, span := s.tracer.Start(wri.producerCtx, "otel_arrow_stream_send")
 	defer span.End()
 
 	defer func() {
@@ -351,6 +297,7 @@ func (s *Stream) encodeAndSend(wri writeItem, hdrsBuf *bytes.Buffer, hdrsEnc *hp
 	// are no fields, it's a no-op propagator implementation and
 	// we can skip the allocations inside this block.
 	prop := otel.GetTextMapPropagator()
+
 	if len(prop.Fields()) > 0 {
 		// When the incoming context carries nothing, the map
 		// will be nil.  Allocate, if necessary.
@@ -432,41 +379,32 @@ func (s *Stream) read(_ context.Context) error {
 			return err
 		}
 
-		// This indicates the server received EOF from client shutdown.
-		// This is not an error because this is an expected shutdown
-		// initiated by the client by setting max_stream_lifetime.
-		if resp.StatusCode == arrowpb.StatusCode_CANCELED {
-			return nil
-		}
-
 		if err = s.processBatchStatus(resp); err != nil {
 			return fmt.Errorf("process: %w", err)
 		}
 	}
 }
 
-// getSenderChannels takes the stream lock and removes the
-// corresonding sender channel for each BatchId.  They are returned
-// with the same index as the original status, for correlation.  Nil
-// channels will be returned when there are errors locating the
+// getSenderChannel takes the stream lock and removes the corresonding
 // sender channel.
-func (s *Stream) getSenderChannels(status *arrowpb.BatchStatus) (chan error, error) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+func (sws *streamWorkState) getSenderChannel(status *arrowpb.BatchStatus) (chan<- error, error) {
+	sws.lock.Lock()
+	defer sws.lock.Unlock()
 
-	ch, ok := s.waiters[status.BatchId]
+	ch, ok := sws.waiters[status.BatchId]
 	if !ok {
 		// Will break the stream.
 		return nil, fmt.Errorf("unrecognized batch ID: %d", status.BatchId)
 	}
-	delete(s.waiters, status.BatchId)
+
+	delete(sws.waiters, status.BatchId)
 	return ch, nil
 }
 
 // processBatchStatus processes a single response from the server and unblocks the
 // associated sender.
 func (s *Stream) processBatchStatus(ss *arrowpb.BatchStatus) error {
-	ch, ret := s.getSenderChannels(ss)
+	ch, ret := s.workState.getSenderChannel(ss)
 
 	if ch == nil {
 		// In case getSenderChannels encounters a problem, the
@@ -493,8 +431,10 @@ func (s *Stream) processBatchStatus(ss *arrowpb.BatchStatus) error {
 		// Retry behavior is configurable
 		err = status.Errorf(codes.ResourceExhausted, "resource exhausted: %d: %s", ss.BatchId, ss.StatusMessage)
 	default:
-		// Note: case arrowpb.StatusCode_CANCELED (a.k.a. codes.Canceled)
-		// is handled before calling processBatchStatus().
+		// Note: a Canceled StatusCode was once returned by receivers following
+		// a CloseSend() from the exporter.  This is now handled using error
+		// status codes.  If an exporter is upgraded before a receiver, the exporter
+		// will log this error when the receiver closes streams.
 
 		// Unrecognized status code.
 		err = status.Errorf(codes.Internal, "unexpected stream response: %d: %s", ss.BatchId, ss.StatusMessage)
@@ -504,70 +444,6 @@ func (s *Stream) processBatchStatus(ss *arrowpb.BatchStatus) error {
 	}
 	ch <- err
 	return ret
-}
-
-// SendAndWait submits a batch of records to be encoded and sent.  Meanwhile, this
-// goroutine waits on the incoming context or for the asynchronous response to be
-// received by the stream reader.
-func (s *Stream) SendAndWait(ctx context.Context, records any) error {
-	errCh := make(chan error, 1)
-
-	// Note that if the OTLP exporter's gRPC Headers field was
-	// set, those (static) headers were used to establish the
-	// stream.  The caller's context was returned by
-	// baseExporter.enhanceContext() includes the static headers
-	// plus optional client metadata.  Here, get whatever
-	// headers that gRPC would have transmitted for a unary RPC
-	// and convey them via the Arrow batch.
-
-	// Note that the "uri" parameter to GetRequestMetadata is
-	// not used by the headersetter extension and is not well
-	// documented.  Since it's an optional list, we omit it.
-	var md map[string]string
-	if s.perRPCCredentials != nil {
-		var err error
-		md, err = s.perRPCCredentials.GetRequestMetadata(ctx)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Note that the uncompressed size as measured by the receiver
-	// will be different than uncompressed size as measured by the
-	// exporter, because of the optimization phase performed in the
-	// conversion to Arrow.
-	var uncompSize int
-	if s.telemetry.MetricsLevel > configtelemetry.LevelNormal {
-		switch data := records.(type) {
-		case ptrace.Traces:
-			var sizer ptrace.ProtoMarshaler
-			uncompSize = sizer.TracesSize(data)
-		case plog.Logs:
-			var sizer plog.ProtoMarshaler
-			uncompSize = sizer.LogsSize(data)
-		case pmetric.Metrics:
-			var sizer pmetric.ProtoMarshaler
-			uncompSize = sizer.MetricsSize(data)
-		}
-	}
-
-	s.toWrite <- writeItem{
-		records:    records,
-		md:         md,
-		uncompSize: uncompSize,
-		errCh:      errCh,
-		parent:     ctx,
-	}
-
-	// Note this ensures the caller's timeout is respected.
-	select {
-	case <-ctx.Done():
-		// This caller's context timed out.
-		return ctx.Err()
-	case err := <-errCh:
-		// Note: includes err == nil and err != nil cases.
-		return err
-	}
 }
 
 // encode produces the next batch of Arrow records.

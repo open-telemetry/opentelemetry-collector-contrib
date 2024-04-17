@@ -148,7 +148,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 			arrowCallOpts = append(arrowCallOpts, e.config.Arrow.Zstd.CallOption())
 		}
 
-		e.arrow = arrow.NewExporter(e.config.Arrow.MaxStreamLifetime, e.config.Arrow.NumStreams, e.config.Arrow.DisableDowngrade, e.settings.TelemetrySettings, arrowCallOpts, func() arrowRecord.ProducerAPI {
+		e.arrow = arrow.NewExporter(e.config.Arrow.MaxStreamLifetime, e.config.Arrow.NumStreams, e.config.Arrow.Prioritizer, e.config.Arrow.DisableDowngrade, e.settings.TelemetrySettings, arrowCallOpts, func() arrowRecord.ProducerAPI {
 			return arrowRecord.NewProducerWithOptions(arrowOpts...)
 		}, e.streamClientFactory(e.clientConn), perRPCCreds, e.netReporter)
 

@@ -5,76 +5,103 @@ package arrow // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 var ErrStreamRestarting = status.Error(codes.Aborted, "stream is restarting")
 
-// streamPrioritizer is a placeholder for a configurable mechanism
-// that selects the next stream to write.
-type streamPrioritizer struct {
-	// done corresponds with the background context Done channel..
-	done <-chan struct{}
+type PrioritizerName string
 
-	// channel will be closed to downgrade to standard OTLP,
-	// otherwise it returns the first-available.
-	channel chan *Stream
+var _ component.ConfigValidator = PrioritizerName("")
+
+const (
+	DefaultPrioritizer         PrioritizerName = FifoPrioritizer
+	FifoPrioritizer            PrioritizerName = "fifo"
+	LeastLoadedTwoPrioritizer  PrioritizerName = llPrefix + "2"
+	LeastLoadedFourPrioritizer PrioritizerName = llPrefix + "4"
+	unsetPrioritizer           PrioritizerName = ""
+
+	llPrefix            = "leastloaded"
+	defaultLeastLoadedN = 4
+)
+
+// streamPrioritizer is an interface for prioritizing multiple
+// streams.
+type streamPrioritizer interface {
+	// nextWriter gets the next stream writer.  In case the exporter
+	// was downgraded, returns nil.
+	nextWriter(context.Context) streamWriter
+
+	// downgrade is called with the root context of the exporter,
+	// and may block indefinitely.  this allows the prioritizer to
+	// drain its channel(s) until the exporter shuts down.
+	downgrade(context.Context)
 }
 
-// newStreamPrioritizer constructs a channel-based first-available prioritizer.
-func newStreamPrioritizer(bgctx context.Context, numStreams int) *streamPrioritizer {
-	return &streamPrioritizer{
-		done:    bgctx.Done(),
-		channel: make(chan *Stream, numStreams),
+// streamWriter is the caller's interface to a stream.
+type streamWriter interface {
+	// sendAndWait is called to begin a write.  After completing
+	// the call, wait on writeItem.errCh for the response.
+	sendAndWait(context.Context, <-chan error, writeItem) error
+}
+
+func newStreamPrioritizer(dc doneCancel, name PrioritizerName, numStreams int) (streamPrioritizer, []*streamWorkState) {
+	if name == unsetPrioritizer {
+		name = DefaultPrioritizer
 	}
+	if strings.HasPrefix(string(name), llPrefix) {
+		// error was checked and reported in Validate; in this function,
+		n, err := strconv.Atoi(string(name[len(llPrefix):]))
+		if err != nil {
+			n = defaultLeastLoadedN
+		}
+		return newBestOfNPrioritizer(dc, n, numStreams, pendingRequests)
+	}
+	return newFifoPrioritizer(dc, numStreams)
 }
 
-// downgrade indicates that streams are never going to be ready.  Note
-// the caller is required to ensure that setReady() and removeReady()
-// cannot be called concurrently; this is done by waiting for
-// Stream.writeStream() calls to return before downgrading.
-func (sp *streamPrioritizer) downgrade() {
-	close(sp.channel)
+// pendingRequests is the load function used by leastloadedN.
+func pendingRequests(sws *streamWorkState) float64 {
+	sws.lock.Lock()
+	defer sws.lock.Unlock()
+	return float64(len(sws.waiters) + len(sws.toWrite))
 }
 
-// readyChannel returns channel to select a ready stream.  The caller
-// is expected to select on this and ctx.Done() simultaneously.  If
-// the exporter is downgraded, the channel will be closed.
-func (sp *streamPrioritizer) readyChannel() chan *Stream {
-	return sp.channel
+// Validate implements component.ConfigValidator
+func (p PrioritizerName) Validate() error {
+	switch p {
+	case FifoPrioritizer, unsetPrioritizer:
+		return nil
+	}
+	if !strings.HasPrefix(string(p), llPrefix) {
+		return fmt.Errorf("unrecognized prioritizer: %q", string(p))
+	}
+	_, err := strconv.Atoi(string(p[len(llPrefix):]))
+	if err != nil {
+		return fmt.Errorf("invalid prioritizer: %q", string(p))
+	}
+	return nil
 }
 
-// setReady marks this stream ready for use.
-func (sp *streamPrioritizer) setReady(stream *Stream) {
-	// Note: downgrade() can't be called concurrently.
-	sp.channel <- stream
-}
-
-// removeReady removes this stream from the ready set, used in cases
-// where the stream has broken unexpectedly.
-func (sp *streamPrioritizer) removeReady(stream *Stream) {
-	// Note: downgrade() can't be called concurrently.
+// drain helps avoid a race condition when downgrade happens, it ensures that
+// any late-arriving work will immediately see ErrStreamRestarting, and this
+// continues until the exporter shuts down.
+//
+// Note: the downgrade function is a major source of complexity and it is
+// probably best removed, instead of having this level of complexity.
+func drain(ch <-chan writeItem, done <-chan struct{}) {
 	for {
-		// Searching for this stream to get it out of the ready queue.
 		select {
-		case <-sp.done:
-			// Shutdown case
+		case <-done:
 			return
-		case alternate := <-sp.channel:
-			if alternate == stream {
-				// Success: removed from ready queue.
-				return
-			}
-			sp.channel <- alternate
-		case wri := <-stream.toWrite:
-			// A consumer got us first, means this stream has been removed
-			// from the ready queue.
-			//
-			// Note: the top-level OTLP exporter will retry.
-			wri.errCh <- ErrStreamRestarting
-			return
+		case item := <-ch:
+			item.errCh <- ErrStreamRestarting
 		}
 	}
 }
