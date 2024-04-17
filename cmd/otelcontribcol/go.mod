@@ -4,6 +4,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 
 go 1.21.0
 
+toolchain go1.21.9
+
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.98.0
