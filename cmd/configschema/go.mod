@@ -244,7 +244,7 @@ require (
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/ReneKroon/ttlcache/v2 v2.11.0 // indirect
-	github.com/SAP/go-hdb v1.8.12 // indirect
+	github.com/SAP/go-hdb v1.8.15 // indirect
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
 	github.com/aerospike/aerospike-client-go/v6 v6.13.0 // indirect
@@ -321,7 +321,7 @@ require (
 	github.com/envoyproxy/go-control-plane v0.12.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
 	github.com/euank/go-kmsg-parser v2.0.0+incompatible // indirect
-	github.com/expr-lang/expr v1.16.4 // indirect
+	github.com/expr-lang/expr v1.16.5 // indirect
 	github.com/facebook/time v0.0.0-20240109160331-d1456d1a6bac // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -451,6 +451,7 @@ require (
 	github.com/mistifyio/go-zfs v2.1.2-0.20190413222219-f784269be439+incompatible // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
+	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/hashstructure v1.1.0 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
@@ -496,6 +497,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.98.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.98.0 // indirect
@@ -687,7 +689,7 @@ require (
 	golang.org/x/tools v0.19.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gonum.org/v1/gonum v0.15.0 // indirect
-	google.golang.org/api v0.172.0 // indirect
+	google.golang.org/api v0.173.0 // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240318140521-94a12d6c2237 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda // indirect
@@ -1152,3 +1154,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/enco
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ../../extension/ackextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector => ../../connector/grafanacloudconnector
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension => ../../extension/sumologicextension

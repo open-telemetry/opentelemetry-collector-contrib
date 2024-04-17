@@ -35,7 +35,7 @@ require (
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
-	github.com/SAP/go-hdb v1.8.12 // indirect
+	github.com/SAP/go-hdb v1.8.15 // indirect
 	github.com/apache/arrow/go/v15 v15.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.22.2 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
@@ -62,7 +62,7 @@ require (
 	github.com/docker/docker v25.0.5+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
-	github.com/expr-lang/expr v1.16.4 // indirect
+	github.com/expr-lang/expr v1.16.5 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
