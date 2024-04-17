@@ -12,13 +12,15 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+	"golang.org/x/net/websocket"
+	"golang.org/x/time/rate"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	"go.uber.org/zap"
-	"golang.org/x/net/websocket"
 )
 
 type wsprocessor struct {
@@ -27,6 +29,7 @@ type wsprocessor struct {
 	server            *http.Server
 	shutdownWG        sync.WaitGroup
 	cs                *channelSet
+	limiter           *rate.Limiter
 }
 
 var logMarshaler = &plog.JSONMarshaler{}
@@ -38,6 +41,7 @@ func newProcessor(settings processor.CreateSettings, config *Config) *wsprocesso
 		config:            config,
 		telemetrySettings: settings.TelemetrySettings,
 		cs:                newChannelSet(),
+		limiter:           rate.NewLimiter(config.Limit, int(config.Limit)),
 	}
 }
 
@@ -93,7 +97,7 @@ func (w *wsprocessor) ConsumeMetrics(_ context.Context, md pmetric.Metrics) (pme
 	if err != nil {
 		w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
 	} else {
-		w.cs.writeBytes(b)
+		w.writeToChannelSet(b)
 	}
 	return md, nil
 }
@@ -103,7 +107,7 @@ func (w *wsprocessor) ConsumeLogs(_ context.Context, ld plog.Logs) (plog.Logs, e
 	if err != nil {
 		w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
 	} else {
-		w.cs.writeBytes(b)
+		w.writeToChannelSet(b)
 	}
 	return ld, nil
 }
@@ -113,7 +117,17 @@ func (w *wsprocessor) ConsumeTraces(_ context.Context, td ptrace.Traces) (ptrace
 	if err != nil {
 		w.telemetrySettings.Logger.Debug("Error serializing to JSON", zap.Error(err))
 	} else {
-		w.cs.writeBytes(b)
+		w.writeToChannelSet(b)
 	}
 	return td, nil
+}
+
+func (w *wsprocessor) writeToChannelSet(b []byte) {
+	if len(b) == 0 {
+		return
+	}
+
+	if w.limiter.Allow() {
+		w.cs.writeBytes(b)
+	}
 }
