@@ -74,24 +74,24 @@ func (cr *customCapabilityRegistry) Register(capability string, listener CustomC
 	return cc, nil
 }
 
-// ProcessMessage processes a custom message, asynchronously broadcasting it to all registered callbacks for
+// ProcessMessage processes a custom message, asynchronously broadcasting it to all registered listeners for
 // the messages capability.
 func (cr customCapabilityRegistry) ProcessMessage(cm *protobufs.CustomMessage) {
 	cr.mux.Lock()
 	defer cr.mux.Unlock()
 
-	callbacks, ok := cr.capabilityToListeners[cm.Capability]
+	listeners, ok := cr.capabilityToListeners[cm.Capability]
 	if !ok {
 		return
 	}
 
-	for node := callbacks.Front(); node != nil; node = node.Next() {
+	for node := listeners.Front(); node != nil; node = node.Next() {
 		listener, ok := node.Value.(CustomCapabilityListener)
 		if !ok {
 			continue
 		}
 
-		// Let the callback process asynchronously in a separate goroutine so it can't block
+		// Let the listener process asynchronously in a separate goroutine so it can't block
 		// the opamp extension
 		go listener.ReceiveMessage(cm)
 	}
@@ -115,17 +115,17 @@ func (cr *customCapabilityRegistry) waitForListenerDone(capability string, liste
 	cr.removeCustomCapabilityListener(capability, listenerElem)
 }
 
-// removeCustomCapabilityListener removes the custom capability with the given callback list element,
+// removeCustomCapabilityListener removes the custom capability with the given listener list element,
 // then recalculates and sets the list of custom capabilities on the OpAMP client.
 func (cr *customCapabilityRegistry) removeCustomCapabilityListener(capability string, listenerElement *list.Element) {
 	cr.mux.Lock()
 	defer cr.mux.Unlock()
 
-	callbackList := cr.capabilityToListeners[capability]
-	callbackList.Remove(listenerElement)
+	listenerList := cr.capabilityToListeners[capability]
+	listenerList.Remove(listenerElement)
 
-	if callbackList.Front() == nil {
-		// Since there are no more callbacks for this capability,
+	if listenerList.Front() == nil {
+		// Since there are no more listeners for this capability,
 		// this capability is no longer supported
 		delete(cr.capabilityToListeners, capability)
 	}
@@ -136,13 +136,13 @@ func (cr *customCapabilityRegistry) removeCustomCapabilityListener(capability st
 	})
 	if err != nil {
 		// It's OK if we couldn't actually remove the capability, it just means we won't
-		// notify the server properly, and the server may send us messages that we have no associated callbacks for.
+		// notify the server properly, and the server may send us messages that we have no associated listeners for.
 		cr.logger.Error("Failed to set new capabilities", zap.Error(err))
 	}
 }
 
 // capabilities gives the current set of custom capabilities with at least one
-// callback registered.
+// listener registered.
 func (cr *customCapabilityRegistry) capabilities() []string {
 	return maps.Keys(cr.capabilityToListeners)
 }
