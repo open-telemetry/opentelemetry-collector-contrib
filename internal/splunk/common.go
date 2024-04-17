@@ -39,7 +39,7 @@ type AccessTokenPassthroughConfig struct {
 	AccessTokenPassthrough bool `mapstructure:"access_token_passthrough"`
 }
 
-// Event represents a metric in Splunk HEC receiver/splunkhecreceiver/receiver.goformat
+// Event represents a metric in Splunk HEC format
 type Event struct {
 	Time       float64        `json:"time,omitempty"`       // optional epoch time - set to zero if the event timestamp is missing or unknown (will be added at indexing time)
 	Host       string         `json:"host"`                 // hostname

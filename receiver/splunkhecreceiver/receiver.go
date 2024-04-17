@@ -404,7 +404,8 @@ func (r *splunkReceiver) validateChannelHeader(channelID string) error {
 		return errors.New(responseErrDataChannelMissing)
 	}
 
-	// check validity of channel
+	// channel id must be a valid uuid
+	// https://docs.splunk.com/Documentation/Splunk/9.2.1/Data/AboutHECIDXAck#:~:text=close%20the%20file.-,About%20channels%20and%20sending%20data,-Sending%20events%20to
 	_, err := uuid.Parse(channelID)
 	if err != nil {
 		return errors.New(responseErrInvalidDataChannel)
