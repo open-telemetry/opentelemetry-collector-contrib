@@ -74,8 +74,7 @@ jobs:
           - receiver-1
           - receiver-2
           - receiver-3
-          - processor-0
-          - processor-1
+          - processor
           - exporter-0
           - exporter-1
           - extension
@@ -140,8 +139,7 @@ jobs:
           - receiver-1
           - receiver-2
           - receiver-3
-          - processor-0
-          - processor-1
+          - processor
           - exporter-0
           - exporter-1
           - extension
@@ -257,8 +255,7 @@ jobs:
           - receiver-1
           - receiver-2
           - receiver-3
-          - processor-0
-          - processor-1
+          - processor
           - exporter-0
           - exporter-1
           - extension
@@ -352,8 +349,7 @@ jobs:
           - receiver-1
           - receiver-2
           - receiver-3
-          - processor-0
-          - processor-1
+          - processor
           - exporter-0
           - exporter-1
           - extension
