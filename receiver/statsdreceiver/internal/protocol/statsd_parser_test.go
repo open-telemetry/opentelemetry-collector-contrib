@@ -606,7 +606,6 @@ func testStatsDMetric(
 ) statsDMetric {
 	if len(labelKeys) > 0 {
 		var kvs []attribute.KeyValue
-		var sortable attribute.Sortable
 		for n, k := range labelKeys {
 			kvs = append(kvs, attribute.String(k, labelValue[n]))
 		}
@@ -614,7 +613,7 @@ func testStatsDMetric(
 			description: statsDMetricDescription{
 				name:       name,
 				metricType: metricType,
-				attrs:      attribute.NewSetWithSortable(kvs, &sortable),
+				attrs:      attribute.NewSet(kvs...),
 			},
 			asFloat:    asFloat,
 			addition:   addition,
@@ -638,14 +637,13 @@ func testStatsDMetric(
 
 func testDescription(name string, metricType MetricType, keys []string, values []string) statsDMetricDescription {
 	var kvs []attribute.KeyValue
-	var sortable attribute.Sortable
 	for n, k := range keys {
 		kvs = append(kvs, attribute.String(k, values[n]))
 	}
 	return statsDMetricDescription{
 		name:       name,
 		metricType: metricType,
-		attrs:      attribute.NewSetWithSortable(kvs, &sortable),
+		attrs:      attribute.NewSet(kvs...),
 	}
 }
 

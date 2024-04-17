@@ -4,6 +4,7 @@
 package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -80,7 +81,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.TLS != nil {
-		_, err := c.TLS.LoadTLSConfig()
+		_, err := c.TLS.LoadTLSConfig(context.Background())
 		if err != nil {
 			allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errFailedTLSLoad, err.Error()))
 		}

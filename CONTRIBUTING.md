@@ -226,8 +226,9 @@ When submitting a component to the community, consider breaking it down into sep
   size of this PR is larger than the recommended size consider splitting it in
   multiple PRs.
 * **Last PR** should mark the new component as `Alpha` stability and add it to the `cmd/otelcontribcol`
-  binary by updating the `cmd/otelcontribcol/components.go` file. The component must be enabled
-  only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
+  binary by updating the `cmd/otelcontribcol/builder-config.yaml` file and running `make genotelcontribcol`.
+  The component's tests must also be added as a part of its respective `component_type_tests.go` file in the `cmd/otelcontribcol` directory.
+  The component must be enabled only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
 * Once a new component has been added to the executable, please add the component
   to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 

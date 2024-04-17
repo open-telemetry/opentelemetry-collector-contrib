@@ -58,7 +58,7 @@ func newPrometheusExporter(config *Config, set exporter.CreateSettings) (*promet
 }
 
 func (pe *prometheusExporter) Start(ctx context.Context, host component.Host) error {
-	ln, err := pe.config.ToListenerContext(ctx)
+	ln, err := pe.config.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (pe *prometheusExporter) Start(ctx context.Context, host component.Host) er
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", pe.handler)
-	srv, err := pe.config.ToServerContext(ctx, host, pe.settings, mux)
+	srv, err := pe.config.ToServer(ctx, host, pe.settings, mux)
 	if err != nil {
 		return err
 	}
