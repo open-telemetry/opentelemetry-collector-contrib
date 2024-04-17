@@ -21,9 +21,6 @@ var _ component.Config = (*Config)(nil)
 type Config struct {
 	// Interval is the time
 	Interval time.Duration `mapstructure:"interval"`
-
-	// MaxStaleness is the total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely.
-	MaxStaleness time.Duration `mapstructure:"max_staleness"`
 }
 
 // Validate checks whether the input configuration has all of the required fields for the processor.
@@ -31,10 +28,6 @@ type Config struct {
 func (config *Config) Validate() error {
 	if config.Interval <= 0 {
 		return ErrInvalidIntervalValue
-	}
-
-	if config.MaxStaleness < 0 {
-		return ErrInvalidMaxStatenessValue
 	}
 
 	return nil

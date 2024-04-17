@@ -15,8 +15,6 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
-// TODO: Add tests for data expiration
-
 func TestAggregation(t *testing.T) {
 	t.Parallel()
 
@@ -211,7 +209,7 @@ func TestAggregation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	config := &Config{Interval: time.Second, MaxStaleness: time.Second}
+	config := &Config{Interval: time.Second}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -257,9 +255,9 @@ func TestAggregation(t *testing.T) {
 			processor.exportMetrics()
 
 			// Processor should now be empty
-			require.Equal(t, 0, processor.numbers.Len())
-			require.Equal(t, 0, processor.histograms.Len())
-			require.Equal(t, 0, processor.expHistograms.Len())
+			require.Equal(t, 0, len(processor.numbers))
+			require.Equal(t, 0, len(processor.histograms))
+			require.Equal(t, 0, len(processor.expHistograms))
 
 			// Exporting again should return nothing
 			processor.exportMetrics()
