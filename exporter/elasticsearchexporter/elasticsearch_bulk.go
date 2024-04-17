@@ -11,6 +11,7 @@ import (
 	"crypto/tls"
 	"io"
 	"net/http"
+	"runtime"
 	"sync/atomic"
 	"time"
 
@@ -167,7 +168,7 @@ func pushDocuments(ctx context.Context, index string, document []byte, bulkIndex
 func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *Config) (*esBulkIndexerCurrent, error) {
 	numWorkers := config.NumWorkers
 	if numWorkers == 0 {
-		numWorkers = 1
+		numWorkers = runtime.NumCPU()
 	}
 
 	flushInterval := config.Flush.Interval
