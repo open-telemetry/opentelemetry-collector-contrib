@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package data
 
 import (
@@ -7,9 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 )
 
 type bins []uint64
@@ -56,22 +60,6 @@ func (bins bins) String() string {
 	return b.String()
 }
 
-func from(buckets expo.Buckets) bins {
-	counts := pmetric.ExponentialHistogramDataPointBuckets(buckets).BucketCounts()
-	off := buckets.Offset()
-	if off < 0 {
-		off = -off
-	}
-	bs := make(bins, counts.Len()+off)
-	for i := 0; i < off; i++ {
-		bs[i] = ø
-	}
-	for i := 0; i < counts.Len(); i++ {
-		bs[i+off] = counts.At(i)
-	}
-	return bs
-}
-
 func TestBucketsHelper(t *testing.T) {
 	cases := []struct {
 		bins bins
@@ -116,9 +104,9 @@ func zeros(size int) bins {
 }
 
 // observe some points with scale 0
-func (dps bins) observe0(pts ...float64) bins {
+func (bins bins) observe0(pts ...float64) bins {
 	if len(pts) == 0 {
-		return dps
+		return bins
 	}
 
 	// https://opentelemetry.io/docs/specs/otel/metrics/data-model/#scale-zero-extract-the-exponent
@@ -134,15 +122,15 @@ func (dps bins) observe0(pts ...float64) bins {
 	min := idx(pts[0])
 	max := idx(pts[len(pts)-1])
 	for i := min; i <= max; i++ {
-		if dps[i] == ø {
-			dps[i] = 0
+		if bins[i] == ø {
+			bins[i] = 0
 		}
 	}
 
 	for _, pt := range pts {
-		dps[idx(pt)] += 1
+		bins[idx(pt)]++
 	}
-	return dps
+	return bins
 }
 
 func TestObserve0(t *testing.T) {

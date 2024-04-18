@@ -1,4 +1,7 @@
-package expo
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package expo // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -21,11 +24,11 @@ func (b Buckets) SetAt(i int, v uint64) {
 }
 
 func (b Buckets) Len() int {
-	return b.data().Len() + int(b.Offset())
+	return b.data().Len() + b.Offset()
 }
 
 func (b Buckets) EnsureLen(n int) {
-	sz := n - int(b.Offset())
+	sz := n - b.Offset()
 	b.data().EnsureCapacity(sz)
 	b.data().Append(make([]uint64, sz-b.data().Len())...)
 }

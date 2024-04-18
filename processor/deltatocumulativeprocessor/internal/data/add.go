@@ -6,8 +6,9 @@ package data // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"math"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 )
 
 func (dp Number) Add(in Number) Number {
@@ -30,9 +31,7 @@ func (dp Histogram) Add(in Histogram) Histogram {
 
 func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 	type H = ExpHistogram
-
-	switch {
-	case dp.Timestamp() >= in.Timestamp():
+	if dp.Timestamp() >= in.Timestamp() {
 		panic("out of order")
 	}
 
@@ -78,11 +77,4 @@ type field struct {
 	has func(ExpHistogram) bool
 	del func(ExpHistogram)
 	op  func(a, b float64) float64
-}
-
-func pos(i int) int {
-	if i < 0 {
-		i = -i
-	}
-	return i
 }
