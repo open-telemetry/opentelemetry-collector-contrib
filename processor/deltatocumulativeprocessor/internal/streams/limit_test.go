@@ -22,11 +22,13 @@ func TestLimit(t *testing.T) {
 	lim := streams.Limit(items, 10)
 
 	ids := make([]identity.Stream, 10)
+	dps := make([]data.Number, 10)
 
 	// write until limit must work
 	for i := 0; i < 10; i++ {
 		id, dp := sum.Stream()
 		ids[i] = id
+		dps[i] = dp
 		err := lim.Store(id, dp)
 		require.NoError(t, err)
 	}
@@ -38,6 +40,12 @@ func TestLimit(t *testing.T) {
 		want := streams.ErrLimit(10)
 		require.ErrorAs(t, err, &want)
 		require.True(t, streams.AtLimit(err))
+	}
+
+	// write to existing must work
+	{
+		err := lim.Store(ids[3], dps[3])
+		require.NoError(t, err)
 	}
 
 	// after removing one, must be accepted again
