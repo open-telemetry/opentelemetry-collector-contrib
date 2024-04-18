@@ -53,7 +53,7 @@ The following settings are optional:
 * `hec_metadata_to_otel_attrs/host` (default = 'host.name'): Specifies the mapping of the host field to a specific unified model attribute.
 * `ack` (no default): defines the ackextension to use for acknowledging events
   * `extension` (no default): Specifies the ack extension ID the receiver should use. If left blank, ack is disabled.
-  * `path` (default = '/services/collector/ack'): The path ack extension will listen on for ack requests, if the extension is enabled.
+  * `path` (default = '/services/collector/ack'): The path the ack extension will listen on for ack requests, if the extension is enabled.
   
 Example:
 
