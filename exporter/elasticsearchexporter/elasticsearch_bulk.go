@@ -12,16 +12,15 @@ import (
 	"io"
 	"net/http"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/elastic/go-docappender/v2"
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
-	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
+	"go.uber.org/zap"
 )
 
 type esClientCurrent = elasticsearch7.Client
@@ -187,9 +186,13 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32344
 		maxDocRetry = config.Retry.MaxRequests - 1
 	}
-	group := &errgroup.Group{}
-	items := make(chan esBulkIndexerItem, config.NumWorkers)
-	stats := bulkIndexerStats{}
+
+	pool := &bulkIndexerPool{
+		wg:    sync.WaitGroup{},
+		items: make(chan esBulkIndexerItem, config.NumWorkers),
+		stats: bulkIndexerStats{},
+	}
+	pool.wg.Add(numWorkers)
 
 	for i := 0; i < numWorkers; i++ {
 		bi, err := docappender.NewBulkIndexer(docappender.BulkIndexerConfig{
@@ -202,20 +205,19 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 		}
 		w := worker{
 			indexer:       bi,
-			items:         items,
+			items:         pool.items,
 			flushInterval: flushInterval,
 			flushTimeout:  config.Timeout,
 			flushBytes:    flushBytes,
 			logger:        logger,
-			stats:         &stats,
+			stats:         &pool.stats,
 		}
-		group.Go(w.run)
+		go func() {
+			w.run()
+			pool.wg.Done()
+		}()
 	}
-	return &bulkIndexerPool{
-		items:    items,
-		errgroup: group,
-		stats:    &stats,
-	}, nil
+	return pool, nil
 }
 
 type bulkIndexerStats struct {
@@ -223,9 +225,9 @@ type bulkIndexerStats struct {
 }
 
 type bulkIndexerPool struct {
-	items    chan esBulkIndexerItem
-	errgroup *errgroup.Group
-	stats    *bulkIndexerStats
+	items chan esBulkIndexerItem
+	wg    sync.WaitGroup
+	stats bulkIndexerStats
 }
 
 // Add adds an item to the bulk indexer pool.
@@ -249,7 +251,7 @@ func (p *bulkIndexerPool) Close(ctx context.Context) error {
 	close(p.items)
 	doneCh := make(chan struct{})
 	go func() {
-		p.errgroup.Wait()
+		p.wg.Wait()
 		close(doneCh)
 	}()
 	select {
@@ -272,7 +274,7 @@ type worker struct {
 	logger *zap.Logger
 }
 
-func (w *worker) run() error {
+func (w *worker) run() {
 	flushTick := time.NewTicker(w.flushInterval)
 	for {
 		select {
@@ -281,7 +283,6 @@ func (w *worker) run() error {
 			zero := esBulkIndexerItem{}
 			if item == zero {
 				w.flush()
-				return nil
 			}
 
 			w.indexer.Add(item)
