@@ -84,6 +84,7 @@ func TestBulkIndexer_flush(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
@@ -140,6 +141,7 @@ func TestBulkIndexer_flush_error(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			cfg := Config{NumWorkers: 1, Flush: FlushSettings{Interval: time.Hour, Bytes: 1}}
