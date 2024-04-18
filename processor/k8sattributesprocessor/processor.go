@@ -71,7 +71,11 @@ func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error 
 		}
 	}
 	if !kp.passthroughMode {
-		go kp.kc.Start()
+		err := kp.kc.Start()
+		if err != nil {
+			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			return nil
+		}
 	}
 	return nil
 }

@@ -70,10 +70,11 @@ func (f *fakeClient) GetNode(nodeName string) (*kube.Node, bool) {
 }
 
 // Start is a noop for FakeClient.
-func (f *fakeClient) Start() {
+func (f *fakeClient) Start() error {
 	if f.Informer != nil {
-		f.Informer.Run(f.StopCh)
+		go f.Informer.Run(f.StopCh)
 	}
+	return nil
 }
 
 // Stop is a noop for FakeClient.
