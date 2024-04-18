@@ -6,6 +6,7 @@ resourceMetrics:
             name: bytes.committed
             sum:
               aggregationTemporality: 2
+              isMonotonic: true
               dataPoints:
                 - asDouble: 1.94461696e+10
                   timeUnixNano: "1646862225775600200"
