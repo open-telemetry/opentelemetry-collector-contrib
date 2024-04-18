@@ -27,7 +27,7 @@ import (
 type esClientCurrent = elasticsearch7.Client
 type esConfigCurrent = elasticsearch7.Config
 
-type esBulkIndexerCurrent = BulkIndexerPool
+type esBulkIndexerCurrent = bulkIndexerPool
 
 type esBulkIndexerItem = docappender.BulkIndexerItem
 
@@ -203,7 +203,7 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 		}
 		group.Go(w.run)
 	}
-	return &BulkIndexerPool{
+	return &bulkIndexerPool{
 		items:    items,
 		errgroup: group,
 		stats:    &stats,
@@ -214,7 +214,7 @@ type bulkIndexerStats struct {
 	docsIndexed atomic.Int64
 }
 
-type BulkIndexerPool struct {
+type bulkIndexerPool struct {
 	items    chan esBulkIndexerItem
 	errgroup *errgroup.Group
 	stats    *bulkIndexerStats
@@ -223,7 +223,7 @@ type BulkIndexerPool struct {
 // Add adds an item to the bulk indexer pool.
 //
 // Adding an item after a call to Close() will panic.
-func (p *BulkIndexerPool) Add(ctx context.Context, index string, document io.WriterTo) error {
+func (p *bulkIndexerPool) Add(ctx context.Context, index string, document io.WriterTo) error {
 	item := esBulkIndexerItem{
 		Index: index,
 		Body:  document,
@@ -237,7 +237,7 @@ func (p *BulkIndexerPool) Add(ctx context.Context, index string, document io.Wri
 }
 
 // Close closes the items channel and wait for the workers to drain it.
-func (p *BulkIndexerPool) Close(ctx context.Context) error {
+func (p *bulkIndexerPool) Close(ctx context.Context) error {
 	close(p.items)
 	doneCh := make(chan struct{})
 	go func() {
