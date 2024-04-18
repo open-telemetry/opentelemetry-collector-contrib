@@ -38,7 +38,7 @@ func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 
 	if dp.ZeroThreshold() != in.ZeroThreshold() {
 		hi, lo := expo.HiLo(dp, in, ExpHistogram.ZeroThreshold)
-		expo.RaiseZero(lo.ExponentialHistogramDataPoint, hi.ZeroThreshold())
+		expo.WidenZero(lo.ExponentialHistogramDataPoint, hi.ZeroThreshold())
 	}
 
 	expo.Merge(dp.Positive(), in.Positive())

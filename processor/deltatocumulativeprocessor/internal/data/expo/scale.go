@@ -16,3 +16,15 @@ func (scale Scale) Idx(v float64) int {
 	// is not a power of two, which is checked above.
 	return int(math.Floor(math.Log(v) * scaleFactor))
 }
+
+// Bounds returns the half-open interval (min,max] of the bucket at index.
+// This means a value min<v<=max belongs to this bucket.
+// NOTE: this is different from Go slice intervals, which are [a,b)
+func (scale Scale) Bounds(index int) (min, max float64) {
+	lower := func(index int) float64 {
+		inverseFactor := math.Ldexp(math.Ln2, int(-scale))
+		return math.Exp(float64(index) * inverseFactor)
+	}
+
+	return lower(index), lower(index + 1)
+}

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/matryer/is"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
 )
@@ -44,9 +43,8 @@ func TestMerge(t *testing.T) {
 		name := fmt.Sprintf("(%+d,%d)+(%+d,%d)=(%+d,%d)", a.Offset(), a.BucketCounts().Len(), b.Offset(), b.BucketCounts().Len(), want.Offset(), want.BucketCounts().Len())
 		t.Run(name, func(t *testing.T) {
 			expo.Merge(a, b)
-			is := is.NewRelaxed(t)
-			is.Equal(want.Offset(), a.Offset())
-			is.Equal(want.BucketCounts().AsRaw(), a.BucketCounts().AsRaw())
+			is := expotest.Is(t)
+			is.Equal(want, a)
 		})
 	}
 }

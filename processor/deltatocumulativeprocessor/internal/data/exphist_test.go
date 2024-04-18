@@ -67,7 +67,7 @@ func TestAdd(t *testing.T) {
 		name: "zero/diff-simple",
 		dp:   expdp{ts: 0, pos: bins{1, 1, 1}, zt: some(0.0), zc: u64(2)},
 		in:   expdp{ts: 1, pos: bins{ø, 1, 1}, zt: some(2.0), zc: u64(2)},
-		want: expdp{ts: 1, pos: bins{ø, 2, 2}, zt: some(2.0), zc: u64(5)},
+		want: expdp{ts: 1, pos: bins{ø, 2, 2}, zt: some(2.0), zc: u64((2 + 2) + 1)},
 	}, {
 		name: "negative-offset",
 		dp:   expdp{ts: 0, posb: some(buckets([]uint64{ /*   */ 1, 2}, -2))},

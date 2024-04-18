@@ -1,27 +1,54 @@
 package expo
 
-import "go.opentelemetry.io/collector/pdata/pmetric"
+import (
+	"fmt"
+
+	"go.opentelemetry.io/collector/pdata/pmetric"
+)
 
 type DataPoint = pmetric.ExponentialHistogramDataPoint
 
-func RaiseZero(dp DataPoint, threshold float64) {
-	if dp.ZeroThreshold() > threshold {
-		panic("new threshold must be greater")
+// WidenZero widens the zero-bucket to span at least [-width,width], possibly wider
+// if min falls in the middle of a bucket
+func WidenZero(dp DataPoint, width float64) {
+	switch {
+	case width == dp.ZeroThreshold():
+		return
+	case width < dp.ZeroThreshold():
+		panic(fmt.Sprintf("min must be larger than current threshold (%f)", dp.ZeroThreshold()))
 	}
 
 	scale := Scale(dp.Scale())
-	idx := scale.Idx(threshold)
+	lo := scale.Idx(width)
 
-	move := func(bin pmetric.ExponentialHistogramDataPointBuckets) {
-		bkt := Buckets(bin)
-		for i := 0; i < idx; i++ {
-			n := bkt.At(i)
-			dp.SetZeroCount(dp.ZeroCount() + n)
-			bkt.SetAt(i, 0)
+	widen := func(bs pmetric.ExponentialHistogramDataPointBuckets) {
+		abs := Abs(bs)
+		for i := abs.Lower(); i <= lo; i++ {
+			dp.SetZeroCount(dp.ZeroCount() + abs.Abs(i))
 		}
-		bkt.Truncate(idx)
+		up := abs.Upper()
+		abs.Slice(min(lo+1, up), up)
 	}
 
-	move(dp.Positive())
-	move(dp.Negative())
+	widen(dp.Positive())
+	widen(dp.Negative())
+
+	_, max := scale.Bounds(lo)
+	dp.SetZeroThreshold(max)
+}
+
+func (a Absolute) Slice(from, to int) {
+	lo, up := a.Lower(), a.Upper()
+	switch {
+	case from > to:
+		panic(fmt.Sprintf("bad bounds: must be from<=to (got %d<=%d)", from, to))
+	case from < lo || to > up:
+		panic(fmt.Sprintf("%d:%d is out of bounds for %d:%d", from, to, lo, up))
+	}
+
+	first := from - lo
+	last := to - lo
+
+	a.BucketCounts().FromRaw(a.BucketCounts().AsRaw()[first:last])
+	a.SetOffset(int32(from))
 }

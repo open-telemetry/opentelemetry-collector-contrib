@@ -6,7 +6,7 @@ import (
 )
 
 func Merge(arel, brel pmetric.ExponentialHistogramDataPointBuckets) {
-	a, b := Absolute{buckets: arel}, Absolute{buckets: brel}
+	a, b := Abs(arel), Abs(brel)
 
 	lo := min(a.Lower(), b.Lower())
 	up := max(a.Upper(), b.Upper())
@@ -22,6 +22,10 @@ func Merge(arel, brel pmetric.ExponentialHistogramDataPointBuckets) {
 
 	a.SetOffset(int32(lo))
 	counts.MoveTo(a.BucketCounts())
+}
+
+func Abs(buckets buckets) Absolute {
+	return Absolute{buckets: buckets}
 }
 
 type buckets = pmetric.ExponentialHistogramDataPointBuckets
