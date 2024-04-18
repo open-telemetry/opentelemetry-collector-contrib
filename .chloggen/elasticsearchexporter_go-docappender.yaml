@@ -18,7 +18,7 @@ issues: [32378]
 subtext: |
   Replace go-elasticsearch BulkIndexer with go-docappender for a bulk indexer that has flush control.
   This will enable exporterhelper batch sender reliability fixes later.
-  As a result of this change, there are slight differences on flush behavior and logging.
+  As a result of this change, there are minor differences in flush behavior and logging.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
