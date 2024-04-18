@@ -181,7 +181,7 @@ func TestClientStartStop(t *testing.T) {
 	done := make(chan struct{})
 	assert.False(t, fctr.HasStopped())
 	go func() {
-		c.Start()
+		assert.NoError(t, c.Start())
 		close(done)
 	}()
 	c.Stop()
