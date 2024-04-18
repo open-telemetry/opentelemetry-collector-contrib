@@ -1,8 +1,10 @@
 package expotest
 
 import (
+	"fmt"
 	"math"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -39,4 +41,37 @@ func Buckets(bins Bins) pmetric.ExponentialHistogramDataPointBuckets {
 	buckets.SetOffset(int32(start - 3))
 	buckets.BucketCounts().FromRaw(counts)
 	return buckets
+}
+
+func ObserveInto(bs pmetric.ExponentialHistogramDataPointBuckets, scale expo.Scale, pts ...float64) {
+	counts := bs.BucketCounts()
+
+	for _, pt := range pts {
+		pt = math.Abs(pt)
+		if pt <= 0.125 || pt > 32 {
+			panic(fmt.Sprintf("out of bounds: 0.125 < %f <= 32", pt))
+		}
+
+		idx := scale.Idx(pt) - int(bs.Offset())
+		switch {
+		case idx < 0:
+			bs.SetOffset(bs.Offset() + int32(idx))
+			counts.FromRaw(append(make([]uint64, -idx), counts.AsRaw()...))
+			idx = 0
+		case idx >= counts.Len():
+			counts.Append(make([]uint64, idx-counts.Len()+1)...)
+		}
+
+		counts.SetAt(idx, counts.At(idx)+1)
+	}
+}
+
+func Observe(scale expo.Scale, pts ...float64) pmetric.ExponentialHistogramDataPointBuckets {
+	bs := pmetric.NewExponentialHistogramDataPointBuckets()
+	ObserveInto(bs, scale, pts...)
+	return bs
+}
+
+func Observe0(pts ...float64) pmetric.ExponentialHistogramDataPointBuckets {
+	return Observe(0, pts...)
 }

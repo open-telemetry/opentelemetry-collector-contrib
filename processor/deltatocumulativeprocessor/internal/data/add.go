@@ -29,11 +29,19 @@ func (dp Histogram) Add(in Histogram) Histogram {
 }
 
 func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
+	type H = ExpHistogram
+
 	switch {
 	case dp.Timestamp() >= in.Timestamp():
 		panic("out of order")
-	case dp.Scale() != in.Scale():
-		panic("scale changed")
+	}
+
+	if dp.Scale() != in.Scale() {
+		hi, lo := expo.HiLo(dp, in, H.Scale)
+		from, to := expo.Scale(hi.Scale()), expo.Scale(lo.Scale())
+		expo.Downscale(hi.Positive(), from, to)
+		expo.Downscale(hi.Negative(), from, to)
+		hi.SetScale(lo.Scale())
 	}
 
 	if dp.ZeroThreshold() != in.ZeroThreshold() {
@@ -48,11 +56,10 @@ func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 	dp.SetCount(dp.Count() + in.Count())
 	dp.SetZeroCount(dp.ZeroCount() + in.ZeroCount())
 
-	type T = ExpHistogram
 	optionals := []field{
-		{get: T.Sum, set: T.SetSum, has: T.HasSum, del: T.RemoveSum, op: func(a, b float64) float64 { return a + b }},
-		{get: T.Min, set: T.SetMin, has: T.HasMin, del: T.RemoveMin, op: math.Min},
-		{get: T.Max, set: T.SetMax, has: T.HasMax, del: T.RemoveMax, op: math.Max},
+		{get: H.Sum, set: H.SetSum, has: H.HasSum, del: H.RemoveSum, op: func(a, b float64) float64 { return a + b }},
+		{get: H.Min, set: H.SetMin, has: H.HasMin, del: H.RemoveMin, op: math.Min},
+		{get: H.Max, set: H.SetMax, has: H.HasMax, del: H.RemoveMax, op: math.Max},
 	}
 	for _, f := range optionals {
 		if f.has(dp) && f.has(in) {

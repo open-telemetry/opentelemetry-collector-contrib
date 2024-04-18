@@ -4,9 +4,9 @@ import (
 	"math"
 	"testing"
 
-	"github.com/matryer/is"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -73,6 +73,17 @@ func TestAdd(t *testing.T) {
 		dp:   expdp{ts: 0, posb: some(buckets([]uint64{ /*   */ 1, 2}, -2))},
 		in:   expdp{ts: 1, posb: some(buckets([]uint64{1, 2, 3 /* */}, -5))},
 		want: expdp{ts: 1, posb: some(buckets([]uint64{1, 2, 3, 1, 2}, -5))},
+	}, {
+		name: "scale/diff",
+		dp:   expdp{ts: 0, posb: some(expo.Buckets(expotest.Observe(expo.Scale(1), 1, 2, 3, 4))), scale: 1},
+		in:   expdp{ts: 1, posb: some(expo.Buckets(expotest.Observe(expo.Scale(0), 1, 2, 3, 4))), scale: 0},
+		want: expdp{ts: 1, scale: 0, posb: func() *expo.Buckets {
+			bs := pmetric.NewExponentialHistogramDataPointBuckets()
+			expotest.ObserveInto(bs, expo.Scale(0), 1, 2, 3, 4)
+			expotest.ObserveInto(bs, expo.Scale(0), 1, 2, 3, 4)
+			bs.BucketCounts().Append([]uint64{0, 0}...) // rescaling leaves zeroed memory. this is expected
+			return some(expo.Buckets(bs))
+		}()},
 	}}
 
 	for _, c := range cases {
@@ -82,8 +93,9 @@ func TestAdd(t *testing.T) {
 
 			got := dp.Add(in)
 
-			is := is.NewRelaxed(t)
-			is.Equal(from(expo.Buckets(want.Positive())).String(), from(expo.Buckets(got.Positive())).String())
+			is := expotest.Is(t)
+			is.Equal(want.ExponentialHistogramDataPoint, got.ExponentialHistogramDataPoint)
+
 			if err := pmetrictest.CompareExponentialHistogramDataPoint(want.ExponentialHistogramDataPoint, got.ExponentialHistogramDataPoint); err != nil {
 				t.Fatal(err)
 			}

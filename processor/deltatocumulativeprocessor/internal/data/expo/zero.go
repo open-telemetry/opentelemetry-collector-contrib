@@ -9,7 +9,9 @@ import (
 type DataPoint = pmetric.ExponentialHistogramDataPoint
 
 // WidenZero widens the zero-bucket to span at least [-width,width], possibly wider
-// if min falls in the middle of a bucket
+// if min falls in the middle of a bucket.
+//
+// Both buckets MUST be of same scale.
 func WidenZero(dp DataPoint, width float64) {
 	switch {
 	case width == dp.ZeroThreshold():
@@ -37,6 +39,7 @@ func WidenZero(dp DataPoint, width float64) {
 	dp.SetZeroThreshold(max)
 }
 
+// Slice drops data outside the range from <= i < to from the bucket counts. It behaves the same as Go's [a:b]
 func (a Absolute) Slice(from, to int) {
 	lo, up := a.Lower(), a.Upper()
 	switch {
