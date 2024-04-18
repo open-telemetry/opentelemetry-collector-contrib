@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -15,6 +16,9 @@ import (
 )
 
 func newTestParser(t *testing.T) *Parser {
+	err := featuregate.GlobalRegistry().Set("logs.jsonParserArray", true)
+	require.Nil(t, err)
+
 	cfg := NewConfigWithID("test")
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
@@ -22,9 +26,12 @@ func newTestParser(t *testing.T) *Parser {
 }
 
 func TestParserBuildFailure(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("logs.jsonParserArray", true)
+	require.Nil(t, err)
+
 	cfg := NewConfigWithID("test")
 	cfg.OnError = "invalid_on_error"
-	_, err := cfg.Build(testutil.Logger(t))
+	_, err = cfg.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
@@ -37,6 +44,9 @@ func TestParserInvalidType(t *testing.T) {
 }
 
 func TestParserByteFailureHeadersMismatch(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("logs.jsonParserArray", true)
+	require.Nil(t, err)
+
 	cfg := NewConfigWithID("test")
 	cfg.Header = "name,sev,msg"
 	op, err := cfg.Build(testutil.Logger(t))
@@ -48,6 +58,9 @@ func TestParserByteFailureHeadersMismatch(t *testing.T) {
 }
 
 func TestParserJarray(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("logs.jsonParserArray", true)
+	require.Nil(t, err)
+
 	cases := []struct {
 		name             string
 		configure        func(*Config)

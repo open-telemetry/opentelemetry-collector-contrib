@@ -6,9 +6,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func TestConfig(t *testing.T) {
@@ -64,4 +68,33 @@ func TestConfig(t *testing.T) {
 			},
 		},
 	}.Run(t)
+}
+
+func TestBuildWithFeatureGate(t *testing.T) {
+	cases := []struct {
+		name                string
+		isFeatureGateEnable bool
+		onErr               string
+	}{
+		{"jsonarray_enabled", true, ""},
+		{"jsonarray_disabled", false, "operator disabled"},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if c.isFeatureGateEnable {
+				err := featuregate.GlobalRegistry().Set("logs.jsonParserArray", true)
+				require.Nil(t, err)
+			}
+
+			buildFunc, ok := operator.Lookup(operatorType)
+			require.True(t, ok)
+
+			_, err := buildFunc().Build(testutil.Logger(t))
+			if err != nil {
+				require.Contains(t, err.Error(), c.onErr)
+			}
+		})
+	}
+
 }
