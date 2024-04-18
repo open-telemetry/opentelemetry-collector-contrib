@@ -7,4 +7,4 @@ status:
     beta: [traces]
   distributions: [core, contrib]
   codeowners:
-    active: [MovieStoreGuy, astencel-sumo, crobert-1]
+    active: [MovieStoreGuy, andrzej-stencel, crobert-1]
