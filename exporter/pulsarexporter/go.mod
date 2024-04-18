@@ -6,7 +6,7 @@ require (
 	github.com/apache/pulsar-client-go v0.8.1
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.55.0
+	github.com/jaegertracing/jaeger v1.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.98.0
 	github.com/stretchr/testify v1.9.0
@@ -29,7 +29,7 @@ require (
 	github.com/AthenZ/athenz v1.10.39 // indirect
 	github.com/DataDog/zstd v1.5.0 // indirect
 	github.com/apache/pulsar-client-go/oauth2 v0.0.0-20220120090717-25e59572242e // indirect
-	github.com/apache/thrift v0.19.0 // indirect
+	github.com/apache/thrift v0.20.0 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -48,7 +48,7 @@ require (
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d // indirect
-	github.com/klauspost/compress v1.17.6 // indirect
+	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
