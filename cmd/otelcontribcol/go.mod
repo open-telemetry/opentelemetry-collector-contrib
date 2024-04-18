@@ -65,6 +65,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension v0.98.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension v0.98.0
@@ -294,6 +295,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.46.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.46.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.22.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.46.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.46.0 // indirect
 	github.com/IBM/sarama v1.43.1 // indirect
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
@@ -1195,3 +1197,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/named
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery => ../../internal/sqlquery
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ../../extension/ackextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension => ../../extension/googleclientauthextension
