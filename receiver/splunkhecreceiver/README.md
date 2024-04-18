@@ -51,7 +51,7 @@ The following settings are optional:
 * `hec_metadata_to_otel_attrs/sourcetype` (default = 'com.splunk.sourcetype'): Specifies the mapping of the sourcetype field to a specific unified model attribute.
 * `hec_metadata_to_otel_attrs/index` (default = 'com.splunk.index'): Specifies the mapping of the  index field to a specific unified model attribute.
 * `hec_metadata_to_otel_attrs/host` (default = 'host.name'): Specifies the mapping of the host field to a specific unified model attribute.
-* `ack` (no default): defines the ackextension to use for acking of events
+* `ack` (no default): defines the ackextension to use for acknowledging events
   * `extension` (no default): Specifies the ack extension ID the receiver should use. If left blank, ack is turned off.
   * `path` (default = '/services/collector/ack'): The path ack extension will listen on for ack requests, if the extension is enabled.
   
