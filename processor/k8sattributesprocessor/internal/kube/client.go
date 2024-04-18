@@ -5,6 +5,7 @@ package kube // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -189,50 +190,61 @@ func New(set component.TelemetrySettings, apiCfg k8sconfig.APIConfig, rules Extr
 }
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
-func (c *WatchClient) Start() {
-	_, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+func (c *WatchClient) Start() error {
+	synced := make([]cache.InformerSynced, 0)
+	reg, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
 		DeleteFunc: c.handlePodDelete,
 	})
 	if err != nil {
-		c.logger.Error("error adding event handler to pod informer", zap.Error(err))
+		return err
 	}
+	synced = append(synced, reg.HasSynced)
 	go c.informer.Run(c.stopCh)
 
-	_, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	reg, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handleNamespaceAdd,
 		UpdateFunc: c.handleNamespaceUpdate,
 		DeleteFunc: c.handleNamespaceDelete,
 	})
 	if err != nil {
-		c.logger.Error("error adding event handler to namespace informer", zap.Error(err))
+		return err
 	}
+	synced = append(synced, reg.HasSynced)
 	go c.namespaceInformer.Run(c.stopCh)
 
 	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
-		_, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		reg, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
 			DeleteFunc: c.handleReplicaSetDelete,
 		})
 		if err != nil {
-			c.logger.Error("error adding event handler to replicaset informer", zap.Error(err))
+			return err
 		}
+		synced = append(synced, reg.HasSynced)
 		go c.replicasetInformer.Run(c.stopCh)
 	}
 
 	if c.nodeInformer != nil {
-		_, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		reg, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleNodeAdd,
 			UpdateFunc: c.handleNodeUpdate,
 			DeleteFunc: c.handleNodeDelete,
 		})
 		if err != nil {
-			c.logger.Error("error adding event handler to node informer", zap.Error(err))
+			return err
 		}
+		synced = append(synced, reg.HasSynced)
 		go c.nodeInformer.Run(c.stopCh)
 	}
+
+	if !cache.WaitForCacheSync(c.stopCh, synced...) {
+		return errors.New("failed to wait for caches to sync")
+	}
+
+	return nil
 }
 
 // Stop signals the the k8s watcher/informer to stop watching for new events.

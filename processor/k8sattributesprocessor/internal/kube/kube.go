@@ -91,7 +91,7 @@ type Client interface {
 	GetPod(PodIdentifier) (*Pod, bool)
 	GetNamespace(string) (*Namespace, bool)
 	GetNode(string) (*Node, bool)
-	Start()
+	Start() error
 	Stop()
 }
 
