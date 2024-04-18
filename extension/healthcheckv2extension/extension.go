@@ -29,7 +29,6 @@ type healthCheckExtension struct {
 	subcomponents []component.Component
 	eventCh       chan *eventSourcePair
 	readyCh       chan struct{}
-	doneCh        chan struct{}
 }
 
 var _ component.Component = (*healthCheckExtension)(nil)
@@ -80,7 +79,6 @@ func newExtension(
 		aggregator:    aggregator,
 		eventCh:       make(chan *eventSourcePair),
 		readyCh:       make(chan struct{}),
-		doneCh:        make(chan struct{}),
 	}
 
 	// Start processing events in the background so that our status watcher doesn't
@@ -108,7 +106,7 @@ func (hc *healthCheckExtension) Shutdown(ctx context.Context) error {
 	// Preemptively send the stopped event, so it can be exported before shutdown
 	hc.telemetry.ReportStatus(component.NewStatusEvent(component.StatusStopped))
 
-	close(hc.doneCh)
+	close(hc.eventCh)
 	hc.aggregator.Close()
 
 	var err error
@@ -124,6 +122,19 @@ func (hc *healthCheckExtension) ComponentStatusChanged(
 	source *component.InstanceID,
 	event *component.StatusEvent,
 ) {
+	// There can be late arriving events after shutdown. We need to close
+	// the event channel so that this function doesn't block and we release all
+	// goroutines, but attempting to write to a closed channel will panic; log
+	// and recover.
+	defer func() {
+		if r := recover(); r != nil {
+			hc.telemetry.Logger.Info(
+				"discarding event received after shutdown",
+				zap.Any("source", source),
+				zap.Any("event", event),
+			)
+		}
+	}()
 	hc.eventCh <- &eventSourcePair{source: source, event: event}
 }
 
@@ -158,7 +169,10 @@ func (hc *healthCheckExtension) eventLoop(ctx context.Context) {
 
 	for loop := true; loop; {
 		select {
-		case esp := <-hc.eventCh:
+		case esp, ok := <-hc.eventCh:
+			if !ok {
+				return
+			}
 			if esp.event.Status() != component.StatusStarting {
 				eventQueue = append(eventQueue, esp)
 				continue
@@ -176,26 +190,13 @@ func (hc *healthCheckExtension) eventLoop(ctx context.Context) {
 	}
 
 	// After PipelineWatcher.Ready, record statuses as they are received.
-	for loop := true; loop; {
-		select {
-		case esp := <-hc.eventCh:
-			hc.aggregator.RecordStatus(esp.source, esp.event)
-		case <-hc.doneCh:
-			loop = false
-		case <-ctx.Done():
-			return
-		}
-	}
-
-	// After shutdown read late arriving events from channel and discard
 	for {
 		select {
-		case esp := <-hc.eventCh:
-			hc.telemetry.Logger.Info(
-				"discarding event received after shutdown",
-				zap.Any("source", esp.source),
-				zap.Any("event", esp.event),
-			)
+		case esp, ok := <-hc.eventCh:
+			if !ok {
+				return
+			}
+			hc.aggregator.RecordStatus(esp.source, esp.event)
 		case <-ctx.Done():
 			return
 		}
