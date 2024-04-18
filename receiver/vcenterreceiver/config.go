@@ -52,7 +52,7 @@ func (c *Config) Validate() error {
 		err = multierr.Append(err, errors.New("password not provided and is required"))
 	}
 
-	if _, tlsErr := c.LoadTLSConfigContext(context.Background()); err != nil {
+	if _, tlsErr := c.LoadTLSConfig(context.Background()); err != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 
