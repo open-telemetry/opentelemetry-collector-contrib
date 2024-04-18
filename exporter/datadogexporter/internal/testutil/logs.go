@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 )
 
 // JSONLogs is the type for the array of processed JSON log data from each request
@@ -32,8 +31,7 @@ func (jsonLogs *JSONLogs) HasDDTag(ddtags string) bool {
 type DatadogLogsServer struct {
 	*httptest.Server
 	// LogsData is the array of json requests sent to datadog backend
-	LogsData          JSONLogs
-	connectivityCheck sync.Once
+	LogsData JSONLogs
 }
 
 // DatadogLogServerMock mocks a Datadog Logs Intake backend server
@@ -46,7 +44,6 @@ func DatadogLogServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *Datadog
 		// but adding one here for ease of testing
 		"/api/v1/validate": validateAPIKeyEndpoint,
 		"/":                server.logsEndpoint,
-		"/api/v2/logs":     server.logsAgentEndpoint,
 	}
 	for _, f := range overwriteHandlerFuncs {
 		p, hf := f()
@@ -64,21 +61,6 @@ func (s *DatadogLogsServer) logsEndpoint(w http.ResponseWriter, r *http.Request)
 	s.LogsData = append(s.LogsData, jsonLogs...)
 }
 
-func (s *DatadogLogsServer) logsAgentEndpoint(w http.ResponseWriter, r *http.Request) {
-	connectivityCheck := false
-	s.connectivityCheck.Do(func() {
-		// The logs agent performs a connectivity check upon initialization.
-		// This function mocks a successful response for the first request received.
-		w.WriteHeader(http.StatusAccepted)
-		connectivityCheck = true
-		return
-	})
-	if !connectivityCheck {
-		jsonLogs := processLogsAgentRequest(w, r)
-		s.LogsData = append(s.LogsData, jsonLogs...)
-	}
-}
-
 func processLogsRequest(w http.ResponseWriter, r *http.Request) JSONLogs {
 	// we can reuse same response object for logs as well
 	req, err := gUnzipData(r.Body)
@@ -86,32 +68,6 @@ func processLogsRequest(w http.ResponseWriter, r *http.Request) JSONLogs {
 	var jsonLogs JSONLogs
 	err = json.Unmarshal(req, &jsonLogs)
 	handleError(w, err, http.StatusBadRequest)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusAccepted)
-	_, err = w.Write([]byte(`{"status":"ok"}`))
-	handleError(w, err, 0)
-	return jsonLogs
-}
-
-func processLogsAgentRequest(w http.ResponseWriter, r *http.Request) JSONLogs {
-	// we can reuse same response object for logs as well
-	req, err := gUnzipData(r.Body)
-	handleError(w, err, http.StatusBadRequest)
-	var jsonLogs JSONLogs
-	err = json.Unmarshal(req, &jsonLogs)
-	handleError(w, err, http.StatusBadRequest)
-
-	// unmarshal nested message JSON
-	for i := range jsonLogs {
-		messageJSON := jsonLogs[i]["message"].(string)
-		var message JSONLog
-		json.Unmarshal([]byte(messageJSON), &message)
-		jsonLogs[i]["message"] = message
-		// delete dynamic keys that can't be tested
-		delete(jsonLogs[i], "hostname")  // hostname of host running tests
-		delete(jsonLogs[i], "timestamp") // ingestion timestamp
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 	_, err = w.Write([]byte(`{"status":"ok"}`))

@@ -109,6 +109,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 			},
 			UseCompression:   true,
 			CompressionLevel: 6,
+			BatchWait:        5,
 		},
 
 		HostMetadata: HostMetadataConfig{
@@ -173,6 +174,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					UseCompression:   true,
 					CompressionLevel: 6,
+					BatchWait:        5,
 				},
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,
@@ -230,6 +232,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					UseCompression:   true,
 					CompressionLevel: 6,
+					BatchWait:        5,
 				},
 				OnlyMetadata: false,
 				HostMetadata: HostMetadataConfig{
@@ -285,6 +288,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					UseCompression:   true,
 					CompressionLevel: 6,
+					BatchWait:        5,
 				},
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,

@@ -463,7 +463,7 @@ func TestLogsAgentExporter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := testutil.DatadogLogServerMock()
+			server := testutil.DatadogLogsAgentServerMock()
 			defer server.Close()
 			cfg := &Config{
 				Logs: LogsConfig{
