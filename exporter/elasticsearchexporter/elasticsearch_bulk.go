@@ -236,7 +236,7 @@ func (p *bulkIndexerPool) Add(ctx context.Context, index string, document io.Wri
 	}
 }
 
-// Close closes the items channel and wait for the workers to drain it.
+// Close closes the items channel and waits for the workers to drain it.
 func (p *bulkIndexerPool) Close(ctx context.Context) error {
 	close(p.items)
 	doneCh := make(chan struct{})
