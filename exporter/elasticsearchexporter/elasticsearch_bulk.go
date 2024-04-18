@@ -19,8 +19,9 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/elastic/go-docappender/v2"
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
 type esClientCurrent = elasticsearch7.Client
