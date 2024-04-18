@@ -5,7 +5,7 @@ package cassandraexporter // import "github.com/open-telemetry/opentelemetry-col
 
 const (
 	// language=SQL
-	createDatabaseSQL = `CREATE KEYSPACE %s WITH REPLICATION = { 'class' : '%s', 'replication_factor' : %d };`
+	createDatabaseSQL = `CREATE KEYSPACE IF NOT EXISTS %s WITH REPLICATION = { 'class' : '%s', 'replication_factor' : %d };`
 	// language=SQL
 	createEventTypeSQL = `CREATE TYPE IF NOT EXISTS %s.Events (Timestamp Date, Name text, Attributes map<text, text>);`
 	// language=SQL

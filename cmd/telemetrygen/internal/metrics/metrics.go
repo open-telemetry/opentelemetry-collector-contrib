@@ -32,11 +32,29 @@ func Start(cfg *Config) error {
 	expFunc := func() (sdkmetric.Exporter, error) {
 		var exp sdkmetric.Exporter
 		if cfg.UseHTTP {
+			var exporterOpts []otlpmetrichttp.Option
+
 			logger.Info("starting HTTP exporter")
-			exp, err = otlpmetrichttp.New(context.Background(), httpExporterOptions(cfg)...)
+			exporterOpts, err = httpExporterOptions(cfg)
+			if err != nil {
+				return nil, err
+			}
+			exp, err = otlpmetrichttp.New(context.Background(), exporterOpts...)
+			if err != nil {
+				return nil, fmt.Errorf("failed to obtain OTLP HTTP exporter: %w", err)
+			}
 		} else {
+			var exporterOpts []otlpmetricgrpc.Option
+
 			logger.Info("starting gRPC exporter")
-			exp, err = otlpmetricgrpc.New(context.Background(), grpcExporterOptions(cfg)...)
+			exporterOpts, err = grpcExporterOptions(cfg)
+			if err != nil {
+				return nil, err
+			}
+			exp, err = otlpmetricgrpc.New(context.Background(), exporterOpts...)
+			if err != nil {
+				return nil, fmt.Errorf("failed to obtain OTLP gRPC exporter: %w", err)
+			}
 		}
 		return exp, err
 	}

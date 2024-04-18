@@ -278,8 +278,8 @@ func (e *metricsExporter) sendBatch(ctx context.Context, lines []string) error {
 }
 
 // start starts the exporter
-func (e *metricsExporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := e.cfg.HTTPClientSettings.ToClient(host, e.settings)
+func (e *metricsExporter) start(ctx context.Context, host component.Host) (err error) {
+	client, err := e.cfg.ClientConfig.ToClientContext(ctx, host, e.settings)
 	if err != nil {
 		e.settings.Logger.Error("Failed to construct HTTP client", zap.Error(err))
 		return fmt.Errorf("start: %w", err)

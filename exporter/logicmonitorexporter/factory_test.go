@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
@@ -20,7 +21,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &Config{
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 	}, cfg, "failed to create default config")
 
@@ -37,7 +38,7 @@ func TestCreateLogsExporter(t *testing.T) {
 		{
 			name: "valid config",
 			config: Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://example.logicmonitor.com/rest",
 				},
 			},
@@ -77,7 +78,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		{
 			name: "valid config",
 			config: Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://example.logicmonitor.com/rest",
 				},
 			},

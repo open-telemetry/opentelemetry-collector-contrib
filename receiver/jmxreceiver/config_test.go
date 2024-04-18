@@ -408,7 +408,7 @@ func TestPasswordFileValidation(t *testing.T) {
 
 func TestWithInvalidConfig(t *testing.T) {
 	f := NewFactory()
-	assert.Equal(t, component.Type("jmx"), f.Type())
+	assert.Equal(t, metadata.Type, f.Type())
 
 	cfg := f.CreateDefaultConfig().(*Config)
 	require.NotNil(t, cfg)

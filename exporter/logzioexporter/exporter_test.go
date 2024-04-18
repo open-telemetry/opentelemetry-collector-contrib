@@ -25,9 +25,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 const (
@@ -51,11 +50,9 @@ func fillLogOne(log plog.LogRecord) {
 	log.SetSeverityText("Info")
 	log.SetSpanID([8]byte{0x01, 0x02, 0x04, 0x08})
 	log.SetTraceID([16]byte{0x08, 0x04, 0x02, 0x01})
-
 	attrs := log.Attributes()
 	attrs.PutStr("app", "server")
 	attrs.PutDouble("instance_num", 1)
-
 	// nested body map
 	attMap := log.Body().SetEmptyMap()
 	attMap.PutDouble("23", 45)
@@ -71,7 +68,6 @@ func fillLogTwo(log plog.LogRecord) {
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
-
 	attrs := log.Attributes()
 	attrs.PutStr("customer", "acme")
 	attrs.PutDouble("number", 64)
@@ -79,11 +75,11 @@ func fillLogTwo(log plog.LogRecord) {
 	attrs.PutStr("env", "dev")
 	log.Body().SetStr("something happened")
 }
+
 func fillLogNoTimestamp(log plog.LogRecord) {
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
-
 	attrs := log.Attributes()
 	attrs.PutStr("customer", "acme")
 	attrs.PutDouble("number", 64)
@@ -93,8 +89,9 @@ func fillLogNoTimestamp(log plog.LogRecord) {
 }
 
 func generateLogsOneEmptyTimestamp() plog.Logs {
-	ld := testdata.GenerateLogsOneEmptyLogRecord()
+	ld := testdata.GenerateLogs(1)
 	logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	ld.ResourceLogs().At(0).ScopeLogs().At(0).Scope().SetName("logScopeName")
 	fillLogOne(logs.At(0))
 	fillLogNoTimestamp(logs.AppendEmpty())
 	return ld
@@ -186,18 +183,18 @@ func TestExportErrors(tester *testing.T) {
 		{http.StatusBadRequest},
 	}
 	for _, test := range ExportErrorsTests {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 			rw.WriteHeader(test.status)
 		}))
 		cfg := &Config{
 			Region: "",
 			Token:  "token",
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: server.URL,
 			},
 		}
 		td := newTestTracesWithAttributes()
-		ld := testdata.GenerateLogsManyLogRecordsSameResource(10)
+		ld := testdata.GenerateLogs(10)
 		err := testTracesExporter(td, tester, cfg)
 		fmt.Println(err.Error())
 		require.Error(tester, err)
@@ -223,13 +220,11 @@ func TestNullExporterConfig(tester *testing.T) {
 
 func gUnzipData(data []byte) (resData []byte, err error) {
 	b := bytes.NewBuffer(data)
-
 	var r io.Reader
 	r, err = gzip.NewReader(b)
 	if err != nil {
 		return
 	}
-
 	var resB bytes.Buffer
 	_, err = resB.ReadFrom(r)
 	if err != nil {
@@ -248,9 +243,9 @@ func TestPushTraceData(tester *testing.T) {
 	cfg := Config{
 		Token:  "token",
 		Region: "",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint:    server.URL,
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 		},
 	}
 	defer server.Close()
@@ -281,13 +276,13 @@ func TestPushLogsData(tester *testing.T) {
 	cfg := Config{
 		Token:  "token",
 		Region: "",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint:    server.URL,
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 		},
 	}
 	defer server.Close()
-	ld := testdata.GenerateLogsManyLogRecordsSameResource(2)
+	ld := testdata.GenerateLogs(2)
 	res := ld.ResourceLogs().At(0).Resource()
 	res.Attributes().PutStr(conventions.AttributeServiceName, testService)
 	res.Attributes().PutStr(conventions.AttributeHostName, testHost)
@@ -299,5 +294,33 @@ func TestPushLogsData(tester *testing.T) {
 	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &jsonLog))
 	assert.Equal(tester, testHost, jsonLog["host.name"])
 	assert.Equal(tester, testService, jsonLog["service.name"])
+}
 
+func TestMergeMapEntries(tester *testing.T) {
+	var firstMap = pcommon.NewMap()
+	var secondMap = pcommon.NewMap()
+	var expectedMap = pcommon.NewMap()
+	firstMap.PutStr("name", "exporter")
+	firstMap.PutStr("host", "localhost")
+	firstMap.PutStr("instanceNum", "1")
+	firstMap.PutInt("id", 4)
+	secondMap.PutStr("tag", "test")
+	secondMap.PutStr("host", "ec2")
+	secondMap.PutInt("instanceNum", 3)
+	secondMap.PutEmptyMap("id").PutInt("instance_a", 1)
+	expectedMap.PutStr("name", "exporter")
+	expectedMap.PutStr("tag", "test")
+	var slice = expectedMap.PutEmptySlice("host")
+	slice.AppendEmpty().SetStr("localhost")
+	slice.AppendEmpty().SetStr("ec2")
+	slice = expectedMap.PutEmptySlice("instanceNum")
+	var val = slice.AppendEmpty()
+	val.SetStr("1")
+	val = slice.AppendEmpty()
+	val.SetInt(3)
+	slice = expectedMap.PutEmptySlice("id")
+	slice.AppendEmpty().SetInt(4)
+	slice.AppendEmpty().SetEmptyMap().PutInt("instance_a", 1)
+	var mergedMap = mergeMapEntries(firstMap, secondMap)
+	assert.Equal(tester, expectedMap.AsRaw(), mergedMap.AsRaw())
 }

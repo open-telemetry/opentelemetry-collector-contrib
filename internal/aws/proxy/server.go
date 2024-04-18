@@ -26,7 +26,6 @@ import (
 )
 
 const (
-	service    = "xray"
 	connHeader = "Connection"
 )
 
@@ -46,6 +45,9 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 	if cfg.ProxyAddress != "" {
 		logger.Debug("Using remote proxy", zap.String("address", cfg.ProxyAddress))
 	}
+	if cfg.ServiceName == "" {
+		cfg.ServiceName = "xray"
+	}
 
 	sessionCfg := cfg.toSessionConfig()
 	awsCfg, sess, err := awsutil.GetAWSConfigSession(logger, &awsutil.Conn{}, sessionCfg)
@@ -53,7 +55,7 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 		return nil, err
 	}
 
-	awsEndPoint, err := getServiceEndpoint(awsCfg)
+	awsEndPoint, err := getServiceEndpoint(awsCfg, cfg.ServiceName)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +105,7 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 			}
 
 			// Sign request. signer.Sign() also repopulates the request body.
-			_, err = signer.Sign(req, body, service, *awsCfg.Region, time.Now())
+			_, err = signer.Sign(req, body, cfg.ServiceName, *awsCfg.Region, time.Now())
 			if err != nil {
 				logger.Error("Unable to sign request", zap.Error(err))
 			}
@@ -119,13 +121,13 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 
 // getServiceEndpoint returns X-Ray service endpoint.
 // It is guaranteed that awsCfg config instance is non-nil and the region value is non nil or non empty in awsCfg object.
-// Currently the caller takes care of it.
-func getServiceEndpoint(awsCfg *aws.Config) (string, error) {
+// Currently, the caller takes care of it.
+func getServiceEndpoint(awsCfg *aws.Config, serviceName string) (string, error) {
 	if isEmpty(awsCfg.Endpoint) {
 		if isEmpty(awsCfg.Region) {
 			return "", errors.New("unable to generate endpoint from region with nil value")
 		}
-		resolved, err := endpoints.DefaultResolver().EndpointFor(service, *awsCfg.Region, setResolverConfig())
+		resolved, err := endpoints.DefaultResolver().EndpointFor(serviceName, *awsCfg.Region, setResolverConfig())
 		return resolved.URL, err
 	}
 	return *awsCfg.Endpoint, nil

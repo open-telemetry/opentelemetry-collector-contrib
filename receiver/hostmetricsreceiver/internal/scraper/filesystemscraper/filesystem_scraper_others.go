@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !linux && !darwin && !freebsd && !openbsd && !solaris
-// +build !linux,!darwin,!freebsd,!openbsd,!solaris
 
 package filesystemscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
 

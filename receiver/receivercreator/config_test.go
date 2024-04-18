@@ -72,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: createDefaultConfig(),
 		},
 		{
-			id:       component.NewIDWithName("receiver_creator", ""),
+			id:       component.MustNewIDWithName("receiver_creator", ""),
 			expected: createDefaultConfig(),
 		},
 		{
@@ -81,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 				receiverTemplates: map[string]receiverTemplate{
 					"examplereceiver/1": {
 						receiverConfig: receiverConfig{
-							id: component.NewIDWithName("examplereceiver", "1"),
+							id: component.MustNewIDWithName("examplereceiver", "1"),
 							config: userConfigMap{
 								"key": "value",
 							},
@@ -93,7 +93,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					"nop/1": {
 						receiverConfig: receiverConfig{
-							id: component.NewIDWithName("nop", "1"),
+							id: component.MustNewIDWithName("nop", "1"),
 							config: userConfigMap{
 								endpointConfigKey: "localhost:12345",
 							},
@@ -105,15 +105,16 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				WatchObservers: []component.ID{
-					component.NewID("mock_observer"),
-					component.NewIDWithName("mock_observer", "with_name"),
+					component.MustNewID("mock_observer"),
+					component.MustNewIDWithName("mock_observer", "with_name"),
 				},
 				ResourceAttributes: map[observer.EndpointType]map[string]string{
-					observer.ContainerType: {"container.key": "container.value"},
-					observer.PodType:       {"pod.key": "pod.value"},
-					observer.PortType:      {"port.key": "port.value"},
-					observer.HostPortType:  {"hostport.key": "hostport.value"},
-					observer.K8sNodeType:   {"k8s.node.key": "k8s.node.value"},
+					observer.ContainerType:  {"container.key": "container.value"},
+					observer.PodType:        {"pod.key": "pod.value"},
+					observer.PortType:       {"port.key": "port.value"},
+					observer.HostPortType:   {"hostport.key": "hostport.value"},
+					observer.K8sServiceType: {"k8s.service.key": "k8s.service.value"},
+					observer.K8sNodeType:    {"k8s.node.key": "k8s.node.value"},
 				},
 			},
 		},
@@ -136,9 +137,9 @@ func TestLoadConfig(t *testing.T) {
 
 func TestInvalidResourceAttributeEndpointType(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
-	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
+	factories.Receivers[component.MustNewType("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
@@ -149,9 +150,9 @@ func TestInvalidResourceAttributeEndpointType(t *testing.T) {
 
 func TestInvalidReceiverResourceAttributeValueType(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
-	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
+	factories.Receivers[component.MustNewType("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory

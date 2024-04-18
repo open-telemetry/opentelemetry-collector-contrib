@@ -23,6 +23,14 @@ resource_attributes:
     description: The host.arch
     type: string
     enabled: false
+  host.ip:
+    description: IP addresses for the host
+    type: slice
+    enabled: false
+  host.mac:
+    description: MAC addresses for the host
+    type: slice
+    enabled: false
   host.cpu.vendor.id:
     description: The host.cpu.vendor.id
     type: string
@@ -41,7 +49,7 @@ resource_attributes:
     enabled: false
   host.cpu.stepping:
     description: The host.cpu.stepping
-    type: int
+    type: string
     enabled: false
   host.cpu.cache.l2.size:
     description: The host.cpu.cache.l2.size

@@ -4,6 +4,7 @@
 package ecsutil
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -36,7 +37,7 @@ func TestClient(t *testing.T) {
 
 func TestNewClientProvider(t *testing.T) {
 	baseURL, _ := url.Parse("http://localhost:8080")
-	provider := NewClientProvider(*baseURL, confighttp.HTTPClientSettings{}, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	provider := NewClientProvider(*baseURL, confighttp.ClientConfig{}, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, provider)
 	_, ok := provider.(*defaultClientProvider)
 	require.True(t, ok)
@@ -48,7 +49,7 @@ func TestNewClientProvider(t *testing.T) {
 
 func TestDefaultClient(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
-	client, err := defaultClient(*endpoint, confighttp.HTTPClientSettings{}, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	client, err := defaultClient(context.Background(), *endpoint, confighttp.ClientConfig{}, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, client.httpClient.Transport)
 	require.Equal(t, "http://localhost:8080", client.baseURL.String())

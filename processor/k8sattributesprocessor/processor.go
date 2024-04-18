@@ -25,14 +25,17 @@ const (
 )
 
 type kubernetesprocessor struct {
-	logger          *zap.Logger
-	apiConfig       k8sconfig.APIConfig
-	kc              kube.Client
-	passthroughMode bool
-	rules           kube.ExtractionRules
-	filters         kube.Filters
-	podAssociations []kube.Association
-	podIgnore       kube.Excludes
+	cfg               component.Config
+	options           []option
+	telemetrySettings component.TelemetrySettings
+	logger            *zap.Logger
+	apiConfig         k8sconfig.APIConfig
+	kc                kube.Client
+	passthroughMode   bool
+	rules             kube.ExtractionRules
+	filters           kube.Filters
+	podAssociations   []kube.Association
+	podIgnore         kube.Excludes
 }
 
 func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kube.ClientProvider) error {
@@ -152,6 +155,12 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 				resource.Attributes().PutStr(key, val)
 			}
 		}
+		nodeUID := kp.getUIDForPodsNode(nodeName)
+		if nodeUID != "" {
+			if _, found := resource.Attributes().Get(conventions.AttributeK8SNodeUID); !found {
+				resource.Attributes().PutStr(conventions.AttributeK8SNodeUID, nodeUID)
+			}
+		}
 	}
 }
 
@@ -247,6 +256,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsNode(nodeName string) map[str
 		return nil
 	}
 	return node.Attributes
+}
+
+func (kp *kubernetesprocessor) getUIDForPodsNode(nodeName string) string {
+	node, ok := kp.kc.GetNode(nodeName)
+	if !ok {
+		return ""
+	}
+	return node.NodeUID
 }
 
 // intFromAttribute extracts int value from an attribute stored as string or int

@@ -107,7 +107,7 @@ func Test_influxHTTPWriterBatch_maxPayload(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			var httpRequests []*http.Request
 
-			mockHTTPService := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mockHTTPService := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				httpRequests = append(httpRequests, r)
 			}))
 			t.Cleanup(mockHTTPService.Close)
@@ -149,7 +149,7 @@ func Test_influxHTTPWriterBatch_maxPayload(t *testing.T) {
 func Test_influxHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 	var recordedRequest *http.Request
 	var recordedRequestBody []byte
-	noopHTTPServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	noopHTTPServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		if assert.Nil(t, recordedRequest) {
 			recordedRequest = r
 			recordedRequestBody, _ = io.ReadAll(r.Body)
@@ -162,7 +162,7 @@ func Test_influxHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 	influxWriter, err := newInfluxHTTPWriter(
 		new(common.NoopLogger),
 		&Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: noopHTTPServer.URL,
 			},
 		},
@@ -185,4 +185,25 @@ func Test_influxHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 	if assert.NotNil(t, recordedRequest) {
 		assert.Equal(t, "m,k=v f=1i 1000000002000", strings.TrimSpace(string(recordedRequestBody)))
 	}
+}
+
+func Test_composeWriteURL_doesNotPanic(t *testing.T) {
+	assert.NotPanics(t, func() {
+		cfg := &Config{}
+		_, err := composeWriteURL(cfg)
+		assert.NoError(t, err)
+	})
+
+	assert.NotPanics(t, func() {
+		cfg := &Config{
+			V1Compatibility: V1Compatibility{
+				Enabled:  true,
+				DB:       "my-db",
+				Username: "my-username",
+				Password: "my-password",
+			},
+		}
+		_, err := composeWriteURL(cfg)
+		assert.NoError(t, err)
+	})
 }

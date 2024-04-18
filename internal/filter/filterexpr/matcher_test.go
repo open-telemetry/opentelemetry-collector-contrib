@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/antonmedv/expr/vm"
+	"github.com/expr-lang/expr/vm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"

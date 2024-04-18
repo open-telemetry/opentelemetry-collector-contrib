@@ -65,7 +65,11 @@ func (s *mongodbScraper) recordCollections(now pcommon.Timestamp, doc bson.M, db
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	s.mb.RecordMongodbCollectionCountDataPoint(now, val, dbName)
+	if s.removeDatabaseAttr {
+		s.mb.RecordMongodbCollectionCountDataPoint(now, val)
+	} else {
+		s.mb.RecordMongodbCollectionCountDataPointDatabaseAttr(now, val, dbName)
+	}
 }
 
 func (s *mongodbScraper) recordDataSize(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
@@ -76,7 +80,11 @@ func (s *mongodbScraper) recordDataSize(now pcommon.Timestamp, doc bson.M, dbNam
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	s.mb.RecordMongodbDataSizeDataPoint(now, val, dbName)
+	if s.removeDatabaseAttr {
+		s.mb.RecordMongodbDataSizeDataPoint(now, val)
+	} else {
+		s.mb.RecordMongodbDataSizeDataPointDatabaseAttr(now, val, dbName)
+	}
 }
 
 func (s *mongodbScraper) recordStorageSize(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
@@ -87,7 +95,11 @@ func (s *mongodbScraper) recordStorageSize(now pcommon.Timestamp, doc bson.M, db
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	s.mb.RecordMongodbStorageSizeDataPoint(now, val, dbName)
+	if s.removeDatabaseAttr {
+		s.mb.RecordMongodbStorageSizeDataPoint(now, val)
+	} else {
+		s.mb.RecordMongodbStorageSizeDataPointDatabaseAttr(now, val, dbName)
+	}
 }
 
 func (s *mongodbScraper) recordObjectCount(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
@@ -98,7 +110,11 @@ func (s *mongodbScraper) recordObjectCount(now pcommon.Timestamp, doc bson.M, db
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	s.mb.RecordMongodbObjectCountDataPoint(now, val, dbName)
+	if s.removeDatabaseAttr {
+		s.mb.RecordMongodbObjectCountDataPoint(now, val)
+	} else {
+		s.mb.RecordMongodbObjectCountDataPointDatabaseAttr(now, val, dbName)
+	}
 }
 
 func (s *mongodbScraper) recordIndexCount(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
@@ -109,7 +125,11 @@ func (s *mongodbScraper) recordIndexCount(now pcommon.Timestamp, doc bson.M, dbN
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	s.mb.RecordMongodbIndexCountDataPoint(now, val, dbName)
+	if s.removeDatabaseAttr {
+		s.mb.RecordMongodbIndexCountDataPoint(now, val)
+	} else {
+		s.mb.RecordMongodbIndexCountDataPointDatabaseAttr(now, val, dbName)
+	}
 }
 
 func (s *mongodbScraper) recordIndexSize(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
@@ -120,7 +140,11 @@ func (s *mongodbScraper) recordIndexSize(now pcommon.Timestamp, doc bson.M, dbNa
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	s.mb.RecordMongodbIndexSizeDataPoint(now, val, dbName)
+	if s.removeDatabaseAttr {
+		s.mb.RecordMongodbIndexSizeDataPoint(now, val)
+	} else {
+		s.mb.RecordMongodbIndexSizeDataPointDatabaseAttr(now, val, dbName)
+	}
 }
 
 func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
@@ -135,7 +159,11 @@ func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, db
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 			return
 		}
-		s.mb.RecordMongodbExtentCountDataPoint(now, val, dbName)
+		if s.removeDatabaseAttr {
+			s.mb.RecordMongodbExtentCountDataPoint(now, val)
+		} else {
+			s.mb.RecordMongodbExtentCountDataPointDatabaseAttr(now, val, dbName)
+		}
 	}
 }
 
@@ -150,7 +178,11 @@ func (s *mongodbScraper) recordConnections(now pcommon.Timestamp, doc bson.M, db
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 			continue
 		}
-		s.mb.RecordMongodbConnectionCountDataPoint(now, val, dbName, ct)
+		if s.removeDatabaseAttr {
+			s.mb.RecordMongodbConnectionCountDataPoint(now, val, ct)
+		} else {
+			s.mb.RecordMongodbConnectionCountDataPointDatabaseAttr(now, val, dbName, ct)
+		}
 	}
 }
 
@@ -166,7 +198,11 @@ func (s *mongodbScraper) recordMemoryUsage(now pcommon.Timestamp, doc bson.M, db
 		}
 		// convert from mebibytes to bytes
 		memUsageBytes := val * int64(1048576)
-		s.mb.RecordMongodbMemoryUsageDataPoint(now, memUsageBytes, dbName, mt)
+		if s.removeDatabaseAttr {
+			s.mb.RecordMongodbMemoryUsageDataPoint(now, memUsageBytes, mt)
+		} else {
+			s.mb.RecordMongodbMemoryUsageDataPointDatabaseAttr(now, memUsageBytes, dbName, mt)
+		}
 	}
 }
 
@@ -180,7 +216,11 @@ func (s *mongodbScraper) recordDocumentOperations(now pcommon.Timestamp, doc bso
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 			continue
 		}
-		s.mb.RecordMongodbDocumentOperationCountDataPoint(now, val, dbName, metadataKey)
+		if s.removeDatabaseAttr {
+			s.mb.RecordMongodbDocumentOperationCountDataPoint(now, val, metadataKey)
+		} else {
+			s.mb.RecordMongodbDocumentOperationCountDataPointDatabaseAttr(now, val, dbName, metadataKey)
+		}
 	}
 }
 
@@ -376,7 +416,11 @@ func (s *mongodbScraper) recordLockAcquireCounts(now pcommon.Timestamp, doc bson
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 				continue
 			}
-			s.mb.RecordMongodbLockAcquireCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			if s.removeDatabaseAttr {
+				s.mb.RecordMongodbLockAcquireCountDataPoint(now, val, lockTypeAttribute, lockModeAttribute)
+			} else {
+				s.mb.RecordMongodbLockAcquireCountDataPointDatabaseAttr(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			}
 		}
 	}
 }
@@ -406,7 +450,11 @@ func (s *mongodbScraper) recordLockAcquireWaitCounts(now pcommon.Timestamp, doc 
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 				continue
 			}
-			s.mb.RecordMongodbLockAcquireWaitCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			if s.removeDatabaseAttr {
+				s.mb.RecordMongodbLockAcquireWaitCountDataPoint(now, val, lockTypeAttribute, lockModeAttribute)
+			} else {
+				s.mb.RecordMongodbLockAcquireWaitCountDataPointDatabaseAttr(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			}
 		}
 	}
 }
@@ -436,7 +484,11 @@ func (s *mongodbScraper) recordLockTimeAcquiringMicros(now pcommon.Timestamp, do
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 				continue
 			}
-			s.mb.RecordMongodbLockAcquireTimeDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			if s.removeDatabaseAttr {
+				s.mb.RecordMongodbLockAcquireTimeDataPoint(now, val, lockTypeAttribute, lockModeAttribute)
+			} else {
+				s.mb.RecordMongodbLockAcquireTimeDataPointDatabaseAttr(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			}
 		}
 	}
 }
@@ -466,7 +518,11 @@ func (s *mongodbScraper) recordLockDeadlockCount(now pcommon.Timestamp, doc bson
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 				continue
 			}
-			s.mb.RecordMongodbLockDeadlockCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			if s.removeDatabaseAttr {
+				s.mb.RecordMongodbLockDeadlockCountDataPoint(now, val, lockTypeAttribute, lockModeAttribute)
+			} else {
+				s.mb.RecordMongodbLockDeadlockCountDataPointDatabaseAttr(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			}
 		}
 	}
 }
@@ -490,7 +546,11 @@ func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bs
 		}
 		indexAccessTotal += indexAccessValue
 	}
-	s.mb.RecordMongodbIndexAccessCountDataPoint(now, indexAccessTotal, dbName, collectionName)
+	if s.removeDatabaseAttr {
+		s.mb.RecordMongodbIndexAccessCountDataPoint(now, indexAccessTotal, collectionName)
+	} else {
+		s.mb.RecordMongodbIndexAccessCountDataPointDatabaseAttr(now, indexAccessTotal, dbName, collectionName)
+	}
 }
 
 // Top Stats

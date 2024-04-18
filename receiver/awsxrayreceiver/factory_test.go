@@ -23,7 +23,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 
-	assert.Equal(t, component.Type(metadata.Type), factory.Type())
+	assert.Equal(t, metadata.Type, factory.Type())
 }
 
 func TestCreateTracesReceiver(t *testing.T) {

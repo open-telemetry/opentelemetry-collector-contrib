@@ -4,6 +4,7 @@
 package rabbitmqreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -13,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/metadata"
 )
@@ -27,25 +27,24 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing username, password, and invalid endpoint",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "invalid://endpoint:  12efg",
 				},
 			},
-			expectedErr: multierr.Combine(
+			expectedErr: errors.Join(
 				errMissingUsername,
 				errMissingPassword,
-				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
-			),
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`)),
 		},
 		{
 			desc: "missing password and invalid endpoint",
 			cfg: &Config{
 				Username: "otelu",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "invalid://endpoint:  12efg",
 				},
 			},
-			expectedErr: multierr.Combine(
+			expectedErr: errors.Join(
 				errMissingPassword,
 				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
 			),
@@ -54,11 +53,11 @@ func TestValidate(t *testing.T) {
 			desc: "missing username and invalid endpoint",
 			cfg: &Config{
 				Password: "otelp",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "invalid://endpoint:  12efg",
 				},
 			},
-			expectedErr: multierr.Combine(
+			expectedErr: errors.Join(
 				errMissingUsername,
 				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
 			),
@@ -68,11 +67,11 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Username: "otelu",
 				Password: "otelp",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "invalid://endpoint:  12efg",
 				},
 			},
-			expectedErr: multierr.Combine(
+			expectedErr: errors.Join(
 				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
 			),
 		},
@@ -81,7 +80,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Username: "otelu",
 				Password: "otelp",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
 				},
 			},

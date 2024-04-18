@@ -406,7 +406,7 @@ func TestEpClient_ServiceNameToPodNum(t *testing.T) {
 func TestTransformFuncEndpoint(t *testing.T) {
 	info, err := transformFuncEndpoint(nil)
 	assert.Nil(t, info)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestNewEndpointClient(t *testing.T) {
@@ -416,5 +416,6 @@ func TestNewEndpointClient(t *testing.T) {
 	fakeClientSet := fake.NewSimpleClientset(endpointsArray...)
 	client := newEpClient(fakeClientSet, zap.NewNop(), setOption)
 	assert.NotNil(t, client)
+	client.shutdown()
 	removeTempKubeConfig()
 }

@@ -57,6 +57,8 @@ func (cr *CarbonDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   carbon:
+    sending_queue:
+      enabled: false
     endpoint: "127.0.0.1:%d"`, cr.Port)
 }
 

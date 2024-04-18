@@ -15,8 +15,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -26,7 +26,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 var (
@@ -152,9 +151,9 @@ func TestAccessLogsRetrieval(t *testing.T) {
 			name: "basic",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+					Granularity:      defaultGranularity,
+					BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 					Logs: LogConfig{
 						Enabled: true,
 						Projects: []*LogsProjectConfig{
@@ -206,9 +205,9 @@ func TestAccessLogsRetrieval(t *testing.T) {
 			name: "multiple page read all",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+					Granularity:      defaultGranularity,
+					BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 					Logs: LogConfig{
 						Enabled: true,
 						Projects: []*LogsProjectConfig{
@@ -243,9 +242,9 @@ func TestAccessLogsRetrieval(t *testing.T) {
 			name: "multiple page break early based on timestamp",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+					Granularity:      defaultGranularity,
+					BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 					Logs: LogConfig{
 						Enabled: true,
 						Projects: []*LogsProjectConfig{
@@ -304,9 +303,9 @@ func TestCheckpointing(t *testing.T) {
 	}
 
 	config := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-		Granularity:               defaultGranularity,
-		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		Granularity:      defaultGranularity,
+		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 		Logs: LogConfig{
 			Enabled:  true,
 			Projects: []*LogsProjectConfig{pc},

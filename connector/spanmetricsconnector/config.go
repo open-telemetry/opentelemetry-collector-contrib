@@ -46,12 +46,30 @@ type Config struct {
 	// Optional. See defaultDimensionsCacheSize in connector.go for the default value.
 	DimensionsCacheSize int `mapstructure:"dimensions_cache_size"`
 
+	// ResourceMetricsCacheSize defines the size of the cache holding metrics for a service. This is mostly relevant for
+	// cumulative temporality to avoid memory leaks and correct metric timestamp resets.
+	// Optional. See defaultResourceMetricsCacheSize in connector.go for the default value.
+	ResourceMetricsCacheSize int `mapstructure:"resource_metrics_cache_size"`
+
+	// ResourceMetricsKeyAttributes filters the resource attributes used to create the resource metrics key hash.
+	// This can be used to avoid situations where resource attributes may change across service restarts, causing
+	// metric counters to break (and duplicate). A resource does not need to have all of the attributes. The list
+	// must include enough attributes to properly identify unique resources or risk aggregating data from more
+	// than one service and span.
+	// e.g. ["service.name", "telemetry.sdk.language", "telemetry.sdk.name"]
+	// See https://opentelemetry.io/docs/specs/semconv/resource/ for possible attributes.
+	ResourceMetricsKeyAttributes []string `mapstructure:"resource_metrics_key_attributes"`
+
 	AggregationTemporality string `mapstructure:"aggregation_temporality"`
 
 	Histogram HistogramConfig `mapstructure:"histogram"`
 
 	// MetricsEmitInterval is the time period between when metrics are flushed or emitted to the configured MetricsExporter.
 	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
+
+	// MetricsExpiration is the time period after which, if no new spans are received, metrics are considered stale and will no longer be exported.
+	// Default value (0) means that the metrics will never expire.
+	MetricsExpiration time.Duration `mapstructure:"metrics_expiration"`
 
 	// Namespace is the namespace of the metrics emitted by the connector.
 	Namespace string `mapstructure:"namespace"`
@@ -71,7 +89,8 @@ type HistogramConfig struct {
 }
 
 type ExemplarsConfig struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled         bool `mapstructure:"enabled"`
+	MaxPerDataPoint *int `mapstructure:"max_per_data_point"`
 }
 
 type ExponentialHistogramConfig struct {
@@ -110,6 +129,14 @@ func (c Config) Validate() error {
 
 	if c.Histogram.Explicit != nil && c.Histogram.Exponential != nil {
 		return errors.New("use either `explicit` or `exponential` buckets histogram")
+	}
+
+	if c.MetricsFlushInterval < 0 {
+		return fmt.Errorf("invalid metrics_flush_interval: %v, the duration should be positive", c.MetricsFlushInterval)
+	}
+
+	if c.MetricsExpiration < 0 {
+		return fmt.Errorf("invalid metrics_expiration: %v, the duration should be positive", c.MetricsExpiration)
 	}
 
 	return nil

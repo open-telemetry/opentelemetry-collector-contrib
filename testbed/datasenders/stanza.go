@@ -116,10 +116,10 @@ func (f *FileLogWriter) GenConfigYAMLStr() string {
       - type: regex_parser
         regex: '^(?P<time>\d{4}-\d{2}-\d{2}) (?P<sev>[A-Z0-9]*) (?P<msg>.*)$'
         timestamp:
-          parse_from: body.time
+          parse_from: attributes.time
           layout: '%%Y-%%m-%%d'
         severity:
-          parse_from: body.sev
+          parse_from: attributes.sev
 `, f.file.Name())
 }
 

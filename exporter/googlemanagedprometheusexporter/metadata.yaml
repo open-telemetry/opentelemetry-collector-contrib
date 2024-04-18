@@ -1,9 +1,13 @@
 type: googlemanagedprometheus
+scope_name: otelcol/googlemanagedprometheus
 
 status:
   class: exporter
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq]
+  distributions: [contrib]
   codeowners:
     active: [aabmass, dashpole, jsuereth, punya, damemi, psx95]
+
+tests:
+  skip_lifecycle: true

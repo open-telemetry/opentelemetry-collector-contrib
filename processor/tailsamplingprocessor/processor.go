@@ -77,10 +77,6 @@ const (
 // newTracesProcessor returns a processor.TracesProcessor that will perform tail sampling according to the given
 // configuration.
 func newTracesProcessor(ctx context.Context, settings component.TelemetrySettings, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
 	policyNames := map[string]bool{}
 	policies := make([]*policy, len(cfg.PolicyCfgs))
 	for i := range cfg.PolicyCfgs {
@@ -308,6 +304,13 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 				mutators,
 				statCountTracesSampled.M(int64(1)),
 			)
+			if isMetricStatCountSpansSampledEnabled() {
+				_ = stats.RecordWithTags(
+					p.ctx,
+					mutators,
+					statCountSpansSampled.M(trace.SpanCount.Load()),
+				)
+			}
 			metrics.decisionSampled++
 
 		case sampling.NotSampled:
@@ -317,6 +320,13 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 				mutators,
 				statCountTracesSampled.M(int64(1)),
 			)
+			if isMetricStatCountSpansSampledEnabled() {
+				_ = stats.RecordWithTags(
+					p.ctx,
+					mutators,
+					statCountSpansSampled.M(trace.SpanCount.Load()),
+				)
+			}
 			metrics.decisionNotSampled++
 		}
 	}

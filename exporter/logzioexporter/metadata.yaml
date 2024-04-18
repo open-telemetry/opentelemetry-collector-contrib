@@ -1,9 +1,15 @@
 type: logzio
+scope_name: otelcol/logzio
 
 status:
   class: exporter
   stability:
     beta: [traces, logs]
-  distributions: [contrib, observiq, aws]
+  distributions: [contrib]
   codeowners:
-    active: [Doron-Bargo, yotamloe]
+    active: [yotamloe]
+
+tests:
+  config:
+    endpoint: "172.0.0.1:8080:"
+  expect_consumer_error: true

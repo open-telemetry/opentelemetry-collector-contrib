@@ -40,8 +40,8 @@ var (
 	errUnauthorized = errors.New("STATUS 403, unauthorized")
 )
 
-func newClient(c *Config, settings component.TelemetrySettings, host component.Host, logger *zap.Logger) (*nsxClient, error) {
-	client, err := c.HTTPClientSettings.ToClient(host, settings)
+func newClient(ctx context.Context, c *Config, settings component.TelemetrySettings, host component.Host, logger *zap.Logger) (*nsxClient, error) {
+	client, err := c.ClientConfig.ToClientContext(ctx, host, settings)
 	if err != nil {
 		return nil, err
 	}

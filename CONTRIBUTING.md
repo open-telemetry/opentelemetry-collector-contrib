@@ -119,7 +119,7 @@ Components refer to connectors, exporters, extensions, processors, and receivers
 * Implement the [component.Component](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component) interface
 * Provide a configuration structure which defines the configuration of the component
 * Provide the implementation which performs the component operation
-* Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md)).
+* Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/README.md)).
 
 Familiarize yourself with the interface of the component that you want to write, and use existing implementations as a reference.
 [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
@@ -152,7 +152,26 @@ and its contributors.
   and in the respective testing harnesses. To align with the test goal of the project, components must be testable within the framework defined within
   the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
   components number with a comment within the PR explaining as to why it can not be tested.
-- Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/metadata-schema.yaml).
+- Enable [goleak checks](https://github.com/uber-go/goleak) to help ensure your component does not leak goroutines. This
+  requires adding a file named `package_test.go` to every sub-directory containing tests. This file should have the following contents by default:
+```
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package fooreceiver
+
+import (
+	"testing"
+
+	"go.uber.org/goleak"
+)
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
+```
+
+- Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/metadata-schema.yaml).
 Here is a minimal representation:
 ```
 type: <name of your component, such as apache, http, haproxy, postgresql>
@@ -181,7 +200,7 @@ status:
 // Package fooreceiver bars.
 package fooreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fooreceiver"
 ```
-- Type `make update-codeowners`. This will trigger the regeneration of the `.github/CODEOWNERS` file and the [metadata generator](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md#using-the-metadata-generator) to generate the associated code/documentation.
+- Type `make update-codeowners`. This will trigger the regeneration of the `.github/CODEOWNERS` file and the [metadata generator](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/README.md#using-the-metadata-generator) to generate the associated code/documentation.
 
 When submitting a component to the community, consider breaking it down into separate PRs as follows:
 
@@ -201,7 +220,6 @@ When submitting a component to the community, consider breaking it down into sep
     * `make genotelcontribcol`
     * `make genoteltestbedcol`
     * `make generate`
-    * `make  gendependabot`
     * `make multimod-verify`
     * `make generate-gh-issue-templates`
 * **Second PR** should include the concrete implementation of the component. If the
@@ -222,6 +240,7 @@ to be included in the distributed otelcol-contrib binaries and docker images.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
+* [@crobert-1](https://github.com/crobert-1)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
 * [@Aneurysm9](https://github.com/Aneurysm9)
@@ -233,6 +252,11 @@ The following GitHub users are the currently available sponsors, either by being
 * [@jpkrohling](https://github.com/jpkrohling)
 * [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
+* [@fatsheep9146](https://github.com/fatsheep9146)
+* [@astencel-sumo](https://github.com/astencel-sumo)
+* [@songy23](https://github.com/songy23)
+* [@Bryan Aguilar](https://github.com/bryan-aguilar)
+* [@atoulme](https://github.com/atoulme)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 
@@ -357,13 +381,18 @@ Example label comment:
 
 ## Becoming a Code Owner
 
-A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, responding to issues, and reviewing pull requests.
+A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, triaging and responding to issues, and reviewing pull requests.
 
 Sometimes a component may be in need of a new or additional Code Owner. A few reasons this situation may arise would be:
-- The component was never assigned a Code Owner.
+
+- The existing Code Owners are actively looking for more help.
 - A previous Code Owner stepped down.
 - An existing Code Owner has become unresponsive. See [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector#unmaintained).
-- The existing Code Owners are actively looking for new Code Owners to help.
+- The component was never assigned a Code Owner.
+
+Code Ownership does not have to be a full-time job. If you can find a couple hours to help out on a recurring basis, please consider pursuing Code Ownership.
+
+### Requirements
 
 If you would like to help and become a Code Owner you must meet the following requirements:
 
@@ -372,9 +401,18 @@ If you would like to help and become a Code Owner you must meet the following re
 
 Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers. Meeting the above requirements is not a guarantee to be granted Code Ownership.
 
-To become a Code Owner, open a PR with the CODEOWNERS file modified, adding your GitHub username to the component's row. Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
+### How to become a Code Owner
 
-### Makefile Guidelines
+To become a Code Owner, open a PR with the following changes:
+
+1. Add your GitHub username to the active codeowners entry in the component's `metadata.yaml` file.
+2. Run the command `make update-codeowners`.
+      * Note: A GitHub [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) must be configured for this command to work.
+      * If this command is unsuccessful, manually update the component's row in the [CODEOWNERS](.github/CODEOWNERS) file, and then run `make generate` to regenerate the component's README header.
+
+Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
+
+## Makefile Guidelines
 
 When adding or modifying the `Makefile`'s in this repository, consider the following design guidelines.
 
@@ -383,7 +421,7 @@ The [Makefile](./Makefile) SHOULD contain "repo-level" targets. (i.e. targets th
 Likewise, `Makefile.Common` SHOULD contain "module-level" targets. (i.e. targets that apply to one module at a time.)
 Each module should have a `Makefile` at its root that includes `Makefile.Common`.
 
-#### Module-level targets
+### Module-level targets
 
 Module-level targets SHOULD NOT act on nested modules. For example, running `make lint` at the root of the repo will
 *only* evaluate code that is part of the `go.opentelemetry.io/collector` module. This excludes nested modules such as
@@ -393,7 +431,7 @@ Each module-level target SHOULD have a corresponding repo-level target. For exam
 in each module. In this way, the entire repository is covered. The root `Makefile` contains some "for each module" targets
 that can wrap a module-level target into a repo-level target.
 
-#### Repo-level targets
+### Repo-level targets
 
 Whenever reasonable, targets SHOULD be implemented as module-level targets (and wrapped with a repo-level target).
 However, there are many valid justifications for implementing a standalone repo-level target.
@@ -403,7 +441,7 @@ However, there are many valid justifications for implementing a standalone repo-
 3. A necessary tool does not provide a mechanism for scoping its application. (e.g. `porto` cannot be limited to a specific module.)
 4. The "for each module" pattern would result in incomplete coverage of the codebase. (e.g. A target that scans all file, not just `.go` files.)
 
-#### Default targets
+### Default targets
 
 The default module-level target (i.e. running `make` in the context of an individual module), should run a substantial set of module-level
 targets for an individual module. Ideally, this would include *all* module-level targets, but exceptions should be made if a particular

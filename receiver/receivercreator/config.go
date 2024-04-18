@@ -86,13 +86,13 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return nil
 	}
 
-	if err := componentParser.Unmarshal(cfg); err != nil {
+	if err := componentParser.Unmarshal(cfg, confmap.WithIgnoreUnused()); err != nil {
 		return err
 	}
 
 	for endpointType := range cfg.ResourceAttributes {
 		switch endpointType {
-		case observer.ContainerType, observer.HostPortType, observer.K8sNodeType, observer.PodType, observer.PortType:
+		case observer.ContainerType, observer.K8sServiceType, observer.HostPortType, observer.K8sNodeType, observer.PodType, observer.PortType:
 		default:
 			return fmt.Errorf("resource attributes for unsupported endpoint type %q", endpointType)
 		}
@@ -115,7 +115,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		}
 
 		// Unmarshals receiver_creator configuration like rule.
-		if err = subreceiverSection.Unmarshal(&subreceiver); err != nil {
+		if err = subreceiverSection.Unmarshal(&subreceiver, confmap.WithIgnoreUnused()); err != nil {
 			return fmt.Errorf("failed to deserialize sub-receiver %q: %w", subreceiverKey, err)
 		}
 

@@ -1,9 +1,0 @@
-http_forwarder:
-http_forwarder/1:
-  ingress:
-    endpoint: http://localhost:7070
-  egress:
-    endpoint: http://target/
-    headers:
-      otel_http_forwarder: dev
-    timeout: 5s

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis/v7"
+	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -38,7 +38,7 @@ func newRedisScraper(cfg *Config, settings receiver.CreateSettings) (scraperhelp
 		Addr:     cfg.Endpoint,
 		Username: cfg.Username,
 		Password: string(cfg.Password),
-		Network:  cfg.Transport,
+		Network:  string(cfg.Transport),
 	}
 
 	var err error
@@ -61,7 +61,7 @@ func newRedisScraperWithClient(client client, settings receiver.CreateSettings, 
 		configInfo: configInfo,
 	}
 	return scraperhelper.NewScraper(
-		metadata.Type,
+		metadata.Type.String(),
 		rs.Scrape,
 		scraperhelper.WithShutdown(rs.shutdown),
 	)

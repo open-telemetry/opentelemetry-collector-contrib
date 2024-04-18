@@ -4,6 +4,7 @@
 package ecsutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,7 +23,7 @@ type Client interface {
 }
 
 // NewClientProvider creates the default rest client provider
-func NewClientProvider(baseURL url.URL, clientSettings confighttp.HTTPClientSettings, host component.Host, settings component.TelemetrySettings) ClientProvider {
+func NewClientProvider(baseURL url.URL, clientSettings confighttp.ClientConfig, host component.Host, settings component.TelemetrySettings) ClientProvider {
 	return &defaultClientProvider{
 		baseURL:        baseURL,
 		clientSettings: clientSettings,
@@ -38,13 +39,14 @@ type ClientProvider interface {
 
 type defaultClientProvider struct {
 	baseURL        url.URL
-	clientSettings confighttp.HTTPClientSettings
+	clientSettings confighttp.ClientConfig
 	host           component.Host
 	settings       component.TelemetrySettings
 }
 
 func (dcp *defaultClientProvider) BuildClient() (Client, error) {
 	return defaultClient(
+		context.Background(),
 		dcp.baseURL,
 		dcp.clientSettings,
 		dcp.host,
@@ -53,12 +55,13 @@ func (dcp *defaultClientProvider) BuildClient() (Client, error) {
 }
 
 func defaultClient(
+	ctx context.Context,
 	baseURL url.URL,
-	clientSettings confighttp.HTTPClientSettings,
+	clientSettings confighttp.ClientConfig,
 	host component.Host,
 	settings component.TelemetrySettings,
 ) (*clientImpl, error) {
-	client, err := clientSettings.ToClient(host, settings)
+	client, err := clientSettings.ToClientContext(ctx, host, settings)
 	if err != nil {
 		return nil, err
 	}

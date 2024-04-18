@@ -24,20 +24,23 @@ const (
 
 func createDefaultConfig() component.Config {
 	// Default HttpClient settings
-	httpCfg := confighttp.NewDefaultHTTPClientSettings()
+	httpCfg := confighttp.NewDefaultClientConfig()
 	httpCfg.Headers = map[string]configopaque.String{
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
+	httpCfg.Timeout = defaultMaxSearchWaitTime
 
 	// Default ScraperController settings
-	scfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	scfg := scraperhelper.NewDefaultControllerConfig()
 	scfg.CollectionInterval = defaultInterval
 	scfg.Timeout = defaultMaxSearchWaitTime
 
 	return &Config{
-		HTTPClientSettings:        httpCfg,
-		ScraperControllerSettings: scfg,
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		IdxEndpoint:          httpCfg,
+		SHEndpoint:           httpCfg,
+		CMEndpoint:           httpCfg,
+		ControllerConfig:     scfg,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -58,7 +61,7 @@ func createMetricsReceiver(
 	cfg := baseCfg.(*Config)
 	splunkScraper := newSplunkMetricsScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type,
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(),
 		splunkScraper.scrape,
 		scraperhelper.WithStart(splunkScraper.start))
 	if err != nil {
@@ -66,7 +69,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings,
+		&cfg.ControllerConfig,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scraper),

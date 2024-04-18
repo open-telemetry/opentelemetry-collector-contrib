@@ -1,7 +1,7 @@
 statsd:
 statsd/receiver_settings:
   endpoint: "localhost:12345"
-  transport: "custom_transport"
+  transport: "udp6"
   aggregation_interval: 70s
   enable_metric_type: false
   timer_histogram_mapping:

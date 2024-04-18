@@ -48,10 +48,10 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Invalid HTTP config",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile: "/non/existent",
 						},
 					},
@@ -65,8 +65,8 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Valid Configuration",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					TLSSetting: configtls.TLSClientSetting{},
+				ClientConfig: confighttp.ClientConfig{
+					TLSSetting: configtls.ClientConfig{},
 					Endpoint:   defaultEndpoint,
 				},
 			},
@@ -79,7 +79,7 @@ func TestNewClient(t *testing.T) {
 
 	for _, tc := range testCase {
 		t.Run(tc.desc, func(t *testing.T) {
-			ac, err := newClient(tc.cfg, tc.host, tc.settings, tc.logger)
+			ac, err := newClient(context.Background(), tc.cfg, tc.host, tc.settings, tc.logger)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
 				require.Contains(t, err.Error(), tc.expectError.Error())
@@ -108,7 +108,7 @@ func TestGetNewToken(t *testing.T) {
 			desc: "Non-200 Response",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusUnauthorized)
 				}))
 				defer ts.Close()
@@ -125,7 +125,7 @@ func TestGetNewToken(t *testing.T) {
 			desc: "Bad payload returned",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("[{}]"))
 					require.NoError(t, err)
 				}))
@@ -145,7 +145,7 @@ func TestGetNewToken(t *testing.T) {
 				data := loadAPIResponseData(t, loginResponseFile)
 
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write(data)
 					require.NoError(t, err)
 				}))
@@ -356,7 +356,7 @@ func TestGetVirtualServers(t *testing.T) {
 			desc: "Successful call empty body",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{}"))
 					require.NoError(t, err)
 				}))
@@ -386,7 +386,7 @@ func TestGetPools(t *testing.T) {
 			desc: "Non-200 Response",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusUnauthorized)
 				}))
 				defer ts.Close()
@@ -402,7 +402,7 @@ func TestGetPools(t *testing.T) {
 			desc: "Bad payload returned",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("[{}]"))
 					require.NoError(t, err)
 				}))
@@ -421,7 +421,7 @@ func TestGetPools(t *testing.T) {
 				data := loadAPIResponseData(t, poolsStatsResponseFile)
 
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write(data)
 					require.NoError(t, err)
 				}))
@@ -443,7 +443,7 @@ func TestGetPools(t *testing.T) {
 			desc: "Successful call empty body",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{}"))
 					require.NoError(t, err)
 				}))
@@ -473,7 +473,7 @@ func TestGetPoolMembers(t *testing.T) {
 			desc: "Non-200 Response for all",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusUnauthorized)
 				}))
 				defer ts.Close()
@@ -493,7 +493,7 @@ func TestGetPoolMembers(t *testing.T) {
 			desc: "Bad payload returned for all",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("[{}]"))
 					require.NoError(t, err)
 				}))
@@ -605,7 +605,7 @@ func TestGetPoolMembers(t *testing.T) {
 			desc: "Successful call empty body for all",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{}"))
 					require.NoError(t, err)
 				}))
@@ -639,7 +639,7 @@ func TestGetNodes(t *testing.T) {
 			desc: "Non-200 Response",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusUnauthorized)
 				}))
 				defer ts.Close()
@@ -655,7 +655,7 @@ func TestGetNodes(t *testing.T) {
 			desc: "Bad payload returned",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("[{}]"))
 					require.NoError(t, err)
 				}))
@@ -674,7 +674,7 @@ func TestGetNodes(t *testing.T) {
 				data := loadAPIResponseData(t, nodesStatsResponseFile)
 
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write(data)
 					require.NoError(t, err)
 				}))
@@ -696,7 +696,7 @@ func TestGetNodes(t *testing.T) {
 			desc: "Successful call empty body",
 			testFunc: func(t *testing.T) {
 				// Setup test server
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{}"))
 					require.NoError(t, err)
 				}))
@@ -722,7 +722,7 @@ func createTestClient(t *testing.T, baseEndpoint string) client {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = baseEndpoint
 
-	testClient, err := newClient(cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), zap.NewNop())
+	testClient, err := newClient(context.Background(), cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), zap.NewNop())
 	require.NoError(t, err)
 	return testClient
 }

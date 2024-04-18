@@ -31,25 +31,27 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 10 * time.Second,
 					InitialDelay:       time.Second,
 					Timeout:            5 * time.Second,
 				},
-				APIVersion: defaultAPIVersion,
-				Endpoint:   "unix:///run/podman/podman.sock",
+				APIVersion:           defaultAPIVersion,
+				Endpoint:             "unix:///run/podman/podman.sock",
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "all"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 2 * time.Second,
 					InitialDelay:       time.Second,
 					Timeout:            20 * time.Second,
 				},
-				APIVersion: defaultAPIVersion,
-				Endpoint:   "http://example.com/",
+				APIVersion:           defaultAPIVersion,
+				Endpoint:             "http://example.com/",
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 	}

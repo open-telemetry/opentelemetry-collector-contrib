@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 
@@ -63,7 +62,7 @@ func newPodmanConnection(logger *zap.Logger, endpoint string, sshKey string, ssh
 func tcpConnection(_url *url.URL) *http.Client {
 	return &http.Client{
 		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+			DialContext: func(context.Context, string, string) (net.Conn, error) {
 				return net.Dial("tcp", _url.Host)
 			},
 			DisableCompression: true,
@@ -169,7 +168,7 @@ func sshConnection(logger *zap.Logger, _url *url.URL, secure bool, key, passphra
 
 	return &http.Client{
 		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+			DialContext: func(context.Context, string, string) (net.Conn, error) {
 				return bastion.Dial("unix", _url.Path)
 			},
 		},

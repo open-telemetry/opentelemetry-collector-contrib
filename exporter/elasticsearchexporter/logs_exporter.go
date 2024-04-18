@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -18,9 +19,10 @@ import (
 type elasticsearchLogsExporter struct {
 	logger *zap.Logger
 
-	index        string
-	dynamicIndex bool
-	maxAttempts  int
+	index          string
+	logstashFormat LogstashFormatSettings
+	dynamicIndex   bool
+	maxAttempts    int
 
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
@@ -51,7 +53,11 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 		maxAttempts = cfg.Retry.MaxRequests
 	}
 
-	model := &encodeModel{dedup: cfg.Mapping.Dedup, dedot: cfg.Mapping.Dedot}
+	model := &encodeModel{
+		dedup: cfg.Mapping.Dedup,
+		dedot: cfg.Mapping.Dedot,
+		mode:  cfg.MappingMode(),
+	}
 
 	indexStr := cfg.LogsIndex
 	if cfg.Index != "" {
@@ -62,10 +68,11 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 		client:      client,
 		bulkIndexer: bulkIndexer,
 
-		index:        indexStr,
-		dynamicIndex: cfg.LogsDynamicIndex.Enabled,
-		maxAttempts:  maxAttempts,
-		model:        model,
+		index:          indexStr,
+		dynamicIndex:   cfg.LogsDynamicIndex.Enabled,
+		maxAttempts:    maxAttempts,
+		model:          model,
+		logstashFormat: cfg.LogstashFormat,
 	}
 	return esLogsExp, nil
 }
@@ -83,8 +90,9 @@ func (e *elasticsearchLogsExporter) pushLogsData(ctx context.Context, ld plog.Lo
 		resource := rl.Resource()
 		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
-			scope := ills.At(j).Scope()
-			logs := ills.At(j).LogRecords()
+			ill := ills.At(j)
+			scope := ill.Scope()
+			logs := ill.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				if err := e.pushLogRecord(ctx, resource, logs.At(k), scope); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
@@ -103,10 +111,18 @@ func (e *elasticsearchLogsExporter) pushLogsData(ctx context.Context, ld plog.Lo
 func (e *elasticsearchLogsExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		prefix := getFromBothResourceAndAttribute(indexPrefix, resource, record)
-		suffix := getFromBothResourceAndAttribute(indexSuffix, resource, record)
+		prefix := getFromAttributes(indexPrefix, resource, scope, record)
+		suffix := getFromAttributes(indexSuffix, resource, scope, record)
 
 		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+	}
+
+	if e.logstashFormat.Enabled {
+		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
+		if err != nil {
+			return err
+		}
+		fIndex = formattedIndex
 	}
 
 	document, err := e.model.encodeLog(resource, record, scope)

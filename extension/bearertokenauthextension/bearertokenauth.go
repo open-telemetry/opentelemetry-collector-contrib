@@ -180,6 +180,9 @@ func (b *BearerTokenAuth) RoundTripper(base http.RoundTripper) (http.RoundTrippe
 // Authenticate checks whether the given context contains valid auth data.
 func (b *BearerTokenAuth) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	auth, ok := headers["authorization"]
+	if !ok {
+		auth, ok = headers["Authorization"]
+	}
 	if !ok || len(auth) == 0 {
 		return ctx, errors.New("authentication didn't succeed")
 	}

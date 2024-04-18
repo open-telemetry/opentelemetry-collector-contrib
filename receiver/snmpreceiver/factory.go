@@ -31,7 +31,7 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig creates a config for SNMP with as many default values as possible
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: defaultCollectionInterval,
 			Timeout:            defaultTimeout,
 		},
@@ -61,12 +61,12 @@ func createMetricsReceiver(
 	}
 
 	snmpScraper := newScraper(params.Logger, snmpConfig, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, snmpScraper.scrape, scraperhelper.WithStart(snmpScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), snmpScraper.scrape, scraperhelper.WithStart(snmpScraper.start))
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&snmpConfig.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(scraper))
+	return scraperhelper.NewScraperControllerReceiver(&snmpConfig.ControllerConfig, params, consumer, scraperhelper.AddScraper(scraper))
 }
 
 // addMissingConfigDefaults adds any missing config parameters that have defaults
