@@ -6,7 +6,7 @@ require (
 	github.com/IBM/sarama v1.43.1
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.55.0
+	github.com/jaegertracing/jaeger v1.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.98.0
@@ -31,7 +31,7 @@ require (
 )
 
 require (
-	github.com/apache/thrift v0.19.0 // indirect
+	github.com/apache/thrift v0.20.0 // indirect
 	github.com/aws/aws-sdk-go v1.51.22 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
