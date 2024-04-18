@@ -13,10 +13,10 @@ import (
 )
 
 func TestQueryIODBWithoutInstanceName(t *testing.T) {
-	expected_bytes, err := os.ReadFile(path.Join("./testdata", "databaseIOQueryWithoutInstanceName.txt"))
+	expectedBytes, err := os.ReadFile(path.Join("./testdata", "databaseIOQueryWithoutInstanceName.txt"))
 	require.NoError(t, err)
 	// Replace all will fix newlines when testing on Windows
-	expected := strings.ReplaceAll(string(expected_bytes[:]), "\r\n", "\n")
+	expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
 
 	actual := getSQLServerDatabaseIOQuery("")
 
@@ -24,10 +24,10 @@ func TestQueryIODBWithoutInstanceName(t *testing.T) {
 }
 
 func TestQueryIODBWithInstanceName(t *testing.T) {
-	expected_bytes, err := os.ReadFile(path.Join("./testdata", "databaseIOQueryWithInstanceName.txt"))
+	expectedBytes, err := os.ReadFile(path.Join("./testdata", "databaseIOQueryWithInstanceName.txt"))
 	require.NoError(t, err)
 	// Replace all will fix newlines when testing on Windows
-	expected := strings.ReplaceAll(string(expected_bytes[:]), "\r\n", "\n")
+	expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
 
 	actual := getSQLServerDatabaseIOQuery("instanceName")
 
