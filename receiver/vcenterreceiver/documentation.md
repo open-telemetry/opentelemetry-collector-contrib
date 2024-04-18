@@ -466,6 +466,7 @@ The memory utilization of the VM.
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | vcenter.cluster.name | The name of the vCenter Cluster. | Any Str | true |
+| vcenter.datacenter.name | The name of the vCenter datacenter. | Any Str | true |
 | vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true |
 | vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true |
 | vcenter.resource_pool.inventory_path | The inventory path of the resource pool. | Any Str | true |

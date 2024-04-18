@@ -1,6 +1,9 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.host.name
           value:
             stringValue: DC0_H0
@@ -35,6 +38,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.cluster.name
           value:
             stringValue: DC0_C0
@@ -69,6 +75,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.host.name
           value:
             stringValue: DC0_H0
@@ -113,6 +122,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.datastore.name
           value:
             stringValue: LocalDS_0
@@ -151,6 +163,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.vm.name
           value:
             stringValue: DC0_H0_VM0
@@ -237,6 +252,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.vm.name
           value:
             stringValue: DC0_H0_VM1
@@ -323,6 +341,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.host.name
           value:
             stringValue: DC0_C0_H0
@@ -370,6 +391,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.host.name
           value:
             stringValue: DC0_C0_H1
@@ -417,6 +441,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.host.name
           value:
             stringValue: DC0_C0_H2
@@ -464,6 +491,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.cluster.name
           value:
             stringValue: DC0_C0
@@ -505,6 +535,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.vm.name
           value:
             stringValue: DC0_C0_RP0_VM0
@@ -594,6 +627,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.vm.name
           value:
             stringValue: DC0_C0_RP0_VM1
@@ -683,6 +719,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: DC0
         - key: vcenter.cluster.name
           value:
             stringValue: DC0_C0

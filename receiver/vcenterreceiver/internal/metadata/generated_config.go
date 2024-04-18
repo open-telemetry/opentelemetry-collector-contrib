@@ -220,6 +220,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 // ResourceAttributesConfig provides config for vcenter resource attributes.
 type ResourceAttributesConfig struct {
 	VcenterClusterName               ResourceAttributeConfig `mapstructure:"vcenter.cluster.name"`
+	VcenterDatacenterName            ResourceAttributeConfig `mapstructure:"vcenter.datacenter.name"`
 	VcenterDatastoreName             ResourceAttributeConfig `mapstructure:"vcenter.datastore.name"`
 	VcenterHostName                  ResourceAttributeConfig `mapstructure:"vcenter.host.name"`
 	VcenterResourcePoolInventoryPath ResourceAttributeConfig `mapstructure:"vcenter.resource_pool.inventory_path"`
@@ -231,6 +232,9 @@ type ResourceAttributesConfig struct {
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		VcenterClusterName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		VcenterDatacenterName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		VcenterDatastoreName: ResourceAttributeConfig{

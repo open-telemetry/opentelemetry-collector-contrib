@@ -7,10 +7,14 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, schmikei]
+    active: [djaglowski, schmikei, StefanKurek]
     seeking_new: true
 
-resource_attributes:
+resource_attributes:  
+  vcenter.datacenter.name:
+    description: The name of the vCenter datacenter.
+    enabled: true
+    type: string
   vcenter.cluster.name:
     description: The name of the vCenter Cluster.
     enabled: true

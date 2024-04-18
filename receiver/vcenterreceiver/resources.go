@@ -11,12 +11,14 @@ import (
 )
 
 func (v *vcenterMetricScraper) createVMResourceBuilder(
+	dcName string,
 	vm mo.VirtualMachine,
 	hs mo.HostSystem,
 	compute *object.ComputeResource,
 	rp *object.ResourcePool,
 ) *metadata.ResourceBuilder {
 	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterDatacenterName(dcName)
 	rb.SetVcenterVMName(vm.Summary.Config.Name)
 	rb.SetVcenterVMID(vm.Config.InstanceUuid)
 	if compute.Reference().Type == "ClusterComputeResource" {

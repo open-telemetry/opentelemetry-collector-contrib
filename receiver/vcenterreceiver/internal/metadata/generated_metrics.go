@@ -2269,6 +2269,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	if mbc.ResourceAttributes.VcenterClusterName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["vcenter.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterClusterName.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.VcenterDatacenterName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.datacenter.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatacenterName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.VcenterDatacenterName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.datacenter.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatacenterName.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.VcenterDatastoreName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["vcenter.datastore.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatastoreName.MetricsInclude)
 	}
