@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/elastic/go-docappender v1.1.1-0.20240417115630-b1a51d43a8cb
+	github.com/elastic/go-docappender/v2 v2.0.0
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/elastic/go-structform v0.0.10
 	github.com/lestrrat-go/strftime v1.0.6
@@ -32,7 +32,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.5.0 // indirect
 	github.com/elastic/go-elasticsearch/v8 v8.13.1 // indirect
-	github.com/elastic/go-sysinfo v1.14.0 // indirect
+	github.com/elastic/go-sysinfo v1.7.1 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
@@ -40,6 +40,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
@@ -76,7 +77,7 @@ require (
 	google.golang.org/grpc v1.63.2 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	howett.net/plist v1.0.1 // indirect
+	howett.net/plist v1.0.0 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

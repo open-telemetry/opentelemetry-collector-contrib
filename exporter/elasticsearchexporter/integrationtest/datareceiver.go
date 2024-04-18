@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elastic/go-docappender/docappendertest"
+	"github.com/elastic/go-docappender/v2/docappendertest"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"

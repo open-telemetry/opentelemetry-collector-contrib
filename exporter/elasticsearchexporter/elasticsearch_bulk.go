@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/elastic/go-docappender"
+	"github.com/elastic/go-docappender/v2"
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -192,8 +192,16 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 	stats := bulkIndexerStats{}
 
 	for i := 0; i < numWorkers; i++ {
+		bi, err := docappender.NewBulkIndexer(docappender.BulkIndexerConfig{
+			MaxDocumentRetries: maxDocRetry,
+			CompressionLevel:   0,
+			Pipeline:           config.Pipeline,
+		})
+		if err != nil {
+			return nil, err
+		}
 		w := worker{
-			indexer:       docappender.NewBulkIndexer(client, 0, maxDocRetry),
+			indexer:       bi,
 			items:         items,
 			flushInterval: flushInterval,
 			flushTimeout:  config.Timeout,
