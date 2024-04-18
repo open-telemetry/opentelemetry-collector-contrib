@@ -29,7 +29,8 @@ jobs:
         group:
           - receiver-0
           - receiver-1
-          - processor
+          - processor-0
+          - processor-1
           - exporter
           - extension
           - internal
