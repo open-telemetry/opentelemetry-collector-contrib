@@ -250,7 +250,7 @@ func (p *BulkIndexerPool) Close(ctx context.Context) error {
 
 type worker struct {
 	indexer       *docappender.BulkIndexer
-	items         chan esBulkIndexerItem
+	items         <-chan esBulkIndexerItem
 	flushInterval time.Duration
 	flushTimeout  time.Duration
 	flushBytes    int
