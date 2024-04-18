@@ -196,6 +196,7 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 
 	for i := 0; i < numWorkers; i++ {
 		bi, err := docappender.NewBulkIndexer(docappender.BulkIndexerConfig{
+			Client:             client,
 			MaxDocumentRetries: maxDocRetry,
 			CompressionLevel:   0,
 			Pipeline:           config.Pipeline,
@@ -285,7 +286,10 @@ func (w *worker) run() {
 				w.flush()
 			}
 
-			w.indexer.Add(item)
+			if err := w.indexer.Add(item); err != nil {
+				w.logger.Error("error adding item to bulk indexer", zap.Error(err))
+			}
+
 			// w.indexer.Len() can be either compressed or uncompressed bytes
 			if w.indexer.Len() >= w.flushBytes {
 				w.flush()
