@@ -5,6 +5,7 @@ package kafka
 
 import (
 	"context"
+	"crypto/tls"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -51,6 +52,15 @@ func TestAuthentication(t *testing.T) {
 	tlscfg, err := tlsClient.LoadTLSConfig(context.Background())
 	require.NoError(t, err)
 	saramaTLSCfg.Net.TLS.Config = tlscfg
+
+	saramaSASLAWSIAMOATUHConfig := &sarama.Config{}
+	saramaSASLAWSIAMOATUHConfig.Net.SASL.Enable = true
+	saramaSASLAWSIAMOATUHConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
+	saramaSASLAWSIAMOATUHConfig.Net.SASL.TokenProvider = &AWSMSKConfig{Region: "region"}
+
+	tlsConfig := tls.Config{}
+	saramaSASLAWSIAMOATUHConfig.Net.TLS.Enable = true
+	saramaSASLAWSIAMOATUHConfig.Net.TLS.Config = &tlsConfig
 
 	saramaKerberosCfg := &sarama.Config{}
 	saramaKerberosCfg.Net.SASL.Mechanism = sarama.SASLTypeGSSAPI
@@ -107,6 +117,10 @@ func TestAuthentication(t *testing.T) {
 		{
 			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "PLAIN"}},
 			saramaConfig: saramaSASLPLAINConfig,
+		},
+		{
+			auth:         Authentication{SASL: &SASLConfig{Username: "", Password: "", Mechanism: "AWS_MSK_IAM_OAUTHBEARER", AWSMSK: AWSMSKConfig{Region: "region"}}},
+			saramaConfig: saramaSASLAWSIAMOATUHConfig,
 		},
 		{
 			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-222"}},
