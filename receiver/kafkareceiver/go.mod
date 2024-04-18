@@ -6,7 +6,7 @@ require (
 	github.com/IBM/sarama v1.43.1
 	github.com/apache/thrift v0.20.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.55.0
+	github.com/jaegertracing/jaeger v1.56.0
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.98.0
@@ -87,7 +87,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.25.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
-	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
+	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
