@@ -235,6 +235,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	err = s.bootstrapTemplate.Execute(&cfg, map[string]any{
 		"InstanceUid":    s.instanceID.String(),
 		"SupervisorPort": supervisorPort,
+		"PID":            os.Getpid(),
 	})
 	if err != nil {
 		return err
