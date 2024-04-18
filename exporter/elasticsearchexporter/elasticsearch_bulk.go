@@ -220,6 +220,9 @@ type BulkIndexerPool struct {
 	stats    *bulkIndexerStats
 }
 
+// Add adds an item to the bulk indexer pool.
+//
+// Adding an item after a call to Close() will panic.
 func (p *BulkIndexerPool) Add(ctx context.Context, index string, document io.WriterTo) error {
 	item := esBulkIndexerItem{
 		Index: index,
@@ -233,6 +236,7 @@ func (p *BulkIndexerPool) Add(ctx context.Context, index string, document io.Wri
 	}
 }
 
+// Close closes the items channel and wait for the workers to drain it.
 func (p *BulkIndexerPool) Close(ctx context.Context) error {
 	close(p.items)
 	doneCh := make(chan struct{})
