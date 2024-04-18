@@ -34,16 +34,43 @@ var mappings = map[string]map[string]string{
 		"result":              "",
 		"sni":                 "",
 	},
+	"FrontDoorHealthProbeLog": {
+		"healthProbeId":                 "",
+		"POP":                           "",
+		"httpVerb":                      "http.request.method",
+		"result":                        "OriginError",
+		"httpStatusCode":                "http.response.status_code",
+		"probeURL":                      "url.full",
+		"originName":                    "server.address",
+		"originIP":                      "",
+		"totalLatencyMilliseconds":      "",
+		"connectionLatencyMilliseconds": "",
+		"DNSLatencyMicroseconds":        "",
+	},
+	"FrontdoorWebApplicationFirewallLog": {
+		"clientIP":          "client.address",
+		"clientPort":        "client.port",
+		"socketIP":          "socket.address",
+		"requestUri":        "url.full",
+		"ruleName":          "",
+		"policy":            "",
+		"action":            "",
+		"host":              "server.address",
+		"trackingReference": "",
+		"policyMode":        "",
+	},
 }
 
-func ResourceLogKeyToSemConvKey(azName string, category string) (string, bool) {
-	if mapping := mappings[category]; mapping != nil {
+func resourceLogKeyToSemConvKey(azName string, category string) (string, bool) {
+	mapping, ok := mappings[category]
+	if ok {
 		if mapped := mapping[azName]; mapped != "" {
 			return mapped, true
 		}
 	}
 
-	if name := mappings["common"][azName]; name != "" {
+	mapping = mappings["common"]
+	if name := mapping[azName]; name != "" {
 		return name, true
 	}
 

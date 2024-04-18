@@ -211,17 +211,16 @@ func extractRawAttributes(log azureLogRecord) map[string]any {
 
 func copyProperties(category string, properties *any, attrs map[string]any) {
 	pmap := (*properties).(map[string]any)
-	var attrsProps map[string]any = nil
+	attrsProps := map[string]any{}
 	for k, v := range pmap {
-		if otelKey, found := ResourceLogKeyToSemConvKey(k, category); found {
+		if otelKey, ok := resourceLogKeyToSemConvKey(k, category); ok {
 			attrs[otelKey] = v
 		} else {
-			if attrsProps == nil {
-				attrsProps = map[string]any{}
-				attrs["azure.properties"] = attrsProps
-			}
 			attrsProps[k] = v
 		}
+	}
+	if len(attrsProps) > 0 {
+		attrs["azure.properties"] = attrsProps
 	}
 }
 
