@@ -3,9 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunk
 go 1.21
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.98.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.98.0
@@ -38,8 +40,8 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
@@ -106,3 +108,5 @@ retract (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ../../extension/ackextension
