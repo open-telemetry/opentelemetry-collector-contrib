@@ -281,7 +281,7 @@ func (w *worker) run() {
 		select {
 		case item, ok := <-w.items:
 			// if channel is closed, flush and return
-			if ok {
+			if !ok {
 				w.flush()
 				return
 			}
