@@ -286,7 +286,7 @@ func (w *worker) run() error {
 	}
 }
 
-func (w *worker) flush() error {
+func (w *worker) flush() {
 	ctx, cancel := context.WithTimeout(context.Background(), w.flushTimeout)
 	defer cancel()
 	stat, err := w.indexer.Flush(ctx)
@@ -294,5 +294,4 @@ func (w *worker) flush() error {
 	if err != nil {
 		w.logger.Error("bulk indexer flush error", zap.Error(err))
 	}
-	return err
 }
