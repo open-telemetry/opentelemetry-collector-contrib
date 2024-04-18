@@ -31,21 +31,6 @@ func monitorPPID(ctx context.Context, ppid int, reportStatus func(*component.Sta
 			return
 		}
 
-		processState, err := process.Wait()
-		if err != nil {
-			err := fmt.Errorf("collector was orphaned, error while waiting on process %d to exit: %w", ppid, err)
-			status := component.NewFatalErrorEvent(err)
-			reportStatus(status)
-			return
-		}
-
-		if processState.Exited() {
-			err := fmt.Errorf("collector was orphaned, process %d exited: %w", ppid, err)
-			status := component.NewFatalErrorEvent(err)
-			reportStatus(status)
-			return
-		}
-
 		select {
 		case <-time.After(orphanPollInterval):
 		case <-ctx.Done():
