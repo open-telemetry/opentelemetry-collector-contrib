@@ -20,7 +20,7 @@ func TestQueryIODBWithoutInstanceName(t *testing.T) {
 
 	actual := getSQLServerDatabaseIOQuery("")
 
-	require.Equal(t, string(expected), actual)
+	require.Equal(t, expected, actual)
 }
 
 func TestQueryIODBWithInstanceName(t *testing.T) {
@@ -31,5 +31,5 @@ func TestQueryIODBWithInstanceName(t *testing.T) {
 
 	actual := getSQLServerDatabaseIOQuery("instanceName")
 
-	require.Equal(t, string(expected), actual)
+	require.Equal(t, expected, actual)
 }
