@@ -18,6 +18,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/diagnostic v0.54.0-devel.0.20240415161448-b255914f33f9
 	github.com/DataDog/datadog-agent/pkg/logs/pipeline v0.0.0-20240416205609-901776f80dc1
 	github.com/DataDog/datadog-agent/pkg/logs/sds v0.0.0-20240416205609-901776f80dc1 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.54.0-devel.0.20240415161448-b255914f33f9
 	github.com/DataDog/datadog-agent/pkg/logs/util/testutils v0.54.0-devel.0.20240415161448-b255914f33f9 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.1
 	github.com/DataDog/datadog-agent/pkg/status/health v0.54.0-devel.0.20240415161448-b255914f33f9
@@ -76,6 +77,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.98.1-0.20240416174005-d0f15e2463f8
 	go.opentelemetry.io/otel/metric v1.25.0
 	go.opentelemetry.io/otel/trace v1.25.0
+	go.uber.org/atomic v1.11.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/protobuf v1.33.0
@@ -84,8 +86,6 @@ require (
 	k8s.io/apimachinery v0.29.3
 	k8s.io/client-go v0.29.3
 )
-
-require github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.54.0-devel.0.20240415161448-b255914f33f9
 
 require (
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
@@ -329,8 +329,8 @@ require (
 	go.uber.org/fx v1.18.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
-	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
-	golang.org/x/mod v0.16.0 // indirect
+	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
+	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/oauth2 v0.18.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
