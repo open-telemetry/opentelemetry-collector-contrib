@@ -284,6 +284,7 @@ func (w *worker) run() {
 			zero := esBulkIndexerItem{}
 			if item == zero {
 				w.flush()
+				return
 			}
 
 			if err := w.indexer.Add(item); err != nil {
