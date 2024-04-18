@@ -114,7 +114,7 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context, datacenter *
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	v.collectResourcePools(ctx, now, errs)
+	v.collectResourcePools(ctx, now, computes, errs)
 	for _, c := range computes {
 		v.collectHosts(ctx, now, c, errs)
 		v.collectDatastores(ctx, now, c, errs)
@@ -250,6 +250,7 @@ func (v *vcenterMetricScraper) collectHost(
 func (v *vcenterMetricScraper) collectResourcePools(
 	ctx context.Context,
 	ts pcommon.Timestamp,
+	computes []*object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	rps, err := v.client.ResourcePools(ctx)
@@ -257,6 +258,13 @@ func (v *vcenterMetricScraper) collectResourcePools(
 		errs.AddPartial(1, err)
 		return
 	}
+
+	// Make it easier to find matching Clusters
+	computesByRef := map[string]*object.ComputeResource{}
+	for _, cr := range computes {
+		computesByRef[cr.Reference().Value] = cr
+	}
+
 	for _, rp := range rps {
 		var moRP mo.ResourcePool
 		err = rp.Properties(ctx, rp.Reference(), []string{
@@ -280,10 +288,20 @@ func (v *vcenterMetricScraper) collectResourcePools(
 			v.vmToResourcePool[vmRef.Value] = rp
 		}
 
-		v.recordResourcePool(ts, moRP)
 		rb := v.mb.NewResourceBuilder()
-		rb.SetVcenterResourcePoolName(rp.Name())
+		rpName := rp.Name()
+		if computeRef.Reference().Type == "ClusterComputeResource" {
+			compute := computesByRef[computeRef.Reference().Value]
+			if compute == nil {
+				errs.AddPartial(1, fmt.Errorf("no collected Cluster for Resource Pool [%s]'s Cluster ref: %s", rpName, computeRef.Reference().Value))
+				continue
+			}
+			rb.SetVcenterClusterName(compute.Name())
+		}
+		rb.SetVcenterResourcePoolName(rpName)
 		rb.SetVcenterResourcePoolInventoryPath(rp.InventoryPath)
+
+		v.recordResourcePool(ts, moRP)
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }

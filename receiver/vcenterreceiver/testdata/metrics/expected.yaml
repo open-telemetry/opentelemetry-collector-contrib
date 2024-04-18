@@ -5057,6 +5057,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.cluster.name
+          value:
+            stringValue: Cluster
         - key: vcenter.resource_pool.inventory_path
           value:
             stringValue: /Datacenter/host/Cluster/Resources

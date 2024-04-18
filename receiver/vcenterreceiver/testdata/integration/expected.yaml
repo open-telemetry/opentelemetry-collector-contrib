@@ -32,6 +32,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.cluster.name
+          value:
+            stringValue: DC0_C0
         - key: vcenter.resource_pool.name
           value:
             stringValue: Resources
