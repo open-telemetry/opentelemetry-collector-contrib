@@ -20,7 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
-type sqlServerScraper struct {
+// SQL Server Perf Counter (PC) Scraper. This is used to scrape metrics from Windows Perf Counters.
+type sqlServerPCScraper struct {
 	logger           *zap.Logger
 	config           *Config
 	watcherRecorders []watcherRecorder
@@ -37,9 +38,9 @@ type watcherRecorder struct {
 // it needs metadata.MetricsBuilder and timestamp as arguments.
 type curriedRecorder func(*metadata.MetricsBuilder, pcommon.Timestamp)
 
-// newSQLServerScraper returns a new sqlServerScraper.
-func newSQLServerScraper(params receiver.CreateSettings, cfg *Config) *sqlServerScraper {
-	return &sqlServerScraper{
+// newSQLServerPCScraper returns a new sqlServerPCScraper.
+func newSQLServerPCScraper(params receiver.CreateSettings, cfg *Config) *sqlServerPCScraper {
+	return &sqlServerPCScraper{
 		logger: params.Logger,
 		config: cfg,
 		mb:     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
@@ -47,7 +48,7 @@ func newSQLServerScraper(params receiver.CreateSettings, cfg *Config) *sqlServer
 }
 
 // start creates and sets the watchers for the scraper.
-func (s *sqlServerScraper) start(_ context.Context, _ component.Host) error {
+func (s *sqlServerPCScraper) start(_ context.Context, _ component.Host) error {
 	s.watcherRecorders = []watcherRecorder{}
 
 	for _, pcr := range perfCounterRecorders {
@@ -71,7 +72,7 @@ func (s *sqlServerScraper) start(_ context.Context, _ component.Host) error {
 }
 
 // scrape collects windows performance counter data from all watchers and then records/emits it using the metricBuilder
-func (s *sqlServerScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *sqlServerPCScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	recordersByDatabase, errs := recordersPerDatabase(s.watcherRecorders)
 
 	for dbName, recorders := range recordersByDatabase {
@@ -113,7 +114,7 @@ func recordersPerDatabase(watcherRecorders []watcherRecorder) (map[string][]curr
 	return dbToRecorders, errs
 }
 
-func (s *sqlServerScraper) emitMetricGroup(recorders []curriedRecorder, databaseName string) {
+func (s *sqlServerPCScraper) emitMetricGroup(recorders []curriedRecorder, databaseName string) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	for _, recorder := range recorders {
@@ -132,7 +133,7 @@ func (s *sqlServerScraper) emitMetricGroup(recorders []curriedRecorder, database
 }
 
 // shutdown stops all of the watchers for the scraper.
-func (s sqlServerScraper) shutdown(_ context.Context) error {
+func (s sqlServerPCScraper) shutdown(_ context.Context) error {
 	var errs error
 	for _, wr := range s.watcherRecorders {
 		err := wr.watcher.Close()

@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/fluent/fluent-logger-golang v1.9.0
-	github.com/jaegertracing/jaeger v1.55.0
+	github.com/jaegertracing/jaeger v1.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.98.0
@@ -81,7 +81,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20231202071711-9a357b53e9c9 // indirect
 	github.com/apache/thrift v0.20.0 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.50.32 // indirect
+	github.com/aws/aws-sdk-go v1.51.7 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -137,7 +137,7 @@ require (
 	github.com/hashicorp/cronexpr v1.1.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-hclog v1.6.2 // indirect
+	github.com/hashicorp/go-hclog v1.6.3 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect

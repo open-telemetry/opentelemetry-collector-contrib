@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/fortytw2/leaktest v1.3.0
-	github.com/jaegertracing/jaeger v1.55.0
+	github.com/jaegertracing/jaeger v1.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.98.0
 	github.com/stretchr/testify v1.9.0
 	github.com/tilinna/clock v1.1.0
@@ -25,7 +25,7 @@ require (
 )
 
 require (
-	github.com/apache/thrift v0.19.0 // indirect
+	github.com/apache/thrift v0.20.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -78,7 +78,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.25.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.25.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
+	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

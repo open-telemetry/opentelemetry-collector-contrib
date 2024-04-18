@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.21
 
 require (
-	github.com/jaegertracing/jaeger v1.55.0
+	github.com/jaegertracing/jaeger v1.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.98.0
 	github.com/openzipkin/zipkin-go v0.4.2
 	github.com/stretchr/testify v1.9.0
@@ -13,7 +13,7 @@ require (
 )
 
 require (
-	github.com/apache/thrift v0.19.0 // indirect
+	github.com/apache/thrift v0.20.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
