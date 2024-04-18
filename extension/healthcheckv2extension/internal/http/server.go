@@ -83,12 +83,12 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 	var err error
 	s.startTimestamp = time.Now()
 
-	s.httpServer, err = s.httpConfig.ToServerContext(ctx, host, s.telemetry, s.mux)
+	s.httpServer, err = s.httpConfig.ToServer(ctx, host, s.telemetry, s.mux)
 	if err != nil {
 		return err
 	}
 
-	ln, err := s.httpConfig.ToListenerContext(ctx)
+	ln, err := s.httpConfig.ToListener(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", s.httpConfig.Endpoint, err)
 	}
