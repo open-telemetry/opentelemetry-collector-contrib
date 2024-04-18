@@ -1,5 +1,39 @@
 package opampextension
 
-import "time"
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/shirou/gopsutil/process"
+	"go.opentelemetry.io/collector/component"
+)
 
 var orphanPollInterval = 5 * time.Second
+
+func monitorPPID(ctx context.Context, ppid int32, reportStatus func(*component.StatusEvent)) {
+	// On unix-based systems, when the parent process dies orphaned processes
+	// are re-parented to be under the init system process (ppid becomes 1).
+	for {
+		exists, err := process.PidExistsWithContext(ctx, ppid)
+		if err != nil {
+			statusErr := fmt.Errorf("collector was orphaned, failed to find process with pid %d: %w", ppid, err)
+			status := component.NewFatalErrorEvent(statusErr)
+			reportStatus(status)
+			return
+		}
+
+		if !exists {
+			statusErr := fmt.Errorf("collector was orphaned, process with pid %d does not exist", ppid)
+			status := component.NewFatalErrorEvent(statusErr)
+			reportStatus(status)
+			return
+		}
+
+		select {
+		case <-time.After(orphanPollInterval): // OK; Poll again to make sure PID exists
+		case <-ctx.Done():
+			return
+		}
+	}
+}

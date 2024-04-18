@@ -33,7 +33,7 @@ type Config struct {
 	// PPID is the process ID of the parent for the collector. If the PPID is specified,
 	// the extension will continuously poll for the status of the parent process, and emit a fatal error
 	// when the parent process is closed.
-	PPID int `mapstructure:"ppid"`
+	PPID int32 `mapstructure:"ppid"`
 }
 
 type AgentDescription struct {
