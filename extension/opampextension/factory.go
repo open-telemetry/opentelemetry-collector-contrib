@@ -31,5 +31,5 @@ func createDefaultConfig() component.Config {
 }
 
 func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
-	return newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
+	return newOpampAgent(cfg.(*Config), set)
 }
