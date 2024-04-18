@@ -29,6 +29,8 @@ jobs:
         group:
           - receiver-0
           - receiver-1
+          - receiver-2
+          - receiver-3
           - processor
           - exporter
           - extension
