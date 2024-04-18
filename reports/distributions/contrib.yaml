@@ -25,7 +25,6 @@ components:
         - coralogix
         - datadog
         - dataset
-        - dynatrace
         - elasticsearch
         - file
         - googlecloud

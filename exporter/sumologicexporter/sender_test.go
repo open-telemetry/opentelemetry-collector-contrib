@@ -83,6 +83,9 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 			},
 			c,
 			pf,
+			testServer.URL,
+			testServer.URL,
+			testServer.URL,
 			gf,
 		),
 	}
@@ -474,7 +477,7 @@ func TestInvalidEndpoint(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.ClientConfig.Endpoint = ":"
+	test.s.dataURLLogs = ":"
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
@@ -485,7 +488,7 @@ func TestInvalidPostRequest(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.ClientConfig.Endpoint = ""
+	test.s.dataURLLogs = ""
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
@@ -496,7 +499,7 @@ func TestLogsBufferOverflow(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.ClientConfig.Endpoint = ":"
+	test.s.dataURLLogs = ":"
 	log := exampleLog()
 	flds := newFields(pcommon.NewMap())
 
@@ -525,7 +528,7 @@ func TestInvalidPipeline(t *testing.T) {
 	defer func() { test.srv.Close() }()
 
 	err := test.s.send(context.Background(), "invalidPipeline", strings.NewReader(""), newFields(pcommon.NewMap()))
-	assert.EqualError(t, err, `unexpected pipeline`)
+	assert.EqualError(t, err, `unknown pipeline type: invalidPipeline`)
 }
 
 func TestSendCompressGzip(t *testing.T) {
