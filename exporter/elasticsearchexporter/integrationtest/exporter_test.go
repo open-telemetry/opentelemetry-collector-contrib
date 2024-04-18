@@ -29,7 +29,7 @@ func TestExporter(t *testing.T) {
 		}{
 			{name: "basic"},
 			{name: "es_intermittent_failure", mockESFailure: true},
-			/* Below tests should be enabled after https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30792 is fixed
+			/* TODO: Below tests should be enabled after https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30792 is fixed
 			{name: "collector_restarts", restartCollector: true},
 			{name: "collector_restart_with_es_intermittent_failure", mockESFailure: true, restartCollector: true},
 			*/
