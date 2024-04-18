@@ -8,16 +8,18 @@ import (
 	"encoding/binary"
 	"fmt"
 	"testing"
+	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const timeFormatString = "2006-01-02T15:04:05.000Z07:00"
@@ -236,7 +238,252 @@ func TestLogsExporter(t *testing.T) {
 			assert.Equal(t, tt.want, server.LogsData)
 		})
 	}
+}
 
+func TestLogsAgentExporter(t *testing.T) {
+	lr := testdata.GenerateLogsOneLogRecord()
+	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	type args struct {
+		ld plog.Logs
+	}
+	tests := []struct {
+		name string
+		args args
+		want testutil.JSONLogs
+	}{
+		{
+			name: "message",
+			args: args{
+				ld: lr,
+			},
+			want: testutil.JSONLogs{
+				{
+					"message": testutil.JSONLog{
+						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"app":                  "server",
+						"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
+						"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
+						"instance_num":         "1",
+						"message":              ld.Body().AsString(),
+						"otel.severity_number": "9",
+						"otel.severity_text":   "Info",
+						"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
+						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
+						"resource-attr":        "resource-attr-val-1",
+						"status":               "Info",
+					},
+					"ddsource": "OTLP log ingestion",
+					"ddtags":   "otel_source:datadog_exporter",
+					"service":  "",
+					"status":   "Info",
+				},
+			},
+		},
+		{
+			name: "message-attribute",
+			args: args{
+				ld: func() plog.Logs {
+					lrr := testdata.GenerateLogsOneLogRecord()
+					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+					ldd.Attributes().PutStr("attr", "hello")
+					ldd.Attributes().PutStr("service.name", "service")
+					return lrr
+				}(),
+			},
+			want: testutil.JSONLogs{
+				{
+					"message": testutil.JSONLog{
+						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"app":                  "server",
+						"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
+						"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
+						"instance_num":         "1",
+						"message":              ld.Body().AsString(),
+						"otel.severity_number": "9",
+						"otel.severity_text":   "Info",
+						"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
+						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
+						"resource-attr":        "resource-attr-val-1",
+						"status":               "Info",
+						"attr":                 "hello",
+						"service":              "service",
+						"service.name":         "service",
+					},
+					"ddsource": "OTLP log ingestion",
+					"ddtags":   "otel_source:datadog_exporter",
+					"service":  "service",
+					"status":   "Info",
+				},
+			},
+		},
+		{
+			name: "ddtags",
+			args: args{
+				ld: func() plog.Logs {
+					lrr := testdata.GenerateLogsOneLogRecord()
+					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+					ldd.Attributes().PutStr("ddtags", "tag1:true")
+					return lrr
+				}(),
+			},
+			want: testutil.JSONLogs{
+				{
+					"message": testutil.JSONLog{
+						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"app":                  "server",
+						"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
+						"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
+						"instance_num":         "1",
+						"message":              ld.Body().AsString(),
+						"otel.severity_number": "9",
+						"otel.severity_text":   "Info",
+						"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
+						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
+						"resource-attr":        "resource-attr-val-1",
+						"status":               "Info",
+					},
+					"ddsource": "OTLP log ingestion",
+					"ddtags":   "tag1:true,otel_source:datadog_exporter",
+					"service":  "",
+					"status":   "Info",
+				},
+			},
+		},
+		{
+			name: "ddtags submits same tags",
+			args: args{
+				ld: func() plog.Logs {
+					lrr := testdata.GenerateLogsTwoLogRecordsSameResource()
+					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+					ldd.Attributes().PutStr("ddtags", "tag1:true")
+					ldd2 := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1)
+					ldd2.Attributes().PutStr("ddtags", "tag1:true")
+					return lrr
+				}(),
+			},
+
+			want: testutil.JSONLogs{
+				{
+					"message": testutil.JSONLog{
+						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"app":                  "server",
+						"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
+						"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
+						"instance_num":         "1",
+						"message":              ld.Body().AsString(),
+						"otel.severity_number": "9",
+						"otel.severity_text":   "Info",
+						"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
+						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
+						"resource-attr":        "resource-attr-val-1",
+						"status":               "Info",
+					},
+					"ddsource": "OTLP log ingestion",
+					"ddtags":   "tag1:true,otel_source:datadog_exporter",
+					"service":  "",
+					"status":   "Info",
+				},
+				{
+					"message": testutil.JSONLog{
+						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"message":              "something happened",
+						"otel.severity_number": "9",
+						"otel.severity_text":   "Info",
+						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"resource-attr":        "resource-attr-val-1",
+						"status":               "Info",
+						"env":                  "dev",
+						"customer":             "acme",
+					},
+					"ddsource": "OTLP log ingestion",
+					"ddtags":   "tag1:true,otel_source:datadog_exporter",
+					"service":  "",
+					"status":   "Info",
+				},
+			},
+		},
+		{
+			name: "ddtags submits different tags",
+			args: args{
+				ld: func() plog.Logs {
+					lrr := testdata.GenerateLogsTwoLogRecordsSameResource()
+					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+					ldd.Attributes().PutStr("ddtags", "tag1:true")
+					ldd2 := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1)
+					ldd2.Attributes().PutStr("ddtags", "tag2:true")
+					return lrr
+				}(),
+			},
+			want: testutil.JSONLogs{
+				{
+					"message": testutil.JSONLog{
+						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"app":                  "server",
+						"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
+						"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
+						"instance_num":         "1",
+						"message":              ld.Body().AsString(),
+						"otel.severity_number": "9",
+						"otel.severity_text":   "Info",
+						"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
+						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
+						"resource-attr":        "resource-attr-val-1",
+						"status":               "Info",
+					},
+					"ddsource": "OTLP log ingestion",
+					"ddtags":   "tag1:true,otel_source:datadog_exporter",
+					"service":  "",
+					"status":   "Info",
+				},
+				{
+					"message": testutil.JSONLog{
+						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"message":              "something happened",
+						"otel.severity_number": "9",
+						"otel.severity_text":   "Info",
+						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"resource-attr":        "resource-attr-val-1",
+						"status":               "Info",
+						"env":                  "dev",
+						"customer":             "acme",
+					},
+					"ddsource": "OTLP log ingestion",
+					"ddtags":   "tag2:true,otel_source:datadog_exporter",
+					"service":  "",
+					"status":   "Info",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := testutil.DatadogLogServerMock()
+			defer server.Close()
+			cfg := &Config{
+				Logs: LogsConfig{
+					LogsDDURL:        server.URL,
+					UseCompression:   true,
+					CompressionLevel: 6,
+					BatchWait:        1,
+				},
+			}
+			params := exportertest.NewNopCreateSettings()
+			featuregate.GlobalRegistry().Set("exporter.datadogexporter.logsagentexporter", true)
+			f := NewFactory()
+			ctx := context.Background()
+			exp, err := f.CreateLogsExporter(ctx, params, cfg)
+			require.NoError(t, err)
+			require.NoError(t, exp.ConsumeLogs(ctx, tt.args.ld))
+			time.Sleep(2 * time.Second)
+			assert.Equal(t, tt.want, server.LogsData)
+		})
+	}
 }
 
 // traceIDToUint64 converts 128bit traceId to 64 bit uint64

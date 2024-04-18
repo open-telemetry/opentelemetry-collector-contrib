@@ -239,6 +239,7 @@ func (f *factory) createDefaultConfig() component.Config {
 			},
 			UseCompression:   true,
 			CompressionLevel: 6,
+			BatchWait:        5,
 		},
 
 		HostMetadata: HostMetadataConfig{
@@ -538,11 +539,14 @@ func (f *factory) createLogsExporter(
 	} else if isLogsAgentExporterEnabled() {
 		logComponent, _ := newLogComponent(set.TelemetrySettings)
 		cfgComponent, _ := newConfigComponent(set.TelemetrySettings, cfg)
-		logsAgentConfig := logsagentexporter.Config{
+		logsAgentConfig := &logsagentexporter.Config{
 			OtelSource:    otelSource,
 			LogSourceName: logSourceName,
 		}
-		hostname := logs.NewHostnameService(pcfg.ConfigHostname)
+		hostname, err := logs.NewHostnameService(ctx, hostProvider)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize logs agent hostname service: %w", err)
+		}
 		f.logsAgent = logs.NewLogsAgent(logComponent, cfgComponent, hostname)
 		err = f.logsAgent.Start(ctx)
 		if err != nil {

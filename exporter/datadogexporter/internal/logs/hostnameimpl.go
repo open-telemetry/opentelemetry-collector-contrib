@@ -2,7 +2,9 @@ package logs
 
 import (
 	"context"
+
 	"github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 )
 
 type service struct {
@@ -34,8 +36,13 @@ func (hs *service) GetWithProvider(context.Context) (hostnameinterface.Data, err
 }
 
 // NewHostnameService creates a new instance of the component hostname
-func NewHostnameService(name string) hostnameinterface.Component {
-	return &service{
-		name: name,
+func NewHostnameService(ctx context.Context, provider source.Provider) (hostnameinterface.Component, error) {
+	src, err := provider.Source(ctx)
+	if err != nil {
+		return nil, err
 	}
+
+	return &service{
+		name: src.Identifier,
+	}, nil
 }

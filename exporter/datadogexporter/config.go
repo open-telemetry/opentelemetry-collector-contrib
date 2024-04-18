@@ -316,12 +316,19 @@ type LogsConfig struct {
 	// DumpPayloads report whether payloads should be dumped when logging level is debug.
 	DumpPayloads bool `mapstructure:"dump_payloads"`
 
+	// LogsDDURL defines the endpoint and port for the logs agent to hit when using a proxy for logs.
+	// The logs are forwarded in TCP, therefore the proxy must be able to handle TCP connections.
+	LogsDDURL string `mapstructure:"logs_dd_url"`
+
 	// UseCompression enables the logs agent to compress logs before sending them.
 	UseCompression bool `mapstructure:"use_compression"`
 
 	// CompressionLevel accepts values from 0 (no compression) to 9 (maximum compression but higher resource usage).
 	// Only takes effect if UseCompression is set to true.
 	CompressionLevel int `mapstructure:"compression_level"`
+
+	// BatchWait represents the maximum time the logs agent waits to fill each batch of logs before sending.
+	BatchWait int `mapstructure:"batch_wait"`
 }
 
 // TagsConfig defines the tag-related configuration
