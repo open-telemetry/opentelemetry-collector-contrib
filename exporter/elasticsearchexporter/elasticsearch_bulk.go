@@ -279,10 +279,9 @@ func (w *worker) run() {
 	flushTick := time.NewTicker(w.flushInterval)
 	for {
 		select {
-		case item := <-w.items:
-			// check if BulkIndexer is closing
-			zero := esBulkIndexerItem{}
-			if item == zero {
+		case item, ok := <-w.items:
+			// if channel is closed, flush and return
+			if ok {
 				w.flush()
 				return
 			}
