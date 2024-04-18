@@ -12,15 +12,14 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/zap"
-	"golang.org/x/net/websocket"
-	"golang.org/x/time/rate"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.uber.org/zap"
+	"golang.org/x/net/websocket"
+	"golang.org/x/time/rate"
 )
 
 type wsprocessor struct {
