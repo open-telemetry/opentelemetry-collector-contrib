@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/integrationtest
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/elastic/go-docappender v1.1.0
