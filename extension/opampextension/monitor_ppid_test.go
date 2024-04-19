@@ -2,6 +2,7 @@ package opampextension
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"runtime"
 	"testing"
@@ -15,6 +16,7 @@ func TestMonitorPPIDOthers(t *testing.T) {
 	t.Run("Does not trigger if process with ppid never stops", func(t *testing.T) {
 		cmdContext, cmdCancel := context.WithCancel(context.Background())
 		cmd := longRunningComand(cmdContext)
+		cmd.Stdout = os.Stdout
 		require.NoError(t, cmd.Start())
 
 		t.Cleanup(func() {
@@ -22,7 +24,8 @@ func TestMonitorPPIDOthers(t *testing.T) {
 			_ = cmd.Wait()
 		})
 
-		statusReportFunc := func(*component.StatusEvent) {
+		statusReportFunc := func(se *component.StatusEvent) {
+			t.Logf("Status event error: %s", se.Err())
 			require.FailNow(t, "status report function should not be called")
 		}
 
@@ -74,7 +77,9 @@ func TestMonitorPPIDOthers(t *testing.T) {
 func longRunningComand(ctx context.Context) *exec.Cmd {
 	switch runtime.GOOS {
 	case "windows":
-		return exec.CommandContext(ctx, "timeout", "/t", "1000")
+		// Would prefer to use timeout.exe here, but it doesn't seem to work in
+		// a CMD-less context.
+		return exec.CommandContext(ctx, "ping", "-n", "1000", "localhost")
 	default:
 		return exec.CommandContext(ctx, "sleep", "1000")
 	}
