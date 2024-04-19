@@ -153,7 +153,7 @@ func NewPrometheusScraper(opts PrometheusScraperOpts) (*PrometheusScraper, error
 	}
 
 	promConfig := prometheusreceiver.Config{
-		PrometheusConfig: &config.Config{
+		PrometheusConfig: &prometheusreceiver.PromConfig{
 			ScrapeConfigs: []*config.ScrapeConfig{scrapeConfig},
 		},
 	}

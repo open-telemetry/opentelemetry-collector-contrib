@@ -127,7 +127,7 @@ func TestSimplePrometheusEndToEnd(opts TestSimplePrometheusEndToEndOpts) {
 	}
 
 	promConfig := prometheusreceiver.Config{
-		PrometheusConfig: &config.Config{
+		PrometheusConfig: &prometheusreceiver.PromConfig{
 			ScrapeConfigs: []*config.ScrapeConfig{mockedScrapeConfig},
 		},
 	}

@@ -36,12 +36,6 @@ func TestNodeCapacity(t *testing.T) {
 		}
 	}
 
-	// can't parse cpu and mem info
-	setEnvOption := func(nc *nodeCapacity) {
-		nc.osSetenv = func(_, _ string) error {
-			return nil
-		}
-	}
 	virtualMemOption := func(nc *nodeCapacity) {
 		nc.virtualMemory = func(context.Context) (*mem.VirtualMemoryStat, error) {
 			return nil, errors.New("error")
