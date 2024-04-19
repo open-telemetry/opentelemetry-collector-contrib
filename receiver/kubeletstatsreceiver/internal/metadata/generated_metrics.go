@@ -2978,6 +2978,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	if mbc.ResourceAttributes.ContainerID.Exclude != nil {
 		mb.resourceAttributeExcludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.Exclude)
 	}
+	if mbc.ResourceAttributes.CsiDriver.Include != nil {
+		mb.resourceAttributeIncludeFilter["csi.driver"] = filter.CreateFilter(mbc.ResourceAttributes.CsiDriver.Include)
+	}
+	if mbc.ResourceAttributes.CsiDriver.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["csi.driver"] = filter.CreateFilter(mbc.ResourceAttributes.CsiDriver.Exclude)
+	}
+	if mbc.ResourceAttributes.CsiVolumeHandle.Include != nil {
+		mb.resourceAttributeIncludeFilter["csi.volume.handle"] = filter.CreateFilter(mbc.ResourceAttributes.CsiVolumeHandle.Include)
+	}
+	if mbc.ResourceAttributes.CsiVolumeHandle.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["csi.volume.handle"] = filter.CreateFilter(mbc.ResourceAttributes.CsiVolumeHandle.Exclude)
+	}
 	if mbc.ResourceAttributes.FsType.Include != nil {
 		mb.resourceAttributeIncludeFilter["fs.type"] = filter.CreateFilter(mbc.ResourceAttributes.FsType.Include)
 	}

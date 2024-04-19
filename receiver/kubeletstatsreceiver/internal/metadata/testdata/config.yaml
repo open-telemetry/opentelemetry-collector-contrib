@@ -307,6 +307,14 @@ filter_set_include:
       enabled: true
       include:
         - regexp: ".*"
+    csi.driver:
+      enabled: true
+      include:
+        - regexp: ".*"
+    csi.volume.handle:
+      enabled: true
+      include:
+        - regexp: ".*"
     fs.type:
       enabled: true
       include:
@@ -369,6 +377,14 @@ filter_set_exclude:
       enabled: true
       exclude:
         - strict: "container.id-val"
+    csi.driver:
+      enabled: true
+      exclude:
+        - strict: "csi.driver-val"
+    csi.volume.handle:
+      enabled: true
+      exclude:
+        - strict: "csi.volume.handle-val"
     fs.type:
       enabled: true
       exclude:
