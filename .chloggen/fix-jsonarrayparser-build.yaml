@@ -7,7 +7,7 @@ change_type: bug_fix
 component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "When the `jsonArrayParserFeatureGate` is disabled, the func `Build` returns an error."
+note: Fix race condition which prevented `jsonArrayParserFeatureGate` from working correctly.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [32313]
