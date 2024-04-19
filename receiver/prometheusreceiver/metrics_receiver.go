@@ -18,7 +18,6 @@ import (
 	"time"
 	"unsafe"
 
-	// "github.com/cnf/structhash"
 	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 	commonconfig "github.com/prometheus/common/config"
@@ -155,7 +154,6 @@ func (r *pReceiver) syncTargetAllocator(compareHash string, allocConf *TargetAll
 		return "", err
 	}
 
-	// hash, err := structhash.Hash(scrapeConfigsResponse, 1)
 	hash, err := internal.Hash(scrapeConfigsResponse, 1)
 	if err != nil {
 		r.settings.Logger.Error("Failed to hash job list", zap.Error(err))
