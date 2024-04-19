@@ -11,9 +11,9 @@ import (
 
 var orphanPollInterval = 5 * time.Second
 
+// monitorPPID polls for the existence of ppid.
+// If the specified ppid no longer exists, a fatal error event is reported via the passed in reportStatus function.
 func monitorPPID(ctx context.Context, ppid int32, reportStatus func(*component.StatusEvent)) {
-	// On unix-based systems, when the parent process dies orphaned processes
-	// are re-parented to be under the init system process (ppid becomes 1).
 	for {
 		exists, err := process.PidExistsWithContext(ctx, ppid)
 		if err != nil {
