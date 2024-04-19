@@ -25,7 +25,6 @@ var _ metrics.APMStatsConsumer = (*ZorkianConsumer)(nil)
 type ZorkianConsumer struct {
 	ms        []zorkian.Metric
 	sl        sketches.SketchSeriesList
-	as        []*pb.ClientStatsPayload
 	seenHosts map[string]struct{}
 	seenTags  map[string]struct{}
 }
@@ -72,11 +71,11 @@ func (c *ZorkianConsumer) runningMetrics(timestamp uint64, buildInfo component.B
 }
 
 // All gets all metrics (consumed metrics and running metrics).
-func (c *ZorkianConsumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]zorkian.Metric, sketches.SketchSeriesList, []*pb.ClientStatsPayload) {
+func (c *ZorkianConsumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]zorkian.Metric, sketches.SketchSeriesList) {
 	series := c.ms
 	series = append(series, c.runningMetrics(timestamp, buildInfo)...)
 	if len(tags) == 0 {
-		return series, c.sl, c.as
+		return series, c.sl
 	}
 	for i := range series {
 		series[i].Tags = append(series[i].Tags, tags...)
@@ -84,16 +83,11 @@ func (c *ZorkianConsumer) All(timestamp uint64, buildInfo component.BuildInfo, t
 	for i := range c.sl {
 		c.sl[i].Tags = append(c.sl[i].Tags, tags...)
 	}
-	for i := range c.as {
-		c.as[i].Tags = append(c.as[i].Tags, tags...)
-	}
-	return series, c.sl, c.as
+	return series, c.sl
 }
 
 // ConsumeAPMStats implements metrics.APMStatsConsumer.
-func (c *ZorkianConsumer) ConsumeAPMStats(s *pb.ClientStatsPayload) {
-	c.as = append(c.as, s)
-}
+func (c *ZorkianConsumer) ConsumeAPMStats(s *pb.ClientStatsPayload) {}
 
 // ConsumeTimeSeries implements the metrics.Consumer interface.
 func (c *ZorkianConsumer) ConsumeTimeSeries(
