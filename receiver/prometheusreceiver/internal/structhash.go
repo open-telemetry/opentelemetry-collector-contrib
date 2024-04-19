@@ -1,3 +1,7 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+// Copying the ISC license from the original package - https://github.com/cnf/structhash?tab=ISC-1-ov-file
 // Copyright (c) 2014, Frank Rosquin
 
 // THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
