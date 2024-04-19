@@ -13,8 +13,10 @@ status:
 resource_attributes:  
   vcenter.datacenter.name:
     description: The name of the vCenter datacenter.
-    enabled: true
+    enabled: false
     type: string
+    warnings:
+      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.100.0"
   vcenter.cluster.name:
     description: The name of the vCenter Cluster.
     enabled: true

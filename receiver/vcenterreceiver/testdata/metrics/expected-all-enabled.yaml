@@ -1,6 +1,9 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
@@ -87,6 +90,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
@@ -128,6 +134,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.datastore.name
           value:
             stringValue: vsanDatastore
@@ -166,6 +175,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
@@ -2613,6 +2625,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.host.name
           value:
             stringValue: esxi-111.europe-southeast1.gve.goog
@@ -5057,6 +5072,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
@@ -5109,6 +5127,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.host.name
           value:
             stringValue: esxi-111.europe-southeast1.gve.goog
@@ -5161,6 +5182,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
@@ -5305,6 +5329,14 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
+          - description: The memory utilization of the VM.
+            gauge:
+              dataPoints:
+                - asDouble: 0.994873046875
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.memory.utilization
+            unit: '%'
           - description: The amount of packets that was received or transmitted over the instance's network.
             name: vcenter.vm.network.packet.count
             sum:
@@ -5610,6 +5642,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
@@ -5748,6 +5783,14 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
+          - description: The memory utilization of the VM.
+            gauge:
+              dataPoints:
+                - asDouble: 0.994873046875
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.memory.utilization
+            unit: '%'
           - description: The amount of packets that was received or transmitted over the instance's network.
             name: vcenter.vm.network.packet.count
             sum:
@@ -6053,6 +6096,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.host.name
           value:
             stringValue: esxi-111.europe-southeast1.gve.goog
@@ -6194,6 +6240,14 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
+          - description: The memory utilization of the VM.
+            gauge:
+              dataPoints:
+                - asDouble: 0.994873046875
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.memory.utilization
+            unit: '%'
           - description: The amount of packets that was received or transmitted over the instance's network.
             name: vcenter.vm.network.packet.count
             sum:

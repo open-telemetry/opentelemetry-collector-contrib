@@ -2216,6 +2216,9 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+	if !mbc.ResourceAttributes.VcenterDatacenterName.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.name`: this attribute will be enabled by default starting in release v0.100.0")
+	}
 	mb := &MetricsBuilder{
 		config:                                mbc,
 		startTime:                             pcommon.NewTimestampFromTime(time.Now()),

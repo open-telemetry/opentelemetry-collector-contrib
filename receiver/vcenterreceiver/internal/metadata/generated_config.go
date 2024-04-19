@@ -235,7 +235,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterDatacenterName: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		VcenterDatastoreName: ResourceAttributeConfig{
 			Enabled: true,
