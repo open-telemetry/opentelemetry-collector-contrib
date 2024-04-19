@@ -4,7 +4,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 
 go 1.21.0
 
-toolchain go1.21.9
+toolchain go1.22.1
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.98.0
@@ -672,7 +672,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240419202408-d1e631b61158 // indirect
-	go.opentelemetry.io/collector/filter v0.98.1-0.20240419202408-d1e631b61158 // indirect
+	go.opentelemetry.io/collector/filter v0.0.0-20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/semconv v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/service v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/contrib/config v0.5.0 // indirect

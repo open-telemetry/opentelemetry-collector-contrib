@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.98.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/collector/consumer v0.98.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240419202408-d1e631b61158
-	go.opentelemetry.io/collector/filter v0.98.1-0.20240419202408-d1e631b61158
+	go.opentelemetry.io/collector/filter v0.0.0-20240419202408-d1e631b61158
 	go.opentelemetry.io/collector/otelcol v0.98.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/collector/pdata v1.5.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/collector/receiver v0.98.1-0.20240419202408-d1e631b61158
@@ -53,7 +53,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -121,7 +121,7 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.25.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.25.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.25.0 // indirect
-	go.opentelemetry.io/proto/otlp v1.1.0 // indirect
+	go.opentelemetry.io/proto/otlp v1.2.0 // indirect
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
 	golang.org/x/mod v0.16.0 // indirect
 	golang.org/x/net v0.23.0 // indirect

@@ -642,7 +642,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240419202408-d1e631b61158 // indirect
-	go.opentelemetry.io/collector/filter v0.98.1-0.20240419202408-d1e631b61158 // indirect
+	go.opentelemetry.io/collector/filter v0.0.0-20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/pdata v1.5.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/semconv v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/service v0.98.1-0.20240419202408-d1e631b61158 // indirect
@@ -665,7 +665,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.25.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.25.0 // indirect
 	go.opentelemetry.io/otel/trace v1.25.0 // indirect
-	go.opentelemetry.io/proto/otlp v1.1.0 // indirect
+	go.opentelemetry.io/proto/otlp v1.2.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
