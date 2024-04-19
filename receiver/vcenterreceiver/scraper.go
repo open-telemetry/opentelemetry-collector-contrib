@@ -241,7 +241,9 @@ func (v *vcenterMetricScraper) collectHost(
 	v.recordHostPerformanceMetrics(ctx, hwSum, errs)
 	rb := v.mb.NewResourceBuilder()
 	rb.SetVcenterHostName(host.Name())
-	rb.SetVcenterClusterName(compute.Name())
+	if compute.Reference().Type == "ClusterComputeResource" {
+		rb.SetVcenterClusterName(compute.Name())
+	}
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
