@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -67,6 +68,7 @@ type Config struct {
 	confighttp.ClientConfig      `mapstructure:",squash"`
 	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
+	BatcherConfig                exporterbatcher.Config `mapstructure:"batcher"`
 
 	// LogDataEnabled can be used to disable sending logs by the exporter.
 	LogDataEnabled bool `mapstructure:"log_data_enabled"`
