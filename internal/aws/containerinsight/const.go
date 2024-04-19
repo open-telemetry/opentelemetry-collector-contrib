@@ -16,7 +16,6 @@ const (
 	HostName                  = "HOST_NAME"
 	RunInContainer            = "RUN_IN_CONTAINER"
 	RunAsHostProcessContainer = "RUN_AS_HOST_PROCESS_CONTAINER"
-	TrueValue                 = "True"
 
 	// Attribute names
 	InstanceID              = "InstanceId"
@@ -184,6 +183,7 @@ const (
 	UnitCountPerSec = "Count/Second"
 	UnitVCPU        = "vCPU"
 	UnitPercent     = "Percent"
+	TrueValue       = "True"
 )
 
 var WaitingReasonLookup = map[string]string{

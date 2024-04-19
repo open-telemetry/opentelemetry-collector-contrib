@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -95,7 +96,8 @@ func TestTelemetryEnabled(t *testing.T) {
 }
 
 func TestMiddleware(t *testing.T) {
-	id := component.NewID("test")
+	testType, _ := component.NewType("test")
+	id := component.NewID(testType)
 	cfg := generateConfig(t)
 	cfg.MiddlewareID = &id
 	handler := new(awsmiddleware.MockHandler)

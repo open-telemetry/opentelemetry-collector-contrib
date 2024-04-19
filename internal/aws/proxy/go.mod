@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/pr
 go 1.21
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.98.0
 	github.com/aws/aws-sdk-go v1.51.17
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.98.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/config/confignet v0.98.0
@@ -22,8 +22,8 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.5.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.5.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.18.0 // indirect
-	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/net v0.24.0 // indirect
+	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

@@ -303,7 +303,7 @@ func TestLogToCWLog(t *testing.T) {
 				return
 			}
 			// Do not test generated time since it is time.Now()
-			assert.Equal(t, *tt.want.InputLogEvent, *got.InputLogEvent)
+			assert.Equal(t, tt.want.InputLogEvent, got.InputLogEvent)
 			assert.Equal(t, tt.want.LogStreamName, got.LogStreamName)
 			assert.Equal(t, tt.want.LogGroupName, got.LogGroupName)
 		})
@@ -468,7 +468,8 @@ func TestConsumeLogs(t *testing.T) {
 }
 
 func TestMiddleware(t *testing.T) {
-	id := component.NewID("test")
+	testType, _ := component.NewType("test")
+	id := component.NewID(testType)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	factory := NewFactory()

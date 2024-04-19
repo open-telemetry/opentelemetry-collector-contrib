@@ -100,15 +100,6 @@ func IsPod(mType string) bool {
 	return false
 }
 
-func IsWindowsHostProcessContainer() bool {
-	// todo: Remove this workaround func when Windows AMIs has containerd 1.7 which solves upstream bug
-	// https://kubernetes.io/docs/tasks/configure-pod-container/create-hostprocess-pod/#containerd-v1-6
-	if runtime.GOOS == OperatingSystemWindows && os.Getenv(RunInContainer) == TrueValue && os.Getenv(RunAsHostProcessContainer) == TrueValue {
-		return true
-	}
-	return false
-}
-
 func getPrefixByMetricType(mType string) string {
 	prefix := ""
 	instancePrefix := "instance_"
@@ -322,4 +313,13 @@ func initMetric(ilm pmetric.ScopeMetrics, name, unit string) pmetric.Metric {
 	metric.SetUnit(unit)
 
 	return metric
+}
+
+func IsWindowsHostProcessContainer() bool {
+	// todo: Remove this workaround func when Windows AMIs has containerd 1.7 which solves upstream bug
+	// https://kubernetes.io/docs/tasks/configure-pod-container/create-hostprocess-pod/#containerd-v1-6
+	if runtime.GOOS == OperatingSystemWindows && os.Getenv(RunInContainer) == TrueValue && os.Getenv(RunAsHostProcessContainer) == TrueValue {
+		return true
+	}
+	return false
 }

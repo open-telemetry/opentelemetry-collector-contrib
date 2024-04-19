@@ -433,7 +433,8 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 }
 
 func TestMiddleware(t *testing.T) {
-	id := component.NewID("test")
+	testType, _ := component.NewType("test")
+	id := component.NewID(testType)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	factory := NewFactory()

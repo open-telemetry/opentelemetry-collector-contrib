@@ -59,6 +59,23 @@ func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error 
 			"enable feature-gate k8sattr.rfc3339 to opt into this change.")
 	}
 
+	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
+	for _, opt := range allOptions {
+		if err := opt(kp); err != nil {
+			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			return nil
+		}
+	}
+	// This might have been set by an option already
+	if kp.kc == nil {
+		err := kp.initKubeClient(kp.logger, kubeClientProvider)
+		if err != nil {
+			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			return nil
+		}
+
+	}
+
 	if !kp.passthroughMode {
 		go kp.kc.Start()
 	}

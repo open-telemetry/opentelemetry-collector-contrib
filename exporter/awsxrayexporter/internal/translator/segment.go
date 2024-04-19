@@ -756,8 +756,6 @@ func fixAnnotationKey(key string) string {
 			fallthrough
 		case 'a' <= r && r <= 'z':
 			fallthrough
-		case r == '.':
-			return r
 		case remoteXrayExporterDotConverter.IsEnabled() && r == '.':
 			return r
 		default:

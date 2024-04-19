@@ -16,24 +16,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/tools/leaderelection"
-	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/klog/v2"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sutil"
-)
-
-const (
-	lockName = "otel-container-insight-clusterleader"
 )
 
 // eventBroadcaster is adpated from record.EventBroadcaster
@@ -54,6 +44,10 @@ type K8sClient interface {
 	GetEpClient() k8sclient.EpClient
 	GetNodeClient() k8sclient.NodeClient
 	GetPodClient() k8sclient.PodClient
+	GetDeploymentClient() k8sclient.DeploymentClient
+	GetDaemonSetClient() k8sclient.DaemonSetClient
+	GetStatefulSetClient() k8sclient.StatefulSetClient
+	GetReplicaSetClient() k8sclient.ReplicaSetClient
 	ShutdownNodeClient()
 	ShutdownPodClient()
 }
@@ -332,7 +326,7 @@ func (k *K8sAPIServer) getPendingPodStatusMetrics(clusterName, timestampNs strin
 	podKeyToServiceNamesMap := k.leaderElection.epClient.PodKeyToServiceNames()
 
 	for _, podInfo := range podsList {
-		if podInfo.Phase == corev1.PodPending {
+		if podInfo.Phase == v1.PodPending {
 			fields := map[string]any{}
 
 			if k.includeEnhancedMetrics {
@@ -356,7 +350,7 @@ func (k *K8sAPIServer) getPendingPodStatusMetrics(clusterName, timestampNs strin
 				}
 			}
 
-			attributes[ci.PodStatus] = string(corev1.PodPending)
+			attributes[ci.PodStatus] = string(v1.PodPending)
 			attributes["k8s.node.name"] = "pending"
 
 			kubernetesBlob := map[string]any{}

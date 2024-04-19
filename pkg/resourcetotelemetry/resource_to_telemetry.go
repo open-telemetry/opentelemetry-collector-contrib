@@ -60,7 +60,7 @@ func (wme *wrapperMetricsExporter) convertToMetricsAttributes(md pmetric.Metrics
 			attrs.Clear()
 		}
 	}
-	return md
+	return cloneMd
 }
 
 // WrapMetricsExporter wraps a given exporter.Metrics and based on the given settings

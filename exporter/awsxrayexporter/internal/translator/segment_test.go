@@ -584,7 +584,7 @@ func TestSpanWithAttributesSegmentMetadata(t *testing.T) {
 }
 
 func TestResourceAttributesCanBeIndexed(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
 	assert.Nil(t, err)
 
 	spanName := "/api/locations"
@@ -639,7 +639,7 @@ func TestResourceAttributesNotIndexedIfSubsegment(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
 	assert.Nil(t, err)
 
 	spanName := "/api/locations"
@@ -679,7 +679,7 @@ func TestSpanWithSpecialAttributesAsListedWithAllowDot(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
 	assert.Nil(t, err)
 
 	spanName := "/api/locations"

@@ -29,6 +29,7 @@ const (
 func GetNeuronScrapeConfig(hostinfo prometheusscraper.HostInfoProvider) *config.ScrapeConfig {
 
 	return &config.ScrapeConfig{
+		ScrapeProtocols: config.DefaultScrapeProtocols,
 		HTTPClientConfig: configutil.HTTPClientConfig{
 			TLSConfig: configutil.TLSConfig{
 				CAFile:             caFile,

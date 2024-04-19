@@ -194,6 +194,7 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 	split := strings.Split(mp.Srv.URL, "http://")
 
 	scrapeConfig := &config.ScrapeConfig{
+		ScrapeProtocols: config.DefaultScrapeProtocols,
 		HTTPClientConfig: configutil.HTTPClientConfig{
 			TLSConfig: configutil.TLSConfig{
 				InsecureSkipVerify: true,
@@ -242,7 +243,7 @@ func TestNewPrometheusScraperEndToEnd(t *testing.T) {
 	}
 
 	promConfig := prometheusreceiver.Config{
-		PrometheusConfig: &config.Config{
+		PrometheusConfig: &prometheusreceiver.PromConfig{
 			ScrapeConfigs: []*config.ScrapeConfig{scrapeConfig},
 		},
 	}

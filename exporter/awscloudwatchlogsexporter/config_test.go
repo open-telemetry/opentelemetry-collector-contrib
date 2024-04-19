@@ -270,9 +270,9 @@ func TestRawLogEmfOnlyCombination(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.Test, func(t *testing.T) {
-			defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
+			defaultBackOffConfig := configretry.NewDefaultBackOffConfig()
 			cfg := &Config{
-				RetrySettings:      defaultRetrySettings,
+				BackOffConfig:      defaultBackOffConfig,
 				LogGroupName:       "test-1",
 				LogStreamName:      "testing",
 				Endpoint:           "",

@@ -22,7 +22,7 @@ func TestExporter_new(t *testing.T) {
 	t.Run("with valid config", func(t *testing.T) {
 		config := &Config{
 
-			HTTPClientSettings: confighttp.HTTPClientSettings{
+			ClientConfig: confighttp.ClientConfig{
 				Endpoint: validEndpoint,
 			},
 		}

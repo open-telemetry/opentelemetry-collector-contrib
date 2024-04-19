@@ -21,7 +21,7 @@ func TestConvertResourceToAttributes(t *testing.T) {
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Len())
 
 	wme := &wrapperMetricsExporter{}
-	cloneMd := wme.convertToMetricsAttributes(md)
+	md = wme.convertToMetricsAttributes(md)
 
 	// After converting resource to labels
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
@@ -43,7 +43,7 @@ func TestConvertResourceToAttributesAllDataTypesEmptyDataPoint(t *testing.T) {
 	assert.Equal(t, 0, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(6).ExponentialHistogram().DataPoints().At(0).Attributes().Len())
 
 	wme := &wrapperMetricsExporter{}
-	cloneMd := wme.convertToMetricsAttributes(md)
+	md = wme.convertToMetricsAttributes(md)
 
 	// After converting resource to labels
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())

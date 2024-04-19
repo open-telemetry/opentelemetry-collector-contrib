@@ -12,15 +12,22 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/transport"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+)
+
+const (
+	OperatingSystemWindows    = "windows"
+	RunInContainer            = "RUN_IN_CONTAINER"
+	TrueValue                 = "True"
+	RunAsHostProcessContainer = "RUN_AS_HOST_PROCESS_CONTAINER"
 )
 
 var (
@@ -38,10 +45,19 @@ func updateSVCPath() {
 	// This is known that k8s token and cert file as available with CONTAINER_SANDBOX_MOUNT_POINT in path.
 	// https://kubernetes.io/docs/tasks/configure-pod-container/create-hostprocess-pod/#containerd-v1-6
 	// todo: Remove this workaround func when Windows AMIs has containerd 1.7 which solves upstream bug
-	if containerinsight.IsWindowsHostProcessContainer() {
+	if isWindowsHostProcessContainer() {
 		svcAcctCACertPath = filepath.Join(os.Getenv("CONTAINER_SANDBOX_MOUNT_POINT"), svcAcctCACertPath)
 		svcAcctTokenPath = filepath.Join(os.Getenv("CONTAINER_SANDBOX_MOUNT_POINT"), svcAcctTokenPath)
 	}
+}
+
+func isWindowsHostProcessContainer() bool {
+	// todo: Remove this workaround func when Windows AMIs has containerd 1.7 which solves upstream bug
+	// https://kubernetes.io/docs/tasks/configure-pod-container/create-hostprocess-pod/#containerd-v1-6
+	if runtime.GOOS == OperatingSystemWindows && os.Getenv(RunInContainer) == TrueValue && os.Getenv(RunAsHostProcessContainer) == TrueValue {
+		return true
+	}
+	return false
 }
 
 type Client interface {

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,12 +24,14 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	certutil "k8s.io/client-go/util/cert"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
 const (
-	cacheTTL = 10 * time.Minute
+	cacheTTL                  = 10 * time.Minute
+	OperatingSystemWindows    = "windows"
+	RunInContainer            = "RUN_IN_CONTAINER"
+	TrueValue                 = "True"
+	RunAsHostProcessContainer = "RUN_AS_HOST_PROCESS_CONTAINER"
 )
 
 // Option is a struct that can be used to change the configuration of passed K8sClient
@@ -471,7 +474,7 @@ func (c *K8sClient) Shutdown() {
 // This copy fixes that bug by appending `CONTAINER_SANDBOX_MOUNT_POINT` in k8s token and cert file paths.
 // todo: Remove this workaround func when Windows AMIs has containerd 1.7 which solves upstream bug.
 func (c *K8sClient) inClusterConfig() (*rest.Config, error) {
-	if !containerinsight.IsWindowsHostProcessContainer() {
+	if !isWindowsHostProcessContainer() {
 		return rest.InClusterConfig()
 	}
 	var (
@@ -502,4 +505,13 @@ func (c *K8sClient) inClusterConfig() (*rest.Config, error) {
 		BearerToken:     string(token),
 		BearerTokenFile: tokenFile,
 	}, nil
+}
+
+func isWindowsHostProcessContainer() bool {
+	// todo: Remove this workaround func when Windows AMIs has containerd 1.7 which solves upstream bug
+	// https://kubernetes.io/docs/tasks/configure-pod-container/create-hostprocess-pod/#containerd-v1-6
+	if runtime.GOOS == OperatingSystemWindows && os.Getenv(RunInContainer) == TrueValue && os.Getenv(RunAsHostProcessContainer) == TrueValue {
+		return true
+	}
+	return false
 }
