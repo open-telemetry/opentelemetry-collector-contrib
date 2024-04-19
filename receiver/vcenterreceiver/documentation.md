@@ -471,5 +471,7 @@ The memory utilization of the VM.
 | vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true |
 | vcenter.resource_pool.inventory_path | The inventory path of the resource pool. | Any Str | true |
 | vcenter.resource_pool.name | The name of the resource pool. | Any Str | true |
+| vcenter.virtual_app.inventory_path | The inventory path of the vApp. | Any Str | true |
+| vcenter.virtual_app.name | The name of the vApp. | Any Str | true |
 | vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true |
 | vcenter.vm.name | The name of the virtual machine. | Any Str | true |

@@ -112,6 +112,15 @@ func (vc *vcenterClient) ResourcePools(ctx context.Context) ([]*object.ResourceP
 	return rps, err
 }
 
+// VirtualApps returns the VirtualApps in the vSphere SDK
+func (vc *vcenterClient) VirtualApps(ctx context.Context) ([]*object.VirtualApp, error) {
+	vApps, err := vc.finder.VirtualAppList(ctx, "*")
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve vApps: %w", err)
+	}
+	return vApps, err
+}
+
 func (vc *vcenterClient) VMs(ctx context.Context) ([]mo.VirtualMachine, error) {
 	v, err := vc.vm.CreateContainerView(ctx, vc.vimDriver.ServiceContent.RootFolder, []string{"VirtualMachine"}, true)
 	if err != nil {
@@ -135,6 +144,7 @@ func (vc *vcenterClient) VMs(ctx context.Context) ([]mo.VirtualMachine, error) {
 		"summary.storage.uncommitted",
 		"summary.runtime.host",
 		"resourcePool",
+		"parentVApp",
 	}, &vms)
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve VMs: %w", err)
