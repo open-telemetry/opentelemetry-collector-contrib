@@ -135,7 +135,7 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 		mk := val.MapKeys()
 		items := make([]item, len(mk), len(mk))
 		// Get all values
-		for i, _ := range items {
+		for i := range items {
 			items[i].name = formatValue(mk[i], fltr)
 			items[i].value = val.MapIndex(mk[i])
 		}
@@ -144,7 +144,7 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 		sort.Sort(itemSorter(items))
 
 		buf.WriteByte('[')
-		for i, _ := range items {
+		for i := range items {
 			if i != 0 {
 				buf.WriteByte(',')
 			}
@@ -176,7 +176,7 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 		sort.Sort(itemSorter(items))
 
 		buf.WriteByte('{')
-		for i, _ := range items {
+		for i := range items {
 			if i != 0 {
 				buf.WriteByte(',')
 			}
