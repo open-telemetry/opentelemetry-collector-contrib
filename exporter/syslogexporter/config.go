@@ -7,6 +7,7 @@ import (
 	"errors"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -19,11 +20,6 @@ var (
 	errUnsupportedNetwork  = errors.New("unsupported network: network is required, only tcp/udp supported")
 	errUnsupportedProtocol = errors.New("unsupported protocol: Only rfc5424 and rfc3164 supported")
 	errOctetCounting       = errors.New("octet counting is only supported for rfc5424 protocol")
-)
-
-const (
-	networkTCP = "tcp"
-	networkUDP = "udp"
 )
 
 // Config defines configuration for Syslog exporter.
@@ -61,7 +57,8 @@ func (cfg *Config) Validate() error {
 		invalidFields = append(invalidFields, errInvalidEndpoint)
 	}
 
-	if strings.ToLower(cfg.Network) != networkTCP && strings.ToLower(cfg.Network) != networkUDP {
+	cfg.Network = strings.ToLower(cfg.Network)
+	if cfg.Network != string(confignet.TransportTypeTCP) && cfg.Network != string(confignet.TransportTypeUDP) {
 		invalidFields = append(invalidFields, errUnsupportedNetwork)
 	}
 
@@ -85,7 +82,7 @@ func (cfg *Config) Validate() error {
 
 const (
 	// Syslog Network
-	DefaultNetwork = networkTCP
+	DefaultNetwork = string(confignet.TransportTypeTCP)
 	// Syslog Port
 	DefaultPort = 514
 	// Syslog Protocol

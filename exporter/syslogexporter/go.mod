@@ -5,6 +5,7 @@ go 1.21.0
 require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.99.0
+	go.opentelemetry.io/collector/config/confignet v0.99.0
 	go.opentelemetry.io/collector/config/configretry v0.99.0
 	go.opentelemetry.io/collector/config/configtls v0.99.0
 	go.opentelemetry.io/collector/exporter v0.99.0
