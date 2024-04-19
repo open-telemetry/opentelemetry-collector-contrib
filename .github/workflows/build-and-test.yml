@@ -1,5 +1,6 @@
 name: build-and-test
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
     tags:
