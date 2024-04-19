@@ -3,6 +3,7 @@
 package jsonarray // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/jsonarray"
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/valyala/fastjson"
@@ -26,9 +27,7 @@ var jsonArrayParserFeatureGate = featuregate.GlobalRegistry().MustRegister(
 )
 
 func init() {
-	if jsonArrayParserFeatureGate.IsEnabled() {
-		operator.Register(operatorType, func() operator.Builder { return NewConfig() })
-	}
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new json array parser config with default values
@@ -51,6 +50,10 @@ type Config struct {
 
 // Build will build a json array parser operator.
 func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	if !jsonArrayParserFeatureGate.IsEnabled() {
+		return nil, fmt.Errorf("%s operator disabled", operatorType)
+	}
+
 	parserOperator, err := c.ParserConfig.Build(logger)
 	if err != nil {
 		return nil, err

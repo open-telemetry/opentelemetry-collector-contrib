@@ -4,12 +4,21 @@ If you would like to contribute please read OpenTelemetry Collector [contributin
 guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md) before you begin your
 work.
 
-## Pull-request title
+## Pull-requests
+
+### Title guidelines
 
 The title for your pull-request should contain the component type and name in brackets, plus a short statement for your
 change. For instance:
 
     [processor/tailsampling] fix AND policy
+
+### Description guidelines
+
+When linking to an open issue, if your PR is meant to close said issue, please prefix your issue with one of the
+following keywords: `Resolves`, `Fixes`, or `Closes`. More information on this functionality (and more keyword options) can be found
+[here](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
+This will automatically close the issue once your PR has been merged.
 
 ## Changelog
 
@@ -226,8 +235,9 @@ When submitting a component to the community, consider breaking it down into sep
   size of this PR is larger than the recommended size consider splitting it in
   multiple PRs.
 * **Last PR** should mark the new component as `Alpha` stability and add it to the `cmd/otelcontribcol`
-  binary by updating the `cmd/otelcontribcol/components.go` file. The component must be enabled
-  only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
+  binary by updating the `cmd/otelcontribcol/builder-config.yaml` file and running `make genotelcontribcol`.
+  The component's tests must also be added as a part of its respective `component_type_tests.go` file in the `cmd/otelcontribcol` directory.
+  The component must be enabled only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
 * Once a new component has been added to the executable, please add the component
   to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
@@ -253,7 +263,7 @@ The following GitHub users are the currently available sponsors, either by being
 * [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
 * [@fatsheep9146](https://github.com/fatsheep9146)
-* [@astencel-sumo](https://github.com/astencel-sumo)
+* [@andrzej-stencel](https://github.com/andrzej-stencel)
 * [@songy23](https://github.com/songy23)
 * [@Bryan Aguilar](https://github.com/bryan-aguilar)
 * [@atoulme](https://github.com/atoulme)
