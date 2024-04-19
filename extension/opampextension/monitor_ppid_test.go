@@ -15,12 +15,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-func TestMonitorPPIDOthers(t *testing.T) {
+func TestMonitorPPID(t *testing.T) {
 	t.Run("Does not trigger if process with ppid never stops", func(t *testing.T) {
 		cmdContext, cmdCancel := context.WithCancel(context.Background())
 		cmd := longRunningComand(cmdContext)
 		cmd.Stdout = os.Stdout
 		require.NoError(t, cmd.Start())
+		cmdPid := cmd.Process.Pid
 
 		t.Cleanup(func() {
 			cmdCancel()
@@ -41,18 +42,14 @@ func TestMonitorPPIDOthers(t *testing.T) {
 			monitorCtxCancel()
 		}()
 
-		monitorPPID(monitorCtx, int32(cmd.Process.Pid), statusReportFunc)
+		monitorPPID(monitorCtx, int32(cmdPid), statusReportFunc)
 	})
 
 	t.Run("Emits fatal status if ppid changes", func(t *testing.T) {
 		cmdContext, cmdCancel := context.WithCancel(context.Background())
 		cmd := longRunningComand(cmdContext)
 		require.NoError(t, cmd.Start())
-
-		t.Cleanup(func() {
-			cmdCancel()
-			_ = cmd.Wait()
-		})
+		cmdPid := cmd.Process.Pid
 
 		var status *component.StatusEvent
 		statusReportFunc := func(evt *component.StatusEvent) {
@@ -64,15 +61,25 @@ func TestMonitorPPIDOthers(t *testing.T) {
 
 		setOrphanPollInterval(t, 10*time.Millisecond)
 
+		cmdDoneChan := make(chan struct{})
 		go func() {
 			time.Sleep(500 * time.Millisecond)
 			cmdCancel()
 			_ = cmd.Wait()
+			close(cmdDoneChan)
 		}()
 
-		monitorPPID(context.Background(), int32(cmd.Process.Pid), statusReportFunc)
+		monitorPPID(context.Background(), int32(cmdPid), statusReportFunc)
 		require.NotNil(t, status)
 		require.Equal(t, component.StatusFatalError, status.Status())
+
+		// wait for command stop goroutine to actually finish
+		select {
+		case <-cmdDoneChan:
+		case <-time.After(5 * time.Second):
+			t.Fatalf("Timed out waiting for command to stop")
+		}
+
 	})
 
 }
