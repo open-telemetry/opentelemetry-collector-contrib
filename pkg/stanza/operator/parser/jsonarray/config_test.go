@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 
+	commontestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
@@ -16,7 +16,7 @@ import (
 )
 
 func TestConfig(t *testing.T) {
-	// Manually adding operator to the Registry as its behind a feature gate
+	// Manually adding operator to the Registry as it's behind a feature gate
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 
 	operatortest.ConfigUnmarshalTests{
@@ -83,8 +83,7 @@ func TestBuildWithFeatureGate(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			if c.isFeatureGateEnable {
-				err := featuregate.GlobalRegistry().Set("logs.jsonParserArray", true)
-				require.Nil(t, err)
+				defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
 			}
 
 			buildFunc, ok := operator.Lookup(operatorType)
