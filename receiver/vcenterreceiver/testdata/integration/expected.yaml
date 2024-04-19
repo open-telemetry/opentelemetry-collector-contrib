@@ -66,9 +66,6 @@ resourceMetrics:
         - key: vcenter.host.name
           value:
             stringValue: DC0_H0
-        - key: vcenter.cluster.name
-          value:
-            stringValue: DC0_H0
     scopeMetrics:
       - metrics:
           - description: The amount of CPU used by the host.
