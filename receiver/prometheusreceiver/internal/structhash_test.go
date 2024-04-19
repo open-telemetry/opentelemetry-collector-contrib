@@ -109,8 +109,8 @@ func dataSetup() *First {
 }
 
 func TestHash(t *testing.T) {
-	v1Hash := "v1_e8e67581aee36d7237603381a9cbd9fc"
-	v2Hash := "v2_5e51490d7c24c4b7a9e63c04f55734eb"
+	v1Hash := "v1_125bd93b268ce6c52d312ed253aa423e3b12b6a01068487b5b33f9b80be386f8"
+	v2Hash := "v2_3933803c20fe1603bf75951fce065ba00815e24df68afdbee3667a9b80b8f4e8"
 
 	data := dataSetup()
 	v1, err := Hash(data, 1)
@@ -130,13 +130,21 @@ func TestHash(t *testing.T) {
 		t.Errorf("%s is not %s", v2, v2Hash)
 	}
 
-	v1md5 := fmt.Sprintf("v1_%x", Md5(data, 1))
-	if v1md5 != v1Hash {
-		t.Errorf("%s is not %s", v1md5, v1Hash[3:])
+	// v1md5 := fmt.Sprintf("v1_%x", Md5(data, 1))
+	// if v1md5 != v1Hash {
+	// 	t.Errorf("%s is not %s", v1md5, v1Hash[3:])
+	// }
+	// v2md5 := fmt.Sprintf("v2_%x", Md5(data, 2))
+	// if v2md5 != v2Hash {
+	// 	t.Errorf("%s is not %s", v2md5, v2Hash[3:])
+	// }
+	v1sha2 := fmt.Sprintf("v1_%x", Sha2(data, 1))
+	if v1sha2 != v1Hash {
+		t.Errorf("%s is not %s", v1sha2, v1Hash[3:])
 	}
-	v2md5 := fmt.Sprintf("v2_%x", Md5(data, 2))
-	if v2md5 != v2Hash {
-		t.Errorf("%s is not %s", v2md5, v2Hash[3:])
+	v2sha2 := fmt.Sprintf("v2_%x", Sha2(data, 2))
+	if v2sha2 != v2Hash {
+		t.Errorf("%s is not %s", v2sha2, v2Hash[3:])
 	}
 }
 
@@ -189,7 +197,7 @@ func TestNils(t *testing.T) {
 }
 
 func TestUnexportedFields(t *testing.T) {
-	v1Hash := "v1_750efb7c919caf87f2ab0d119650c87d"
+	v1Hash := "v1_254758689a97ac1cd9c48a317e65ad6851a88ecba4f045247ba4c9766e8c745e"
 	data := unexportedTags{
 		foo: "foo",
 		bar: "bar",
@@ -204,7 +212,7 @@ func TestUnexportedFields(t *testing.T) {
 	if v1 != v1Hash {
 		t.Errorf("%s is not %s", v1, v1Hash)
 	}
-	v1md5 := fmt.Sprintf("v1_%x", Md5(data, 1))
+	v1md5 := fmt.Sprintf("v1_%x", Sha2(data, 1))
 	if v1md5 != v1Hash {
 		t.Errorf("%s is not %s", v1md5, v1Hash[3:])
 	}
