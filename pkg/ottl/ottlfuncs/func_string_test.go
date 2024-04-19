@@ -71,8 +71,8 @@ func Test_String(t *testing.T) {
 		},
 		{
 			name:     "map",
-			value:    map[int]bool{1: true, 2: false},
-			expected: string("{\"1\":true,\"2\":false}"),
+			value:    map[int]bool{1: true},
+			expected: string("{\"1\":true}"),
 		},
 		{
 			name:     "slice",

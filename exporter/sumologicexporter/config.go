@@ -6,11 +6,16 @@ package sumologicexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension"
 )
 
 // Config defines configuration for Sumo Logic exporter.
@@ -62,9 +67,12 @@ type Config struct {
 
 // createDefaultClientConfig returns default http client settings
 func createDefaultClientConfig() confighttp.ClientConfig {
-	config := confighttp.NewDefaultClientConfig()
-	config.Timeout = defaultTimeout
-	return config
+	return confighttp.ClientConfig{
+		Timeout: defaultTimeout,
+		Auth: &configauth.Authentication{
+			AuthenticatorID: component.NewID(sumologicextension.NewFactory().Type()),
+		},
+	}
 }
 
 // LogFormatType represents log_format
@@ -148,8 +156,14 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("unexpected compression encoding: %s", cfg.CompressEncoding)
 	}
 
-	if len(cfg.ClientConfig.Endpoint) == 0 {
-		return errors.New("endpoint is not set")
+	if len(cfg.ClientConfig.Endpoint) == 0 && cfg.ClientConfig.Auth == nil {
+		return errors.New("no endpoint and no auth extension specified")
+	}
+
+	if _, err := url.Parse(cfg.ClientConfig.Endpoint); err != nil {
+		return fmt.Errorf("failed parsing endpoint URL: %s; err: %w",
+			cfg.ClientConfig.Endpoint, err,
+		)
 	}
 
 	if err := cfg.QueueSettings.Validate(); err != nil {
