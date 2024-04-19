@@ -116,8 +116,8 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 		}
 	case reflect.Array, reflect.Slice:
 		buf.WriteByte('[')
-		len := val.Len()
-		for i := 0; i < len; i++ {
+		valLen := val.Len()
+		for i := 0; i < valLen; i++ {
 			if i != 0 {
 				buf.WriteByte(',')
 			}
@@ -126,7 +126,7 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 		buf.WriteByte(']')
 	case reflect.Map:
 		mk := val.MapKeys()
-		items := make([]item, len(mk), len(mk))
+		items := make([]item, len(mk))
 		// Get all values
 		for i := range items {
 			items[i].name = formatValue(mk[i], fltr)
@@ -196,7 +196,7 @@ func formatValue(val reflect.Value, fltr structFieldFilter) string {
 	var buf bytes.Buffer
 	writeValue(&buf, val, fltr)
 
-	return string(buf.Bytes())
+	return buf.String()
 }
 
 func filterField(f reflect.StructField, i *item, version int) (bool, error) {
