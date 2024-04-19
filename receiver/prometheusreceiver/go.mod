@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/promet
 go 1.21
 
 require (
-	github.com/cnf/structhash v0.0.0-20201127153200-e1b16c1ebc08
 	github.com/go-kit/log v0.2.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
