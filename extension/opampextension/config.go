@@ -32,7 +32,8 @@ type Config struct {
 
 	// PPID is the process ID of the parent for the collector. If the PPID is specified,
 	// the extension will continuously poll for the status of the parent process, and emit a fatal error
-	// when the parent process is closed.
+	// when the parent process is no longer running.
+	// If unspecified, the orphan detection logic does not run.
 	PPID int32 `mapstructure:"ppid"`
 }
 
