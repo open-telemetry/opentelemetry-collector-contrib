@@ -81,11 +81,20 @@ func (w *wsprocessor) handleConn(conn *websocket.Conn) {
 }
 
 func (w *wsprocessor) Shutdown(ctx context.Context) error {
+	var err error
+
 	if w.server != nil {
-		err := w.server.Shutdown(ctx)
-		return err
+		err = w.server.Shutdown(ctx)
+		w.shutdownWG.Wait()
 	}
-	return nil
+
+	// The processor's channelset is only modified by its server, so once
+	// it's completely shutdown it's safe to shutdown the channelset itself.
+	if w.cs != nil {
+		w.cs.shutdown()
+	}
+
+	return err
 }
 
 func (w *wsprocessor) ConsumeMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
