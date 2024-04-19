@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
 
-go 1.21.9
+go 1.21.0
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.111
@@ -10,14 +10,14 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.54.0-devel.0.20240415161448-b255914f33f9
 	github.com/DataDog/datadog-agent/comp/core/log v0.52.1
 	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.54.0-devel.0.20240415161448-b255914f33f9
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.0.0-20240416205609-901776f80dc1
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.0.0-20240419195358-8549c987746f
 	github.com/DataDog/datadog-agent/pkg/config/model v0.54.0-devel.0.20240415161448-b255914f33f9
 	github.com/DataDog/datadog-agent/pkg/config/setup v0.54.0-devel.0.20240415161448-b255914f33f9
 	github.com/DataDog/datadog-agent/pkg/logs/auditor v0.54.0-devel.0.20240415161448-b255914f33f9
 	github.com/DataDog/datadog-agent/pkg/logs/client v0.54.0-devel.0.20240415161448-b255914f33f9
 	github.com/DataDog/datadog-agent/pkg/logs/diagnostic v0.54.0-devel.0.20240415161448-b255914f33f9
-	github.com/DataDog/datadog-agent/pkg/logs/pipeline v0.0.0-20240416205609-901776f80dc1
-	github.com/DataDog/datadog-agent/pkg/logs/sds v0.0.0-20240416205609-901776f80dc1 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/pipeline v0.0.0-20240419195358-8549c987746f
+	github.com/DataDog/datadog-agent/pkg/logs/sds v0.0.0-20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.54.0-devel.0.20240415161448-b255914f33f9
 	github.com/DataDog/datadog-agent/pkg/logs/util/testutils v0.54.0-devel.0.20240415161448-b255914f33f9 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.52.1
@@ -98,7 +98,7 @@ require (
 	github.com/Code-Hex/go-generics-cache v1.3.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/secrets v0.54.0-devel.0.20240415161448-b255914f33f9 // indirect
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.54.0-devel.0.20240415161448-b255914f33f9 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.0.0-20240416205609-901776f80dc1 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.0.0-20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.54.0-devel.0.20240415161448-b255914f33f9 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.54.0-devel.0.20240415161448-b255914f33f9 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.54.0-devel.0.20240415161448-b255914f33f9 // indirect
@@ -127,7 +127,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.54.0-devel.0.20240415161448-b255914f33f9 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.54.0-devel.0.20240415161448-b255914f33f9 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.54.0-devel.0.20240415161448-b255914f33f9 // indirect
-	github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240318112024-de26033b606a // indirect
+	github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240418080137-a7c7a570540d // indirect
 	github.com/DataDog/go-sqllexer v0.0.9 // indirect
 	github.com/DataDog/go-tuf v1.0.2-0.5.2 // indirect
 	github.com/DataDog/viper v1.13.0 // indirect
