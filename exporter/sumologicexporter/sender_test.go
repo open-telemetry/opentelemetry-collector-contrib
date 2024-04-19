@@ -83,6 +83,9 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 			},
 			c,
 			pf,
+			testServer.URL,
+			testServer.URL,
+			testServer.URL,
 			gf,
 		),
 	}
@@ -168,7 +171,7 @@ func exampleMultitypeLogs() []plog.LogRecord {
 
 func TestSendLogs(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, "Example log\nAnother example log", body)
 			assert.Equal(t, "key1=value, key2=value2", req.Header.Get("X-Sumo-Fields"))
@@ -186,7 +189,7 @@ func TestSendLogs(t *testing.T) {
 
 func TestSendLogsMultitype(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			expected := `{"lk1":"lv1","lk2":13}
 ["lv2",13]`
@@ -206,11 +209,11 @@ func TestSendLogsMultitype(t *testing.T) {
 
 func TestSendLogsSplit(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, "Example log", body)
 		},
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, "Another example log", body)
 		},
@@ -230,7 +233,7 @@ func TestSendLogsSplitFailedOne(t *testing.T) {
 			body := extractBody(t, req)
 			assert.Equal(t, "Example log", body)
 		},
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, "Another example log", body)
 		},
@@ -276,7 +279,7 @@ func TestSendLogsSplitFailedAll(t *testing.T) {
 
 func TestSendLogsJson(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			expected := `{"key1":"value1","key2":"value2","log":"Example log"}
 {"key1":"value1","key2":"value2","log":"Another example log"}`
@@ -296,7 +299,7 @@ func TestSendLogsJson(t *testing.T) {
 
 func TestSendLogsJsonMultitype(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			expected := `{"key1":"value1","key2":"value2","log":{"lk1":"lv1","lk2":13}}
 {"key1":"value1","key2":"value2","log":["lv2",13]}`
@@ -316,11 +319,11 @@ func TestSendLogsJsonMultitype(t *testing.T) {
 
 func TestSendLogsJsonSplit(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, `{"key1":"value1","key2":"value2","log":"Example log"}`, body)
 		},
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, `{"key1":"value1","key2":"value2","log":"Another example log"}`, body)
 		},
@@ -342,7 +345,7 @@ func TestSendLogsJsonSplitFailedOne(t *testing.T) {
 			body := extractBody(t, req)
 			assert.Equal(t, `{"key1":"value1","key2":"value2","log":"Example log"}`, body)
 		},
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, `{"key1":"value1","key2":"value2","log":"Another example log"}`, body)
 		},
@@ -388,7 +391,7 @@ func TestSendLogsJsonSplitFailedAll(t *testing.T) {
 
 func TestSendLogsUnexpectedFormat(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, _ *http.Request) {
 		},
 	})
 	defer func() { test.srv.Close() }()
@@ -403,7 +406,7 @@ func TestSendLogsUnexpectedFormat(t *testing.T) {
 
 func TestOverrideSourceName(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			assert.Equal(t, "Test source name/test_name", req.Header.Get("X-Sumo-Name"))
 		},
 	})
@@ -418,7 +421,7 @@ func TestOverrideSourceName(t *testing.T) {
 
 func TestOverrideSourceCategory(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			assert.Equal(t, "Test source category/test_name", req.Header.Get("X-Sumo-Category"))
 		},
 	})
@@ -433,7 +436,7 @@ func TestOverrideSourceCategory(t *testing.T) {
 
 func TestOverrideSourceHost(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			assert.Equal(t, "Test source host/test_name", req.Header.Get("X-Sumo-Host"))
 		},
 	})
@@ -474,7 +477,7 @@ func TestInvalidEndpoint(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.ClientConfig.Endpoint = ":"
+	test.s.dataURLLogs = ":"
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
@@ -485,7 +488,7 @@ func TestInvalidPostRequest(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.ClientConfig.Endpoint = ""
+	test.s.dataURLLogs = ""
 	test.s.logBuffer = exampleLog()
 
 	_, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
@@ -496,7 +499,7 @@ func TestLogsBufferOverflow(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	test.s.config.ClientConfig.Endpoint = ":"
+	test.s.dataURLLogs = ":"
 	log := exampleLog()
 	flds := newFields(pcommon.NewMap())
 
@@ -525,7 +528,7 @@ func TestInvalidPipeline(t *testing.T) {
 	defer func() { test.srv.Close() }()
 
 	err := test.s.send(context.Background(), "invalidPipeline", strings.NewReader(""), newFields(pcommon.NewMap()))
-	assert.EqualError(t, err, `unexpected pipeline`)
+	assert.EqualError(t, err, `unknown pipeline type: invalidPipeline`)
 }
 
 func TestSendCompressGzip(t *testing.T) {
@@ -602,7 +605,7 @@ func TestInvalidContentEncoding(t *testing.T) {
 
 func TestSendMetrics(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000
 gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
@@ -629,12 +632,12 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 
 func TestSendMetricsSplit(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000`
 			assert.Equal(t, expected, body)
 		},
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			expected := `gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
 gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
@@ -662,7 +665,7 @@ func TestSendMetricsSplitFailedOne(t *testing.T) {
 			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000`
 			assert.Equal(t, expected, body)
 		},
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			expected := `gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
 gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
@@ -719,7 +722,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 
 func TestSendMetricsUnexpectedFormat(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, _ *http.Request) {
 		},
 	})
 	defer func() { test.srv.Close() }()
@@ -784,7 +787,7 @@ func TestMetricsBufferOverflow(t *testing.T) {
 
 func TestSendCarbon2Metrics(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			expected := `test=test_value test2=second_value _unit=m/s escape_me=:invalid_ metric=true metric=test.metric.data unit=bytes  14500 1605534165
 foo=bar metric=gauge_metric_name  124 1608124661
@@ -817,7 +820,7 @@ foo=bar metric=gauge_metric_name  245 1608124662`
 
 func TestSendGraphiteMetrics(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
+		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			expected := `test_metric_data.true.m/s 14500 1605534165
 gauge_metric_name.. 124 1608124661

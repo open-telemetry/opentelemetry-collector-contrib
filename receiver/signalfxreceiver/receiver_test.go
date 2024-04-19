@@ -617,7 +617,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	cfg.ServerConfig.TLSSetting = &configtls.ServerConfig{
-		TLSSetting: configtls.Config{
+		Config: configtls.Config{
 			CertFile: "./testdata/server.crt",
 			KeyFile:  "./testdata/server.key",
 		},
@@ -667,14 +667,14 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	req.Header.Set("Content-Type", "application/x-protobuf")
 
 	tlscs := configtls.ClientConfig{
-		TLSSetting: configtls.Config{
+		Config: configtls.Config{
 			CAFile:   "./testdata/ca.crt",
 			CertFile: "./testdata/client.crt",
 			KeyFile:  "./testdata/client.key",
 		},
 		ServerName: "localhost",
 	}
-	tls, errTLS := tlscs.LoadTLSConfig()
+	tls, errTLS := tlscs.LoadTLSConfig(context.Background())
 	assert.NoError(t, errTLS)
 	client := &http.Client{
 		Transport: &http.Transport{

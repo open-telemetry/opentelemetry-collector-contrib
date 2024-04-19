@@ -518,7 +518,7 @@ func TestSpanWithEventsToEnvelopes(t *testing.T) {
 		assert.Equal(t, targetEnvelopeName, envelope.Name)
 		assert.Equal(t, toTime(spanEvent.Timestamp()).Format(time.RFC3339Nano), envelope.Time)
 		assert.Equal(t, defaultTraceIDAsHex, envelope.Tags[contracts.OperationId])
-		assert.Equal(t, defaultParentSpanIDAsHex, envelope.Tags[contracts.OperationParentId])
+		assert.Equal(t, defaultSpanIDAsHex, envelope.Tags[contracts.OperationParentId])
 		assert.Equal(t, defaultServiceNamespace+"."+defaultServiceName, envelope.Tags[contracts.CloudRole])
 		assert.Equal(t, defaultServiceInstance, envelope.Tags[contracts.CloudRoleInstance])
 		assert.NotNil(t, envelope.Data)
