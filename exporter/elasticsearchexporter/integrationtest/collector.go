@@ -167,7 +167,7 @@ func (c *recreatableOtelCol) Start(_ testbed.StartParams) error {
 		return err
 	}
 
-	fmp := fileprovider.NewWithSettings(confmap.ProviderSettings{})
+	fmp := fileprovider.NewFactory().Create(confmap.ProviderSettings{})
 	cfgProviderSettings := otelcol.ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:      []string{confFile.Name()},
