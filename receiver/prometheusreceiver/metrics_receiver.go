@@ -156,7 +156,7 @@ func (r *pReceiver) syncTargetAllocator(compareHash string, allocConf *TargetAll
 	}
 
 	// hash, err := structhash.Hash(scrapeConfigsResponse, 1)
-	hash, err := Hash(scrapeConfigsResponse, 1)
+	hash, err := internal.Hash(scrapeConfigsResponse, 1)
 	if err != nil {
 		r.settings.Logger.Error("Failed to hash job list", zap.Error(err))
 		return "", err
