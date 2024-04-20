@@ -45,18 +45,18 @@ func Version(h string) int {
 //
 // This function uses md5 hashing function and default formatter. See also Dump()
 // function.
-func Hash(c interface{}, version int) (string, error) {
+func Hash(c any, version int) (string, error) {
 	return fmt.Sprintf("v%d_%x", version, Sha2(c, version)), nil
 
 }
 
 // Dump takes a data structure and returns its byte representation. This can be
 // useful if you need to use your own hashing function or formatter.
-func Dump(c interface{}, version int) []byte {
+func Dump(c any, version int) []byte {
 	return serialize(c, version)
 }
 
-func Sha2(c interface{}, version int) []byte {
+func Sha2(c any, version int) []byte {
 	h := sha256.New()
 	h.Write(Dump(c, version))
 	sum := h.Sum(nil)
@@ -252,7 +252,7 @@ func filterField(f reflect.StructField, i *item, version int) (bool, error) {
 	return true, nil
 }
 
-func serialize(object interface{}, version int) []byte {
+func serialize(object any, version int) []byte {
 	var buf bytes.Buffer
 
 	writeValue(&buf, reflect.ValueOf(object),

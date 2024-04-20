@@ -70,8 +70,8 @@ type unexportedTags struct {
 
 type interfaceStruct struct {
 	Name            string
-	Interface1      interface{}
-	InterfaceIgnore interface{} `hash:"-"`
+	Interface1      any
+	InterfaceIgnore any `hash:"-"`
 }
 
 type ambiguousData struct {
