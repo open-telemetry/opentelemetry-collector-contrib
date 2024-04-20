@@ -155,11 +155,19 @@ func newConnector(set component.TelemetrySettings, config component.Config) *ser
 	}
 }
 
+type getExporters interface {
+	GetExporters() map[component.DataType]map[component.ID]component.Component
+}
+
 func (p *serviceGraphConnector) Start(_ context.Context, host component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
 	if p.metricsConsumer == nil {
-		exporters := host.GetExporters() //nolint:staticcheck
+		ge, ok := host.(getExporters)
+		if !ok {
+			return fmt.Errorf("unable to get exporters")
+		}
+		exporters := ge.GetExporters()
 
 		// The available list of exporters come from any configured metrics pipelines' exporters.
 		for k, exp := range exporters[component.DataTypeMetrics] {

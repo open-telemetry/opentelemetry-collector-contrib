@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/docker/docker v25.0.5+incompatible
