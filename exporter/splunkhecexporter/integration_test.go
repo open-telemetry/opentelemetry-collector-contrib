@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
@@ -42,12 +43,7 @@ type SplunkContainerConfig struct {
 
 func setup() SplunkContainerConfig {
 	// Perform setup operations here
-	fmt.Println("Setting up...")
 	cfg := startSplunk()
-	integrationtestutils.CreateAnIndexInSplunk(integrationtestutils.GetConfigVariable("EVENT_INDEX"), "event")
-	integrationtestutils.CreateAnIndexInSplunk(integrationtestutils.GetConfigVariable("METRIC_INDEX"), "metric")
-	integrationtestutils.CreateAnIndexInSplunk(integrationtestutils.GetConfigVariable("TRACE_INDEX"), "event")
-	fmt.Println("Index created")
 	return cfg
 }
 
@@ -105,7 +101,14 @@ func startSplunk() SplunkContainerConfig {
 			"SPLUNK_HEC_TOKEN":  integrationtestutils.GetConfigVariable("HEC_TOKEN"),
 			"SPLUNK_PASSWORD":   integrationtestutils.GetConfigVariable("PASSWORD"),
 		},
-		WaitingFor: wait.ForLog("Ansible playbook complete, will begin streaming splunkd_stderr.log").WithStartupTimeout(2 * time.Minute),
+		Files: []testcontainers.ContainerFile{
+			{
+				HostFilePath:      filepath.Join("testdata", "splunk.yaml"),
+				ContainerFilePath: "/tmp/defaults/default.yml",
+				FileMode:          0644,
+			},
+		},
+		WaitingFor: wait.ForHealthCheck().WithStartupTimeout(5 * time.Minute),
 	}
 
 	container, err := testcontainers.GenericContainer(conContext, testcontainers.GenericContainerRequest{
