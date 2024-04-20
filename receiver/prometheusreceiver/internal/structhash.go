@@ -43,7 +43,7 @@ func Version(h string) int {
 // Hash takes a data structure and returns a hash string of that data structure
 // at the version asked.
 //
-// This function uses md5 hashing function and default formatter. See also Dump()
+// This function uses sha256 hashing function and default formatter. See also Dump()
 // function.
 func Hash(c interface{}, version int) (string, error) {
 	return fmt.Sprintf("v%d_%x", version, Sha2(c, version)), nil
@@ -60,7 +60,7 @@ func Sha2(c interface{}, version int) []byte {
 	h := sha256.New()
 	h.Write(Dump(c, version))
 	sum := h.Sum(nil)
-	return sum[:]
+	return sum
 }
 
 type item struct {
