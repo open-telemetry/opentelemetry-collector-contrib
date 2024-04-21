@@ -44,6 +44,7 @@ func TestLoadConfig(t *testing.T) {
 				RawPath:    "/foo",
 				Splitting:  SplittingStrategyLine,
 				HealthPath: "/bar",
+				Ack:        Ack{Path: "/services/collector/ack"},
 				HecToOtelAttrs: splunk.HecToOtelAttrs{
 					Source:     "file.name",
 					SourceType: "foobar",
@@ -70,6 +71,7 @@ func TestLoadConfig(t *testing.T) {
 				RawPath:    "/services/collector/raw",
 				Splitting:  SplittingStrategyLine,
 				HealthPath: "/services/collector/health",
+				Ack:        Ack{Path: "/services/collector/ack"},
 				HecToOtelAttrs: splunk.HecToOtelAttrs{
 					Source:     "com.splunk.source",
 					SourceType: "com.splunk.sourcetype",
