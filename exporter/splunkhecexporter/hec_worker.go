@@ -20,9 +20,8 @@ type hecWorker interface {
 }
 
 type defaultHecWorker struct {
-	url     *url.URL
-	client  *http.Client
-	headers map[string]string
+	url    *url.URL
+	client *http.Client
 }
 
 func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[string]string) error {
@@ -31,11 +30,6 @@ func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[s
 		return consumererror.NewPermanent(err)
 	}
 	req.ContentLength = int64(buf.Len())
-
-	// Set the headers configured for the client
-	for k, v := range hec.headers {
-		req.Header.Set(k, v)
-	}
 
 	// Set extra headers passed by the caller
 	for k, v := range headers {
