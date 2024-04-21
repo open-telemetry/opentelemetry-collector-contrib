@@ -5,6 +5,7 @@ go 1.21.0
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
+	github.com/elastic/go-elasticsearch/v8 v8.13.1
 	github.com/elastic/go-structform v0.0.10
 	github.com/lestrrat-go/strftime v1.0.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.98.0
