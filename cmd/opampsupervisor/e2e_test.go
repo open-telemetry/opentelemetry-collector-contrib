@@ -542,14 +542,15 @@ func TestSupervisorRestartCommand(t *testing.T) {
 		},
 	})
 
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		Flags: uint64(protobufs.ServerToAgentFlags_ServerToAgentFlags_ReportFullState),
+	})
+
 	require.Eventually(t, func() bool {
-
 		health := healthReport.Load().(*protobufs.ComponentHealth)
-
 		if health != nil {
 			return health.Healthy && health.LastError == ""
 		}
-
 		return false
 	}, 10*time.Second, 250*time.Millisecond, "Collector never reported healthy after restart")
 }

@@ -107,6 +107,7 @@ type Supervisor struct {
 
 	agentHasStarted               bool
 	agentStartHealthCheckAttempts int
+	agentRestarting               atomic.Bool
 
 	connectedToOpAMPServer chan struct{}
 }
@@ -709,6 +710,8 @@ func (s *Supervisor) recalcEffectiveConfig() (configChanged bool, err error) {
 }
 
 func (s *Supervisor) handleRestartCommand() error {
+	s.agentRestarting.Store(true)
+	defer s.agentRestarting.Store(false)
 	s.logger.Debug("Received restart command")
 	err := s.commander.Restart(context.Background())
 	if err != nil {
@@ -810,6 +813,11 @@ func (s *Supervisor) runAgentProcess() {
 			s.startAgent()
 
 		case <-s.commander.Done():
+			// the agent process exit is expected for restart command and will not attempt to restart
+			if s.agentRestarting.Load() {
+				continue
+			}
+
 			if s.shuttingDown {
 				return
 			}
