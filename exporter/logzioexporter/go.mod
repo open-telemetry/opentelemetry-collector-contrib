@@ -8,14 +8,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.98.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.98.1-0.20240419202408-d1e631b61158
-	go.opentelemetry.io/collector/config/configcompression v1.5.1-0.20240419202408-d1e631b61158
+	go.opentelemetry.io/collector/config/configcompression v1.5.1-0.20240422193438-b47303424f42
 	go.opentelemetry.io/collector/config/confighttp v0.98.1-0.20240419202408-d1e631b61158
-	go.opentelemetry.io/collector/config/configopaque v1.5.1-0.20240419202408-d1e631b61158
+	go.opentelemetry.io/collector/config/configopaque v1.5.1-0.20240422193438-b47303424f42
 	go.opentelemetry.io/collector/config/configretry v0.98.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/collector/confmap v0.98.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/collector/consumer v0.98.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/collector/exporter v0.98.1-0.20240419202408-d1e631b61158
-	go.opentelemetry.io/collector/pdata v1.5.1-0.20240419202408-d1e631b61158
+	go.opentelemetry.io/collector/pdata v1.5.1-0.20240422193438-b47303424f42
 	go.opentelemetry.io/collector/pdata/testdata v0.98.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/collector/semconv v0.98.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/otel/metric v1.25.0
@@ -67,7 +67,7 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/extension v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.98.1-0.20240419202408-d1e631b61158 // indirect
-	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240419202408-d1e631b61158 // indirect
+	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240422193438-b47303424f42 // indirect
 	go.opentelemetry.io/collector/receiver v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.50.0 // indirect
 	go.opentelemetry.io/otel v1.25.0 // indirect
