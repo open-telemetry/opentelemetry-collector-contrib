@@ -58,6 +58,7 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
   - `max_requests` (default=3): Number of HTTP request retries.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
+  - `retry_on_status` (default=[429]): Status codes that trigger a request or document retry.
 - `mapping`: Events are encoded to JSON. The `mapping` allows users to
   configure additional mapping rules.
   - `mode` (default=none): The fields naming mode. valid modes are:

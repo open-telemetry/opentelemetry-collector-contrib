@@ -61,6 +61,7 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 			MaxRequests:     5,
 			InitialInterval: 100 * time.Millisecond,
 			MaxInterval:     1 * time.Minute,
+			RetryOnStatus:   []int{429},
 		},
 		Mapping: MappingsSettings{
 			Mode:  "none",
@@ -136,6 +137,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxRequests:     5,
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
+					RetryOnStatus:   []int{429, 500},
 				},
 				Mapping: MappingsSettings{
 					Mode:  "none",
@@ -186,6 +188,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxRequests:     5,
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
+					RetryOnStatus:   []int{429, 500},
 				},
 				Mapping: MappingsSettings{
 					Mode:  "none",

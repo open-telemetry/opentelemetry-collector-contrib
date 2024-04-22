@@ -23,13 +23,12 @@ type elasticsearchLogsExporter struct {
 	logstashFormat LogstashFormatSettings
 	dynamicIndex   bool
 	maxAttempts    int
+	retryOnStatus  []int
 
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
 	model       mappingModel
 }
-
-var retryOnStatus = []int{500, 502, 503, 504, 429}
 
 const createAction = "create"
 
@@ -71,6 +70,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 		index:          indexStr,
 		dynamicIndex:   cfg.LogsDynamicIndex.Enabled,
 		maxAttempts:    maxAttempts,
+		retryOnStatus:  cfg.Retry.RetryOnStatus,
 		model:          model,
 		logstashFormat: cfg.LogstashFormat,
 	}
@@ -129,5 +129,5 @@ func (e *elasticsearchLogsExporter) pushLogRecord(ctx context.Context, resource 
 	if err != nil {
 		return fmt.Errorf("Failed to encode log event: %w", err)
 	}
-	return pushDocuments(ctx, e.logger, fIndex, document, e.bulkIndexer, e.maxAttempts)
+	return pushDocuments(ctx, e.logger, fIndex, document, e.bulkIndexer, e.maxAttempts, e.retryOnStatus)
 }

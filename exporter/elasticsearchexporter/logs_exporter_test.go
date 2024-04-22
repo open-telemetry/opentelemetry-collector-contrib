@@ -328,7 +328,7 @@ func TestExporter_PushEvent(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			if failures == 0 {
 				failures++
-				return nil, &httpTestError{message: "oops"}
+				return nil, &httpTestError{status: 429, message: "oops"}
 			}
 
 			rec.Record(docs)
@@ -508,7 +508,7 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 }
 
 func mustSend(t *testing.T, exporter *elasticsearchLogsExporter, contents string) {
-	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts)
+	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts, exporter.retryOnStatus)
 	require.NoError(t, err)
 }
 
