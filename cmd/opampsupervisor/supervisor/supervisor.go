@@ -52,8 +52,8 @@ var (
 	//go:embed templates/owntelemetry.yaml
 	ownTelemetryTpl string
 
-	lastRecvRemoteConfigFile     = "last_recv_remote_config.yaml"
-	lastRecvOwnMetricsConfigFile = "last_recv_own_metrics_config.yaml"
+	lastRecvRemoteConfigFile     = "last_recv_remote_config.dat"
+	lastRecvOwnMetricsConfigFile = "last_recv_own_metrics_config.dat"
 )
 
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
@@ -163,7 +163,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	}
 
 	if connErr := s.waitForOpAMPConnection(); connErr != nil {
-		return nil, fmt.Errorf("failed to connect to the OpAMP server: %w", err)
+		return nil, fmt.Errorf("failed to connect to the OpAMP server: %w", connErr)
 	}
 
 	s.commander, err = commander.NewCommander(
@@ -581,9 +581,11 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 			} else {
 				s.remoteConfig = config
 			}
+		} else {
+			s.logger.Error("error while reading last received config", zap.Error(err))
 		}
 	} else {
-		s.logger.Debug("Remote config is not supported")
+		s.logger.Debug("Remote config is not supported, will not attempt to load config from fil")
 	}
 
 	if s.config.Capabilities != nil && s.config.Capabilities.ReportsOwnMetrics != nil &&
@@ -601,7 +603,7 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 			}
 		}
 	} else {
-		s.logger.Debug("Own metrics is not supported")
+		s.logger.Debug("Own metrics is not supported, will not attempt to load config from file")
 	}
 
 	_, err = s.recalcEffectiveConfig()
