@@ -17,7 +17,7 @@ issues: [32584]
 # Use pipe (|) for multiline entries.
 subtext: |
   Previously the status codes that will trigger retries are 500, 502, 503, 504, 429, and may lead to duplicates.
-  It now defaults to 429 only.
+  Introduce a breaking change such that it now defaults to 429 only.
   To opt-in to the previous behavior, configure retry.retry_on_status accordingly.
 
 # If your change doesn't affect end users or the exported elements of any package,
