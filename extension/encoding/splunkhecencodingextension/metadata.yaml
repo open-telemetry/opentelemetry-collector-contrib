@@ -1,0 +1,13 @@
+type: splunkhec_encoding
+scope_name: otelcol/splunkhecencoding
+
+status:
+  class: extension
+  stability:
+    development: [ extension ]
+  distributions: [ ]
+  codeowners:
+    active: [ atoulme ]
+
+tests:
+  config:
