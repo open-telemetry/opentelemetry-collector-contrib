@@ -4,8 +4,12 @@ on:
     branches: [ main ]
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
+    paths-ignore:
+      - '**/README.md'
   merge_group:
   pull_request:
+    paths-ignore:
+      - '**/README.md'
 env:
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.

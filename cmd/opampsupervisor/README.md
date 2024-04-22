@@ -9,15 +9,25 @@ The design is still undergoing changes, and as such this implementation may chan
 The supervisor is currently undergoing heavy development and is not ready for any serious use. However, if you would like to test it, you can follow the steps below:
 
 1. Download the [opamp-go](https://github.com/open-telemetry/opamp-go) repository, and run the OpAMP example server in the `internal/examples/server` directory.
+
+   ```shell
+   git clone git@github.com:open-telemetry/opamp-go.git
+   cd opamp-go/internal/examples/server
+   go run .
+   ```
+
+   Visit [localhost:4321](http://localhost:4321) to verify that the server is running.
+
 2. From the Collector contrib repository root, build the Collector:
 
    ```shell
    make otelcontribcol
    ```
 
-3. Run the supervisor, substituting `<OS>` for your platform:
+3. Run the supervisor in the `cmd/opampsupervisor` directory of Collector contrib repository, substituting `<OS>` for your operating system (`darwin` for MacOS, `linux` or `windows`):
 
    ```shell
+   cd cmd/opampsupervisor
    go run . --config examples/supervisor_<OS>.yaml
    ```
 
