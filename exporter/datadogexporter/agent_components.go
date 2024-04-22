@@ -1,4 +1,4 @@
-package datadogexporter
+package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
 	"strings"

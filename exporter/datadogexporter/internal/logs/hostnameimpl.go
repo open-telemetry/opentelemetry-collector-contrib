@@ -1,4 +1,4 @@
-package logs
+package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
 
 import (
 	"context"

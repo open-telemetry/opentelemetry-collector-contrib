@@ -1,4 +1,4 @@
-package testutil
+package testutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 
 import (
 	"encoding/json"
