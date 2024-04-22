@@ -255,3 +255,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmr
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../../pkg/resourcetotelemetry
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter => ../../prometheusremotewriteexporter
+
+replace github.com/elastic/go-docappender/v2 => github.com/elastic/go-docappender/v2 v2.0.2-0.20240422094139-71966cb3fef6
