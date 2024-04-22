@@ -11,9 +11,6 @@ import (
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
-
-	// Embed the timezone database so this code works across platforms.
-	_ "time/tzdata"
 )
 
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
