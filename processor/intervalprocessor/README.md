@@ -61,5 +61,5 @@ At the next `interval` (15s by default), the processor would pass the following 
 | 8         | test_metric | Cumulative                | labelA: foo |  12.8 |
 | 10        | test_metric | Cumulative                | labelA: bar |   6.4 |
 
-[!IMPORTANT]
-After exporting, any internal state is cleared. So if no new metrics come in, the next interval will export nothing.
+> [!IMPORTANT]
+> After exporting, any internal state is cleared. So if no new metrics come in, the next interval will export nothing.
