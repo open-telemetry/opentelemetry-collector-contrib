@@ -22,8 +22,6 @@ import (
 )
 
 func Test_ProcessScrape(t *testing.T) {
-	t.Skip("TODO: Skipping for now due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32536")
-
 	expectedFile := filepath.Join("testdata", "e2e", "expected_process.yaml")
 	cmd := exec.Command("/bin/sleep", "300")
 	require.NoError(t, cmd.Start())
