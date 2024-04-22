@@ -642,7 +642,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.98.1-0.20240422074114-6611edfa5a69 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.98.1-0.20240422074114-6611edfa5a69 // indirect
 	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240422074114-6611edfa5a69 // indirect
-	go.opentelemetry.io/collector/filter v0.98.1-0.20240422074114-6611edfa5a69 // indirect
+	go.opentelemetry.io/collector/filter v0.0.0-20240422074114-6611edfa5a69 // indirect
 	go.opentelemetry.io/collector/pdata v1.5.1-0.20240422074114-6611edfa5a69 // indirect
 	go.opentelemetry.io/collector/semconv v0.98.1-0.20240422074114-6611edfa5a69 // indirect
 	go.opentelemetry.io/collector/service v0.98.1-0.20240422074114-6611edfa5a69 // indirect
