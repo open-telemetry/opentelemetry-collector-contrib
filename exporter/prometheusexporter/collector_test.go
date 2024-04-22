@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
@@ -391,6 +392,24 @@ func TestCollectMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(42.42)
+				dp.Attributes().PutStr("label_1", "1")
+				dp.Attributes().PutStr("label_2", "2")
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+
+				return
+			},
+		},
+		{
+			name:       "Unknown",
+			metricType: prometheus.UntypedValue,
+			value:      42.42,
+			metric: func(ts time.Time) (metric pmetric.Metric) {
+				metric = pmetric.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDescription("test description")
+				metric.Metadata().PutStr(prometheustranslator.MetricMetadataTypeKey, "unknown")
+				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.SetDoubleValue(42.42)
 				dp.Attributes().PutStr("label_1", "1")
 				dp.Attributes().PutStr("label_2", "2")
