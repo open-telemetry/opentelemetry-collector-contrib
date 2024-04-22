@@ -51,7 +51,7 @@ func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
 		header.Set(k, string(v))
 	}
 
-	tls, err := o.cfg.Server.GetTLSSetting().LoadTLSConfigContext(ctx)
+	tls, err := o.cfg.Server.GetTLSSetting().LoadTLSConfig(ctx)
 	if err != nil {
 		return err
 	}

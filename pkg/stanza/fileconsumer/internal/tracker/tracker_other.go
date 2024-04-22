@@ -12,7 +12,7 @@ import (
 
 // On non-windows platforms, we keep files open between poll cycles so that we can detect
 // and read "lost" files, which have been moved out of the matching pattern.
-func (t *Tracker) EndConsume() {
+func (t *fileTracker) EndConsume() {
 	t.ClosePreviousFiles()
 
 	// t.currentPollFiles -> t.previousPollFiles

@@ -594,6 +594,7 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 			},
 		},
 	})
+	waitForSupervisorConnection(newServer.supervisorConnected, true)
 
 	require.Eventually(t, func() bool {
 		return connectedToNewServer.Load() == true
