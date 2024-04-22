@@ -34,6 +34,19 @@ func TestOtelMetricTypeToPromMetricType(t *testing.T) {
 			want: prompb.MetricMetadata_GAUGE,
 		},
 		{
+			name: "gauge from metadata",
+			metric: func() pmetric.Metric {
+				metric := getIntGaugeMetric(
+					"test",
+					pcommon.NewMap(),
+					1, ts,
+				)
+				metric.Metadata().PutStr(prometheustranslator.MetricMetadataTypeKey, "gauge")
+				return metric
+			},
+			want: prompb.MetricMetadata_GAUGE,
+		},
+		{
 			name: "sum",
 			metric: func() pmetric.Metric {
 				return getIntSumMetric(
@@ -61,9 +74,34 @@ func TestOtelMetricTypeToPromMetricType(t *testing.T) {
 			want: prompb.MetricMetadata_COUNTER,
 		},
 		{
+			name: "counter from metadata",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_sum")
+				metric.Metadata().PutStr(prometheustranslator.MetricMetadataTypeKey, "counter")
+				metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				metric.SetEmptySum().SetIsMonotonic(true)
+
+				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+
+				return metric
+			},
+			want: prompb.MetricMetadata_COUNTER,
+		},
+		{
 			name: "cumulative histogram",
 			metric: func() pmetric.Metric {
 				m := getHistogramMetric("", pcommon.NewMap(), pmetric.AggregationTemporalityCumulative, 0, 0, 0, []float64{}, []uint64{})
+				return m
+			},
+			want: prompb.MetricMetadata_HISTOGRAM,
+		},
+		{
+			name: "histogram from metadata",
+			metric: func() pmetric.Metric {
+				m := getHistogramMetric("", pcommon.NewMap(), pmetric.AggregationTemporalityCumulative, 0, 0, 0, []float64{}, []uint64{})
+				m.Metadata().PutStr(prometheustranslator.MetricMetadataTypeKey, "histogram")
 				return m
 			},
 			want: prompb.MetricMetadata_HISTOGRAM,
@@ -92,6 +130,66 @@ func TestOtelMetricTypeToPromMetricType(t *testing.T) {
 				return metric
 			},
 			want: prompb.MetricMetadata_SUMMARY,
+		},
+		{
+			name: "summary from metadata",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_summary")
+				metric.Metadata().PutStr(prometheustranslator.MetricMetadataTypeKey, "summary")
+				metric.SetEmptySummary()
+
+				dp := metric.Summary().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(ts))
+				dp.SetStartTimestamp(pcommon.Timestamp(ts))
+
+				return metric
+			},
+			want: prompb.MetricMetadata_SUMMARY,
+		},
+		{
+			name: "unknown from metadata",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_sum")
+				metric.Metadata().PutStr(prometheustranslator.MetricMetadataTypeKey, "unknown")
+
+				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+
+				return metric
+			},
+			want: prompb.MetricMetadata_UNKNOWN,
+		},
+		{
+			name: "info from metadata",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_sum")
+				metric.Metadata().PutStr(prometheustranslator.MetricMetadataTypeKey, "info")
+				metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				metric.SetEmptySum().SetIsMonotonic(false)
+				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+
+				return metric
+			},
+			want: prompb.MetricMetadata_INFO,
+		},
+		{
+			name: "stateset from metadata",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_sum")
+				metric.Metadata().PutStr(prometheustranslator.MetricMetadataTypeKey, "stateset")
+				metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				metric.SetEmptySum().SetIsMonotonic(false)
+				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1)
+
+				return metric
+			},
+			want: prompb.MetricMetadata_STATESET,
 		},
 	}
 	for _, tt := range tests {
