@@ -12,7 +12,7 @@ require (
 	github.com/prometheus/prometheus v0.51.2-0.20240405174432-b4a973753c6e
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/pdata v1.5.1-0.20240422193438-b47303424f42
-	go.opentelemetry.io/collector/semconv v0.98.1-0.20240419202408-d1e631b61158
+	go.opentelemetry.io/collector/semconv v0.98.1-0.20240422193438-b47303424f42
 	go.uber.org/goleak v1.3.0
 )
 
