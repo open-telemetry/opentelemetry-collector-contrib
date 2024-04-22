@@ -4,6 +4,7 @@
 package data // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -52,19 +53,19 @@ func (dp Histogram) CopyTo(dst Histogram) {
 }
 
 type ExpHistogram struct {
-	pmetric.ExponentialHistogramDataPoint
+	expo.DataPoint
 }
 
 func (dp ExpHistogram) Clone() ExpHistogram {
-	clone := ExpHistogram{ExponentialHistogramDataPoint: pmetric.NewExponentialHistogramDataPoint()}
-	if dp.ExponentialHistogramDataPoint != (pmetric.ExponentialHistogramDataPoint{}) {
+	clone := ExpHistogram{DataPoint: pmetric.NewExponentialHistogramDataPoint()}
+	if dp.DataPoint != (expo.DataPoint{}) {
 		dp.CopyTo(clone)
 	}
 	return clone
 }
 
 func (dp ExpHistogram) CopyTo(dst ExpHistogram) {
-	dp.ExponentialHistogramDataPoint.CopyTo(dst.ExponentialHistogramDataPoint)
+	dp.DataPoint.CopyTo(dst.DataPoint)
 }
 
 type mustPoint[D Point[D]] struct{ _ D }

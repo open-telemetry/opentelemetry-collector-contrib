@@ -22,7 +22,7 @@ const (
 // bounds: (0.125,0.25], (0.25,0.5], (0.5,1], (1,2], (2,4], (4,8], (8,16], (16,32]
 type Bins [8]uint64
 
-func (bins Bins) Into() pmetric.ExponentialHistogramDataPointBuckets {
+func (bins Bins) Into() expo.Buckets {
 	start := 0
 	for i := 0; i < len(bins); i++ {
 		if bins[i] != ø {
@@ -47,7 +47,7 @@ func (bins Bins) Into() pmetric.ExponentialHistogramDataPointBuckets {
 	return buckets
 }
 
-func ObserveInto(bs pmetric.ExponentialHistogramDataPointBuckets, scale expo.Scale, pts ...float64) {
+func ObserveInto(bs expo.Buckets, scale expo.Scale, pts ...float64) {
 	counts := bs.BucketCounts()
 
 	for _, pt := range pts {
@@ -70,12 +70,12 @@ func ObserveInto(bs pmetric.ExponentialHistogramDataPointBuckets, scale expo.Sca
 	}
 }
 
-func Observe(scale expo.Scale, pts ...float64) pmetric.ExponentialHistogramDataPointBuckets {
+func Observe(scale expo.Scale, pts ...float64) expo.Buckets {
 	bs := pmetric.NewExponentialHistogramDataPointBuckets()
 	ObserveInto(bs, scale, pts...)
 	return bs
 }
 
-func Observe0(pts ...float64) pmetric.ExponentialHistogramDataPointBuckets {
+func Observe0(pts ...float64) expo.Buckets {
 	return Observe(0, pts...)
 }

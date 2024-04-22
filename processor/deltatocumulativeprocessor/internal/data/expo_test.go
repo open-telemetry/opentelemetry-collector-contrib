@@ -75,7 +75,7 @@ func TestAdd(t *testing.T) {
 		name: "scale/diff",
 		dp:   expdp{PosNeg: expotest.Observe(expo.Scale(1), 1, 2, 3, 4), Scale: 1},
 		in:   expdp{PosNeg: expotest.Observe(expo.Scale(0), 4, 3, 2, 1), Scale: 0},
-		want: expdp{Scale: 0, PosNeg: func() pmetric.ExponentialHistogramDataPointBuckets {
+		want: expdp{Scale: 0, PosNeg: func() expo.Buckets {
 			bs := pmetric.NewExponentialHistogramDataPointBuckets()
 			expotest.ObserveInto(bs, expo.Scale(0), 1, 2, 3, 4)
 			expotest.ObserveInto(bs, expo.Scale(0), 4, 3, 2, 1)
@@ -100,7 +100,7 @@ func TestAdd(t *testing.T) {
 				want.SetTimestamp(1)
 
 				got := dp.Add(in)
-				is.Equal(want.ExponentialHistogramDataPoint, got.ExponentialHistogramDataPoint)
+				is.Equal(want.DataPoint, got.DataPoint)
 			}
 		}
 
@@ -114,7 +114,7 @@ func TestAdd(t *testing.T) {
 
 }
 
-func rawbs(data []uint64, offset int32) pmetric.ExponentialHistogramDataPointBuckets {
+func rawbs(data []uint64, offset int32) expo.Buckets {
 	bs := pmetric.NewExponentialHistogramDataPointBuckets()
 	bs.BucketCounts().FromRaw(data)
 	bs.SetOffset(offset)

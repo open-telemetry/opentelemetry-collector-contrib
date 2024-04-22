@@ -5,12 +5,11 @@ package expo // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // Merge combines the counts of buckets a and b into a.
 // Both buckets MUST be of same scale
-func Merge(arel, brel pmetric.ExponentialHistogramDataPointBuckets) {
+func Merge(arel, brel Buckets) {
 	a, b := Abs(arel), Abs(brel)
 
 	lo := min(a.Lower(), b.Lower())
@@ -33,7 +32,7 @@ func Abs(buckets buckets) Absolute {
 	return Absolute{buckets: buckets}
 }
 
-type buckets = pmetric.ExponentialHistogramDataPointBuckets
+type buckets = Buckets
 
 // Absolute addresses bucket counts using an absolute scale, such that the
 // following holds true:

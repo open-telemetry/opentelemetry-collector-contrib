@@ -13,8 +13,8 @@ import (
 type Histogram struct {
 	Ts pcommon.Timestamp
 
-	Pos, Neg pmetric.ExponentialHistogramDataPointBuckets
-	PosNeg   pmetric.ExponentialHistogramDataPointBuckets
+	Pos, Neg expo.Buckets
+	PosNeg   expo.Buckets
 
 	Scale int
 	Count uint64

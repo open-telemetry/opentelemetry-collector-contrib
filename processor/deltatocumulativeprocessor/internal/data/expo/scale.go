@@ -5,8 +5,6 @@ package expo // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"math"
-
-	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type Scale int32
@@ -41,7 +39,7 @@ func (scale Scale) Bounds(index int) (min, max float64) {
 }
 
 // Downscale collapses the buckets of bs until scale 'to' is reached
-func Downscale(bs pmetric.ExponentialHistogramDataPointBuckets, from, to Scale) {
+func Downscale(bs Buckets, from, to Scale) {
 	switch {
 	case from == to:
 		return
@@ -58,7 +56,7 @@ func Downscale(bs pmetric.ExponentialHistogramDataPointBuckets, from, to Scale) 
 //
 //	before:	1 1 1 1 1 1 1 1 1 1 1 1
 //	after:	 2   2   2   2   2   2   0   0   0   0   0   0
-func Collapse(bs pmetric.ExponentialHistogramDataPointBuckets) {
+func Collapse(bs Buckets) {
 	counts := bs.BucketCounts()
 	size := counts.Len() / 2
 	if counts.Len()%2 != 0 {

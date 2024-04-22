@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/matryer/is"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
@@ -35,8 +34,8 @@ func (is *I) Equal(want, got any) {
 		is.Equal(want.Positive(), got.Positive())
 		is.Equal(want.Negative(), got.Negative())
 		is.NoErr(pmetrictest.CompareExponentialHistogramDataPoint(want, got)) // pmetrictest
-	case pmetric.ExponentialHistogramDataPointBuckets:
-		want := want.(pmetric.ExponentialHistogramDataPointBuckets)
+	case expo.Buckets:
+		want := want.(expo.Buckets)
 		is.I.Equal(want.Offset(), got.Offset())                             // offset
 		is.I.Equal(want.BucketCounts().AsRaw(), got.BucketCounts().AsRaw()) // counts
 	default:

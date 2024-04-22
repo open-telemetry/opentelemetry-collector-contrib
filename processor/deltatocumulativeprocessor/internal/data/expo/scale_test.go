@@ -46,7 +46,7 @@ func TestDownscale(t *testing.T) {
 		{scale: 0, bkt: "   4       4       4   "},
 	}}
 
-	type B = pmetric.ExponentialHistogramDataPointBuckets
+	type B = expo.Buckets
 	for i, reprs := range cases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			buckets := make([]Repr[B], len(reprs))

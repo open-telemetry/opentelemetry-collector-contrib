@@ -5,11 +5,7 @@ package expo // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
-
-	"go.opentelemetry.io/collector/pdata/pmetric"
 )
-
-type DataPoint = pmetric.ExponentialHistogramDataPoint
 
 // WidenZero widens the zero-bucket to span at least [-width,width], possibly wider
 // if min falls in the middle of a bucket.
@@ -26,7 +22,7 @@ func WidenZero(dp DataPoint, width float64) {
 	scale := Scale(dp.Scale())
 	lo := scale.Idx(width)
 
-	widen := func(bs pmetric.ExponentialHistogramDataPointBuckets) {
+	widen := func(bs Buckets) {
 		abs := Abs(bs)
 		for i := abs.Lower(); i <= lo; i++ {
 			dp.SetZeroCount(dp.ZeroCount() + abs.Abs(i))
