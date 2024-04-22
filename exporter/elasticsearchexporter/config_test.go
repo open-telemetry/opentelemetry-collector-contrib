@@ -4,6 +4,7 @@
 package elasticsearchexporter
 
 import (
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -61,7 +62,7 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 			MaxRequests:     5,
 			InitialInterval: 100 * time.Millisecond,
 			MaxInterval:     1 * time.Minute,
-			RetryOnStatus:   []int{429},
+			RetryOnStatus:   []int{http.StatusTooManyRequests},
 		},
 		Mapping: MappingsSettings{
 			Mode:  "none",
@@ -137,7 +138,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxRequests:     5,
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
-					RetryOnStatus:   []int{429, 500},
+					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
 					Mode:  "none",
@@ -188,7 +189,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxRequests:     5,
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
-					RetryOnStatus:   []int{429, 500},
+					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
 					Mode:  "none",
