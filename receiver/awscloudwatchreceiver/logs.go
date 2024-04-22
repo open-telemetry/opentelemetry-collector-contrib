@@ -110,6 +110,9 @@ func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *l
 		if len(sc.Names) > 0 {
 			groups = append(groups, &streamNames{group: logGroupName, names: sc.Names})
 		}
+		if len(sc.Prefixes) == 0 && len(sc.Names) == 0 {
+			groups = append(groups, &streamNames{group: logGroupName})
+		}
 	}
 
 	// safeguard from using both

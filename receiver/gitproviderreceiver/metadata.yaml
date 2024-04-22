@@ -9,7 +9,7 @@ status:
     development: [metrics]
   distributions: []
   codeowners:
-    active: [adrielp, astencel-sumo]
+    active: [adrielp, andrzej-stencel]
 
 # this might need to be unique per sub receiver implementation
 resource_attributes:
