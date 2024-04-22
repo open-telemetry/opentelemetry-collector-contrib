@@ -523,7 +523,8 @@ func (f *factory) createLogsExporter(
 		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
 	}
 
-	if cfg.OnlyMetadata {
+	switch {
+	case cfg.OnlyMetadata:
 		// only host metadata needs to be sent, once.
 		pusher = func(_ context.Context, td plog.Logs) error {
 			f.onceMetadata.Do(func() {
@@ -536,8 +537,7 @@ func (f *factory) createLogsExporter(
 			}
 			return nil
 		}
-	}
-	if !cfg.OnlyMetadata && isLogsAgentExporterEnabled() {
+	case isLogsAgentExporterEnabled():
 		logComponent := newLogComponent(set.TelemetrySettings)
 		cfgComponent := newConfigComponent(set.TelemetrySettings, cfg)
 		logsAgentConfig := &logsagentexporter.Config{
@@ -566,8 +566,7 @@ func (f *factory) createLogsExporter(
 			return nil, err
 		}
 		pusher = logsAgentExporter.ConsumeLogs
-	}
-	if !cfg.OnlyMetadata && !isLogsAgentExporterEnabled() {
+	default:
 		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, attributesTranslator, hostProvider, metadataReporter)
 		if err != nil {
 			cancel()
@@ -576,6 +575,7 @@ func (f *factory) createLogsExporter(
 		}
 		pusher = exp.consumeLogs
 	}
+
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
