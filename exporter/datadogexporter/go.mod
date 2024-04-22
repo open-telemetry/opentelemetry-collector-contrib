@@ -247,7 +247,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.98.1-0.20240422193438-b47303424f42 // indirect
 	go.opentelemetry.io/collector/extension v0.98.1-0.20240422193438-b47303424f42 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.98.1-0.20240422193438-b47303424f42 // indirect
-	go.opentelemetry.io/collector/filter v0.98.1-0.20240422193438-b47303424f42 // indirect
+	go.opentelemetry.io/collector/filter v0.0.0-20240422193438-b47303424f42 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.98.1-0.20240422193438-b47303424f42 // indirect
 	go.opentelemetry.io/collector/service v0.98.1-0.20240422193438-b47303424f42 // indirect
 	go.opentelemetry.io/contrib/config v0.5.0 // indirect
