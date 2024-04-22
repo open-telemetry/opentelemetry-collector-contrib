@@ -9,12 +9,6 @@ type noop struct {
 	data io.Writer
 }
 
-func NewNoopCompressor() Compressor {
-	return &compressor{
-		compression: &noop{},
-	}
-}
-
 func (n *noop) Reset(w io.Writer) {
 	n.data = w
 }
