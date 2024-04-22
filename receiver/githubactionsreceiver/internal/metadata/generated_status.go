@@ -6,7 +6,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type = component.MustNewType("githubactions")
+)
+
 const (
-	Type          	 = "githubactions"
 	TracesStability  = component.StabilityLevelAlpha
 )

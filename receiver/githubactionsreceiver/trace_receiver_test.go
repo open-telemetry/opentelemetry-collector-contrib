@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/go-github/v61/github"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -46,11 +45,6 @@ func TestCreateNewTracesReceiver(t *testing.T) {
 				Secret: "mysecret",
 			},
 			consumer: consumertest.NewNop(),
-		},
-		{
-			desc:   "Missing consumer fails",
-			config: *defaultConfig,
-			err:    component.ErrNilNextConsumer,
 		},
 	}
 

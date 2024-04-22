@@ -36,10 +36,6 @@ func newTracesReceiver(
 	config *Config,
 	nextConsumer consumer.Traces,
 ) (*githubActionsReceiver, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
 	if config.Endpoint == "" {
 		return nil, errMissingEndpoint
 	}
