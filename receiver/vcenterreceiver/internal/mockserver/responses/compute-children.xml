@@ -3,14 +3,17 @@
     <soapenv:Body>
         <RetrievePropertiesResponse xmlns="urn:vim25">
             <returnval>
-                <obj type="ClusterComputeResource">domain-c8</obj>
+                <obj type="ResourcePool">resgroup-10</obj>
                 <propSet>
                     <name>name</name>
-                    <val xsi:type="xsd:string">Cluster</val>
+                    <val xsi:type="xsd:string">Resources</val>
                 </propSet>
+            </returnval>
+            <returnval>
+                <obj type="HostSystem">host-1003</obj>
                 <propSet>
-                    <name>resourcePool</name>
-                    <val type="ResourcePool" xsi:type="ManagedObjectReference">resgroup-9</val>
+                    <name>name</name>
+                    <val xsi:type="xsd:string">esxi-111.europe-southeast1.gve.goog</val>
                 </propSet>
             </returnval>
         </RetrievePropertiesResponse>
