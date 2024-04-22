@@ -65,7 +65,7 @@ func (*clientLogger) ResponseBodyEnabled() bool {
 }
 
 func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurrent, error) {
-	tlsCfg, err := config.TLSClientSetting.LoadTLSConfig()
+	tlsCfg, err := config.ClientConfig.LoadTLSConfigContext(context.Background())
 	if err != nil {
 		return nil, err
 	}

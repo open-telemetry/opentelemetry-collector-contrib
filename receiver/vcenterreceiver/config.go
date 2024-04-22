@@ -4,6 +4,7 @@
 package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -18,12 +19,12 @@ import (
 
 // Config is the configuration of the receiver
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	Endpoint                                string              `mapstructure:"endpoint"`
-	Username                                string              `mapstructure:"username"`
-	Password                                configopaque.String `mapstructure:"password"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	Endpoint                       string              `mapstructure:"endpoint"`
+	Username                       string              `mapstructure:"username"`
+	Password                       configopaque.String `mapstructure:"password"`
 }
 
 // Validate checks to see if the supplied config will work for the receiver
@@ -51,7 +52,7 @@ func (c *Config) Validate() error {
 		err = multierr.Append(err, errors.New("password not provided and is required"))
 	}
 
-	if _, tlsErr := c.LoadTLSConfig(); err != nil {
+	if _, tlsErr := c.LoadTLSConfigContext(context.Background()); err != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 

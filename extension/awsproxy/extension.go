@@ -24,7 +24,13 @@ type xrayProxy struct {
 
 var _ extension.Extension = (*xrayProxy)(nil)
 
-func (x xrayProxy) Start(_ context.Context, _ component.Host) error {
+func (x *xrayProxy) Start(_ context.Context, _ component.Host) error {
+	srv, err := proxy.NewServer(&x.config.ProxyConfig, x.settings.Logger)
+
+	if err != nil {
+		return err
+	}
+	x.server = srv
 	go func() {
 		if err := x.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			x.settings.ReportStatus(component.NewFatalErrorEvent(err))
@@ -34,21 +40,17 @@ func (x xrayProxy) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (x xrayProxy) Shutdown(ctx context.Context) error {
-	return x.server.Shutdown(ctx)
+func (x *xrayProxy) Shutdown(ctx context.Context) error {
+	if x.server != nil {
+		return x.server.Shutdown(ctx)
+	}
+	return nil
 }
 
 func newXrayProxy(config *Config, telemetrySettings component.TelemetrySettings) (extension.Extension, error) {
-	srv, err := proxy.NewServer(&config.ProxyConfig, telemetrySettings.Logger)
-
-	if err != nil {
-		return nil, err
-	}
-
 	p := &xrayProxy{
 		config:   config,
 		logger:   telemetrySettings.Logger,
-		server:   srv,
 		settings: telemetrySettings,
 	}
 

@@ -38,8 +38,10 @@ const (
 	consistentGets          = "consistent gets"
 	sessionCountSQL         = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
 	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
-	tablespaceUsageSQL      = "select TABLESPACE_NAME, BYTES from DBA_DATA_FILES"
-	tablespaceMaxSpaceSQL   = "select TABLESPACE_NAME, (BLOCK_SIZE*MAX_EXTENTS) AS VALUE FROM DBA_TABLESPACES"
+	tablespaceUsageSQL      = `
+		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE
+		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
+		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
 )
 
 type dbProviderFunc func() (*sql.DB, error)
@@ -48,7 +50,6 @@ type clientProviderFunc func(*sql.DB, string, *zap.Logger) dbClient
 
 type scraper struct {
 	statsClient                dbClient
-	tablespaceMaxSpaceClient   dbClient
 	tablespaceUsageClient      dbClient
 	systemResourceLimitsClient dbClient
 	sessionCountClient         dbClient
@@ -59,12 +60,12 @@ type scraper struct {
 	logger                     *zap.Logger
 	id                         component.ID
 	instanceName               string
-	scrapeCfg                  scraperhelper.ScraperControllerSettings
+	scrapeCfg                  scraperhelper.ControllerConfig
 	startTime                  pcommon.Timestamp
 	metricsBuilderConfig       metadata.MetricsBuilderConfig
 }
 
-func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ScraperControllerSettings, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string) (scraperhelper.Scraper, error) {
+func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string) (scraperhelper.Scraper, error) {
 	s := &scraper{
 		mb:                   metricsBuilder,
 		metricsBuilderConfig: metricsBuilderConfig,
@@ -88,7 +89,6 @@ func (s *scraper) start(context.Context, component.Host) error {
 	s.sessionCountClient = s.clientProviderFunc(s.db, sessionCountSQL, s.logger)
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
 	s.tablespaceUsageClient = s.clientProviderFunc(s.db, tablespaceUsageSQL, s.logger)
-	s.tablespaceMaxSpaceClient = s.clientProviderFunc(s.db, tablespaceMaxSpaceSQL, s.logger)
 	return nil
 }
 
@@ -274,7 +274,9 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			}
 		}
 	}
-	if s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeUsage.Enabled {
+
+	if s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeUsage.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeLimit.Enabled {
 		rows, err := s.tablespaceUsageClient.metricRows(ctx)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", tablespaceUsageSQL, err))
@@ -282,33 +284,39 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			now := pcommon.NewTimestampFromTime(time.Now())
 			for _, row := range rows {
 				tablespaceName := row["TABLESPACE_NAME"]
-				err := s.mb.RecordOracledbTablespaceSizeUsageDataPoint(now, row["BYTES"], tablespaceName)
+				usedSpaceBlockCount, err := strconv.ParseInt(row["USED_SPACE"], 10, 64)
 				if err != nil {
-					scrapeErrors = append(scrapeErrors, err)
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbTablespaceSizeUsage, value was %s: %w", row["USED_SPACE"], err))
+					continue
 				}
-			}
-		}
-	}
-	if s.metricsBuilderConfig.Metrics.OracledbTablespaceSizeLimit.Enabled {
-		rows, err := s.tablespaceMaxSpaceClient.metricRows(ctx)
-		if err != nil {
-			scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", tablespaceMaxSpaceSQL, err))
-		} else {
-			now := pcommon.NewTimestampFromTime(time.Now())
-			for _, row := range rows {
-				tablespaceName := row["TABLESPACE_NAME"]
-				var val int64
-				inputVal := row["VALUE"]
-				if inputVal == "" {
-					val = -1
+
+				tablespaceSizeOriginal := row["TABLESPACE_SIZE"]
+				var tablespaceSizeBlockCount int64
+				// Tablespace size should never be empty using the DBA_TABLESPACE_USAGE_METRICS query. This logic is done
+				// to preserve backward compatibility for with the original metric gathered from querying DBA_TABLESPACES
+				if tablespaceSizeOriginal == "" {
+					tablespaceSizeBlockCount = -1
 				} else {
-					val, err = strconv.ParseInt(inputVal, 10, 64)
+					tablespaceSizeBlockCount, err = strconv.ParseInt(tablespaceSizeOriginal, 10, 64)
 					if err != nil {
-						scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbTablespaceSizeLimit, value was %s: %w", inputVal, err))
+						scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbTablespaceSizeLimit, value was %s: %w", tablespaceSizeOriginal, err))
 						continue
 					}
 				}
-				s.mb.RecordOracledbTablespaceSizeLimitDataPoint(now, val, tablespaceName)
+
+				blockSize, err := strconv.ParseInt(row["BLOCK_SIZE"], 10, 64)
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for OracledbBlockSize, value was %s: %w", row["BLOCK_SIZE"], err))
+					continue
+				}
+
+				s.mb.RecordOracledbTablespaceSizeUsageDataPoint(now, usedSpaceBlockCount*blockSize, tablespaceName)
+
+				if tablespaceSizeBlockCount < 0 {
+					s.mb.RecordOracledbTablespaceSizeLimitDataPoint(now, -1, tablespaceName)
+				} else {
+					s.mb.RecordOracledbTablespaceSizeLimitDataPoint(now, tablespaceSizeBlockCount*blockSize, tablespaceName)
+				}
 			}
 		}
 	}

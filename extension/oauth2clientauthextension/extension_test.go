@@ -43,8 +43,8 @@ func TestOAuthClientSettings(t *testing.T) {
 				TokenURL:       "https://example.com/v1/token",
 				Scopes:         []string{"resource.read"},
 				Timeout:        2,
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					Config: configtls.Config{
 						CAFile:   testCAFile,
 						CertFile: testCertFile,
 						KeyFile:  testKeyFile,
@@ -64,8 +64,8 @@ func TestOAuthClientSettings(t *testing.T) {
 				TokenURL:     "https://example.com/v1/token",
 				Scopes:       []string{"resource.read"},
 				Timeout:      2,
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
+				TLSSetting: configtls.ClientConfig{
+					Config: configtls.Config{
 						CAFile:   testCAFile,
 						CertFile: "doestexist.cert",
 						KeyFile:  testKeyFile,
@@ -98,7 +98,7 @@ func TestOAuthClientSettings(t *testing.T) {
 			// test tls settings
 			transport := rc.client.Transport.(*http.Transport)
 			tlsClientConfig := transport.TLSClientConfig
-			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfig()
+			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfigContext(context.Background())
 			assert.NoError(t, err)
 			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
 		})
@@ -190,7 +190,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			// test tls settings
 			transport := rc.client.Transport.(*http.Transport)
 			tlsClientConfig := transport.TLSClientConfig
-			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfig()
+			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfigContext(context.Background())
 			assert.NoError(t, err)
 			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
 		})
@@ -290,7 +290,7 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 }
 
 func TestFailContactingOAuth(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(200)
 		_, err := w.Write([]byte("not-json"))
 		assert.NoError(t, err)
@@ -323,7 +323,7 @@ func TestFailContactingOAuth(t *testing.T) {
 		},
 	}
 
-	client, _ := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	client, _ := setting.ToClientContext(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	req, err := http.NewRequest("POST", setting.Endpoint, nil)
 	assert.NoError(t, err)
 	_, err = client.Do(req)

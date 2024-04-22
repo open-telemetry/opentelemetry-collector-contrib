@@ -22,7 +22,7 @@ import (
 var _ component.Config = (*Config)(nil)
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	kube.ClientConfig       `mapstructure:",squash"`
 	confignet.TCPAddrConfig `mapstructure:",squash"`

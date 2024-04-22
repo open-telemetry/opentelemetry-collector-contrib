@@ -19,6 +19,8 @@ all_set:
       enabled: true
     container.cpu.limit:
       enabled: true
+    container.cpu.logical.count:
+      enabled: true
     container.cpu.shares:
       enabled: true
     container.cpu.throttling_data.periods:
@@ -48,6 +50,8 @@ all_set:
     container.memory.cache:
       enabled: true
     container.memory.dirty:
+      enabled: true
+    container.memory.fails:
       enabled: true
     container.memory.file:
       enabled: true
@@ -174,6 +178,8 @@ none_set:
       enabled: false
     container.cpu.limit:
       enabled: false
+    container.cpu.logical.count:
+      enabled: false
     container.cpu.shares:
       enabled: false
     container.cpu.throttling_data.periods:
@@ -203,6 +209,8 @@ none_set:
     container.memory.cache:
       enabled: false
     container.memory.dirty:
+      enabled: false
+    container.memory.fails:
       enabled: false
     container.memory.file:
       enabled: false

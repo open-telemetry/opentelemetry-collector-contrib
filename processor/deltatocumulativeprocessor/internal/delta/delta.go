@@ -44,8 +44,17 @@ func (a Accumulator[D]) Store(id streams.Ident, dp D) error {
 		return ErrOutOfOrder{Last: aggr.Timestamp(), Sample: dp.Timestamp()}
 	}
 
+	// detect gaps
+	var gap error
+	if dp.StartTimestamp() > aggr.Timestamp() {
+		gap = ErrGap{From: aggr.Timestamp(), To: dp.StartTimestamp()}
+	}
+
 	res := aggr.Add(dp)
-	return a.Map.Store(id, res)
+	if err := a.Map.Store(id, res); err != nil {
+		return err
+	}
+	return gap
 }
 
 type ErrOlderStart struct {
@@ -64,4 +73,12 @@ type ErrOutOfOrder struct {
 
 func (e ErrOutOfOrder) Error() string {
 	return fmt.Sprintf("out of order: dropped sample from time=%s, because series is already at time=%s", e.Sample, e.Last)
+}
+
+type ErrGap struct {
+	From, To pcommon.Timestamp
+}
+
+func (e ErrGap) Error() string {
+	return fmt.Sprintf("gap in stream from %s to %s. samples were likely lost in transit", e.From, e.To)
 }

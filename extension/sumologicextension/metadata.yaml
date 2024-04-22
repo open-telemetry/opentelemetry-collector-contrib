@@ -4,8 +4,8 @@ scope_name: otelcol/sumologic
 status:
   class: extension
   stability:
-    development: [extension]
-  distributions: [sumo]
+    alpha: [extension]
+  distributions: []
   codeowners:
     active: [astencel-sumo, sumo-drosiek, swiatekm-sumo]
 

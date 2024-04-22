@@ -93,11 +93,10 @@ type Key struct {
 
 func NewKey(metricMetadata any, labels map[string]string) Key {
 	kvs := make([]attribute.KeyValue, 0, len(labels))
-	var sortable attribute.Sortable
 	for k, v := range labels {
 		kvs = append(kvs, attribute.String(k, v))
 	}
-	set := attribute.NewSetWithSortable(kvs, &sortable)
+	set := attribute.NewSet(kvs...)
 
 	dedupSortedLabels := set.Equivalent()
 	return Key{

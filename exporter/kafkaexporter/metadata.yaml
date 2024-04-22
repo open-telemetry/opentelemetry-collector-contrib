@@ -5,11 +5,10 @@ status:
   class: exporter
   stability:
     beta: [traces, metrics, logs]
-  distributions: [core, contrib, observiq, splunk, sumo, aws]
+  distributions: [core, contrib]
   codeowners:
     active: [pavolloffay, MovieStoreGuy]
 
-# TODO: Update the exporter to pass the tests
 tests:
+  config:
   skip_lifecycle: true
-  skip_shutdown: true

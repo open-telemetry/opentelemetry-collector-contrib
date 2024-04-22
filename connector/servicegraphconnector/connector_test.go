@@ -288,7 +288,7 @@ func TestUpdateDurationMetrics(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		t.Run(tc.caseStr, func(t *testing.T) {
+		t.Run(tc.caseStr, func(_ *testing.T) {
 			p.updateDurationMetrics(metricKey, tc.duration, tc.duration)
 		})
 	}
@@ -334,6 +334,73 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	// ConsumeTraces with a trace with different attribute value
 	td = buildSampleTrace(t, "second")
 	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
+
+	// Shutdown the connector
+	assert.NoError(t, p.Shutdown(context.Background()))
+}
+
+func TestMapsAreConsistentDuringCleanup(t *testing.T) {
+	// Prepare
+	cfg := &Config{
+		MetricsExporter: "mock",
+		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+		Store: StoreConfig{
+			MaxItems: 10,
+			TTL:      time.Second,
+		},
+	}
+
+	mockMetricsExporter := newMockMetricsExporter()
+
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	p := newConnector(set, cfg)
+
+	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.MustNewID("mock"): mockMetricsExporter,
+		},
+	})
+
+	assert.NoError(t, p.Start(context.Background(), mHost))
+
+	// ConsumeTraces
+	td := buildSampleTrace(t, "first")
+	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
+
+	// Make series stale and force a cache cleanup
+	for key, metric := range p.keyToMetric {
+		metric.lastUpdated = 0
+		p.keyToMetric[key] = metric
+	}
+
+	// Start cleanup, but use locks to pretend that we are:
+	// - currently collecting metrics (so seriesMutex is locked)
+	// - currently getting dimensions for that series (so metricMutex is locked)
+	p.seriesMutex.Lock()
+	p.metricMutex.RLock()
+	go p.cleanCache()
+
+	// Since everything is locked, nothing has happened, so both should still have length 1
+	assert.Equal(t, 1, len(p.reqTotal))
+	assert.Equal(t, 1, len(p.keyToMetric))
+
+	// Now we pretend that we have stopped collecting metrics, by unlocking seriesMutex
+	p.seriesMutex.Unlock()
+
+	// Make sure cleanupCache has continued to the next mutex
+	time.Sleep(time.Millisecond)
+	p.seriesMutex.Lock()
+
+	// The expired series should have been removed. The metrics collector now won't look
+	// for dimensions from that series. It's important that it happens this way around,
+	// instead of deleting it from `keyToMetric`, otherwise the metrics collector will try
+	// and fail to find dimensions for a series that is about to be removed.
+	assert.Equal(t, 0, len(p.reqTotal))
+	assert.Equal(t, 1, len(p.keyToMetric))
+
+	p.metricMutex.RUnlock()
+	p.seriesMutex.Unlock()
 
 	// Shutdown the connector
 	assert.NoError(t, p.Shutdown(context.Background()))

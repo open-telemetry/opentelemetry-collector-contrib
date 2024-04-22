@@ -31,7 +31,7 @@ const NativeKey = "native" // provided for operator development
 // NewTimeParser creates a new time parser with default values
 func NewTimeParser() TimeParser {
 	return TimeParser{
-		LayoutType: "strptime",
+		LayoutType: StrptimeKey,
 	}
 }
 

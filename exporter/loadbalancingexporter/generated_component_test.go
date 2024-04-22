@@ -19,6 +19,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+func TestComponentFactoryType(t *testing.T) {
+	require.Equal(t, "loadbalancing", NewFactory().Type().String())
+}
+
+func TestComponentConfigStruct(t *testing.T) {
+	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
@@ -70,20 +78,26 @@ func TestComponentLifecycle(t *testing.T) {
 			err = c.Start(context.Background(), host)
 			require.NoError(t, err)
 			require.NotPanics(t, func() {
-				switch e := c.(type) {
-				case exporter.Logs:
+				switch test.name {
+				case "logs":
+					e, ok := c.(exporter.Logs)
+					require.True(t, ok)
 					logs := generateLifecycleTestLogs()
 					if !e.Capabilities().MutatesData {
 						logs.MarkReadOnly()
 					}
 					err = e.ConsumeLogs(context.Background(), logs)
-				case exporter.Metrics:
+				case "metrics":
+					e, ok := c.(exporter.Metrics)
+					require.True(t, ok)
 					metrics := generateLifecycleTestMetrics()
 					if !e.Capabilities().MutatesData {
 						metrics.MarkReadOnly()
 					}
 					err = e.ConsumeMetrics(context.Background(), metrics)
-				case exporter.Traces:
+				case "traces":
+					e, ok := c.(exporter.Traces)
+					require.True(t, ok)
 					traces := generateLifecycleTestTraces()
 					if !e.Capabilities().MutatesData {
 						traces.MarkReadOnly()

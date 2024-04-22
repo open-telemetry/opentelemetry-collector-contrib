@@ -16,7 +16,7 @@ import (
 
 func Test_extractPatterns(t *testing.T) {
 	target := &ottl.StandardStringGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, _ any) (any, error) {
 			return `a=b c=d`, nil
 		},
 	}
@@ -39,7 +39,7 @@ func Test_extractPatterns(t *testing.T) {
 			name:    "no pattern found",
 			target:  target,
 			pattern: `^a=(?P<a>\w+)$`,
-			want:    func(expectedMap pcommon.Map) {},
+			want:    func(_ pcommon.Map) {},
 		},
 	}
 	for _, tt := range tests {
@@ -57,7 +57,7 @@ func Test_extractPatterns(t *testing.T) {
 			tt.want(expected)
 
 			assert.Equal(t, expected.Len(), resultMap.Len())
-			expected.Range(func(k string, v pcommon.Value) bool {
+			expected.Range(func(k string, _ pcommon.Value) bool {
 				ev, _ := expected.Get(k)
 				av, _ := resultMap.Get(k)
 				assert.Equal(t, ev, av)
@@ -76,7 +76,7 @@ func Test_extractPatterns_validation(t *testing.T) {
 		{
 			name: "bad regex",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "foobar", nil
 				},
 			},
@@ -85,7 +85,7 @@ func Test_extractPatterns_validation(t *testing.T) {
 		{
 			name: "no named capture group",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "foobar", nil
 				},
 			},
@@ -110,7 +110,7 @@ func Test_extractPatterns_bad_input(t *testing.T) {
 		{
 			name: "target is non-string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return 123, nil
 				},
 			},
@@ -119,7 +119,7 @@ func Test_extractPatterns_bad_input(t *testing.T) {
 		{
 			name: "target is nil",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return nil, nil
 				},
 			},

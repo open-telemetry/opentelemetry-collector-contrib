@@ -70,7 +70,7 @@ func TestWatchingTimeouts(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			Timeout: 50 * time.Millisecond,
 		},
 	}
@@ -123,7 +123,7 @@ func TestEventLoopHandlesError(t *testing.T) {
 	observed, logs := observer.New(zapcore.WarnLevel)
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			Timeout: 50 * time.Millisecond,
 		},
 	}
@@ -134,7 +134,9 @@ func TestEventLoopHandlesError(t *testing.T) {
 	cli := newContainerScraper(client, zap.New(observed), config)
 	assert.NotNil(t, cli)
 
-	go cli.containerEventLoop(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	go cli.containerEventLoop(ctx)
+	defer cancel()
 
 	assert.Eventually(t, func() bool {
 		for _, l := range logs.All() {
@@ -176,7 +178,10 @@ func TestEventLoopHandles(t *testing.T) {
 
 	assert.Equal(t, 0, len(cli.containers))
 
-	go cli.containerEventLoop(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	go cli.containerEventLoop(ctx)
+	defer cancel()
+
 	eventChan <- event{ID: "c1", Status: "start"}
 
 	assert.Eventually(t, func() bool {
