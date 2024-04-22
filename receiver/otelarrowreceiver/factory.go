@@ -22,7 +22,7 @@ const (
 	defaultMemoryLimitMiB = 128
 )
 
-// NewFactory creates a new OTLP receiver factory.
+// NewFactory creates a new OTel-Arrow receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
