@@ -16,8 +16,8 @@ issues: [32584]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Previously the status codes that will trigger retries are 500, 502, 503, 504, 429.
-  It will now default to 429 only.
+  Previously the status codes that will trigger retries are 500, 502, 503, 504, 429, and may lead to duplicates.
+  It now defaults to 429 only.
   To opt-in to the previous behavior, configure retry.retry_on_status accordingly.
 
 # If your change doesn't affect end users or the exported elements of any package,
