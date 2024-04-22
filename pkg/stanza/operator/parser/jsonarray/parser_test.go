@@ -9,12 +9,15 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	commontestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func newTestParser(t *testing.T) *Parser {
+	defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
+
 	cfg := NewConfigWithID("test")
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
@@ -22,6 +25,8 @@ func newTestParser(t *testing.T) *Parser {
 }
 
 func TestParserBuildFailure(t *testing.T) {
+	defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
+
 	cfg := NewConfigWithID("test")
 	cfg.OnError = "invalid_on_error"
 	_, err := cfg.Build(testutil.Logger(t))
@@ -37,6 +42,8 @@ func TestParserInvalidType(t *testing.T) {
 }
 
 func TestParserByteFailureHeadersMismatch(t *testing.T) {
+	defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
+
 	cfg := NewConfigWithID("test")
 	cfg.Header = "name,sev,msg"
 	op, err := cfg.Build(testutil.Logger(t))
@@ -48,6 +55,8 @@ func TestParserByteFailureHeadersMismatch(t *testing.T) {
 }
 
 func TestParserJarray(t *testing.T) {
+	defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
+
 	cases := []struct {
 		name             string
 		configure        func(*Config)
@@ -268,6 +277,8 @@ func TestParserJarray(t *testing.T) {
 }
 
 func TestParserJarrayMultiline(t *testing.T) {
+	defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
+
 	cases := []struct {
 		name     string
 		input    string
@@ -374,6 +385,8 @@ dd","eeee"]`,
 }
 
 func TestBuildParserJarray(t *testing.T) {
+	defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
+
 	newBasicParser := func() *Config {
 		cfg := NewConfigWithID("test")
 		cfg.OutputIDs = []string{"test"}
