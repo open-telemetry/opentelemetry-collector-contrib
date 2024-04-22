@@ -463,7 +463,8 @@ func TestLogsAgentExporter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := testutil.DatadogLogsAgentServerMock()
+			doneChannel := make(chan bool)
+			server := testutil.DatadogLogsAgentServerMock(doneChannel)
 			defer server.Close()
 			cfg := &Config{
 				Logs: LogsConfig{
@@ -480,8 +481,13 @@ func TestLogsAgentExporter(t *testing.T) {
 			exp, err := f.CreateLogsExporter(ctx, params, cfg)
 			require.NoError(t, err)
 			require.NoError(t, exp.ConsumeLogs(ctx, tt.args.ld))
-			time.Sleep(2 * time.Second)
-			assert.Equal(t, tt.want, server.LogsData)
+			// Wait until `done` is closed.
+			select {
+			case <-doneChannel:
+				assert.Equal(t, tt.want, server.LogsData)
+			case <-time.After(10 * time.Second):
+				panic("timeout")
+			}
 		})
 	}
 }

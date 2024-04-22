@@ -12,13 +12,16 @@ type DatadogLogsAgentServer struct {
 	// LogsData is the array of json requests sent to datadog backend
 	LogsData          JSONLogs
 	connectivityCheck sync.Once
+	doneChannel       chan bool
 }
 
 // DatadogLogsAgentServerMock mocks a Datadog Logs Intake backend server for the logs agent
-func DatadogLogsAgentServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *DatadogLogsAgentServer {
+func DatadogLogsAgentServerMock(doneChannel chan bool, overwriteHandlerFuncs ...OverwriteHandleFunc) *DatadogLogsAgentServer {
 	mux := http.NewServeMux()
 
-	server := &DatadogLogsAgentServer{}
+	server := &DatadogLogsAgentServer{
+		doneChannel: doneChannel,
+	}
 	handlers := map[string]http.HandlerFunc{
 		"/api/v2/logs": server.logsAgentEndpoint,
 	}
@@ -45,6 +48,7 @@ func (s *DatadogLogsAgentServer) logsAgentEndpoint(w http.ResponseWriter, r *htt
 	if !connectivityCheck {
 		jsonLogs := processLogsAgentRequest(w, r)
 		s.LogsData = append(s.LogsData, jsonLogs...)
+		s.doneChannel <- true
 	}
 }
 
