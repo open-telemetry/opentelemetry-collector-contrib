@@ -42,7 +42,7 @@ var (
 	}
 
 	defaultPeerAttributes = []string{
-		semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeNetSockPeerName, semconv.AttributeNetPeerName, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget,
+		semconv.AttributePeerService, semconv.AttributeDBName, semconv.AttributeDBSystem,
 	}
 
 	defaultDatabaseNameAttribute = semconv.AttributeDBName
@@ -380,7 +380,7 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 
 	p.statExpiredEdges.Add(context.Background(), 1)
 
-	if virtualNodeFeatureGate.IsEnabled() {
+	if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
 		e.ConnectionType = store.VirtualNode
 		if len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"

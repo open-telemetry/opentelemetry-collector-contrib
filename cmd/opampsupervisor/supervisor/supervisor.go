@@ -366,7 +366,7 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 func (s *Supervisor) startOpAMP() error {
 	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
 
-	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfig()
+	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfigContext(context.Background())
 	if err != nil {
 		return err
 	}
@@ -812,7 +812,7 @@ func (s *Supervisor) runAgentProcess() {
 			s.stopAgentApplyConfig()
 			s.startAgent()
 
-		case <-s.commander.Done():
+		case <-s.commander.Exited():
 			// the agent process exit is expected for restart command and will not attempt to restart
 			if s.agentRestarting.Load() {
 				continue
@@ -837,7 +837,12 @@ func (s *Supervisor) runAgentProcess() {
 			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
 
 			// Wait 5 seconds before starting again.
-			restartTimer.Stop()
+			if !restartTimer.Stop() {
+				select {
+				case <-restartTimer.C: // Try to drain the channel
+				default:
+				}
+			}
 			restartTimer.Reset(5 * time.Second)
 
 		case <-restartTimer.C:
