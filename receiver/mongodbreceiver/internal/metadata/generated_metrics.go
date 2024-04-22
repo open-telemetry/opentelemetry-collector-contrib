@@ -1897,11 +1897,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.Database.Include != nil {
-		mb.resourceAttributeIncludeFilter["database"] = filter.CreateFilter(mbc.ResourceAttributes.Database.Include)
+	if mbc.ResourceAttributes.Database.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["database"] = filter.CreateFilter(mbc.ResourceAttributes.Database.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.Database.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["database"] = filter.CreateFilter(mbc.ResourceAttributes.Database.Exclude)
+	if mbc.ResourceAttributes.Database.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["database"] = filter.CreateFilter(mbc.ResourceAttributes.Database.MetricsExclude)
 	}
 
 	for _, op := range options {

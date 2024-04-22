@@ -1457,23 +1457,23 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:    make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:    make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.HaproxyAddr.Include != nil {
-		mb.resourceAttributeIncludeFilter["haproxy.addr"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyAddr.Include)
+	if mbc.ResourceAttributes.HaproxyAddr.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["haproxy.addr"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyAddr.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.HaproxyAddr.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["haproxy.addr"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyAddr.Exclude)
+	if mbc.ResourceAttributes.HaproxyAddr.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["haproxy.addr"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyAddr.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.HaproxyProxyName.Include != nil {
-		mb.resourceAttributeIncludeFilter["haproxy.proxy_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyProxyName.Include)
+	if mbc.ResourceAttributes.HaproxyProxyName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["haproxy.proxy_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyProxyName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.HaproxyProxyName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["haproxy.proxy_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyProxyName.Exclude)
+	if mbc.ResourceAttributes.HaproxyProxyName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["haproxy.proxy_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyProxyName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.HaproxyServiceName.Include != nil {
-		mb.resourceAttributeIncludeFilter["haproxy.service_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServiceName.Include)
+	if mbc.ResourceAttributes.HaproxyServiceName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["haproxy.service_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServiceName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.HaproxyServiceName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["haproxy.service_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServiceName.Exclude)
+	if mbc.ResourceAttributes.HaproxyServiceName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["haproxy.service_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServiceName.MetricsExclude)
 	}
 
 	for _, op := range options {

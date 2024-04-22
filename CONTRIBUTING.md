@@ -263,7 +263,7 @@ The following GitHub users are the currently available sponsors, either by being
 * [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
 * [@fatsheep9146](https://github.com/fatsheep9146)
-* [@astencel-sumo](https://github.com/astencel-sumo)
+* [@andrzej-stencel](https://github.com/andrzej-stencel)
 * [@songy23](https://github.com/songy23)
 * [@Bryan Aguilar](https://github.com/bryan-aguilar)
 * [@atoulme](https://github.com/atoulme)
