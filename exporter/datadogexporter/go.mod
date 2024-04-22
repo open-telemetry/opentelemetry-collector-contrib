@@ -77,7 +77,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.98.1-0.20240416174005-d0f15e2463f8
 	go.opentelemetry.io/otel/metric v1.25.0
 	go.opentelemetry.io/otel/trace v1.25.0
-	go.uber.org/atomic v1.11.0
+	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/protobuf v1.33.0
