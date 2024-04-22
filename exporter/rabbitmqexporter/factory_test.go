@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
@@ -40,6 +41,26 @@ func TestCreateMetricsExporter(t *testing.T) {
 func TestCreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
+
+	te, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, te)
+}
+
+func TestCreateExporterWithCustomRoutingKey(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Routing.RoutingKey = "custom_routing_key"
+
+	te, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, te)
+}
+
+func TestCreateExporterWithTLSSettings(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Connection.TLSConfig = &configtls.ClientConfig{}
 
 	te, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	assert.NoError(t, err)

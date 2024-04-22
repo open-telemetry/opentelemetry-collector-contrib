@@ -129,7 +129,36 @@ The schedule for this feature gate is:
 
 - Introduced in v0.87.0 (October 2023) as `alpha` - disabled by default.
 - Moved to `beta` in v0.92.0 (January 2024) - enabled by default.
-- Moved to `stable` in April 2024 - cannot be disabled.
-- Removed three releases after `stable`.
+- Moved to `stable` in v0.99.0 (April 2024) - cannot be disabled.
+- Removed in v0.102.0 (three releases after `stable`).
 
 [unicode_chars]: https://en.wikipedia.org/wiki/List_of_Unicode_characters
+
+## Troubleshooting
+
+_Currently, the File Storage extension uses [bbolt](https://github.com/etcd-io/bbolt) to store and read data on disk. The
+following troubleshooting method works for bbolt-managed files. As such, there is no guarantee that this method will continue to work in the future, particularly if the extension switches away from bbolt._
+
+When troubleshooting components that use the File Storage extension, it is sometimes helpful to read the raw contents of
+files created by the extension for the component.  The simplest way to read files
+created by the File Storage extension is to use the strings utility ([Linux](https://linux.die.net/man/1/strings),
+[Windows](https://learn.microsoft.com/en-us/sysinternals/downloads/strings)).
+
+For example, here are the contents of the file created by the File Storage extension when it's configured as the storage
+for the `filelog` receiver.
+
+```sh
+$ strings /tmp/otelcol/file_storage/filelogreceiver/receiver_filelog_
+default
+file_input.knownFiles2
+{"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
+{"Fingerprint":{"first_bytes":"MjQ0MDMK"},"Offset":6,"FileAttributes":{"log.file.name":"2.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:39.96429-07:00","LastDataLength":0}}
+default
+file_input.knownFiles2
+{"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
+{"Fingerprint":{"first_bytes":"MjQ0MDMK"},"Offset":6,"FileAttributes":{"log.file.name":"2.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:39.96429-07:00","LastDataLength":0}}
+default
+file_input.knownFiles2
+{"Fingerprint":{"first_bytes":"MzEwNzkKMjE5Cg=="},"Offset":10,"FileAttributes":{"log.file.name":"1.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:18.164331-07:00","LastDataLength":0}}
+{"Fingerprint":{"first_bytes":"MjQ0MDMK"},"Offset":6,"FileAttributes":{"log.file.name":"2.log"},"HeaderFinalized":false,"FlushState":{"LastDataChange":"2024-03-20T18:16:39.96429-07:00","LastDataLength":0}}
+```

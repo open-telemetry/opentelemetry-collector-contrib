@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -1031,6 +1032,8 @@ type MetricsBuilder struct {
 	metricsCapacity                            int                  // maximum observed number of metrics per resource.
 	metricsBuffer                              pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                  component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter             map[string]filter.Filter
+	resourceAttributeExcludeFilter             map[string]filter.Filter
 	metricSqlserverBatchRequestRate            metricSqlserverBatchRequestRate
 	metricSqlserverBatchSQLCompilationRate     metricSqlserverBatchSQLCompilationRate
 	metricSqlserverBatchSQLRecompilationRate   metricSqlserverBatchSQLRecompilationRate
@@ -1089,7 +1092,28 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricSqlserverTransactionLogShrinkCount:   newMetricSqlserverTransactionLogShrinkCount(mbc.Metrics.SqlserverTransactionLogShrinkCount),
 		metricSqlserverTransactionLogUsage:         newMetricSqlserverTransactionLogUsage(mbc.Metrics.SqlserverTransactionLogUsage),
 		metricSqlserverUserConnectionCount:         newMetricSqlserverUserConnectionCount(mbc.Metrics.SqlserverUserConnectionCount),
+		resourceAttributeIncludeFilter:             make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:             make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.SqlserverComputerName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["sqlserver.computer.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverComputerName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.SqlserverComputerName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["sqlserver.computer.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverComputerName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.SqlserverDatabaseName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["sqlserver.database.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverDatabaseName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.SqlserverDatabaseName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["sqlserver.database.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverDatabaseName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.SqlserverInstanceName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["sqlserver.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverInstanceName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.SqlserverInstanceName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["sqlserver.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverInstanceName.MetricsExclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -1174,6 +1198,17 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

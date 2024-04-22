@@ -89,6 +89,44 @@ func TestFileMetricsReceiver(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestFileMetricsReceiverWithReplay(t *testing.T) {
+	tempFolder := t.TempDir()
+	factory := NewFactory()
+	cfg := createDefaultConfig().(*Config)
+	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.Config.StartAt = "beginning"
+	cfg.ReplayFile = true
+	cfg.Config.PollInterval = 5 * time.Second
+
+	sink := new(consumertest.MetricsSink)
+	receiver, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
+	assert.NoError(t, err)
+	err = receiver.Start(context.Background(), nil)
+	assert.NoError(t, err)
+
+	md := testdata.GenerateMetrics(5)
+	marshaler := &pmetric.JSONMarshaler{}
+	b, err := marshaler.MarshalMetrics(md)
+	assert.NoError(t, err)
+	b = append(b, '\n')
+	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0600)
+	assert.NoError(t, err)
+
+	// Wait for the first poll to complete.
+	time.Sleep(cfg.Config.PollInterval + time.Second)
+	require.Len(t, sink.AllMetrics(), 1)
+	assert.EqualValues(t, md, sink.AllMetrics()[0])
+
+	// Reset the sink and assert that the next poll replays all the existing metrics.
+	sink.Reset()
+	time.Sleep(cfg.Config.PollInterval + time.Second)
+	require.Len(t, sink.AllMetrics(), 1)
+	assert.EqualValues(t, md, sink.AllMetrics()[0])
+
+	err = receiver.Shutdown(context.Background())
+	assert.NoError(t, err)
+}
+
 func TestFileLogsReceiver(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
