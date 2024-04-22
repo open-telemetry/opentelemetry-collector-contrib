@@ -137,7 +137,7 @@ func newMockESReceiver(params receiver.CreateSettings, cfg *config, next consume
 
 				if err := next.ConsumeLogs(context.Background(), logs); err != nil {
 					response.HasErrors = true
-					item.Status = 429
+					item.Status = http.StatusTooManyRequests
 					item.Error.Type = "simulated_es_error"
 					item.Error.Reason = err.Error()
 				}
