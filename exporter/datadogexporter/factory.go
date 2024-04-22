@@ -536,15 +536,17 @@ func (f *factory) createLogsExporter(
 			}
 			return nil
 		}
-	} else if isLogsAgentExporterEnabled() {
-		logComponent, _ := newLogComponent(set.TelemetrySettings)
-		cfgComponent, _ := newConfigComponent(set.TelemetrySettings, cfg)
+	}
+	if !cfg.OnlyMetadata && isLogsAgentExporterEnabled() {
+		logComponent := newLogComponent(set.TelemetrySettings)
+		cfgComponent := newConfigComponent(set.TelemetrySettings, cfg)
 		logsAgentConfig := &logsagentexporter.Config{
 			OtelSource:    otelSource,
 			LogSourceName: logSourceName,
 		}
 		hostname, err := logs.NewHostnameService(ctx, hostProvider)
 		if err != nil {
+			cancel()
 			return nil, fmt.Errorf("failed to initialize logs agent hostname service: %w", err)
 		}
 		f.logsAgent = logs.NewLogsAgent(logComponent, cfgComponent, hostname)
@@ -564,7 +566,8 @@ func (f *factory) createLogsExporter(
 			return nil, err
 		}
 		pusher = logsAgentExporter.ConsumeLogs
-	} else {
+	}
+	if !cfg.OnlyMetadata && !isLogsAgentExporterEnabled() {
 		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, attributesTranslator, hostProvider, metadataReporter)
 		if err != nil {
 			cancel()
@@ -586,7 +589,7 @@ func (f *factory) createLogsExporter(
 			cancel()
 			f.StopReporter()
 			if f.logsAgent != nil {
-				f.logsAgent.Stop(ctx)
+				_ = f.logsAgent.Stop(ctx)
 			}
 			return nil
 		}),

@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
@@ -10,14 +13,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-func newLogComponent(set component.TelemetrySettings) (log.Component, error) {
+func newLogComponent(set component.TelemetrySettings) log.Component {
 	zlog := &zaplogger{
 		logger: set.Logger,
 	}
-	return zlog, nil
+	return zlog
 }
 
-func newConfigComponent(set component.TelemetrySettings, cfg *Config) (coreconfig.Component, error) {
+func newConfigComponent(set component.TelemetrySettings, cfg *Config) coreconfig.Component {
 	pkgconfig := pkgconfigmodel.NewConfig("DD", "DD", strings.NewReplacer(".", "_"))
 	pkgconfigsetup.InitConfig(pkgconfig)
 
@@ -34,5 +37,5 @@ func newConfigComponent(set component.TelemetrySettings, cfg *Config) (coreconfi
 	pkgconfig.Set("apm_config.enabled", true, pkgconfigmodel.SourceFile)
 	pkgconfig.Set("apm_config.apm_non_local_traffic", true, pkgconfigmodel.SourceFile)
 
-	return pkgconfig, nil
+	return pkgconfig
 }

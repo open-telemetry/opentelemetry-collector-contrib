@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package testutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 
 import (
@@ -43,7 +46,6 @@ func (s *DatadogLogsAgentServer) logsAgentEndpoint(w http.ResponseWriter, r *htt
 		// This function mocks a successful response for the first request received.
 		w.WriteHeader(http.StatusAccepted)
 		connectivityCheck = true
-		return
 	})
 	if !connectivityCheck {
 		jsonLogs := processLogsAgentRequest(w, r)
@@ -64,7 +66,8 @@ func processLogsAgentRequest(w http.ResponseWriter, r *http.Request) JSONLogs {
 	for i := range jsonLogs {
 		messageJSON := jsonLogs[i]["message"].(string)
 		var message JSONLog
-		json.Unmarshal([]byte(messageJSON), &message)
+		err = json.Unmarshal([]byte(messageJSON), &message)
+		handleError(w, err, http.StatusBadRequest)
 		jsonLogs[i]["message"] = message
 		// delete dynamic keys that can't be tested
 		delete(jsonLogs[i], "hostname")  // hostname of host running tests

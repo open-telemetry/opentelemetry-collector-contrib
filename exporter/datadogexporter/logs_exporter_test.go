@@ -10,16 +10,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 const timeFormatString = "2006-01-02T15:04:05.000Z07:00"
@@ -475,7 +475,8 @@ func TestLogsAgentExporter(t *testing.T) {
 				},
 			}
 			params := exportertest.NewNopCreateSettings()
-			featuregate.GlobalRegistry().Set("exporter.datadogexporter.logsagentexporter", true)
+			err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.logsagentexporter", true)
+			assert.NoError(t, err)
 			f := NewFactory()
 			ctx := context.Background()
 			exp, err := f.CreateLogsExporter(ctx, params, cfg)

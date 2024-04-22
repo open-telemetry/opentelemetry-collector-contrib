@@ -1,7 +1,5 @@
-// Unless explicitly stated otherwise all files in this repository are licensed
-// under the Apache License Version 2.0.
-// This product includes software developed at Datadog (https://www.datadoghq.com/).
-// Copyright 2023-present Datadog, Inc.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
 
@@ -9,20 +7,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface"
-	"github.com/DataDog/datadog-agent/comp/core/log"
-	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
-	"go.uber.org/zap"
 	"time"
 
+	"github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface"
+	"github.com/DataDog/datadog-agent/comp/core/log"
 	"github.com/DataDog/datadog-agent/comp/logs/agent/config"
+	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	"github.com/DataDog/datadog-agent/pkg/logs/auditor"
 	"github.com/DataDog/datadog-agent/pkg/logs/client"
 	"github.com/DataDog/datadog-agent/pkg/logs/pipeline"
 	"github.com/DataDog/datadog-agent/pkg/status/health"
 	"github.com/DataDog/datadog-agent/pkg/util/startstop"
-
-	"go.uber.org/atomic"
+	"go.uber.org/zap"
 )
 
 const (
@@ -43,9 +39,6 @@ type Agent struct {
 	destinationsCtx  *client.DestinationsContext
 	pipelineProvider pipeline.Provider
 	health           *health.Handle
-
-	// started is true if the logs agent is running
-	started *atomic.Bool
 }
 
 func NewLogsAgent(log log.Component, cfg pkgconfigmodel.Reader, hostname hostnameinterface.Component) *Agent {
@@ -53,7 +46,6 @@ func NewLogsAgent(log log.Component, cfg pkgconfigmodel.Reader, hostname hostnam
 		log:      log,
 		config:   cfg,
 		hostname: hostname,
-		started:  atomic.NewBool(false),
 	}
 	return logsAgent
 }
@@ -74,7 +66,7 @@ func (a *Agent) Start(context.Context) error {
 	err = a.setupAgent()
 
 	if err != nil {
-		a.log.Error("Could not start logs-agent: ", zap.Error(err))
+		_ = a.log.Error("Could not start logs-agent: ", zap.Error(err))
 		return err
 	}
 
@@ -93,7 +85,7 @@ func (a *Agent) setupAgent() error {
 	}
 
 	if config.HasMultiLineRule(processingRules) {
-		a.log.Warn(multiLineWarning)
+		_ = a.log.Warn(multiLineWarning)
 	}
 
 	a.SetupPipeline(processingRules)
@@ -103,8 +95,6 @@ func (a *Agent) setupAgent() error {
 // Start starts all the elements of the data pipeline
 // in the right order to prevent data loss
 func (a *Agent) startPipeline() {
-	a.started.Store(true)
-
 	starter := startstop.NewStarter(
 		a.destinationsCtx,
 		a.auditor,
@@ -148,7 +138,7 @@ func (a *Agent) Stop(context.Context) error {
 		select {
 		case <-c:
 		case <-timeout.C:
-			a.log.Warn("Force close of the Logs Agent.")
+			_ = a.log.Warn("Force close of the Logs Agent.")
 		}
 	}
 	a.log.Debug("logs-agent stopped")
