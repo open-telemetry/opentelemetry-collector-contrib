@@ -18,5 +18,8 @@ tests:
   skip_lifecycle: true
   skip_shutdown: true
   goleak:
-    skip: true
+    skip: false
+    ignore:
+      # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+      top: go.opencensus.io/stats/view.(*worker).start
 
