@@ -90,7 +90,10 @@ func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologic
 		return nil, err
 	}
 
-	pf := newPrometheusFormatter()
+	pf, err := newPrometheusFormatter()
+	if err != nil {
+		return nil, err
+	}
 
 	gf := newGraphiteFormatter(cfg.GraphiteTemplate)
 
