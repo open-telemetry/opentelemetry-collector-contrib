@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
@@ -18,7 +17,8 @@ import (
 func TestScopePathGetSetter(t *testing.T) {
 	refIS := createInstrumentationScope()
 
-	refISC := newInstrumentationScopeContext(refIS, s)
+	refISC := newInstrumentationScopeContext(refIS, "schema_url")
+	newSchemaURLItem := createSchemaURLItem("new_schema_url")
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
 	tests := []struct {
@@ -65,9 +65,9 @@ func TestScopePathGetSetter(t *testing.T) {
 				N: "schema_url",
 			},
 			orig:   refISC.GetScopeSchemaURLItem(),
-			newVal: "new_schema_url",
-			modified: func(is pcommon.InstrumentationScope) {
-				refISC.GetScopeSchemaURLItem().SetSchemaUrl()
+			newVal: newSchemaURLItem,
+			modified: func(isc pcommon.InstrumentationScope) {
+				isc := newInstrumentationScopeContext(is, "new_schema_url")
 			},
 		},
 		{
@@ -352,11 +352,11 @@ func TestScopePathGetSetter(t *testing.T) {
 
 			is := createInstrumentationScope()
 
-			got, err := accessor.Get(context.Background(), newInstrumentationScopeContext(is))
+			got, err := accessor.Get(context.Background(), newInstrumentationScopeContext(is, "schema_url"))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), newInstrumentationScopeContext(is), tt.newVal)
+			err = accessor.Set(context.Background(), newInstrumentationScopeContext(is, "schema_url"), tt.newVal)
 			assert.NoError(t, err)
 
 			expectedIS := createInstrumentationScope()
@@ -407,8 +407,20 @@ func createInstrumentationScope() pcommon.InstrumentationScope {
 	return is
 }
 
-func createSchemaURLItem() SchemaURLItem {
-	return plog.NewScopeLogs()
+type TestSchemaURLItem struct {
+	schema_url string
+}
+
+func (t *TestSchemaURLItem) SchemaUrl() string {
+	return t.schema_url
+}
+
+func (t *TestSchemaURLItem) SetSchemaUrl(v string) {
+	t.schema_url = v
+}
+
+func createSchemaURLItem(v string) SchemaURLItem {
+	return &TestSchemaURLItem{schema_url: v}
 }
 
 type instrumentationScopeContext struct {
@@ -424,6 +436,6 @@ func (r *instrumentationScopeContext) GetScopeSchemaURLItem() SchemaURLItem {
 	return r.schemaURLItem
 }
 
-func newInstrumentationScopeContext(is pcommon.InstrumentationScope, schemaURLItem SchemaURLItem) *instrumentationScopeContext {
-	return &instrumentationScopeContext{is: is, schemaURLItem: schemaURLItem}
+func newInstrumentationScopeContext(is pcommon.InstrumentationScope, schema_url string) *instrumentationScopeContext {
+	return &instrumentationScopeContext{is: is, schemaURLItem: createSchemaURLItem(schema_url)}
 }
