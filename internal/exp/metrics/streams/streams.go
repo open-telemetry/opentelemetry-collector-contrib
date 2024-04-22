@@ -19,27 +19,27 @@ type Map[T any] interface {
 	Clear()
 }
 
-var _ Map[any] = &HashMap[any]{}
+var _ Map[any] = HashMap[any](nil)
 
 type HashMap[T any] map[identity.Stream]T
 
-func (m *HashMap[T]) Load(id identity.Stream) (T, bool) {
-	v, ok := (*m)[id]
+func (m HashMap[T]) Load(id identity.Stream) (T, bool) {
+	v, ok := (map[identity.Stream]T)(m)[id]
 	return v, ok
 }
 
-func (m *HashMap[T]) Store(id identity.Stream, v T) error {
-	(*m)[id] = v
+func (m HashMap[T]) Store(id identity.Stream, v T) error {
+	(map[identity.Stream]T)(m)[id] = v
 	return nil
 }
 
-func (m *HashMap[T]) Delete(id identity.Stream) {
-	delete(*m, id)
+func (m HashMap[T]) Delete(id identity.Stream) {
+	delete((map[identity.Stream]T)(m), id)
 }
 
-func (m *HashMap[T]) Items() func(yield func(identity.Stream, T) bool) bool {
+func (m HashMap[T]) Items() func(yield func(identity.Stream, T) bool) bool {
 	return func(yield func(identity.Stream, T) bool) bool {
-		for id, v := range *m {
+		for id, v := range (map[identity.Stream]T)(m) {
 			if !yield(id, v) {
 				break
 			}
@@ -48,12 +48,12 @@ func (m *HashMap[T]) Items() func(yield func(identity.Stream, T) bool) bool {
 	}
 }
 
-func (m *HashMap[T]) Len() int {
-	return len(*m)
+func (m HashMap[T]) Len() int {
+	return len((map[identity.Stream]T)(m))
 }
 
-func (m *HashMap[T]) Clear() {
-	*m = map[identity.Stream]T{}
+func (m HashMap[T]) Clear() {
+	clear(m)
 }
 
 // Evictors remove the "least important" stream based on some strategy such as
