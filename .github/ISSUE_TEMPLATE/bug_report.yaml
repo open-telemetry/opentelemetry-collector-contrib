@@ -50,7 +50,6 @@ body:
       - exporter/coralogix
       - exporter/datadog
       - exporter/dataset
-      - exporter/dynatrace
       - exporter/elasticsearch
       - exporter/file
       - exporter/googlecloud
@@ -88,6 +87,7 @@ body:
       - extension/basicauth
       - extension/bearertokenauth
       - extension/encoding
+      - extension/encoding/avrologencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
       - extension/encoding/otlpencoding
