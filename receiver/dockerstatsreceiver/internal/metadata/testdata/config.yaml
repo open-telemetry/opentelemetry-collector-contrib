@@ -321,59 +321,59 @@ filter_set_include:
   resource_attributes:
     container.command_line:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     container.hostname:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     container.id:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     container.image.id:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     container.image.name:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     container.name:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     container.runtime:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
     container.command_line:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "container.command_line-val"
     container.hostname:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "container.hostname-val"
     container.id:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "container.id-val"
     container.image.id:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "container.image.id-val"
     container.image.name:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "container.image.name-val"
     container.name:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "container.name-val"
     container.runtime:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "container.runtime-val"
