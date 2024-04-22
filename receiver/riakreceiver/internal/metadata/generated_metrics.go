@@ -423,11 +423,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:     make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:     make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.RiakNodeName.Include != nil {
-		mb.resourceAttributeIncludeFilter["riak.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.RiakNodeName.Include)
+	if mbc.ResourceAttributes.RiakNodeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["riak.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.RiakNodeName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.RiakNodeName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["riak.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.RiakNodeName.Exclude)
+	if mbc.ResourceAttributes.RiakNodeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["riak.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.RiakNodeName.MetricsExclude)
 	}
 
 	for _, op := range options {
