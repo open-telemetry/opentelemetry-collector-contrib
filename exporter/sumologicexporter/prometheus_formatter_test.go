@@ -7,13 +7,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestSanitizeKey(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 
 	key := "&^*123-abc-ABC!./?_:\n\r"
 	expected := "___123-abc-ABC_./__:__"
@@ -21,8 +19,7 @@ func TestSanitizeKey(t *testing.T) {
 }
 
 func TestSanitizeValue(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 
 	// `\`, `"` and `\n` should be escaped, everything else should be left as-is
 	// see: https://github.com/prometheus/docs/blob/main/content/docs/instrumenting/exposition_formats.md#line-format
@@ -32,8 +29,7 @@ func TestSanitizeValue(t *testing.T) {
 }
 
 func TestTags2StringNoLabels(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 
 	mp := exampleIntMetric()
 	mp.attributes.Clear()
@@ -41,8 +37,7 @@ func TestTags2StringNoLabels(t *testing.T) {
 }
 
 func TestTags2String(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 
 	mp := exampleIntMetric()
 	mp.attributes.PutInt("int", 200)
@@ -59,8 +54,7 @@ func TestTags2String(t *testing.T) {
 }
 
 func TestTags2StringNoAttributes(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 
 	mp := exampleIntMetric()
 	mp.attributes.Clear()
@@ -68,8 +62,7 @@ func TestTags2StringNoAttributes(t *testing.T) {
 }
 
 func TestPrometheusMetricDataTypeIntGauge(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 	mp := exampleIntGaugeMetric()
 
 	result := f.metric2String(mp.metric, mp.attributes)
@@ -79,8 +72,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 }
 
 func TestPrometheusMetricDataTypeDoubleGauge(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 	mp := exampleDoubleGaugeMetric()
 
 	result := f.metric2String(mp.metric, mp.attributes)
@@ -90,8 +82,7 @@ gauge_metric_name_double_test{foo="bar",local_name="156155",endpoint="http://ano
 }
 
 func TestPrometheusMetricDataTypeIntSum(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 	mp := exampleIntSumMetric()
 
 	result := f.metric2String(mp.metric, mp.attributes)
@@ -101,8 +92,7 @@ sum_metric_int_test{foo="bar",name="156155",address="http://another_url"} 1238 1
 }
 
 func TestPrometheusMetricDataTypeDoubleSum(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 	mp := exampleDoubleSumMetric()
 
 	result := f.metric2String(mp.metric, mp.attributes)
@@ -112,8 +102,7 @@ sum_metric_double_test{foo="bar",pod_name="opsum",namespace="kube-config"} 1238.
 }
 
 func TestPrometheusMetricDataTypeSummary(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 	mp := exampleSummaryMetric()
 
 	result := f.metric2String(mp.metric, mp.attributes)
@@ -127,8 +116,7 @@ summary_metric_double_test_count{foo="bar",pod_name="sit",namespace="main"} 7 16
 }
 
 func TestPrometheusMetricDataTypeHistogram(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 	mp := exampleHistogramMetric()
 
 	result := f.metric2String(mp.metric, mp.attributes)
@@ -193,8 +181,7 @@ func TestEmptyPrometheusMetrics(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f, err := newPrometheusFormatter()
-			require.NoError(t, err)
+			f := newPrometheusFormatter()
 
 			mp := tt.metricFunc(false)
 			result := f.metric2String(mp.metric, mp.attributes)
@@ -204,8 +191,7 @@ func TestEmptyPrometheusMetrics(t *testing.T) {
 }
 
 func Benchmark_PrometheusFormatter_Metric2String(b *testing.B) {
-	f, err := newPrometheusFormatter()
-	require.NoError(b, err)
+	f := newPrometheusFormatter()
 
 	mp := buildExampleHistogramMetric(true)
 
