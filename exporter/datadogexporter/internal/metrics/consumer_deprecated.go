@@ -6,7 +6,6 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/quantile"
 	"go.opentelemetry.io/collector/component"
@@ -18,7 +17,6 @@ import (
 var _ metrics.Consumer = (*ZorkianConsumer)(nil)
 var _ metrics.HostConsumer = (*ZorkianConsumer)(nil)
 var _ metrics.TagsConsumer = (*ZorkianConsumer)(nil)
-var _ metrics.APMStatsConsumer = (*ZorkianConsumer)(nil)
 
 // ZorkianConsumer implements metrics.Consumer. It records consumed metrics, sketches and
 // APM stats payloads. It provides them to the caller using the All method.
@@ -85,9 +83,6 @@ func (c *ZorkianConsumer) All(timestamp uint64, buildInfo component.BuildInfo, t
 	}
 	return series, c.sl
 }
-
-// ConsumeAPMStats implements metrics.APMStatsConsumer.
-func (c *ZorkianConsumer) ConsumeAPMStats(s *pb.ClientStatsPayload) {}
 
 // ConsumeTimeSeries implements the metrics.Consumer interface.
 func (c *ZorkianConsumer) ConsumeTimeSeries(

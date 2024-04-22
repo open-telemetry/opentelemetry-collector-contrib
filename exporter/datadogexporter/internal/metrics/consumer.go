@@ -6,7 +6,6 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
@@ -19,7 +18,6 @@ import (
 var _ metrics.Consumer = (*Consumer)(nil)
 var _ metrics.HostConsumer = (*Consumer)(nil)
 var _ metrics.TagsConsumer = (*Consumer)(nil)
-var _ metrics.APMStatsConsumer = (*Consumer)(nil)
 
 // Consumer implements metrics.Consumer. It records consumed metrics, sketches and
 // APM stats payloads. It provides them to the caller using the All method.
@@ -93,9 +91,6 @@ func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []s
 	}
 	return series, c.sl
 }
-
-// ConsumeAPMStats implements metrics.APMStatsConsumer.
-func (c *Consumer) ConsumeAPMStats(s *pb.ClientStatsPayload) {}
 
 // ConsumeTimeSeries implements the metrics.Consumer interface.
 func (c *Consumer) ConsumeTimeSeries(
