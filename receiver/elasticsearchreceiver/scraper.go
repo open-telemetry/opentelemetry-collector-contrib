@@ -53,8 +53,8 @@ func newElasticSearchScraper(
 	}
 }
 
-func (r *elasticsearchScraper) start(_ context.Context, host component.Host) (err error) {
-	r.client, err = newElasticsearchClient(r.settings, *r.cfg, host)
+func (r *elasticsearchScraper) start(ctx context.Context, host component.Host) (err error) {
+	r.client, err = newElasticsearchClient(ctx, r.settings, *r.cfg, host)
 	return
 }
 

@@ -96,6 +96,7 @@ func TestFilterBuilder_BuildFilterByMetricPositiveTotalLimit(t *testing.T) {
 						assert.Equal(t, expectedLimit, f.TotalLimit())
 						assert.Equal(t, expectedLimit, f.LimitByTimestamp())
 					}
+					assert.NoError(t, f.Shutdown())
 				}
 			}
 		})
@@ -147,6 +148,7 @@ func TestFilterBuilder_HandleLowCardinalityGroups(t *testing.T) {
 					assert.Equal(t, expectedLimit, f.TotalLimit())
 					assert.Equal(t, expectedLimit, f.LimitByTimestamp())
 					assert.Equal(t, testCase.expectedRemainingTotalLimit, remainingTotalLimit)
+					assert.NoError(t, f.Shutdown())
 				}
 			}
 		})
@@ -200,6 +202,7 @@ func TestFilterBuilder_HandleHighCardinalityGroups(t *testing.T) {
 					assert.Equal(t, testCase.expectedHighCardinalityTotalLimit, f.TotalLimit())
 					assert.Equal(t, testCase.expectedHighCardinalityLimitByTimestamp, f.LimitByTimestamp())
 					assert.Equal(t, testCase.expectedRemainingTotalLimit, remainingTotalLimit)
+					assert.NoError(t, f.Shutdown())
 				}
 			}
 		})
@@ -234,6 +237,7 @@ func TestFilterBuilder_TestConstructFiltersForGroups(t *testing.T) {
 			assert.Equal(t, totalLimitPerMetric, f.TotalLimit())
 			assert.Equal(t, limitPerMetricByTimestamp, f.LimitByTimestamp())
 			assert.Equal(t, expectedRemainingTotalLimit, result)
+			assert.NoError(t, f.Shutdown())
 		}
 	}
 }
