@@ -6,9 +6,14 @@ status:
   stability:
     beta: [traces]
     alpha: [logs]
-  distributions: [core, contrib, observiq, splunk, sumo, aws, grafana]
+  distributions: [core, contrib]
   codeowners:
-    active: [jpkrohling]
+    active: [jpkrohling, jmacd]
 
 tests:
   config:
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"

@@ -101,7 +101,7 @@ func TestK8sResolve(t *testing.T) {
 				return err
 
 			},
-			verifyFn: func(ctx *suiteContext, args args) error {
+			verifyFn: func(ctx *suiteContext, _ args) error {
 				if _, err := ctx.resolver.resolve(context.Background()); err != nil {
 					return err
 				}
@@ -139,7 +139,7 @@ func TestK8sResolve(t *testing.T) {
 				return err
 
 			},
-			verifyFn: func(ctx *suiteContext, args args) error {
+			verifyFn: func(ctx *suiteContext, _ args) error {
 				if _, err := ctx.resolver.resolve(context.Background()); err != nil {
 					return err
 				}
@@ -163,7 +163,7 @@ func TestK8sResolve(t *testing.T) {
 				return suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
 					Delete(context.TODO(), args.service, metav1.DeleteOptions{})
 			},
-			verifyFn: func(suiteCtx *suiteContext, args args) error {
+			verifyFn: func(suiteCtx *suiteContext, _ args) error {
 				if _, err := suiteCtx.resolver.resolve(context.Background()); err != nil {
 					return err
 				}

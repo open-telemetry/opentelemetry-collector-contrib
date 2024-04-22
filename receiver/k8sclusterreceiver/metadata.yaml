@@ -6,7 +6,7 @@ status:
   stability:
     beta: [metrics]
     development: [logs]
-  distributions: [contrib, splunk, observiq, sumo, liatrio]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, TylerHelmuth, povilasv]
 
@@ -520,3 +520,5 @@ metrics:
 tests:
   config:
   skip_lifecycle: true
+  goleak:
+    skip: true
