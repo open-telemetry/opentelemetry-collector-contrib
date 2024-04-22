@@ -26,6 +26,15 @@ type Config struct {
 
 	// Capabilities contains options to enable a particular OpAMP capability
 	Capabilities Capabilities `mapstructure:"capabilities"`
+
+	// Agent descriptions contains options to modify the AgentDescription message
+	AgentDescription AgentDescription `mapstructure:"agent_description"`
+}
+
+type AgentDescription struct {
+	// NonIdentifyingAttributes are a map of key-value pairs that may be specified to provide
+	// extra information about the agent to the OpAMP server.
+	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
 }
 
 type Capabilities struct {

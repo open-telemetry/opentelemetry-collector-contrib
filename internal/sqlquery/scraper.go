@@ -71,7 +71,7 @@ func (s *Scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	out := pmetric.NewMetrics()
 	rows, err := s.Client.QueryRows(ctx)
 	if err != nil {
-		if errors.Is(err, errNullValueWarning) {
+		if errors.Is(err, ErrNullValueWarning) {
 			s.Logger.Warn("problems encountered getting metric rows", zap.Error(err))
 		} else {
 			return out, fmt.Errorf("Scraper: %w", err)
