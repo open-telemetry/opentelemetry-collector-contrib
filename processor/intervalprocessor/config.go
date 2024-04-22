@@ -11,8 +11,7 @@ import (
 )
 
 var (
-	ErrInvalidIntervalValue     = errors.New("invalid interval value")
-	ErrInvalidMaxStatenessValue = errors.New("invalid max_stateless value")
+	ErrInvalidIntervalValue = errors.New("invalid interval value")
 )
 
 var _ component.Config = (*Config)(nil)
