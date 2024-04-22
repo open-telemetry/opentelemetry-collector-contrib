@@ -4,16 +4,24 @@
 package k8sconfig // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
+	api_v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime"
 	k8sruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -178,4 +186,26 @@ func MakeOpenShiftQuotaClient(apiConf APIConfig) (quotaclientset.Interface, erro
 	}
 
 	return client, nil
+}
+
+func NewNodeSharedInformer(client k8s.Interface, nodeName string, watchSyncPeriod time.Duration) cache.SharedInformer {
+	informer := cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+				if nodeName != "" {
+					opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", nodeName).String()
+				}
+				return client.CoreV1().Nodes().List(context.Background(), opts)
+			},
+			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+				if nodeName != "" {
+					opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", nodeName).String()
+				}
+				return client.CoreV1().Nodes().Watch(context.Background(), opts)
+			},
+		},
+		&api_v1.Node{},
+		watchSyncPeriod,
+	)
+	return informer
 }

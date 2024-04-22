@@ -172,7 +172,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 	}
 
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
-		c.nodeInformer = newNodeSharedInformer(c.kc, c.Filters.Node)
+		c.nodeInformer = k8sconfig.NewNodeSharedInformer(c.kc, c.Filters.Node, 5*time.Minute)
 	}
 
 	return c, err
