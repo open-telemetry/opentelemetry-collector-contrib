@@ -35,7 +35,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logsagent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -112,7 +112,7 @@ type factory struct {
 	wg sync.WaitGroup // waits for agent to exit
 
 	registry  *featuregate.Registry
-	logsAgent *logs.Agent
+	logsAgent *logsagent.Agent
 }
 
 func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
@@ -544,12 +544,12 @@ func (f *factory) createLogsExporter(
 			OtelSource:    otelSource,
 			LogSourceName: logSourceName,
 		}
-		hostname, err := logs.NewHostnameService(ctx, hostProvider)
+		hostname, err := logsagent.NewHostnameService(ctx, hostProvider)
 		if err != nil {
 			cancel()
 			return nil, fmt.Errorf("failed to initialize logs agent hostname service: %w", err)
 		}
-		f.logsAgent = logs.NewLogsAgent(logComponent, cfgComponent, hostname)
+		f.logsAgent = logsagent.NewLogsAgent(logComponent, cfgComponent, hostname)
 		err = f.logsAgent.Start(ctx)
 		if err != nil {
 			set.Logger.Error("Failed to create logs agent", zap.Error(err))

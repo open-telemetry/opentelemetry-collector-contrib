@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
+package logsagent // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logsagent"
 
 import (
 	"time"
