@@ -274,37 +274,30 @@ func (h *headerReceiver) newContext(ctx context.Context, hdrs map[string][]strin
 	})
 }
 
-// logStreamError decides whether to log an error to the console.
+// logStreamError decides how to log an error.
 func (r *Receiver) logStreamError(err error) {
-	status, ok := status.FromError(err)
-
-	if ok {
-		switch status.Code() {
-		case codes.Canceled:
-			r.telemetry.Logger.Debug("arrow stream canceled")
-		case codes.Unavailable:
-			r.telemetry.Logger.Info("arrow stream unavailable",
-				zap.String("message", status.Message()),
-			)
-		default:
-			r.telemetry.Logger.Error("arrow stream error",
-				zap.Uint32("code", uint32(status.Code())),
-				zap.String("message", status.Message()),
-			)
-		}
-		return
+	var code codes.Code
+	var msg string
+	// gRPC tends to supply status-wrapped errors, so we always
+	// unpack them.  A wrapped Canceled code indicates intentional
+	// shutdown, which can be due to normal causes (EOF, e.g.,
+	// max-stream-lifetime reached) or unusual causes (Canceled,
+	// e.g., because the other stream direction reached an error).
+	if status, ok := status.FromError(err); ok {
+		code = status.Code()
+		msg = status.Message()
+	} else if errors.Is(err, io.EOF) || errors.Is(err, context.Canceled) {
+		code = codes.Canceled
+		msg = err.Error()
+	} else {
+		code = codes.Internal
+		msg = err.Error()
 	}
 
-	isEOF := errors.Is(err, io.EOF)
-	isCanceled := errors.Is(err, context.Canceled)
-
-	switch {
-	case !isEOF && !isCanceled:
-		r.telemetry.Logger.Error("arrow stream error", zap.Error(err))
-	case isEOF:
-		r.telemetry.Logger.Debug("arrow stream end")
-	default:
-		r.telemetry.Logger.Debug("arrow stream canceled")
+	if code == codes.Canceled {
+		r.telemetry.Logger.Debug("arrow stream shutdown", zap.String("message", msg))
+	} else {
+		r.telemetry.Logger.Error("arrow stream error", zap.String("message", msg), zap.Int("code", int(code)))
 	}
 }
 
@@ -361,21 +354,16 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 		// Receive a batch corresponding with one ptrace.Traces, pmetric.Metrics,
 		// or plog.Logs item.
 		req, err := serverStream.Recv()
-
 		if err != nil {
-			// client called CloseSend()
-			if errors.Is(err, io.EOF) {
-				status := &arrowpb.BatchStatus{}
-				status.StatusCode = arrowpb.StatusCode_CANCELED
-				err = serverStream.Send(status)
-				if err != nil {
-					r.logStreamError(err)
-					return err
-				}
-				return nil
-			}
-
+			// This includes the case where a client called CloseSend(), in
+			// which case we see an EOF error here.
 			r.logStreamError(err)
+
+			if errors.Is(err, io.EOF) {
+				return status.Error(codes.Canceled, "client stream shutdown")
+			} else if errors.Is(err, context.Canceled) {
+				return status.Error(codes.Canceled, "server stream shutdown")
+			}
 			return err
 		}
 

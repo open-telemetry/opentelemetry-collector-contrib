@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -40,7 +39,9 @@ import (
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/net/http2/hpack"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow/mock"
 )
@@ -351,6 +352,13 @@ func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, opt
 	}()
 }
 
+func requireCanceledStatus(t *testing.T, err error) {
+	require.Error(t, err)
+	status, ok := status.FromError(err)
+	require.True(t, ok, "is status-wrapped %v", err)
+	require.Equal(t, codes.Canceled, status.Code())
+}
+
 func TestReceiverTraces(t *testing.T) {
 	tc := healthyTestChannel{}
 	ctc := newCommonTestCase(t, tc)
@@ -367,8 +375,7 @@ func TestReceiverTraces(t *testing.T) {
 	assert.EqualValues(t, td, (<-ctc.consume).Data)
 
 	err = ctc.cancelAndWait()
-	require.Error(t, err)
-	require.True(t, errors.Is(err, context.Canceled))
+	requireCanceledStatus(t, err)
 }
 
 func TestReceiverLogs(t *testing.T) {
@@ -387,8 +394,7 @@ func TestReceiverLogs(t *testing.T) {
 	assert.EqualValues(t, []json.Marshaler{compareJSONLogs{ld}}, []json.Marshaler{compareJSONLogs{(<-ctc.consume).Data.(plog.Logs)}})
 
 	err = ctc.cancelAndWait()
-	require.Error(t, err)
-	require.True(t, errors.Is(err, context.Canceled), "for %v", err)
+	requireCanceledStatus(t, err)
 }
 
 func TestReceiverMetrics(t *testing.T) {
@@ -412,8 +418,7 @@ func TestReceiverMetrics(t *testing.T) {
 	})
 
 	err = ctc.cancelAndWait()
-	require.Error(t, err)
-	require.True(t, errors.Is(err, context.Canceled), "for %v", err)
+	requireCanceledStatus(t, err)
 }
 
 func TestReceiverRecvError(t *testing.T) {
@@ -506,8 +511,7 @@ func TestReceiverConsumeError(t *testing.T) {
 		}
 
 		err = ctc.cancelAndWait()
-		require.Error(t, err)
-		require.True(t, errors.Is(err, context.Canceled), "for %v", err)
+		requireCanceledStatus(t, err)
 	}
 }
 
@@ -544,8 +548,7 @@ func TestReceiverInvalidData(t *testing.T) {
 		ctc.putBatch(batch, nil)
 
 		err = ctc.cancelAndWait()
-		require.Error(t, err)
-		require.True(t, errors.Is(err, context.Canceled), "for %v", err)
+		requireCanceledStatus(t, err)
 	}
 }
 
@@ -582,8 +585,7 @@ func TestReceiverMemoryLimit(t *testing.T) {
 		ctc.putBatch(batch, nil)
 
 		err = ctc.cancelAndWait()
-		require.Error(t, err)
-		require.True(t, errors.Is(err, context.Canceled), "for %v", err)
+		requireCanceledStatus(t, err)
 	}
 }
 
@@ -623,7 +625,7 @@ func TestReceiverEOF(t *testing.T) {
 	var actualData []ptrace.Traces
 	var expectData []ptrace.Traces
 
-	ctc.stream.EXPECT().Send(gomock.Any()).Times(times + 1).Return(nil)
+	ctc.stream.EXPECT().Send(gomock.Any()).Times(times).Return(nil)
 
 	ctc.start(ctc.newRealConsumer)
 
@@ -647,9 +649,8 @@ func TestReceiverEOF(t *testing.T) {
 
 	go func() {
 		err := ctc.wait()
-		// Once receiver receives EOF it will call Send() to signal shutdown for the client.
-		// Then the receiver returns nil, so we expect no error in this case
-		require.NoError(t, err)
+		// EOF is treated the same as Canceled.
+		requireCanceledStatus(t, err)
 		wg.Done()
 	}()
 
@@ -681,7 +682,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 		nil,
 	}
 
-	ctc.stream.EXPECT().Send(gomock.Any()).Times(len(expectData) + 1).Return(nil)
+	ctc.stream.EXPECT().Send(gomock.Any()).Times(len(expectData)).Return(nil)
 
 	ctc.start(ctc.newRealConsumer, func(gsettings *configgrpc.ServerConfig, _ *auth.Server) {
 		gsettings.IncludeMetadata = includeMeta
@@ -724,7 +725,8 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 
 	go func() {
 		err := ctc.wait()
-		require.NoError(t, err)
+		// EOF is treated the same as Canceled.
+		requireCanceledStatus(t, err)
 		wg.Done()
 	}()
 
@@ -757,8 +759,7 @@ func TestReceiverCancel(t *testing.T) {
 	ctc.start(ctc.newRealConsumer)
 
 	err := ctc.wait()
-	require.Error(t, err)
-	require.True(t, errors.Is(err, context.Canceled))
+	requireCanceledStatus(t, err)
 }
 
 func requireContainsAll(t *testing.T, md client.Metadata, exp map[string][]string) {
@@ -1039,7 +1040,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 
 	var recvBatches []*arrowpb.BatchStatus
 
-	ctc.stream.EXPECT().Send(gomock.Any()).Times(len(expectData) + 1).DoAndReturn(func(batch *arrowpb.BatchStatus) error {
+	ctc.stream.EXPECT().Send(gomock.Any()).Times(len(expectData)).DoAndReturn(func(batch *arrowpb.BatchStatus) error {
 		recvBatches = append(recvBatches, batch)
 		return nil
 	})
@@ -1155,16 +1156,15 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 	}
 
 	err := ctc.wait()
-	require.NoError(t, err)
+	// EOF is treated the same as Canceled
+	requireCanceledStatus(t, err)
+
 	// Add in expectErrs for when receiver sees EOF,
 	// the status code will not be arrowpb.StatusCode_OK.
 	expectErrs = append(expectErrs, true)
 
 	require.Equal(t, len(expectData), dataCount)
-
-	// recvBatches will be 1 more than dataCount, because of the extra
-	// Send() call the receiver makes when it encounters EOF.
-	require.Equal(t, len(recvBatches), dataCount+1)
+	require.Equal(t, len(recvBatches), dataCount)
 
 	for idx, batch := range recvBatches {
 		if expectErrs[idx] {

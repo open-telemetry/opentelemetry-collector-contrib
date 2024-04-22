@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -51,7 +50,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				GRPC: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "0.0.0.0:4317",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 					TLSSetting: &configtls.ServerConfig{
 						Config: configtls.Config{
@@ -79,9 +78,6 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				Arrow: ArrowConfig{
 					MemoryLimitMiB: 123,
-					Zstd: zstd.DecoderConfig{
-						MemoryLimitMiB: 8,
-					},
 				},
 			},
 		}, cfg)
