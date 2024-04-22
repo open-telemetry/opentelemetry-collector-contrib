@@ -1455,11 +1455,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.OracledbInstanceName.Include != nil {
-		mb.resourceAttributeIncludeFilter["oracledb.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.OracledbInstanceName.Include)
+	if mbc.ResourceAttributes.OracledbInstanceName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["oracledb.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.OracledbInstanceName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.OracledbInstanceName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["oracledb.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.OracledbInstanceName.Exclude)
+	if mbc.ResourceAttributes.OracledbInstanceName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["oracledb.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.OracledbInstanceName.MetricsExclude)
 	}
 
 	for _, op := range options {

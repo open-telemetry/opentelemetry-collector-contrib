@@ -527,29 +527,29 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.DeviceID.Include != nil {
-		mb.resourceAttributeIncludeFilter["device.id"] = filter.CreateFilter(mbc.ResourceAttributes.DeviceID.Include)
+	if mbc.ResourceAttributes.DeviceID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["device.id"] = filter.CreateFilter(mbc.ResourceAttributes.DeviceID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.DeviceID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["device.id"] = filter.CreateFilter(mbc.ResourceAttributes.DeviceID.Exclude)
+	if mbc.ResourceAttributes.DeviceID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["device.id"] = filter.CreateFilter(mbc.ResourceAttributes.DeviceID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.NsxtNodeID.Include != nil {
-		mb.resourceAttributeIncludeFilter["nsxt.node.id"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeID.Include)
+	if mbc.ResourceAttributes.NsxtNodeID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["nsxt.node.id"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.NsxtNodeID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["nsxt.node.id"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeID.Exclude)
+	if mbc.ResourceAttributes.NsxtNodeID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["nsxt.node.id"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.NsxtNodeName.Include != nil {
-		mb.resourceAttributeIncludeFilter["nsxt.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeName.Include)
+	if mbc.ResourceAttributes.NsxtNodeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["nsxt.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.NsxtNodeName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["nsxt.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeName.Exclude)
+	if mbc.ResourceAttributes.NsxtNodeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["nsxt.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.NsxtNodeType.Include != nil {
-		mb.resourceAttributeIncludeFilter["nsxt.node.type"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeType.Include)
+	if mbc.ResourceAttributes.NsxtNodeType.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["nsxt.node.type"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeType.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.NsxtNodeType.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["nsxt.node.type"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeType.Exclude)
+	if mbc.ResourceAttributes.NsxtNodeType.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["nsxt.node.type"] = filter.CreateFilter(mbc.ResourceAttributes.NsxtNodeType.MetricsExclude)
 	}
 
 	for _, op := range options {
