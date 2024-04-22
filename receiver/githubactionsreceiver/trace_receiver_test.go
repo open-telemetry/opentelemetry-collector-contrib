@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/google/go-github/v61/github"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -66,29 +67,40 @@ func TestCreateNewTracesReceiver(t *testing.T) {
 	}
 }
 
-func TestUnmarshalTraces(t *testing.T) {
+func TestEventToTracesTraces(t *testing.T) {
 	tests := []struct {
 		desc            string
 		payloadFilePath string
+		eventType       string
 		expectedError   error
 		expectedSpans   int
 	}{
 		{
 			desc:            "WorkflowJobEvent processing",
 			payloadFilePath: "./testdata/completed/5_workflow_job_completed.json",
+			eventType:       "workflow_job",
 			expectedError:   nil,
 			expectedSpans:   10, // 10 spans in the payload
 		},
 		{
 			desc:            "WorkflowRunEvent processing",
 			payloadFilePath: "./testdata/completed/8_workflow_run_completed.json",
+			eventType:       "workflow_run",
 			expectedError:   nil,
 			expectedSpans:   1, // Root span
 		},
 		{
-			desc:            "Unknown event",
-			payloadFilePath: "./testdata/unknown/1_workflow_job_unknown.json",
-			expectedError:   fmt.Errorf("unknown event type"),
+			desc:            "Job not completed",
+			payloadFilePath: "./testdata/queued/1_workflow_job_queued.json",
+			expectedError:   nil,
+			eventType:       "workflow_job",
+			expectedSpans:   0,
+		},
+		{
+			desc:            "Run not completed",
+			payloadFilePath: "./testdata/requested/1_workflow_run_requested.json",
+			expectedError:   nil,
+			eventType:       "workflow_run",
 			expectedSpans:   0,
 		},
 	}
@@ -99,17 +111,22 @@ func TestUnmarshalTraces(t *testing.T) {
 			payload, err := os.ReadFile(test.payloadFilePath)
 			require.NoError(t, err)
 
-			unmarshaler := &jsonTracesUnmarshaler{logger: logger}
-			config := &Config{}
+			event, err := github.ParseWebHook(test.eventType, payload)
+			require.NoError(t, err)
 
-			traces, err := unmarshaler.UnmarshalTraces(payload, config)
+			traces, err := eventToTraces(event, &Config{}, logger)
 
 			if test.expectedError != nil {
 				require.Error(t, err)
 				require.Equal(t, test.expectedError, err)
 			} else {
 				require.NoError(t, err)
+			}
+
+			if test.expectedSpans != 0 {
 				require.Equal(t, test.expectedSpans, traces.SpanCount())
+			} else {
+				require.Equal(t, ptrace.Traces{}, traces)
 			}
 		})
 	}
@@ -118,18 +135,19 @@ func TestUnmarshalTraces(t *testing.T) {
 func TestProcessSteps(t *testing.T) {
 	tests := []struct {
 		desc             string
-		givenSteps       []Step
+		givenSteps       []*github.TaskStep
 		expectedSpans    int
 		expectedStatuses []ptrace.StatusCode
 	}{
 		{
 			desc: "Multiple steps with mixed status",
-			givenSteps: []Step{
-				{Name: "Checkout", Status: "completed", Conclusion: "success"},
-				{Name: "Build", Status: "completed", Conclusion: "failure"},
-				{Name: "Test", Status: "completed", Conclusion: "success"},
+
+			givenSteps: []*github.TaskStep{
+				{Name: getPtr("Checkout"), Status: getPtr("completed"), Conclusion: getPtr("success")},
+				{Name: getPtr("Build"), Status: getPtr("completed"), Conclusion: getPtr("failure")},
+				{Name: getPtr("Test"), Status: getPtr("completed"), Conclusion: getPtr("success")},
 			},
-			expectedSpans: 4, // Includes parent spant
+			expectedSpans: 4, // Includes parent span
 			expectedStatuses: []ptrace.StatusCode{
 				ptrace.StatusCodeOk,
 				ptrace.StatusCodeError,
@@ -138,7 +156,7 @@ func TestProcessSteps(t *testing.T) {
 		},
 		{
 			desc:             "No steps",
-			givenSteps:       []Step{},
+			givenSteps:       []*github.TaskStep{},
 			expectedSpans:    1, // Only the parent span should be created
 			expectedStatuses: nil,
 		},
@@ -152,9 +170,9 @@ func TestProcessSteps(t *testing.T) {
 			ss := rs.ScopeSpans().AppendEmpty()
 
 			traceID, _ := generateTraceID(123, 1)
-			parentSpanID := createParentSpan(ss, tc.givenSteps, WorkflowJob{}, traceID, logger)
+			parentSpanID := createParentSpan(ss, tc.givenSteps, &github.WorkflowJob{}, traceID, logger)
 
-			processSteps(ss, tc.givenSteps, WorkflowJob{}, traceID, parentSpanID, logger)
+			processSteps(ss, tc.givenSteps, &github.WorkflowJob{}, traceID, parentSpanID, logger)
 
 			startIdx := 1 // Skip the parent span if it's the first one
 			if len(tc.expectedStatuses) == 0 {
@@ -181,8 +199,8 @@ func TestResourceAndSpanAttributesCreation(t *testing.T) {
 			desc:            "WorkflowJobEvent Step Attributes",
 			payloadFilePath: "./testdata/completed/5_workflow_job_completed.json",
 			expectedSteps: []map[string]string{
-				{"ci.github.step.name": "Set up job", "ci.github.step.number": "1"},
-				{"ci.github.step.name": "Run actions/checkout@v3", "ci.github.step.number": "2"},
+				{"ci.github.workflow.job.step.name": "Set up job", "ci.github.workflow.job.step.number": "1"},
+				{"ci.github.workflow.job.step.name": "Run actions/checkout@v3", "ci.github.workflow.job.step.number": "2"},
 			},
 		},
 	}
@@ -190,13 +208,14 @@ func TestResourceAndSpanAttributesCreation(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.desc, func(t *testing.T) {
 			logger := zaptest.NewLogger(t)
-			config := &Config{}
 
 			payload, err := os.ReadFile(tc.payloadFilePath)
 			require.NoError(t, err)
 
-			unmarshaler := &jsonTracesUnmarshaler{logger: logger}
-			traces, err := unmarshaler.UnmarshalTraces(payload, config)
+			event, err := github.ParseWebHook("workflow_job", payload)
+			require.NoError(t, err)
+
+			traces, err := eventToTraces(event, &Config{}, logger)
 			require.NoError(t, err)
 
 			rs := traces.ResourceSpans().At(0)
@@ -210,11 +229,12 @@ func TestResourceAndSpanAttributesCreation(t *testing.T) {
 					attrs := span.Attributes()
 
 					stepValue, found := attrs.Get("ci.github.workflow.job.step.name")
-					if !found || stepValue.Str() == "" { // Skip if the attribute is not found or name is empty
+					stepName := stepValue.Str()
+
+					if !found || stepName == "" { // Skip if the attribute is not found or name is empty
 						continue
 					}
 
-					stepName := stepValue.Str()
 					expectedStepName := expectedStep["ci.github.workflow.job.step.name"]
 
 					if stepName == expectedStepName {
@@ -256,4 +276,8 @@ func attributeValueToString(attr pcommon.Value) string {
 	default:
 		return "<Unknown Value Type>"
 	}
+}
+
+func getPtr(str string) *string {
+	return &str
 }

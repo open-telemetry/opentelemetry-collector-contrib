@@ -7,11 +7,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
-	"strings"
 	"sync"
 
+	"github.com/google/go-github/v61/github"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -22,14 +21,14 @@ import (
 var errMissingEndpoint = errors.New("missing a receiver endpoint")
 
 type githubActionsReceiver struct {
-	nextConsumer    consumer.Traces
-	config          *Config
-	server          *http.Server
-	shutdownWG      sync.WaitGroup
-	createSettings  receiver.CreateSettings
-	logger          *zap.Logger
-	jsonUnmarshaler *jsonTracesUnmarshaler
-	obsrecv         *receiverhelper.ObsReport
+	nextConsumer   consumer.Traces
+	config         *Config
+	server         *http.Server
+	shutdownWG     sync.WaitGroup
+	createSettings receiver.CreateSettings
+	logger         *zap.Logger
+	obsrecv        *receiverhelper.ObsReport
+	ghClient       *github.Client
 }
 
 func newTracesReceiver(
@@ -60,15 +59,15 @@ func newTracesReceiver(
 		return nil, err
 	}
 
+	client := github.NewClient(nil)
+
 	gar := &githubActionsReceiver{
 		nextConsumer:   nextConsumer,
 		config:         config,
 		createSettings: params,
 		logger:         params.Logger,
-		jsonUnmarshaler: &jsonTracesUnmarshaler{
-			logger: params.Logger,
-		},
-		obsrecv: obsrecv,
+		obsrecv:        obsrecv,
+		ghClient:       client,
 	}
 
 	return gar, nil
@@ -106,58 +105,65 @@ func (gar *githubActionsReceiver) Shutdown(ctx context.Context) error {
 func (gar *githubActionsReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userAgent := r.Header.Get("User-Agent")
-	if !strings.HasPrefix(userAgent, "GitHub-Hookshot") {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-		return
-	}
-
 	if r.URL.Path != gar.config.Path {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
 
-	defer r.Body.Close()
-
-	slurp, err := io.ReadAll(r.Body)
+	payload, err := github.ValidatePayload(r, []byte(gar.config.Secret))
 	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+		gar.logger.Debug("Payload validation failed", zap.Error(err))
+		http.Error(w, "Invalid payload or signature", http.StatusBadRequest)
 		return
 	}
 
-	// Validate the request if Secret is set in the configuration
-	if gar.config.Secret != "" {
-		signatureSHA256 := r.Header.Get("X-Hub-Signature-256")
-		if signatureSHA256 != "" && !validateSignatureSHA256(gar.config.Secret, signatureSHA256, slurp, gar.logger) {
-			gar.logger.Debug("Unauthorized - Signature Mismatch SHA256")
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	event, err := github.ParseWebHook(github.WebHookType(r), payload)
+	if err != nil {
+		gar.logger.Debug("Webhook parsing failed", zap.Error(err))
+		http.Error(w, "Failed to parse webhook", http.StatusBadRequest)
+		return
+	}
+
+	gar.logger.Debug("Received GitHub event", zap.Any("event", event))
+
+	// Filter events based on the status
+	switch e := event.(type) {
+	case *github.WorkflowJobEvent:
+		if e.GetWorkflowJob().GetStatus() != "completed" {
+			gar.logger.Debug("Skipping non-completed WorkflowJobEvent", zap.String("status", e.GetWorkflowJob().GetStatus()))
+			w.WriteHeader(http.StatusNoContent)
 			return
-		} else {
-			signatureSHA1 := r.Header.Get("X-Hub-Signature")
-			if signatureSHA1 != "" && !validateSignatureSHA1(gar.config.Secret, signatureSHA1, slurp, gar.logger) {
-				gar.logger.Debug("Unauthorized - Signature Mismatch SHA1")
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				return
-			}
+		}
+	case *github.WorkflowRunEvent:
+		if e.GetWorkflowRun().GetStatus() != "completed" {
+			gar.logger.Debug("Skipping non-completed WorkflowRunEvent", zap.String("status", e.GetWorkflowRun().GetStatus()))
+			w.WriteHeader(http.StatusNoContent)
+			return
 		}
 	}
 
-	gar.logger.Debug("Received request", zap.ByteString("payload", slurp))
-
-	td, err := gar.jsonUnmarshaler.UnmarshalTraces(slurp, gar.config)
+	// Convert the GitHub event to OpenTelemetry traces
+	td, err := eventToTraces(event, gar.config, gar.logger)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		gar.logger.Debug("Failed to convert event to traces", zap.Error(err))
+		http.Error(w, "Error processing traces", http.StatusBadRequest)
 		return
 	}
 
-	gar.logger.Debug("Unmarshaled spans", zap.Int("#spans", td.SpanCount()))
+	// Check if the traces data contains any ResourceSpans
+	if td.ResourceSpans().Len() > 0 {
+		spanCount := td.SpanCount()
+		gar.logger.Debug("Unmarshaled spans", zap.Int("#spans", spanCount))
 
-	// Pass the traces to the nextConsumer
-	consumerErr := gar.nextConsumer.ConsumeTraces(ctx, td)
-	if consumerErr != nil {
-		gar.logger.Error("Failed to process traces", zap.Error(consumerErr))
-		http.Error(w, "Failed to process traces", http.StatusInternalServerError)
-		return
+		// Pass the traces to the nextConsumer
+		consumerErr := gar.nextConsumer.ConsumeTraces(ctx, td)
+		if consumerErr != nil {
+			gar.logger.Debug("Failed to process traces", zap.Error(consumerErr))
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		gar.logger.Debug("No spans to unmarshal or traces not initialized")
 	}
 
 	w.WriteHeader(http.StatusAccepted)
