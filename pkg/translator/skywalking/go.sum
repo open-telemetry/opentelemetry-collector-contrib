@@ -81,10 +81,10 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
-go.opentelemetry.io/collector/pdata v1.5.1-0.20240416174005-d0f15e2463f8 h1:HZ6TE3RrqRIfgbr7jEyvaIWsLT3NF1ITAZdw26k/wmo=
-go.opentelemetry.io/collector/pdata v1.5.1-0.20240416174005-d0f15e2463f8/go.mod h1:pQv6AJO6wDUDxrPxhNaj3JdSzaOIo5glTGL1b4h4KTg=
-go.opentelemetry.io/collector/semconv v0.98.1-0.20240416174005-d0f15e2463f8 h1:7zEKnQqXCascqjgjrN/Pzdi1EYulP7kTirfc41dDB5o=
-go.opentelemetry.io/collector/semconv v0.98.1-0.20240416174005-d0f15e2463f8/go.mod h1:8ElcRZ8Cdw5JnvhTOQOdYizkJaQ10Z2fS+R6djOnj6A=
+go.opentelemetry.io/collector/pdata v1.5.1-0.20240419202408-d1e631b61158 h1:G8FZc9G67qjslUu6GiI3SEVOJaCwUNlN4pAKxcCPMt0=
+go.opentelemetry.io/collector/pdata v1.5.1-0.20240419202408-d1e631b61158/go.mod h1:pQv6AJO6wDUDxrPxhNaj3JdSzaOIo5glTGL1b4h4KTg=
+go.opentelemetry.io/collector/semconv v0.98.1-0.20240419202408-d1e631b61158 h1:iu02vtl+XIHHLtBGnwQ04ZoGuVO++8+PB7ElYIfkNzw=
+go.opentelemetry.io/collector/semconv v0.98.1-0.20240419202408-d1e631b61158/go.mod h1:8ElcRZ8Cdw5JnvhTOQOdYizkJaQ10Z2fS+R6djOnj6A=
 go.opentelemetry.io/proto/otlp v0.7.0/go.mod h1:PqfVotwruBrMGOCsRd/89rSnXhoiJIqeYNgFYFoEGnI=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=

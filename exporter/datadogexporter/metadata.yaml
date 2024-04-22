@@ -22,3 +22,6 @@ tests:
     retry_on_failure:
       enabled: false
   expect_consumer_error: true
+  goleak:
+    setup: "setupTestMain(m)"
+    skip: true
