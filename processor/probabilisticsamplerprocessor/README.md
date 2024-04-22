@@ -73,10 +73,10 @@ attribute is not configurable, and is called `sampling.priority`.
 
 In logs pipelines, when the priority attribute has value 0, the
 configured probability will by modified to 0%, and the item will not
-pass the sampler.  Otherwise, the sampling priority attribute is
+pass the sampler.  Otherwise, the logs sampling priority attribute is
 interpreted as a percentage, with values >= 100 equal to 100%
-sampling.  The sampling priority is configurable, via
-`from_attribute`.
+sampling.  The logs sampling priority attribute is configured via
+`sampling_priority`.
 
 ## Sampling algorithm
 
@@ -147,7 +147,8 @@ processors:
     from_attribute: logID # value is required if the source is not traceID
 ```
 
-Sample logs according to the attribute `priority`:
+Give sampling priority to log records according to the attribute named
+`priority`:
 
 ```yaml
 processors:
