@@ -176,9 +176,6 @@ func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Durati
 }
 
 func shouldRetryEvent(status int, retryOnStatus []int) bool {
-	if retryOnStatus == nil {
-		return false
-	}
 	for _, retryable := range retryOnStatus {
 		if status == retryable {
 			return true
