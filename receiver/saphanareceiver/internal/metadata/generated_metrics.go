@@ -3040,17 +3040,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:                make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.DbSystem.Include != nil {
-		mb.resourceAttributeIncludeFilter["db.system"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystem.Include)
+	if mbc.ResourceAttributes.DbSystem.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["db.system"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystem.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.DbSystem.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["db.system"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystem.Exclude)
+	if mbc.ResourceAttributes.DbSystem.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["db.system"] = filter.CreateFilter(mbc.ResourceAttributes.DbSystem.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.SaphanaHost.Include != nil {
-		mb.resourceAttributeIncludeFilter["saphana.host"] = filter.CreateFilter(mbc.ResourceAttributes.SaphanaHost.Include)
+	if mbc.ResourceAttributes.SaphanaHost.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["saphana.host"] = filter.CreateFilter(mbc.ResourceAttributes.SaphanaHost.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.SaphanaHost.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["saphana.host"] = filter.CreateFilter(mbc.ResourceAttributes.SaphanaHost.Exclude)
+	if mbc.ResourceAttributes.SaphanaHost.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["saphana.host"] = filter.CreateFilter(mbc.ResourceAttributes.SaphanaHost.MetricsExclude)
 	}
 
 	for _, op := range options {

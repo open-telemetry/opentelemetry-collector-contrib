@@ -3685,41 +3685,41 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:                           make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                           make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.SparkApplicationID.Include != nil {
-		mb.resourceAttributeIncludeFilter["spark.application.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationID.Include)
+	if mbc.ResourceAttributes.SparkApplicationID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["spark.application.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.SparkApplicationID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["spark.application.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationID.Exclude)
+	if mbc.ResourceAttributes.SparkApplicationID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["spark.application.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.SparkApplicationName.Include != nil {
-		mb.resourceAttributeIncludeFilter["spark.application.name"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationName.Include)
+	if mbc.ResourceAttributes.SparkApplicationName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["spark.application.name"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.SparkApplicationName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["spark.application.name"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationName.Exclude)
+	if mbc.ResourceAttributes.SparkApplicationName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["spark.application.name"] = filter.CreateFilter(mbc.ResourceAttributes.SparkApplicationName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.SparkExecutorID.Include != nil {
-		mb.resourceAttributeIncludeFilter["spark.executor.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkExecutorID.Include)
+	if mbc.ResourceAttributes.SparkExecutorID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["spark.executor.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkExecutorID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.SparkExecutorID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["spark.executor.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkExecutorID.Exclude)
+	if mbc.ResourceAttributes.SparkExecutorID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["spark.executor.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkExecutorID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.SparkJobID.Include != nil {
-		mb.resourceAttributeIncludeFilter["spark.job.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkJobID.Include)
+	if mbc.ResourceAttributes.SparkJobID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["spark.job.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkJobID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.SparkJobID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["spark.job.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkJobID.Exclude)
+	if mbc.ResourceAttributes.SparkJobID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["spark.job.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkJobID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.SparkStageAttemptID.Include != nil {
-		mb.resourceAttributeIncludeFilter["spark.stage.attempt.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageAttemptID.Include)
+	if mbc.ResourceAttributes.SparkStageAttemptID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["spark.stage.attempt.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageAttemptID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.SparkStageAttemptID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["spark.stage.attempt.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageAttemptID.Exclude)
+	if mbc.ResourceAttributes.SparkStageAttemptID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["spark.stage.attempt.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageAttemptID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.SparkStageID.Include != nil {
-		mb.resourceAttributeIncludeFilter["spark.stage.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageID.Include)
+	if mbc.ResourceAttributes.SparkStageID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["spark.stage.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.SparkStageID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["spark.stage.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageID.Exclude)
+	if mbc.ResourceAttributes.SparkStageID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["spark.stage.id"] = filter.CreateFilter(mbc.ResourceAttributes.SparkStageID.MetricsExclude)
 	}
 
 	for _, op := range options {
