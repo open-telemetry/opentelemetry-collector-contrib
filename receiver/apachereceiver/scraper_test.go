@@ -27,6 +27,8 @@ import (
 
 func TestScraper(t *testing.T) {
 	apacheMock := newMockServer(t)
+	defer func() { apacheMock.Close() }()
+
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
 	require.NoError(t, component.ValidateConfig(cfg))

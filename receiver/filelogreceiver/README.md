@@ -19,7 +19,8 @@ Tails and parses logs from files.
 | Field                               | Default                              | Description                                                                                                                                                                                                                                                     |
 |-------------------------------------|--------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `include`                           | required                             | A list of file glob patterns that match the file paths to be read.                                                                                                                                                                                              |
-| `exclude`                           | []                                   | A list of file glob patterns to exclude from reading. This is applied against the paths matched by `include`.                                                                                                                                                 |
+| `exclude`                           | []                                   | A list of file glob patterns to exclude from reading. This is applied against the paths matched by `include`.                                                                                                                                                   |
+| `exclude_older_than`                |                                      | Exclude files whose modification time is older than the specified [age](#time-parameters).                                                                                                                                                                      |
 | `start_at`                          | `end`                                | At startup, where to start reading logs from the file. Options are `beginning` or `end`.                                                                                                                                                                        |
 | `multiline`                         |                                      | A `multiline` configuration block. See [below](#multiline-configuration) for more details.                                                                                                                                                                      |
 | `force_flush_period`                | `500ms`                              | [Time](#time-parameters) since last read of data from file, after which currently buffered log should be send to pipeline. A value of `0` will disable forced flushing.                                                                                         |
@@ -179,7 +180,17 @@ Exception in thread 2 "main" java.lang.NullPointerException
 
 ## Offset tracking
 
-`storage` setting allows to define the proper storage extension to be used for storing file offsets. 
+The `storage` setting allows you to define the proper storage extension for storing file offsets.
 While the storage parameter can ensure that log files are consumed accurately, it is possible that
 logs are dropped while moving downstream through other components in the collector.
 For additional resiliency, see [Fault tolerant log collection example](../../examples/fault-tolerant-logs-collection/README.md)
+
+Here is some of the information the `filelog` receiver stores:
+- The number of files it is currently tracking (`knownFiles`).
+- For each file being tracked:
+  - The [fingerprint](../../pkg/stanza/fileconsumer/design.md#fingerprints) of the file (`Fingerprint.first_bytes`).
+  - The byte offset from the start of the file, indicating the position in the file from where the
+    `filelog` receiver continues reading the file (`Offset`).
+  - An arbitrary set of file attributes, such as the name of the file (`FileAttributes`).
+
+Exactly how this information is serialized depends on the type of storage being used.

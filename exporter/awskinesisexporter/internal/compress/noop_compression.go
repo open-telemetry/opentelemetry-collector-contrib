@@ -20,3 +20,5 @@ func (n noop) Write(p []byte) (int, error) {
 func (n noop) Flush() error {
 	return nil
 }
+
+func (n *noop) Close() error { return nil }

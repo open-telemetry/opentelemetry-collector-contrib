@@ -299,6 +299,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricSystemMemoryUsage:          newMetricSystemMemoryUsage(mbc.Metrics.SystemMemoryUsage),
 		metricSystemMemoryUtilization:    newMetricSystemMemoryUtilization(mbc.Metrics.SystemMemoryUtilization),
 	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -363,6 +364,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
