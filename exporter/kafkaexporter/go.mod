@@ -7,11 +7,11 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.56.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.98.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.98.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.98.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.98.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.98.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.99.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.99.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.99.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.99.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.99.0
 	github.com/openzipkin/zipkin-go v0.4.2
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.99.0
