@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.98.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.98.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/collector/otelcol v0.98.1-0.20240419202408-d1e631b61158
-	go.opentelemetry.io/collector/pdata v1.5.1-0.20240419202408-d1e631b61158
+	go.opentelemetry.io/collector/pdata v1.5.1-0.20240422074114-6611edfa5a69
 	go.opentelemetry.io/collector/semconv v0.98.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/otel/metric v1.25.0
 	go.opentelemetry.io/otel/trace v1.25.0
@@ -98,10 +98,10 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.98.1-0.20240419202408-d1e631b61158 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.5.1-0.20240419202408-d1e631b61158 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.5.1-0.20240422074114-6611edfa5a69 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.98.1-0.20240419202408-d1e631b61158 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.5.1-0.20240419202408-d1e631b61158 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.5.1-0.20240422074114-6611edfa5a69 // indirect
 	go.opentelemetry.io/collector/config/configretry v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.98.1-0.20240419202408-d1e631b61158 // indirect
@@ -115,7 +115,7 @@ require (
 	go.opentelemetry.io/collector/connector v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/extension v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.98.1-0.20240419202408-d1e631b61158 // indirect
-	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240419202408-d1e631b61158 // indirect
+	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240422074114-6611edfa5a69 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/processor v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/receiver v0.98.1-0.20240419202408-d1e631b61158 // indirect

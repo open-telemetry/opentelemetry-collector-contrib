@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.98.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/collector/extension v0.98.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/collector/otelcol v0.98.1-0.20240419202408-d1e631b61158
-	go.opentelemetry.io/collector/pdata v1.5.1-0.20240419202408-d1e631b61158
+	go.opentelemetry.io/collector/pdata v1.5.1-0.20240422074114-6611edfa5a69
 	go.opentelemetry.io/collector/receiver v0.98.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/collector/semconv v0.98.1-0.20240419202408-d1e631b61158
 	go.opentelemetry.io/otel/metric v1.25.0
@@ -73,7 +73,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/connector v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/exporter v0.98.1-0.20240419202408-d1e631b61158 // indirect
-	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240419202408-d1e631b61158 // indirect
+	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240422074114-6611edfa5a69 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/processor v0.98.1-0.20240419202408-d1e631b61158 // indirect
 	go.opentelemetry.io/collector/service v0.98.1-0.20240419202408-d1e631b61158 // indirect
