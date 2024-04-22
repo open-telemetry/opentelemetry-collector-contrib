@@ -22,7 +22,7 @@ const (
 // bounds: (0.125,0.25], (0.25,0.5], (0.5,1], (1,2], (2,4], (4,8], (8,16], (16,32]
 type Bins [8]uint64
 
-func Buckets(bins Bins) pmetric.ExponentialHistogramDataPointBuckets {
+func (bins Bins) Into() pmetric.ExponentialHistogramDataPointBuckets {
 	start := 0
 	for i := 0; i < len(bins); i++ {
 		if bins[i] != ø {

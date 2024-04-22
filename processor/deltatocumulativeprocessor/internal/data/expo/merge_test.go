@@ -39,9 +39,9 @@ func TestMerge(t *testing.T) {
 	}}
 
 	for _, cs := range cases {
-		a := expotest.Buckets(cs.a)
-		b := expotest.Buckets(cs.b)
-		want := expotest.Buckets(cs.want)
+		a := cs.a.Into()
+		b := cs.b.Into()
+		want := cs.want.Into()
 
 		name := fmt.Sprintf("(%+d,%d)+(%+d,%d)=(%+d,%d)", a.Offset(), a.BucketCounts().Len(), b.Offset(), b.BucketCounts().Len(), want.Offset(), want.BucketCounts().Len())
 		t.Run(name, func(t *testing.T) {
