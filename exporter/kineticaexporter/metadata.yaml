@@ -13,3 +13,5 @@ status:
 # TODO: Update the exporter to pass the tests
 tests:
   skip_lifecycle: true
+  goleak:
+    setup: "setupTestMain(m)"
