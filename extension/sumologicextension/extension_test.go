@@ -28,7 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/metadata"
 )
 
-func TestMain(m *testing.M) {
+func setupTestMain(m *testing.M) {
 	// Enable the feature gates before all tests to avoid flaky tests.
 	err := featuregate.GlobalRegistry().Set(updateCollectorMetadataID, true)
 
