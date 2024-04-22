@@ -61,7 +61,16 @@ func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics
 
 func (p *Processor) Start(_ context.Context, _ component.Host) error {
 	p.exportTicker = time.NewTicker(p.exportInterval)
-	go p.exportMetricsLoop()
+	go func() {
+		for {
+			select {
+			case <-p.ctx.Done():
+				return
+			case <-p.exportTicker.C:
+				p.exportMetrics()
+			}
+		}
+	}()
 
 	return nil
 }
@@ -170,17 +179,6 @@ func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP
 		}
 
 		// Otherwise, we leave existing as-is
-	}
-}
-
-func (p *Processor) exportMetricsLoop() {
-	for {
-		select {
-		case <-p.ctx.Done():
-			return
-		case <-p.exportTicker.C:
-			p.exportMetrics()
-		}
 	}
 }
 
