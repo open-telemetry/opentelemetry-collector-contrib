@@ -68,8 +68,8 @@ probabilistic decision in all modes.
 In traces pipelines, when the priority attribute has value 0, the
 configured probability will by modified to 0% and the item will not
 pass the sampler.  When the priority attribute is non-zero the
-configured probability will modified to 100%.  The sampling priority
-attribute is fixed, `sampling.priority`.
+configured probability will be set to 100%.  The sampling priority
+attribute is not configurable, and is called `sampling.priority`.
 
 In logs pipelines, when the priority attribute has value 0, the
 configured probability will by modified to 0%, and the item will not
@@ -92,7 +92,7 @@ This mode requires configuring the `hash_seed` field.  This mode is
 enabled when the `hash_seed` field is not zero, or when log records
 are sampled with `attribute_source` is set to `record`.
 
-In order for hashing to work, all collectors for a given tier
+In order for hashing to be consistent, all collectors for a given tier
 (e.g. behind the same load balancer) must have the same
 `hash_seed`. It is also possible to leverage a different `hash_seed`
 at different collector tiers to support additional sampling
