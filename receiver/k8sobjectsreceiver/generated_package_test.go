@@ -4,10 +4,8 @@ package k8sobjectsreceiver
 
 import (
 	"testing"
-
-	"go.uber.org/goleak"
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	// skipping goleak test as per metadata.yml configuration
 }
