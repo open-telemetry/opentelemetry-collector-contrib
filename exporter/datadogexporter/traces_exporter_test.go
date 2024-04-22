@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
-func TestMain(m *testing.M) {
+func setupTestMain(m *testing.M) {
 	tracelog.SetLogger(&testlogger{})
 	os.Exit(m.Run())
 }
