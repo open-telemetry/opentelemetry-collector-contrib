@@ -76,8 +76,8 @@ type Supervisor struct {
 
 	agentDescription *protobufs.AgentDescription
 
-	// Agent's instance id.
-	instanceID ulid.ULID
+	// Agent's persistent state
+	persistentState *persistentState
 
 	bootstrapTemplate    *template.Template
 	extraConfigTemplate  *template.Template
@@ -136,12 +136,11 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		return nil, fmt.Errorf("error loading config: %w", err)
 	}
 
-	id, err := s.loadOrCreateInstanceID()
+	var err error
+	s.persistentState, err = loadOrCreatePersistentState(s.instanceIDFile())
 	if err != nil {
 		return nil, err
 	}
-
-	s.instanceID = id
 
 	if err = s.getBootstrapInfo(); err != nil {
 		return nil, fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
@@ -156,7 +155,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)
 
 	logger.Debug("Supervisor starting",
-		zap.String("id", s.instanceID.String()))
+		zap.String("id", s.persistentState.InstanceID.String()))
 
 	s.loadAgentEffectiveConfig()
 
@@ -234,7 +233,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	var cfg bytes.Buffer
 
 	err = s.bootstrapTemplate.Execute(&cfg, map[string]any{
-		"InstanceUid":    s.instanceID.String(),
+		"InstanceUid":    s.persistentState.InstanceID.String(),
 		"SupervisorPort": supervisorPort,
 	})
 	if err != nil {
@@ -264,11 +263,11 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 					if attr.Key == semconv.AttributeServiceInstanceID {
 						// TODO: Consider whether to attempt restarting the Collector.
 						// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29864
-						if attr.Value.GetStringValue() != s.instanceID.String() {
+						if attr.Value.GetStringValue() != s.persistentState.InstanceID.String() {
 							done <- fmt.Errorf(
 								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s)",
 								attr.Value.GetStringValue(),
-								s.instanceID.String())
+								s.persistentState.InstanceID.String())
 							return
 						}
 						instanceIDSeen = true
@@ -376,7 +375,7 @@ func (s *Supervisor) startOpAMP() error {
 		OpAMPServerURL: s.config.Server.Endpoint,
 		Header:         s.config.Server.Headers,
 		TLSConfig:      tlsConfig,
-		InstanceUid:    s.instanceID.String(),
+		InstanceUid:    s.persistentState.InstanceID.String(),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func(_ context.Context) {
 				s.connectedToOpAMPServer <- struct{}{}
@@ -512,26 +511,6 @@ func (s *Supervisor) waitForOpAMPConnection() error {
 	case <-time.After(10 * time.Second):
 		return errors.New("timed out waiting for the server to connect")
 	}
-}
-
-func (s *Supervisor) loadOrCreateInstanceID() (ulid.ULID, error) {
-	id, err := loadULIDFromFile(s.instanceIDFile())
-
-	switch {
-	case errors.Is(err, os.ErrNotExist):
-		id, err = generateNewULID()
-		if err != nil {
-			return id, err
-		}
-
-		err = saveULIDToFile(s.instanceIDFile(), id)
-		return id, err
-	case err != nil:
-		// TODO: Should we actually just regenerate and write the file in this case?
-		return ulid.ULID{}, nil
-	}
-
-	return id, nil
 }
 
 func (s *Supervisor) composeExtraLocalConfig() []byte {
@@ -1045,15 +1024,14 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		}
 
 		s.logger.Debug("Agent identity is changing",
-			zap.String("old_id", s.instanceID.String()),
+			zap.String("old_id", s.persistentState.InstanceID.String()),
 			zap.String("new_id", newInstanceID.String()))
 
-		err = saveULIDToFile(s.instanceIDFile(), newInstanceID)
+		err = s.persistentState.SetInstanceID(newInstanceID)
 		if err != nil {
 			s.logger.Error("Failed to persist new instance ID, instance ID will revert on restart.", zap.String("new_id", newInstanceID.String()), zap.Error(err))
 		}
 
-		s.instanceID = newInstanceID
 		err = s.opampClient.SetAgentDescription(s.agentDescription)
 		if err != nil {
 			s.logger.Error("Failed to send agent description to OpAMP server")

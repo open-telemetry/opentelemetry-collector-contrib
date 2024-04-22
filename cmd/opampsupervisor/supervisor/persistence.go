@@ -10,14 +10,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// persistentState represents persistent state for the supervisor
 type persistentState struct {
 	InstanceID ulid.ULID `yaml:"instance_id"`
 
+	// Path to the config file that the state should be saved to.
+	// This is not marshaled.
 	configPath string `yaml:"-"`
 }
 
-func (p *persistentState) SetInstanceID(id ulid.ULID) {
-	p.writeState()
+func (p *persistentState) SetInstanceID(id ulid.ULID) error {
+	p.InstanceID = id
+	return p.writeState()
 }
 
 func (p *persistentState) writeState() error {
@@ -29,6 +33,8 @@ func (p *persistentState) writeState() error {
 	return os.WriteFile(p.configPath, by, 0600)
 }
 
+// loadOrCreatePersistentState attempts to load the persistent state from disk. If it doesn't
+// exist, a new persistent state file is created.
 func loadOrCreatePersistentState(file string) (*persistentState, error) {
 	state, err := loadPersistentState(file)
 	switch {
@@ -64,10 +70,12 @@ func createNewPersistentState(file string) (*persistentState, error) {
 		return nil, err
 	}
 
-	return &persistentState{
+	p := &persistentState{
 		InstanceID: id,
 		configPath: file,
-	}, nil
+	}
+
+	return p, p.writeState()
 }
 
 func generateNewULID() (ulid.ULID, error) {
