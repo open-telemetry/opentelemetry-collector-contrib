@@ -203,7 +203,12 @@ require (
 	go.opentelemetry.io/collector/config/confighttp v0.99.0
 	go.opentelemetry.io/collector/config/configopaque v1.6.0
 	go.opentelemetry.io/collector/confmap v0.99.0
+	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.99.0
+	go.opentelemetry.io/collector/confmap/provider/envprovider v0.99.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.99.0
+	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.99.0
+	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.99.0
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.99.0
 	go.opentelemetry.io/collector/connector v0.99.0
 	go.opentelemetry.io/collector/connector/forwardconnector v0.99.0
 	go.opentelemetry.io/collector/consumer v0.99.0
@@ -666,11 +671,6 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.99.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.99.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.99.0 // indirect
-	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.99.0 // indirect
-	go.opentelemetry.io/collector/confmap/provider/envprovider v0.99.0 // indirect
-	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.99.0 // indirect
-	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.99.0 // indirect
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.99.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.99.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.6.0 // indirect
 	go.opentelemetry.io/collector/filter v0.99.0 // indirect
