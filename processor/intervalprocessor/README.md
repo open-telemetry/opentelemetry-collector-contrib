@@ -31,7 +31,7 @@ The following metric types will *not* be aggregated, and will instead be passed,
 
 The following settings can be optionally configured:
 
-* `interval`: The interval in which the processor should export the aggregated metrics. Default: 15s
+* `interval`: The interval in which the processor should export the aggregated metrics. Default: 60s
 
 ## Example of metric flows
 
