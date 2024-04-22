@@ -1178,6 +1178,14 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 
 `location` specifies a default time zone canonical ID to be used for date parsing in case it is not part of `format`.
 
+When loading `location` collector looks for the IANA Time Zone database in the following locations in order:
+- the directory or uncompressed zip file named by the ZONEINFO environment variable,
+- on a Unix system, the system standard installation location,
+- $GOROOT/lib/time/zoneinfo.zip,
+- the `time/tzdata` package, if it was imported. 
+
+In case you're building from source importing `time/tzdata` will ensure collector works properly on each system. This will add roughly 500kB to binary size.
+
 Examples:
 
 - `Time("02/04/2023", "%m/%d/%Y")`
