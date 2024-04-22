@@ -97,3 +97,31 @@ none_set:
       enabled: false
     sqlserver.instance.name:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    sqlserver.computer.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    sqlserver.database.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    sqlserver.instance.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    sqlserver.computer.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "sqlserver.computer.name-val"
+    sqlserver.database.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "sqlserver.database.name-val"
+    sqlserver.instance.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "sqlserver.instance.name-val"
