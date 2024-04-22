@@ -12,35 +12,26 @@ import (
 )
 
 func otelMetricTypeToPromMetricType(otelMetric pmetric.Metric) prompb.MetricMetadata_MetricType {
-	// If we have the original prometheus type preserved in metric metadata,
-	// use that.
-	if originalType, ok := otelMetric.Metadata().Get(prometheustranslator.MetricMetadataTypeKey); ok {
-		switch originalType.Str() {
-		case string(model.MetricTypeCounter):
-			return prompb.MetricMetadata_COUNTER
-		case string(model.MetricTypeGauge):
-			return prompb.MetricMetadata_GAUGE
-		case string(model.MetricTypeHistogram):
-			return prompb.MetricMetadata_HISTOGRAM
-		case string(model.MetricTypeSummary):
-			return prompb.MetricMetadata_SUMMARY
-		case string(model.MetricTypeInfo):
-			return prompb.MetricMetadata_INFO
-		case string(model.MetricTypeStateset):
-			return prompb.MetricMetadata_STATESET
-		case string(model.MetricTypeUnknown):
-			return prompb.MetricMetadata_UNKNOWN
-		}
-	}
+	// metric metadata can be used to support Prometheus types that don't exist
+	// in OpenTelemetry.
+	typeFromMetadata, hasTypeFromMetadata := otelMetric.Metadata().Get(prometheustranslator.MetricMetadataTypeKey)
 	switch otelMetric.Type() {
 	case pmetric.MetricTypeGauge:
+		if hasTypeFromMetadata && typeFromMetadata.Str() == string(model.MetricTypeUnknown) {
+			return prompb.MetricMetadata_UNKNOWN
+		}
 		return prompb.MetricMetadata_GAUGE
 	case pmetric.MetricTypeSum:
-		metricType := prompb.MetricMetadata_GAUGE
 		if otelMetric.Sum().IsMonotonic() {
-			metricType = prompb.MetricMetadata_COUNTER
+			return prompb.MetricMetadata_COUNTER
 		}
-		return metricType
+		if hasTypeFromMetadata && typeFromMetadata.Str() == string(model.MetricTypeInfo) {
+			return prompb.MetricMetadata_INFO
+		}
+		if hasTypeFromMetadata && typeFromMetadata.Str() == string(model.MetricTypeStateset) {
+			return prompb.MetricMetadata_STATESET
+		}
+		return prompb.MetricMetadata_GAUGE
 	case pmetric.MetricTypeHistogram:
 		return prompb.MetricMetadata_HISTOGRAM
 	case pmetric.MetricTypeSummary:
