@@ -6,6 +6,7 @@ package telemetry // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/otel/attribute"
@@ -30,6 +31,7 @@ type Streams struct {
 	tracked metric.Int64UpDownCounter
 	limit   metric.Int64ObservableGauge
 	evicted metric.Int64Counter
+	stale   metric.Int64ObservableGauge
 }
 
 type Datapoints struct {
@@ -65,6 +67,10 @@ func metrics(meter metric.Meter) Metrics {
 				metric.WithDescription("number of streams evicted"),
 				metric.WithUnit("{stream}"),
 			),
+			stale: gauge("streams.max_stale",
+				metric.WithDescription("duration without new samples after which streams are dropped"),
+				metric.WithUnit("s"),
+			),
 		},
 		dps: Datapoints{
 			total: count("datapoints.processed",
@@ -89,6 +95,17 @@ func (m Metrics) WithLimit(meter metric.Meter, max int64) {
 		return nil
 	})
 	_, err := meter.RegisterCallback(then, m.streams.limit)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (m Metrics) WithStale(meter metric.Meter, max time.Duration) {
+	then := metric.Callback(func(_ context.Context, o metric.Observer) error {
+		o.ObserveInt64(m.streams.stale, int64(max.Seconds()))
+		return nil
+	})
+	_, err := meter.RegisterCallback(then, m.streams.stale)
 	if err != nil {
 		panic(err)
 	}
