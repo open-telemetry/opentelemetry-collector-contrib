@@ -275,7 +275,7 @@ body:
 
   - type: textarea
     attributes:
-      label: 
+      label: Details
       description: Please provide details 
       value: |
         Code owners for this component have explicitly stated they will no longer maintain the code
