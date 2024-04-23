@@ -1130,17 +1130,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:                          make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                          make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.AerospikeNamespace.Include != nil {
-		mb.resourceAttributeIncludeFilter["aerospike.namespace"] = filter.CreateFilter(mbc.ResourceAttributes.AerospikeNamespace.Include)
+	if mbc.ResourceAttributes.AerospikeNamespace.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["aerospike.namespace"] = filter.CreateFilter(mbc.ResourceAttributes.AerospikeNamespace.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.AerospikeNamespace.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["aerospike.namespace"] = filter.CreateFilter(mbc.ResourceAttributes.AerospikeNamespace.Exclude)
+	if mbc.ResourceAttributes.AerospikeNamespace.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["aerospike.namespace"] = filter.CreateFilter(mbc.ResourceAttributes.AerospikeNamespace.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.AerospikeNodeName.Include != nil {
-		mb.resourceAttributeIncludeFilter["aerospike.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.AerospikeNodeName.Include)
+	if mbc.ResourceAttributes.AerospikeNodeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["aerospike.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.AerospikeNodeName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.AerospikeNodeName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["aerospike.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.AerospikeNodeName.Exclude)
+	if mbc.ResourceAttributes.AerospikeNodeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["aerospike.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.AerospikeNodeName.MetricsExclude)
 	}
 
 	for _, op := range options {
