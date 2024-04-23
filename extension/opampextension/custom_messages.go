@@ -3,26 +3,46 @@
 
 package opampextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension"
 
-import (
-	"github.com/open-telemetry/opamp-go/protobufs"
-)
+import "github.com/open-telemetry/opamp-go/protobufs"
 
-// CustomMessageCallback is a callback that handles a custom message from an OpAMP server.
-type CustomMessageCallback func(*protobufs.CustomMessage)
+// customCapabilityRegisterOptions represent extra options that can be use in CustomCapabilityRegistry.Register
+type customCapabilityRegisterOptions struct {
+	MaxQueuedMessages int
+}
+
+// defaultCustomCapabilityRegisterOptions returns the default options for CustomCapabilityRegisterOptions
+func defaultCustomCapabilityRegisterOptions() *customCapabilityRegisterOptions {
+	return &customCapabilityRegisterOptions{
+		MaxQueuedMessages: 10,
+	}
+}
+
+// CustomCapabilityRegisterOption represent a single option for CustomCapabilityRegistry.Register
+type CustomCapabilityRegisterOption func(*customCapabilityRegisterOptions)
+
+// WithMaxQueuedMessages overrides the default amount of max queue messages. If a message is recieved while
+// MaxQueuedMessages messages are already queued to be processed, the message is dropped.
+func WithMaxQueuedMessages(maxQueuedMessages int) CustomCapabilityRegisterOption {
+	return func(c *customCapabilityRegisterOptions) {
+		c.MaxQueuedMessages = maxQueuedMessages
+	}
+}
 
 // CustomCapabilityRegistry allows for registering a custom capability that can receive custom messages.
 type CustomCapabilityRegistry interface {
-	// Register registers a new custom capability. Any messages for the capability
-	// will be received by the given callback asynchronously.
-	// It returns a handle to a CustomCapability, which can be used to send
-	// a message to the OpAMP server.
-	// It also returns a function that can be used to unregister the capability.
-	Register(capability string, callback CustomMessageCallback) (sender CustomMessageSender, unregister func(), err error)
+	// Register registers a new custom capability.
+	// It returns a CustomMessageHandler, which can be used to send and receive
+	// messages to/from the OpAMP server.
+	Register(capability string, opts ...CustomCapabilityRegisterOption) (handler CustomCapabilityHandler, err error)
 }
 
-// CustomMessageSender represents a handle to a custom capability.
-// This can be used to send a custom message to an OpAMP server.
-type CustomMessageSender interface {
+// CustomCapabilityHandler represents a handler for a custom capability.
+// This can be used to send and receive custom messages to/from an OpAMP server.
+// It can also be used to unregister the custom capability when it is no longer supported.
+type CustomCapabilityHandler interface {
+	// Message returns a channel that can be used to receive custom messages sent from the OpAMP server.
+	Message() <-chan *protobufs.CustomMessage
+
 	// SendMessage sends a custom message to the OpAMP server.
 	//
 	// Only one message can be sent at a time. If SendCustomMessage has been already called
@@ -35,4 +55,8 @@ type CustomMessageSender interface {
 	// If no error is returned, the channel returned will be closed after the specified
 	// message is sent.
 	SendMessage(messageType string, message []byte) (messageSendingChannel chan struct{}, err error)
+
+	// Unregister unregisters the custom capability. After this method returns, SendMessage will always return an error,
+	// and Message will no longer receive further custom messages.
+	Unregister()
 }

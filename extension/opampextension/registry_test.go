@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/require"
@@ -31,10 +30,9 @@ func TestRegistry_Register(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		sender, unregister, err := registry.Register(capabilityString, func(*protobufs.CustomMessage) {})
+		sender, err := registry.Register(capabilityString)
 		require.NoError(t, err)
 		require.NotNil(t, sender)
-		require.NotNil(t, unregister)
 	})
 
 	t.Run("Setting capabilities fails", func(t *testing.T) {
@@ -49,11 +47,10 @@ func TestRegistry_Register(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		sender, unregister, err := registry.Register(capabilityString, func(*protobufs.CustomMessage) {})
+		sender, err := registry.Register(capabilityString)
 		require.Nil(t, sender)
 		require.ErrorIs(t, err, capabilityErr)
-		require.Nil(t, unregister)
-		require.Len(t, registry.capabilityToCallbacks, 0, "Setting capability failed, but callback ended up in the map anyways")
+		require.Len(t, registry.capabilityToMsgChannels, 0, "Setting capability failed, but callback ended up in the map anyways")
 	})
 }
 
@@ -72,23 +69,37 @@ func TestRegistry_ProcessMessage(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		callbackCalledChan := make(chan struct{})
-		sender, unregister, err := registry.Register(capabilityString, func(c *protobufs.CustomMessage) {
-			require.Equal(t, customMessage, c)
-
-			close(callbackCalledChan)
-		})
+		sender, err := registry.Register(capabilityString)
 		require.NotNil(t, sender)
 		require.NoError(t, err)
-		require.NotNil(t, unregister)
 
 		registry.ProcessMessage(customMessage)
-		select {
-		case <-time.After(2 * time.Second):
-			t.Fatalf("Timed out waiting for callback to be called")
-		case <-callbackCalledChan: // OK
+
+		require.Equal(t, customMessage, <-sender.Message())
+	})
+
+	t.Run("Skips blocked message channels", func(t *testing.T) {
+		capabilityString := "io.opentelemetry.teapot"
+		messageType := "steep"
+		mesageBytes := []byte("blackTea")
+		customMessage := &protobufs.CustomMessage{
+			Capability: capabilityString,
+			Type:       messageType,
+			Data:       mesageBytes,
 		}
 
+		client := mockCustomCapabilityClient{}
+
+		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
+
+		sender, err := registry.Register(capabilityString, WithMaxQueuedMessages(0))
+		require.NotNil(t, sender)
+		require.NoError(t, err)
+
+		// If we did not skip sending on blocked channels, we'd expect this to never return.
+		registry.ProcessMessage(customMessage)
+
+		require.Equal(t, 0, len(sender.Message()))
 	})
 
 	t.Run("Callback is called only for its own capability", func(t *testing.T) {
@@ -117,39 +128,19 @@ func TestRegistry_ProcessMessage(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		teapotCalledChan := make(chan struct{})
-		teapotSender, unregisterTeapot, err := registry.Register(teapotCapabilityString1, func(c *protobufs.CustomMessage) {
-			require.Equal(t, customMessageSteep, c)
-
-			close(teapotCalledChan)
-		})
+		teapotSender, err := registry.Register(teapotCapabilityString1)
 		require.NotNil(t, teapotSender)
 		require.NoError(t, err)
-		require.NotNil(t, unregisterTeapot)
 
-		coffeeMakerCalledChan := make(chan struct{})
-		coffeeMakerSender, unregisterCoffeeMaker, err := registry.Register(coffeeMakerCapabilityString2, func(c *protobufs.CustomMessage) {
-			require.Equal(t, customMessageBrew, c)
-
-			close(coffeeMakerCalledChan)
-		})
+		coffeeMakerSender, err := registry.Register(coffeeMakerCapabilityString2)
 		require.NotNil(t, coffeeMakerSender)
 		require.NoError(t, err)
-		require.NotNil(t, unregisterCoffeeMaker)
 
 		registry.ProcessMessage(customMessageSteep)
 		registry.ProcessMessage(customMessageBrew)
 
-		select {
-		case <-time.After(2 * time.Second):
-			t.Fatalf("Timed out waiting for callback 1 to be called")
-		case <-coffeeMakerCalledChan: // OK
-		}
-		select {
-		case <-time.After(2 * time.Second):
-			t.Fatalf("Timed out waiting for callback 2 to be called")
-		case <-coffeeMakerCalledChan: // OK
-		}
+		require.Equal(t, customMessageSteep, <-teapotSender.Message())
+		require.Equal(t, customMessageBrew, <-coffeeMakerSender.Message())
 	})
 }
 
@@ -172,10 +163,9 @@ func TestCustomCapability_SendMesage(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		sender, unregister, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {})
+		sender, err := registry.Register(capabilityString)
 		require.NoError(t, err)
 		require.NotNil(t, sender)
-		require.NotNil(t, unregister)
 
 		channel, err := sender.SendMessage(messageType, mesageBytes)
 		require.NoError(t, err)
@@ -198,16 +188,19 @@ func TestCustomCapability_Unregister(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		unregisteredSender, unregister, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {
-			t.Fatalf("Unregistered capability should not be called")
-		})
+		unregisteredSender, err := registry.Register(capabilityString)
 		require.NotNil(t, unregisteredSender)
 		require.NoError(t, err)
-		require.NotNil(t, unregister)
 
-		unregister()
+		unregisteredSender.Unregister()
 
 		registry.ProcessMessage(customMessage)
+
+		select {
+		case <-unregisteredSender.Message():
+			t.Fatalf("Unregistered capability should not be called")
+		default: // OK
+		}
 	})
 
 	t.Run("Unregister is successful even if set capabilities fails", func(t *testing.T) {
@@ -224,23 +217,25 @@ func TestCustomCapability_Unregister(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		unregisteredSender, unregister, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {
-			t.Fatalf("Unregistered capability should not be called")
-		})
+		unregisteredSender, err := registry.Register(capabilityString)
 		require.NotNil(t, unregisteredSender)
 		require.NoError(t, err)
-		require.NotNil(t, unregister)
 
 		client.setCustomCapabilites = func(_ *protobufs.CustomCapabilities) error {
 			return fmt.Errorf("failed to set capabilities")
 		}
 
-		unregister()
+		unregisteredSender.Unregister()
 
 		registry.ProcessMessage(customMessage)
+
+		select {
+		case <-unregisteredSender.Message():
+			t.Fatalf("Unregistered capability should not be called")
+		default: // OK
+		}
 	})
 
-	// FIXME this test is broken
 	t.Run("Does not send if unregistered", func(t *testing.T) {
 		capabilityString := "io.opentelemetry.teapot"
 		messageType := "steep"
@@ -250,17 +245,20 @@ func TestCustomCapability_Unregister(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		unregisteredSender, unregister, err := registry.Register(capabilityString, func(_ *protobufs.CustomMessage) {
-			t.Fatalf("Unregistered capability should not be called")
-		})
+		unregisteredSender, err := registry.Register(capabilityString)
 		require.NotNil(t, unregisteredSender)
 		require.NoError(t, err)
-		require.NotNil(t, unregister)
 
-		unregister()
+		unregisteredSender.Unregister()
 
 		_, err = unregisteredSender.SendMessage(messageType, mesageBytes)
 		require.ErrorContains(t, err, "capability has already been unregistered")
+
+		select {
+		case <-unregisteredSender.Message():
+			t.Fatalf("Unregistered capability should not be called")
+		default: // OK
+		}
 	})
 }
 

@@ -22,23 +22,28 @@ type customCapabilityClient interface {
 }
 
 type customCapabilityRegistry struct {
-	mux                   *sync.Mutex
-	capabilityToCallbacks map[string]*list.List
-	client                customCapabilityClient
-	logger                *zap.Logger
+	mux                     *sync.Mutex
+	capabilityToMsgChannels map[string]*list.List
+	client                  customCapabilityClient
+	logger                  *zap.Logger
 }
 
 func newCustomCapabilityRegistry(logger *zap.Logger, client customCapabilityClient) *customCapabilityRegistry {
 	return &customCapabilityRegistry{
-		mux:                   &sync.Mutex{},
-		capabilityToCallbacks: make(map[string]*list.List),
-		client:                client,
-		logger:                logger,
+		mux:                     &sync.Mutex{},
+		capabilityToMsgChannels: make(map[string]*list.List),
+		client:                  client,
+		logger:                  logger,
 	}
 }
 
 // Register implements CustomCapabilityRegistry.Register
-func (cr *customCapabilityRegistry) Register(capability string, callback CustomMessageCallback) (CustomMessageSender, func(), error) {
+func (cr *customCapabilityRegistry) Register(capability string, opts ...CustomCapabilityRegisterOption) (CustomCapabilityHandler, error) {
+	optsStruct := defaultCustomCapabilityRegisterOptions()
+	for _, opt := range opts {
+		opt(optsStruct)
+	}
+
 	cr.mux.Lock()
 	defer cr.mux.Unlock()
 
@@ -51,62 +56,65 @@ func (cr *customCapabilityRegistry) Register(capability string, callback CustomM
 		Capabilities: capabilities,
 	})
 	if err != nil {
-		return nil, nil, fmt.Errorf("set custom capabilities: %w", err)
+		return nil, fmt.Errorf("set custom capabilities: %w", err)
 	}
 
-	capabilityList := cr.capabilityToCallbacks[capability]
+	capabilityList := cr.capabilityToMsgChannels[capability]
 	if capabilityList == nil {
 		capabilityList = list.New()
-		cr.capabilityToCallbacks[capability] = capabilityList
+		cr.capabilityToMsgChannels[capability] = capabilityList
 	}
 
-	callbackElem := capabilityList.PushBack(callback)
+	msgChan := make(chan *protobufs.CustomMessage, optsStruct.MaxQueuedMessages)
+	callbackElem := capabilityList.PushBack(msgChan)
 
-	sender := newCustomMessageSender(cr, cr.client, capability)
+	unregisterFunc := cr.removeCapabilityFunc(capability, callbackElem)
+	sender := newCustomMessageSender(cr, cr.client, capability, msgChan, unregisterFunc)
 
-	return sender, cr.removeCapabilityFunc(capability, callbackElem, sender), nil
+	return sender, nil
 }
 
-// ProcessMessage processes a custom message, asynchronously broadcasting it to all registered callbacks for
+// ProcessMessage processes a custom message, asynchronously broadcasting it to all registered capability handlers for
 // the messages capability.
 func (cr customCapabilityRegistry) ProcessMessage(cm *protobufs.CustomMessage) {
 	cr.mux.Lock()
 	defer cr.mux.Unlock()
 
-	callbacks, ok := cr.capabilityToCallbacks[cm.Capability]
+	msgChannels, ok := cr.capabilityToMsgChannels[cm.Capability]
 	if !ok {
 		return
 	}
 
-	for node := callbacks.Front(); node != nil; node = node.Next() {
-		cb, ok := node.Value.(CustomMessageCallback)
+	for node := msgChannels.Front(); node != nil; node = node.Next() {
+		msgChan, ok := node.Value.(chan *protobufs.CustomMessage)
 		if !ok {
 			continue
 		}
 
-		// Let the callback process asynchronously in a separate goroutine so it can't block
-		// the opamp extension
-		go cb(cm)
+		// If the channel is full, we will skip sending the message to the receiver.
+		// We do this because we don't want a misbehaving component to be able to
+		// block the opamp extension, or block other components from receiving messages.
+		select {
+		case msgChan <- cm:
+		default:
+		}
 	}
 }
 
-// removeCapabilityFunc returns a func that removes the custom capability with the given callback list element and sender,
+// removeCapabilityFunc returns a func that removes the custom capability with the given msg channel list element and sender,
 // then recalculates and sets the list of custom capabilities on the OpAMP client.
-func (cr *customCapabilityRegistry) removeCapabilityFunc(capability string, callbackElement *list.Element, sender *customMessageSender) func() {
+func (cr *customCapabilityRegistry) removeCapabilityFunc(capability string, callbackElement *list.Element) func() {
 	return func() {
-		// Mark the sender as unregistered, so that no more sends may be performed.
-		sender.markUnregistered()
-
 		cr.mux.Lock()
 		defer cr.mux.Unlock()
 
-		callbackList := cr.capabilityToCallbacks[capability]
-		callbackList.Remove(callbackElement)
+		msgChanList := cr.capabilityToMsgChannels[capability]
+		msgChanList.Remove(callbackElement)
 
-		if callbackList.Front() == nil {
+		if msgChanList.Front() == nil {
 			// Since there are no more callbacks for this capability,
 			// this capability is no longer supported
-			delete(cr.capabilityToCallbacks, capability)
+			delete(cr.capabilityToMsgChannels, capability)
 		}
 
 		capabilities := cr.capabilities()
@@ -119,13 +127,12 @@ func (cr *customCapabilityRegistry) removeCapabilityFunc(capability string, call
 			cr.logger.Error("Failed to set new capabilities", zap.Error(err))
 		}
 	}
-
 }
 
 // capabilities gives the current set of custom capabilities with at least one
 // callback registered.
 func (cr *customCapabilityRegistry) capabilities() []string {
-	return maps.Keys(cr.capabilityToCallbacks)
+	return maps.Keys(cr.capabilityToMsgChannels)
 }
 
 type customMessageSender struct {
@@ -133,9 +140,11 @@ type customMessageSender struct {
 	// on an unregistered capability.
 	unregisteredMux *sync.Mutex
 
-	capability  string
-	opampClient customCapabilityClient
-	registry    *customCapabilityRegistry
+	capability               string
+	opampClient              customCapabilityClient
+	registry                 *customCapabilityRegistry
+	sendChan                 <-chan *protobufs.CustomMessage
+	unregisterCapabilityFunc func()
 
 	unregistered bool
 }
@@ -144,17 +153,26 @@ func newCustomMessageSender(
 	registry *customCapabilityRegistry,
 	opampClient customCapabilityClient,
 	capability string,
+	sendChan <-chan *protobufs.CustomMessage,
+	unregisterCapabilityFunc func(),
 ) *customMessageSender {
 	return &customMessageSender{
 		unregisteredMux: &sync.Mutex{},
 
-		capability:  capability,
-		opampClient: opampClient,
-		registry:    registry,
+		capability:               capability,
+		opampClient:              opampClient,
+		registry:                 registry,
+		sendChan:                 sendChan,
+		unregisterCapabilityFunc: unregisterCapabilityFunc,
 	}
 }
 
-// SendMessage implements CustomMessageSender.SendMessage
+// Message implements CustomCapabilityHandler.Message
+func (c *customMessageSender) Message() <-chan *protobufs.CustomMessage {
+	return c.sendChan
+}
+
+// SendMessage implements CustomCapabilityHandler.SendMessage
 func (c *customMessageSender) SendMessage(messageType string, message []byte) (messageSendingChannel chan struct{}, err error) {
 	c.unregisteredMux.Lock()
 	defer c.unregisteredMux.Unlock()
@@ -172,9 +190,12 @@ func (c *customMessageSender) SendMessage(messageType string, message []byte) (m
 	return c.opampClient.SendCustomMessage(cm)
 }
 
-func (c *customMessageSender) markUnregistered() {
+// Unregister implements CustomCapabilityHandler.Unregister
+func (c *customMessageSender) Unregister() {
 	c.unregisteredMux.Lock()
 	defer c.unregisteredMux.Unlock()
 
 	c.unregistered = true
+
+	c.unregisterCapabilityFunc()
 }
