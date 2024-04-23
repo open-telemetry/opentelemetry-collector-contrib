@@ -42,10 +42,6 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.99.0 h1:UasccXIsMcNGsGuyft5N7C1vvzRmQCYHWVXF7YBcY/I=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.99.0/go.mod h1:v9snZu986K9CFjBYeYMwYs2hyqfTiOgLZDw5qphiObI=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.99.0 h1:EEgERxtXvEIhtHtC7kWbRmfX5LWNIBQqx0RI70r1bfw=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.99.0/go.mod h1:5KimRKjmPn++ylvv00qpVnaInTejqcrrYlZ24pCiymQ=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/prometheus/client_golang v1.19.0 h1:ygXvpU1AoN1MhdzckN+PyD9QJOSD4x7kmXYlnfbA6JU=
