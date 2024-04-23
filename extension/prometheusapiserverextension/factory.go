@@ -7,14 +7,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/prometheusapiserverextension/internal/metadata"
-)
-const (
-	// Default endpoints to bind to.
-	defaultEndpoint = ":9090"
 )
 
 func NewFactory() extension.Factory {
@@ -27,13 +22,9 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		Server: confighttp.ServerConfig{
-			Endpoint: defaultEndpoint,
-		},
-	}
+	return &Config{}
 }
 
 func createExtension(_ context.Context, settings extension.CreateSettings, config component.Config) (extension.Extension, error) {
-	return &prometheusUIExtension{config: config.(*Config), settings: settings}, nil
+	return &prometheusAPIServerExtension{config: config.(*Config), settings: settings}, nil
 }

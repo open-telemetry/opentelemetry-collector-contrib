@@ -1,4 +1,5 @@
-prometheusui:
-prometheusui/1:
-  server:
-    endpoint: http://localhost:9090
+scrape_configs:
+  - job_name: 'my_job'
+    scrape_interval: 1s
+    static_configs:
+      - targets: ['localhost:9090']

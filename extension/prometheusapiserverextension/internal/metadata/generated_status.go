@@ -10,7 +10,7 @@ import (
 
 
 var (
-	Type = component.MustNewType("prometheusui")
+	Type = component.MustNewType("prometheus_api_server")
 )
 
 const (
@@ -18,9 +18,9 @@ const (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/prometheusui")
+	return settings.MeterProvider.Meter("otelcol/prometheus_api_server")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/prometheusui")
+	return settings.TracerProvider.Tracer("otelcol/prometheus_api_server")
 }

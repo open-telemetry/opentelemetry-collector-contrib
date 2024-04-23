@@ -21,6 +21,7 @@ import (
 	"golang.org/x/net/netutil"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/route"
 	"github.com/prometheus/common/version"
 	toolkit_web "github.com/prometheus/exporter-toolkit/web"
@@ -35,17 +36,17 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-type prometheusUIExtension struct {
-	config   				   *Config
-	settings 				   extension.CreateSettings
-	cancelFunc         context.CancelFunc
-	ctx                context.Context
-	prometheusReceiver *prometheusReceiver
+type prometheusAPIServerExtension struct {
+	config   				    *Config
+	settings 				    extension.CreateSettings
+	cancelFunc          context.CancelFunc
+	ctx                 context.Context
+	prometheusReceivers map[string]*prometheusReceiver
 }
 
 type prometheusReceiver struct {
 	name 						   string
-	port						   uint16
+	endpoint					 string
 	prometheusConfig   *config.Config
 	scrapeManager      *scrape.Manager
 	registerer			   prometheus.Registerer
@@ -53,32 +54,36 @@ type prometheusReceiver struct {
 
   // Use same settings as Prometheus web server
 const (
+	defaultPort							= 9090
 	maxConnections     			= 512
 	readTimeoutMinutes 			= 10
-	prometheusUIServerPort 	= 9090
 )
 
-func (e *prometheusUIExtension) Start(_ context.Context, host component.Host) error {
+func (e *prometheusAPIServerExtension) Start(_ context.Context, host component.Host) error {
 	e.ctx, e.cancelFunc = context.WithCancel(context.Background())
 
-	fmt.Println("starting prometheusuiextension")
-
 	return nil
-
 }
 
-func (e *prometheusUIExtension) RegisterPrometheusReceiverComponents(prometheusConfig *config.Config, scrapeManager *scrape.Manager, registerer prometheus.Registerer) error {
-	e.prometheusReceiver.prometheusConfig = prometheusConfig
-	e.prometheusReceiver.scrapeManager = scrapeManager
-	e.prometheusReceiver.registerer = registerer
+func (e *prometheusAPIServerExtension) RegisterPrometheusReceiverComponents(receiverName string, endpoint string,
+		prometheusConfig *config.Config, scrapeManager *scrape.Manager, registerer prometheus.Registerer) error {
+
+	prometheusReceiver := &prometheusReceiver{
+		name: receiverName,
+		endpoint: endpoint,
+		prometheusConfig: prometheusConfig,
+		scrapeManager: scrapeManager,
+		registerer: registerer,
+	}
+	e.prometheusReceivers[receiverName] = prometheusReceiver
 
 	o := &web.Options{
-		ScrapeManager: e.prometheusReceiver.scrapeManager,
+		ScrapeManager: prometheusReceiver.scrapeManager,
 		Context:       e.ctx,
-		ListenAddress: ":9090",
+		ListenAddress: prometheusReceiver.endpoint,
 		ExternalURL: &url.URL{
 			Scheme: "http",
-			Host:   "localhost:9090",
+			Host:   fmt.Sprintf("localhost%s", prometheusReceiver.endpoint),
 			Path:   "",
 		},
 		RoutePrefix: "/",
@@ -96,13 +101,13 @@ func (e *prometheusUIExtension) RegisterPrometheusReceiverComponents(prometheusC
 		MaxConnections: maxConnections,
 		IsAgent:        true,
 		Gatherer:       prometheus.DefaultGatherer,
-		Registerer:			e.prometheusReceiver.registerer,
+		Registerer:			prometheusReceiver.registerer,
 	}
 
 	// Creates the API object in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L314-L354
 	// Anything not defined by the options above will be nil, such as o.QueryEngine, o.Storage, etc. IsAgent=true, so these being nil is expected by Prometheus.
-	factorySPr := func(_ context.Context) api_v1.ScrapePoolsRetriever { return e.prometheusReceiver.scrapeManager }
-	factoryTr := func(_ context.Context) api_v1.TargetRetriever { return e.prometheusReceiver.scrapeManager }
+	factorySPr := func(_ context.Context) api_v1.ScrapePoolsRetriever { return prometheusReceiver.scrapeManager }
+	factoryTr := func(_ context.Context) api_v1.TargetRetriever { return prometheusReceiver.scrapeManager }
 	factoryAr := func(_ context.Context) api_v1.AlertmanagerRetriever { return nil }
 	FactoryRr := func(_ context.Context) api_v1.RulesRetriever { return nil }
 	var app storage.Appendable
@@ -110,7 +115,7 @@ func (e *prometheusUIExtension) RegisterPrometheusReceiverComponents(prometheusC
 
 	apiV1 := api_v1.NewAPI(o.QueryEngine, o.Storage, app, o.ExemplarStorage, factorySPr, factoryTr, factoryAr,
 		func() config.Config {
-			return *e.prometheusReceiver.prometheusConfig
+			return *prometheusReceiver.prometheusConfig
 		},
 		o.Flags,
 		api_v1.GlobalURLOptions{
@@ -153,20 +158,19 @@ func (e *prometheusUIExtension) RegisterPrometheusReceiverComponents(prometheusC
 	)
 
 	// Create listener and monitor with conntrack in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579
-	level.Info(logger).Log("msg", "Start listening for connections", "address", o.ListenAddress)
 	listener, err := net.Listen("tcp", o.ListenAddress)
 	if err != nil {
 		return err
 	}
 	listener = netutil.LimitListener(listener, o.MaxConnections)
 	listener = conntrack.NewListener(listener,
-	conntrack.TrackWithName("http"),
-	conntrack.TrackWithTracing())
+		conntrack.TrackWithName("http"),
+		conntrack.TrackWithTracing())
 
 	// Run the API server in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L582-L630
 	mux := http.NewServeMux()
-	router := route.New().WithInstrumentation(setPathWithPrefix(""))
-	mux.Handle("/", router)
+	promHandler := promhttp.HandlerFor(o.Gatherer, promhttp.HandlerOpts{Registry: o.Registerer})
+	mux.Handle("/metrics", promHandler)
 
 	// This is the path the web package uses, but the router above with no prefix can also be Registered by apiV1 instead.
 	apiPath := "/api"
@@ -198,16 +202,16 @@ func (e *prometheusUIExtension) RegisterPrometheusReceiverComponents(prometheusC
  return nil
 }
 
-func (e *prometheusUIExtension) UpdatePrometheusConfig(prometheusConfig *config.Config) {
-	e.prometheusReceiver.prometheusConfig = prometheusConfig
+func (e *prometheusAPIServerExtension) UpdatePrometheusConfig(receiverName string, prometheusConfig *config.Config) {
+	e.prometheusReceivers[receiverName].prometheusConfig = prometheusConfig
 }
 
-func (e *prometheusUIExtension) Shutdown(_ context.Context) error {
+func (e *prometheusAPIServerExtension) Shutdown(_ context.Context) error {
 	if e.cancelFunc != nil {
 		e.cancelFunc()
 	}
 
-	fmt.Println("shutting down prometheusuiextension")
+	fmt.Println("shutting down prometheusAPIServerExtension")
 	return nil
 }
 

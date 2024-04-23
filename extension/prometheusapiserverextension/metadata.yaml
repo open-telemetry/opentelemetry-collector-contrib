@@ -1,18 +1,7 @@
-type: prometheusui
+type: prometheus_api_server
 
 status:
   class: extension
   stability:
     development: [extension]
   distributions: []
-
-status:
-  class: extension
-  stability:
-    beta: [extension]
-  distributions: []
-
-tests:
-  config:
-    server:
-      endpoint: localhost:9090
