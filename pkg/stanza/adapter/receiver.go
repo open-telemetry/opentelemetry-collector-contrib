@@ -16,6 +16,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
@@ -25,7 +26,7 @@ type receiver struct {
 	cancel context.CancelFunc
 
 	pipe      pipeline.Pipeline
-	emitter   *LogEmitter
+	emitter   *helper.LogEmitter
 	consumer  consumer.Logs
 	converter *Converter
 	logger    *zap.Logger
@@ -90,7 +91,7 @@ func (r *receiver) emitterLoop(ctx context.Context) {
 			r.logger.Debug("Receive loop stopped")
 			return
 
-		case e, ok := <-r.emitter.logChan:
+		case e, ok := <-r.emitter.OutChannel():
 			if !ok {
 				continue
 			}
