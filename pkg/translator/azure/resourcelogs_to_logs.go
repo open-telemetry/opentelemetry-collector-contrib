@@ -213,6 +213,12 @@ func copyProperties(category string, properties *any, attrs map[string]any) {
 	pmap := (*properties).(map[string]any)
 	attrsProps := map[string]any{}
 	for k, v := range pmap {
+		// Check for a complex conversion, e.g. AppServiceHTTPLogs.Protocol
+		if complexConversion, ok := tryGetComplexConversion(category, k); ok {
+			if complexConversion(k, v, attrs) {
+				continue
+			}
+		}
 		if otelKey, ok := resourceLogKeyToSemConvKey(k, category); ok {
 			attrs[otelKey] = v
 		} else {
@@ -220,7 +226,7 @@ func copyProperties(category string, properties *any, attrs map[string]any) {
 		}
 	}
 	if len(attrsProps) > 0 {
-		attrs["azure.properties"] = attrsProps
+		attrs[azureProperties] = attrsProps
 	}
 }
 
