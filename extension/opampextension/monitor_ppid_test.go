@@ -38,7 +38,7 @@ func TestMonitorPPID(t *testing.T) {
 		monitorCtx, monitorCtxCancel := context.WithCancel(context.Background())
 
 		go func() {
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 			monitorCtxCancel()
 		}()
 
@@ -63,7 +63,7 @@ func TestMonitorPPID(t *testing.T) {
 
 		cmdDoneChan := make(chan struct{})
 		go func() {
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 			cmdCancel()
 			_ = cmd.Wait()
 			close(cmdDoneChan)
