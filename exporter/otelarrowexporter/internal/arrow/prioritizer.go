@@ -35,10 +35,8 @@ const (
 // streams.
 type streamPrioritizer interface {
 	// nextWriter gets the next stream writer.  In case the exporter
-	// was downgraded, returns nil.  This intentionally does not inspect
-	// Context.Done(), since we want to finish the stream as much as
-	// possible.
-	nextWriter() streamWriter
+	// was downgraded, returns nil.
+	nextWriter(context.Context) streamWriter
 
 	// downgrade is called with the root context of the exporter,
 	// and may block indefinitely.  this allows the prioritizer to

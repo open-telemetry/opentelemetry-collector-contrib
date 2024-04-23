@@ -26,8 +26,8 @@ type bestOfNPrioritizer struct {
 	// state tracks the work being handled by all streams.
 	state []*streamWorkState
 
-	// numChoices is the number of streams to consder in each decision.
-	numChoices int
+	// N is the number of streams to consder in each decision.
+	N int
 
 	// loadFunc is the load function.
 	loadFunc loadFunc
@@ -42,11 +42,11 @@ type streamSorter struct {
 
 var _ streamPrioritizer = &bestOfNPrioritizer{}
 
-func newBestOfNPrioritizer(dc doneCancel, numChoices, numStreams int, lf loadFunc) (*bestOfNPrioritizer, []*streamWorkState) {
+func newBestOfNPrioritizer(dc doneCancel, N, numStreams int, lf loadFunc) (*bestOfNPrioritizer, []*streamWorkState) {
 	var state []*streamWorkState
 
-	// Limit numChoices to the number of streams.
-	numChoices = min(numStreams, numChoices)
+	// Limit N to the number of streams.
+	N = min(numStreams, N)
 
 	for i := 0; i < numStreams; i++ {
 		ws := &streamWorkState{
@@ -61,7 +61,7 @@ func newBestOfNPrioritizer(dc doneCancel, numChoices, numStreams int, lf loadFun
 		doneCancel: dc,
 		input:      make(chan writeItem, runtime.NumCPU()),
 		state:      state,
-		numChoices: numChoices,
+		N:          N,
 		loadFunc:   lf,
 	}
 
@@ -118,7 +118,7 @@ func (lp *bestOfNPrioritizer) sendAndWait(ctx context.Context, errCh <-chan erro
 	}
 }
 
-func (lp *bestOfNPrioritizer) nextWriter() streamWriter {
+func (lp *bestOfNPrioritizer) nextWriter(ctx context.Context) streamWriter {
 	select {
 	case <-lp.done:
 		// In case of downgrade, return nil to return into a
@@ -137,15 +137,15 @@ func (lp *bestOfNPrioritizer) streamFor(_ writeItem, rnd *rand.Rand, tmp []strea
 	}
 	// Select N at random by shifting the selection into the start
 	// of the temporary slice.
-	for i := 0; i < lp.numChoices; i++ {
-		pick := rnd.Intn(lp.numChoices - i)
+	for i := 0; i < lp.N; i++ {
+		pick := rand.Intn(lp.N - i)
 		tmp[i], tmp[i+pick] = tmp[i+pick], tmp[i]
 	}
-	for i := 0; i < lp.numChoices; i++ {
+	for i := 0; i < lp.N; i++ {
 		// TODO: skip channels w/ a pending item (maybe)
 		tmp[i].load = lp.loadFunc(tmp[i].work)
 	}
-	sort.Slice(tmp[0:lp.numChoices], func(i, j int) bool {
+	sort.Slice(tmp[0:lp.N], func(i, j int) bool {
 		return tmp[i].load < tmp[j].load
 	})
 	return tmp[0].work
