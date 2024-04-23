@@ -12,11 +12,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-var orphanPollInterval = 5 * time.Second
-
 // monitorPPID polls for the existence of ppid.
 // If the specified ppid no longer exists, a fatal error event is reported via the passed in reportStatus function.
-func monitorPPID(ctx context.Context, ppid int32, reportStatus func(*component.StatusEvent)) {
+func monitorPPID(ctx context.Context, interval time.Duration, ppid int32, reportStatus func(*component.StatusEvent)) {
 	for {
 		exists, err := process.PidExistsWithContext(ctx, ppid)
 		if err != nil {
@@ -34,7 +32,7 @@ func monitorPPID(ctx context.Context, ppid int32, reportStatus func(*component.S
 		}
 
 		select {
-		case <-time.After(orphanPollInterval): // OK; Poll again to make sure PID exists
+		case <-time.After(interval): // OK; Poll again to make sure PID exists
 		case <-ctx.Done():
 			return
 		}

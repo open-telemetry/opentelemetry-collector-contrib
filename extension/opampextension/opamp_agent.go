@@ -69,7 +69,7 @@ func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
 	o.lifetimeCtx, o.lifetimeCtxCancel = context.WithCancel(context.Background())
 
 	if o.cfg.PPID != 0 {
-		go monitorPPID(o.lifetimeCtx, o.cfg.PPID, o.reportFunc)
+		go monitorPPID(o.lifetimeCtx, o.cfg.PPIDPollInterval, o.cfg.PPID, o.reportFunc)
 	}
 
 	settings := types.StartSettings{

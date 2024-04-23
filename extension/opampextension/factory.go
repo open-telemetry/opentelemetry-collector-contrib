@@ -5,6 +5,7 @@ package opampextension // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -27,6 +28,7 @@ func createDefaultConfig() component.Config {
 		Capabilities: Capabilities{
 			ReportsEffectiveConfig: true,
 		},
+		PPIDPollInterval: 5 * time.Second,
 	}
 }
 

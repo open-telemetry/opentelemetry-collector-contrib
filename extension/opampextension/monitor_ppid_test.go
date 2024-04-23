@@ -17,6 +17,8 @@ import (
 
 func TestMonitorPPID(t *testing.T) {
 	t.Run("Does not trigger if process with ppid never stops", func(t *testing.T) {
+		t.Parallel()
+
 		cmdContext, cmdCancel := context.WithCancel(context.Background())
 		cmd := longRunningComand(cmdContext)
 		cmd.Stdout = os.Stdout
@@ -35,17 +37,17 @@ func TestMonitorPPID(t *testing.T) {
 
 		monitorCtx, monitorCtxCancel := context.WithCancel(context.Background())
 
-		setOrphanPollInterval(t, 10*time.Millisecond)
-
 		go func() {
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			monitorCtxCancel()
 		}()
 
-		monitorPPID(monitorCtx, int32(cmdPid), statusReportFunc)
+		monitorPPID(monitorCtx, 1*time.Millisecond, int32(cmdPid), statusReportFunc)
 	})
 
 	t.Run("Emits fatal status if ppid changes", func(t *testing.T) {
+		t.Parallel()
+
 		cmdContext, cmdCancel := context.WithCancel(context.Background())
 		cmd := longRunningComand(cmdContext)
 		require.NoError(t, cmd.Start())
@@ -59,17 +61,15 @@ func TestMonitorPPID(t *testing.T) {
 			status = evt
 		}
 
-		setOrphanPollInterval(t, 10*time.Millisecond)
-
 		cmdDoneChan := make(chan struct{})
 		go func() {
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			cmdCancel()
 			_ = cmd.Wait()
 			close(cmdDoneChan)
 		}()
 
-		monitorPPID(context.Background(), int32(cmdPid), statusReportFunc)
+		monitorPPID(context.Background(), 1*time.Millisecond, int32(cmdPid), statusReportFunc)
 		require.NotNil(t, status)
 		require.Equal(t, component.StatusFatalError, status.Status())
 
@@ -93,12 +93,4 @@ func longRunningComand(ctx context.Context) *exec.Cmd {
 	default:
 		return exec.CommandContext(ctx, "sleep", "1000")
 	}
-}
-
-func setOrphanPollInterval(t *testing.T, newInterval time.Duration) {
-	old := orphanPollInterval
-	orphanPollInterval = newInterval
-	t.Cleanup(func() {
-		orphanPollInterval = old
-	})
 }

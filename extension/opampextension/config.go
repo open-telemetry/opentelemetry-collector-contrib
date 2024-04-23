@@ -6,6 +6,7 @@ package opampextension // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 	"net/url"
+	"time"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/open-telemetry/opamp-go/client"
@@ -35,6 +36,9 @@ type Config struct {
 	// when the parent process is no longer running.
 	// If unspecified, the orphan detection logic does not run.
 	PPID int32 `mapstructure:"ppid"`
+
+	// PPIDPollInterval is the time between polling for whether PPID is running.
+	PPIDPollInterval time.Duration `mapstructure:"ppid_poll_interval"`
 }
 
 type AgentDescription struct {
