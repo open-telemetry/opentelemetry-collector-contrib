@@ -21,53 +21,46 @@ import (
 	"go.opentelemetry.io/collector/service/extensions"
 )
 
-var apiPaths = []string{
-	"/scrape_pools",
-	"/targets",
-	"/status/config",
-	"/targets/metadata",
-}
-
- type apiResponse struct {
-  Status    string          `json:"status"`
-  Data      json.RawMessage `json:"data"`
-  ErrorType v1.ErrorType    `json:"errorType"`
-  Error     string          `json:"error"`
-  Warnings  []string        `json:"warnings,omitempty"`
+type apiResponse struct {
+	Status    string          `json:"status"`
+	Data      json.RawMessage `json:"data"`
+	ErrorType v1.ErrorType    `json:"errorType"`
+	Error     string          `json:"error"`
+	Warnings  []string        `json:"warnings,omitempty"`
 }
 
 type scrapePoolsData struct {
-  ScrapePools []string `json:"scrapePools"`
+	ScrapePools []string `json:"scrapePools"`
 }
 
 type prometheusConfigData struct {
-  PrometheusConfigYAML string `json:"yaml"`
+	PrometheusConfigYAML string `json:"yaml"`
 }
 
 func TestPrometheusAPIServerExtension(t *testing.T) {
 	ctx, _ := context.WithCancel(context.Background())
 
-	mockReceiver, err := createMockReceiver()
+	mockReceiver, discoveryManagerCancelFunc, err := createMockReceiver()
 	assert.NoError(t, err)
 	mockReceiverList := make(map[string]*prometheusReceiver)
 	mockReceiverList["mockReceiver"] = mockReceiver
 
 	ext := &prometheusAPIServerExtension{
-		config:               &Config{},
-		settings:             extension.CreateSettings{},
-		prometheusReceivers:  mockReceiverList,
+		config:              &Config{},
+		settings:            extension.CreateSettings{},
+		prometheusReceivers: mockReceiverList,
 	}
 	extensions, err := extensions.New(ctx, extensions.Settings{}, extensions.Config{})
-  assert.NoError(t, err)
+	assert.NoError(t, err)
 
 	mockHost := &mockServiceHost{
 		serviceExtensions: extensions,
-	}	
+	}
 
 	err = ext.Start(ctx, mockHost)
 	assert.NoError(t, err)
 
-	err = ext.RegisterPrometheusReceiverComponents(mockReceiver.name, mockReceiver.endpoint, mockReceiver.prometheusConfig, mockReceiver.scrapeManager, mockReceiver.registerer)
+	err = ext.RegisterPrometheusReceiverComponents(mockReceiver.name, mockReceiver.port, mockReceiver.prometheusConfig, mockReceiver.scrapeManager, mockReceiver.registerer)
 	assert.NoError(t, err)
 
 	time.Sleep(5 * time.Second)
@@ -80,6 +73,12 @@ func TestPrometheusAPIServerExtension(t *testing.T) {
 
 	err = ext.Shutdown(ctx)
 	assert.NoError(t, err)
+
+	_, err = callAPI("/scrape_pools")
+	assert.Error(t, err)
+
+	mockReceiver.scrapeManager.Stop()
+	discoveryManagerCancelFunc()
 }
 
 func testScrapePools(t *testing.T) {
@@ -164,7 +163,7 @@ func callAPI(path string) (*apiResponse, error) {
 	return &apiResponse, nil
 }
 
-func createMockReceiver() (*prometheusReceiver, error) {
+func createMockReceiver() (*prometheusReceiver, context.CancelFunc, error) {
 
 	// Create and run the discoveryManager
 	registerer := prometheus.WrapRegistererWith(
@@ -173,15 +172,12 @@ func createMockReceiver() (*prometheusReceiver, error) {
 	)
 	sdMetrics, err := discovery.CreateAndRegisterSDMetrics(registerer)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	discoveryManager := discovery.NewManager(ctx, nil, registerer, sdMetrics)
 	go func() {
-		err = discoveryManager.Run()
-		if err != nil {
-			cancel()
-		}
+		discoveryManager.Run()
 	}()
 
 	// Create and run the scrapeManager
@@ -191,7 +187,7 @@ func createMockReceiver() (*prometheusReceiver, error) {
 		HTTPClientOptions:     []commonconfig.HTTPClientOption{},
 	}, nil, nil, registerer)
 	if err != nil {
-		return nil, err
+		return nil, cancel, err
 	}
 
 	go func() {
@@ -202,34 +198,34 @@ func createMockReceiver() (*prometheusReceiver, error) {
 	filePath := "testdata/config.yaml"
 	content, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return nil, err
+		return nil, cancel, err
 	}
 	cfg, err := config.Load(string(content), true, nil)
 	if err != nil {
-		return nil, err
+		return nil, cancel, err
 	}
 
 	// Apply the config to the scrapeManager and discoveryManager
 	if err := scrapeManager.ApplyConfig((*config.Config)(cfg)); err != nil {
-		return nil, err
+		return nil, cancel, err
 	}
 	discoveryCfg := make(map[string]discovery.Configs)
 	for _, scrapeConfig := range cfg.ScrapeConfigs {
 		discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
 	}
 	if err := discoveryManager.ApplyConfig(discoveryCfg); err != nil {
-		return nil, err
+		return nil, cancel, err
 	}
 
 	mockReceiver := &prometheusReceiver{
-		name:              "mockReceiver",
-		endpoint:          ":9090",
-		prometheusConfig:  cfg,
-		scrapeManager:     scrapeManager,
-		registerer:        registerer,
+		name:             "mockReceiver",
+		port:             9090,
+		prometheusConfig: cfg,
+		scrapeManager:    scrapeManager,
+		registerer:       registerer,
 	}
 
-	return mockReceiver, nil
+	return mockReceiver, cancel, nil
 }
 
 type mockServiceHost struct {

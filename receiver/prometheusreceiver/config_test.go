@@ -345,7 +345,7 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	r0 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
 	assert.Equal(t, true, r0.PrometheusAPIServerExtension.Enabled)
-	assert.Equal(t, "extension1", r0.PrometheusAPIServerExtension.ExtensionName)
+	assert.Equal(t, uint64(9090), r0.PrometheusAPIServerExtension.Port)
 
 	assert.Equal(t, 1, len(r0.PrometheusConfig.ScrapeConfigs))
 	assert.Equal(t, "demo", r0.PrometheusConfig.ScrapeConfigs[0].JobName)
@@ -360,7 +360,6 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	r1 := cfg.(*Config)
 	assert.NotNil(t, r1.PrometheusConfig)
 	assert.Equal(t, false, r1.PrometheusAPIServerExtension.Enabled)
-	assert.Equal(t, "", r1.PrometheusAPIServerExtension.ExtensionName)
 
 	assert.Equal(t, 1, len(r1.PrometheusConfig.ScrapeConfigs))
 	assert.Equal(t, "demo", r1.PrometheusConfig.ScrapeConfigs[0].JobName)

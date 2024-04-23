@@ -1,7 +1,7 @@
 prometheus/withExtension:
   prometheus_api_server_extension:
     enabled: true
-    extension_name: extension1
+    port: 9090
   config:
     scrape_configs:
       - job_name: 'demo'

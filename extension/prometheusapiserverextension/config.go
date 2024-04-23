@@ -3,4 +3,4 @@
 
 package prometheusapiserverextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/prometheusapiserverextension"
 
-type Config struct {}
+type Config struct{}

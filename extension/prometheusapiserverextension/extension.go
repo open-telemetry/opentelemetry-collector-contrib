@@ -37,53 +37,53 @@ import (
 )
 
 type prometheusAPIServerExtension struct {
-	config   				    *Config
-	settings 				    extension.CreateSettings
-	cancelFunc          context.CancelFunc
+	config              *Config
+	settings            extension.CreateSettings
 	ctx                 context.Context
+	httpServer          *http.Server
 	prometheusReceivers map[string]*prometheusReceiver
 }
 
 type prometheusReceiver struct {
-	name 						   string
-	endpoint					 string
-	prometheusConfig   *config.Config
-	scrapeManager      *scrape.Manager
-	registerer			   prometheus.Registerer
+	name             string
+	port             uint64
+	prometheusConfig *config.Config
+	scrapeManager    *scrape.Manager
+	registerer       prometheus.Registerer
 }
 
-  // Use same settings as Prometheus web server
+// Use same settings as Prometheus web server
 const (
-	defaultPort							= 9090
-	maxConnections     			= 512
-	readTimeoutMinutes 			= 10
+	defaultPort        = 9090
+	maxConnections     = 512
+	readTimeoutMinutes = 10
 )
 
 func (e *prometheusAPIServerExtension) Start(_ context.Context, host component.Host) error {
-	e.ctx, e.cancelFunc = context.WithCancel(context.Background())
+	e.ctx = context.Background()
 
 	return nil
 }
 
-func (e *prometheusAPIServerExtension) RegisterPrometheusReceiverComponents(receiverName string, endpoint string,
-		prometheusConfig *config.Config, scrapeManager *scrape.Manager, registerer prometheus.Registerer) error {
+func (e *prometheusAPIServerExtension) RegisterPrometheusReceiverComponents(receiverName string, port uint64,
+	prometheusConfig *config.Config, scrapeManager *scrape.Manager, registerer prometheus.Registerer) error {
 
 	prometheusReceiver := &prometheusReceiver{
-		name: receiverName,
-		endpoint: endpoint,
+		name:             receiverName,
+		port:         port,
 		prometheusConfig: prometheusConfig,
-		scrapeManager: scrapeManager,
-		registerer: registerer,
+		scrapeManager:    scrapeManager,
+		registerer:       registerer,
 	}
 	e.prometheusReceivers[receiverName] = prometheusReceiver
 
 	o := &web.Options{
 		ScrapeManager: prometheusReceiver.scrapeManager,
 		Context:       e.ctx,
-		ListenAddress: prometheusReceiver.endpoint,
+		ListenAddress: fmt.Sprintf(":%d", prometheusReceiver.port),
 		ExternalURL: &url.URL{
 			Scheme: "http",
-			Host:   fmt.Sprintf("localhost%s", prometheusReceiver.endpoint),
+			Host:   fmt.Sprintf("localhost:%d", prometheusReceiver.port),
 			Path:   "",
 		},
 		RoutePrefix: "/",
@@ -101,7 +101,7 @@ func (e *prometheusAPIServerExtension) RegisterPrometheusReceiverComponents(rece
 		MaxConnections: maxConnections,
 		IsAgent:        true,
 		Gatherer:       prometheus.DefaultGatherer,
-		Registerer:			prometheusReceiver.registerer,
+		Registerer:     prometheusReceiver.registerer,
 	}
 
 	// Creates the API object in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L314-L354
@@ -119,9 +119,9 @@ func (e *prometheusAPIServerExtension) RegisterPrometheusReceiverComponents(rece
 		},
 		o.Flags,
 		api_v1.GlobalURLOptions{
-		ListenAddress: o.ListenAddress,
-		Host:          o.ExternalURL.Host,
-		Scheme:        o.ExternalURL.Scheme,
+			ListenAddress: o.ListenAddress,
+			Host:          o.ExternalURL.Host,
+			Scheme:        o.ExternalURL.Scheme,
 		},
 		func(f http.HandlerFunc) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
@@ -179,7 +179,7 @@ func (e *prometheusAPIServerExtension) RegisterPrometheusReceiverComponents(rece
 		level.Info(logger).Log("msg", "Router prefix", "prefix", o.RoutePrefix)
 	}
 	av1 := route.New().
-	WithInstrumentation(setPathWithPrefix(apiPath + "/v1"))
+		WithInstrumentation(setPathWithPrefix(apiPath + "/v1"))
 	apiV1.Register(av1)
 	mux.Handle(apiPath+"/v1/", http.StripPrefix(apiPath+"/v1", av1))
 
@@ -187,29 +187,26 @@ func (e *prometheusAPIServerExtension) RegisterPrometheusReceiverComponents(rece
 	spanNameFormatter := otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 		return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
 	})
-	httpSrv := &http.Server{
+	e.httpServer = &http.Server{
 		Handler:     otelhttp.NewHandler(mux, "", spanNameFormatter),
 		ErrorLog:    errlog,
 		ReadTimeout: o.ReadTimeout,
 	}
 	webconfig := ""
 
-	// An error channel will be needed for graceful shutdown in the Shutdown() method for the receiver
 	go func() {
-		toolkit_web.Serve(listener, httpSrv, &toolkit_web.FlagConfig{WebConfigFile: &webconfig}, logger)
+		toolkit_web.Serve(listener, e.httpServer, &toolkit_web.FlagConfig{WebConfigFile: &webconfig}, logger)
 	}()
 
- return nil
+	return nil
 }
 
 func (e *prometheusAPIServerExtension) UpdatePrometheusConfig(receiverName string, prometheusConfig *config.Config) {
 	e.prometheusReceivers[receiverName].prometheusConfig = prometheusConfig
 }
 
-func (e *prometheusAPIServerExtension) Shutdown(_ context.Context) error {
-	if e.cancelFunc != nil {
-		e.cancelFunc()
-	}
+func (e *prometheusAPIServerExtension) Shutdown(ctx context.Context) error {
+	e.httpServer.Shutdown(ctx)
 
 	fmt.Println("shutting down prometheusAPIServerExtension")
 	return nil

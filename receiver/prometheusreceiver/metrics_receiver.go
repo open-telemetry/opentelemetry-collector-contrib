@@ -96,8 +96,8 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 		for id, ext := range extensions {
 			if id.Type() == component.MustNewType("prometheus_api_server") {
 				r.apiExtension = ext
-				extRegisterer := ext.(interface{ RegisterPrometheusReceiverComponents(string, string, *config.Config, *scrape.Manager, prometheus.Registerer) })
-				extRegisterer.RegisterPrometheusReceiverComponents(r.settings.ID.Name(), prometheusAPIServerExtensionConf.Endpoint, (*config.Config)(baseCfg), r.scrapeManager, r.registerer)
+				extRegisterer := ext.(interface{ RegisterPrometheusReceiverComponents(string, uint64, *config.Config, *scrape.Manager, prometheus.Registerer) })
+				extRegisterer.RegisterPrometheusReceiverComponents(r.settings.ID.Name(), prometheusAPIServerExtensionConf.Port, (*config.Config)(baseCfg), r.scrapeManager, r.registerer)
 			}
 		}
 	}

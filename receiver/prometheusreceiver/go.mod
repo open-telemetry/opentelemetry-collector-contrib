@@ -8,7 +8,6 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.97.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/prometheusapiserverextension/prometheusapiservertest v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.97.0
 	github.com/prometheus/client_golang v1.19.0
@@ -254,4 +253,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/prometheusapiserverextension => ../../extension/prometheusapiserverextension
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/prometheusapiserverextension/prometheusapiservertest => ../../extension/prometheusapiserverextension/prometheusapiservertest
