@@ -41,6 +41,22 @@ func Test_composeEffectiveConfig(t *testing.T) {
 		},
 	}
 
+	fileLogConfig := `
+receivers:
+  filelog:
+    include: ['/test/logs/input.log']
+    start_at: "beginning"
+
+exporters:
+  file:
+    path: '/test/logs/output.log'
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      exporters: [file]`
+
 	require.NoError(t, s.createTemplates())
 	s.loadAgentEffectiveConfig()
 
@@ -48,7 +64,7 @@ func Test_composeEffectiveConfig(t *testing.T) {
 		Config: &protobufs.AgentConfigMap{
 			ConfigMap: map[string]*protobufs.AgentConfigFile{
 				"": {
-					Body: []byte(""),
+					Body: []byte(fileLogConfig),
 				},
 			},
 		},
@@ -59,6 +75,6 @@ func Test_composeEffectiveConfig(t *testing.T) {
 	require.NoError(t, err)
 	expectedConfig = bytes.ReplaceAll(expectedConfig, []byte("\r\n"), []byte("\n"))
 
-	require.False(t, configChanged)
+	require.True(t, configChanged)
 	require.Equal(t, string(expectedConfig), s.effectiveConfig.Load().(string))
 }
