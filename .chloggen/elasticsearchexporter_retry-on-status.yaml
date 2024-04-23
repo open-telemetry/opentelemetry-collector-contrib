@@ -18,7 +18,7 @@ issues: [32584]
 subtext: |
   Previously, the status codes that trigger retries were hardcoded to be 429, 500, 502, 503, 504.
   It is now configurable using `retry.retry_on_status`, and defaults to `[429, 500, 502, 503, 504]` to avoid a breaking change.
-  To avoid duplicates, it is recommended to configure `retry.retry_on_status` to `[429]` which will also be the default in the future.
+  To avoid duplicates, it is recommended to configure `retry.retry_on_status` to `[429]`, which would be the default in a future version.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
