@@ -112,6 +112,7 @@ type Supervisor struct {
 
 	agentHasStarted               bool
 	agentStartHealthCheckAttempts int
+	agentRestarting               atomic.Bool
 
 	connectedToOpAMPServer chan struct{}
 }
@@ -224,11 +225,6 @@ func (s *Supervisor) loadConfig(configFile string) error {
 }
 
 func (s *Supervisor) getBootstrapInfo() (err error) {
-	port, err := s.findRandomPort()
-	if err != nil {
-		return err
-	}
-
 	supervisorPort, err := s.findRandomPort()
 	if err != nil {
 		return err
@@ -237,9 +233,8 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	var cfg bytes.Buffer
 
 	err = s.bootstrapTemplate.Execute(&cfg, map[string]any{
-		"OTLPHTTPEndpointPort": port,
-		"InstanceUid":          s.instanceID.String(),
-		"SupervisorPort":       supervisorPort,
+		"InstanceUid":    s.instanceID.String(),
+		"SupervisorPort": supervisorPort,
 	})
 	if err != nil {
 		return err
@@ -292,6 +287,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
+	defer func() {
+		if stopErr := srv.Stop(context.Background()); stopErr != nil {
+			err = errors.Join(err, fmt.Errorf("error when stopping the opamp server: %w", stopErr))
+		}
+	}()
+
 	cmd, err := commander.NewCommander(
 		s.logger,
 		s.config.Agent,
@@ -305,6 +306,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
+	defer func() {
+		if stopErr := cmd.Stop(context.Background()); stopErr != nil {
+			err = errors.Join(err, fmt.Errorf("error when stopping the collector: %w", stopErr))
+		}
+	}()
+
 	select {
 	// TODO make timeout configurable
 	case <-time.After(3 * time.Second):
@@ -314,20 +321,8 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 			return errors.New("collector's OpAMP client never connected to the Supervisor")
 		}
 	case err = <-done:
-		if err != nil {
-			return err
-		}
-	}
-
-	if err = cmd.Stop(context.Background()); err != nil {
 		return err
 	}
-
-	if err = srv.Stop(context.Background()); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
@@ -356,6 +351,10 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
 		}
 
+		if c.AcceptsRestartCommand != nil && *c.AcceptsRestartCommand {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
+		}
+
 		if c.AcceptsOpAMPConnectionSettings != nil && *c.AcceptsOpAMPConnectionSettings {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
 		}
@@ -366,7 +365,7 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 func (s *Supervisor) startOpAMP() error {
 	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
 
-	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfig()
+	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfig(context.Background())
 	if err != nil {
 		return err
 	}
@@ -397,8 +396,7 @@ func (s *Supervisor) startOpAMP() error {
 			OnCommandFunc: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 				cmdType := command.GetType()
 				if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
-					// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21077
-					s.logger.Debug("Received restart command")
+					return s.handleRestartCommand()
 				}
 				return nil
 			},
@@ -761,6 +759,17 @@ func (s *Supervisor) recalcEffectiveConfig() (configChanged bool, err error) {
 	return configChanged, nil
 }
 
+func (s *Supervisor) handleRestartCommand() error {
+	s.agentRestarting.Store(true)
+	defer s.agentRestarting.Store(false)
+	s.logger.Debug("Received restart command")
+	err := s.commander.Restart(context.Background())
+	if err != nil {
+		s.logger.Error("Could not restart agent process", zap.Error(err))
+	}
+	return err
+}
+
 func (s *Supervisor) startAgent() {
 	err := s.commander.Start(context.Background())
 	if err != nil {
@@ -853,7 +862,12 @@ func (s *Supervisor) runAgentProcess() {
 			s.stopAgentApplyConfig()
 			s.startAgent()
 
-		case <-s.commander.Done():
+		case <-s.commander.Exited():
+			// the agent process exit is expected for restart command and will not attempt to restart
+			if s.agentRestarting.Load() {
+				continue
+			}
+
 			if s.shuttingDown {
 				return
 			}
@@ -873,7 +887,12 @@ func (s *Supervisor) runAgentProcess() {
 			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
 
 			// Wait 5 seconds before starting again.
-			restartTimer.Stop()
+			if !restartTimer.Stop() {
+				select {
+				case <-restartTimer.C: // Try to drain the channel
+				default:
+				}
+			}
 			restartTimer.Reset(5 * time.Second)
 
 		case <-restartTimer.C:

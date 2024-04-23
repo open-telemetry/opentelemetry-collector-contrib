@@ -79,6 +79,8 @@ func routeBody(t *testing.T, requestType string, body map[string]any) ([]byte, e
 		return routeRetreiveProperties(t, body)
 	case "QueryPerf":
 		return routePerformanceQuery(t, body)
+	case "CreateContainerView":
+		return loadResponse("create-container-view.xml")
 	}
 
 	return []byte{}, errNotFound
@@ -163,7 +165,7 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 	case contentType == "HostSystem":
 		if ps, ok := propSet["pathSet"].([]any); ok {
 			for _, v := range ps {
-				if v == "summary.hardware" {
+				if v == "summary.hardware" || v == "summary.hardware.cpuMhz" {
 					return loadResponse("host-properties.xml")
 				}
 			}
@@ -179,23 +181,8 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 
 		}
 
-	case content == "group-v4" && contentType == "Folder":
-		if propSetArray {
-			return loadResponse("vm-group.xml")
-		}
-		if propSet == nil {
-			return loadResponse("vm-folder.xml")
-		}
-		return loadResponse("vm-folder-parent.xml")
-
-	case content == "vm-1040" && contentType == "VirtualMachine":
-		if propSet["pathSet"] == "summary.runtime.host" {
-			return loadResponse("vm-host.xml")
-		}
-		return loadResponse("vm-properties.xml")
-
-	case (content == "group-v1034" || content == "group-v1001") && contentType == "Folder":
-		return loadResponse("vm-empty-folder.xml")
+	case contentType == "ContainerView" && propSet["type"] == "VirtualMachine":
+		return loadResponse("vm-default-properties.xml")
 
 	case contentType == "ResourcePool":
 		if ps, ok := propSet["pathSet"].([]any); ok {
@@ -235,7 +222,11 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 func routePerformanceQuery(t *testing.T, body map[string]any) ([]byte, error) {
 	queryPerf := body["QueryPerf"].(map[string]any)
 	require.NotNil(t, queryPerf)
-	querySpec := queryPerf["querySpec"].(map[string]any)
+	querySpec, ok := queryPerf["querySpec"].(map[string]any)
+	if !ok {
+		querySpecs := queryPerf["querySpec"].([]any)
+		querySpec = querySpecs[0].(map[string]any)
+	}
 	entity := querySpec["entity"].(map[string]any)
 	switch entity["-type"] {
 	case "HostSystem":

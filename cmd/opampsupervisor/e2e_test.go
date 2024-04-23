@@ -480,6 +480,87 @@ func waitForSupervisorConnection(connection chan bool, connected bool) {
 	}
 }
 
+func TestSupervisorRestartCommand(t *testing.T) {
+	var healthReport atomic.Value
+	var agentConfig atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.Health != nil {
+					healthReport.Store(message.Health)
+				}
+
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						agentConfig.Store(string(config.Body))
+					}
+				}
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	// Send the initial config
+	cfg, hash, _, _ := createSimplePipelineCollectorConf(t)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: cfg.Bytes()},
+				},
+			},
+			ConfigHash: hash,
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		cfg, ok := agentConfig.Load().(string)
+		if ok {
+			return strings.Contains(cfg, "health_check")
+		}
+		return false
+	}, 5*time.Second, 500*time.Millisecond, "Collector was not started with healthcheck")
+
+	require.Eventually(t, func() bool {
+		health := healthReport.Load().(*protobufs.ComponentHealth)
+
+		if health != nil {
+			return health.Healthy && health.LastError == ""
+		}
+
+		return false
+	}, 5*time.Second, 500*time.Millisecond, "Collector never became healthy")
+
+	// The health report should be received after the restart
+	healthReport.Store(&protobufs.ComponentHealth{})
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		Command: &protobufs.ServerToAgentCommand{
+			Type: protobufs.CommandType_CommandType_Restart,
+		},
+	})
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		Flags: uint64(protobufs.ServerToAgentFlags_ServerToAgentFlags_ReportFullState),
+	})
+
+	require.Eventually(t, func() bool {
+		health := healthReport.Load().(*protobufs.ComponentHealth)
+		if health != nil {
+			return health.Healthy && health.LastError == ""
+		}
+		return false
+	}, 10*time.Second, 250*time.Millisecond, "Collector never reported healthy after restart")
+}
+
 func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 	var connectedToNewServer atomic.Bool
 	initialServer := newOpAMPServer(
@@ -519,6 +600,7 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 			},
 		},
 	})
+	waitForSupervisorConnection(newServer.supervisorConnected, true)
 
 	require.Eventually(t, func() bool {
 		return connectedToNewServer.Load() == true

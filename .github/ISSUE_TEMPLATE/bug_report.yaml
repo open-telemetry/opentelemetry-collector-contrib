@@ -50,7 +50,6 @@ body:
       - exporter/coralogix
       - exporter/datadog
       - exporter/dataset
-      - exporter/dynatrace
       - exporter/elasticsearch
       - exporter/file
       - exporter/googlecloud

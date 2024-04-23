@@ -57,7 +57,7 @@ func (ipp *inProcessCollector) Start(_ StartParams) error {
 	}
 	ipp.configFile = confFile.Name()
 
-	fmp := fileprovider.NewWithSettings(confmap.ProviderSettings{})
+	fmp := fileprovider.NewFactory().Create(confmap.ProviderSettings{})
 	configProvider, err := otelcol.NewConfigProvider(
 		otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{

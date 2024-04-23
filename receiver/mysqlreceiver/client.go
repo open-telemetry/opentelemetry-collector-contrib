@@ -4,6 +4,7 @@
 package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -164,7 +165,7 @@ type ReplicaStatusStats struct {
 var _ client = (*mySQLClient)(nil)
 
 func newMySQLClient(conf *Config) (client, error) {
-	tls, err := conf.TLS.LoadTLSConfig()
+	tls, err := conf.TLS.LoadTLSConfig(context.Background())
 	if err != nil {
 		return nil, err
 	}
