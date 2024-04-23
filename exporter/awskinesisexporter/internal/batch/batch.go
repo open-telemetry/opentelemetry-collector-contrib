@@ -5,11 +5,12 @@ package batch // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/compress"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis/types" //nolint:staticcheck // Some encoding types uses legacy prototype version
 	"go.opentelemetry.io/collector/consumer/consumererror"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/compress"
 )
 
 const (
@@ -81,7 +82,7 @@ func (b *Batch) AddRecord(raw []byte, key string) error {
 		return err
 	}
 
-	record, err := compressor.Do(raw)
+	record, err := compressor(raw)
 	if err != nil {
 		return err
 	}

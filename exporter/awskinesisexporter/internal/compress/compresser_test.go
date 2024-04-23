@@ -6,6 +6,7 @@ package compress_test
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 	"testing"
 	"time"
 
@@ -35,7 +36,7 @@ func TestCompressorFormats(t *testing.T) {
 			require.NoError(t, err, "Must have a valid compression format")
 			require.NotNil(t, c, "Must have a valid compressor")
 
-			out, err := c.Do([]byte(data))
+			out, err := c([]byte(data))
 			assert.NoError(t, err, "Must not error when processing data")
 			assert.NotNil(t, out, "Must have a valid record")
 		})
@@ -94,8 +95,64 @@ func benchmarkCompressor(b *testing.B, format string, length int) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		out, err := compressor.Do(data)
+		out, err := compressor(data)
 		assert.NoError(b, err, "Must not error when processing data")
 		assert.NotNil(b, out, "Must have a valid byte array after")
+	}
+}
+
+// an issue encountered in the past was a crash due race condition in the compressor, so the
+// current implementation creates a new context on each compression request
+// this is a test to check no exceptions are raised for executing concurrent compressions
+func TestCompressorConcurrent(t *testing.T) {
+
+	// with this amount of workers it will take about a few seconds (about 3-8 secs on differ)
+	// but it's safer to test with this many to increase the chances of encountering a race condition
+	// the issue was discovered under heavy load of thousands of requests a second
+	numWorkers := 50000
+
+	var wg sync.WaitGroup
+	wg.Add(numWorkers)
+
+	errCh := make(chan error, numWorkers)
+
+	// any single format would do it here, since each exporter can be set to use only one at a time
+	// and the concurrent issue that was present in the past was independent of the format
+	compressFunc, err := compress.NewCompressor("gzip")
+
+	if err != nil {
+		errCh <- err
+		return
+	}
+
+	// it is important for the data length to be on the higher side of a record
+	// since it is where the chances of having race conditions are bigger
+	dataLength := 131072
+
+	for j := 0; j < numWorkers; j++ {
+		go func() {
+			defer wg.Done()
+
+			source := rand.NewSource(time.Now().UnixMilli())
+			genRand := rand.New(source)
+
+			data := make([]byte, dataLength)
+			for i := 0; i < dataLength; i++ {
+				data[i] = byte(genRand.Int31())
+			}
+
+			_, err = compressFunc(data)
+			if err != nil {
+				errCh <- err
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	close(errCh)
+
+	for err := range errCh {
+		t.Errorf("Error encountered on concurrent compression: %v", err)
 	}
 }
