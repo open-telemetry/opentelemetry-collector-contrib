@@ -6,8 +6,11 @@ package reader
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
@@ -182,4 +185,26 @@ func TestFingerprintChangeSize(t *testing.T) {
 			require.Equal(t, fingerprint.New(fileContent[:fpSizeDown]), reader.Fingerprint)
 		})
 	}
+}
+
+func TestFlushPeriodEOF(t *testing.T) {
+	tempDir := t.TempDir()
+	temp := filetest.OpenTemp(t, tempDir)
+	// Create a long enough initial token, so the scanner can't read the whole file at once
+	aContentLength := 2 * 16 * 1024
+	content := []byte(strings.Repeat("a", aContentLength))
+	content = append(content, '\n', 'b')
+	_, err := temp.WriteString(string(content))
+	require.NoError(t, err)
+
+	// Make sure FlushPeriod is small, so it is guaranteed to expire
+	f, sink := testFactory(t, withFlushPeriod(5*time.Nanosecond))
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err := f.NewReader(temp, fp)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), r.Offset)
+
+	r.ReadToEnd(context.Background())
+	sink.ExpectTokens(t, content[0:aContentLength], []byte{'b'})
 }

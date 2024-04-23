@@ -15,12 +15,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
 )
 
 type senderTest struct {
@@ -69,14 +67,10 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 	err = exp.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	logger, err := zap.NewDevelopment()
-	require.NoError(t, err)
-
 	return &senderTest{
 		srv: testServer,
 		exp: exp,
 		s: newSender(
-			logger,
 			cfg,
 			&http.Client{
 				Timeout: cfg.ClientConfig.Timeout,
@@ -93,7 +87,6 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 			testServer.URL,
 			testServer.URL,
 			gf,
-			component.ID{},
 		),
 	}
 }
@@ -251,7 +244,7 @@ func TestSendLogsSplitFailedOne(t *testing.T) {
 	test.s.logBuffer = exampleTwoLogs()
 
 	dropped, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
-	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
+	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 	assert.Equal(t, test.s.logBuffer[0:1], dropped)
 }
 
@@ -279,7 +272,7 @@ func TestSendLogsSplitFailedAll(t *testing.T) {
 	assert.EqualError(
 		t,
 		err,
-		"failed sending data: status: 500 Internal Server Error\nfailed sending data: status: 404 Not Found",
+		"error during sending data: 500 Internal Server Error\nerror during sending data: 404 Not Found",
 	)
 	assert.Equal(t, test.s.logBuffer[0:2], dropped)
 }
@@ -363,7 +356,7 @@ func TestSendLogsJsonSplitFailedOne(t *testing.T) {
 	test.s.logBuffer = exampleTwoLogs()
 
 	dropped, err := test.s.sendLogs(context.Background(), newFields(pcommon.NewMap()))
-	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
+	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 	assert.Equal(t, test.s.logBuffer[0:1], dropped)
 }
 
@@ -391,7 +384,7 @@ func TestSendLogsJsonSplitFailedAll(t *testing.T) {
 	assert.EqualError(
 		t,
 		err,
-		"failed sending data: status: 500 Internal Server Error\nfailed sending data: status: 404 Not Found",
+		"error during sending data: 500 Internal Server Error\nerror during sending data: 404 Not Found",
 	)
 	assert.Equal(t, test.s.logBuffer[0:2], dropped)
 }
@@ -526,7 +519,7 @@ func TestInvalidMetricFormat(t *testing.T) {
 
 	test.s.config.MetricFormat = "invalid"
 
-	err := test.s.send(context.Background(), MetricsPipeline, newCountingReader(0).withString(""), newFields(pcommon.NewMap()))
+	err := test.s.send(context.Background(), MetricsPipeline, strings.NewReader(""), newFields(pcommon.NewMap()))
 	assert.EqualError(t, err, `unsupported metrics format: invalid`)
 }
 
@@ -534,7 +527,7 @@ func TestInvalidPipeline(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
 	defer func() { test.srv.Close() }()
 
-	err := test.s.send(context.Background(), "invalidPipeline", newCountingReader(0).withString(""), newFields(pcommon.NewMap()))
+	err := test.s.send(context.Background(), "invalidPipeline", strings.NewReader(""), newFields(pcommon.NewMap()))
 	assert.EqualError(t, err, `unknown pipeline type: invalidPipeline`)
 }
 
@@ -557,7 +550,7 @@ func TestSendCompressGzip(t *testing.T) {
 	require.NoError(t, err)
 
 	test.s.compressor = c
-	reader := newCountingReader(0).withString("Some example log")
+	reader := strings.NewReader("Some example log")
 
 	err = test.s.send(context.Background(), LogsPipeline, reader, newFields(pcommon.NewMap()))
 	require.NoError(t, err)
@@ -582,7 +575,7 @@ func TestSendCompressDeflate(t *testing.T) {
 	require.NoError(t, err)
 
 	test.s.compressor = c
-	reader := newCountingReader(0).withString("Some example log")
+	reader := strings.NewReader("Some example log")
 
 	err = test.s.send(context.Background(), LogsPipeline, reader, newFields(pcommon.NewMap()))
 	require.NoError(t, err)
@@ -593,7 +586,7 @@ func TestCompressionError(t *testing.T) {
 	defer func() { test.srv.Close() }()
 
 	test.s.compressor = getTestCompressor(errors.New("read error"), nil)
-	reader := newCountingReader(0).withString("Some example log")
+	reader := strings.NewReader("Some example log")
 
 	err := test.s.send(context.Background(), LogsPipeline, reader, newFields(pcommon.NewMap()))
 	assert.EqualError(t, err, "read error")
@@ -604,7 +597,7 @@ func TestInvalidContentEncoding(t *testing.T) {
 	defer func() { test.srv.Close() }()
 
 	test.s.config.CompressEncoding = "test"
-	reader := newCountingReader(0).withString("Some example log")
+	reader := strings.NewReader("Some example log")
 
 	err := test.s.send(context.Background(), LogsPipeline, reader, newFields(pcommon.NewMap()))
 	assert.EqualError(t, err, "invalid content encoding: test")
@@ -688,7 +681,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 	}
 
 	dropped, err := test.s.sendMetrics(context.Background(), newFields(pcommon.NewMap()))
-	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
+	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
 	assert.Equal(t, test.s.metricBuffer[0:1], dropped)
 }
 
@@ -722,7 +715,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 	assert.EqualError(
 		t,
 		err,
-		"failed sending data: status: 500 Internal Server Error\nfailed sending data: status: 404 Not Found",
+		"error during sending data: 500 Internal Server Error\nerror during sending data: 404 Not Found",
 	)
 	assert.Equal(t, test.s.metricBuffer[0:2], dropped)
 }

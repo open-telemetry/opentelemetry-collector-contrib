@@ -12,17 +12,18 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/observability"
 )
+
+type appendResponse struct {
+	// sent gives information if the data was sent or not
+	sent bool
+	// appended keeps state of appending new log line to the body
+	appended bool
+}
 
 // metricPair represents information required to send one metric to the Sumo Logic
 type metricPair struct {
@@ -30,75 +31,7 @@ type metricPair struct {
 	metric     pmetric.Metric
 }
 
-// countingReader keeps number of records related to reader
-type countingReader struct {
-	counter int64
-	reader  io.Reader
-}
-
-// newCountingReader creates countingReader with given number of records
-func newCountingReader(records int) *countingReader {
-	return &countingReader{
-		counter: int64(records),
-	}
-}
-
-// withString sets up reader to read from string data
-func (c *countingReader) withString(data string) *countingReader {
-	c.reader = strings.NewReader(data)
-	return c
-}
-
-// bodyBuilder keeps information about number of records related to data it keeps
-type bodyBuilder struct {
-	builder strings.Builder
-	counter int
-}
-
-// newBodyBuilder returns empty bodyBuilder
-func newBodyBuilder() bodyBuilder {
-	return bodyBuilder{}
-}
-
-// Reset resets both counter and builder content
-func (b *bodyBuilder) Reset() {
-	b.counter = 0
-	b.builder.Reset()
-}
-
-// addLine adds multiple lines to builder and increments counter
-func (b *bodyBuilder) addLines(lines []string) {
-	if len(lines) == 0 {
-		return
-	}
-
-	// add the first line separately to avoid a conditional in the loop
-	b.builder.WriteString(lines[0])
-
-	for _, line := range lines[1:] {
-		b.builder.WriteByte('\n')
-		b.builder.WriteString(line) // WriteString can't actually return an error
-	}
-	b.counter += len(lines)
-}
-
-// addNewLine adds newline to builder
-func (b *bodyBuilder) addNewLine() {
-	b.builder.WriteByte('\n') // WriteByte can't actually return an error
-}
-
-// Len returns builder content length
-func (b *bodyBuilder) Len() int {
-	return b.builder.Len()
-}
-
-// toCountingReader converts bodyBuilder to countingReader
-func (b *bodyBuilder) toCountingReader() *countingReader {
-	return newCountingReader(b.counter).withString(b.builder.String())
-}
-
 type sender struct {
-	logger              *zap.Logger
 	logBuffer           []plog.LogRecord
 	metricBuffer        []metricPair
 	config              *Config
@@ -111,7 +44,6 @@ type sender struct {
 	dataURLLogs         string
 	dataURLTraces       string
 	graphiteFormatter   graphiteFormatter
-	id                  component.ID
 }
 
 const (
@@ -127,10 +59,6 @@ const (
 	headerCategory        string = "X-Sumo-Category"
 	headerFields          string = "X-Sumo-Fields"
 
-	attributeKeySourceHost     = "_sourceHost"
-	attributeKeySourceName     = "_sourceName"
-	attributeKeySourceCategory = "_sourceCategory"
-
 	contentTypeLogs       string = "application/x-www-form-urlencoded"
 	contentTypePrometheus string = "application/vnd.sumologic.prometheus"
 	contentTypeCarbon2    string = "application/vnd.sumologic.carbon2"
@@ -140,8 +68,13 @@ const (
 	contentEncodingDeflate string = "deflate"
 )
 
+func newAppendResponse() appendResponse {
+	return appendResponse{
+		appended: true,
+	}
+}
+
 func newSender(
-	logger *zap.Logger,
 	cfg *Config,
 	cl *http.Client,
 	f filter,
@@ -152,10 +85,8 @@ func newSender(
 	logsURL string,
 	tracesURL string,
 	gf graphiteFormatter,
-	id component.ID,
 ) *sender {
 	return &sender{
-		logger:              logger,
 		config:              cfg,
 		client:              cl,
 		filter:              f,
@@ -166,143 +97,11 @@ func newSender(
 		dataURLLogs:         logsURL,
 		dataURLTraces:       tracesURL,
 		graphiteFormatter:   gf,
-		id:                  id,
 	}
 }
-
-var errUnauthorized = errors.New("unauthorized")
 
 // send sends data to sumologic
-func (s *sender) send(ctx context.Context, pipeline PipelineType, reader *countingReader, flds fields) error {
-	req, err := s.createRequest(ctx, pipeline, reader.reader)
-	if err != nil {
-		return err
-	}
-
-	if err = s.addRequestHeaders(req, pipeline, flds); err != nil {
-		return err
-	}
-
-	s.logger.Debug("Sending data",
-		zap.String("pipeline", string(pipeline)),
-		zap.Any("headers", req.Header),
-	)
-
-	start := time.Now()
-	resp, err := s.client.Do(req)
-	if err != nil {
-		s.recordMetrics(time.Since(start), reader.counter, req, nil, pipeline)
-		return err
-	}
-	defer resp.Body.Close()
-
-	s.recordMetrics(time.Since(start), reader.counter, req, resp, pipeline)
-
-	return s.handleReceiverResponse(resp)
-}
-
-func (s *sender) handleReceiverResponse(resp *http.Response) error {
-	// API responds with a 200 or 204 with ConentLength set to 0 when all data
-	// has been successfully ingested.
-	if resp.ContentLength == 0 && (resp.StatusCode == 200 || resp.StatusCode == 204) {
-		return nil
-	}
-
-	type ReceiverResponseCore struct {
-		Status  int    `json:"status,omitempty"`
-		ID      string `json:"id,omitempty"`
-		Code    string `json:"code,omitempty"`
-		Message string `json:"message,omitempty"`
-	}
-
-	// API responds with a 200 or 204 with a JSON body describing what issues
-	// were encountered when processing the sent data.
-	switch resp.StatusCode {
-	case 200, 204:
-		if resp.ContentLength < 0 {
-			s.logger.Warn("Unknown length of server response")
-			return nil
-		}
-
-		var rResponse ReceiverResponseCore
-		var (
-			b  = bytes.NewBuffer(make([]byte, 0, resp.ContentLength))
-			tr = io.TeeReader(resp.Body, b)
-		)
-
-		if err := json.NewDecoder(tr).Decode(&rResponse); err != nil {
-			s.logger.Warn("Error decoding receiver response", zap.ByteString("body", b.Bytes()))
-			return nil
-		}
-
-		l := s.logger.With(zap.String("status", resp.Status))
-		if len(rResponse.ID) > 0 {
-			l = l.With(zap.String("id", rResponse.ID))
-		}
-		if len(rResponse.Code) > 0 {
-			l = l.With(zap.String("code", rResponse.Code))
-		}
-		if len(rResponse.Message) > 0 {
-			l = l.With(zap.String("message", rResponse.Message))
-		}
-		l.Warn("There was an issue sending data")
-		return nil
-
-	case 401:
-		return errUnauthorized
-
-	default:
-		type ReceiverErrorResponse struct {
-			ReceiverResponseCore
-			Errors []struct {
-				Code    string `json:"code"`
-				Message string `json:"message"`
-			} `json:"errors,omitempty"`
-		}
-
-		var rResponse ReceiverErrorResponse
-		if resp.ContentLength > 0 {
-			var (
-				b  = bytes.NewBuffer(make([]byte, 0, resp.ContentLength))
-				tr = io.TeeReader(resp.Body, b)
-			)
-
-			if err := json.NewDecoder(tr).Decode(&rResponse); err != nil {
-				return fmt.Errorf("failed to decode API response (status: %s): %s",
-					resp.Status, b.String(),
-				)
-			}
-		}
-
-		errMsgs := []string{
-			fmt.Sprintf("status: %s", resp.Status),
-		}
-
-		if len(rResponse.ID) > 0 {
-			errMsgs = append(errMsgs, fmt.Sprintf("id: %s", rResponse.ID))
-		}
-		if len(rResponse.Code) > 0 {
-			errMsgs = append(errMsgs, fmt.Sprintf("code: %s", rResponse.Code))
-		}
-		if len(rResponse.Message) > 0 {
-			errMsgs = append(errMsgs, fmt.Sprintf("message: %s", rResponse.Message))
-		}
-		if len(rResponse.Errors) > 0 {
-			errMsgs = append(errMsgs, fmt.Sprintf("errors: %+v", rResponse.Errors))
-		}
-
-		err := fmt.Errorf("failed sending data: %s", strings.Join(errMsgs, ", "))
-
-		if resp.StatusCode == http.StatusBadRequest {
-			// Report the failure as permanent if the server thinks the request is malformed.
-			return consumererror.NewPermanent(err)
-		}
-
-		return err
-	}
-}
-
-func (s *sender) createRequest(ctx context.Context, pipeline PipelineType, data io.Reader) (*http.Request, error) {
+func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader, flds fields) error {
 	var url string
 
 	switch pipeline {
@@ -311,15 +110,70 @@ func (s *sender) createRequest(ctx context.Context, pipeline PipelineType, data 
 	case LogsPipeline:
 		url = s.dataURLLogs
 	default:
-		return nil, fmt.Errorf("unknown pipeline type: %s", pipeline)
+		return fmt.Errorf("unknown pipeline type: %s", pipeline)
 	}
 
-	data, err := s.compressor.compress(data)
+	data, err := s.compressor.compress(body)
 	if err != nil {
-		return nil, err
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, data)
+	if err != nil {
+		return err
 	}
 
-	return http.NewRequestWithContext(ctx, http.MethodPost, url, data)
+	// Add headers
+	switch s.config.CompressEncoding {
+	case GZIPCompression:
+		req.Header.Set(headerContentEncoding, contentEncodingGzip)
+	case DeflateCompression:
+		req.Header.Set(headerContentEncoding, contentEncodingDeflate)
+	case NoCompression:
+	default:
+		return fmt.Errorf("invalid content encoding: %s", s.config.CompressEncoding)
+	}
+
+	req.Header.Add(headerClient, s.config.Client)
+
+	if s.sources.host.isSet() {
+		req.Header.Add(headerHost, s.sources.host.format(flds))
+	}
+
+	if s.sources.name.isSet() {
+		req.Header.Add(headerName, s.sources.name.format(flds))
+	}
+
+	if s.sources.category.isSet() {
+		req.Header.Add(headerCategory, s.sources.category.format(flds))
+	}
+
+	switch pipeline {
+	case LogsPipeline:
+		req.Header.Add(headerContentType, contentTypeLogs)
+		req.Header.Add(headerFields, flds.string())
+	case MetricsPipeline:
+		switch s.config.MetricFormat {
+		case PrometheusFormat:
+			req.Header.Add(headerContentType, contentTypePrometheus)
+		case Carbon2Format:
+			req.Header.Add(headerContentType, contentTypeCarbon2)
+		case GraphiteFormat:
+			req.Header.Add(headerContentType, contentTypeGraphite)
+		default:
+			return fmt.Errorf("unsupported metrics format: %s", s.config.MetricFormat)
+		}
+	default:
+		return errors.New("unexpected pipeline")
+	}
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+		return fmt.Errorf("error during sending data: %s", resp.Status)
+	}
+	return nil
 }
 
 // logToText converts LogRecord to a plain text line, returns it and error eventually
@@ -345,7 +199,7 @@ func (s *sender) logToJSON(record plog.LogRecord) (string, error) {
 // returns array of records which has not been sent correctly and error
 func (s *sender) sendLogs(ctx context.Context, flds fields) ([]plog.LogRecord, error) {
 	var (
-		body           = newBodyBuilder()
+		body           strings.Builder
 		errs           []error
 		droppedRecords []plog.LogRecord
 		currentRecords []plog.LogRecord
@@ -370,22 +224,31 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]plog.LogRecord, e
 			continue
 		}
 
-		sent, err := s.appendAndMaybeSend(ctx, []string{formattedLine}, LogsPipeline, &body, flds)
+		ar, err := s.appendAndSend(ctx, formattedLine, LogsPipeline, &body, flds)
 		if err != nil {
 			errs = append(errs, err)
-			droppedRecords = append(droppedRecords, currentRecords...)
+			if ar.sent {
+				droppedRecords = append(droppedRecords, currentRecords...)
+			}
+
+			if !ar.appended {
+				droppedRecords = append(droppedRecords, record)
+			}
 		}
 
 		// If data was sent, cleanup the currentTimeSeries counter
-		if sent {
+		if ar.sent {
 			currentRecords = currentRecords[:0]
 		}
 
-		currentRecords = append(currentRecords, record)
+		// If log has been appended to body, increment the currentTimeSeries
+		if ar.appended {
+			currentRecords = append(currentRecords, record)
+		}
 	}
 
 	if body.Len() > 0 {
-		if err := s.send(ctx, LogsPipeline, body.toCountingReader(), flds); err != nil {
+		if err := s.send(ctx, LogsPipeline, strings.NewReader(body.String()), flds); err != nil {
 			errs = append(errs, err)
 			droppedRecords = append(droppedRecords, currentRecords...)
 		}
@@ -397,7 +260,7 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]plog.LogRecord, e
 // sendMetrics sends metrics in right format basing on the s.config.MetricFormat
 func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, error) {
 	var (
-		body           = newBodyBuilder()
+		body           strings.Builder
 		errs           []error
 		droppedRecords []metricPair
 		currentRecords []metricPair
@@ -424,24 +287,31 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 			continue
 		}
 
-		sent, err := s.appendAndMaybeSend(ctx, []string{formattedLine}, MetricsPipeline, &body, flds)
+		ar, err := s.appendAndSend(ctx, formattedLine, MetricsPipeline, &body, flds)
 		if err != nil {
 			errs = append(errs, err)
-			if sent {
+			if ar.sent {
 				droppedRecords = append(droppedRecords, currentRecords...)
+			}
+
+			if !ar.appended {
+				droppedRecords = append(droppedRecords, record)
 			}
 		}
 
 		// If data was sent, cleanup the currentTimeSeries counter
-		if sent {
+		if ar.sent {
 			currentRecords = currentRecords[:0]
 		}
 
-		currentRecords = append(currentRecords, record)
+		// If log has been appended to body, increment the currentTimeSeries
+		if ar.appended {
+			currentRecords = append(currentRecords, record)
+		}
 	}
 
 	if body.Len() > 0 {
-		if err := s.send(ctx, MetricsPipeline, body.toCountingReader(), flds); err != nil {
+		if err := s.send(ctx, MetricsPipeline, strings.NewReader(body.String()), flds); err != nil {
 			errs = append(errs, err)
 			droppedRecords = append(droppedRecords, currentRecords...)
 		}
@@ -450,36 +320,42 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 	return droppedRecords, errors.Join(errs...)
 }
 
-// appendAndMaybeSend appends line to the request body that will be sent and sends
-// the accumulated data if the internal logBuffer has been filled (with config.MaxRequestBodySize bytes).
-// It returns a boolean indicating if the data was sent and an error
-func (s *sender) appendAndMaybeSend(
+// appendAndSend appends line to the request body that will be sent and sends
+// the accumulated data if the internal logBuffer has been filled (with maxBufferSize elements).
+// It returns appendResponse
+func (s *sender) appendAndSend(
 	ctx context.Context,
-	lines []string,
+	line string,
 	pipeline PipelineType,
-	body *bodyBuilder,
+	body *strings.Builder,
 	flds fields,
-) (sent bool, err error) {
+) (appendResponse, error) {
+	var errs []error
+	ar := newAppendResponse()
 
-	linesTotalLength := 0
-	for _, line := range lines {
-		linesTotalLength += len(line) + 1 // count the newline as well
-	}
-
-	if body.Len() > 0 && body.Len()+linesTotalLength >= s.config.MaxRequestBodySize {
-		sent = true
-		err = s.send(ctx, pipeline, body.toCountingReader(), flds)
+	if body.Len() > 0 && body.Len()+len(line) >= s.config.MaxRequestBodySize {
+		ar.sent = true
+		errs = append(errs, s.send(ctx, pipeline, strings.NewReader(body.String()), flds))
 		body.Reset()
 	}
 
 	if body.Len() > 0 {
 		// Do not add newline if the body is empty
-		body.addNewLine()
+		if _, err := body.WriteString("\n"); err != nil {
+			errs = append(errs, err)
+			ar.appended = false
+		}
 	}
 
-	body.addLines(lines)
+	if ar.appended {
+		// Do not append new line if separator was not appended
+		if _, err := body.WriteString(line); err != nil {
+			errs = append(errs, err)
+			ar.appended = false
+		}
+	}
 
-	return sent, err
+	return ar, errors.Join(errs...)
 }
 
 // cleanLogsBuffer zeroes logBuffer
@@ -528,94 +404,4 @@ func (s *sender) batchMetric(ctx context.Context, metric metricPair, metadata fi
 // countMetrics returns number of metrics in metricBuffer
 func (s *sender) countMetrics() int {
 	return len(s.metricBuffer)
-}
-
-func (s *sender) addSourcesHeaders(req *http.Request, flds fields) {
-	if s.sources.host.isSet() {
-		req.Header.Add(headerHost, s.sources.host.format(flds))
-	}
-
-	if s.sources.name.isSet() {
-		req.Header.Add(headerName, s.sources.name.format(flds))
-	}
-
-	if s.sources.category.isSet() {
-		req.Header.Add(headerCategory, s.sources.category.format(flds))
-	}
-}
-
-func addLogsHeaders(req *http.Request, _ LogFormatType, flds fields) {
-	req.Header.Add(headerContentType, contentTypeLogs)
-
-	if fieldsStr := flds.string(); fieldsStr != "" {
-		req.Header.Add(headerFields, fieldsStr)
-	}
-}
-
-func addMetricsHeaders(req *http.Request, mf MetricFormatType) error {
-	switch mf {
-	case PrometheusFormat:
-		req.Header.Add(headerContentType, contentTypePrometheus)
-	case Carbon2Format:
-		req.Header.Add(headerContentType, contentTypeCarbon2)
-	case GraphiteFormat:
-		req.Header.Add(headerContentType, contentTypeGraphite)
-	default:
-		return fmt.Errorf("unsupported metrics format: %s", mf)
-	}
-	return nil
-}
-
-func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, flds fields) error {
-	req.Header.Add(headerClient, s.config.Client)
-	s.addSourcesHeaders(req, flds)
-
-	// Add headers
-	switch s.config.CompressEncoding {
-	case GZIPCompression:
-		req.Header.Set(headerContentEncoding, contentEncodingGzip)
-	case DeflateCompression:
-		req.Header.Set(headerContentEncoding, contentEncodingDeflate)
-	case NoCompression:
-	default:
-		return fmt.Errorf("invalid content encoding: %s", s.config.CompressEncoding)
-	}
-
-	switch pipeline {
-	case LogsPipeline:
-		addLogsHeaders(req, s.config.LogFormat, flds)
-	case MetricsPipeline:
-		if err := addMetricsHeaders(req, s.config.MetricFormat); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("unexpected pipeline: %v", pipeline)
-	}
-	return nil
-}
-
-func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Request, resp *http.Response, pipeline PipelineType) {
-	statusCode := 0
-
-	if resp != nil {
-		statusCode = resp.StatusCode
-	}
-
-	id := s.id.String()
-
-	if err := observability.RecordRequestsDuration(duration, statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for request duration", zap.Error(err))
-	}
-
-	if err := observability.RecordRequestsBytes(req.ContentLength, statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for sent bytes", zap.Error(err))
-	}
-
-	if err := observability.RecordRequestsRecords(count, statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for sent records", zap.Error(err))
-	}
-
-	if err := observability.RecordRequestsSent(statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for sent request", zap.Error(err))
-	}
 }

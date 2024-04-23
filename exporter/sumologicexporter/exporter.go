@@ -55,8 +55,6 @@ type sumologicexporter struct {
 
 	foundSumologicExtension bool
 	sumologicExtension      *sumologicextension.SumologicExtension
-
-	id component.ID
 }
 
 func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologicexporter, error) {
@@ -297,7 +295,6 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 	}
 	logsURL, metricsURL, tracesURL := se.getDataURLs()
 	sdr := newSender(
-		se.logger,
 		se.config,
 		se.getHTTPClient(),
 		se.filter,
@@ -308,7 +305,6 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 		logsURL,
 		tracesURL,
 		se.graphiteFormatter,
-		se.id,
 	)
 
 	// Iterate over ResourceLogs
@@ -396,7 +392,6 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 	}
 	logsURL, metricsURL, tracesURL := se.getDataURLs()
 	sdr := newSender(
-		se.logger,
 		se.config,
 		se.getHTTPClient(),
 		se.filter,
@@ -407,7 +402,6 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 		logsURL,
 		tracesURL,
 		se.graphiteFormatter,
-		se.id,
 	)
 
 	// Iterate over ResourceMetrics
