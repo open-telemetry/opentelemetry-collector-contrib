@@ -330,7 +330,6 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 						exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) { *cfg = *testConfig })
 						mustSendTraces(t, exporter, `{"message": "test1"}`)
 
-						time.Sleep(200 * time.Millisecond)
 						assert.Equal(t, int64(1), attempts.Load())
 					})
 				}
@@ -346,9 +345,9 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		})
 
 		exporter := newTestTracesExporter(t, server.URL)
-		mustSendTraces(t, exporter, `{"message": "test1"}`)
+		err := sendTraces(t, exporter, `{"message": "test1"}`)
+		assert.ErrorContains(t, err, "flush failed: [400 Bad Request] oops")
 
-		time.Sleep(200 * time.Millisecond)
 		assert.Equal(t, int64(1), attempts.Load())
 	})
 
@@ -382,7 +381,6 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		exporter := newTestTracesExporter(t, server.URL)
 		mustSendTraces(t, exporter, `{"message": "test1"}`)
 
-		time.Sleep(200 * time.Millisecond)
 		assert.Equal(t, int64(1), attempts.Load())
 	})
 
@@ -420,9 +418,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 			cfg.Retry.InitialInterval = 1 * time.Millisecond
 			cfg.Retry.MaxInterval = 10 * time.Millisecond
 		})
-		mustSendTraces(t, exporter, `{"message": "test1", "idx": 0}`)
-		mustSendTraces(t, exporter, `{"message": "test2", "idx": 1}`)
-		mustSendTraces(t, exporter, `{"message": "test3", "idx": 2}`)
+		mustSendTraces(t, exporter, `{"message": "test1", "idx": 0}`, `{"message": "test2", "idx": 1}`, `{"message": "test3", "idx": 2}`)
 
 		wg.Wait() // <- this blocks forever if the trace is not retried
 
@@ -462,8 +458,22 @@ func withTestTracesExporterConfig(fns ...func(*Config)) func(string) *Config {
 	}
 }
 
-func mustSendTraces(t *testing.T, exporter *elasticsearchTracesExporter, contents string) {
-	err := pushDocuments(context.TODO(), exporter.index, []byte(contents), exporter.bulkIndexer)
+func sendTraces(t *testing.T, exporter *elasticsearchTracesExporter, contents ...string) error {
+	req := request{
+		bulkIndexer: exporter.bulkIndexer,
+		Items:       nil,
+	}
+	for _, body := range contents {
+		req.Add(bulkIndexerItem{
+			Index: exporter.index,
+			Body:  []byte(body),
+		})
+	}
+	return req.Export(context.TODO())
+}
+
+func mustSendTraces(t *testing.T, exporter *elasticsearchTracesExporter, contents ...string) {
+	err := sendTraces(t, exporter, contents...)
 	require.NoError(t, err)
 }
 
@@ -474,6 +484,13 @@ func mustSendTracesWithAttributes(t *testing.T, exporter *elasticsearchTracesExp
 	span := resSpans.ScopeSpans().At(0).Spans().At(0)
 	scope := resSpans.ScopeSpans().At(0).Scope()
 
-	err := exporter.pushTraceRecord(context.TODO(), resSpans.Resource(), span, scope)
+	req := request{
+		bulkIndexer: exporter.bulkIndexer,
+		Items:       nil,
+	}
+	item, err := exporter.traceRecordToItem(context.TODO(), resSpans.Resource(), span, scope)
+	require.NoError(t, err)
+	req.Add(item)
+	err = req.Export(context.TODO())
 	require.NoError(t, err)
 }

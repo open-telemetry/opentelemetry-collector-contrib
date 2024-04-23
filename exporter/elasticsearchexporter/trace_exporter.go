@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -65,10 +66,11 @@ func (e *elasticsearchTracesExporter) Shutdown(ctx context.Context) error {
 	return e.bulkIndexer.Close(ctx)
 }
 
-func (e *elasticsearchTracesExporter) pushTraceData(
+func (e *elasticsearchTracesExporter) traceDataToRequest(
 	ctx context.Context,
 	td ptrace.Traces,
-) error {
+) (exporterhelper.Request, error) {
+	req := newRequest(e.bulkIndexer)
 	var errs []error
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -81,20 +83,23 @@ func (e *elasticsearchTracesExporter) pushTraceData(
 			spans := scopeSpan.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if err := e.pushTraceRecord(ctx, resource, span, scope); err != nil {
+				item, err := e.traceRecordToItem(ctx, resource, span, scope)
+				if err != nil {
 					if cerr := ctx.Err(); cerr != nil {
-						return cerr
+						return req, cerr
 					}
 					errs = append(errs, err)
+					continue
 				}
+				req.Add(item)
 			}
 		}
 	}
 
-	return errors.Join(errs...)
+	return req, errors.Join(errs...)
 }
 
-func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) error {
+func (e *elasticsearchTracesExporter) traceRecordToItem(ctx context.Context, resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) (bulkIndexerItem, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
 		prefix := getFromAttributes(indexPrefix, resource, scope, span)
@@ -106,16 +111,19 @@ func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resou
 	if e.logstashFormat.Enabled {
 		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
 		if err != nil {
-			return err
+			return bulkIndexerItem{}, err
 		}
 		fIndex = formattedIndex
 	}
 
 	document, err := e.model.encodeSpan(resource, span, scope)
 	if err != nil {
-		return fmt.Errorf("Failed to encode trace record: %w", err)
+		return bulkIndexerItem{}, fmt.Errorf("Failed to encode trace record: %w", err)
 	}
-	return pushDocuments(ctx, fIndex, document, e.bulkIndexer)
+	return bulkIndexerItem{
+		Index: fIndex,
+		Body:  document,
+	}, nil
 }
 
 func pushDocuments(ctx context.Context, index string, document []byte, current *esBulkIndexerCurrent) error {

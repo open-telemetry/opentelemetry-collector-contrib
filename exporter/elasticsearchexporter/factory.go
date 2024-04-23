@@ -35,7 +35,7 @@ func NewFactory() exporter.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		exporter.WithLogs(createLogsRequestExporter, metadata.LogsStability),
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithTraces(createTracesRequestExporter, metadata.TracesStability),
 	)
 }
 
@@ -144,7 +144,7 @@ func createLogsRequestExporter(
 	)
 }
 
-func createTracesExporter(ctx context.Context,
+func createTracesRequestExporter(ctx context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config) (exporter.Traces, error) {
 
@@ -156,13 +156,53 @@ func createTracesExporter(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch tracesExporter: %w", err)
 	}
-	return exporterhelper.NewTracesExporter(
+
+	batchMergeFunc := func(ctx context.Context, r1, r2 exporterhelper.Request) (exporterhelper.Request, error) {
+		rr1 := r1.(*request)
+		rr2 := r2.(*request)
+		req := newRequest(tracesExporter.bulkIndexer)
+		req.Items = append(rr1.Items, rr2.Items...)
+		return req, nil
+	}
+
+	batchMergeSplitFunc := func(ctx context.Context, conf exporterbatcher.MaxSizeConfig, optReq, req exporterhelper.Request) ([]exporterhelper.Request, error) {
+		// FIXME: implement merge split func
+		panic("not implemented")
+		return nil, nil
+	}
+
+	marshalRequest := func(req exporterhelper.Request) ([]byte, error) {
+		b, err := json.Marshal(*req.(*request))
+		return b, err
+	}
+
+	unmarshalRequest := func(b []byte) (exporterhelper.Request, error) {
+		var req request
+		err := json.Unmarshal(b, &req)
+		req.bulkIndexer = tracesExporter.bulkIndexer
+		return &req, err
+	}
+
+	batcherCfg := exporterbatcher.NewDefaultConfig()
+
+	// FIXME: is this right?
+	queueCfg := exporterqueue.NewDefaultConfig()
+	queueCfg.Enabled = cf.QueueSettings.Enabled
+	queueCfg.NumConsumers = cf.QueueSettings.NumConsumers
+	queueCfg.QueueSize = cf.QueueSettings.QueueSize
+
+	return exporterhelper.NewTracesRequestExporter(
 		ctx,
 		set,
-		cfg,
-		tracesExporter.pushTraceData,
+		tracesExporter.traceDataToRequest,
+		exporterhelper.WithBatcher(batcherCfg, exporterhelper.WithRequestBatchFuncs(batchMergeFunc, batchMergeSplitFunc)),
 		exporterhelper.WithShutdown(tracesExporter.Shutdown),
-		exporterhelper.WithQueue(cf.QueueSettings))
+		exporterhelper.WithRequestQueue(queueCfg,
+			exporterqueue.NewPersistentQueueFactory[exporterhelper.Request](cf.QueueSettings.StorageID, exporterqueue.PersistentQueueSettings[exporterhelper.Request]{
+				Marshaler:   marshalRequest,
+				Unmarshaler: unmarshalRequest,
+			})),
+	)
 }
 
 // set default User-Agent header with BuildInfo if User-Agent is empty

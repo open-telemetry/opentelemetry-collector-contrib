@@ -407,7 +407,7 @@ func TestExporter_PushEvent(t *testing.T) {
 
 		exporter := newTestExporter(t, server.URL)
 		err := send(t, exporter, `{"message": "test1"}`)
-		assert.ErrorContains(t, err, "flush failed")
+		assert.ErrorContains(t, err, "flush failed: [400 Bad Request] oops")
 
 		assert.Equal(t, int64(1), attempts.Load())
 	})

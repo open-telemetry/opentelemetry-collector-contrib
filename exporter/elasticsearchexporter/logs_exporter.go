@@ -72,10 +72,8 @@ func (e *elasticsearchLogsExporter) Shutdown(ctx context.Context) error {
 }
 
 func (e *elasticsearchLogsExporter) logsDataToRequest(ctx context.Context, ld plog.Logs) (exporterhelper.Request, error) {
-	request := newRequest(e.bulkIndexer)
-
+	req := newRequest(e.bulkIndexer)
 	var errs []error
-
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
@@ -88,18 +86,18 @@ func (e *elasticsearchLogsExporter) logsDataToRequest(ctx context.Context, ld pl
 				item, err := e.logRecordToItem(ctx, resource, logs.At(k), scope)
 				if err != nil {
 					if cerr := ctx.Err(); cerr != nil {
-						return request, cerr
+						return req, cerr
 					}
 
 					errs = append(errs, err)
 					continue
 				}
-				request.Add(item)
+				req.Add(item)
 			}
 		}
 	}
 
-	return request, errors.Join(errs...)
+	return req, errors.Join(errs...)
 }
 
 func (e *elasticsearchLogsExporter) logRecordToItem(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) (bulkIndexerItem, error) {
