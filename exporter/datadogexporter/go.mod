@@ -9,11 +9,11 @@ require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.25.0
 	github.com/DataDog/datadog-go/v5 v5.5.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.14.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.14.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.14.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.14.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.14.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.15.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.15.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.15.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.15.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.15.0
 	github.com/DataDog/sketches-go v1.4.4
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.22.0
 	github.com/aws/aws-sdk-go v1.51.26
