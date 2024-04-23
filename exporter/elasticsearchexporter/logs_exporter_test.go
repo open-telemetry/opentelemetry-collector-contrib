@@ -162,8 +162,7 @@ func TestExporter_PushEvent(t *testing.T) {
 		})
 
 		exporter := newTestExporter(t, server.URL)
-		mustSend(t, exporter, `{"message": "test1"}`)
-		mustSend(t, exporter, `{"message": "test2"}`)
+		mustSend(t, exporter, `{"message": "test1"}`, `{"message": "test2"}`)
 
 		rec.WaitItems(2)
 	})
@@ -392,7 +391,6 @@ func TestExporter_PushEvent(t *testing.T) {
 						exporter := newTestExporter(t, server.URL, func(cfg *Config) { *cfg = *testConfig })
 						mustSend(t, exporter, `{"message": "test1"}`)
 
-						time.Sleep(200 * time.Millisecond)
 						assert.Equal(t, int64(1), attempts.Load())
 					})
 				}
@@ -408,9 +406,9 @@ func TestExporter_PushEvent(t *testing.T) {
 		})
 
 		exporter := newTestExporter(t, server.URL)
-		mustSend(t, exporter, `{"message": "test1"}`)
+		err := send(t, exporter, `{"message": "test1"}`)
+		assert.ErrorContains(t, err, "flush failed")
 
-		time.Sleep(200 * time.Millisecond)
 		assert.Equal(t, int64(1), attempts.Load())
 	})
 
@@ -444,7 +442,6 @@ func TestExporter_PushEvent(t *testing.T) {
 		exporter := newTestExporter(t, server.URL)
 		mustSend(t, exporter, `{"message": "test1"}`)
 
-		time.Sleep(200 * time.Millisecond)
 		assert.Equal(t, int64(1), attempts.Load())
 	})
 
@@ -482,9 +479,8 @@ func TestExporter_PushEvent(t *testing.T) {
 			cfg.Retry.InitialInterval = 1 * time.Millisecond
 			cfg.Retry.MaxInterval = 10 * time.Millisecond
 		})
-		mustSend(t, exporter, `{"message": "test1", "idx": 0}`)
-		mustSend(t, exporter, `{"message": "test2", "idx": 1}`)
-		mustSend(t, exporter, `{"message": "test3", "idx": 2}`)
+		mustSend(t, exporter, `{"message": "test1", "idx": 0}`,
+			`{"message": "test2", "idx": 1}`, `{"message": "test3", "idx": 2}`)
 
 		wg.Wait() // <- this blocks forever if the event is not retried
 
@@ -515,8 +511,22 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 	}
 }
 
-func mustSend(t *testing.T, exporter *elasticsearchLogsExporter, contents string) {
-	err := pushDocuments(context.TODO(), exporter.index, []byte(contents), exporter.bulkIndexer)
+func send(t *testing.T, exporter *elasticsearchLogsExporter, contents ...string) error {
+	req := request{
+		bulkIndexer: exporter.bulkIndexer,
+		Items:       nil,
+	}
+	for _, body := range contents {
+		req.Add(bulkIndexerItem{
+			Index: exporter.index,
+			Body:  []byte(body),
+		})
+	}
+	return req.Export(context.TODO())
+}
+
+func mustSend(t *testing.T, exporter *elasticsearchLogsExporter, contents ...string) {
+	err := send(t, exporter, contents...)
 	require.NoError(t, err)
 }
 
@@ -528,6 +538,13 @@ func mustSendLogsWithAttributes(t *testing.T, exporter *elasticsearchLogsExporte
 	logRecords := scopeLog.LogRecords().At(0)
 	logRecords.Body().SetStr(body)
 
-	err := exporter.pushLogRecord(context.TODO(), resSpans.Resource(), logRecords, scopeLog.Scope())
+	req := request{
+		bulkIndexer: exporter.bulkIndexer,
+		Items:       nil,
+	}
+	item, err := exporter.logRecordToItem(context.TODO(), resSpans.Resource(), logRecords, scopeLog.Scope())
+	require.NoError(t, err)
+	req.Add(item)
+	err = req.Export(context.TODO())
 	require.NoError(t, err)
 }
