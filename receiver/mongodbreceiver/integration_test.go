@@ -56,7 +56,7 @@ func integrationTest(name string, script []string, cfgMod func(*Config)) func(*t
 				cfgMod(rCfg)
 				rCfg.CollectionInterval = 2 * time.Second
 				rCfg.MetricsBuilderConfig.Metrics.MongodbLockAcquireTime.Enabled = false
-				rCfg.Hosts = []confignet.AddrConfig{
+				rCfg.Hosts = []confignet.TCPAddrConfig{
 					{
 						Endpoint: fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, mongoPort)),
 					},
