@@ -15,14 +15,12 @@ import (
 	"time"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -105,7 +103,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		expectedSeries        map[string]any
 		expectedSketchPayload *gogen.SketchPayload
 		expectedErr           error
-		expectedStats         []*pb.ClientStatsPayload
 	}{
 		{
 			metrics: createTestMetrics(attrs),
@@ -300,7 +297,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			var (
 				once sync.Once
 			)
-			statsToAgent := make(chan *pb.StatsPayload, 1000) // Buffer the channel to allow test to pass without go-routines
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
@@ -315,7 +311,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				&once,
 				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
-				statsToAgent,
 				reporter,
 				nil,
 			)
@@ -358,19 +353,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				expected, err := tt.expectedSketchPayload.Marshal()
 				assert.NoError(t, err)
 				assert.Equal(t, expected, sketchRecorder.ByteBody)
-			}
-			if tt.expectedStats != nil {
-				var actualStats []*pb.ClientStatsPayload
-			pullStats:
-				for len(actualStats) < len(tt.expectedStats) {
-					select {
-					case <-time.After(10 * time.Second):
-						break pullStats
-					case sp := <-statsToAgent:
-						actualStats = append(actualStats, sp.Stats...)
-					}
-				}
-				assert.ElementsMatch(t, actualStats, tt.expectedStats)
 			}
 		})
 	}
@@ -445,7 +427,6 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 		expectedSeries        map[string]any
 		expectedSketchPayload *gogen.SketchPayload
 		expectedErr           error
-		expectedStats         []*pb.ClientStatsPayload
 	}{
 		{
 			metrics: createTestMetrics(attrs),
@@ -629,7 +610,10 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			expectedErr:           nil,
 		},
 		{
-			metrics: createTestMetricsWithStats(t),
+			metrics: createTestMetrics(map[string]string{
+				conventions.AttributeDeploymentEnvironment: "dev",
+				"custom_attribute":                         "custom_value",
+			}),
 			source: source.Source{
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
@@ -686,7 +670,6 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 					},
 				},
 			},
-			expectedStats: testutil.StatsPayloads,
 		},
 	}
 	for _, tt := range tests {
@@ -702,7 +685,6 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			var (
 				once sync.Once
 			)
-			statsToAgent := make(chan *pb.StatsPayload, 1000)
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
@@ -717,7 +699,6 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				&once,
 				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
-				statsToAgent,
 				reporter,
 				nil,
 			)
@@ -756,42 +737,8 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, expected, sketchRecorder.ByteBody)
 			}
-			if tt.expectedStats != nil {
-				var actualStats []*pb.ClientStatsPayload
-			pullStats:
-				for len(actualStats) < len(tt.expectedStats) {
-					select {
-					case <-time.After(10 * time.Second):
-						break pullStats
-					case sp := <-statsToAgent:
-						actualStats = append(actualStats, sp.Stats...)
-					}
-				}
-				assert.ElementsMatch(t, actualStats, tt.expectedStats)
-			}
 		})
 	}
-}
-
-func createTestMetricsWithStats(t *testing.T) pmetric.Metrics {
-	md := createTestMetrics(map[string]string{
-		conventions.AttributeDeploymentEnvironment: "dev",
-		"custom_attribute":                         "custom_value",
-	})
-	dest := md.ResourceMetrics()
-	set := componenttest.NewNopTelemetrySettings()
-	var err error
-	set.Logger, err = zap.NewDevelopment()
-	require.NoError(t, err)
-	attributesTranslator, err := attributes.NewTranslator(set)
-	require.NoError(t, err)
-	trans, err := metrics.NewTranslator(set, attributesTranslator)
-	require.NoError(t, err)
-	src := trans.
-		StatsPayloadToMetrics(&pb.StatsPayload{Stats: testutil.StatsPayloads}).
-		ResourceMetrics()
-	src.MoveAndAppendTo(dest)
-	return md
 }
 
 func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {

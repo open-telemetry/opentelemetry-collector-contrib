@@ -1095,23 +1095,23 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:             make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:             make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.SqlserverComputerName.Include != nil {
-		mb.resourceAttributeIncludeFilter["sqlserver.computer.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverComputerName.Include)
+	if mbc.ResourceAttributes.SqlserverComputerName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["sqlserver.computer.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverComputerName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.SqlserverComputerName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["sqlserver.computer.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverComputerName.Exclude)
+	if mbc.ResourceAttributes.SqlserverComputerName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["sqlserver.computer.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverComputerName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.SqlserverDatabaseName.Include != nil {
-		mb.resourceAttributeIncludeFilter["sqlserver.database.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverDatabaseName.Include)
+	if mbc.ResourceAttributes.SqlserverDatabaseName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["sqlserver.database.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverDatabaseName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.SqlserverDatabaseName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["sqlserver.database.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverDatabaseName.Exclude)
+	if mbc.ResourceAttributes.SqlserverDatabaseName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["sqlserver.database.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverDatabaseName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.SqlserverInstanceName.Include != nil {
-		mb.resourceAttributeIncludeFilter["sqlserver.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverInstanceName.Include)
+	if mbc.ResourceAttributes.SqlserverInstanceName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["sqlserver.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverInstanceName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.SqlserverInstanceName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["sqlserver.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverInstanceName.Exclude)
+	if mbc.ResourceAttributes.SqlserverInstanceName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["sqlserver.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverInstanceName.MetricsExclude)
 	}
 
 	for _, op := range options {

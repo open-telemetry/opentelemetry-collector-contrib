@@ -11,3 +11,5 @@ status:
     emeritus: [architjugran, kiranmayib]
 tests:
   config:
+  goleak:
+    skip: true

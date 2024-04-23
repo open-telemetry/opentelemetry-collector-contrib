@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension"
@@ -254,6 +255,13 @@ func TestDefaultExtensions(t *testing.T) {
 			getConfigFn: func() component.Config {
 				return extFactories["ackextension"].CreateDefaultConfig().(*ackextension.Config)
 			},
+		},
+		{
+			extension: "googleclientauthextension",
+			getConfigFn: func() component.Config {
+				return extFactories["googleclientauthextension"].CreateDefaultConfig().(*googleclientauthextension.Config)
+			},
+			skipLifecycle: true,
 		},
 	}
 

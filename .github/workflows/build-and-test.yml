@@ -78,6 +78,8 @@ jobs:
           - processor-1
           - exporter-0
           - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
           - connector
           - internal
@@ -144,6 +146,8 @@ jobs:
           - processor-1
           - exporter-0
           - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
           - connector
           - internal
@@ -261,6 +265,8 @@ jobs:
           - processor-1
           - exporter-0
           - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
           - connector
           - internal
@@ -356,6 +362,8 @@ jobs:
           - processor-1
           - exporter-0
           - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
           - connector
           - internal

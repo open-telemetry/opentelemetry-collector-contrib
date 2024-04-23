@@ -163,6 +163,12 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 		DeleteAtEOF:       c.DeleteAfterRead,
 	}
 
+	var t tracker.Tracker
+	if o.noTracking {
+		t = tracker.NewNoStateTracker(logger.With("component", "fileconsumer"), c.MaxConcurrentFiles/2)
+	} else {
+		t = tracker.NewFileTracker(logger.With("component", "fileconsumer"), c.MaxConcurrentFiles/2)
+	}
 	return &Manager{
 		SugaredLogger: logger.With("component", "fileconsumer"),
 		readerFactory: readerFactory,
@@ -170,7 +176,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 		pollInterval:  c.PollInterval,
 		maxBatchFiles: c.MaxConcurrentFiles / 2,
 		maxBatches:    c.MaxBatches,
-		tracker:       tracker.New(logger.With("component", "fileconsumer"), c.MaxConcurrentFiles/2),
+		tracker:       t,
 	}, nil
 }
 
@@ -229,7 +235,8 @@ func (c Config) validate() error {
 }
 
 type options struct {
-	splitFunc bufio.SplitFunc
+	splitFunc  bufio.SplitFunc
+	noTracking bool
 }
 
 type Option func(*options)
@@ -238,5 +245,13 @@ type Option func(*options)
 func WithSplitFunc(f bufio.SplitFunc) Option {
 	return func(o *options) {
 		o.splitFunc = f
+	}
+}
+
+// WithNoTracking forces the readerFactory to not keep track of files in memory. When used, the reader will
+// read from the beginning of each file every time it is polled.
+func WithNoTracking() Option {
+	return func(o *options) {
+		o.noTracking = true
 	}
 }
