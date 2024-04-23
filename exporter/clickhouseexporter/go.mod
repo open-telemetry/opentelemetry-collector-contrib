@@ -5,7 +5,7 @@ go 1.21.0
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.23.0
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/jmoiron/sqlx v1.3.5
+	github.com/jmoiron/sqlx v1.4.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.99.0
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.30.0
