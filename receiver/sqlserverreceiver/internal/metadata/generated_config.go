@@ -31,6 +31,7 @@ type MetricsConfig struct {
 	SqlserverBatchRequestRate            MetricConfig `mapstructure:"sqlserver.batch.request.rate"`
 	SqlserverBatchSQLCompilationRate     MetricConfig `mapstructure:"sqlserver.batch.sql_compilation.rate"`
 	SqlserverBatchSQLRecompilationRate   MetricConfig `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
+	SqlserverDatabaseIoReadLatency       MetricConfig `mapstructure:"sqlserver.database.io.read_latency"`
 	SqlserverLockWaitRate                MetricConfig `mapstructure:"sqlserver.lock.wait.rate"`
 	SqlserverLockWaitTimeAvg             MetricConfig `mapstructure:"sqlserver.lock.wait_time.avg"`
 	SqlserverPageBufferCacheHitRatio     MetricConfig `mapstructure:"sqlserver.page.buffer_cache.hit_ratio"`
@@ -60,6 +61,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverBatchSQLRecompilationRate: MetricConfig{
 			Enabled: true,
+		},
+		SqlserverDatabaseIoReadLatency: MetricConfig{
+			Enabled: false,
 		},
 		SqlserverLockWaitRate: MetricConfig{
 			Enabled: true,
@@ -117,9 +121,14 @@ func DefaultMetricsConfig() MetricsConfig {
 
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
-	Enabled bool            `mapstructure:"enabled"`
-	Include []filter.Config `mapstructure:"include"`
-	Exclude []filter.Config `mapstructure:"exclude"`
+	Enabled bool `mapstructure:"enabled"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
 
 	enabledSetByUser bool
 }

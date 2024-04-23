@@ -239,7 +239,11 @@ func (m *mockScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
+	tmp := scraperFactories
 	scraperFactories = map[string]internal.ScraperFactory{}
+	defer func() {
+		scraperFactories = tmp
+	}()
 
 	sink := new(consumertest.MetricsSink)
 	cfg := &Config{Scrapers: map[string]internal.Config{"error": &mockConfig{}}}
@@ -250,7 +254,11 @@ func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
 func TestGatherMetrics_CreateMetricsScraperError(t *testing.T) {
 	mFactory := &mockFactory{}
 	mFactory.On("CreateMetricsScraper").Return(&mockScraper{}, errors.New("err1"))
+	tmp := scraperFactories
 	scraperFactories = map[string]internal.ScraperFactory{mockTypeStr: mFactory}
+	defer func() {
+		scraperFactories = tmp
+	}()
 
 	sink := new(consumertest.MetricsSink)
 	cfg := &Config{Scrapers: map[string]internal.Config{mockTypeStr: &mockConfig{}}}

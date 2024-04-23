@@ -22,11 +22,11 @@ any open WebSockets is rate limited by an adjustable amount.
 
 ## Config
 
-The WebSocket processor has two configurable fields: `port` and `limit`:
+The WebSocket processor has two configurable fields: `endpoint` and `limit`:
 
-- `port`: The port on which the WebSocket processor listens. Optional. Defaults
-  to `12001`.
-  The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:12001. This will become the default in a future release.
+- `endpoint`: The endpoint on which the WebSocket processor listens. Optional. Defaults
+  to `0.0.0.0:12001`.
+  The `component.UseLocalHostAsDefaultHost` feature gate changes this to `localhost:12001`. This will become the default in a future release.
 
 - `limit`: The rate limit over the WebSocket in messages per second. Can be a
   float or an integer. Optional. Defaults to `1`.
@@ -35,6 +35,6 @@ Example configuration:
 
 ```yaml
 websocket:
-  port: 12001
+  endpoint: 0.0.0.0:12001
   limit: 1 # rate limit 1 msg/sec
 ```

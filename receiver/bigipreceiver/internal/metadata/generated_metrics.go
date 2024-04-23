@@ -1600,47 +1600,47 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:          make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:          make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.BigipNodeIPAddress.Include != nil {
-		mb.resourceAttributeIncludeFilter["bigip.node.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeIPAddress.Include)
+	if mbc.ResourceAttributes.BigipNodeIPAddress.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.node.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeIPAddress.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.BigipNodeIPAddress.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["bigip.node.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeIPAddress.Exclude)
+	if mbc.ResourceAttributes.BigipNodeIPAddress.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.node.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeIPAddress.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.BigipNodeName.Include != nil {
-		mb.resourceAttributeIncludeFilter["bigip.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeName.Include)
+	if mbc.ResourceAttributes.BigipNodeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.BigipNodeName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["bigip.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeName.Exclude)
+	if mbc.ResourceAttributes.BigipNodeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.BigipPoolName.Include != nil {
-		mb.resourceAttributeIncludeFilter["bigip.pool.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolName.Include)
+	if mbc.ResourceAttributes.BigipPoolName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.pool.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.BigipPoolName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["bigip.pool.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolName.Exclude)
+	if mbc.ResourceAttributes.BigipPoolName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.pool.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.BigipPoolMemberIPAddress.Include != nil {
-		mb.resourceAttributeIncludeFilter["bigip.pool_member.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberIPAddress.Include)
+	if mbc.ResourceAttributes.BigipPoolMemberIPAddress.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.pool_member.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberIPAddress.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.BigipPoolMemberIPAddress.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["bigip.pool_member.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberIPAddress.Exclude)
+	if mbc.ResourceAttributes.BigipPoolMemberIPAddress.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.pool_member.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberIPAddress.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.BigipPoolMemberName.Include != nil {
-		mb.resourceAttributeIncludeFilter["bigip.pool_member.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberName.Include)
+	if mbc.ResourceAttributes.BigipPoolMemberName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.pool_member.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.BigipPoolMemberName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["bigip.pool_member.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberName.Exclude)
+	if mbc.ResourceAttributes.BigipPoolMemberName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.pool_member.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.BigipVirtualServerDestination.Include != nil {
-		mb.resourceAttributeIncludeFilter["bigip.virtual_server.destination"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerDestination.Include)
+	if mbc.ResourceAttributes.BigipVirtualServerDestination.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.virtual_server.destination"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerDestination.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.BigipVirtualServerDestination.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["bigip.virtual_server.destination"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerDestination.Exclude)
+	if mbc.ResourceAttributes.BigipVirtualServerDestination.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.virtual_server.destination"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerDestination.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.BigipVirtualServerName.Include != nil {
-		mb.resourceAttributeIncludeFilter["bigip.virtual_server.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerName.Include)
+	if mbc.ResourceAttributes.BigipVirtualServerName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.virtual_server.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.BigipVirtualServerName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["bigip.virtual_server.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerName.Exclude)
+	if mbc.ResourceAttributes.BigipVirtualServerName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.virtual_server.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerName.MetricsExclude)
 	}
 
 	for _, op := range options {
