@@ -19,8 +19,7 @@ import (
 func TestExporter(t *testing.T) {
 	for _, eventType := range []string{"logs", "traces"} {
 		for _, tc := range []struct {
-			name      string
-			eventType string
+			name string
 			// restartCollector restarts the OTEL collector. Restarting
 			// the collector allows durability testing of the ES exporter
 			// based on the OTEL config used for testing.
