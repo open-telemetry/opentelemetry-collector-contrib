@@ -76,7 +76,7 @@ type Supervisor struct {
 
 	agentDescription *protobufs.AgentDescription
 
-	// Agent's persistent state
+	// Supervisor's persistent state
 	persistentState *persistentState
 
 	bootstrapTemplate    *template.Template
@@ -108,7 +108,7 @@ type Supervisor struct {
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
 
-	shuttingDown bool
+	doneChan     chan struct{}
 	supervisorWG sync.WaitGroup
 
 	agentHasStarted               bool
@@ -126,6 +126,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		agentConfigOwnMetricsSection: &atomic.Value{},
 		effectiveConfig:              &atomic.Value{},
 		connectedToOpAMPServer:       make(chan struct{}),
+		doneChan:                     make(chan struct{}),
 	}
 
 	if err := s.createTemplates(); err != nil {
@@ -554,8 +555,7 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 	s.effectiveConfig.Store(string(effectiveConfigBytes))
 
 	if s.config.Capabilities != nil && s.config.Capabilities.AcceptsRemoteConfig != nil &&
-		*s.config.Capabilities.AcceptsRemoteConfig &&
-		s.config.Storage != nil {
+		*s.config.Capabilities.AcceptsRemoteConfig {
 		// Try to load the last received remote config if it exists.
 		lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
 		if err == nil {
@@ -574,8 +574,7 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 	}
 
 	if s.config.Capabilities != nil && s.config.Capabilities.ReportsOwnMetrics != nil &&
-		*s.config.Capabilities.ReportsOwnMetrics &&
-		s.config.Storage != nil {
+		*s.config.Capabilities.ReportsOwnMetrics {
 		// Try to load the last received own metrics config if it exists.
 		lastRecvOwnMetricsConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvOwnMetricsConfigFile))
 		if err == nil {
@@ -836,6 +835,7 @@ func (s *Supervisor) healthCheck() {
 func (s *Supervisor) runAgentProcess() {
 	if _, err := os.Stat(s.effectiveConfigFilePath); err == nil {
 		// We have an effective config file saved previously. Use it to start the agent.
+		s.logger.Debug("Effective config found, starting agent initial time")
 		s.startAgent()
 	}
 
@@ -845,20 +845,12 @@ func (s *Supervisor) runAgentProcess() {
 	for {
 		select {
 		case <-s.hasNewConfig:
+			s.logger.Debug("Restarting agent due to new config")
 			restartTimer.Stop()
 			s.stopAgentApplyConfig()
 			s.startAgent()
 
 		case <-s.commander.Exited():
-			// the agent process exit is expected for restart command and will not attempt to restart
-			if s.agentRestarting.Load() {
-				continue
-			}
-
-			if s.shuttingDown {
-				return
-			}
-
 			s.logger.Debug("Agent process exited unexpectedly. Will restart in a bit...", zap.Int("pid", s.commander.Pid()), zap.Int("exit_code", s.commander.ExitCode()))
 			errMsg := fmt.Sprintf(
 				"Agent process PID=%d exited unexpectedly, exit code=%d. Will restart in a bit...",
@@ -883,10 +875,18 @@ func (s *Supervisor) runAgentProcess() {
 			restartTimer.Reset(5 * time.Second)
 
 		case <-restartTimer.C:
+			s.logger.Debug("Agent starting after start backoff")
 			s.startAgent()
 
 		case <-s.healthCheckTicker.C:
 			s.healthCheck()
+
+		case <-s.doneChan:
+			err := s.commander.Stop(context.Background())
+			if err != nil {
+				s.logger.Error("Could not stop agent process", zap.Error(err))
+			}
+			return
 		}
 	}
 }
@@ -919,14 +919,7 @@ func (s *Supervisor) writeEffectiveConfigToFile(cfg string, filePath string) {
 
 func (s *Supervisor) Shutdown() {
 	s.logger.Debug("Supervisor shutting down...")
-	s.shuttingDown = true
-	if s.commander != nil {
-		err := s.commander.Stop(context.Background())
-
-		if err != nil {
-			s.logger.Error("Could not stop agent process", zap.Error(err))
-		}
-	}
+	close(s.doneChan)
 
 	if s.opampClient != nil {
 		err := s.opampClient.SetHealth(
@@ -954,10 +947,6 @@ func (s *Supervisor) Shutdown() {
 }
 
 func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig) error {
-	if s.config.Storage == nil {
-		return nil
-	}
-
 	cfg, err := proto.Marshal(config)
 	if err != nil {
 		return err
@@ -967,10 +956,6 @@ func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig)
 }
 
 func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.TelemetryConnectionSettings, filePath string) error {
-	if s.config.Storage == nil {
-		return nil
-	}
-
 	cfg, err := proto.Marshal(set)
 	if err != nil {
 		return err
