@@ -1,3 +1,6 @@
+exporters:
+    file:
+        path: /test/logs/output.log
 extensions:
     health_check:
         endpoint: localhost:8000
@@ -8,10 +11,21 @@ extensions:
                 endpoint: ws://localhost:0/v1/opamp
                 tls:
                     insecure: true
+receivers:
+    filelog:
+        include:
+            - /test/logs/input.log
+        start_at: beginning
 service:
     extensions:
         - health_check
         - opamp
+    pipelines:
+        logs:
+            exporters:
+                - file
+            receivers:
+                - filelog
     telemetry:
         logs:
             encoding: json

@@ -12,11 +12,15 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
 
 func Test_composeEffectiveConfig(t *testing.T) {
+	acceptsRemoteConfig := true
 	s := Supervisor{
 		logger:                       zap.NewNop(),
+		config:                       config.Supervisor{Capabilities: &config.Capabilities{AcceptsRemoteConfig: &acceptsRemoteConfig}},
 		hasNewConfig:                 make(chan struct{}, 1),
 		effectiveConfigFilePath:      "effective.yaml",
 		agentConfigOwnMetricsSection: &atomic.Value{},
@@ -37,6 +41,22 @@ func Test_composeEffectiveConfig(t *testing.T) {
 		},
 	}
 
+	fileLogConfig := `
+receivers:
+  filelog:
+    include: ['/test/logs/input.log']
+    start_at: "beginning"
+
+exporters:
+  file:
+    path: '/test/logs/output.log'
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      exporters: [file]`
+
 	require.NoError(t, s.createTemplates())
 	s.loadAgentEffectiveConfig()
 
@@ -44,7 +64,7 @@ func Test_composeEffectiveConfig(t *testing.T) {
 		Config: &protobufs.AgentConfigMap{
 			ConfigMap: map[string]*protobufs.AgentConfigFile{
 				"": {
-					Body: []byte(""),
+					Body: []byte(fileLogConfig),
 				},
 			},
 		},
