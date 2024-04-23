@@ -20,7 +20,7 @@ func defaultCustomCapabilityRegisterOptions() *customCapabilityRegisterOptions {
 // CustomCapabilityRegisterOption represent a single option for CustomCapabilityRegistry.Register
 type CustomCapabilityRegisterOption func(*customCapabilityRegisterOptions)
 
-// WithMaxQueuedMessages overrides the default amount of max queue messages. If a message is recieved while
+// WithMaxQueuedMessages overrides the default amount of max queue messages. If a message is received while
 // MaxQueuedMessages messages are already queued to be processed, the message is dropped.
 func WithMaxQueuedMessages(maxQueuedMessages int) CustomCapabilityRegisterOption {
 	return func(c *customCapabilityRegisterOptions) {
