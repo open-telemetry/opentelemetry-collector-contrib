@@ -607,7 +607,7 @@ func TestSendMetrics(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
-			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000
+			expected := `test.metric.data{test="test_value",test2="second_value"} 14500 1605534165000
 gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
 gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
 			assert.Equal(t, expected, body)
@@ -634,7 +634,7 @@ func TestSendMetricsSplit(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
-			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000`
+			expected := `test.metric.data{test="test_value",test2="second_value"} 14500 1605534165000`
 			assert.Equal(t, expected, body)
 		},
 		func(_ http.ResponseWriter, req *http.Request) {
@@ -662,7 +662,7 @@ func TestSendMetricsSplitFailedOne(t *testing.T) {
 			w.WriteHeader(500)
 
 			body := extractBody(t, req)
-			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000`
+			expected := `test.metric.data{test="test_value",test2="second_value"} 14500 1605534165000`
 			assert.Equal(t, expected, body)
 		},
 		func(_ http.ResponseWriter, req *http.Request) {
@@ -691,7 +691,7 @@ func TestSendMetricsSplitFailedAll(t *testing.T) {
 			w.WriteHeader(500)
 
 			body := extractBody(t, req)
-			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000`
+			expected := `test.metric.data{test="test_value",test2="second_value"} 14500 1605534165000`
 			assert.Equal(t, expected, body)
 		},
 		func(w http.ResponseWriter, req *http.Request) {
