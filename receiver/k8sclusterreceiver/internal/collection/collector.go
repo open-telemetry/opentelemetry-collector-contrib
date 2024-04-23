@@ -134,6 +134,7 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 	dc.metadataStore.ForEach(gvk.StatefulSet, func(o any) {
 		statefulset.RecordMetrics(dc.metricsBuilder, o.(*appsv1.StatefulSet), ts)
 	})
+
 	dc.metadataStore.ForEach(gvk.Job, func(o any) {
 		jobs.RecordMetrics(dc.metricsBuilder, o.(*batchv1.Job), ts)
 	})
