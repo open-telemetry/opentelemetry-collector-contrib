@@ -939,11 +939,11 @@ func (s *Supervisor) Shutdown() {
 		}
 	}
 
+	s.supervisorWG.Wait()
+
 	if s.healthCheckTicker != nil {
 		s.healthCheckTicker.Stop()
 	}
-
-	s.supervisorWG.Wait()
 }
 
 func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig) error {
