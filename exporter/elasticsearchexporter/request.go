@@ -7,7 +7,7 @@ import (
 
 type Request struct {
 	bulkIndexer *esBulkIndexerCurrent
-	Items       []BulkIndexerItem
+	Items       []bulkIndexerItem
 }
 
 func newRequest(bulkIndexer *esBulkIndexerCurrent) *Request {
@@ -29,11 +29,11 @@ func (r *Request) ItemsCount() int {
 	return len(r.Items)
 }
 
-func (r *Request) Add(item BulkIndexerItem) {
+func (r *Request) Add(item bulkIndexerItem) {
 	r.Items = append(r.Items, item)
 }
 
-type BulkIndexerItem struct {
+type bulkIndexerItem struct {
 	Index string
 	Body  []byte
 }

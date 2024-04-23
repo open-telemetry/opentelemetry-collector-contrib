@@ -102,7 +102,7 @@ func (e *elasticsearchLogsExporter) logsDataToRequest(ctx context.Context, ld pl
 	return request, errors.Join(errs...)
 }
 
-func (e *elasticsearchLogsExporter) logRecordToItem(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) (BulkIndexerItem, error) {
+func (e *elasticsearchLogsExporter) logRecordToItem(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) (bulkIndexerItem, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
 		prefix := getFromAttributes(indexPrefix, resource, scope, record)
@@ -114,16 +114,16 @@ func (e *elasticsearchLogsExporter) logRecordToItem(ctx context.Context, resourc
 	if e.logstashFormat.Enabled {
 		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
 		if err != nil {
-			return BulkIndexerItem{}, err
+			return bulkIndexerItem{}, err
 		}
 		fIndex = formattedIndex
 	}
 
 	document, err := e.model.encodeLog(resource, record, scope)
 	if err != nil {
-		return BulkIndexerItem{}, fmt.Errorf("Failed to encode log event: %w", err)
+		return bulkIndexerItem{}, fmt.Errorf("Failed to encode log event: %w", err)
 	}
-	return BulkIndexerItem{
+	return bulkIndexerItem{
 		Index: fIndex,
 		Body:  document,
 	}, nil
