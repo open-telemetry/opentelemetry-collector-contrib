@@ -197,10 +197,11 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 
 	for i := 0; i < numWorkers; i++ {
 		bi, err := docappender.NewBulkIndexer(docappender.BulkIndexerConfig{
-			Client:             client,
-			MaxDocumentRetries: maxDocRetry,
-			CompressionLevel:   0,
-			Pipeline:           config.Pipeline,
+			Client:                client,
+			MaxDocumentRetries:    maxDocRetry,
+			CompressionLevel:      0,
+			Pipeline:              config.Pipeline,
+			RetryOnDocumentStatus: config.Retry.RetryOnStatus,
 		})
 		if err != nil {
 			return nil, err
