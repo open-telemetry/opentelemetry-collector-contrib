@@ -4,7 +4,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 
 go 1.21.0
 
-toolchain go1.21.9
+toolchain go1.22.2
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.99.0
@@ -788,8 +788,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsem
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ../../receiver/opencensusreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver => ../../receiver/splunkenterprisereceiver
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ../../receiver/splunkhecreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver => ../../receiver/collectdreceiver
@@ -969,6 +967,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8ste
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka => ../../internal/kafka
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ../../receiver/carbonreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkenterprisereceive => ../../exporter/splunkenterprisereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ../../exporter/splunkhecexporter
 
