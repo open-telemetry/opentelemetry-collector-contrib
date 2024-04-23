@@ -98,8 +98,8 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		},
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:7777",
-			TLSSetting: &configtls.TLSServerSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: &configtls.ServerConfig{
+				Config: configtls.Config{
 					CertFile: "./testdata/certs/server.crt",
 					KeyFile:  "./testdata/certs/server.key",
 					CAFile:   "./testdata/certs/ca.crt",
@@ -117,15 +117,15 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 
-	tlscs := configtls.TLSClientSetting{
-		TLSSetting: configtls.TLSSetting{
+	tlscs := configtls.ClientConfig{
+		Config: configtls.Config{
 			CAFile:   "./testdata/certs/ca.crt",
 			CertFile: "./testdata/certs/client.crt",
 			KeyFile:  "./testdata/certs/client.key",
 		},
 		ServerName: "localhost",
 	}
-	tls, err := tlscs.LoadTLSConfig()
+	tls, err := tlscs.LoadTLSConfig(context.Background())
 	assert.NoError(t, err)
 	httpClient := &http.Client{
 		Transport: &http.Transport{
@@ -136,8 +136,10 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = httpClient.Get("https://localhost:7777/metrics")
+		var resp *http.Response
+		resp, err = httpClient.Get("https://localhost:7777/metrics")
 		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -195,8 +197,10 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = http.Get("http://localhost:7777/metrics")
+		var resp *http.Response
+		resp, err = http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -277,8 +281,10 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = http.Get("http://localhost:7777/metrics")
+		var resp *http.Response
+		resp, err = http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -354,8 +360,10 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = http.Get("http://localhost:7777/metrics")
+		var resp *http.Response
+		resp, err = http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -434,8 +442,10 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = http.Get("http://localhost:7777/metrics")
+		var resp *http.Response
+		resp, err = http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err, "Failed to perform a scrape")
+		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)

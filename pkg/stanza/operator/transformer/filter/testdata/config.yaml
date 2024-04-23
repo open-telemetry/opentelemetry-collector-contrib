@@ -1,0 +1,14 @@
+default:
+  type: filter
+drop_ratio_0:
+  type: filter
+  drop_ratio: 0
+drop_ratio_half:
+  type: filter
+  drop_ratio: 0.5
+drop_ratio_1:
+  type: filter
+  drop_ratio: 1
+expr:
+  type: filter
+  expr: body == 'value'

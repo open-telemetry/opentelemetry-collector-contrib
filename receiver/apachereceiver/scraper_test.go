@@ -27,6 +27,8 @@ import (
 
 func TestScraper(t *testing.T) {
 	apacheMock := newMockServer(t)
+	defer func() { apacheMock.Close() }()
+
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
 	require.NoError(t, component.ValidateConfig(cfg))
@@ -58,8 +60,8 @@ func TestScraperFailedStart(t *testing.T) {
 	sc := newApacheScraper(receivertest.NewNopCreateSettings(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "localhost:8080",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.ClientConfig{
+				Config: configtls.Config{
 					CAFile: "/non/existent",
 				},
 			},

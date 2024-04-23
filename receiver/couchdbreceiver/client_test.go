@@ -4,6 +4,7 @@
 package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -21,6 +22,7 @@ func defaultClient(t *testing.T, endpoint string) client {
 	cfg.Endpoint = endpoint
 
 	couchdbClient, err := newCouchDBClient(
+		context.Background(),
 		cfg,
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings())
@@ -32,11 +34,12 @@ func defaultClient(t *testing.T, endpoint string) client {
 func TestNewCouchDBClient(t *testing.T) {
 	t.Run("Invalid config", func(t *testing.T) {
 		couchdbClient, err := newCouchDBClient(
+			context.Background(),
 			&Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile: "/non/existent",
 						},
 					},
@@ -108,6 +111,7 @@ func TestGet(t *testing.T) {
 	t.Run("401 Unauthorized", func(t *testing.T) {
 		url := ts.URL + "/_node/_local/_stats/couchdb"
 		couchdbClient, err := newCouchDBClient(
+			context.Background(),
 			&Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: url,

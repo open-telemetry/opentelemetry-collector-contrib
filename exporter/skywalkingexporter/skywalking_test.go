@@ -33,7 +33,7 @@ func TestSwExporter(t *testing.T) {
 		NumStreams: 10,
 		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: addr.String(),
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: configtls.ClientConfig{
 				Insecure: true,
 			},
 		},
@@ -106,7 +106,7 @@ func TestSwExporter(t *testing.T) {
 		NumStreams: 10,
 		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: addr.String(),
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: configtls.ClientConfig{
 				Insecure: true,
 			},
 		},

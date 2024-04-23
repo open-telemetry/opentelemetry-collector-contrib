@@ -5,6 +5,6 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, sumo, splunk]
+  distributions: [contrib]
   codeowners:
     active: [samiura]

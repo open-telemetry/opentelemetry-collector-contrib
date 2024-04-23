@@ -22,7 +22,6 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -629,7 +628,10 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			expectedErr:           nil,
 		},
 		{
-			metrics: createTestMetricsWithStats(t),
+			metrics: createTestMetrics(map[string]string{
+				conventions.AttributeDeploymentEnvironment: "dev",
+				"custom_attribute":                         "custom_value",
+			}),
 			source: source.Source{
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
@@ -686,7 +688,6 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 					},
 				},
 			},
-			expectedStats: testutil.StatsPayloads,
 		},
 	}
 	for _, tt := range tests {
@@ -771,27 +772,6 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			}
 		})
 	}
-}
-
-func createTestMetricsWithStats(t *testing.T) pmetric.Metrics {
-	md := createTestMetrics(map[string]string{
-		conventions.AttributeDeploymentEnvironment: "dev",
-		"custom_attribute":                         "custom_value",
-	})
-	dest := md.ResourceMetrics()
-	set := componenttest.NewNopTelemetrySettings()
-	var err error
-	set.Logger, err = zap.NewDevelopment()
-	require.NoError(t, err)
-	attributesTranslator, err := attributes.NewTranslator(set)
-	require.NoError(t, err)
-	trans, err := metrics.NewTranslator(set, attributesTranslator)
-	require.NoError(t, err)
-	src := trans.
-		StatsPayloadToMetrics(&pb.StatsPayload{Stats: testutil.StatsPayloads}).
-		ResourceMetrics()
-	src.MoveAndAppendTo(dest)
-	return md
 }
 
 func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {

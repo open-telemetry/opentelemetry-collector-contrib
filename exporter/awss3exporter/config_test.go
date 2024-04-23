@@ -29,8 +29,11 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+	encoding := component.MustNewIDWithName("foo", "bar")
 	assert.Equal(t, e,
 		&Config{
+			Encoding:              &encoding,
+			EncodingFileExtension: "baz",
 			S3Uploader: S3UploaderConfig{
 				Region:      "us-east-1",
 				S3Bucket:    "foo",

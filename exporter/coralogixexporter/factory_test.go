@@ -92,7 +92,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: &Config{
 				Traces: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure: false,
 					},
 				},
@@ -172,8 +172,8 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: &Config{
 				Traces: configgrpc.ClientConfig{
 					Endpoint: endpoint,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile: "nosuchfile",
 						},
 					},
@@ -186,7 +186,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			config: &Config{
 				Domain: "localhost",
 				DomainSettings: configgrpc.ClientConfig{
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure: false,
 					},
 				},

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -3275,6 +3276,8 @@ type MetricsBuilder struct {
 	metricsCapacity                    int                  // maximum observed number of metrics per resource.
 	metricsBuffer                      pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                          component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter     map[string]filter.Filter
+	resourceAttributeExcludeFilter     map[string]filter.Filter
 	metricMysqlBufferPoolDataPages     metricMysqlBufferPoolDataPages
 	metricMysqlBufferPoolLimit         metricMysqlBufferPoolLimit
 	metricMysqlBufferPoolOperations    metricMysqlBufferPoolOperations
@@ -3379,7 +3382,16 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricMysqlThreads:                 newMetricMysqlThreads(mbc.Metrics.MysqlThreads),
 		metricMysqlTmpResources:            newMetricMysqlTmpResources(mbc.Metrics.MysqlTmpResources),
 		metricMysqlUptime:                  newMetricMysqlUptime(mbc.Metrics.MysqlUptime),
+		resourceAttributeIncludeFilter:     make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:     make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mysql.instance.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mysql.instance.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.MysqlInstanceEndpoint.MetricsExclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -3487,6 +3499,17 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

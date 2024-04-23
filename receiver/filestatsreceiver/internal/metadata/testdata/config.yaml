@@ -33,3 +33,23 @@ none_set:
       enabled: false
     file.path:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    file.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    file.path:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    file.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "file.name-val"
+    file.path:
+      enabled: true
+      metrics_exclude:
+        - strict: "file.path-val"
