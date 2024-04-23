@@ -937,17 +937,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:             make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:             make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.ServerState.Include != nil {
-		mb.resourceAttributeIncludeFilter["server.state"] = filter.CreateFilter(mbc.ResourceAttributes.ServerState.Include)
+	if mbc.ResourceAttributes.ServerState.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.state"] = filter.CreateFilter(mbc.ResourceAttributes.ServerState.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ServerState.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["server.state"] = filter.CreateFilter(mbc.ResourceAttributes.ServerState.Exclude)
+	if mbc.ResourceAttributes.ServerState.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.state"] = filter.CreateFilter(mbc.ResourceAttributes.ServerState.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ZkVersion.Include != nil {
-		mb.resourceAttributeIncludeFilter["zk.version"] = filter.CreateFilter(mbc.ResourceAttributes.ZkVersion.Include)
+	if mbc.ResourceAttributes.ZkVersion.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["zk.version"] = filter.CreateFilter(mbc.ResourceAttributes.ZkVersion.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ZkVersion.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["zk.version"] = filter.CreateFilter(mbc.ResourceAttributes.ZkVersion.Exclude)
+	if mbc.ResourceAttributes.ZkVersion.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["zk.version"] = filter.CreateFilter(mbc.ResourceAttributes.ZkVersion.MetricsExclude)
 	}
 
 	for _, op := range options {

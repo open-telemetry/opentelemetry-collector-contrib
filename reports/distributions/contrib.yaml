@@ -6,6 +6,7 @@ components:
         - count
         - datadog
         - exceptions
+        - failover
         - grafanacloud
         - routing
         - servicegraph
