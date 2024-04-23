@@ -82,12 +82,12 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 	s := server.New(testLogger{t: t})
 	onConnectedFunc := callbacks.OnConnectedFunc
 	callbacks.OnConnectedFunc = func(ctx context.Context, conn types.Connection) {
-		agentConn.Store(conn)
-		isAgentConnected.Store(true)
-		connectedChan <- true
 		if onConnectedFunc != nil {
 			onConnectedFunc(ctx, conn)
 		}
+		agentConn.Store(conn)
+		isAgentConnected.Store(true)
+		connectedChan <- true
 	}
 	onConnectionCloseFunc := callbacks.OnConnectionCloseFunc
 	callbacks.OnConnectionCloseFunc = func(conn types.Connection) {
@@ -472,4 +472,131 @@ func waitForSupervisorConnection(connection chan bool, connected bool) {
 			break
 		}
 	}
+}
+
+func TestSupervisorRestartCommand(t *testing.T) {
+	var healthReport atomic.Value
+	var agentConfig atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.Health != nil {
+					healthReport.Store(message.Health)
+				}
+
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						agentConfig.Store(string(config.Body))
+					}
+				}
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	// Send the initial config
+	cfg, hash, _, _ := createSimplePipelineCollectorConf(t)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: cfg.Bytes()},
+				},
+			},
+			ConfigHash: hash,
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		cfg, ok := agentConfig.Load().(string)
+		if ok {
+			return strings.Contains(cfg, "health_check")
+		}
+		return false
+	}, 5*time.Second, 500*time.Millisecond, "Collector was not started with healthcheck")
+
+	require.Eventually(t, func() bool {
+		health := healthReport.Load().(*protobufs.ComponentHealth)
+
+		if health != nil {
+			return health.Healthy && health.LastError == ""
+		}
+
+		return false
+	}, 5*time.Second, 500*time.Millisecond, "Collector never became healthy")
+
+	// The health report should be received after the restart
+	healthReport.Store(&protobufs.ComponentHealth{})
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		Command: &protobufs.ServerToAgentCommand{
+			Type: protobufs.CommandType_CommandType_Restart,
+		},
+	})
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		Flags: uint64(protobufs.ServerToAgentFlags_ServerToAgentFlags_ReportFullState),
+	})
+
+	require.Eventually(t, func() bool {
+		health := healthReport.Load().(*protobufs.ComponentHealth)
+		if health != nil {
+			return health.Healthy && health.LastError == ""
+		}
+		return false
+	}, 10*time.Second, 250*time.Millisecond, "Collector never reported healthy after restart")
+}
+
+func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
+	var connectedToNewServer atomic.Bool
+	initialServer := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{})
+
+	s := newSupervisor(t, "accepts_conn", map[string]string{"url": initialServer.addr})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(initialServer.supervisorConnected, true)
+
+	newServer := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnConnectedFunc: func(_ context.Context, _ types.Connection) {
+				connectedToNewServer.Store(true)
+			},
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	initialServer.sendToSupervisor(&protobufs.ServerToAgent{
+		ConnectionSettings: &protobufs.ConnectionSettingsOffers{
+			Opamp: &protobufs.OpAMPConnectionSettings{
+				DestinationEndpoint: "ws://" + newServer.addr + "/v1/opamp",
+				Headers: &protobufs.Headers{
+					Headers: []*protobufs.Header{
+						{
+							Key:   "x-foo",
+							Value: "bar",
+						},
+					},
+				},
+			},
+		},
+	})
+	waitForSupervisorConnection(newServer.supervisorConnected, true)
+
+	require.Eventually(t, func() bool {
+		return connectedToNewServer.Load() == true
+	}, 10*time.Second, 500*time.Millisecond, "Collector did not connect to new OpAMP server")
 }

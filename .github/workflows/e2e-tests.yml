@@ -6,7 +6,11 @@ on:
       - main
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
+    paths-ignore:
+      - '**/README.md'
   pull_request:
+    paths-ignore:
+      - '**/README.md'
   merge_group:
 
 env:
@@ -113,6 +117,7 @@ jobs:
     env:
       KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
     strategy:
+      fail-fast: false
       matrix:
         k8s-version:
           - "v1.26.0"
@@ -145,7 +150,7 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Create kind cluster
-        uses: helm/kind-action@v1.9.0
+        uses: helm/kind-action@v1.10.0
         with:
           node_image: kindest/node:${{ matrix.k8s-version }}
           kubectl_version: ${{ matrix.k8s-version }}

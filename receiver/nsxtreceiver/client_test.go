@@ -26,7 +26,7 @@ const (
 )
 
 func TestNewClientFailureToParse(t *testing.T) {
-	_, err := newClient(&Config{
+	_, err := newClient(context.Background(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "http://\x00",
 		},
@@ -38,7 +38,7 @@ func TestTransportNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(&Config{
+	client, err := newClient(context.Background(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
@@ -53,7 +53,7 @@ func TestClusterNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(&Config{
+	client, err := newClient(context.Background(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
@@ -68,7 +68,7 @@ func TestClusterNodeInterface(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(&Config{
+	client, err := newClient(context.Background(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
@@ -83,7 +83,7 @@ func TestTransportNodeInterface(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(&Config{
+	client, err := newClient(context.Background(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
@@ -98,7 +98,7 @@ func TestTransportNodeStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(&Config{
+	client, err := newClient(context.Background(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
@@ -113,7 +113,7 @@ func TestClusterNodeStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(&Config{
+	client, err := newClient(context.Background(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
@@ -128,7 +128,7 @@ func TestTransportNodeInterfaceStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(&Config{
+	client, err := newClient(context.Background(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
@@ -143,7 +143,7 @@ func TestManagerNodeInterfaceStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(&Config{
+	client, err := newClient(context.Background(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
@@ -158,7 +158,7 @@ func TestDoRequestBadUrl(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(&Config{
+	client, err := newClient(context.Background(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
 		},
@@ -173,7 +173,7 @@ func TestPermissionDenied_ClusterNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(&Config{
+	client, err := newClient(context.Background(), &Config{
 		Password: badPassword,
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -189,7 +189,7 @@ func TestPermissionDenied_Interfaces(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(&Config{
+	client, err := newClient(context.Background(), &Config{
 		Password: badPassword,
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -205,7 +205,7 @@ func TestPermissionDenied_InterfaceStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(&Config{
+	client, err := newClient(context.Background(), &Config{
 		Password: badPassword,
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -221,7 +221,7 @@ func TestPermissionDenied_NodeStatus(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(&Config{
+	client, err := newClient(context.Background(), &Config{
 		Password: badPassword,
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -237,7 +237,7 @@ func TestPermissionDenied_TransportNodes(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(&Config{
+	client, err := newClient(context.Background(), &Config{
 		Password: badPassword,
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,
@@ -253,7 +253,7 @@ func TestInternalServerError(t *testing.T) {
 	nsxMock := mockServer(t)
 	defer nsxMock.Close()
 
-	client, err := newClient(&Config{
+	client, err := newClient(context.Background(), &Config{
 		Username: user500,
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: nsxMock.URL,

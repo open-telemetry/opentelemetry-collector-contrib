@@ -30,6 +30,8 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/open-telemetry/opamp-go/server"
 	serverTypes "github.com/open-telemetry/opamp-go/server/types"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtls"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.uber.org/zap"
 
@@ -105,6 +107,9 @@ type Supervisor struct {
 
 	agentHasStarted               bool
 	agentStartHealthCheckAttempts int
+	agentRestarting               atomic.Bool
+
+	connectedToOpAMPServer chan struct{}
 }
 
 func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
@@ -114,6 +119,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		effectiveConfigFilePath:      "effective.yaml",
 		agentConfigOwnMetricsSection: &atomic.Value{},
 		effectiveConfig:              &atomic.Value{},
+		connectedToOpAMPServer:       make(chan struct{}),
 	}
 
 	if err := s.createTemplates(); err != nil {
@@ -150,6 +156,10 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 
 	if err = s.startOpAMP(); err != nil {
 		return nil, fmt.Errorf("cannot start OpAMP client: %w", err)
+	}
+
+	if connErr := s.waitForOpAMPConnection(); connErr != nil {
+		return nil, fmt.Errorf("failed to connect to the OpAMP server: %w", err)
 	}
 
 	s.commander, err = commander.NewCommander(
@@ -210,11 +220,6 @@ func (s *Supervisor) loadConfig(configFile string) error {
 }
 
 func (s *Supervisor) getBootstrapInfo() (err error) {
-	port, err := s.findRandomPort()
-	if err != nil {
-		return err
-	}
-
 	supervisorPort, err := s.findRandomPort()
 	if err != nil {
 		return err
@@ -223,7 +228,6 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	var cfg bytes.Buffer
 
 	err = s.bootstrapTemplate.Execute(&cfg, map[string]any{
-		"EndpointPort":   port,
 		"InstanceUid":    s.instanceID.String(),
 		"SupervisorPort": supervisorPort,
 	})
@@ -278,6 +282,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
+	defer func() {
+		if stopErr := srv.Stop(context.Background()); stopErr != nil {
+			err = errors.Join(err, fmt.Errorf("error when stopping the opamp server: %w", stopErr))
+		}
+	}()
+
 	cmd, err := commander.NewCommander(
 		s.logger,
 		s.config.Agent,
@@ -291,6 +301,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
+	defer func() {
+		if stopErr := cmd.Stop(context.Background()); stopErr != nil {
+			err = errors.Join(err, fmt.Errorf("error when stopping the collector: %w", stopErr))
+		}
+	}()
+
 	select {
 	// TODO make timeout configurable
 	case <-time.After(3 * time.Second):
@@ -300,20 +316,8 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 			return errors.New("collector's OpAMP client never connected to the Supervisor")
 		}
 	case err = <-done:
-		if err != nil {
-			return err
-		}
-	}
-
-	if err = cmd.Stop(context.Background()); err != nil {
 		return err
 	}
-
-	if err = srv.Stop(context.Background()); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
@@ -341,6 +345,14 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 		if c.ReportsRemoteConfig != nil && *c.ReportsRemoteConfig {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
 		}
+
+		if c.AcceptsRestartCommand != nil && *c.AcceptsRestartCommand {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
+		}
+
+		if c.AcceptsOpAMPConnectionSettings != nil && *c.AcceptsOpAMPConnectionSettings {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
+		}
 	}
 	return supportedCapabilities
 }
@@ -348,17 +360,20 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 func (s *Supervisor) startOpAMP() error {
 	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
 
-	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfig()
+	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfig(context.Background())
 	if err != nil {
 		return err
 	}
 
+	s.logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))
 	settings := types.StartSettings{
 		OpAMPServerURL: s.config.Server.Endpoint,
+		Header:         s.config.Server.Headers,
 		TLSConfig:      tlsConfig,
 		InstanceUid:    s.instanceID.String(),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func(_ context.Context) {
+				s.connectedToOpAMPServer <- struct{}{}
 				s.logger.Debug("Connected to the server.")
 			},
 			OnConnectFailedFunc: func(_ context.Context, err error) {
@@ -368,16 +383,15 @@ func (s *Supervisor) startOpAMP() error {
 				s.logger.Error("Server returned an error response", zap.String("message", err.ErrorMessage))
 			},
 			OnMessageFunc: s.onMessage,
-			OnOpampConnectionSettingsFunc: func(_ context.Context, _ *protobufs.OpAMPConnectionSettings) error {
-				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043
-				s.logger.Debug("Received ConnectionSettings request")
+			OnOpampConnectionSettingsFunc: func(ctx context.Context, settings *protobufs.OpAMPConnectionSettings) error {
+				//nolint:errcheck
+				go s.onOpampConnectionSettings(ctx, settings)
 				return nil
 			},
 			OnCommandFunc: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 				cmdType := command.GetType()
 				if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
-					// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21077
-					s.logger.Debug("Received restart command")
+					return s.handleRestartCommand()
 				}
 				return nil
 			},
@@ -410,6 +424,88 @@ func (s *Supervisor) startOpAMP() error {
 	s.logger.Debug("OpAMP Client started.")
 
 	return nil
+}
+
+func (s *Supervisor) stopOpAMP() error {
+	s.logger.Debug("Stopping OpAMP client...")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err := s.opampClient.Stop(ctx)
+	// TODO(srikanthccv): remove context.DeadlineExceeded after https://github.com/open-telemetry/opamp-go/pull/213
+	if err != nil && !errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+	s.logger.Debug("OpAMP client stopped.")
+	return nil
+}
+
+func (s *Supervisor) getHeadersFromSettings(protoHeaders *protobufs.Headers) http.Header {
+	headers := make(http.Header)
+	for _, header := range protoHeaders.Headers {
+		headers.Add(header.Key, header.Value)
+	}
+	return headers
+}
+
+func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *protobufs.OpAMPConnectionSettings) error {
+	if settings == nil {
+		s.logger.Debug("Received ConnectionSettings request with nil settings")
+		return nil
+	}
+
+	newServerConfig := &config.OpAMPServer{}
+
+	if settings.DestinationEndpoint != "" {
+		newServerConfig.Endpoint = settings.DestinationEndpoint
+	}
+	if settings.Headers != nil {
+		newServerConfig.Headers = s.getHeadersFromSettings(settings.Headers)
+	}
+	if settings.Certificate != nil {
+		if len(settings.Certificate.CaPublicKey) != 0 {
+			newServerConfig.TLSSetting.CAPem = configopaque.String(settings.Certificate.CaPublicKey)
+		}
+		if len(settings.Certificate.PublicKey) != 0 {
+			newServerConfig.TLSSetting.CertPem = configopaque.String(settings.Certificate.PublicKey)
+		}
+		if len(settings.Certificate.PrivateKey) != 0 {
+			newServerConfig.TLSSetting.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
+		}
+	} else {
+		newServerConfig.TLSSetting = configtls.ClientConfig{Insecure: true}
+	}
+
+	if err := s.stopOpAMP(); err != nil {
+		s.logger.Error("Cannot stop the OpAMP client", zap.Error(err))
+		return err
+	}
+
+	// take a copy of the current OpAMP server config
+	oldServerConfig := s.config.Server
+	// update the OpAMP server config
+	s.config.Server = newServerConfig
+
+	if err := s.startOpAMP(); err != nil {
+		s.logger.Error("Cannot connect to the OpAMP server using the new settings", zap.Error(err))
+		// revert the OpAMP server config
+		s.config.Server = oldServerConfig
+		// start the OpAMP client with the old settings
+		if err := s.startOpAMP(); err != nil {
+			s.logger.Error("Cannot reconnect to the OpAMP server after restoring old settings", zap.Error(err))
+			return err
+		}
+	}
+	return s.waitForOpAMPConnection()
+}
+
+func (s *Supervisor) waitForOpAMPConnection() error {
+	// wait for the OpAMP client to connect to the server or timeout
+	select {
+	case <-s.connectedToOpAMPServer:
+		return nil
+	case <-time.After(10 * time.Second):
+		return errors.New("timed out waiting for the server to connect")
+	}
 }
 
 // TODO: Persist instance ID. https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21073
@@ -607,6 +703,17 @@ func (s *Supervisor) recalcEffectiveConfig() (configChanged bool, err error) {
 	return configChanged, nil
 }
 
+func (s *Supervisor) handleRestartCommand() error {
+	s.agentRestarting.Store(true)
+	defer s.agentRestarting.Store(false)
+	s.logger.Debug("Received restart command")
+	err := s.commander.Restart(context.Background())
+	if err != nil {
+		s.logger.Error("Could not restart agent process", zap.Error(err))
+	}
+	return err
+}
+
 func (s *Supervisor) startAgent() {
 	err := s.commander.Start(context.Background())
 	if err != nil {
@@ -699,7 +806,12 @@ func (s *Supervisor) runAgentProcess() {
 			s.stopAgentApplyConfig()
 			s.startAgent()
 
-		case <-s.commander.Done():
+		case <-s.commander.Exited():
+			// the agent process exit is expected for restart command and will not attempt to restart
+			if s.agentRestarting.Load() {
+				continue
+			}
+
 			if s.shuttingDown {
 				return
 			}
@@ -719,7 +831,12 @@ func (s *Supervisor) runAgentProcess() {
 			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
 
 			// Wait 5 seconds before starting again.
-			restartTimer.Stop()
+			if !restartTimer.Stop() {
+				select {
+				case <-restartTimer.C: // Try to drain the channel
+				default:
+				}
+			}
 			restartTimer.Reset(5 * time.Second)
 
 		case <-restartTimer.C:
@@ -779,7 +896,7 @@ func (s *Supervisor) Shutdown() {
 			s.logger.Error("Could not report health to OpAMP server", zap.Error(err))
 		}
 
-		err = s.opampClient.Stop(context.Background())
+		err = s.stopOpAMP()
 
 		if err != nil {
 			s.logger.Error("Could not stop the OpAMP client", zap.Error(err))

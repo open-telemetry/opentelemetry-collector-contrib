@@ -5,6 +5,14 @@
             <returnval>
                 <obj type="HostSystem">host-1002</obj>
                 <propSet>
+                    <name>name</name>
+                    <val xsi:type="xsd:string">esxi-27971.cf5e88ac.australia-southeast1.gve.goog</val>
+                </propSet>
+                <propSet>
+                    <name>summary.hardware.cpuMhz</name>
+                    <val xsi:type="xsd:int">2593</val>
+                </propSet>
+                <propSet>
                     <name>config</name>
                     <val xsi:type="HostConfigInfo">
                         <host type="HostSystem">host-1002</host>

@@ -65,10 +65,11 @@ func createExporter(ctx context.Context, c component.Config, log *zap.Logger, op
 	var kinesisOpts []func(*kinesis.Options)
 	if conf.AWS.Role != "" {
 		kinesisOpts = append(kinesisOpts, func(o *kinesis.Options) {
-			o.Credentials = stscreds.NewAssumeRoleProvider(
+			roleProvider := stscreds.NewAssumeRoleProvider(
 				sts.NewFromConfig(awsconf),
 				conf.AWS.Role,
 			)
+			o.Credentials = aws.NewCredentialsCache(roleProvider)
 		})
 	}
 

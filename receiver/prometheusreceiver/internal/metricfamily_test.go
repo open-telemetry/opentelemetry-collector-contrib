@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
@@ -285,6 +286,199 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			require.Equal(t, mc[tt.metricName].Unit, metric.Unit(), "Expected unit metadata in metric")
 
 			hdpL := metric.Histogram().DataPoints()
+			require.Equal(t, 1, hdpL.Len(), "Exactly one point expected")
+			got := hdpL.At(0)
+			want := tt.want()
+			require.Equal(t, want, got, "Expected the points to be equal")
+		})
+	}
+}
+
+func TestMetricGroupData_toExponentialDistributionUnitTest(t *testing.T) {
+	type scrape struct {
+		at         int64
+		metric     string
+		extraLabel labels.Label
+
+		// Only one kind of value should be set.
+		value            float64
+		integerHistogram *histogram.Histogram
+		floatHistogram   *histogram.FloatHistogram // TODO: add tests for float histograms.
+	}
+	tests := []struct {
+		name                string
+		metricName          string
+		labels              labels.Labels
+		scrapes             []*scrape
+		want                func() pmetric.ExponentialHistogramDataPoint
+		wantErr             bool
+		intervalStartTimeMs int64
+	}{
+		{
+			name:                "integer histogram with startTimestamp",
+			metricName:          "request_duration_seconds",
+			intervalStartTimeMs: 11,
+			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			scrapes: []*scrape{
+				{
+					at:     11,
+					metric: "request_duration_seconds",
+					integerHistogram: &histogram.Histogram{
+						CounterResetHint: histogram.UnknownCounterReset,
+						Schema:           1,
+						ZeroThreshold:    0.42,
+						ZeroCount:        1,
+						Count:            66,
+						Sum:              1004.78,
+						PositiveSpans:    []histogram.Span{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}},
+						PositiveBuckets:  []int64{33, -30, 26}, // Delta encoded counts: 33, 3=(33-30), 30=(3+27) -> 65
+						NegativeSpans:    []histogram.Span{{Offset: 0, Length: 1}},
+						NegativeBuckets:  []int64{1}, // Delta encoded counts: 1
+					},
+				},
+			},
+			want: func() pmetric.ExponentialHistogramDataPoint {
+				point := pmetric.NewExponentialHistogramDataPoint()
+				point.SetCount(66)
+				point.SetSum(1004.78)
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.SetScale(1)
+				point.SetZeroThreshold(0.42)
+				point.SetZeroCount(1)
+				point.Positive().SetOffset(0)
+				point.Positive().BucketCounts().FromRaw([]uint64{33, 3, 0, 0, 0, 29})
+				point.Negative().SetOffset(-1)
+				point.Negative().BucketCounts().FromRaw([]uint64{1})
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
+		{
+			name:                "integer histogram with startTimestamp from _created",
+			metricName:          "request_duration_seconds",
+			intervalStartTimeMs: 11,
+			labels:              labels.FromMap(map[string]string{"a": "A"}),
+			scrapes: []*scrape{
+				{
+					at:     11,
+					metric: "request_duration_seconds",
+					integerHistogram: &histogram.Histogram{
+						CounterResetHint: histogram.UnknownCounterReset,
+						Schema:           1,
+						ZeroThreshold:    0.42,
+						ZeroCount:        1,
+						Count:            66,
+						Sum:              1004.78,
+						PositiveSpans:    []histogram.Span{{Offset: 1, Length: 2}, {Offset: 3, Length: 1}},
+						PositiveBuckets:  []int64{33, -30, 26}, // Delta encoded counts: 33, 3=(33-30), 30=(3+27) -> 65
+						NegativeSpans:    []histogram.Span{{Offset: 0, Length: 1}},
+						NegativeBuckets:  []int64{1}, // Delta encoded counts: 1
+					},
+				},
+				{
+					at:     11,
+					metric: "request_duration_seconds_created",
+					value:  600.78,
+				},
+			},
+			want: func() pmetric.ExponentialHistogramDataPoint {
+				point := pmetric.NewExponentialHistogramDataPoint()
+				point.SetCount(66)
+				point.SetSum(1004.78)
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(timestampFromFloat64(600.78))        // the time in milliseconds -> nanoseconds.
+				point.SetScale(1)
+				point.SetZeroThreshold(0.42)
+				point.SetZeroCount(1)
+				point.Positive().SetOffset(0)
+				point.Positive().BucketCounts().FromRaw([]uint64{33, 3, 0, 0, 0, 29})
+				point.Negative().SetOffset(-1)
+				point.Negative().BucketCounts().FromRaw([]uint64{1})
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				return point
+			},
+		},
+		{
+			name:                "integer histogram that is stale",
+			metricName:          "request_duration_seconds",
+			intervalStartTimeMs: 11,
+			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
+			scrapes: []*scrape{
+				{
+					at:     11,
+					metric: "request_duration_seconds",
+					integerHistogram: &histogram.Histogram{
+						Sum: math.Float64frombits(value.StaleNaN),
+					},
+				},
+			},
+			want: func() pmetric.ExponentialHistogramDataPoint {
+				point := pmetric.NewExponentialHistogramDataPoint()
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				attributes := point.Attributes()
+				attributes.PutStr("a", "A")
+				attributes.PutStr("b", "B")
+				return point
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			mp := newMetricFamily(tt.metricName, mc, zap.NewNop())
+			for i, tv := range tt.scrapes {
+				var lbls labels.Labels
+				if tv.extraLabel.Name != "" {
+					lbls = labels.NewBuilder(tt.labels).Set(tv.extraLabel.Name, tv.extraLabel.Value).Labels()
+				} else {
+					lbls = tt.labels.Copy()
+				}
+
+				var err error
+				switch {
+				case tv.integerHistogram != nil:
+					mp.mtype = pmetric.MetricTypeExponentialHistogram
+					sRef, _ := getSeriesRef(nil, lbls, mp.mtype)
+					err = mp.addExponentialHistogramSeries(sRef, tv.metric, lbls, tv.at, tv.integerHistogram, nil)
+				case tv.floatHistogram != nil:
+					mp.mtype = pmetric.MetricTypeExponentialHistogram
+					sRef, _ := getSeriesRef(nil, lbls, mp.mtype)
+					err = mp.addExponentialHistogramSeries(sRef, tv.metric, lbls, tv.at, nil, tv.floatHistogram)
+				default:
+					sRef, _ := getSeriesRef(nil, lbls, mp.mtype)
+					err = mp.addSeries(sRef, tv.metric, lbls, tv.at, tv.value)
+				}
+				if tt.wantErr {
+					if i != 0 {
+						require.Error(t, err)
+					}
+				} else {
+					require.NoError(t, err)
+				}
+			}
+			if tt.wantErr {
+				// Don't check the result if we got an error
+				return
+			}
+
+			require.Len(t, mp.groups, 1)
+
+			sl := pmetric.NewMetricSlice()
+			mp.appendMetric(sl, false)
+
+			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
+			metric := sl.At(0)
+			require.Equal(t, mc[tt.metricName].Help, metric.Description(), "Expected help metadata in metric description")
+			require.Equal(t, mc[tt.metricName].Unit, metric.Unit(), "Expected unit metadata in metric")
+
+			hdpL := metric.ExponentialHistogram().DataPoints()
 			require.Equal(t, 1, hdpL.Len(), "Exactly one point expected")
 			got := hdpL.At(0)
 			want := tt.want()
