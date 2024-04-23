@@ -491,8 +491,8 @@ func getShowTableResponse(requestBody string) []byte {
 
 }
 
-// Setup function (runs before tests start)
-func TestMain(m *testing.M) {
+// setupTestMain function (runs before tests start)
+func setupTestMain(m *testing.M) {
 	// Create a test server with a simple handler function
 	testServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("In main ...")

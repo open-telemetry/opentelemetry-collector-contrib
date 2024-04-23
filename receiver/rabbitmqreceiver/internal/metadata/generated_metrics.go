@@ -389,23 +389,23 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:    make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:    make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.RabbitmqNodeName.Include != nil {
-		mb.resourceAttributeIncludeFilter["rabbitmq.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqNodeName.Include)
+	if mbc.ResourceAttributes.RabbitmqNodeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["rabbitmq.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqNodeName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.RabbitmqNodeName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["rabbitmq.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqNodeName.Exclude)
+	if mbc.ResourceAttributes.RabbitmqNodeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["rabbitmq.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqNodeName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.RabbitmqQueueName.Include != nil {
-		mb.resourceAttributeIncludeFilter["rabbitmq.queue.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqQueueName.Include)
+	if mbc.ResourceAttributes.RabbitmqQueueName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["rabbitmq.queue.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqQueueName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.RabbitmqQueueName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["rabbitmq.queue.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqQueueName.Exclude)
+	if mbc.ResourceAttributes.RabbitmqQueueName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["rabbitmq.queue.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqQueueName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.RabbitmqVhostName.Include != nil {
-		mb.resourceAttributeIncludeFilter["rabbitmq.vhost.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqVhostName.Include)
+	if mbc.ResourceAttributes.RabbitmqVhostName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["rabbitmq.vhost.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqVhostName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.RabbitmqVhostName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["rabbitmq.vhost.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqVhostName.Exclude)
+	if mbc.ResourceAttributes.RabbitmqVhostName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["rabbitmq.vhost.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqVhostName.MetricsExclude)
 	}
 
 	for _, op := range options {
