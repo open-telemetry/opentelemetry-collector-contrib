@@ -5,9 +5,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out this bug report! Please make sure to fill out the entire form below, providing as much context as you can in order to help us triage and track down your bug as quickly as possible.
-
-        Before filing a bug, please be sure you have searched through [existing bugs](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3Abug) to see if an existing issue covers your bug.
+        Please open an issue using this template if code owners for a component have been unresponsive in 6 weeks. Ensure
+        links to relevant pull requests and issues are added to this issue.
   - type: dropdown
     id: component
     attributes:
