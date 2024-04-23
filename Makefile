@@ -29,9 +29,11 @@ RECEIVER_MODS_2 := $(shell find ./receiver/[p]* $(FIND_MOD_ARGS) -exec $(TO_MOD_
 RECEIVER_MODS_3 := $(shell find ./receiver/[q-z]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 RECEIVER_MODS := $(RECEIVER_MODS_0) $(RECEIVER_MODS_1) $(RECEIVER_MODS_2) $(RECEIVER_MODS_3)
 PROCESSOR_MODS := $(shell find ./processor/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-EXPORTER_MODS_0 := $(shell find ./exporter/[a-m]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-EXPORTER_MODS_1 := $(shell find ./exporter/[n-z]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-EXPORTER_MODS := $(EXPORTER_MODS_0) $(EXPORTER_MODS_1)
+EXPORTER_MODS_0 := $(shell find ./exporter/[a-c]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXPORTER_MODS_1 := $(shell find ./exporter/[d-i]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXPORTER_MODS_2 := $(shell find ./exporter/[k-o]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXPORTER_MODS_3 := $(shell find ./exporter/[p-z]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXPORTER_MODS := $(EXPORTER_MODS_0) $(EXPORTER_MODS_1) $(EXPORTER_MODS_2) $(EXPORTER_MODS_3)
 EXTENSION_MODS := $(shell find ./extension/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 CONNECTOR_MODS := $(shell find ./connector/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 INTERNAL_MODS := $(shell find ./internal/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
@@ -63,6 +65,8 @@ all-groups:
 	@echo "\nprocessor: $(PROCESSOR_MODS)"
 	@echo "\nexporter-0: $(EXPORTER_MODS_0)"
 	@echo "\nexporter-1: $(EXPORTER_MODS_1)"
+	@echo "\nexporter-2: $(EXPORTER_MODS_2)"
+	@echo "\nexporter-3: $(EXPORTER_MODS_3)"
 	@echo "\nextension: $(EXTENSION_MODS)"
 	@echo "\nconnector: $(CONNECTOR_MODS)"
 	@echo "\ninternal: $(INTERNAL_MODS)"
@@ -194,6 +198,12 @@ for-exporter-0-target: $(EXPORTER_MODS_0)
 
 .PHONY: for-exporter-1-target
 for-exporter-1-target: $(EXPORTER_MODS_1)
+
+.PHONY: for-exporter-2-target
+for-exporter-2-target: $(EXPORTER_MODS_2)
+
+.PHONY: for-exporter-3-target
+for-exporter-3-target: $(EXPORTER_MODS_3)
 
 .PHONY: for-extension-target
 for-extension-target: $(EXTENSION_MODS)
