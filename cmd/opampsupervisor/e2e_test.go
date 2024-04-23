@@ -692,3 +692,83 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 	}, 10*time.Second, 500*time.Millisecond, "Collector was not started with the last received remote config")
 
 }
+
+func TestSupervisorPersistsNewInstanceID(t *testing.T) {
+	// Tests that an agent ID that is given from the server to the agent in an AgentIdentification message
+	// is properly persisted.
+	storageDir := t.TempDir()
+
+	newID := "01HW3GS9NWD840C5C2BZS3KYPW"
+
+	agentIDChan := make(chan string, 1)
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+
+				select {
+				case agentIDChan <- message.InstanceUid:
+				default:
+				}
+
+				if message.InstanceUid != newID {
+					return &protobufs.ServerToAgent{
+						InstanceUid: message.InstanceUid,
+						AgentIdentification: &protobufs.AgentIdentification{
+							NewInstanceUid: newID,
+						},
+					}
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "basic", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+	})
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	t.Logf("Supervisor connected")
+
+	for id := range agentIDChan {
+		if id == newID {
+			t.Logf("Agent ID was changed to new ID")
+			break
+		}
+	}
+
+	s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, false)
+
+	t.Logf("Supervisor disconnected")
+
+	// Drain agent ID channel so we get a fresh ID from the new supervisor
+	select {
+	case <-agentIDChan:
+	default:
+	}
+
+	s = newSupervisor(t, "basic", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+	})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	t.Logf("Supervisor connected")
+
+	var newRecievedAgentID string
+	select {
+	case newRecievedAgentID = <-agentIDChan:
+	case <-time.After(1 * time.Second):
+		t.Fatalf("failed to get second agent ID")
+	}
+
+	require.Equal(t, newID, newRecievedAgentID)
+}
