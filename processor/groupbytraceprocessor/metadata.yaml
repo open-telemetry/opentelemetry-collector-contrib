@@ -12,7 +12,6 @@ status:
 tests:
   config:
   goleak:
-    skip: false
     ignore:
       # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
       top: go.opencensus.io/stats/view.(*worker).start
