@@ -137,6 +137,11 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		return nil, fmt.Errorf("error loading config: %w", err)
 	}
 
+	storageDir := s.config.Storage.DirectoryOrDefault()
+	if err := os.MkdirAll(storageDir, 0700); err != nil {
+		return nil, fmt.Errorf("error creating storage dir: %w", err)
+	}
+
 	var err error
 	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFile())
 	if err != nil {
