@@ -29,15 +29,16 @@ func NewDatabase(ctx context.Context, databaseID *DatabaseID, credentialsFilePat
 	var client *spanner.Client
 	var err error
 
-	if credentialsFilePath != "" {
+	switch {
+	case credentialsFilePath != "":
 		credentialsFileClientOption := option.WithCredentialsFile(credentialsFilePath)
 		client, err = spanner.NewClient(ctx, databaseID.ID(), credentialsFileClientOption)
-	} else if useFGACDatabaseRole {
+	case useFGACDatabaseRole:
 		cfg := spanner.ClientConfig{
 			DatabaseRole: fgacRole,
 		}
 		client, err = spanner.NewClientWithConfig(ctx, databaseID.ID(), cfg)
-	} else {
+	default:
 		// Fallback to Application Default Credentials(https://google.aip.dev/auth/4110)
 		client, err = spanner.NewClient(ctx, databaseID.ID())
 	}
