@@ -18,12 +18,13 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
 func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
-	emitter := NewLogEmitter(zap.NewNop().Sugar())
+	emitter := helper.NewLogEmitter(zap.NewNop().Sugar())
 
 	pipe, err := pipeline.Config{
 		Operators: []operator.Config{
