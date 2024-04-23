@@ -272,7 +272,7 @@ func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, er
 
 		switch s.config.MetricFormat {
 		case PrometheusFormat:
-			formattedLine = s.prometheusFormatter.metric2String(record)
+			formattedLine = s.prometheusFormatter.metric2String(record.metric, record.attributes)
 		case Carbon2Format:
 			formattedLine = carbon2Metric2String(record)
 		case GraphiteFormat:

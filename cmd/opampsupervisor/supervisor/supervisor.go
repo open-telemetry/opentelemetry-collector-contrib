@@ -219,11 +219,6 @@ func (s *Supervisor) loadConfig(configFile string) error {
 }
 
 func (s *Supervisor) getBootstrapInfo() (err error) {
-	port, err := s.findRandomPort()
-	if err != nil {
-		return err
-	}
-
 	supervisorPort, err := s.findRandomPort()
 	if err != nil {
 		return err
@@ -232,7 +227,6 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	var cfg bytes.Buffer
 
 	err = s.bootstrapTemplate.Execute(&cfg, map[string]any{
-		"EndpointPort":   port,
 		"InstanceUid":    s.instanceID.String(),
 		"SupervisorPort": supervisorPort,
 	})
