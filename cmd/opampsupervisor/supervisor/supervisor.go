@@ -55,7 +55,7 @@ var (
 	lastRecvOwnMetricsConfigFile = "last_recv_own_metrics_config.dat"
 )
 
-const instanceIDStorageFile = "instance_id"
+const persistentStateFile = "persistent_state.yaml"
 
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
@@ -138,7 +138,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	}
 
 	var err error
-	s.persistentState, err = loadOrCreatePersistentState(s.instanceIDFile())
+	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFile())
 	if err != nil {
 		return nil, err
 	}
@@ -1040,8 +1040,8 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	}
 }
 
-func (s *Supervisor) instanceIDFile() string {
-	return filepath.Join(s.config.Storage.DirectoryOrDefault(), instanceIDStorageFile)
+func (s *Supervisor) persistentStateFile() string {
+	return filepath.Join(s.config.Storage.DirectoryOrDefault(), persistentStateFile)
 }
 
 func (s *Supervisor) findRandomPort() (int, error) {
