@@ -191,6 +191,7 @@ import (
 	snmpreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 	snowflakereceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver"
 	solacereceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver"
+	splunkenterprisereceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
 	splunkhecreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 	sqlqueryreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
 	sqlserverreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
@@ -321,6 +322,7 @@ func components() (otelcol.Factories, error) {
 		skywalkingreceiver.NewFactory(),
 		snowflakereceiver.NewFactory(),
 		solacereceiver.NewFactory(),
+		splunkenterprisereceiver.NewFactory(),
 		splunkhecreceiver.NewFactory(),
 		sqlqueryreceiver.NewFactory(),
 		sqlserverreceiver.NewFactory(),

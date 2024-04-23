@@ -152,6 +152,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver v0.97.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver v0.97.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.97.0
@@ -1071,6 +1072,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywa
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver => ./receiver/snmpreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver => ./receiver/solacereceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceive => ./receiver/splunkenterprisereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ./receiver/splunkhecreceiver
 
