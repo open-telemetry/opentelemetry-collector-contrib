@@ -753,17 +753,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:  make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:  make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.IisApplicationPool.Include != nil {
-		mb.resourceAttributeIncludeFilter["iis.application_pool"] = filter.CreateFilter(mbc.ResourceAttributes.IisApplicationPool.Include)
+	if mbc.ResourceAttributes.IisApplicationPool.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["iis.application_pool"] = filter.CreateFilter(mbc.ResourceAttributes.IisApplicationPool.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.IisApplicationPool.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["iis.application_pool"] = filter.CreateFilter(mbc.ResourceAttributes.IisApplicationPool.Exclude)
+	if mbc.ResourceAttributes.IisApplicationPool.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["iis.application_pool"] = filter.CreateFilter(mbc.ResourceAttributes.IisApplicationPool.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.IisSite.Include != nil {
-		mb.resourceAttributeIncludeFilter["iis.site"] = filter.CreateFilter(mbc.ResourceAttributes.IisSite.Include)
+	if mbc.ResourceAttributes.IisSite.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["iis.site"] = filter.CreateFilter(mbc.ResourceAttributes.IisSite.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.IisSite.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["iis.site"] = filter.CreateFilter(mbc.ResourceAttributes.IisSite.Exclude)
+	if mbc.ResourceAttributes.IisSite.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["iis.site"] = filter.CreateFilter(mbc.ResourceAttributes.IisSite.MetricsExclude)
 	}
 
 	for _, op := range options {

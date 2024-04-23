@@ -45,19 +45,19 @@ filter_set_include:
   resource_attributes:
     git.vendor.name:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     organization.name:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
     git.vendor.name:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "git.vendor.name-val"
     organization.name:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "organization.name-val"
