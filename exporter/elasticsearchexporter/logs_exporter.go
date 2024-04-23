@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -68,6 +69,59 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 
 func (e *elasticsearchLogsExporter) Shutdown(ctx context.Context) error {
 	return e.bulkIndexer.Close(ctx)
+}
+
+func (e *elasticsearchLogsExporter) logsDataToRequest(ctx context.Context, ld plog.Logs) (exporterhelper.Request, error) {
+	request := newRequest(e.bulkIndexer)
+
+	var errs []error
+
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		rl := rls.At(i)
+		resource := rl.Resource()
+		ills := rl.ScopeLogs()
+		for j := 0; j < ills.Len(); j++ {
+			scope := ills.At(j).Scope()
+			logs := ills.At(j).LogRecords()
+			for k := 0; k < logs.Len(); k++ {
+				if err := e.appendLogRecord(ctx, request, resource, logs.At(k), scope); err != nil {
+					if cerr := ctx.Err(); cerr != nil {
+						return request, cerr
+					}
+
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+
+	return request, errors.Join(errs...)
+}
+
+func (e *elasticsearchLogsExporter) appendLogRecord(ctx context.Context, req *Request, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) error {
+	fIndex := e.index
+	if e.dynamicIndex {
+		prefix := getFromAttributes(indexPrefix, resource, scope, record)
+		suffix := getFromAttributes(indexSuffix, resource, scope, record)
+
+		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+	}
+
+	if e.logstashFormat.Enabled {
+		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
+		if err != nil {
+			return err
+		}
+		fIndex = formattedIndex
+	}
+
+	document, err := e.model.encodeLog(resource, record, scope)
+	if err != nil {
+		return fmt.Errorf("Failed to encode log event: %w", err)
+	}
+	req.Add(fIndex, document)
+	return nil
 }
 
 func (e *elasticsearchLogsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {

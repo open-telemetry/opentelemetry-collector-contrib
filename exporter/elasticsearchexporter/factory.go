@@ -14,7 +14,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
@@ -31,7 +33,7 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithLogs(createLogsRequestExporter, metadata.LogsStability),
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 	)
 }
@@ -73,10 +75,10 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-// createLogsExporter creates a new exporter for logs.
+// createLogsRequestExporter creates a new request exporter for logs.
 //
 // Logs are directly indexed into Elasticsearch.
-func createLogsExporter(
+func createLogsRequestExporter(
 	ctx context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config,
@@ -93,13 +95,52 @@ func createLogsExporter(
 		return nil, fmt.Errorf("cannot configure Elasticsearch logsExporter: %w", err)
 	}
 
-	return exporterhelper.NewLogsExporter(
+	batchMergeFunc := func(ctx context.Context, r1, r2 exporterhelper.Request) (exporterhelper.Request, error) {
+		rr1 := r1.(*Request)
+		rr2 := r2.(*Request)
+		req := newRequest(logsExporter.bulkIndexer, logsExporter.mu)
+		req.Items = append(rr1.Items, rr2.Items...)
+		return req, nil
+	}
+
+	batchMergeSplitFunc := func(ctx context.Context, conf exporterbatcher.MaxSizeConfig, optReq, req exporterhelper.Request) ([]exporterhelper.Request, error) {
+		// FIXME: implement merge split func
+		panic("not implemented")
+		return nil, nil
+	}
+
+	marshalRequest := func(req exporterhelper.Request) ([]byte, error) {
+		b, err := json.Marshal(*req.(*Request))
+		return b, err
+	}
+
+	unmarshalRequest := func(b []byte) (exporterhelper.Request, error) {
+		var req Request
+		err := json.Unmarshal(b, &req)
+		req.bulkIndexer = logsExporter.bulkIndexer
+		req.mu = logsExporter.mu
+		return &req, err
+	}
+
+	batcherCfg := exporterbatcher.NewDefaultConfig()
+
+	// FIXME: is this right?
+	queueCfg := exporterqueue.NewDefaultConfig()
+	queueCfg.Enabled = cf.QueueSettings.Enabled
+	queueCfg.NumConsumers = cf.QueueSettings.NumConsumers
+	queueCfg.QueueSize = cf.QueueSettings.QueueSize
+
+	return exporterhelper.NewLogsRequestExporter(
 		ctx,
 		set,
-		cfg,
-		logsExporter.pushLogsData,
+		logsExporter.logsDataToRequest,
+		exporterhelper.WithBatcher(batcherCfg, exporterhelper.WithRequestBatchFuncs(batchMergeFunc, batchMergeSplitFunc)),
 		exporterhelper.WithShutdown(logsExporter.Shutdown),
-		exporterhelper.WithQueue(cf.QueueSettings),
+		exporterhelper.WithRequestQueue(queueCfg,
+			exporterqueue.NewPersistentQueueFactory[exporterhelper.Request](cf.QueueSettings.StorageID, exporterqueue.PersistentQueueSettings[exporterhelper.Request]{
+				Marshaler:   marshalRequest,
+				Unmarshaler: unmarshalRequest,
+			})),
 	)
 }
 
