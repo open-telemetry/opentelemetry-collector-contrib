@@ -15,7 +15,7 @@ issues: [32589]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Instead of using a mutex in the compressor Do I ended up creating a new compressor on each batch generation because it generated more performant execution in my tests with heavy load, specially if the payloads were bigger
+subtext: removed compressor abstraction and each execution has its own buffer (so it's thread safe)
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
