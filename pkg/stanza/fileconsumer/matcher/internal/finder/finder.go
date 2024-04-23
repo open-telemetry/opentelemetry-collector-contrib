@@ -6,6 +6,7 @@ package finder // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
 )
@@ -21,16 +22,16 @@ func Validate(globs []string) error {
 }
 
 // FindFiles gets a list of paths given an array of glob patterns to include and exclude
-func FindFiles(includes []string, excludes []string) ([]string, error) {
+func FindFiles(includes []string, excludes []string, maxAge time.Duration) ([]string, error) {
 	var errs error
 	all := make([]string, 0, len(includes))
 	for _, include := range includes {
-		matches, err := doublestar.FilepathGlob(include, doublestar.WithFilesOnly(), doublestar.WithFailOnIOErrors())
+		matches, err := doublestar.FilepathGlob(include, doublestar.WithFilesOnly(), doublestar.WithFailOnIOErrors(), doublestar.WithMaxAge(maxAge))
 		if err != nil {
 			errs = errors.Join(errs, fmt.Errorf("find files with '%s' pattern: %w", include, err))
 			// the same pattern could cause an IO error due to one file or directory,
 			// but also could still find files without `doublestar.WithFailOnIOErrors()`.
-			matches, _ = doublestar.FilepathGlob(include, doublestar.WithFilesOnly())
+			matches, _ = doublestar.FilepathGlob(include, doublestar.WithFilesOnly(), doublestar.WithMaxAge(maxAge))
 		}
 	INCLUDE:
 		for _, match := range matches {

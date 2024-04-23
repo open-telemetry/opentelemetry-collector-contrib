@@ -186,7 +186,7 @@ func TestFindFiles(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, file.Close())
 			}
-			files, err := FindFiles(tc.include, tc.exclude)
+			files, err := FindFiles(tc.include, tc.exclude, 0)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, files)
 		})
@@ -249,7 +249,7 @@ func TestFindFilesWithIOErrors(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			files, err := FindFiles(tc.include, []string{})
+			files, err := FindFiles(tc.include, []string{}, 0)
 			assert.ErrorContains(t, err, tc.failedMsg)
 			assert.Equal(t, tc.expected, files)
 		})
