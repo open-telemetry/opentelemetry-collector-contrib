@@ -48,7 +48,7 @@ func (fp *fifoPrioritizer) downgrade(ctx context.Context) {
 }
 
 // nextWriter returns the first-available stream.
-func (fp *fifoPrioritizer) nextWriter(ctx context.Context) streamWriter {
+func (fp *fifoPrioritizer) nextWriter() streamWriter {
 	select {
 	case <-fp.done:
 		// In case of downgrade, return nil to return into a

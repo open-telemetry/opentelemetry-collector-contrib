@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
 	"github.com/open-telemetry/otel-arrow/collector/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {

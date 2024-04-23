@@ -247,7 +247,7 @@ func (s *Stream) run(ctx context.Context, dc doneCancel, streamClient StreamClie
 // the caller waiting on its error channel.
 func (s *Stream) write(ctx context.Context) (retErr error) {
 	// always close send()
-	defer s.client.CloseSend()
+	defer func() { _ = s.client.CloseSend() }()
 
 	// headers are encoding using hpack, reusing a buffer on each call.
 	var hdrsBuf bytes.Buffer
