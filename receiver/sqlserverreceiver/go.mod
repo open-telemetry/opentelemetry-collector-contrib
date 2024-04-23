@@ -4,18 +4,18 @@ go 1.21.0
 
 require (
 	github.com/google/go-cmp v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.98.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.98.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.98.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.98.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.99.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.99.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.99.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.99.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.98.1-0.20240419202408-d1e631b61158
-	go.opentelemetry.io/collector/config/configopaque v1.5.1-0.20240419202408-d1e631b61158
-	go.opentelemetry.io/collector/confmap v0.98.1-0.20240419202408-d1e631b61158
-	go.opentelemetry.io/collector/consumer v0.98.1-0.20240419202408-d1e631b61158
-	go.opentelemetry.io/collector/filter v0.0.0-20240419202408-d1e631b61158
-	go.opentelemetry.io/collector/pdata v1.5.1-0.20240419202408-d1e631b61158
-	go.opentelemetry.io/collector/receiver v0.98.1-0.20240419202408-d1e631b61158
+	go.opentelemetry.io/collector/component v0.99.0
+	go.opentelemetry.io/collector/config/configopaque v1.6.0
+	go.opentelemetry.io/collector/confmap v0.99.0
+	go.opentelemetry.io/collector/consumer v0.99.0
+	go.opentelemetry.io/collector/filter v0.99.0
+	go.opentelemetry.io/collector/pdata v1.6.0
+	go.opentelemetry.io/collector/receiver v0.99.0
 	go.opentelemetry.io/otel/metric v1.25.0
 	go.opentelemetry.io/otel/trace v1.25.0
 	go.uber.org/goleak v1.3.0
@@ -80,13 +80,13 @@ require (
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
 	github.com/lib/pq v1.10.9 // indirect
-	github.com/microsoft/go-mssqldb v1.7.0 // indirect
+	github.com/microsoft/go-mssqldb v1.7.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.98.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.99.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -94,13 +94,13 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.52.3 // indirect
 	github.com/prometheus/procfs v0.13.0 // indirect
-	github.com/sijms/go-ora/v2 v2.8.11 // indirect
+	github.com/sijms/go-ora/v2 v2.8.13 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/snowflakedb/gosnowflake v1.9.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.opentelemetry.io/collector v0.98.1-0.20240419202408-d1e631b61158 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.98.1-0.20240419202408-d1e631b61158 // indirect
+	go.opentelemetry.io/collector v0.99.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.99.0 // indirect
 	go.opentelemetry.io/otel v1.25.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.47.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.25.0 // indirect
