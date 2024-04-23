@@ -133,11 +133,11 @@ filter_set_include:
   resource_attributes:
     database:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
     database:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "database-val"
