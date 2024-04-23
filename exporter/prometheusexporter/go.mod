@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.99.0
 	github.com/prometheus/client_golang v1.19.0
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.52.3
+	github.com/prometheus/common v0.53.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.99.0
 	go.opentelemetry.io/collector/config/confighttp v0.99.0
