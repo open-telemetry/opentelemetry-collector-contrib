@@ -85,13 +85,16 @@ func (e *elasticsearchLogsExporter) logsDataToRequest(ctx context.Context, ld pl
 			scope := ills.At(j).Scope()
 			logs := ills.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				if err := e.addLogRecordToRequest(ctx, request, resource, logs.At(k), scope); err != nil {
+				item, err := e.logRecordToItem(ctx, resource, logs.At(k), scope)
+				if err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return request, cerr
 					}
 
 					errs = append(errs, err)
+					continue
 				}
+				request.Add(item)
 			}
 		}
 	}
@@ -99,7 +102,7 @@ func (e *elasticsearchLogsExporter) logsDataToRequest(ctx context.Context, ld pl
 	return request, errors.Join(errs...)
 }
 
-func (e *elasticsearchLogsExporter) addLogRecordToRequest(ctx context.Context, req *Request, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) error {
+func (e *elasticsearchLogsExporter) logRecordToItem(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) (BulkIndexerItem, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
 		prefix := getFromAttributes(indexPrefix, resource, scope, record)
@@ -111,15 +114,17 @@ func (e *elasticsearchLogsExporter) addLogRecordToRequest(ctx context.Context, r
 	if e.logstashFormat.Enabled {
 		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
 		if err != nil {
-			return err
+			return BulkIndexerItem{}, err
 		}
 		fIndex = formattedIndex
 	}
 
 	document, err := e.model.encodeLog(resource, record, scope)
 	if err != nil {
-		return fmt.Errorf("Failed to encode log event: %w", err)
+		return BulkIndexerItem{}, fmt.Errorf("Failed to encode log event: %w", err)
 	}
-	req.Add(fIndex, document)
-	return nil
+	return BulkIndexerItem{
+		Index: fIndex,
+		Body:  document,
+	}, nil
 }

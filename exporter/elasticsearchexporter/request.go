@@ -29,8 +29,8 @@ func (r *Request) ItemsCount() int {
 	return len(r.Items)
 }
 
-func (r *Request) Add(index string, body []byte) {
-	r.Items = append(r.Items, BulkIndexerItem{Index: index, Body: body})
+func (r *Request) Add(item BulkIndexerItem) {
+	r.Items = append(r.Items, item)
 }
 
 type BulkIndexerItem struct {
