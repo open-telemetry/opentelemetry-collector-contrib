@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasti
 go 1.21.0
 
 require (
-	github.com/elastic/go-docappender/v2 v2.0.1
+	github.com/elastic/go-docappender/v2 v2.0.2
 	github.com/gorilla/mux v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.99.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.99.0
@@ -257,5 +257,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourceto
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter => ../../prometheusremotewriteexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ../../../extension/ackextension
-
-replace github.com/elastic/go-docappender/v2 => github.com/lahsivjar/go-docappender/v2 v2.0.0-20240422190930-f7664bd478dc
