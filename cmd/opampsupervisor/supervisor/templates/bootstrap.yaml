@@ -1,11 +1,7 @@
 receivers:
-  otlp:
-    protocols:
-      http:
-        endpoint: "localhost:{{.EndpointPort}}"
+  nop:
 exporters:
-  debug:
-    verbosity: basic
+  nop:
 
 extensions:
   opamp:
@@ -19,6 +15,6 @@ extensions:
 service:
   pipelines:
     traces:
-      receivers: [otlp]
-      exporters: [debug]
+      receivers: [nop]
+      exporters: [nop]
   extensions: [opamp]
