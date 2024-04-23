@@ -37,11 +37,11 @@ filter_set_include:
   resource_attributes:
     ssh.endpoint:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
     ssh.endpoint:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "ssh.endpoint-val"
