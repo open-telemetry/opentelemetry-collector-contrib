@@ -5,16 +5,16 @@ import (
 	"context"
 )
 
-type Request struct {
+type request struct {
 	bulkIndexer *esBulkIndexerCurrent
 	Items       []bulkIndexerItem
 }
 
-func newRequest(bulkIndexer *esBulkIndexerCurrent) *Request {
-	return &Request{bulkIndexer: bulkIndexer}
+func newRequest(bulkIndexer *esBulkIndexerCurrent) *request {
+	return &request{bulkIndexer: bulkIndexer}
 }
 
-func (r *Request) Export(ctx context.Context) error {
+func (r *request) Export(ctx context.Context) error {
 	batch := make([]esBulkIndexerItem, len(r.Items))
 	for i, item := range r.Items {
 		batch[i] = esBulkIndexerItem{
@@ -25,11 +25,11 @@ func (r *Request) Export(ctx context.Context) error {
 	return r.bulkIndexer.AddBatchAndFlush(ctx, batch)
 }
 
-func (r *Request) ItemsCount() int {
+func (r *request) ItemsCount() int {
 	return len(r.Items)
 }
 
-func (r *Request) Add(item bulkIndexerItem) {
+func (r *request) Add(item bulkIndexerItem) {
 	r.Items = append(r.Items, item)
 }
 
