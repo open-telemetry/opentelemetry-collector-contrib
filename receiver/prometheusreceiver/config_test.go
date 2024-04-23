@@ -329,7 +329,6 @@ func TestFileSDConfigWithoutSDFile(t *testing.T) {
 	require.NoError(t, component.ValidateConfig(cfg))
 }
 
-
 func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_prometheus_api_server_extension.yaml"))
 	require.NoError(t, err)
@@ -377,4 +376,3 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	assert.Equal(t, "demo", r2.PrometheusConfig.ScrapeConfigs[0].JobName)
 	assert.Equal(t, promModel.Duration(5*time.Second), r2.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
 }
-

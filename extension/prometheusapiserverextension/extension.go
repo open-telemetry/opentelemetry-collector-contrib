@@ -70,7 +70,7 @@ func (e *prometheusAPIServerExtension) RegisterPrometheusReceiverComponents(rece
 
 	prometheusReceiver := &prometheusReceiver{
 		name:             receiverName,
-		port:         port,
+		port:             port,
 		prometheusConfig: prometheusConfig,
 		scrapeManager:    scrapeManager,
 		registerer:       registerer,

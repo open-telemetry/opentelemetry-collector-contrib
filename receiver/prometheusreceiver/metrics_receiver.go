@@ -90,13 +90,15 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	}
 
 	prometheusAPIServerExtensionConf := r.cfg.PrometheusAPIServerExtension
-	if prometheusAPIServerExtensionConf != nil  && prometheusAPIServerExtensionConf.Enabled {
+	if prometheusAPIServerExtensionConf != nil && prometheusAPIServerExtensionConf.Enabled {
 		fmt.Println("Prometheus API Extension enabled")
 		extensions := host.GetExtensions()
 		for id, ext := range extensions {
 			if id.Type() == component.MustNewType("prometheus_api_server") {
 				r.apiExtension = ext
-				extRegisterer := ext.(interface{ RegisterPrometheusReceiverComponents(string, uint64, *config.Config, *scrape.Manager, prometheus.Registerer) })
+				extRegisterer := ext.(interface {
+					RegisterPrometheusReceiverComponents(string, uint64, *config.Config, *scrape.Manager, prometheus.Registerer)
+				})
 				extRegisterer.RegisterPrometheusReceiverComponents(r.settings.ID.Name(), prometheusAPIServerExtensionConf.Port, (*config.Config)(baseCfg), r.scrapeManager, r.registerer)
 			}
 		}
@@ -252,7 +254,9 @@ func (r *pReceiver) applyCfg(cfg *PromConfig) error {
 	}
 
 	if r.cfg.PrometheusAPIServerExtension != nil && r.apiExtension != nil && r.cfg.PrometheusAPIServerExtension.Enabled {
-		ext := r.apiExtension.(interface{ UpdatePrometheusConfig(string, *config.Config, *scrape.Manager) })
+		ext := r.apiExtension.(interface {
+			UpdatePrometheusConfig(string, *config.Config, *scrape.Manager)
+		})
 		ext.UpdatePrometheusConfig(r.settings.ID.Name(), (*config.Config)(cfg), r.scrapeManager)
 	}
 
