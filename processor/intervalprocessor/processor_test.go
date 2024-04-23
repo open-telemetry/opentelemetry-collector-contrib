@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
-func TestAggregation2(t *testing.T) {
+func TestAggregation(t *testing.T) {
 	t.Parallel()
 
 	testCases := []string{
@@ -35,7 +35,11 @@ func TestAggregation2(t *testing.T) {
 	config := &Config{Interval: time.Second}
 
 	for _, tc := range testCases {
-		t.Run(tc, func(t *testing.T) {
+		testName := tc
+
+		t.Run(testName, func(t *testing.T) {
+			t.Parallel()
+
 			// next stores the results of the filter metric processor
 			next := &consumertest.MetricsSink{}
 
@@ -48,7 +52,7 @@ func TestAggregation2(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			dir := filepath.Join("testdata", tc)
+			dir := filepath.Join("testdata", testName)
 
 			md, err := golden.ReadMetrics(filepath.Join(dir, "input.yaml"))
 			require.NoError(t, err)
@@ -63,10 +67,13 @@ func TestAggregation2(t *testing.T) {
 			// Pretend we hit the interval timer and call export
 			processor.exportMetrics()
 
-			// Processor should now be empty
-			require.Equal(t, 0, len(processor.numbers))
-			require.Equal(t, 0, len(processor.histograms))
-			require.Equal(t, 0, len(processor.expHistograms))
+			// All the lookup tables should now be empty
+			require.Empty(t, processor.rmLookup)
+			require.Empty(t, processor.smLookup)
+			require.Empty(t, processor.mLookup)
+			require.Empty(t, processor.numberLookup)
+			require.Empty(t, processor.histogramLookup)
+			require.Empty(t, processor.expHistogramLookup)
 
 			// Exporting again should return nothing
 			processor.exportMetrics()

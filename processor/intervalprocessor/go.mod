@@ -4,6 +4,8 @@ go 1.21.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.98.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.98.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.98.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.99.0
 	go.opentelemetry.io/collector/confmap v0.99.0

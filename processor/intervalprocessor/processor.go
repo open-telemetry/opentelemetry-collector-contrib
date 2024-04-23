@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
@@ -30,9 +29,13 @@ type Processor struct {
 
 	stateLock sync.Mutex
 
-	numbers       map[identity.Stream]metrics.StreamDataPoint[pmetric.NumberDataPoint]
-	histograms    map[identity.Stream]metrics.StreamDataPoint[pmetric.HistogramDataPoint]
-	expHistograms map[identity.Stream]metrics.StreamDataPoint[pmetric.ExponentialHistogramDataPoint]
+	md                 pmetric.Metrics
+	rmLookup           map[identity.Resource]pmetric.ResourceMetrics
+	smLookup           map[identity.Scope]pmetric.ScopeMetrics
+	mLookup            map[identity.Metric]pmetric.Metric
+	numberLookup       map[identity.Stream]pmetric.NumberDataPoint
+	histogramLookup    map[identity.Stream]pmetric.HistogramDataPoint
+	expHistogramLookup map[identity.Stream]pmetric.ExponentialHistogramDataPoint
 
 	exportInterval time.Duration
 	exportTicker   *time.Ticker
@@ -48,10 +51,15 @@ func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics
 		cancel: cancel,
 		logger: log,
 
-		stateLock:     sync.Mutex{},
-		numbers:       map[identity.Stream]metrics.StreamDataPoint[pmetric.NumberDataPoint]{},
-		histograms:    map[identity.Stream]metrics.StreamDataPoint[pmetric.HistogramDataPoint]{},
-		expHistograms: map[identity.Stream]metrics.StreamDataPoint[pmetric.ExponentialHistogramDataPoint]{},
+		stateLock: sync.Mutex{},
+
+		md:                 pmetric.NewMetrics(),
+		rmLookup:           map[identity.Resource]pmetric.ResourceMetrics{},
+		smLookup:           map[identity.Scope]pmetric.ScopeMetrics{},
+		mLookup:            map[identity.Metric]pmetric.Metric{},
+		numberLookup:       map[identity.Stream]pmetric.NumberDataPoint{},
+		histogramLookup:    map[identity.Stream]pmetric.HistogramDataPoint{},
+		expHistogramLookup: map[identity.Stream]pmetric.ExponentialHistogramDataPoint{},
 
 		exportInterval: config.Interval,
 
@@ -100,6 +108,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 				case pmetric.MetricTypeGauge, pmetric.MetricTypeSummary:
 					return false
 				case pmetric.MetricTypeSum:
+					// Check if we care about this value
 					sum := m.Sum()
 
 					if !sum.IsMonotonic() {
@@ -110,7 +119,10 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 						return false
 					}
 
-					aggregateDataPoints(sum.DataPoints(), p.numbers, rm.Resource(), rm.SchemaUrl(), sm.Scope(), sm.SchemaUrl(), m)
+					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
+					cloneSum := mClone.Sum()
+
+					aggregateDataPoints(sum.DataPoints(), cloneSum.DataPoints(), metricID, p.numberLookup)
 					return true
 				case pmetric.MetricTypeHistogram:
 					histogram := m.Histogram()
@@ -119,7 +131,10 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 						return false
 					}
 
-					aggregateDataPoints(histogram.DataPoints(), p.histograms, rm.Resource(), rm.SchemaUrl(), sm.Scope(), sm.SchemaUrl(), m)
+					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
+					cloneHistogram := mClone.Histogram()
+
+					aggregateDataPoints(histogram.DataPoints(), cloneHistogram.DataPoints(), metricID, p.histogramLookup)
 					return true
 				case pmetric.MetricTypeExponentialHistogram:
 					expHistogram := m.ExponentialHistogram()
@@ -128,7 +143,10 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 						return false
 					}
 
-					aggregateDataPoints(expHistogram.DataPoints(), p.expHistograms, rm.Resource(), rm.SchemaUrl(), sm.Scope(), sm.SchemaUrl(), m)
+					mClone, metricID := p.getOrCloneMetric(rm, sm, m)
+					cloneExpHistogram := mClone.ExponentialHistogram()
+
+					aggregateDataPoints(expHistogram.DataPoints(), cloneExpHistogram.DataPoints(), metricID, p.expHistogramLookup)
 					return true
 				default:
 					errs = errors.Join(fmt.Errorf("invalid MetricType %d", m.Type()))
@@ -147,34 +165,22 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 	return errs
 }
 
-func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP]](dataPoints DPS, state map[identity.Stream]metrics.StreamDataPoint[DP], res pcommon.Resource, resSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, m pmetric.Metric) {
-	metric := metrics.From(res, resSchemaURL, scope, scopeSchemaURL, m)
-	metricID := metric.Identity()
-
-	now := time.Now()
-
+func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP]](dataPoints DPS, mCloneDataPoints DPS, metricID identity.Metric, dpLookup map[identity.Stream]DP) {
 	for i := 0; i < dataPoints.Len(); i++ {
 		dp := dataPoints.At(i)
 
-		streamDataPointID := metrics.StreamDataPointIdentity(metricID, dp)
-
-		existing, ok := state[streamDataPointID]
+		streamID := identity.OfStream(metricID, dp)
+		existingDP, ok := dpLookup[streamID]
 		if !ok {
-			state[streamDataPointID] = metrics.StreamDataPoint[DP]{
-				Metric:      metric,
-				DataPoint:   dp,
-				LastUpdated: now,
-			}
+			dpClone := mCloneDataPoints.AppendEmpty()
+			dp.CopyTo(dpClone)
+			dpLookup[streamID] = dpClone
 			continue
 		}
 
 		// Check if the datapoint is newer
-		if dp.Timestamp().AsTime().After(existing.DataPoint.Timestamp().AsTime()) {
-			state[streamDataPointID] = metrics.StreamDataPoint[DP]{
-				Metric:      metric,
-				DataPoint:   dp,
-				LastUpdated: now,
-			}
+		if dp.Timestamp() > existingDP.Timestamp() {
+			dp.CopyTo(existingDP)
 			continue
 		}
 
@@ -183,79 +189,89 @@ func aggregateDataPoints[DPS metrics.DataPointSlice[DP], DP metrics.DataPoint[DP
 }
 
 func (p *Processor) exportMetrics() {
-	p.stateLock.Lock()
-	defer p.stateLock.Unlock()
+	md := func() pmetric.Metrics {
+		p.stateLock.Lock()
+		defer p.stateLock.Unlock()
 
-	// We have to generate our own metrics slice to send to the nextConsumer
-	md := pmetric.NewMetrics()
+		// ConsumeMetrics() has prepared our own pmetric.Metrics instance ready for us to use
+		// Take it and create a new one
+		out := p.md
+		p.md = pmetric.NewMetrics()
 
-	// We want to avoid generating duplicate ResourceMetrics, ScopeMetrics, and Metrics
-	// So we use lookups to only generate what we need
-	rmLookup := map[identity.Resource]pmetric.ResourceMetrics{}
-	smLookup := map[identity.Scope]pmetric.ScopeMetrics{}
-	mLookup := map[identity.Metric]pmetric.Metric{}
+		// Clear all the lookup references
+		clear(p.rmLookup)
+		clear(p.smLookup)
+		clear(p.mLookup)
+		clear(p.numberLookup)
+		clear(p.histogramLookup)
+		clear(p.expHistogramLookup)
 
-	for dataID, dp := range p.numbers {
-		m := getOrCreateMetric(dataID, dp.Metric, md, rmLookup, smLookup, mLookup)
-
-		sum := m.Sum()
-		numDP := sum.DataPoints().AppendEmpty()
-		dp.DataPoint.CopyTo(numDP)
-	}
-
-	for dataID, dp := range p.histograms {
-		m := getOrCreateMetric(dataID, dp.Metric, md, rmLookup, smLookup, mLookup)
-
-		histogram := m.Histogram()
-		histogramDP := histogram.DataPoints().AppendEmpty()
-		dp.DataPoint.CopyTo(histogramDP)
-	}
-
-	for dataID, dp := range p.expHistograms {
-		m := getOrCreateMetric(dataID, dp.Metric, md, rmLookup, smLookup, mLookup)
-
-		expHistogram := m.ExponentialHistogram()
-		expHistogramDP := expHistogram.DataPoints().AppendEmpty()
-		dp.DataPoint.CopyTo(expHistogramDP)
-	}
+		return out
+	}()
 
 	if err := p.nextConsumer.ConsumeMetrics(p.ctx, md); err != nil {
 		p.logger.Error("Metrics export failed", zap.Error(err))
 	}
-
-	// Clear everything now that we've exported
-	p.numbers = map[identity.Stream]metrics.StreamDataPoint[pmetric.NumberDataPoint]{}
-	p.histograms = map[identity.Stream]metrics.StreamDataPoint[pmetric.HistogramDataPoint]{}
-	p.expHistograms = map[identity.Stream]metrics.StreamDataPoint[pmetric.ExponentialHistogramDataPoint]{}
 }
 
-func getOrCreateMetric(
-	streamID identity.Stream, metricRef metrics.Metric,
-	md pmetric.Metrics,
-	rmLookup map[identity.Resource]pmetric.ResourceMetrics,
-	smLookup map[identity.Scope]pmetric.ScopeMetrics,
-	mLookup map[identity.Metric]pmetric.Metric,
-) pmetric.Metric {
+func (p *Processor) getOrCloneMetric(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) (pmetric.Metric, identity.Metric) {
 	// Find the ResourceMetrics
-	rm, ok := rmLookup[streamID.Metric().Scope().Resource()]
+	resID := identity.OfResource(rm.Resource())
+	rmClone, ok := p.rmLookup[resID]
 	if !ok {
-		// We need to create it
-		rm = md.ResourceMetrics().AppendEmpty()
-		metricRef.CopyToResourceMetric(rm)
+		// We need to clone it *without* the ScopeMetricsSlice data
+		rmClone = p.md.ResourceMetrics().AppendEmpty()
+		rm.Resource().CopyTo(rmClone.Resource())
+		rmClone.SetSchemaUrl(rm.SchemaUrl())
+		p.rmLookup[resID] = rmClone
 	}
 
 	// Find the ScopeMetrics
-	sm, ok := smLookup[streamID.Metric().Scope()]
+	scopeID := identity.OfScope(resID, sm.Scope())
+	smClone, ok := p.smLookup[scopeID]
 	if !ok {
-		sm = rm.ScopeMetrics().AppendEmpty()
-		metricRef.CopyToScopeMetric(sm)
+		// We need to clone it *without* the MetricSlice data
+		smClone = rmClone.ScopeMetrics().AppendEmpty()
+		sm.Scope().CopyTo(smClone.Scope())
+		smClone.SetSchemaUrl(sm.SchemaUrl())
+		p.smLookup[scopeID] = smClone
 	}
 
-	m, ok := mLookup[streamID.Metric()]
+	// Find the Metric
+	metricID := identity.OfMetric(scopeID, m)
+	mClone, ok := p.mLookup[metricID]
 	if !ok {
-		m = sm.Metrics().AppendEmpty()
-		metricRef.CopyToPMetric(m)
+		// We need to clone it *without* the datapoint data
+		mClone = smClone.Metrics().AppendEmpty()
+		mClone.SetName(m.Name())
+		mClone.SetDescription(m.Description())
+		mClone.SetUnit(m.Unit())
+
+		switch m.Type() {
+		case pmetric.MetricTypeGauge:
+			mClone.SetEmptyGauge()
+		case pmetric.MetricTypeSummary:
+			mClone.SetEmptySummary()
+		case pmetric.MetricTypeSum:
+			src := m.Sum()
+
+			dest := mClone.SetEmptySum()
+			dest.SetAggregationTemporality(src.AggregationTemporality())
+			dest.SetIsMonotonic(src.IsMonotonic())
+		case pmetric.MetricTypeHistogram:
+			src := m.Histogram()
+
+			dest := mClone.SetEmptyHistogram()
+			dest.SetAggregationTemporality(src.AggregationTemporality())
+		case pmetric.MetricTypeExponentialHistogram:
+			src := m.ExponentialHistogram()
+
+			dest := mClone.SetEmptyExponentialHistogram()
+			dest.SetAggregationTemporality(src.AggregationTemporality())
+		}
+
+		p.mLookup[metricID] = mClone
 	}
 
-	return m
+	return mClone, metricID
 }
