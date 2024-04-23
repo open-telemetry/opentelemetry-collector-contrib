@@ -117,3 +117,7 @@ func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resou
 	}
 	return pushDocuments(ctx, fIndex, document, e.bulkIndexer)
 }
+
+func pushDocuments(ctx context.Context, index string, document []byte, current *esBulkIndexerCurrent) error {
+	return fmt.Errorf("not implemented")
+}

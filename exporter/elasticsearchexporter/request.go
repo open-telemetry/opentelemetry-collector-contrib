@@ -15,13 +15,14 @@ func newRequest(bulkIndexer *esBulkIndexerCurrent) *Request {
 }
 
 func (r *Request) Export(ctx context.Context) error {
-	for _, item := range r.Items {
-		if err := r.bulkIndexer.Add(ctx, item.Index, bytes.NewReader(item.Body)); err != nil {
-			return err // FIXME: merge errors
+	batch := make([]esBulkIndexerItem, len(r.Items))
+	for i, item := range r.Items {
+		batch[i] = esBulkIndexerItem{
+			Index: item.Index,
+			Body:  bytes.NewReader(item.Body),
 		}
 	}
-	_, err := r.bulkIndexer.Flush(ctx)
-	return err
+	return r.bulkIndexer.AddBatchAndFlush(ctx, batch)
 }
 
 func (r *Request) ItemsCount() int {

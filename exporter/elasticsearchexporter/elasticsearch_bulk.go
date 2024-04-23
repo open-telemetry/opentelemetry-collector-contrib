@@ -6,11 +6,9 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io"
 	"net/http"
 	"runtime"
 	"sync"
@@ -162,10 +160,6 @@ func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Durati
 	}
 }
 
-func pushDocuments(ctx context.Context, index string, document []byte, bulkIndexer *esBulkIndexerCurrent) error {
-	return bulkIndexer.Add(ctx, index, bytes.NewReader(document))
-}
-
 func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *Config) (*esBulkIndexerCurrent, error) {
 	numWorkers := config.NumWorkers
 	if numWorkers == 0 {
@@ -190,9 +184,10 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 	}
 
 	pool := &bulkIndexerPool{
-		wg:    sync.WaitGroup{},
-		items: make(chan esBulkIndexerItem, config.NumWorkers),
-		stats: bulkIndexerStats{},
+		wg:        sync.WaitGroup{},
+		closeCh:   make(chan struct{}),
+		stats:     bulkIndexerStats{},
+		available: make(chan *worker, numWorkers),
 	}
 	pool.wg.Add(numWorkers)
 
@@ -208,10 +203,9 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 		}
 		w := worker{
 			indexer:       bi,
-			items:         pool.items,
+			closeCh:       pool.closeCh,
 			flushInterval: flushInterval,
 			flushTimeout:  config.Timeout,
-			flushBytes:    flushBytes,
 			logger:        logger,
 			stats:         &pool.stats,
 		}
@@ -219,6 +213,7 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 			defer pool.wg.Done()
 			w.run()
 		}()
+		pool.available <- &w
 	}
 	return pool, nil
 }
@@ -228,30 +223,27 @@ type bulkIndexerStats struct {
 }
 
 type bulkIndexerPool struct {
-	items chan esBulkIndexerItem
-	wg    sync.WaitGroup
-	stats bulkIndexerStats
+	closeCh   chan struct{}
+	wg        sync.WaitGroup
+	stats     bulkIndexerStats
+	available chan *worker
 }
 
-// Add adds an item to the bulk indexer pool.
-//
-// Adding an item after a call to Close() will panic.
-func (p *bulkIndexerPool) Add(ctx context.Context, index string, document io.WriterTo) error {
-	item := esBulkIndexerItem{
-		Index: index,
-		Body:  document,
-	}
+func (p *bulkIndexerPool) AddBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case p.items <- item:
-		return nil
+	case worker := <-p.available:
+		defer func() {
+			p.available <- worker
+		}()
+		return worker.addBatchAndFlush(batch)
 	}
 }
 
-// Close closes the items channel and waits for the workers to drain it.
+// Close closes the closeCh channel and wait for workers to finish.
 func (p *bulkIndexerPool) Close(ctx context.Context) error {
-	close(p.items)
+	close(p.closeCh)
 	doneCh := make(chan struct{})
 	go func() {
 		p.wg.Wait()
@@ -267,14 +259,26 @@ func (p *bulkIndexerPool) Close(ctx context.Context) error {
 
 type worker struct {
 	indexer       *docappender.BulkIndexer
-	items         <-chan esBulkIndexerItem
+	closeCh       <-chan struct{}
 	flushInterval time.Duration
 	flushTimeout  time.Duration
-	flushBytes    int
+	//flushBytes    int
+	mu sync.Mutex
 
 	stats *bulkIndexerStats
 
 	logger *zap.Logger
+}
+
+func (w *worker) addBatchAndFlush(batch []esBulkIndexerItem) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	for _, item := range batch {
+		if err := w.indexer.Add(item); err != nil {
+			w.logger.Error("error adding item to bulk indexer", zap.Error(err))
+		}
+	}
+	return w.flush()
 }
 
 func (w *worker) run() {
@@ -282,31 +286,26 @@ func (w *worker) run() {
 	defer flushTick.Stop()
 	for {
 		select {
-		case item, ok := <-w.items:
-			// if channel is closed, flush and return
-			if !ok {
-				w.flush()
-				return
-			}
-
-			if err := w.indexer.Add(item); err != nil {
-				w.logger.Error("error adding item to bulk indexer", zap.Error(err))
-			}
-
-			// w.indexer.Len() can be either compressed or uncompressed bytes
-			if w.indexer.Len() >= w.flushBytes {
-				w.flush()
-				flushTick.Reset(w.flushInterval)
-			}
 		case <-flushTick.C:
+			w.mu.Lock()
 			// bulk indexer needs to be flushed every flush interval because
 			// there may be pending bytes in bulk indexer buffer due to e.g. document level 429
-			w.flush()
+			if err := w.flush(); err != nil {
+				w.logger.Error("bulk indexer background flush error", zap.Error(err))
+			}
+			w.mu.Unlock()
+		case <-w.closeCh:
+			w.mu.Lock()
+			if err := w.flush(); err != nil {
+				w.logger.Error("bulk indexer background flush error", zap.Error(err))
+			}
+			return
+			// no need to unlock
 		}
 	}
 }
 
-func (w *worker) flush() {
+func (w *worker) flush() error {
 	ctx, cancel := context.WithTimeout(context.Background(), w.flushTimeout)
 	defer cancel()
 	stat, err := w.indexer.Flush(ctx)
@@ -318,4 +317,5 @@ func (w *worker) flush() {
 		w.logger.Error(fmt.Sprintf("Drop docs: failed to index: %#v", resp.Error),
 			zap.Int("status", resp.Status))
 	}
+	return err
 }

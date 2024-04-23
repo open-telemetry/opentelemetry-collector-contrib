@@ -7,6 +7,7 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -98,7 +99,7 @@ func createLogsRequestExporter(
 	batchMergeFunc := func(ctx context.Context, r1, r2 exporterhelper.Request) (exporterhelper.Request, error) {
 		rr1 := r1.(*Request)
 		rr2 := r2.(*Request)
-		req := newRequest(logsExporter.bulkIndexer, logsExporter.mu)
+		req := newRequest(logsExporter.bulkIndexer)
 		req.Items = append(rr1.Items, rr2.Items...)
 		return req, nil
 	}
@@ -118,7 +119,6 @@ func createLogsRequestExporter(
 		var req Request
 		err := json.Unmarshal(b, &req)
 		req.bulkIndexer = logsExporter.bulkIndexer
-		req.mu = logsExporter.mu
 		return &req, err
 	}
 
