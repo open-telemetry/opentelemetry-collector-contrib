@@ -106,6 +106,40 @@ func TestPrefixedNamedStreamsConfig(t *testing.T) {
 	require.NoError(t, plogtest.CompareLogs(expected, logs, plogtest.IgnoreObservedTimestamp()))
 }
 
+func TestNamedConfigNoStreamFilter(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Region = "us-west-1"
+	cfg.Logs.PollInterval = 1 * time.Second
+	cfg.Logs.Groups = GroupConfig{
+		NamedConfigs: map[string]StreamConfig{
+			testLogGroupName: {},
+		},
+	}
+
+	sink := &consumertest.LogsSink{}
+	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
+	alertRcvr.client = defaultMockClient()
+
+	err := alertRcvr.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		return sink.LogRecordCount() > 0
+	}, 2*time.Second, 10*time.Millisecond)
+
+	groupRequests := alertRcvr.groupRequests
+	require.Len(t, groupRequests, 1)
+	require.Equal(t, groupRequests[0].groupName(), "test-log-group-name")
+
+	err = alertRcvr.Shutdown(context.Background())
+	require.NoError(t, err)
+
+	logs := sink.AllLogs()[0]
+	expected, err := golden.ReadLogs(filepath.Join("testdata", "processed", "prefixed.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, plogtest.CompareLogs(expected, logs, plogtest.IgnoreObservedTimestamp()))
+}
+
 func TestDiscovery(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Region = "us-west-1"
