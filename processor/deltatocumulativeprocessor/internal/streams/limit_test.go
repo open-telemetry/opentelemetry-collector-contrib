@@ -18,7 +18,7 @@ import (
 func TestLimit(t *testing.T) {
 	sum := random.Sum()
 
-	items := exp.HashMap[data.Number]{}
+	items := make(exp.HashMap[data.Number])
 	lim := streams.Limit(items, 10)
 
 	ids := make([]identity.Stream, 10)
