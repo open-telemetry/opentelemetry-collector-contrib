@@ -3,19 +3,25 @@
     <soapenv:Body>
         <RetrievePropertiesResponse xmlns="urn:vim25">
             <returnval>
-                <obj type="HostSystem">host-1002</obj>
+                <obj type="HostSystem">host-1003</obj>
                 <propSet>
                     <name>name</name>
-                    <val xsi:type="xsd:string">esxi-27971.cf5e88ac.australia-southeast1.gve.goog</val>
+                    <val xsi:type="xsd:string">esxi-111.europe-southeast1.gve.goog</val>
                 </propSet>
                 <propSet>
                     <name>summary.hardware.cpuMhz</name>
                     <val xsi:type="xsd:int">2593</val>
                 </propSet>
                 <propSet>
+                    <name>vm</name>
+                    <val xsi:type="ArrayOfManagedObjectReference">
+                        <ManagedObjectReference type="VirtualMachine" xsi:type="ManagedObjectReference">vm-6005</ManagedObjectReference>
+                    </val>
+                </propSet>
+                <propSet>
                     <name>config</name>
                     <val xsi:type="HostConfigInfo">
-                        <host type="HostSystem">host-1002</host>
+                        <host type="HostSystem">host-1003</host>
                         <product>
                             <name>VMware ESXi</name>
                             <fullName>VMware ESXi 7.0.2 build-18836573</fullName>
