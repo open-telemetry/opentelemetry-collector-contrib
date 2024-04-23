@@ -56,7 +56,7 @@ func Start(_ context.Context, host component.Host) error {
 
   registry, ok := ext.(opampextension.CustomCapabilityRegistry)
   if !ok {
-    return fmt.Errorf("extension %q is not an custom message registry", opampExtensionID)
+    return fmt.Errorf("extension %q is not a custom message registry", opampExtensionID)
 	}
 
   // You can now use registry.Register to register a custom capability
