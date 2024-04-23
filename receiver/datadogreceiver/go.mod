@@ -3,21 +3,20 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.21.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.54.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.102.0
-	github.com/stretchr/testify v1.9.0
-	github.com/vmihailenco/msgpack/v4 v4.3.13
-	go.opentelemetry.io/collector/component v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/config/confighttp v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/confmap v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/consumer v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/pdata v1.9.1-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/receiver v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/semconv v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/otel/metric v1.27.0
-	go.opentelemetry.io/otel/trace v1.27.0
-	go.uber.org/goleak v1.3.0
-	google.golang.org/protobuf v1.34.2
+	github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1
+	github.com/gogo/protobuf v1.3.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.84.0
+	github.com/stretchr/testify v1.8.4
+	github.com/tinylib/msgp v1.1.8
+	github.com/vmihailenco/msgpack/v4 v4.3.12
+	go.opentelemetry.io/collector v0.84.0
+	go.opentelemetry.io/collector/component v0.84.0
+	go.opentelemetry.io/collector/config/confighttp v0.84.0
+	go.opentelemetry.io/collector/consumer v0.84.0
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
+	go.opentelemetry.io/collector/receiver v0.84.0
+	go.opentelemetry.io/collector/semconv v0.84.0
+	go.uber.org/multierr v1.11.0
 )
 
 require (
@@ -28,9 +27,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect

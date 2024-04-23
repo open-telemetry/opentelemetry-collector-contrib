@@ -145,7 +145,9 @@ func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 		rs.SetSchemaUrl(semconv.SchemaURL)
 		sharedAttributes.CopyTo(rs.Resource().Attributes())
 		rs.Resource().Attributes().PutStr(semconv.AttributeServiceName, service)
-
+		if mwAPIKey := req.Header.Get("dd-api-key"); mwAPIKey != "" {
+			rs.Resource().Attributes().PutStr("mw.account_key", mwAPIKey)
+		}
 		in := rs.ScopeSpans().AppendEmpty()
 		in.Scope().SetName("Datadog")
 		in.Scope().SetVersion(payload.TracerVersion)
@@ -206,7 +208,7 @@ func handlePayload(req *http.Request) (tp []*pb.TracerPayload, err error) {
 	}()
 
 	switch {
-	case strings.HasPrefix(req.URL.Path, "/v0.7"):
+	case strings.Contains(req.URL.Path, "/v0.7"):
 		buf := getBuffer()
 		defer putBuffer(buf)
 		if _, err = io.Copy(buf, req.Body); err != nil {
