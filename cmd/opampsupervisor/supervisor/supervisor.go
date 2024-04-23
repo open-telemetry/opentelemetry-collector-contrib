@@ -107,6 +107,7 @@ type Supervisor struct {
 
 	agentHasStarted               bool
 	agentStartHealthCheckAttempts int
+	agentRestarting               atomic.Bool
 
 	connectedToOpAMPServer chan struct{}
 }
@@ -345,6 +346,10 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
 		}
 
+		if c.AcceptsRestartCommand != nil && *c.AcceptsRestartCommand {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
+		}
+
 		if c.AcceptsOpAMPConnectionSettings != nil && *c.AcceptsOpAMPConnectionSettings {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
 		}
@@ -386,8 +391,7 @@ func (s *Supervisor) startOpAMP() error {
 			OnCommandFunc: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 				cmdType := command.GetType()
 				if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
-					// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21077
-					s.logger.Debug("Received restart command")
+					return s.handleRestartCommand()
 				}
 				return nil
 			},
@@ -699,6 +703,17 @@ func (s *Supervisor) recalcEffectiveConfig() (configChanged bool, err error) {
 	return configChanged, nil
 }
 
+func (s *Supervisor) handleRestartCommand() error {
+	s.agentRestarting.Store(true)
+	defer s.agentRestarting.Store(false)
+	s.logger.Debug("Received restart command")
+	err := s.commander.Restart(context.Background())
+	if err != nil {
+		s.logger.Error("Could not restart agent process", zap.Error(err))
+	}
+	return err
+}
+
 func (s *Supervisor) startAgent() {
 	err := s.commander.Start(context.Background())
 	if err != nil {
@@ -792,6 +807,11 @@ func (s *Supervisor) runAgentProcess() {
 			s.startAgent()
 
 		case <-s.commander.Exited():
+			// the agent process exit is expected for restart command and will not attempt to restart
+			if s.agentRestarting.Load() {
+				continue
+			}
+
 			if s.shuttingDown {
 				return
 			}

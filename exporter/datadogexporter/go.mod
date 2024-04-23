@@ -9,11 +9,11 @@ require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.25.0
 	github.com/DataDog/datadog-go/v5 v5.5.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.14.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.14.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.14.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.14.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.14.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.15.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.15.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.15.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.15.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.15.0
 	github.com/DataDog/sketches-go v1.4.4
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.22.0
 	github.com/aws/aws-sdk-go v1.51.26
@@ -215,7 +215,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.52.3 // indirect
+	github.com/prometheus/common v0.53.0 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.13.0 // indirect
 	github.com/prometheus/prometheus v0.51.2-0.20240405174432-b4a973753c6e // indirect
