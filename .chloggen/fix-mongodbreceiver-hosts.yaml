@@ -7,7 +7,7 @@ change_type: breaking
 component: mongodbreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: mongodbreceiver hosts configuration use `confignet.TCPAddrConfig`.
+note: Now only supports `TCP` connections
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [32199]
