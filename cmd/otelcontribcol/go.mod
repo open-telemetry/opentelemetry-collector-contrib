@@ -553,6 +553,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.99.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.99.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.99.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.98.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.99.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.99.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.99.0 // indirect
@@ -750,6 +751,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersi
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs => ../../internal/aws/cwlogs
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics => ../../internal/exp/metrics
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver => ../../receiver/awsxrayreceiver
 
