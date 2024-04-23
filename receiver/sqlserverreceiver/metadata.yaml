@@ -161,3 +161,6 @@ metrics:
 
 tests:
   config:
+  goleak:
+    ignore:
+      any: "github.com/godbus/dbus.(*Conn).inWorker"
