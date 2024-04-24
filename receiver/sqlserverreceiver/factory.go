@@ -38,8 +38,11 @@ func createDefaultConfig() component.Config {
 
 func setupQueries(cfg *Config) []string {
 	var queries []string
-	// TODO: Only add query if metrics are enabled
-	queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
+
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIoReadLatency.Enabled {
+		queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
+	}
+
 	return queries
 }
 
