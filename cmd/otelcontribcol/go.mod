@@ -968,8 +968,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ../../receiver/carbonreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkenterprisereceive => ../../exporter/splunkenterprisereceiver
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ../../exporter/splunkhecexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter => ../../exporter/prometheusexporter
@@ -1209,3 +1207,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlqu
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ../../extension/ackextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension => ../../extension/googleclientauthextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver => ../../receiver/splunkenterprisereceiver
