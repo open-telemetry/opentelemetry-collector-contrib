@@ -17,6 +17,13 @@ import (
 )
 
 func TestExporter(t *testing.T) {
+	// NOTE: The data receiver/mock backend will receive and process traces
+	// as log document. This does not reduce the effectiveness of testing as
+	// the assertions can still be made without considering for data types
+	// in the mock backend. Adding support for traces in the mock data
+	// receiver is possible, however, distinguishing between traces and
+	// logs is not straightforward after the document has been encoded and
+	// doesn't add any practical benefits to the test.
 	for _, eventType := range []string{"logs", "traces"} {
 		for _, tc := range []struct {
 			name string
