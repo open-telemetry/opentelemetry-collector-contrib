@@ -99,6 +99,7 @@ func (c *Commander) Start(ctx context.Context) error {
 }
 
 func (c *Commander) Restart(ctx context.Context) error {
+	c.logger.Debug("Restarting agent", zap.String("agent", c.cfg.Executable))
 	if err := c.Stop(ctx); err != nil {
 		return err
 	}

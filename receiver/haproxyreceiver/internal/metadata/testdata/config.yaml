@@ -125,27 +125,27 @@ filter_set_include:
   resource_attributes:
     haproxy.addr:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     haproxy.proxy_name:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     haproxy.service_name:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
     haproxy.addr:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "haproxy.addr-val"
     haproxy.proxy_name:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "haproxy.proxy_name-val"
     haproxy.service_name:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "haproxy.service_name-val"
