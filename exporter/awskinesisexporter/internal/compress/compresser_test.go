@@ -101,13 +101,6 @@ func benchmarkCompressor(b *testing.B, format string, length int) {
 	}
 }
 
-func TestGzipIntegrity(t *testing.T) {
-	data := make([]byte, length)
-	for i := 0; i < length; i++ {
-		data[i] = byte(genRand.Int31())
-	}
-}
-
 // an issue encountered in the past was a crash due race condition in the compressor, so the
 // current implementation creates a new context on each compression request
 // this is a test to check no exceptions are raised for executing concurrent compressions
