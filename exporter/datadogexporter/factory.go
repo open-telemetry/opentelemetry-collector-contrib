@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline"
+	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl"
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
@@ -19,6 +21,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -35,7 +38,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logsagent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -112,7 +114,7 @@ type factory struct {
 	wg sync.WaitGroup // waits for agent to exit
 
 	registry  *featuregate.Registry
-	logsAgent *logsagent.Agent
+	logsAgent logsagentpipeline.Component
 }
 
 func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
@@ -544,25 +546,33 @@ func (f *factory) createLogsExporter(
 			OtelSource:    otelSource,
 			LogSourceName: logSourceName,
 		}
-		hostname, err := logsagent.NewHostnameService(ctx, hostProvider)
+		hostname, err := logs.NewHostnameService(ctx, hostProvider)
 		if err != nil {
 			cancel()
 			return nil, fmt.Errorf("failed to initialize logs agent hostname service: %w", err)
 		}
-		f.logsAgent = logsagent.NewLogsAgent(logComponent, cfgComponent, hostname)
+		laOption := logsagentpipelineimpl.NewLogsAgent(logsagentpipelineimpl.Dependencies{
+			Log:      logComponent,
+			Config:   cfgComponent,
+			Hostname: hostname,
+		})
+		logsAgent, ok := laOption.Get()
+		if !ok {
+			cancel()
+			return nil, fmt.Errorf("failed to create logs agent, logs agent is disabled")
+		}
+		f.logsAgent = logsAgent
 		err = f.logsAgent.Start(ctx)
 		if err != nil {
-			set.Logger.Error("Failed to create logs agent", zap.Error(err))
+			set.Logger.Error("failed to create logs agent", zap.Error(err))
 			cancel()
-			f.wg.Wait() // then wait for shutdown
 			return nil, err
 		}
 		pipelineChan := f.logsAgent.GetPipelineProvider().NextPipelineChan()
 		logsAgentExporter, err := logsagentexporter.NewFactory(pipelineChan).CreateLogsExporter(ctx, set, logsAgentConfig)
 		if err != nil {
-			set.Logger.Error("Failed to create logs agent exporter", zap.Error(err))
+			set.Logger.Error("failed to create logs agent exporter", zap.Error(err))
 			cancel()
-			f.wg.Wait() // then wait for shutdown
 			return nil, err
 		}
 		pusher = logsAgentExporter.ConsumeLogs
@@ -570,7 +580,6 @@ func (f *factory) createLogsExporter(
 		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, attributesTranslator, hostProvider, metadataReporter)
 		if err != nil {
 			cancel()
-			f.wg.Wait() // then wait for shutdown
 			return nil, err
 		}
 		pusher = exp.consumeLogs

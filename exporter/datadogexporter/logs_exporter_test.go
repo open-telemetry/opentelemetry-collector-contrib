@@ -482,7 +482,8 @@ func TestLogsAgentExporter(t *testing.T) {
 			exp, err := f.CreateLogsExporter(ctx, params, cfg)
 			require.NoError(t, err)
 			require.NoError(t, exp.ConsumeLogs(ctx, tt.args.ld))
-			// Wait until `done` is closed.
+
+			// Wait until `doneChannel` is closed.
 			select {
 			case <-doneChannel:
 				assert.Equal(t, tt.want, server.LogsData)
