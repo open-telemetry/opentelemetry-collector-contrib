@@ -93,67 +93,67 @@ filter_set_include:
   resource_attributes:
     process.cgroup:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     process.command:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     process.command_line:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     process.executable.name:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     process.executable.path:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     process.owner:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     process.parent_pid:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     process.pid:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
     process.cgroup:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "process.cgroup-val"
     process.command:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "process.command-val"
     process.command_line:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "process.command_line-val"
     process.executable.name:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "process.executable.name-val"
     process.executable.path:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "process.executable.path-val"
     process.owner:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "process.owner-val"
     process.parent_pid:
       enabled: true
-      exclude:
+      metrics_exclude:
         - regexp: ".*"
     process.pid:
       enabled: true
-      exclude:
+      metrics_exclude:
         - regexp: ".*"

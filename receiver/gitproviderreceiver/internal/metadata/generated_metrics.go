@@ -443,17 +443,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:               make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:               make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.GitVendorName.Include != nil {
-		mb.resourceAttributeIncludeFilter["git.vendor.name"] = filter.CreateFilter(mbc.ResourceAttributes.GitVendorName.Include)
+	if mbc.ResourceAttributes.GitVendorName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["git.vendor.name"] = filter.CreateFilter(mbc.ResourceAttributes.GitVendorName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.GitVendorName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["git.vendor.name"] = filter.CreateFilter(mbc.ResourceAttributes.GitVendorName.Exclude)
+	if mbc.ResourceAttributes.GitVendorName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["git.vendor.name"] = filter.CreateFilter(mbc.ResourceAttributes.GitVendorName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.OrganizationName.Include != nil {
-		mb.resourceAttributeIncludeFilter["organization.name"] = filter.CreateFilter(mbc.ResourceAttributes.OrganizationName.Include)
+	if mbc.ResourceAttributes.OrganizationName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["organization.name"] = filter.CreateFilter(mbc.ResourceAttributes.OrganizationName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.OrganizationName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["organization.name"] = filter.CreateFilter(mbc.ResourceAttributes.OrganizationName.Exclude)
+	if mbc.ResourceAttributes.OrganizationName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["organization.name"] = filter.CreateFilter(mbc.ResourceAttributes.OrganizationName.MetricsExclude)
 	}
 
 	for _, op := range options {

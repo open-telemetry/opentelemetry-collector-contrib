@@ -306,17 +306,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.FileName.Include != nil {
-		mb.resourceAttributeIncludeFilter["file.name"] = filter.CreateFilter(mbc.ResourceAttributes.FileName.Include)
+	if mbc.ResourceAttributes.FileName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["file.name"] = filter.CreateFilter(mbc.ResourceAttributes.FileName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.FileName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["file.name"] = filter.CreateFilter(mbc.ResourceAttributes.FileName.Exclude)
+	if mbc.ResourceAttributes.FileName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["file.name"] = filter.CreateFilter(mbc.ResourceAttributes.FileName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.FilePath.Include != nil {
-		mb.resourceAttributeIncludeFilter["file.path"] = filter.CreateFilter(mbc.ResourceAttributes.FilePath.Include)
+	if mbc.ResourceAttributes.FilePath.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["file.path"] = filter.CreateFilter(mbc.ResourceAttributes.FilePath.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.FilePath.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["file.path"] = filter.CreateFilter(mbc.ResourceAttributes.FilePath.Exclude)
+	if mbc.ResourceAttributes.FilePath.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["file.path"] = filter.CreateFilter(mbc.ResourceAttributes.FilePath.MetricsExclude)
 	}
 
 	for _, op := range options {

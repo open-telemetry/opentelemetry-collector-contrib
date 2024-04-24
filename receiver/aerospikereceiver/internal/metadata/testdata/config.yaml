@@ -73,19 +73,19 @@ filter_set_include:
   resource_attributes:
     aerospike.namespace:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     aerospike.node.name:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
     aerospike.namespace:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "aerospike.namespace-val"
     aerospike.node.name:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "aerospike.node.name-val"
