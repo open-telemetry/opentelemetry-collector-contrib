@@ -44,7 +44,7 @@ func (c BasicConfig) Type() string {
 }
 
 // Build will build a basic operator.
-func (c BasicConfig) Build(set *component.TelemetrySettings) (BasicOperator, error) {
+func (c BasicConfig) Build(set component.TelemetrySettings) (BasicOperator, error) {
 	if c.OperatorType == "" {
 		return BasicOperator{}, errors.NewError(
 			"missing required `type` field.",

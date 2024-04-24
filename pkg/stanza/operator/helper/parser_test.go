@@ -23,7 +23,7 @@ import (
 func TestParserConfigMissingBase(t *testing.T) {
 	config := ParserConfig{}
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := config.Build(&set)
+	_, err := config.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing required `type` field.")
 }
@@ -38,7 +38,7 @@ func TestParserConfigInvalidTimeParser(t *testing.T) {
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := cfg.Build(&set)
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing required configuration parameter `layout`")
 }
@@ -51,7 +51,7 @@ func TestParserConfigBodyCollision(t *testing.T) {
 	cfg.BodyField = &b
 
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := cfg.Build(&set)
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "`parse_to: body` not allowed when `body` is configured")
 }
@@ -92,7 +92,7 @@ func TestParserConfigBuildValid(t *testing.T) {
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 
 	require.NotNil(t, op.TimeParser)
@@ -633,7 +633,7 @@ func TestParserFields(t *testing.T) {
 			tc.cfgMod(&cfg)
 
 			set := componenttest.NewNopTelemetrySettings()
-			parser, err := cfg.Build(&set)
+			parser, err := cfg.Build(set)
 			require.NoError(t, err)
 
 			e := tc.input()

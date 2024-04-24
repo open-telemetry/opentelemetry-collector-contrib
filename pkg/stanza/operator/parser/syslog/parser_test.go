@@ -29,7 +29,7 @@ func TestParser(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := tc.Config.Build(&set)
+			op, err := tc.Config.Build(set)
 			require.NoError(t, err)
 
 			fake := testutil.NewFakeOutput(t)
@@ -60,7 +60,7 @@ func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 	body := `<86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [verylongsdnamethatisgreaterthan32bytes@12345 UserHostAddress="192.168.2.132"] my message`
 
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 
 	fake := testutil.NewFakeOutput(t)
@@ -86,7 +86,7 @@ func TestSyslogProtocolConfig(t *testing.T) {
 		cfg := basicConfig()
 		cfg.Protocol = proto
 		set := componenttest.NewNopTelemetrySettings()
-		_, err := cfg.Build(&set)
+		_, err := cfg.Build(set)
 		require.NoError(t, err)
 	}
 
@@ -94,7 +94,7 @@ func TestSyslogProtocolConfig(t *testing.T) {
 		cfg := basicConfig()
 		cfg.Protocol = proto
 		set := componenttest.NewNopTelemetrySettings()
-		_, err := cfg.Build(&set)
+		_, err := cfg.Build(set)
 		require.Error(t, err)
 	}
 }

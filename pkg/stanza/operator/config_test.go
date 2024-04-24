@@ -18,7 +18,7 @@ type FakeBuilder struct {
 	Array        []string `json:"array" yaml:"array"`
 }
 
-func (f *FakeBuilder) Build(_ *component.TelemetrySettings) (Operator, error) {
+func (f *FakeBuilder) Build(_ component.TelemetrySettings) (Operator, error) {
 	return nil, nil
 }
 func (f *FakeBuilder) ID() string     { return "operator" }
