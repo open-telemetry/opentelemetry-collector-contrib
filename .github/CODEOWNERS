@@ -97,6 +97,7 @@ extension/encoding/zipkinencodingextension/              @open-telemetry/collect
 extension/googleclientauthextension/                     @open-telemetry/collector-contrib-approvers @dashpole @damemi @aabmass @jsuereth @punya @psx95
 extension/headerssetterextension/                        @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/healthcheckextension/                          @open-telemetry/collector-contrib-approvers @jpkrohling
+extension/healthcheckv2extension/                        @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 extension/httpforwarderextension/                        @open-telemetry/collector-contrib-approvers @atoulme @rmfitzpatrick
 extension/jaegerremotesampling/                          @open-telemetry/collector-contrib-approvers @yurishkuro @frzifus
 extension/oauth2clientauthextension/                     @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
@@ -268,7 +269,7 @@ receiver/statsdreceiver/                                 @open-telemetry/collect
 receiver/syslogreceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/tcplogreceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/udplogreceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski
-receiver/vcenterreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
+receiver/vcenterreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski @schmikei @StefanKurek
 receiver/wavefrontreceiver/                              @open-telemetry/collector-contrib-approvers @samiura
 receiver/webhookeventreceiver/                           @open-telemetry/collector-contrib-approvers @atoulme @shalper2
 receiver/windowseventlogreceiver/                        @open-telemetry/collector-contrib-approvers @djaglowski @armstrmi @pjanotti
