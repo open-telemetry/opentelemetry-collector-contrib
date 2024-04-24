@@ -191,7 +191,7 @@ func (p *Processor) exportMetrics() {
 		defer p.stateLock.Unlock()
 
 		// ConsumeMetrics() has prepared our own pmetric.Metrics instance ready for us to use
-		// Take it and create a new one
+		// Take it and clear replace it with a new empty one
 		out := p.md
 		p.md = pmetric.NewMetrics()
 
