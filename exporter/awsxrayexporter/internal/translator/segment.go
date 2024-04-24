@@ -43,8 +43,10 @@ const (
 
 var (
 	// reInvalidSpanCharacters defines the invalid letters in a span name as per
-	// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
-	reInvalidSpanCharacters = regexp.MustCompile(`[^ 0-9\p{L}N_.:/%&#=+,\-@]`)
+	// Allowed characters for X-Ray Segment Name:
+	// Unicode letters, numbers, and whitespace, and the following symbols: _, ., :, /, %, &, #, =, +, \, -, @
+	// Doc: https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
+	reInvalidSpanCharacters = regexp.MustCompile(`[^ 0-9\p{L}N_.:/%&#=+\-@]`)
 )
 
 var (
