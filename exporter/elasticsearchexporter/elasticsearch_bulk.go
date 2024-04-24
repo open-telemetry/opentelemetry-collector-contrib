@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net/http"
 	"runtime"
@@ -312,5 +313,9 @@ func (w *worker) flush() {
 	w.stats.docsIndexed.Add(stat.Indexed)
 	if err != nil {
 		w.logger.Error("bulk indexer flush error", zap.Error(err))
+	}
+	for _, resp := range stat.FailedDocs {
+		w.logger.Error(fmt.Sprintf("Drop docs: failed to index: %#v", resp.Error),
+			zap.Int("status", resp.Status))
 	}
 }
