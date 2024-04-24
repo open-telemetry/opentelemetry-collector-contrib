@@ -9,16 +9,30 @@ import (
 type ComplexConversion func(string, any, map[string]any) bool
 
 var conversions = map[string]ComplexConversion{
+	"AzureCDNAccessLog:SecurityProtocol":               azureCDNAccessLogSecurityProtocol,
+	"FrontDoorAccessLog:SecurityProtocol":              azureCDNAccessLogSecurityProtocol,
 	"AppServiceHTTPLogs:Protocol":                      appServiceHTTPLogsProtocol,
 	"FrontDoorHealthProbeLog:DNSLatencyMicroseconds":   frontDoorHealthProbeLogDNSLatencyMicroseconds,
 	"FrontDoorHealthProbeLog:totalLatencyMilliseconds": frontDoorHealthProbeLogTotalLatencyMilliseconds,
+}
+
+// Splits the "TLS 1.2" value into "TLS" and "1.2" and sets as "network.protocol.name" and "network.protocol.version"
+func azureCDNAccessLogSecurityProtocol(key string, value any, attrs map[string]any) bool {
+	if str, ok := value.(string); ok {
+		if parts := strings.SplitN(str, " ", 2); len(parts) == 2 {
+			attrs["tls.protocol.name"] = strings.ToLower(parts[0])
+			attrs["tls.protocol.version"] = parts[1]
+			return true
+		}
+	}
+	return false
 }
 
 // Splits the "HTTP/1.1" value into "HTTP" and "1.1" and sets as "network.protocol.name" and "network.protocol.version"
 func appServiceHTTPLogsProtocol(key string, value any, attrs map[string]any) bool {
 	if str, ok := value.(string); ok {
 		if parts := strings.SplitN(str, "/", 2); len(parts) == 2 {
-			attrs["network.protocol.name"] = parts[0]
+			attrs["network.protocol.name"] = strings.ToLower(parts[0])
 			attrs["network.protocol.version"] = parts[1]
 			return true
 		}

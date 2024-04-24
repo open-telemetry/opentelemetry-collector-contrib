@@ -3,29 +3,29 @@ package azure
 var mappings = map[string]map[string]string{
 	"common": {},
 	"AzureCdnAccessLog": {
-		"BackendHostname":       "", // If the request is being forwarded to a backend, this field represents the hostname of the backend. This field is blank if the request gets redirected or forwarded to a regional cache (when caching gets enabled for the routing rule).
-		"CacheStatus":           "", // For caching scenarios, this field defines the cache hit/miss at the POP
-		"ClientIp":              "", // The IP address of the client that made the request. If there was an X-Forwarded-For header in the request, then the Client IP is picked from the same.
-		"ClientPort":            "", // The IP port of the client that made the request.
-		"HttpMethod":            "", // HTTP method used by the request.
-		"HttpStatusCode":        "", // The HTTP status code returned from the proxy. If a request to the origin timeouts the value for HttpStatusCode is set to 0.
-		"HttpStatusDetails":     "", // Resulting status on the request. Meaning of this string value can be found at a Status reference table.
-		"HttpVersion":           "", // Type of the request or connection.
-		"POP":                   "", // Short name of the edge where the request landed.
-		"RequestBytes":          "", // The size of the HTTP request message in bytes, including the request headers and the request body.
-		"RequestUri":            "", // URI of the received request.
-		"ResponseBytes":         "", // Bytes sent by the backend server as the response.
-		"RoutingRuleName":       "", // The name of the routing rule that the request matched.
-		"RulesEngineMatchNames": "", // The names of the rules that the request matched.
-		"SecurityProtocol":      "", // The TLS/SSL protocol version used by the request or null if no encryption.
-		"isReceivedFromClient":  "", // If true, it means that the request came from the client. If false, the request is a miss in the edge (child POP) and is responded from origin shield (parent POP).
-		"TimeTaken":             "", // The length of time from first byte of request into Azure Front Door to last byte of response out, in seconds.
-		"TrackingReference":     "", // The unique reference string that identifies a request served by Azure Front Door, also sent as X-Azure-Ref header to the client. Required for searching details in the access logs for a specific request.
-		"UserAgent":             "", // The browser type that the client used.
-		"ErrorInfo":             "", // This field contains the specific type of error to narrow down troubleshooting area.
-		"TimeToFirstByte":       "", // The length of time in milliseconds from when Microsoft CDN receives the request to the time the first byte gets sent to the client. The time is measured only from the Microsoft side. Client-side data isn't measured.
-		"Result":                "", // SSLMismatchedSNI is a status code that signifies a successful request with a mismatch warning between the Server Name Indication (SNI) and the host header. This status code implies domain fronting, a technique that violates Azure Front Door's terms of service. Requests with SSLMismatchedSNI will be rejected after January 22, 2024.
-		"SNI":                   "", // This field specifies the Server Name Indication (SNI) that is sent during the TLS/SSL handshake. It can be used to identify the exact SNI value if there was a SSLMismatchedSNI status code. Additionally, it can be compared with the host value in the requestUri field to detect and resolve the mismatch issue.
+		"BackendHostname":       "destination.address",       // If the request is being forwarded to a backend, this field represents the hostname of the backend. This field is blank if the request gets redirected or forwarded to a regional cache (when caching gets enabled for the routing rule).
+		"CacheStatus":           "",                          // For caching scenarios, this field defines the cache hit/miss at the POP
+		"ClientIp":              "client.address",            // The IP address of the client that made the request. If there was an X-Forwarded-For header in the request, then the Client IP is picked from the same.
+		"ClientPort":            "client.port",               // The IP port of the client that made the request.
+		"HttpMethod":            "http.request.method",       // HTTP method used by the request.
+		"HttpStatusCode":        "http.response.status_code", // The HTTP status code returned from the proxy. If a request to the origin timeouts the value for HttpStatusCode is set to 0.
+		"HttpStatusDetails":     "",                          // Resulting status on the request. Meaning of this string value can be found at a Status reference table.
+		"HttpVersion":           "network.protocol.version",  // Type of the request or connection.
+		"POP":                   "",                          // Short name of the edge where the request landed.
+		"RequestBytes":          "http.request.size",         // The size of the HTTP request message in bytes, including the request headers and the request body.
+		"RequestUri":            "url.full",                  // URI of the received request.
+		"ResponseBytes":         "http.response.size",        // Bytes sent by the backend server as the response.
+		"RoutingRuleName":       "",                          // The name of the routing rule that the request matched.
+		"RulesEngineMatchNames": "",                          // The names of the rules that the request matched.
+		"SecurityProtocol":      "",                          // handled by complex_conversions
+		"isReceivedFromClient":  "",                          // If true, it means that the request came from the client. If false, the request is a miss in the edge (child POP) and is responded from origin shield (parent POP).
+		"TimeTaken":             "",                          // The length of time from first byte of request into Azure Front Door to last byte of response out, in seconds.
+		"TrackingReference":     "az.service_request_id",     // The unique reference string that identifies a request served by Azure Front Door, also sent as X-Azure-Ref header to the client. Required for searching details in the access logs for a specific request.
+		"UserAgent":             "user_agent.original",       // The browser type that the client used.
+		"ErrorInfo":             "error.type",                // This field contains the specific type of error to narrow down troubleshooting area.
+		"TimeToFirstByte":       "",                          // The length of time in milliseconds from when Microsoft CDN receives the request to the time the first byte gets sent to the client. The time is measured only from the Microsoft side. Client-side data isn't measured.
+		"Result":                "",                          // SSLMismatchedSNI is a status code that signifies a successful request with a mismatch warning between the Server Name Indication (SNI) and the host header. This status code implies domain fronting, a technique that violates Azure Front Door's terms of service. Requests with SSLMismatchedSNI will be rejected after January 22, 2024.
+		"SNI":                   "",                          // This field specifies the Server Name Indication (SNI) that is sent during the TLS/SSL handshake. It can be used to identify the exact SNI value if there was a SSLMismatchedSNI status code. Additionally, it can be compared with the host value in the requestUri field to detect and resolve the mismatch issue.
 	},
 	"FrontDoorAccessLog": {
 		"trackingReference":   "az.service_request_id",
@@ -33,17 +33,17 @@ var mappings = map[string]map[string]string{
 		"httpVersion":         "network.protocol.version",
 		"requestUri":          "url.full",
 		"hostName":            "server.address",
-		"requestBytes":        "http.request.body.size",
-		"responseBytes":       "http.response.body.size",
+		"requestBytes":        "http.request.size",
+		"responseBytes":       "http.response.size",
 		"userAgent":           "user_agent.original",
 		"clientIp":            "client.address",
 		"clientPort":          "client.port",
 		"socketIp":            "network.peer.address",
 		"timeTaken":           "http.server.request.duration",
 		"requestProtocol":     "network.protocol.name",
-		"securityProtocol":    "",
-		"securityCipher":      "",
-		"securityCurves":      "",
+		"securityProtocol":    "", // handled by complex_conversions
+		"securityCipher":      "tls.cipher",
+		"securityCurves":      "tls.curve",
 		"endpoint":            "",
 		"httpStatusCode":      "http.response.status_code",
 		"pop":                 "",
@@ -68,9 +68,9 @@ var mappings = map[string]map[string]string{
 		"probeURL":                      "url.full",
 		"originName":                    "server.address",
 		"originIP":                      "",
-		"totalLatencyMilliseconds":      "",
+		"totalLatencyMilliseconds":      "", // handled by complex_conversions
 		"connectionLatencyMilliseconds": "",
-		"DNSLatencyMicroseconds":        "",
+		"DNSLatencyMicroseconds":        "", // handled by complex_conversions
 	},
 	"FrontdoorWebApplicationFirewallLog": {
 		"clientIP":          "client.address",
@@ -110,41 +110,41 @@ var mappings = map[string]map[string]string{
 		"WebSiteInstanceId": "", //string	Instance ID of the application running
 	},
 	"AppServiceAuditLogs": {
-		"_BilledSize":     "", //real	The record size in bytes
-		"Category":        "", //string	Log category name
-		"_IsBillable":     "", //string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
-		"OperationName":   "", //string	Name of the operation
-		"Protocol":        "", //string	Authentication protocol
-		"_ResourceId":     "", //string	A unique identifier for the resource that the record is associated with
-		"SourceSystem":    "", //string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
-		"_SubscriptionId": "", //string	A unique identifier for the subscription that the record is associated with
-		"TenantId":        "", //string	The Log Analytics workspace ID
-		"TimeGenerated":   "", //datetime	Time when event is generated
-		"Type":            "", //string	The name of the table
-		"User":            "", //string	Username used for publishing access
-		"UserAddress":     "", //string	Client IP address of the publishing user
-		"UserDisplayName": "", //string	Email address of a user in case publishing was authorized via AAD authentication
+		"_BilledSize":     "",               //real	The record size in bytes
+		"Category":        "",               //string	Log category name
+		"_IsBillable":     "",               //string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
+		"OperationName":   "",               //string	Name of the operation
+		"Protocol":        "",               //string	Authentication protocol
+		"_ResourceId":     "",               //string	A unique identifier for the resource that the record is associated with
+		"SourceSystem":    "",               //string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
+		"_SubscriptionId": "",               //string	A unique identifier for the subscription that the record is associated with
+		"TenantId":        "",               //string	The Log Analytics workspace ID
+		"TimeGenerated":   "",               //datetime	Time when event is generated
+		"Type":            "",               //string	The name of the table
+		"User":            "enduser.id",     //string	Username used for publishing access
+		"UserAddress":     "client.address", //string	Client IP address of the publishing user
+		"UserDisplayName": "",               //string	Email address of a user in case publishing was authorized via AAD authentication
 	},
 	"AppServiceAuthenticationLogs": {
-		"_BilledSize":          "", //real	The record size in bytes
-		"CorrelationId":        "", //string	The ID for correlated events.
-		"Details":              "", //string	The event details.
-		"HostName":             "", //string	The host name of the application.
-		"_IsBillable":          "", //string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
-		"Level":                "", //string	The level of log verbosity.
-		"Message":              "", //string	The log message.
-		"ModuleRuntimeVersion": "", //string	The version of App Service Authentication running.
-		"OperationName":        "", //string	The name of the operation represented by this event.
-		"_ResourceId":          "", //string	A unique identifier for the resource that the record is associated with
-		"SiteName":             "", //string	The runtime name of the application.
-		"SourceSystem":         "", //string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
-		"StatusCode":           "", //int	The HTTP status code of the operation.
-		"_SubscriptionId":      "", //string	A unique identifier for the subscription that the record is associated with
-		"SubStatusCode":        "", //int	The HTTP sub-status code of the request.
-		"TaskName":             "", //string	The name of the task being performed.
-		"TenantId":             "", //string	The Log Analytics workspace ID
-		"TimeGenerated":        "", //datetime	The timestamp (UTC) of when this event was generated.
-		"Type":                 "", //string	The name of the table
+		"_BilledSize":          "",                          //real	The record size in bytes
+		"CorrelationId":        "",                          //string	The ID for correlated events.
+		"Details":              "",                          //string	The event details.
+		"HostName":             "",                          //string	The host name of the application.
+		"_IsBillable":          "",                          //string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
+		"Level":                "",                          //string	The level of log verbosity.
+		"Message":              "",                          //string	The log message.
+		"ModuleRuntimeVersion": "",                          //string	The version of App Service Authentication running.
+		"OperationName":        "",                          //string	The name of the operation represented by this event.
+		"_ResourceId":          "",                          //string	A unique identifier for the resource that the record is associated with
+		"SiteName":             "",                          //string	The runtime name of the application.
+		"SourceSystem":         "",                          //string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
+		"StatusCode":           "http.response.status_code", //int	The HTTP status code of the operation.
+		"_SubscriptionId":      "",                          //string	A unique identifier for the subscription that the record is associated with
+		"SubStatusCode":        "",                          //int	The HTTP sub-status code of the request.
+		"TaskName":             "",                          //string	The name of the task being performed.
+		"TenantId":             "",                          //string	The Log Analytics workspace ID
+		"TimeGenerated":        "",                          //datetime	The timestamp (UTC) of when this event was generated.
+		"Type":                 "",                          //string	The name of the table
 	},
 	"AppServiceConsoleLogs": {
 		"_BilledSize":       "", // real	The record size in bytes
@@ -191,71 +191,72 @@ var mappings = map[string]map[string]string{
 		"Type":            "", // string	The name of the table
 	},
 	"AppServiceHTTPLogs": {
-		"_BilledSize":     "",                          //real	The record size in bytes
-		"CIp":             "client.address",            //string	IP address of the client
-		"ComputerName":    "host.name",                 //string	The name of the server on which the log file entry was generated.
-		"Cookie":          "",                          //string	Cookie on HTTP request
-		"CsBytes":         "http.request.body.size",    //int	Number of bytes received by server
-		"CsHost":          "url.domain",                //string	Host name header on HTTP request
-		"CsMethod":        "http.request.method",       //string	The request HTTP verb
-		"CsUriQuery":      "url.query",                 //string	URI query on HTTP request
-		"CsUriStem":       "url.path",                  //string	The target of the request
-		"CsUsername":      "",                          //string	The name of the authenticated user on HTTP request
-		"_IsBillable":     "",                          //string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
-		"Protocol":        "",                          //string	HTTP version
-		"Referer":         "",                          //string	The site that the user last visited. This site provided a link to the current site
-		"_ResourceId":     "",                          //string	A unique identifier for the resource that the record is associated with
-		"Result":          "",                          //string	Success / Failure of HTTP request
-		"ScBytes":         "http.response.body.size",   //int	Number of bytes sent by server
-		"ScStatus":        "http.response.status_code", //int	HTTP status code
-		"ScSubStatus":     "",                          //string	Sub-status error code on HTTP request
-		"ScWin32Status":   "",                          //string	Windows status code on HTTP request
-		"SourceSystem":    "",                          //string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
-		"SPort":           "server.port",               //string	Server port number
-		"_SubscriptionId": "",                          //string	A unique identifier for the subscription that the record is associated with
-		"TenantId":        "",                          //string	The Log Analytics workspace ID
-		"TimeGenerated":   "",                          //datetime	Time when event is generated
-		"TimeTaken":       "",                          //int	Time taken by HTTP request in milliseconds
-		"Type":            "",                          //string	The name of the table
-		"UserAgent":       "",                          //string	User agent on HTTP request
+		"_BilledSize":     "",                             //real	The record size in bytes
+		"CIp":             "client.address",               //string	IP address of the client
+		"ComputerName":    "host.name",                    //string	The name of the server on which the log file entry was generated.
+		"Cookie":          "",                             //string	Cookie on HTTP request
+		"CsBytes":         "http.request.body.size",       //int	Number of bytes received by server
+		"CsHost":          "url.domain",                   //string	Host name header on HTTP request
+		"CsMethod":        "http.request.method",          //string	The request HTTP verb
+		"CsUriQuery":      "url.query",                    //string	URI query on HTTP request
+		"CsUriStem":       "url.path",                     //string	The target of the request
+		"CsUsername":      "",                             //string	The name of the authenticated user on HTTP request
+		"_IsBillable":     "",                             //string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
+		"Protocol":        "",                             // handled by complex_conversions
+		"Referer":         "http.request.header.referer",  //string	The site that the user last visited. This site provided a link to the current site
+		"_ResourceId":     "",                             //string	A unique identifier for the resource that the record is associated with
+		"Result":          "",                             //string	Success / Failure of HTTP request
+		"ScBytes":         "http.response.body.size",      //int	Number of bytes sent by server
+		"ScStatus":        "http.response.status_code",    //int	HTTP status code
+		"ScSubStatus":     "",                             //string	Sub-status error code on HTTP request
+		"ScWin32Status":   "",                             //string	Windows status code on HTTP request
+		"SourceSystem":    "",                             //string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
+		"SPort":           "server.port",                  //string	Server port number
+		"_SubscriptionId": "",                             //string	A unique identifier for the subscription that the record is associated with
+		"TenantId":        "",                             //string	The Log Analytics workspace ID
+		"TimeGenerated":   "",                             //datetime	Time when event is generated
+		"TimeTaken":       "http.server.request.duration", //int	Time taken by HTTP request in milliseconds
+		"Type":            "",                             //string	The name of the table
+		"UserAgent":       "user_agent.original",          //string	User agent on HTTP request
 	},
 	"AppServiceIPSecAuditLogs": {
-		"_BilledSize":     "", // real	The record size in bytes
-		"CIp":             "", // string	IP address of the client
-		"CsHost":          "", // string	Host header of the HTTP request
-		"Details":         "", // string	Additional information
-		"_IsBillable":     "", // string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
-		"_ResourceId":     "", // string	A unique identifier for the resource that the record is associated with
-		"Result":          "", // string	The result whether the access is Allowed or Denied
-		"ServiceEndpoint": "", // string	This indicates whether the access is via Virtual Network Service Endpoint communication
-		"SourceSystem":    "", // string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
-		"_SubscriptionId": "", // string	A unique identifier for the subscription that the record is associated with
-		"TenantId":        "", // string	The Log Analytics workspace ID
-		"TimeGenerated":   "", // datetime	Time of the Http Request
-		"Type":            "", // string	The name of the table
-		"XAzureFDID":      "", // string	X-Azure-FDID header (Azure Frontdoor ID) of the HTTP request
-		"XFDHealthProbe":  "", // string	X-FD-HealthProbe (Azure Frontdoor Health Probe) of the HTTP request
-		"XForwardedFor":   "", // string	X-Forwarded-For header of the HTTP request
-		"XForwardedHost":  "", // string	X-Forwarded-Host header of the HTTP request
+		"_BilledSize":     "",               // real	The record size in bytes
+		"CIp":             "client.address", // string	IP address of the client
+		"CsHost":          "url.domain",     // string	Host header of the HTTP request
+		"Details":         "",               // string	Additional information
+		"_IsBillable":     "",               // string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
+		"_ResourceId":     "",               // string	A unique identifier for the resource that the record is associated with
+		"Result":          "",               // string	The result whether the access is Allowed or Denied
+		"ServiceEndpoint": "",               // string	This indicates whether the access is via Virtual Network Service Endpoint communication
+		"SourceSystem":    "",               // string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
+		"_SubscriptionId": "",               // string	A unique identifier for the subscription that the record is associated with
+		"TenantId":        "",               // string	The Log Analytics workspace ID
+		"TimeGenerated":   "",               // datetime	Time of the Http Request
+		"Type":            "",               // string	The name of the table
+		"XAzureFDID":      "",               // string	X-Azure-FDID header (Azure Frontdoor ID) of the HTTP request
+		"XFDHealthProbe":  "",               // string	X-FD-HealthProbe (Azure Frontdoor Health Probe) of the HTTP request
+		"XForwardedFor":   "",               // string	X-Forwarded-For header of the HTTP request
+		"XForwardedHost":  "",               // string	X-Forwarded-Host header of the HTTP request
 	},
 	"AppServicePlatformLogs": {
-		"ActivityId":      "", // string	Activity ID to correlate events
-		"_BilledSize":     "", // real	The record size in bytes
-		"ContainerId":     "", // string	Application container id
-		"DeploymentId":    "", // string	Deployment ID of the application deployment
-		"Exception":       "", // string	Details of the exception
-		"Host":            "", // string	Host where the application is running
-		"_IsBillable":     "", // string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
-		"Level":           "", // string	Level of log verbosity
-		"Message":         "", // string	Log message
-		"OperationName":   "", // string	The name of the operation represented by this event.
-		"_ResourceId":     "", // string	A unique identifier for the resource that the record is associated with
-		"SourceSystem":    "", // string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
-		"StackTrace":      "", // string	Stack trace for the exception
-		"_SubscriptionId": "", // string	A unique identifier for the subscription that the record is associated with
-		"TenantId":        "", // string	The Log Analytics workspace ID
-		"TimeGenerated":   "", // datetime	Time when event is generated
-		"Type":            "", // string	The name of the table
+		"ActivityId":      "",               // string	Activity ID to correlate events
+		"_BilledSize":     "",               // real	The record size in bytes
+		"containerId":     "container.id",   // string	Application container id
+		"containerName":   "container.name", // string	Application container id
+		"DeploymentId":    "",               // string	Deployment ID of the application deployment
+		"exception":       "error.type",     // string	Details of the exception
+		"Host":            "",               // string	Host where the application is running
+		"_IsBillable":     "",               // string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
+		"Level":           "",               // string	Level of log verbosity
+		"Message":         "",               // string	Log message
+		"OperationName":   "",               // string	The name of the operation represented by this event.
+		"_ResourceId":     "",               // string	A unique identifier for the resource that the record is associated with
+		"SourceSystem":    "",               // string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
+		"StackTrace":      "",               // string	Stack trace for the exception
+		"_SubscriptionId": "",               // string	A unique identifier for the subscription that the record is associated with
+		"TenantId":        "",               // string	The Log Analytics workspace ID
+		"TimeGenerated":   "",               // datetime	Time when event is generated
+		"Type":            "",               // string	The name of the table
 	},
 	"AppServiceServerlessSecurityPluginData": {
 		"_BilledSize":     "", // real	The record size in bytes
