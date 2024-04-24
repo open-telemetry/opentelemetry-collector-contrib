@@ -1,6 +1,9 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: vcenter.host.name
+          value:
+            stringValue: DC0_H0
         - key: vcenter.resource_pool.name
           value:
             stringValue: Resources

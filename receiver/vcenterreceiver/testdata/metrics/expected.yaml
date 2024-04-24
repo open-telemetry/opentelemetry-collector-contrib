@@ -5109,6 +5109,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.host.name
+          value:
+            stringValue: esxi-111.europe-southeast1.gve.goog
         - key: vcenter.resource_pool.inventory_path
           value:
             stringValue: /Datacenter/host/StandaloneHost/Resources

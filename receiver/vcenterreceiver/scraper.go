@@ -290,16 +290,28 @@ func (v *vcenterMetricScraper) collectResourcePools(
 
 		rb := v.mb.NewResourceBuilder()
 		rpName := rp.Name()
-		if computeRef.Reference().Type == "ClusterComputeResource" {
-			compute := computesByRef[computeRef.Reference().Value]
-			if compute == nil {
-				errs.AddPartial(1, fmt.Errorf("no collected Cluster for Resource Pool [%s]'s Cluster ref: %s", rpName, computeRef.Reference().Value))
-				continue
-			}
-			rb.SetVcenterClusterName(compute.Name())
-		}
 		rb.SetVcenterResourcePoolName(rpName)
 		rb.SetVcenterResourcePoolInventoryPath(rp.InventoryPath)
+
+		compute := computesByRef[computeRef.Reference().Value]
+		if compute == nil {
+			errs.AddPartial(1, fmt.Errorf("no collected %s for Resource Pool [%s]'s owner ref: %s", computeRef.Reference().Type, rpName, computeRef.Reference().Value))
+			continue
+		}
+
+		if computeRef.Reference().Type == "ClusterComputeResource" {
+			rb.SetVcenterClusterName(compute.Name())
+		}
+		if computeRef.Reference().Type == "ComputeResource" {
+			hosts, err := compute.Hosts(ctx)
+			if err != nil || len(hosts) == 0 || hosts[0] == nil {
+				errs.AddPartial(1, fmt.Errorf("no hosts found for Resource Pool [%s]'s owner ref: %s", rpName, computeRef.Reference().Value))
+				continue
+			}
+
+			host := hosts[0]
+			rb.SetVcenterHostName(host.Name())
+		}
 
 		v.recordResourcePool(ts, moRP)
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
