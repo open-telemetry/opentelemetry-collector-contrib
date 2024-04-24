@@ -48,3 +48,22 @@ func (c *channelSet) closeAndRemove(key int) {
 	delete(c.chanmap, key)
 	c.mu.Unlock()
 }
+
+func (c *channelSet) shutdown() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Get all keys before deletion, so the map is not
+	// being modified while iterating.
+	keys := make([]int, len(c.chanmap))
+	i := 0
+	for key := range c.chanmap {
+		keys[i] = key
+		i++
+	}
+
+	for key := range keys {
+		close(c.chanmap[key])
+		delete(c.chanmap, key)
+	}
+}
