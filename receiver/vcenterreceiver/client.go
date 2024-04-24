@@ -5,6 +5,7 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 
@@ -116,7 +117,8 @@ func (vc *vcenterClient) ResourcePools(ctx context.Context) ([]*object.ResourceP
 func (vc *vcenterClient) VirtualApps(ctx context.Context) ([]*object.VirtualApp, error) {
 	vApps, err := vc.finder.VirtualAppList(ctx, "*")
 	if err != nil {
-		if _, ok := err.(*find.NotFoundError); ok {
+		var notFoundErr *find.NotFoundError
+		if errors.As(err, &notFoundErr) {
 			return []*object.VirtualApp{}, nil
 		}
 
