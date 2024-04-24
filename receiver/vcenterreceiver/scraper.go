@@ -114,13 +114,14 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context, datacenter *
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	v.collectResourcePools(ctx, now, errs)
+	dcName := datacenter.Name()
+	v.collectResourcePools(ctx, now, dcName, computes, errs)
 	for _, c := range computes {
-		v.collectHosts(ctx, now, c, errs)
-		v.collectDatastores(ctx, now, c, errs)
-		poweredOnVMs, poweredOffVMs := v.collectVMs(ctx, now, c, errs)
+		v.collectHosts(ctx, now, dcName, c, errs)
+		v.collectDatastores(ctx, now, dcName, c, errs)
+		poweredOnVMs, poweredOffVMs := v.collectVMs(ctx, now, dcName, c, errs)
 		if c.Reference().Type == "ClusterComputeResource" {
-			v.collectCluster(ctx, now, c, poweredOnVMs, poweredOffVMs, errs)
+			v.collectCluster(ctx, now, dcName, c, poweredOnVMs, poweredOffVMs, errs)
 		}
 	}
 }
@@ -128,6 +129,7 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context, datacenter *
 func (v *vcenterMetricScraper) collectCluster(
 	ctx context.Context,
 	now pcommon.Timestamp,
+	dcName string,
 	c *object.ComputeResource,
 	poweredOnVMs, poweredOffVMs int64,
 	errs *scrapererror.ScrapeErrors,
@@ -149,6 +151,7 @@ func (v *vcenterMetricScraper) collectCluster(
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), false)
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumEffectiveHosts), true)
 	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterDatacenterName(dcName)
 	rb.SetVcenterClusterName(c.Name())
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
@@ -156,6 +159,7 @@ func (v *vcenterMetricScraper) collectCluster(
 func (v *vcenterMetricScraper) collectDatastores(
 	ctx context.Context,
 	colTime pcommon.Timestamp,
+	dcName string,
 	compute *object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
 ) {
@@ -166,13 +170,14 @@ func (v *vcenterMetricScraper) collectDatastores(
 	}
 
 	for _, ds := range datastores {
-		v.collectDatastore(ctx, colTime, ds, compute, errs)
+		v.collectDatastore(ctx, colTime, dcName, ds, compute, errs)
 	}
 }
 
 func (v *vcenterMetricScraper) collectDatastore(
 	ctx context.Context,
 	now pcommon.Timestamp,
+	dcName string,
 	ds *object.Datastore,
 	compute *object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
@@ -186,6 +191,7 @@ func (v *vcenterMetricScraper) collectDatastore(
 
 	v.recordDatastoreProperties(now, moDS)
 	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterDatacenterName(dcName)
 	if compute.Reference().Type == "ClusterComputeResource" {
 		rb.SetVcenterClusterName(compute.Name())
 	}
@@ -196,6 +202,7 @@ func (v *vcenterMetricScraper) collectDatastore(
 func (v *vcenterMetricScraper) collectHosts(
 	ctx context.Context,
 	colTime pcommon.Timestamp,
+	dcName string,
 	compute *object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
 ) {
@@ -206,13 +213,14 @@ func (v *vcenterMetricScraper) collectHosts(
 	}
 
 	for _, h := range hosts {
-		v.collectHost(ctx, colTime, h, compute, errs)
+		v.collectHost(ctx, colTime, dcName, h, compute, errs)
 	}
 }
 
 func (v *vcenterMetricScraper) collectHost(
 	ctx context.Context,
 	now pcommon.Timestamp,
+	dcName string,
 	host *object.HostSystem,
 	compute *object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
@@ -240,6 +248,7 @@ func (v *vcenterMetricScraper) collectHost(
 	v.recordHostSystemMemoryUsage(now, hwSum)
 	v.recordHostPerformanceMetrics(ctx, hwSum, errs)
 	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterDatacenterName(dcName)
 	rb.SetVcenterHostName(host.Name())
 	if compute.Reference().Type == "ClusterComputeResource" {
 		rb.SetVcenterClusterName(compute.Name())
@@ -250,6 +259,8 @@ func (v *vcenterMetricScraper) collectHost(
 func (v *vcenterMetricScraper) collectResourcePools(
 	ctx context.Context,
 	ts pcommon.Timestamp,
+	dcName string,
+	computes []*object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	rps, err := v.client.ResourcePools(ctx)
@@ -257,6 +268,13 @@ func (v *vcenterMetricScraper) collectResourcePools(
 		errs.AddPartial(1, err)
 		return
 	}
+
+	// Make it easier to find matching Clusters
+	computesByRef := map[string]*object.ComputeResource{}
+	for _, cr := range computes {
+		computesByRef[cr.Reference().Value] = cr
+	}
+
 	for _, rp := range rps {
 		var moRP mo.ResourcePool
 		err = rp.Properties(ctx, rp.Reference(), []string{
@@ -280,10 +298,33 @@ func (v *vcenterMetricScraper) collectResourcePools(
 			v.vmToResourcePool[vmRef.Value] = rp
 		}
 
-		v.recordResourcePool(ts, moRP)
 		rb := v.mb.NewResourceBuilder()
-		rb.SetVcenterResourcePoolName(rp.Name())
+		rpName := rp.Name()
+		rb.SetVcenterResourcePoolName(rpName)
 		rb.SetVcenterResourcePoolInventoryPath(rp.InventoryPath)
+		rb.SetVcenterDatacenterName(dcName)
+
+		compute := computesByRef[computeRef.Reference().Value]
+		if compute == nil {
+			errs.AddPartial(1, fmt.Errorf("no collected %s for Resource Pool [%s]'s owner ref: %s", computeRef.Reference().Type, rpName, computeRef.Reference().Value))
+			continue
+		}
+
+		if computeRef.Reference().Type == "ClusterComputeResource" {
+			rb.SetVcenterClusterName(compute.Name())
+		}
+		if computeRef.Reference().Type == "ComputeResource" {
+			hosts, err := compute.Hosts(ctx)
+			if err != nil || len(hosts) == 0 || hosts[0] == nil {
+				errs.AddPartial(1, fmt.Errorf("no hosts found for Resource Pool [%s]'s owner ref: %s", rpName, computeRef.Reference().Value))
+				continue
+			}
+
+			host := hosts[0]
+			rb.SetVcenterHostName(host.Name())
+		}
+
+		v.recordResourcePool(ts, moRP)
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
@@ -291,6 +332,7 @@ func (v *vcenterMetricScraper) collectResourcePools(
 func (v *vcenterMetricScraper) collectVMs(
 	ctx context.Context,
 	colTime pcommon.Timestamp,
+	dcName string,
 	compute *object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
 ) (poweredOnVMs int64, poweredOffVMs int64) {
@@ -380,7 +422,7 @@ func (v *vcenterMetricScraper) collectVMs(
 
 		perfMetrics := vmPerfMetrics.resultsByMoRef[vm.Reference().Value]
 		v.buildVMMetrics(colTime, vm, hwSum, perfMetrics)
-		rb := v.createVMResourceBuilder(vm, hwSum, compute, rp)
+		rb := v.createVMResourceBuilder(dcName, vm, hwSum, compute, rp)
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
