@@ -30,6 +30,7 @@ body:
       - connector/datadog
       - connector/exceptions
       - connector/failover
+      - connector/grafanacloud
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
@@ -49,7 +50,6 @@ body:
       - exporter/coralogix
       - exporter/datadog
       - exporter/dataset
-      - exporter/dynatrace
       - exporter/elasticsearch
       - exporter/file
       - exporter/googlecloud
@@ -71,6 +71,7 @@ body:
       - exporter/prometheus
       - exporter/prometheusremotewrite
       - exporter/pulsar
+      - exporter/rabbitmq
       - exporter/sapm
       - exporter/sentry
       - exporter/signalfx
@@ -86,11 +87,13 @@ body:
       - extension/basicauth
       - extension/bearertokenauth
       - extension/encoding
+      - extension/encoding/avrologencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
       - extension/encoding/otlpencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
+      - extension/googleclientauth
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
@@ -183,6 +186,7 @@ body:
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
+      - receiver/awss3
       - receiver/awsxray
       - receiver/azureblob
       - receiver/azureeventhub

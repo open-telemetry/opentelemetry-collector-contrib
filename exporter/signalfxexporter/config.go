@@ -68,7 +68,7 @@ type Config struct {
 
 	// ingest_tls needs to be set if the exporter's IngestURL is pointing to a signalfx receiver
 	// with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
-	IngestTLSSettings configtls.TLSClientSetting `mapstructure:"ingest_tls,omitempty"`
+	IngestTLSSettings configtls.ClientConfig `mapstructure:"ingest_tls,omitempty"`
 
 	// APIURL is the destination to where SignalFx metadata will be sent. This
 	// value takes precedence over the value of Realm
@@ -76,7 +76,7 @@ type Config struct {
 
 	// api_tls needs to be set if the exporter's APIURL is pointing to a httforwarder extension
 	// with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
-	APITLSSettings configtls.TLSClientSetting `mapstructure:"api_tls,omitempty"`
+	APITLSSettings configtls.ClientConfig `mapstructure:"api_tls,omitempty"`
 
 	// Whether to log datapoints dispatched to Splunk Observability Cloud
 	LogDataPoints bool `mapstructure:"log_data_points"`

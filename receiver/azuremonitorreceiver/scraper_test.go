@@ -85,7 +85,7 @@ func TestAzureScraperStart(t *testing.T) {
 			name: "service_principal",
 			testFunc: func(t *testing.T) {
 				customCfg := &Config{
-					ScraperControllerSettings:     cfg.ScraperControllerSettings,
+					ControllerConfig:              cfg.ControllerConfig,
 					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
 					CacheResources:                24 * 60 * 60,
 					CacheResourcesDefinitions:     24 * 60 * 60,
@@ -113,7 +113,7 @@ func TestAzureScraperStart(t *testing.T) {
 			name: "workload_identity",
 			testFunc: func(t *testing.T) {
 				customCfg := &Config{
-					ScraperControllerSettings:     cfg.ScraperControllerSettings,
+					ControllerConfig:              cfg.ControllerConfig,
 					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
 					CacheResources:                24 * 60 * 60,
 					CacheResourcesDefinitions:     24 * 60 * 60,

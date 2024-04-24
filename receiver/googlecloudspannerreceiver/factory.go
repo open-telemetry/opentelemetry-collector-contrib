@@ -32,7 +32,7 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings:         scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		ControllerConfig:                  scraperhelper.NewDefaultControllerConfig(),
 		TopMetricsQueryMaxRows:            defaultTopMetricsQueryMaxRows,
 		BackfillEnabled:                   defaultBackfillEnabled,
 		HideTopnLockstatsRowrangestartkey: defaultHideTopnLockstatsRowrangestartkey,
@@ -56,6 +56,6 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&rCfg.ScraperControllerSettings, settings, consumer,
+	return scraperhelper.NewScraperControllerReceiver(&rCfg.ControllerConfig, settings, consumer,
 		scraperhelper.AddScraper(scraper))
 }

@@ -35,12 +35,12 @@ func TestConfig(t *testing.T) {
 				Endpoint:  "localhost:6379",
 				Transport: confignet.TransportTypeTCP,
 			},
-			TLS: configtls.TLSClientSetting{
+			TLS: configtls.ClientConfig{
 				Insecure: true,
 			},
 			Username: "test",
 			Password: "test",
-			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: 10 * time.Second,
 				InitialDelay:       time.Second,
 			},

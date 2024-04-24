@@ -7,6 +7,8 @@ all_set:
       enabled: true
     sqlserver.batch.sql_recompilation.rate:
       enabled: true
+    sqlserver.database.io.read_latency:
+      enabled: true
     sqlserver.lock.wait.rate:
       enabled: true
     sqlserver.lock.wait_time.avg:
@@ -56,6 +58,8 @@ none_set:
       enabled: false
     sqlserver.batch.sql_recompilation.rate:
       enabled: false
+    sqlserver.database.io.read_latency:
+      enabled: false
     sqlserver.lock.wait.rate:
       enabled: false
     sqlserver.lock.wait_time.avg:
@@ -97,3 +101,31 @@ none_set:
       enabled: false
     sqlserver.instance.name:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    sqlserver.computer.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    sqlserver.database.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    sqlserver.instance.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    sqlserver.computer.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "sqlserver.computer.name-val"
+    sqlserver.database.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "sqlserver.database.name-val"
+    sqlserver.instance.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "sqlserver.instance.name-val"

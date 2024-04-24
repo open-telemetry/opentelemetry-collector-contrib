@@ -97,7 +97,7 @@ func TestConfig_Getters(t *testing.T) {
 						Headers: map[string]configopaque.String{
 							"test": configopaque.String("test"),
 						},
-						TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.ClientConfig{
 							Insecure: true,
 						},
 					},
@@ -118,7 +118,7 @@ func TestConfig_Getters(t *testing.T) {
 						Headers: map[string]configopaque.String{
 							"test": configopaque.String("test"),
 						},
-						TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.ClientConfig{
 							Insecure: true,
 						},
 					},

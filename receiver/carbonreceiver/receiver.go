@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -96,7 +97,7 @@ func (r *carbonReceiver) Start(_ context.Context, _ component.Host) error {
 	}
 	r.server = server
 	go func() {
-		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter); err != nil {
+		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter); err != nil && !errors.Is(err, net.ErrClosed) {
 			r.settings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()

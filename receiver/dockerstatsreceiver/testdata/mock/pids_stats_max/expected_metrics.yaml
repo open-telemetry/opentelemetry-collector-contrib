@@ -104,6 +104,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: By
+          - description: 'Number of cores available to the container.'
+            gauge:
+              dataPoints:
+                - asInt: 2
+                  startTimeUnixNano: "1687762436124732000"
+                  timeUnixNano: "1687762436137493000"
+            name: container.cpu.logical.count
+            unit: "{cpus}"
           - description: CPU shares set for the container.
             gauge:
               dataPoints:
@@ -217,6 +225,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
+          - description: 'Number of times the memory limit was hit.'
+            name: container.memory.fails
+            sum:
+              isMonotonic: true
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "{fails}"
           - description: Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2).
             name: container.memory.file
             sum:

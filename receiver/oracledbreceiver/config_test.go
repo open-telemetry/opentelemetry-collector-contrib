@@ -13,8 +13,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
 func TestValidateInvalidConfigs(t *testing.T) {
@@ -26,85 +24,85 @@ func TestValidateInvalidConfigs(t *testing.T) {
 		{
 			name: "Empty endpoint",
 			config: &Config{
-				Endpoint:                  "",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Endpoint:         "",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expected: errEmptyEndpoint,
 		},
 		{
 			name: "Missing port in endpoint",
 			config: &Config{
-				Endpoint:                  "localhost",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Endpoint:         "localhost",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expected: errBadEndpoint,
 		},
 		{
 			name: "Invalid endpoint format",
 			config: &Config{
-				Endpoint:                  "x;;ef;s;d:::ss:23423423423423423",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Endpoint:         "x;;ef;s;d:::ss:23423423423423423",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expected: errBadEndpoint,
 		},
 		{
 			name: "Missing host in endpoint",
 			config: &Config{
-				Endpoint:                  ":3001",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Endpoint:         ":3001",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expected: errBadEndpoint,
 		},
 		{
 			name: "Negative port",
 			config: &Config{
-				Endpoint:                  "localhost:-2",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Endpoint:         "localhost:-2",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expected: errBadPort,
 		},
 		{
 			name: "Bad port",
 			config: &Config{
-				Endpoint:                  "localhost:9999999999999999999",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Endpoint:         "localhost:9999999999999999999",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expected: errBadPort,
 		},
 		{
 			name: "Empty username",
 			config: &Config{
-				Endpoint:                  "localhost:3000",
-				Username:                  "",
-				Password:                  "secret",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Endpoint:         "localhost:3000",
+				Username:         "",
+				Password:         "secret",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expected: errEmptyUsername,
 		},
 		{
 			name: "Empty password",
 			config: &Config{
-				Endpoint:                  "localhost:3000",
-				Username:                  "ro_user",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Endpoint:         "localhost:3000",
+				Username:         "ro_user",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expected: errEmptyPassword,
 		},
 		{
 			name: "Empty service",
 			config: &Config{
-				Endpoint:                  "localhost:3000",
-				Password:                  "password",
-				Username:                  "ro_user",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Endpoint:         "localhost:3000",
+				Password:         "password",
+				Username:         "ro_user",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expected: errEmptyService,
 		},
 		{
 			name: "Invalid data source",
 			config: &Config{
-				DataSource:                "%%%",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				DataSource:       "%%%",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expected: errBadDataSource,
 		},
@@ -120,7 +118,7 @@ func TestValidateInvalidConfigs(t *testing.T) {
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	assert.Equal(t, 10*time.Second, cfg.ScraperControllerSettings.CollectionInterval)
+	assert.Equal(t, 10*time.Second, cfg.ControllerConfig.CollectionInterval)
 }
 
 func TestParseConfig(t *testing.T) {

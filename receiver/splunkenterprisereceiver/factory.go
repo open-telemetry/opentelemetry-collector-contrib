@@ -31,16 +31,16 @@ func createDefaultConfig() component.Config {
 	httpCfg.Timeout = defaultMaxSearchWaitTime
 
 	// Default ScraperController settings
-	scfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	scfg := scraperhelper.NewDefaultControllerConfig()
 	scfg.CollectionInterval = defaultInterval
 	scfg.Timeout = defaultMaxSearchWaitTime
 
 	return &Config{
-		IdxEndpoint:               httpCfg,
-		SHEndpoint:                httpCfg,
-		CMEndpoint:                httpCfg,
-		ScraperControllerSettings: scfg,
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		IdxEndpoint:          httpCfg,
+		SHEndpoint:           httpCfg,
+		CMEndpoint:           httpCfg,
+		ControllerConfig:     scfg,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -69,7 +69,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings,
+		&cfg.ControllerConfig,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scraper),

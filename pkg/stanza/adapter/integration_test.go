@@ -18,12 +18,13 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
 func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
-	emitter := NewLogEmitter(zap.NewNop().Sugar())
+	emitter := helper.NewLogEmitter(zap.NewNop().Sugar())
 
 	pipe, err := pipeline.Config{
 		Operators: []operator.Config{
@@ -66,6 +67,45 @@ func BenchmarkEmitterToConsumer(b *testing.B) {
 
 	var (
 		entries = complexEntriesForNDifferentHosts(entryCount, hostsCount)
+	)
+
+	cl := &consumertest.LogsSink{}
+	logsReceiver, err := createNoopReceiver(cl)
+	require.NoError(b, err)
+
+	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(b, err)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		cl.Reset()
+
+		go func() {
+			ctx := context.Background()
+			for _, e := range entries {
+				_ = logsReceiver.emitter.Process(ctx, e)
+			}
+		}()
+
+		require.Eventually(b,
+			func() bool {
+				return cl.LogRecordCount() == entryCount
+			},
+			30*time.Second, 5*time.Millisecond, "Did not receive all logs (only received %d)", cl.LogRecordCount(),
+		)
+	}
+}
+
+func BenchmarkEmitterToConsumerScopeGroupping(b *testing.B) {
+	const (
+		entryCount  = 1_000_000
+		hostsCount  = 2
+		scopesCount = 2
+	)
+
+	var (
+		entries = complexEntriesForNDifferentHostsMDifferentScopes(entryCount, hostsCount, scopesCount)
 	)
 
 	cl := &consumertest.LogsSink{}

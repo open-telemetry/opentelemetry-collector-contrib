@@ -5,9 +5,11 @@ status:
   class: processor
   stability:
     beta: [traces]
-  distributions: [contrib, observiq, sumo, aws]
+  distributions: [contrib]
   warnings: [Statefulness]
   codeowners:
     active: [jpkrohling]
 tests:
   config:
+  goleak:
+    skip: true

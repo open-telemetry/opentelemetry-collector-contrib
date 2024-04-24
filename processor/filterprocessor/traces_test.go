@@ -257,7 +257,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 					`Substring("", 0, 100) == "test"`,
 				},
 			},
-			want:      func(td ptrace.Traces) {},
+			want:      func(_ ptrace.Traces) {},
 			errorMode: ottl.IgnoreError,
 		},
 	}

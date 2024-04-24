@@ -5,7 +5,7 @@ status:
   class: extension
   stability:
     alpha: [extension]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, atoulme]
 

@@ -18,11 +18,11 @@ type Config struct {
 }
 
 type LogsConfig struct {
-	Secret         string                      `mapstructure:"secret"`
-	Endpoint       string                      `mapstructure:"endpoint"`
-	TLS            *configtls.TLSServerSetting `mapstructure:"tls"`
-	Attributes     map[string]string           `mapstructure:"attributes"`
-	TimestampField string                      `mapstructure:"timestamp_field"`
+	Secret         string                  `mapstructure:"secret"`
+	Endpoint       string                  `mapstructure:"endpoint"`
+	TLS            *configtls.ServerConfig `mapstructure:"tls"`
+	Attributes     map[string]string       `mapstructure:"attributes"`
+	TimestampField string                  `mapstructure:"timestamp_field"`
 }
 
 var (

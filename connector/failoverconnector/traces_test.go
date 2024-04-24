@@ -143,6 +143,12 @@ func consumeTracesAndCheckStable(conn *tracesFailover, idx int, tr ptrace.Traces
 	return stableIndex == idx
 }
 
+func consumeTracesAndCheckCurrent(conn *tracesFailover, idx int, tr ptrace.Traces) bool {
+	_ = conn.ConsumeTraces(context.Background(), tr)
+	currentIndex := conn.failover.pS.TestCurrentIndex()
+	return currentIndex == idx
+}
+
 func sampleTrace() ptrace.Traces {
 	tr := ptrace.NewTraces()
 	rl := tr.ResourceSpans().AppendEmpty()

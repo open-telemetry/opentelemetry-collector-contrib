@@ -4,14 +4,18 @@
 package prometheusremotewrite
 
 import (
+	"fmt"
 	"math"
+	"sort"
 	"testing"
 	"time"
 
+	"github.com/cespare/xxhash/v2"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -102,110 +106,135 @@ func Test_isValidAggregationTemporality(t *testing.T) {
 	}
 }
 
-// Test_addSample checks addSample updates the map it receives correctly based on the sample and Label
-// set it receives.
-// Test cases are two samples belonging to the same TimeSeries,  two samples belong to different TimeSeries, and nil
-// case.
-func Test_addSample(t *testing.T) {
+// TestPrometheusConverter_addSample verifies that prometheusConverter.addSample adds the sample to the correct time series.
+func TestPrometheusConverter_addSample(t *testing.T) {
 	type testCase struct {
 		metric pmetric.Metric
 		sample prompb.Sample
 		labels []prompb.Label
 	}
 
+	t.Run("empty_case", func(t *testing.T) {
+		converter := newPrometheusConverter()
+		converter.addSample(nil, nil)
+		assert.Empty(t, converter.unique)
+		assert.Empty(t, converter.conflicts)
+	})
+
 	tests := []struct {
 		name     string
-		orig     map[string]*prompb.TimeSeries
 		testCase []testCase
-		want     map[string]*prompb.TimeSeries
+		want     map[uint64]*prompb.TimeSeries
 	}{
 		{
-			"two_points_same_ts_same_metric",
-			map[string]*prompb.TimeSeries{},
-			[]testCase{
-				{validMetrics1[validDoubleGauge],
-					getSample(floatVal1, msTime1),
-					promLbs1,
+			name: "two_points_same_ts_same_metric",
+			testCase: []testCase{
+				{
+					metric: validMetrics1[validDoubleGauge],
+					sample: getSample(floatVal1, msTime1),
+					labels: promLbs1,
 				},
 				{
-					validMetrics1[validDoubleGauge],
-					getSample(floatVal2, msTime2),
-					promLbs1,
+					metric: validMetrics1[validDoubleGauge],
+					sample: getSample(floatVal2, msTime2),
+					labels: promLbs1,
 				},
 			},
-			twoPointsSameTs,
+			want: twoPointsSameTs(),
 		},
 		{
-			"two_points_different_ts_same_metric",
-			map[string]*prompb.TimeSeries{},
-			[]testCase{
-				{validMetrics1[validIntGauge],
-					getSample(float64(intVal1), msTime1),
-					promLbs1,
+			name: "two_points_different_ts_same_metric",
+			testCase: []testCase{
+				{
+					sample: getSample(float64(intVal1), msTime1),
+					labels: promLbs1,
 				},
-				{validMetrics1[validIntGauge],
-					getSample(float64(intVal1), msTime2),
-					promLbs2,
+				{
+					sample: getSample(float64(intVal1), msTime2),
+					labels: promLbs2,
 				},
 			},
-			twoPointsDifferentTs,
+			want: twoPointsDifferentTs(),
 		},
 	}
-	t.Run("empty_case", func(t *testing.T) {
-		tsMap := map[string]*prompb.TimeSeries{}
-		addSample(tsMap, nil, nil, "")
-		assert.Exactly(t, tsMap, map[string]*prompb.TimeSeries{})
-	})
-	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addSample(tt.orig, &tt.testCase[0].sample, tt.testCase[0].labels, tt.testCase[0].metric.Type().String())
-			addSample(tt.orig, &tt.testCase[1].sample, tt.testCase[1].labels, tt.testCase[1].metric.Type().String())
-			assert.Exactly(t, tt.want, tt.orig)
+			converter := newPrometheusConverter()
+			converter.addSample(&tt.testCase[0].sample, tt.testCase[0].labels)
+			converter.addSample(&tt.testCase[1].sample, tt.testCase[1].labels)
+			assert.Exactly(t, tt.want, converter.unique)
+			assert.Empty(t, converter.conflicts)
 		})
 	}
 }
 
-// Test_timeSeries checks timeSeriesSignature returns consistent and unique signatures for a distinct label set and
-// metric type combination.
+// Test_timeSeriesSignature checks that timeSeriesSignature returns consistent and unique signatures for a distinct label set.
 func Test_timeSeriesSignature(t *testing.T) {
+	var oneKBLabels []prompb.Label
+	for i := 0; i < 100; i++ {
+		const name = "12345"
+		const value = "12345"
+		oneKBLabels = append(oneKBLabels, prompb.Label{Name: name, Value: value})
+	}
+
 	tests := []struct {
 		name   string
 		lbs    []prompb.Label
 		metric pmetric.Metric
-		want   string
 	}{
 		{
 			"int64_signature",
 			promLbs1,
 			validMetrics1[validIntGauge],
-			validMetrics1[validIntGauge].Type().String() + lb1Sig,
 		},
 		{
 			"histogram_signature",
 			promLbs2,
 			validMetrics1[validHistogram],
-			validMetrics1[validHistogram].Type().String() + lb2Sig,
 		},
 		{
 			"unordered_signature",
 			getPromLabels(label22, value22, label21, value21),
 			validMetrics1[validHistogram],
-			validMetrics1[validHistogram].Type().String() + lb2Sig,
 		},
 		// descriptor type cannot be nil, as checked by validateAggregationTemporality
 		{
 			"nil_case",
 			nil,
 			validMetrics1[validHistogram],
-			validMetrics1[validHistogram].Type().String(),
 		},
+		{
+			// Case that triggers optimized logic when exceeding 1 kb
+			"greater_than_1kb_signature",
+			oneKBLabels,
+			validMetrics1[validIntGauge],
+		},
+	}
+
+	calcSig := func(labels []prompb.Label) uint64 {
+		sort.Sort(ByLabelName(labels))
+
+		h := xxhash.New()
+		for _, l := range labels {
+			_, err := h.WriteString(l.Name)
+			require.NoError(t, err)
+			_, err = h.Write(seps)
+			require.NoError(t, err)
+			_, err = h.WriteString(l.Value)
+			require.NoError(t, err)
+			_, err = h.Write(seps)
+			require.NoError(t, err)
+		}
+
+		return h.Sum64()
 	}
 
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.EqualValues(t, tt.want, timeSeriesSignature(tt.metric.Type().String(), tt.lbs))
+			exp := calcSig(tt.lbs)
+			sig := timeSeriesSignature(tt.lbs)
+			assert.EqualValues(t, exp, sig)
 		})
 	}
 }
@@ -331,7 +360,7 @@ func Test_createLabelSet(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, tt.extras...))
+			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, nil, true, tt.extras...))
 		})
 	}
 }
@@ -349,79 +378,72 @@ func BenchmarkCreateAttributes(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		createAttributes(r, m, ext)
+		createAttributes(r, m, ext, nil, true)
 	}
 }
 
-// Test_addExemplars checks addExemplars updates the map it receives correctly based on the exemplars and bucket bounds data it receives.
-func Test_addExemplars(t *testing.T) {
-	type testCase struct {
-		exemplars    []prompb.Exemplar
-		bucketBounds []bucketBoundsData
-	}
-
+// TestPrometheusConverter_addExemplars verifies that prometheusConverter.addExemplars adds exemplars correctly given bucket bounds data.
+func TestPrometheusConverter_addExemplars(t *testing.T) {
+	ts1 := getTimeSeries(
+		getPromLabels(label11, value11, label12, value12),
+		getSample(float64(intVal1), msTime1),
+	)
+	ts2 := getTimeSeries(
+		getPromLabels(label11, value11, label12, value12),
+		getSample(float64(intVal1), msTime1),
+	)
+	tsMap1 := tsWithoutSampleAndExemplar()
 	tests := []struct {
-		name     string
-		orig     map[string]*prompb.TimeSeries
-		testCase []testCase
-		want     map[string]*prompb.TimeSeries
+		name         string
+		orig         map[uint64]*prompb.TimeSeries
+		dataPoint    pmetric.HistogramDataPoint
+		bucketBounds []bucketBoundsData
+		want         map[uint64]*prompb.TimeSeries
 	}{
 		{
-			"timeSeries_is_empty",
-			map[string]*prompb.TimeSeries{},
-			[]testCase{
-				{
-					[]prompb.Exemplar{getExemplar(float64(intVal1), msTime1)},
-					getBucketBoundsData([]float64{1, 2, 3}),
-				},
-			},
-			map[string]*prompb.TimeSeries{},
+			name:      "timeSeries_is_empty",
+			orig:      map[uint64]*prompb.TimeSeries{},
+			dataPoint: getHistogramDataPointWithExemplars(t, time.UnixMilli(msTime1), float64(intVal1), traceIDValue1, "", "", ""),
+			bucketBounds: getBucketBoundsData(
+				[]float64{1, 2, 3},
+				getTimeSeries(getPromLabels(label11, value11, label12, value12), getSample(float64(intVal1), msTime1)),
+			),
+			want: map[uint64]*prompb.TimeSeries{},
 		},
 		{
-			"timeSeries_without_sample",
-			tsWithoutSampleAndExemplar,
-			[]testCase{
-				{
-					[]prompb.Exemplar{getExemplar(float64(intVal1), msTime1)},
-					getBucketBoundsData([]float64{1, 2, 3}),
-				},
-			},
-			tsWithoutSampleAndExemplar,
+			name:         "timeSeries_without_sample",
+			orig:         tsMap1,
+			dataPoint:    getHistogramDataPointWithExemplars(t, time.UnixMilli(msTime1), float64(intVal1), traceIDValue1, "", "", ""),
+			bucketBounds: getBucketBoundsData([]float64{1, 2, 3}, tsMap1[lb1Sig]),
+			want:         tsWithoutSampleAndExemplar(),
 		},
 		{
-			"exemplar_value_less_than_bucket_bound",
-			map[string]*prompb.TimeSeries{
-				lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12),
-					getSample(float64(intVal1), msTime1)),
+			name: "exemplar_value_less_than_bucket_bound",
+			orig: map[uint64]*prompb.TimeSeries{
+				lb1Sig: ts1,
 			},
-			[]testCase{
-				{
-					[]prompb.Exemplar{getExemplar(floatVal2, msTime1)},
-					getBucketBoundsData([]float64{1, 2, 3}),
-				},
-			},
-			tsWithSamplesAndExemplars,
+			dataPoint:    getHistogramDataPointWithExemplars(t, time.UnixMilli(msTime1), floatVal2, traceIDValue1, "", "", ""),
+			bucketBounds: getBucketBoundsData([]float64{1, 2, 3}, ts1),
+			want:         tsWithSamplesAndExemplars(),
 		},
 		{
-			"infinite_bucket_bound",
-			map[string]*prompb.TimeSeries{
-				lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12),
-					getSample(float64(intVal1), msTime1)),
+			name: "infinite_bucket_bound",
+			orig: map[uint64]*prompb.TimeSeries{
+				lb1Sig: ts2,
 			},
-			[]testCase{
-				{
-					[]prompb.Exemplar{getExemplar(math.MaxFloat64, msTime1)},
-					getBucketBoundsData([]float64{1, math.Inf(1)}),
-				},
-			},
-			tsWithInfiniteBoundExemplarValue,
+			dataPoint:    getHistogramDataPointWithExemplars(t, time.UnixMilli(msTime1), math.MaxFloat64, traceIDValue1, "", "", ""),
+			bucketBounds: getBucketBoundsData([]float64{1, math.Inf(1)}, ts2),
+			want:         tsWithInfiniteBoundExemplarValue(),
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addExemplars(tt.orig, tt.testCase[0].exemplars, tt.testCase[0].bucketBounds)
-			assert.Exactly(t, tt.want, tt.orig)
+			converter := &prometheusConverter{
+				unique: tt.orig,
+			}
+			converter.addExemplars(tt.dataPoint, tt.bucketBounds)
+			assert.Exactly(t, tt.want, converter.unique)
 		})
 	}
 }
@@ -515,45 +537,33 @@ func TestAddResourceTargetInfo(t *testing.T) {
 	resourceWithOnlyServiceAttrs := pcommon.NewResource()
 	assert.NoError(t, resourceWithOnlyServiceAttrs.Attributes().FromRaw(resourceAttrMap))
 	for _, tc := range []struct {
-		desc      string
-		resource  pcommon.Resource
-		settings  Settings
-		timestamp pcommon.Timestamp
-		expected  map[string]*prompb.TimeSeries
+		desc       string
+		resource   pcommon.Resource
+		settings   Settings
+		timestamp  pcommon.Timestamp
+		wantLabels []prompb.Label
 	}{
 		{
 			desc:     "empty resource",
 			resource: pcommon.NewResource(),
-			expected: map[string]*prompb.TimeSeries{},
 		},
 		{
 			desc:     "disable target info metric",
 			resource: testdata.GenerateMetricsNoLibraries().ResourceMetrics().At(0).Resource(),
 			settings: Settings{DisableTargetInfo: true},
-			expected: map[string]*prompb.TimeSeries{},
 		},
 		{
 			desc:      "with resource",
 			resource:  testdata.GenerateMetricsNoLibraries().ResourceMetrics().At(0).Resource(),
 			timestamp: testdata.TestMetricStartTimestamp,
-			expected: map[string]*prompb.TimeSeries{
-				"info-__name__-target_info-resource_attr-resource-attr-val-1": {
-					Labels: []prompb.Label{
-						{
-							Name:  "__name__",
-							Value: "target_info",
-						},
-						{
-							Name:  "resource_attr",
-							Value: "resource-attr-val-1",
-						},
-					},
-					Samples: []prompb.Sample{
-						{
-							Value:     1,
-							Timestamp: 1581452772000,
-						},
-					},
+			wantLabels: []prompb.Label{
+				{
+					Name:  model.MetricNameLabel,
+					Value: targetMetricName,
+				},
+				{
+					Name:  "resource_attr",
+					Value: "resource-attr-val-1",
 				},
 			},
 		},
@@ -562,24 +572,14 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			resource:  testdata.GenerateMetricsNoLibraries().ResourceMetrics().At(0).Resource(),
 			timestamp: testdata.TestMetricStartTimestamp,
 			settings:  Settings{Namespace: "foo"},
-			expected: map[string]*prompb.TimeSeries{
-				"info-__name__-foo_target_info-resource_attr-resource-attr-val-1": {
-					Labels: []prompb.Label{
-						{
-							Name:  "__name__",
-							Value: "foo_target_info",
-						},
-						{
-							Name:  "resource_attr",
-							Value: "resource-attr-val-1",
-						},
-					},
-					Samples: []prompb.Sample{
-						{
-							Value:     1,
-							Timestamp: 1581452772000,
-						},
-					},
+			wantLabels: []prompb.Label{
+				{
+					Name:  model.MetricNameLabel,
+					Value: fmt.Sprintf("foo_%s", targetMetricName),
+				},
+				{
+					Name:  "resource_attr",
+					Value: "resource-attr-val-1",
 				},
 			},
 		},
@@ -587,32 +587,22 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			desc:      "with resource, with service attributes",
 			resource:  resourceWithServiceAttrs,
 			timestamp: testdata.TestMetricStartTimestamp,
-			expected: map[string]*prompb.TimeSeries{
-				"info-__name__-target_info-instance-service-instance-id-job-service-namespace/service-name-resource_attr-resource-attr-val-1": {
-					Labels: []prompb.Label{
-						{
-							Name:  "__name__",
-							Value: "target_info",
-						},
-						{
-							Name:  "instance",
-							Value: "service-instance-id",
-						},
-						{
-							Name:  "job",
-							Value: "service-namespace/service-name",
-						},
-						{
-							Name:  "resource_attr",
-							Value: "resource-attr-val-1",
-						},
-					},
-					Samples: []prompb.Sample{
-						{
-							Value:     1,
-							Timestamp: 1581452772000,
-						},
-					},
+			wantLabels: []prompb.Label{
+				{
+					Name:  model.MetricNameLabel,
+					Value: targetMetricName,
+				},
+				{
+					Name:  "instance",
+					Value: "service-instance-id",
+				},
+				{
+					Name:  "job",
+					Value: "service-namespace/service-name",
+				},
+				{
+					Name:  "resource_attr",
+					Value: "resource-attr-val-1",
 				},
 			},
 		},
@@ -620,13 +610,31 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			desc:      "with resource, with only service attributes",
 			resource:  resourceWithOnlyServiceAttrs,
 			timestamp: testdata.TestMetricStartTimestamp,
-			expected:  map[string]*prompb.TimeSeries{},
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			tsMap := map[string]*prompb.TimeSeries{}
-			addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, tsMap)
-			assert.Exactly(t, tc.expected, tsMap)
+			converter := newPrometheusConverter()
+
+			addResourceTargetInfo(tc.resource, tc.settings, tc.timestamp, converter)
+
+			if len(tc.wantLabels) == 0 || tc.settings.DisableTargetInfo {
+				assert.Empty(t, converter.timeSeries())
+				return
+			}
+
+			expected := map[uint64]*prompb.TimeSeries{
+				timeSeriesSignature(tc.wantLabels): {
+					Labels: tc.wantLabels,
+					Samples: []prompb.Sample{
+						{
+							Value:     1,
+							Timestamp: 1581452772000,
+						},
+					},
+				},
+			}
+			assert.Exactly(t, expected, converter.unique)
+			assert.Empty(t, converter.conflicts)
 		})
 	}
 }
@@ -659,12 +667,12 @@ func TestMostRecentTimestampInMetric(t *testing.T) {
 	}
 }
 
-func TestAddSingleSummaryDataPoint(t *testing.T) {
+func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	tests := []struct {
 		name   string
 		metric func() pmetric.Metric
-		want   func() map[string]*prompb.TimeSeries
+		want   func() map[uint64]*prompb.TimeSeries
 	}{
 		{
 			name: "summary with start time",
@@ -679,7 +687,7 @@ func TestAddSingleSummaryDataPoint(t *testing.T) {
 
 				return metric
 			},
-			want: func() map[string]*prompb.TimeSeries {
+			want: func() map[uint64]*prompb.TimeSeries {
 				labels := []prompb.Label{
 					{Name: model.MetricNameLabel, Value: "test_summary" + countStr},
 				}
@@ -689,20 +697,20 @@ func TestAddSingleSummaryDataPoint(t *testing.T) {
 				sumLabels := []prompb.Label{
 					{Name: model.MetricNameLabel, Value: "test_summary" + sumStr},
 				}
-				return map[string]*prompb.TimeSeries{
-					timeSeriesSignature(pmetric.MetricTypeSummary.String(), labels): {
+				return map[uint64]*prompb.TimeSeries{
+					timeSeriesSignature(labels): {
 						Labels: labels,
 						Samples: []prompb.Sample{
 							{Value: 0, Timestamp: convertTimeStamp(ts)},
 						},
 					},
-					timeSeriesSignature(pmetric.MetricTypeSummary.String(), sumLabels): {
+					timeSeriesSignature(sumLabels): {
 						Labels: sumLabels,
 						Samples: []prompb.Sample{
 							{Value: 0, Timestamp: convertTimeStamp(ts)},
 						},
 					},
-					timeSeriesSignature(pmetric.MetricTypeSummary.String(), createdLabels): {
+					timeSeriesSignature(createdLabels): {
 						Labels: createdLabels,
 						Samples: []prompb.Sample{
 							{Value: float64(convertTimeStamp(ts)), Timestamp: convertTimeStamp(ts)},
@@ -723,21 +731,21 @@ func TestAddSingleSummaryDataPoint(t *testing.T) {
 
 				return metric
 			},
-			want: func() map[string]*prompb.TimeSeries {
+			want: func() map[uint64]*prompb.TimeSeries {
 				labels := []prompb.Label{
 					{Name: model.MetricNameLabel, Value: "test_summary" + countStr},
 				}
 				sumLabels := []prompb.Label{
 					{Name: model.MetricNameLabel, Value: "test_summary" + sumStr},
 				}
-				return map[string]*prompb.TimeSeries{
-					timeSeriesSignature(pmetric.MetricTypeSummary.String(), labels): {
+				return map[uint64]*prompb.TimeSeries{
+					timeSeriesSignature(labels): {
 						Labels: labels,
 						Samples: []prompb.Sample{
 							{Value: 0, Timestamp: convertTimeStamp(ts)},
 						},
 					},
-					timeSeriesSignature(pmetric.MetricTypeSummary.String(), sumLabels): {
+					timeSeriesSignature(sumLabels): {
 						Labels: sumLabels,
 						Samples: []prompb.Sample{
 							{Value: 0, Timestamp: convertTimeStamp(ts)},
@@ -750,31 +758,29 @@ func TestAddSingleSummaryDataPoint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
+			converter := newPrometheusConverter()
 
-			got := make(map[string]*prompb.TimeSeries)
-			for x := 0; x < metric.Summary().DataPoints().Len(); x++ {
-				addSingleSummaryDataPoint(
-					metric.Summary().DataPoints().At(x),
-					pcommon.NewResource(),
-					metric,
-					Settings{
-						ExportCreatedMetric: true,
-					},
-					got,
-					metric.Name(),
-				)
-			}
-			assert.Equal(t, tt.want(), got)
+			converter.addSummaryDataPoints(
+				metric.Summary().DataPoints(),
+				pcommon.NewResource(),
+				Settings{
+					ExportCreatedMetric: true,
+				},
+				metric.Name(),
+			)
+
+			assert.Equal(t, tt.want(), converter.unique)
+			assert.Empty(t, converter.conflicts)
 		})
 	}
 }
 
-func TestAddSingleHistogramDataPoint(t *testing.T) {
+func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	tests := []struct {
 		name   string
 		metric func() pmetric.Metric
-		want   func() map[string]*prompb.TimeSeries
+		want   func() map[uint64]*prompb.TimeSeries
 	}{
 		{
 			name: "histogram with start time",
@@ -789,7 +795,7 @@ func TestAddSingleHistogramDataPoint(t *testing.T) {
 
 				return metric
 			},
-			want: func() map[string]*prompb.TimeSeries {
+			want: func() map[uint64]*prompb.TimeSeries {
 				labels := []prompb.Label{
 					{Name: model.MetricNameLabel, Value: "test_hist" + countStr},
 				}
@@ -800,20 +806,20 @@ func TestAddSingleHistogramDataPoint(t *testing.T) {
 					{Name: model.MetricNameLabel, Value: "test_hist_bucket"},
 					{Name: model.BucketLabel, Value: "+Inf"},
 				}
-				return map[string]*prompb.TimeSeries{
-					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), infLabels): {
+				return map[uint64]*prompb.TimeSeries{
+					timeSeriesSignature(infLabels): {
 						Labels: infLabels,
 						Samples: []prompb.Sample{
 							{Value: 0, Timestamp: convertTimeStamp(ts)},
 						},
 					},
-					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), labels): {
+					timeSeriesSignature(labels): {
 						Labels: labels,
 						Samples: []prompb.Sample{
 							{Value: 0, Timestamp: convertTimeStamp(ts)},
 						},
 					},
-					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), createdLabels): {
+					timeSeriesSignature(createdLabels): {
 						Labels: createdLabels,
 						Samples: []prompb.Sample{
 							{Value: float64(convertTimeStamp(ts)), Timestamp: convertTimeStamp(ts)},
@@ -834,7 +840,7 @@ func TestAddSingleHistogramDataPoint(t *testing.T) {
 
 				return metric
 			},
-			want: func() map[string]*prompb.TimeSeries {
+			want: func() map[uint64]*prompb.TimeSeries {
 				labels := []prompb.Label{
 					{Name: model.MetricNameLabel, Value: "test_hist" + countStr},
 				}
@@ -842,14 +848,14 @@ func TestAddSingleHistogramDataPoint(t *testing.T) {
 					{Name: model.MetricNameLabel, Value: "test_hist_bucket"},
 					{Name: model.BucketLabel, Value: "+Inf"},
 				}
-				return map[string]*prompb.TimeSeries{
-					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), infLabels): {
+				return map[uint64]*prompb.TimeSeries{
+					timeSeriesSignature(infLabels): {
 						Labels: infLabels,
 						Samples: []prompb.Sample{
 							{Value: 0, Timestamp: convertTimeStamp(ts)},
 						},
 					},
-					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), labels): {
+					timeSeriesSignature(labels): {
 						Labels: labels,
 						Samples: []prompb.Sample{
 							{Value: 0, Timestamp: convertTimeStamp(ts)},
@@ -862,21 +868,182 @@ func TestAddSingleHistogramDataPoint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
+			converter := newPrometheusConverter()
 
-			got := make(map[string]*prompb.TimeSeries)
-			for x := 0; x < metric.Histogram().DataPoints().Len(); x++ {
-				addSingleHistogramDataPoint(
-					metric.Histogram().DataPoints().At(x),
-					pcommon.NewResource(),
-					metric,
-					Settings{
-						ExportCreatedMetric: true,
-					},
-					got,
-					metric.Name(),
-				)
-			}
-			assert.Equal(t, tt.want(), got)
+			converter.addHistogramDataPoints(
+				metric.Histogram().DataPoints(),
+				pcommon.NewResource(),
+				Settings{
+					ExportCreatedMetric: true,
+				},
+				metric.Name(),
+			)
+
+			assert.Equal(t, tt.want(), converter.unique)
+			assert.Empty(t, converter.conflicts)
+		})
+	}
+}
+
+func TestPrometheusConverter_getOrCreateTimeSeries(t *testing.T) {
+	converter := newPrometheusConverter()
+	lbls := []prompb.Label{
+		{
+			Name:  "key1",
+			Value: "value1",
+		},
+		{
+			Name:  "key2",
+			Value: "value2",
+		},
+	}
+	ts, created := converter.getOrCreateTimeSeries(lbls)
+	require.NotNil(t, ts)
+	require.True(t, created)
+
+	// Now, get (not create) the unique time series
+	gotTS, created := converter.getOrCreateTimeSeries(ts.Labels)
+	require.Same(t, ts, gotTS)
+	require.False(t, created)
+
+	var keys []uint64
+	for k := range converter.unique {
+		keys = append(keys, k)
+	}
+	require.Len(t, keys, 1)
+	h := keys[0]
+
+	// Make sure that state is correctly set
+	require.Equal(t, map[uint64]*prompb.TimeSeries{
+		h: ts,
+	}, converter.unique)
+	require.Empty(t, converter.conflicts)
+
+	// Fake a hash collision, by making this not equal to the next series with the same hash
+	ts.Labels = append(ts.Labels, prompb.Label{Name: "key3", Value: "value3"})
+
+	// Make the first hash collision
+	cTS1, created := converter.getOrCreateTimeSeries(lbls)
+	require.NotNil(t, cTS1)
+	require.True(t, created)
+	require.Equal(t, map[uint64][]*prompb.TimeSeries{
+		h: {cTS1},
+	}, converter.conflicts)
+
+	// Fake a hash collision, by making this not equal to the next series with the same hash
+	cTS1.Labels = append(cTS1.Labels, prompb.Label{Name: "key3", Value: "value3"})
+
+	// Make the second hash collision
+	cTS2, created := converter.getOrCreateTimeSeries(lbls)
+	require.NotNil(t, cTS2)
+	require.True(t, created)
+	require.Equal(t, map[uint64][]*prompb.TimeSeries{
+		h: {cTS1, cTS2},
+	}, converter.conflicts)
+
+	// Now, get (not create) the second colliding time series
+	gotCTS2, created := converter.getOrCreateTimeSeries(lbls)
+	require.Same(t, cTS2, gotCTS2)
+	require.False(t, created)
+	require.Equal(t, map[uint64][]*prompb.TimeSeries{
+		h: {cTS1, cTS2},
+	}, converter.conflicts)
+
+	require.Equal(t, map[uint64]*prompb.TimeSeries{
+		h: ts,
+	}, converter.unique)
+}
+
+func TestCreateLabels(t *testing.T) {
+	testCases := []struct {
+		name       string
+		metricName string
+		baseLabels []prompb.Label
+		extras     []string
+		expected   []prompb.Label
+	}{
+		{
+			name:       "no base labels, no extras",
+			metricName: "test",
+			baseLabels: nil,
+			expected: []prompb.Label{
+				{Name: model.MetricNameLabel, Value: "test"},
+			},
+		},
+		{
+			name:       "base labels, no extras",
+			metricName: "test",
+			baseLabels: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+			},
+			expected: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+				{Name: model.MetricNameLabel, Value: "test"},
+			},
+		},
+		{
+			name:       "base labels, 1 extra",
+			metricName: "test",
+			baseLabels: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+			},
+			extras: []string{"extra1", "extraValue1"},
+			expected: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+				{Name: "extra1", Value: "extraValue1"},
+				{Name: model.MetricNameLabel, Value: "test"},
+			},
+		},
+		{
+			name:       "base labels, 2 extras",
+			metricName: "test",
+			baseLabels: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+			},
+			extras: []string{"extra1", "extraValue1", "extra2", "extraValue2"},
+			expected: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+				{Name: "extra1", Value: "extraValue1"},
+				{Name: "extra2", Value: "extraValue2"},
+				{Name: model.MetricNameLabel, Value: "test"},
+			},
+		},
+		{
+			name:       "base labels, unpaired extra",
+			metricName: "test",
+			baseLabels: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+			},
+			extras: []string{"extra1", "extraValue1", "extra2"},
+			expected: []prompb.Label{
+				{Name: "base1", Value: "value1"},
+				{Name: "base2", Value: "value2"},
+				{Name: "extra1", Value: "extraValue1"},
+				{Name: model.MetricNameLabel, Value: "test"},
+			},
+		},
+		{
+			name:       "no base labels, 1 extra",
+			metricName: "test",
+			baseLabels: nil,
+			extras:     []string{"extra1", "extraValue1"},
+			expected: []prompb.Label{
+				{Name: "extra1", Value: "extraValue1"},
+				{Name: model.MetricNameLabel, Value: "test"},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			lbls := createLabels(tc.metricName, tc.baseLabels, tc.extras...)
+			assert.Equal(t, lbls, tc.expected)
 		})
 	}
 }

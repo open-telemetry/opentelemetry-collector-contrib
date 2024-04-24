@@ -67,7 +67,7 @@ func New(opts ...Option) *Batch {
 		maxBatchSize:  MaxBatchedRecords,
 		maxRecordSize: MaxRecordSize,
 		compression:   compress.NewNoopCompressor(),
-		records:       make([]types.PutRecordsRequestEntry, 0, MaxRecordSize),
+		records:       make([]types.PutRecordsRequestEntry, 0, MaxBatchedRecords),
 	}
 
 	for _, op := range opts {

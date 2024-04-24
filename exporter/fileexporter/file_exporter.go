@@ -44,11 +44,14 @@ func (e *fileExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 }
 
 // Start starts the flush timer if set.
-func (e *fileExporter) Start(_ context.Context, _ component.Host) error {
-	e.marshaller = newMarshaller(e.conf)
+func (e *fileExporter) Start(_ context.Context, host component.Host) error {
+	var err error
+	e.marshaller, err = newMarshaller(e.conf, host)
+	if err != nil {
+		return err
+	}
 	export := buildExportFunc(e.conf)
 
-	var err error
 	e.writer, err = newFileWriter(e.conf.Path, e.conf.Append, e.conf.Rotation, e.conf.FlushInterval, export)
 	if err != nil {
 		return err

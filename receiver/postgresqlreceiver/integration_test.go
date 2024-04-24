@@ -76,6 +76,7 @@ func integrationTest(name string, databases []string) func(*testing.T) {
 				rCfg.Username = "otelu"
 				rCfg.Password = "otelp"
 				rCfg.Insecure = true
+				rCfg.Metrics.PostgresqlWalDelay.Enabled = true
 				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
 				rCfg.Metrics.PostgresqlTempFiles.Enabled = true
 				rCfg.Metrics.PostgresqlSequentialScans.Enabled = true

@@ -9,8 +9,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/osqueryreceiver/internal/metadata"
 )
 
 const (
@@ -18,19 +16,19 @@ const (
 )
 
 func createDefaultConfig() component.Config {
-	scs := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	scs := scraperhelper.NewDefaultControllerConfig()
 	scs.CollectionInterval = 30 * time.Second
 
 	return &Config{
-		ExtensionsSocket:          defaultSocket,
-		ScraperControllerSettings: scs,
+		ExtensionsSocket: defaultSocket,
+		ControllerConfig: scs,
 	}
 }
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	ExtensionsSocket                        string   `mapstructure:"extensions_socket"`
-	Queries                                 []string `mapstructure:"queries"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	ExtensionsSocket               string   `mapstructure:"extensions_socket"`
+	Queries                        []string `mapstructure:"queries"`
 }
 
 func (c Config) Validate() error {

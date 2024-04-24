@@ -10,6 +10,9 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -63,13 +66,17 @@ func TestTransformerDropOnError(t *testing.T) {
 	output := &testutil.Operator{}
 	output.On("ID").Return("test-output")
 	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+
+	obs, logs := observer.New(zap.WarnLevel)
+	logger := zap.New(obs)
+
 	transformer := TransformerOperator{
 		OnError: DropOnError,
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
 				OperatorID:    "test-id",
 				OperatorType:  "test-type",
-				SugaredLogger: testutil.Logger(t),
+				SugaredLogger: logger.Sugar(),
 			},
 			OutputOperators: []operator.Operator{output},
 			OutputIDs:       []string{"test-output"},
@@ -77,26 +84,43 @@ func TestTransformerDropOnError(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	transform := func(e *entry.Entry) error {
+	transform := func(_ *entry.Entry) error {
 		return fmt.Errorf("Failure")
 	}
 
 	err := transformer.ProcessWith(ctx, testEntry, transform)
 	require.Error(t, err)
 	output.AssertNotCalled(t, "Process", mock.Anything, mock.Anything)
+
+	// Test output logs
+	expectedLogs := []observer.LoggedEntry{
+		{
+			Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to process entry"},
+			Context: []zapcore.Field{
+				{Key: "error", Type: 26, Interface: fmt.Errorf("Failure")},
+				zap.Any("action", "drop"),
+			},
+		},
+	}
+	require.Equal(t, 1, logs.Len())
+	require.Equalf(t, expectedLogs, logs.AllUntimed(), "expected logs do not match")
 }
 
-func TestTransformerSendOnError(t *testing.T) {
+func TestTransformerDropOnErrorQuiet(t *testing.T) {
 	output := &testutil.Operator{}
 	output.On("ID").Return("test-output")
 	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+
+	obs, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(obs)
+
 	transformer := TransformerOperator{
-		OnError: SendOnError,
+		OnError: DropOnErrorQuiet,
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
 				OperatorID:    "test-id",
 				OperatorType:  "test-type",
-				SugaredLogger: testutil.Logger(t),
+				SugaredLogger: logger.Sugar(),
 			},
 			OutputOperators: []operator.Operator{output},
 			OutputIDs:       []string{"test-output"},
@@ -104,13 +128,114 @@ func TestTransformerSendOnError(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	transform := func(e *entry.Entry) error {
+	transform := func(_ *entry.Entry) error {
+		return fmt.Errorf("Failure")
+	}
+
+	err := transformer.ProcessWith(ctx, testEntry, transform)
+	require.Error(t, err)
+	output.AssertNotCalled(t, "Process", mock.Anything, mock.Anything)
+
+	// Test output logs
+	expectedLogs := []observer.LoggedEntry{
+		{
+			Entry: zapcore.Entry{Level: zap.DebugLevel, Message: "Failed to process entry"},
+			Context: []zapcore.Field{
+				{Key: "error", Type: 26, Interface: fmt.Errorf("Failure")},
+				zap.Any("action", "drop_quiet"),
+			},
+		},
+	}
+	require.Equal(t, 1, logs.Len())
+	require.Equalf(t, expectedLogs, logs.AllUntimed(), "expected logs do not match")
+}
+
+func TestTransformerSendOnError(t *testing.T) {
+	output := &testutil.Operator{}
+	output.On("ID").Return("test-output")
+	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+
+	obs, logs := observer.New(zap.WarnLevel)
+	logger := zap.New(obs)
+
+	transformer := TransformerOperator{
+		OnError: SendOnError,
+		WriterOperator: WriterOperator{
+			BasicOperator: BasicOperator{
+				OperatorID:    "test-id",
+				OperatorType:  "test-type",
+				SugaredLogger: logger.Sugar(),
+			},
+			OutputOperators: []operator.Operator{output},
+			OutputIDs:       []string{"test-output"},
+		},
+	}
+	ctx := context.Background()
+	testEntry := entry.New()
+	transform := func(_ *entry.Entry) error {
 		return fmt.Errorf("Failure")
 	}
 
 	err := transformer.ProcessWith(ctx, testEntry, transform)
 	require.Error(t, err)
 	output.AssertCalled(t, "Process", mock.Anything, mock.Anything)
+
+	// Test output logs
+	expectedLogs := []observer.LoggedEntry{
+		{
+			Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to process entry"},
+			Context: []zapcore.Field{
+				{Key: "error", Type: 26, Interface: fmt.Errorf("Failure")},
+				zap.Any("action", "send"),
+			},
+		},
+	}
+	require.Equal(t, 1, logs.Len())
+	require.Equalf(t, expectedLogs, logs.AllUntimed(), "expected logs do not match")
+}
+
+func TestTransformerSendOnErrorQuiet(t *testing.T) {
+	output := &testutil.Operator{}
+	output.On("ID").Return("test-output")
+	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+
+	obs, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(obs)
+
+	transformer := TransformerOperator{
+		OnError: SendOnErrorQuiet,
+		WriterOperator: WriterOperator{
+			BasicOperator: BasicOperator{
+				OperatorID:    "test-id",
+				OperatorType:  "test-type",
+				SugaredLogger: logger.Sugar(),
+			},
+			OutputOperators: []operator.Operator{output},
+			OutputIDs:       []string{"test-output"},
+		},
+	}
+	ctx := context.Background()
+	testEntry := entry.New()
+	transform := func(_ *entry.Entry) error {
+		return fmt.Errorf("Failure")
+	}
+
+	err := transformer.ProcessWith(ctx, testEntry, transform)
+	require.Error(t, err)
+	output.AssertCalled(t, "Process", mock.Anything, mock.Anything)
+
+	// Test output logs
+	expectedLogs := []observer.LoggedEntry{
+		{
+			Entry: zapcore.Entry{Level: zap.DebugLevel, Message: "Failed to process entry"},
+			Context: []zapcore.Field{
+				{Key: "error", Type: 26, Interface: fmt.Errorf("Failure")},
+				zap.Any("action", "send_quiet"),
+			},
+		},
+	}
+	require.Equal(t, 1, logs.Len())
+	require.Equalf(t, expectedLogs, logs.AllUntimed(), "expected logs do not match")
 }
 
 func TestTransformerProcessWithValid(t *testing.T) {
@@ -131,7 +256,7 @@ func TestTransformerProcessWithValid(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	transform := func(e *entry.Entry) error {
+	transform := func(_ *entry.Entry) error {
 		return nil
 	}
 
