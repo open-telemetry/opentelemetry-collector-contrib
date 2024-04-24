@@ -82,6 +82,8 @@ all_set:
   resource_attributes:
     vcenter.cluster.name:
       enabled: true
+    vcenter.datacenter.name:
+      enabled: true
     vcenter.datastore.name:
       enabled: true
     vcenter.host.name:
@@ -177,6 +179,8 @@ none_set:
   resource_attributes:
     vcenter.cluster.name:
       enabled: false
+    vcenter.datacenter.name:
+      enabled: false
     vcenter.datastore.name:
       enabled: false
     vcenter.host.name:
@@ -192,6 +196,10 @@ none_set:
 filter_set_include:
   resource_attributes:
     vcenter.cluster.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.datacenter.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -225,6 +233,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "vcenter.cluster.name-val"
+    vcenter.datacenter.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.datacenter.name-val"
     vcenter.datastore.name:
       enabled: true
       metrics_exclude:
