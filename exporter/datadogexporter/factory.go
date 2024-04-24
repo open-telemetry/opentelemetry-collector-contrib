@@ -46,7 +46,7 @@ import (
 var logsAgentExporterFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.logsagentexporter",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, logs export in datadogexporter uses the new logs agent exporter."),
+	featuregate.WithRegisterDescription("When enabled, datadogexporter uses the Datadog agent logs pipeline for exporting logs."),
 )
 
 var metricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -114,7 +114,7 @@ type factory struct {
 	wg sync.WaitGroup // waits for agent to exit
 
 	registry  *featuregate.Registry
-	logsAgent logsagentpipeline.Component
+	logsAgent logsagentpipeline.LogsAgent
 }
 
 func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
@@ -546,22 +546,16 @@ func (f *factory) createLogsExporter(
 			OtelSource:    otelSource,
 			LogSourceName: logSourceName,
 		}
-		hostname, err := logs.NewHostnameService(ctx, hostProvider)
+		hostnameComponent, err := logs.NewHostnameService(ctx, hostProvider)
 		if err != nil {
 			cancel()
 			return nil, fmt.Errorf("failed to initialize logs agent hostname service: %w", err)
 		}
-		laOption := logsagentpipelineimpl.NewLogsAgent(logsagentpipelineimpl.Dependencies{
+		f.logsAgent = logsagentpipelineimpl.NewLogsAgent(logsagentpipelineimpl.Dependencies{
 			Log:      logComponent,
 			Config:   cfgComponent,
-			Hostname: hostname,
+			Hostname: hostnameComponent,
 		})
-		logsAgent, ok := laOption.Get()
-		if !ok {
-			cancel()
-			return nil, fmt.Errorf("failed to create logs agent, logs agent is disabled")
-		}
-		f.logsAgent = logsAgent
 		err = f.logsAgent.Start(ctx)
 		if err != nil {
 			set.Logger.Error("failed to create logs agent", zap.Error(err))

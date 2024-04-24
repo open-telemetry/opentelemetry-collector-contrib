@@ -36,9 +36,9 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/secrets v0.54.0-devel.0.20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.54.0-devel.0.20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.54.0-devel.0.20240419195358-8549c987746f // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.0.0-20240424165631-8597dd4763ce // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.0.0-20240424165631-8597dd4763ce // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.0.0-20240424165631-8597dd4763ce // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.0.0-20240424191628-a3a7bf7f54ab // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.0.0-20240424191628-a3a7bf7f54ab // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.0.0-20240424191628-a3a7bf7f54ab // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.54.0-devel.0.20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.54.0-devel.0.20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/pkg/config/model v0.54.0-devel.0.20240419195358-8549c987746f // indirect
@@ -49,9 +49,9 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/diagnostic v0.54.0-devel.0.20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/message v0.54.0-devel.0.20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/metrics v0.54.0-devel.0.20240419195358-8549c987746f // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/pipeline v0.0.0-20240424165631-8597dd4763ce // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/pipeline v0.0.0-20240424191628-a3a7bf7f54ab // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/processor v0.54.0-devel.0.20240419195358-8549c987746f // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/sds v0.0.0-20240424165631-8597dd4763ce // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/sds v0.0.0-20240424191628-a3a7bf7f54ab // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/sender v0.54.0-devel.0.20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/sources v0.54.0-devel.0.20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.54.0-devel.0.20240419195358-8549c987746f // indirect

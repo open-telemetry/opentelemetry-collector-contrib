@@ -10,16 +10,16 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.54.0-devel.0.20240419195358-8549c987746f
 	github.com/DataDog/datadog-agent/comp/core/log v0.54.0-devel.0.20240419195358-8549c987746f
 	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.54.0-devel.0.20240419195358-8549c987746f // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.0.0-20240424165631-8597dd4763ce
-	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.0.0-20240424165631-8597dd4763ce
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.0.0-20240424165631-8597dd4763ce
+	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.0.0-20240424191628-a3a7bf7f54ab
+	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.0.0-20240424191628-a3a7bf7f54ab
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.0.0-20240424191628-a3a7bf7f54ab
 	github.com/DataDog/datadog-agent/pkg/config/model v0.54.0-devel.0.20240419195358-8549c987746f
 	github.com/DataDog/datadog-agent/pkg/config/setup v0.54.0-devel.0.20240419195358-8549c987746f
 	github.com/DataDog/datadog-agent/pkg/logs/auditor v0.54.0-devel.0.20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/client v0.54.0-devel.0.20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/diagnostic v0.54.0-devel.0.20240419195358-8549c987746f // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/pipeline v0.0.0-20240424165631-8597dd4763ce // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/sds v0.0.0-20240424165631-8597dd4763ce // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/pipeline v0.0.0-20240424191628-a3a7bf7f54ab // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/sds v0.0.0-20240424191628-a3a7bf7f54ab // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.54.0-devel.0.20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/util/testutils v0.54.0-devel.0.20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.54.0-devel.0.20240419195358-8549c987746f
@@ -100,7 +100,7 @@ require (
 	github.com/Code-Hex/go-generics-cache v1.3.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/secrets v0.54.0-devel.0.20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.54.0-devel.0.20240419195358-8549c987746f // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.0.0-20240424165631-8597dd4763ce // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.0.0-20240424191628-a3a7bf7f54ab // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.54.0-devel.0.20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.54.0-devel.0.20240419195358-8549c987746f // indirect
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.54.0-devel.0.20240419195358-8549c987746f // indirect
