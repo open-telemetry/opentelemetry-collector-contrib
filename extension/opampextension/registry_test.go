@@ -92,7 +92,7 @@ func TestRegistry_ProcessMessage(t *testing.T) {
 
 		registry := newCustomCapabilityRegistry(zap.NewNop(), client)
 
-		sender, err := registry.Register(capabilityString, WithMaxQueuedMessages(0))
+		sender, err := registry.Register(capabilityString, withMaxQueuedMessages(0))
 		require.NotNil(t, sender)
 		require.NoError(t, err)
 
