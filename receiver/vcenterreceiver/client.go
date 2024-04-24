@@ -116,6 +116,10 @@ func (vc *vcenterClient) ResourcePools(ctx context.Context) ([]*object.ResourceP
 func (vc *vcenterClient) VirtualApps(ctx context.Context) ([]*object.VirtualApp, error) {
 	vApps, err := vc.finder.VirtualAppList(ctx, "*")
 	if err != nil {
+		if _, ok := err.(*find.NotFoundError); ok {
+			return []*object.VirtualApp{}, nil
+		}
+
 		return nil, fmt.Errorf("unable to retrieve vApps: %w", err)
 	}
 	return vApps, err

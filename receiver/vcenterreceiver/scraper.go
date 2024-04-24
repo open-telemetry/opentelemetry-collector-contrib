@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
@@ -340,9 +339,6 @@ func (v *vcenterMetricScraper) collectVirtualApps(
 ) {
 	vApps, err := v.client.VirtualApps(ctx)
 	if err != nil {
-		if _, ok := err.(*find.NotFoundError); ok {
-			return
-		}
 		errs.AddPartial(1, err)
 		return
 	}
