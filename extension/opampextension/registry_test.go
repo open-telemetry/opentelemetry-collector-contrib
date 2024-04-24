@@ -140,7 +140,9 @@ func TestRegistry_ProcessMessage(t *testing.T) {
 		registry.ProcessMessage(customMessageBrew)
 
 		require.Equal(t, customMessageSteep, <-teapotSender.Message())
+		require.Empty(t, teapotSender.Message())
 		require.Equal(t, customMessageBrew, <-coffeeMakerSender.Message())
+		require.Empty(t, coffeeMakerSender.Message())
 	})
 }
 
