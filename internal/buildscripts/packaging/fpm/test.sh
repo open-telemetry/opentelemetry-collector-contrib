@@ -5,11 +5,12 @@
 
 set -euov pipefail
 
-SCRIPT_DIR="$( cd "$( dirname ${BASH_SOURCE[0]} )" && pwd )"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 REPO_DIR="$( cd "$SCRIPT_DIR/../../../../" && pwd )"
+export REPO_DIR
 PKG_PATH="${1:-}"
 
-. $SCRIPT_DIR/common.sh
+. "$SCRIPT_DIR"/common.sh
 
 if [[ -z "$PKG_PATH" ]]; then
     echo "usage: ${BASH_SOURCE[0]} DEB_OR_RPM_PATH" >&2
@@ -32,10 +33,10 @@ image_name="otelcontribcol-$pkg_type-test"
 container_name="$image_name"
 container_exec="podman exec $container_name"
 
-trap "podman rm -fv $container_name >/dev/null 2>&1 || true" EXIT
+trap 'podman rm -fv $container_name >/dev/null 2>&1 || true' EXIT
 
-podman build -t $image_name -f "$SCRIPT_DIR/$pkg_type/Dockerfile.test" "$SCRIPT_DIR"
-podman rm -fv $container_name >/dev/null 2>&1 || true
+podman build -t "$image_name" -f "$SCRIPT_DIR/$pkg_type/Dockerfile.test" "$SCRIPT_DIR"
+podman rm -fv "$container_name" >/dev/null 2>&1 || true
 
 # test install
 CRUN_VER='1.14.4'
@@ -52,8 +53,8 @@ crun = [
 EOF
 
 echo
-podman run --name $container_name -d $image_name
-install_pkg $container_name "$PKG_PATH"
+podman run --name "$container_name" -d "$image_name"
+install_pkg "$container_name" "$PKG_PATH"
 
 # ensure service has started and still running after 5 seconds
 sleep 5
@@ -65,7 +66,7 @@ $container_exec pgrep -a -u otel $PROCESS_NAME
 
 # test uninstall
 echo
-uninstall_pkg $container_name $pkg_type
+uninstall_pkg "$container_name" "$pkg_type"
 
 echo "Checking $SERVICE_NAME service status after uninstall ..."
 if $container_exec systemctl --no-pager status $SERVICE_NAME; then
