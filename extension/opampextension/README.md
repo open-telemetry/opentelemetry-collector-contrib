@@ -49,19 +49,19 @@ Other components may use a configured OpAMP extension to send and receive custom
 
 ```go
 func Start(_ context.Context, host component.Host) error {
-  ext, ok := host.GetExtensions()[opampExtensionID]
-  if !ok {
-    return fmt.Errorf("opamp extension %q does not exist", opampExtensionID)
-  }
-
-  registry, ok := ext.(opampextension.CustomCapabilityRegistry)
-  if !ok {
-    return fmt.Errorf("extension %q is not a custom message registry", opampExtensionID)
+	ext, ok := host.GetExtensions()[opampExtensionID]
+	if !ok {
+		return fmt.Errorf("opamp extension %q does not exist", opampExtensionID)
 	}
 
-  // You can now use registry.Register to register a custom capability
+	registry, ok := ext.(opampextension.CustomCapabilityRegistry)
+	if !ok {
+		return fmt.Errorf("extension %q is not a custom message registry", opampExtensionID)
+	}
 
-  return nil
+	// You can now use registry.Register to register a custom capability
+
+	return nil
 }
 ```
 
