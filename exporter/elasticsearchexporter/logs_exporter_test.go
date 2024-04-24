@@ -372,9 +372,11 @@ func TestExporter_PushEvent(t *testing.T) {
 		}
 
 		for name, handler := range handlers {
+			handler := handler
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 				for name, configurer := range configurations {
+					configurer := configurer
 					t.Run(name, func(t *testing.T) {
 						t.Parallel()
 						attempts := &atomic.Int64{}
