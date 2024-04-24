@@ -268,7 +268,7 @@ receiver/statsdreceiver/                                 @open-telemetry/collect
 receiver/syslogreceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/tcplogreceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/udplogreceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski
-receiver/vcenterreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
+receiver/vcenterreceiver/                                @open-telemetry/collector-contrib-approvers @djaglowski @schmikei @StefanKurek
 receiver/wavefrontreceiver/                              @open-telemetry/collector-contrib-approvers @samiura
 receiver/webhookeventreceiver/                           @open-telemetry/collector-contrib-approvers @atoulme @shalper2
 receiver/windowseventlogreceiver/                        @open-telemetry/collector-contrib-approvers @djaglowski @armstrmi @pjanotti
