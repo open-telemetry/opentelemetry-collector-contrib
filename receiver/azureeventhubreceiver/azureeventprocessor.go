@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	// Updating imports to use the new SDK
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/checkpoints"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
@@ -137,12 +136,31 @@ func processEventsForPartition(partitionClient *azeventhubs.ProcessorPartitionCl
 			continue
 		}
 
-		fmt.Printf("Received %d event(s)\n", len(events))
-		for _, event := range events {
-			fmt.Printf("Event received with body %v\n", event.Body)
+		if err := processEvents(events, partitionClient); err != nil {
+			return err
 		}
+
 		if err := partitionClient.UpdateCheckpoint(context.TODO(), events[len(events)-1], nil); err != nil {
 			return err
 		}
 	}
+}
+
+func shutdownPartitionResources(partitionClient *azeventhubs.ProcessorPartitionClient) {
+	if err := partitionClient.Close(context.TODO()); err != nil {
+		panic(err)
+	}
+}
+
+func initializePartitionResources(partitionID string) error {
+	fmt.Printf("Initializing resources for partition %s\n", partitionID)
+	return nil
+}
+
+// This is very much like the old processEvents function
+func processEvents(events []*azeventhubs.ReceivedEventData, partitionClient *azeventhubs.ProcessorPartitionClient) error {
+	for _, event := range events {
+		// fmt.Printf("Processing event: %v\n", event.EventData())
+	}
+	return nil
 }
