@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/matryer/is"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
 )
 
 func TestDownscale(t *testing.T) {
@@ -66,17 +66,17 @@ func TestDownscale(t *testing.T) {
 				buckets[i] = Repr[B]{scale: r.scale, bkt: bkt}
 			}
 
-			is := is.NewRelaxed(t)
+			is := expotest.Is(t)
 			for i := 0; i < len(buckets)-1; i++ {
 				expo.Downscale(buckets[i].bkt, buckets[i].scale, buckets[i+1].scale)
 
-				is.Equal(buckets[i+1].bkt.Offset(), buckets[i].bkt.Offset()) // offset must be equal
+				is.Equalf(buckets[i+1].bkt.Offset(), buckets[i].bkt.Offset(), "offset")
 
 				want := buckets[i+1].bkt.BucketCounts().AsRaw()
 				got := buckets[i].bkt.BucketCounts().AsRaw()
 
-				is.Equal(want, got[:len(want)])                               // counts must be equal
-				is.Equal(make([]uint64, len(got)-len(want)), got[len(want):]) // extra space must be zero
+				is.Equalf(want, got[:len(want)], "counts")
+				is.Equalf(make([]uint64, len(got)-len(want)), got[len(want):], "extra-space")
 			}
 		})
 	}

@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/delta
 go 1.21.0
 
 require (
-	github.com/matryer/is v1.4.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.98.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.97.0
 	github.com/stretchr/testify v1.9.0

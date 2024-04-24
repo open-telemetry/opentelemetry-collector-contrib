@@ -7,20 +7,19 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/matryer/is"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
 )
 
 func TestAbsolute(t *testing.T) {
-	is := is.NewRelaxed(t)
+	is := expotest.Is(t)
 
 	bs := expotest.Bins{ø, 1, 2, 3, 4, 5, ø, ø}.Into()
 	abs := expo.Abs(bs)
 
 	lo, up := abs.Lower(), abs.Upper()
-	is.Equal(-2, lo) // lower bound
-	is.Equal(3, up)  // upper bound
+	is.Equalf(-2, lo, "lower-bound")
+	is.Equalf(3, up, "upper-bound")
 
 	for i := lo; i < up; i++ {
 		got := abs.Abs(i)
