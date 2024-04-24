@@ -52,7 +52,7 @@ func equal(t *testing.T, want, got any, name string) bool {
 	// compare all "getters" of the struct
 	for i := 0; i < vw.NumMethod(); i++ {
 		mname := vw.Type().Method(i).Name
-		name := strings.TrimPrefix(name+"."+mname+"()", ".")
+		fname := strings.TrimPrefix(name+"."+mname+"()", ".")
 
 		mw := vw.Method(i)
 		mg := vg.Method(i)
@@ -69,7 +69,7 @@ func equal(t *testing.T, want, got any, name string) bool {
 		rw := mw.Call(nil)[0].Interface()
 		rg := mg.Call(nil)[0].Interface()
 
-		ok = equal(t, rw, rg, name) && ok
+		ok = equal(t, rw, rg, fname) && ok
 	}
 
 	// compare all exported fields of the struct
@@ -77,10 +77,10 @@ func equal(t *testing.T, want, got any, name string) bool {
 		if !vw.Type().Field(i).IsExported() {
 			continue
 		}
-		name := name + "." + vw.Type().Field(i).Name
+		fname := name + "." + vw.Type().Field(i).Name
 		fw := vw.Field(i).Interface()
 		fg := vg.Field(i).Interface()
-		ok = equal(t, fw, fg, name) && ok
+		ok = equal(t, fw, fg, fname) && ok
 	}
 	if !ok {
 		return false
