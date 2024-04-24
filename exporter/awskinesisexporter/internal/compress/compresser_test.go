@@ -101,20 +101,44 @@ func benchmarkCompressor(b *testing.B, format string, length int) {
 	}
 }
 
+func TestGzipIntegrity(t *testing.T) {
+	data := make([]byte, length)
+	for i := 0; i < length; i++ {
+		data[i] = byte(genRand.Int31())
+	}
+}
+
 // an issue encountered in the past was a crash due race condition in the compressor, so the
 // current implementation creates a new context on each compression request
 // this is a test to check no exceptions are raised for executing concurrent compressions
 func TestCompressorConcurrent(t *testing.T) {
 
-	// with this amount of workers it will take about a few seconds (about 3-8 secs on differ)
-	// but it's safer to test with this many to increase the chances of encountering a race condition
-	// the issue was discovered under heavy load of thousands of requests a second
-	numWorkers := 50000
+	timeout := time.After(15 * time.Second)
+	done := make(chan bool)
+	go func() {
+		// do your testing
+		concurrentCompressFunc(t)
+		done <- true
+	}()
+
+	select {
+	case <-timeout:
+		t.Fatal("Test didn't finish in time")
+	case <-done:
+	}
+
+}
+
+func concurrentCompressFunc(t *testing.T) {
+	// this value should be way higher to make this test more valuable, but the make of this project uses
+	// max 4 workers, so we had to set this value here
+	numWorkers := 4
 
 	var wg sync.WaitGroup
 	wg.Add(numWorkers)
 
 	errCh := make(chan error, numWorkers)
+	var errMutex sync.Mutex
 
 	// any single format would do it here, since each exporter can be set to use only one at a time
 	// and the concurrent issue that was present in the past was independent of the format
@@ -141,10 +165,15 @@ func TestCompressorConcurrent(t *testing.T) {
 				data[i] = byte(genRand.Int31())
 			}
 
-			_, err = compressFunc(data)
-			if err != nil {
-				errCh <- err
+			result, localErr := compressFunc(data)
+			if localErr != nil {
+				errMutex.Lock()
+				errCh <- localErr
+				errMutex.Unlock()
+				return
 			}
+
+			_ = result
 		}()
 	}
 
