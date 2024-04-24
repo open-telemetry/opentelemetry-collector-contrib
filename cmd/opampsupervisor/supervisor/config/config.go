@@ -14,6 +14,12 @@ type Supervisor struct {
 	Server       *OpAMPServer
 	Agent        *Agent
 	Capabilities *Capabilities `mapstructure:"capabilities"`
+	Storage      *Storage      `mapstructure:"storage"`
+}
+
+type Storage struct {
+	// Directory is the directory where the Supervisor will store its data.
+	Directory string `mapstructure:"directory"`
 }
 
 // Capabilities is the set of capabilities that the Supervisor supports.
