@@ -38,7 +38,6 @@ type Processor struct {
 	expHistogramLookup map[identity.Stream]pmetric.ExponentialHistogramDataPoint
 
 	exportInterval time.Duration
-	exportTicker   *time.Ticker
 
 	nextConsumer consumer.Metrics
 }
@@ -68,13 +67,14 @@ func newProcessor(config *Config, log *zap.Logger, nextConsumer consumer.Metrics
 }
 
 func (p *Processor) Start(_ context.Context, _ component.Host) error {
-	p.exportTicker = time.NewTicker(p.exportInterval)
+	exportTicker := time.NewTicker(p.exportInterval)
 	go func() {
 		for {
 			select {
 			case <-p.ctx.Done():
+				exportTicker.Stop()
 				return
-			case <-p.exportTicker.C:
+			case <-exportTicker.C:
 				p.exportMetrics()
 			}
 		}
@@ -84,9 +84,6 @@ func (p *Processor) Start(_ context.Context, _ component.Host) error {
 }
 
 func (p *Processor) Shutdown(_ context.Context) error {
-	if p.exportTicker != nil {
-		p.exportTicker.Stop()
-	}
 	p.cancel()
 	return nil
 }
