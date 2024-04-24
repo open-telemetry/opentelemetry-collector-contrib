@@ -10,7 +10,7 @@ type ComplexConversion func(string, any, map[string]any) bool
 
 var conversions = map[string]ComplexConversion{
 	"AzureCDNAccessLog:SecurityProtocol":               azureCDNAccessLogSecurityProtocol,
-	"FrontDoorAccessLog:SecurityProtocol":              azureCDNAccessLogSecurityProtocol,
+	"FrontDoorAccessLog:securityProtocol":              azureCDNAccessLogSecurityProtocol,
 	"AppServiceHTTPLogs:Protocol":                      appServiceHTTPLogsProtocol,
 	"FrontDoorHealthProbeLog:DNSLatencyMicroseconds":   frontDoorHealthProbeLogDNSLatencyMicroseconds,
 	"FrontDoorHealthProbeLog:totalLatencyMilliseconds": frontDoorHealthProbeLogTotalLatencyMilliseconds,
