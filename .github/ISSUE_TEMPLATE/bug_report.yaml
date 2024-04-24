@@ -96,6 +96,7 @@ body:
       - extension/googleclientauth
       - extension/headerssetter
       - extension/healthcheck
+      - extension/healthcheckv2
       - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/oauth2clientauth
