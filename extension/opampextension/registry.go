@@ -28,6 +28,8 @@ type customCapabilityRegistry struct {
 	logger                  *zap.Logger
 }
 
+var _ CustomCapabilityRegistry = (*customCapabilityRegistry)(nil)
+
 func newCustomCapabilityRegistry(logger *zap.Logger, client customCapabilityClient) *customCapabilityRegistry {
 	return &customCapabilityRegistry{
 		mux:                     &sync.Mutex{},
@@ -148,6 +150,8 @@ type customMessageSender struct {
 
 	unregistered bool
 }
+
+var _ CustomCapabilityHandler = (*customMessageSender)(nil)
 
 func newCustomMessageSender(
 	registry *customCapabilityRegistry,
