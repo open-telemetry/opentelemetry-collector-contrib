@@ -35,12 +35,16 @@ resource_attributes:
     type: string
   vcenter.virtual_app.name:
     description: The name of the vApp.
-    enabled: true
+    enabled: false
     type: string
+    warnings:
+      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
   vcenter.virtual_app.inventory_path:
     description: The inventory path of the vApp.
-    enabled: true
+    enabled: false
     type: string
+    warnings:
+      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
   vcenter.datastore.name:
     description: The name of the vCenter datastore.
     enabled: true

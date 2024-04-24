@@ -252,10 +252,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterVirtualAppInventoryPath: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		VcenterVirtualAppName: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		VcenterVMID: ResourceAttributeConfig{
 			Enabled: true,
