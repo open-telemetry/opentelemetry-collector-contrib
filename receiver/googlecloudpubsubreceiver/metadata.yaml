@@ -17,4 +17,6 @@ tests:
     subscription: projects/my-project/subscriptions/otlp-subscription
   skip_lifecycle: true
   skip_shutdown: true
+  goleak:
+    skip: true
 

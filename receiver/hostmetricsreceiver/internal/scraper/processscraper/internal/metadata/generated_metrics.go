@@ -849,53 +849,53 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:   make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:   make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.ProcessCgroup.Include != nil {
-		mb.resourceAttributeIncludeFilter["process.cgroup"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCgroup.Include)
+	if mbc.ResourceAttributes.ProcessCgroup.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["process.cgroup"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCgroup.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ProcessCgroup.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["process.cgroup"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCgroup.Exclude)
+	if mbc.ResourceAttributes.ProcessCgroup.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["process.cgroup"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCgroup.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ProcessCommand.Include != nil {
-		mb.resourceAttributeIncludeFilter["process.command"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommand.Include)
+	if mbc.ResourceAttributes.ProcessCommand.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["process.command"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommand.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ProcessCommand.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["process.command"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommand.Exclude)
+	if mbc.ResourceAttributes.ProcessCommand.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["process.command"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommand.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ProcessCommandLine.Include != nil {
-		mb.resourceAttributeIncludeFilter["process.command_line"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommandLine.Include)
+	if mbc.ResourceAttributes.ProcessCommandLine.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["process.command_line"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommandLine.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ProcessCommandLine.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["process.command_line"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommandLine.Exclude)
+	if mbc.ResourceAttributes.ProcessCommandLine.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["process.command_line"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommandLine.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ProcessExecutableName.Include != nil {
-		mb.resourceAttributeIncludeFilter["process.executable.name"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutableName.Include)
+	if mbc.ResourceAttributes.ProcessExecutableName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["process.executable.name"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutableName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ProcessExecutableName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["process.executable.name"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutableName.Exclude)
+	if mbc.ResourceAttributes.ProcessExecutableName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["process.executable.name"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutableName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ProcessExecutablePath.Include != nil {
-		mb.resourceAttributeIncludeFilter["process.executable.path"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutablePath.Include)
+	if mbc.ResourceAttributes.ProcessExecutablePath.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["process.executable.path"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutablePath.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ProcessExecutablePath.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["process.executable.path"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutablePath.Exclude)
+	if mbc.ResourceAttributes.ProcessExecutablePath.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["process.executable.path"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutablePath.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ProcessOwner.Include != nil {
-		mb.resourceAttributeIncludeFilter["process.owner"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessOwner.Include)
+	if mbc.ResourceAttributes.ProcessOwner.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["process.owner"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessOwner.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ProcessOwner.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["process.owner"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessOwner.Exclude)
+	if mbc.ResourceAttributes.ProcessOwner.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["process.owner"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessOwner.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ProcessParentPid.Include != nil {
-		mb.resourceAttributeIncludeFilter["process.parent_pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessParentPid.Include)
+	if mbc.ResourceAttributes.ProcessParentPid.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["process.parent_pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessParentPid.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ProcessParentPid.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["process.parent_pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessParentPid.Exclude)
+	if mbc.ResourceAttributes.ProcessParentPid.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["process.parent_pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessParentPid.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ProcessPid.Include != nil {
-		mb.resourceAttributeIncludeFilter["process.pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessPid.Include)
+	if mbc.ResourceAttributes.ProcessPid.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["process.pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessPid.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ProcessPid.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["process.pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessPid.Exclude)
+	if mbc.ResourceAttributes.ProcessPid.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["process.pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessPid.MetricsExclude)
 	}
 
 	for _, op := range options {
