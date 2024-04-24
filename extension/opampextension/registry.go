@@ -71,7 +71,7 @@ func (cr *customCapabilityRegistry) Register(capability string, opts ...CustomCa
 	callbackElem := capabilityList.PushBack(msgChan)
 
 	unregisterFunc := cr.removeCapabilityFunc(capability, callbackElem)
-	sender := newCustomMessageSender(cr, cr.client, capability, msgChan, unregisterFunc)
+	sender := newCustomMessageHandler(cr, cr.client, capability, msgChan, unregisterFunc)
 
 	return sender, nil
 }
@@ -153,7 +153,7 @@ type customMessageHandler struct {
 
 var _ CustomCapabilityHandler = (*customMessageHandler)(nil)
 
-func newCustomMessageSender(
+func newCustomMessageHandler(
 	registry *customCapabilityRegistry,
 	opampClient customCapabilityClient,
 	capability string,
