@@ -9,8 +9,10 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -103,6 +105,9 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 	const computerNameKey = "computer_name"
 	const databaseNameKey = "database_name"
 	const instanceNameKey = "sql_instance"
+	const physicalFilenameKey = "physical_filename"
+	const logicalFilenameKey = "logical_filename"
+	const fileTypeKey = "file_type"
 	const readLatencyMsKey = "read_latency_ms"
 
 	rows, err := s.client.QueryRows(ctx)
@@ -115,6 +120,8 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 	}
 
 	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	var val float64
 	for i, row := range rows {
 		if i == 0 {
 			rb.SetSqlserverComputerName(row[computerNameKey])
@@ -122,12 +129,13 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 			rb.SetSqlserverInstanceName(row[instanceNameKey])
 		}
 
-		_, err = strconv.ParseFloat(row[readLatencyMsKey], 64)
+		val, err = strconv.ParseFloat(row[readLatencyMsKey], 64)
 		if err != nil {
 			err = fmt.Errorf("row %d: %w", i, err)
 			errs = append(errs, err)
+		} else {
+			s.mb.RecordSqlserverDatabaseIoReadLatencyDataPoint(now, val/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey])
 		}
-		// TODO: Set metrics here if no parsing error occurred.
 	}
 
 	if len(rows) == 0 {
