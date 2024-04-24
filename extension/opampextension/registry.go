@@ -137,7 +137,7 @@ func (cr *customCapabilityRegistry) capabilities() []string {
 	return maps.Keys(cr.capabilityToMsgChannels)
 }
 
-type customMessageSender struct {
+type customMessageHandler struct {
 	// unregisteredMux protects unregistered, and makes sure that a message cannot be sent
 	// on an unregistered capability.
 	unregisteredMux *sync.Mutex
@@ -151,7 +151,7 @@ type customMessageSender struct {
 	unregistered bool
 }
 
-var _ CustomCapabilityHandler = (*customMessageSender)(nil)
+var _ CustomCapabilityHandler = (*customMessageHandler)(nil)
 
 func newCustomMessageSender(
 	registry *customCapabilityRegistry,
@@ -159,8 +159,8 @@ func newCustomMessageSender(
 	capability string,
 	sendChan <-chan *protobufs.CustomMessage,
 	unregisterCapabilityFunc func(),
-) *customMessageSender {
-	return &customMessageSender{
+) *customMessageHandler {
+	return &customMessageHandler{
 		unregisteredMux: &sync.Mutex{},
 
 		capability:               capability,
@@ -172,12 +172,12 @@ func newCustomMessageSender(
 }
 
 // Message implements CustomCapabilityHandler.Message
-func (c *customMessageSender) Message() <-chan *protobufs.CustomMessage {
+func (c *customMessageHandler) Message() <-chan *protobufs.CustomMessage {
 	return c.sendChan
 }
 
 // SendMessage implements CustomCapabilityHandler.SendMessage
-func (c *customMessageSender) SendMessage(messageType string, message []byte) (messageSendingChannel chan struct{}, err error) {
+func (c *customMessageHandler) SendMessage(messageType string, message []byte) (messageSendingChannel chan struct{}, err error) {
 	c.unregisteredMux.Lock()
 	defer c.unregisteredMux.Unlock()
 
@@ -195,7 +195,7 @@ func (c *customMessageSender) SendMessage(messageType string, message []byte) (m
 }
 
 // Unregister implements CustomCapabilityHandler.Unregister
-func (c *customMessageSender) Unregister() {
+func (c *customMessageHandler) Unregister() {
 	c.unregisteredMux.Lock()
 	defer c.unregisteredMux.Unlock()
 
