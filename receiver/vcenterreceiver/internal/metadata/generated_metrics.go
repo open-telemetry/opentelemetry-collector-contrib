@@ -2216,6 +2216,9 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+	if !mbc.ResourceAttributes.VcenterDatacenterName.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.name`: this attribute will be enabled by default starting in release v0.101.0")
+	}
 	mb := &MetricsBuilder{
 		config:                                mbc,
 		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
@@ -2268,6 +2271,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	}
 	if mbc.ResourceAttributes.VcenterClusterName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["vcenter.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterClusterName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.VcenterDatacenterName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.datacenter.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatacenterName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.VcenterDatacenterName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.datacenter.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatacenterName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.VcenterDatastoreName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["vcenter.datastore.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatastoreName.MetricsInclude)
