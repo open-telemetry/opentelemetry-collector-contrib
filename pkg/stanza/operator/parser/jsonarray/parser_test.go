@@ -21,7 +21,7 @@ func newTestParser(t *testing.T) *Parser {
 
 	cfg := NewConfigWithID("test")
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	return op.(*Parser)
 }
@@ -32,7 +32,7 @@ func TestParserBuildFailure(t *testing.T) {
 	cfg := NewConfigWithID("test")
 	cfg.OnError = "invalid_on_error"
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := cfg.Build(&set)
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
@@ -50,7 +50,7 @@ func TestParserByteFailureHeadersMismatch(t *testing.T) {
 	cfg := NewConfigWithID("test")
 	cfg.Header = "name,sev,msg"
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	parser := op.(*Parser)
 	_, err = parser.parse("[\"stanza\",\"INFO\",\"started agent\", 42, true]")
@@ -252,7 +252,7 @@ func TestParserJarray(t *testing.T) {
 			tc.configure(cfg)
 
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(&set)
+			op, err := cfg.Build(set)
 			if tc.expectBuildErr {
 				require.Error(t, err)
 				return
@@ -374,7 +374,7 @@ dd","eeee"]`,
 			cfg.OutputIDs = []string{"fake"}
 
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(&set)
+			op, err := cfg.Build(set)
 			require.NoError(t, err)
 
 			fake := testutil.NewFakeOutput(t)
@@ -402,7 +402,7 @@ func TestBuildParserJarray(t *testing.T) {
 	t.Run("BasicConfig", func(t *testing.T) {
 		c := newBasicParser()
 		set := componenttest.NewNopTelemetrySettings()
-		_, err := c.Build(&set)
+		_, err := c.Build(set)
 		require.NoError(t, err)
 	})
 }

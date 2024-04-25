@@ -25,7 +25,7 @@ func TestWriterConfigMissingOutput(t *testing.T) {
 		},
 	}
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := config.Build(&set)
+	_, err := config.Build(set)
 	require.NoError(t, err)
 }
 
@@ -37,7 +37,7 @@ func TestWriterConfigValidBuild(t *testing.T) {
 		},
 	}
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := config.Build(&set)
+	_, err := config.Build(set)
 	require.NoError(t, err)
 }
 

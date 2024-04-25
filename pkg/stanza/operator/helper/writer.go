@@ -27,7 +27,7 @@ type WriterConfig struct {
 }
 
 // Build will build a writer operator from the config.
-func (c WriterConfig) Build(set *component.TelemetrySettings) (WriterOperator, error) {
+func (c WriterConfig) Build(set component.TelemetrySettings) (WriterOperator, error) {
 	basicOperator, err := c.BasicConfig.Build(set)
 	if err != nil {
 		return WriterOperator{}, err

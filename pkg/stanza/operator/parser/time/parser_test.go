@@ -65,7 +65,7 @@ func TestBuild(t *testing.T) {
 			cfg, err := tc.input()
 			require.NoError(t, err, "expected nil error when running test cases input func")
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(&set)
+			op, err := cfg.Build(set)
 			if tc.expectErr {
 				require.Error(t, err, "expected error while building time_parser operator")
 				return
@@ -124,7 +124,7 @@ func TestProcess(t *testing.T) {
 				return
 			}
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(&set)
+			op, err := cfg.Build(set)
 			if err != nil {
 				require.NoError(t, err)
 				return
@@ -505,7 +505,7 @@ func runTimeParseTest(t *testing.T, cfg *Config, ent *entry.Entry, buildErr bool
 func runLossyTimeParseTest(_ *testing.T, cfg *Config, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time, maxLoss time.Duration) func(*testing.T) {
 	return func(t *testing.T) {
 		set := componenttest.NewNopTelemetrySettings()
-		op, err := cfg.Build(&set)
+		op, err := cfg.Build(set)
 		if buildErr {
 			require.Error(t, err, "expected error when configuring operator")
 			return
