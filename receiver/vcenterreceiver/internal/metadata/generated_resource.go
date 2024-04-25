@@ -28,6 +28,13 @@ func (rb *ResourceBuilder) SetVcenterClusterName(val string) {
 	}
 }
 
+// SetVcenterDatacenterName sets provided value as "vcenter.datacenter.name" attribute.
+func (rb *ResourceBuilder) SetVcenterDatacenterName(val string) {
+	if rb.config.VcenterDatacenterName.Enabled {
+		rb.res.Attributes().PutStr("vcenter.datacenter.name", val)
+	}
+}
+
 // SetVcenterDatastoreName sets provided value as "vcenter.datastore.name" attribute.
 func (rb *ResourceBuilder) SetVcenterDatastoreName(val string) {
 	if rb.config.VcenterDatastoreName.Enabled {
