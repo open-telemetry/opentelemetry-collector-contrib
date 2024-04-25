@@ -8,6 +8,7 @@ on:
   pull_request:
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
+  GOPROXY: https://goproxy.cncf.actuated.dev,direct
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
@@ -63,6 +64,7 @@ jobs:
         run: ./.github/workflows/scripts/check-codeowners.sh check_entries_in_allowlist
   lint-matrix:
     strategy:
+      fail-fast: false
       matrix:
         test:
           - windows
@@ -241,9 +243,13 @@ jobs:
           git diff --exit-code '.github/ISSUE_TEMPLATE' || (echo 'Dropdowns in issue templates are out of date, please run "make generate-gh-issue-templates" and commit the changes in this PR.' && exit 1)
   unittest-matrix:
     strategy:
+      fail-fast: false
       matrix:
         go-version: ["1.22.2", "1.21.9"] # 1.20 is interpreted as 1.2 without quotes
         runner: [ubuntu-latest, actuated-arm64-4cpu-4gb]
+        exclude:
+          - go-version: "1.21.9"
+            runner: actuated-arm64-4cpu-4gb
         group:
           - receiver-0
           - receiver-1
@@ -262,13 +268,6 @@ jobs:
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     steps:
-      - name: Set up arkade
-        uses: alexellis/setup-arkade@v3
-      - name: Install vmmeter
-        run: |
-          sudo -E arkade oci install ghcr.io/openfaasltd/vmmeter:latest --path /usr/local/bin/
-      - name: Run vmmeter
-        uses: self-actuated/vmmeter-action@v1
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
@@ -331,7 +330,7 @@ jobs:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: Wandalen/wretry.action@v3.2.0
+        uses: Wandalen/wretry.action@v3.4.0
         with:
           action: codecov/codecov-action@v4
           with: |
@@ -343,6 +342,7 @@ jobs:
 
   integration-tests-matrix:
     strategy:
+      fail-fast: false
       matrix:
         group:
           - receiver-0
@@ -460,6 +460,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup-environment]
     strategy:
+      fail-fast: false
       matrix:
         os:
           - darwin

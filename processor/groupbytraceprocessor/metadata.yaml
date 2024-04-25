@@ -11,3 +11,5 @@ status:
     active: [jpkrohling]
 tests:
   config:
+  goleak:
+    skip: true

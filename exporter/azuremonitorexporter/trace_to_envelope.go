@@ -133,6 +133,7 @@ func spanToEnvelopes(
 		}
 
 		spanEventEnvelope := newEnvelope(span, toTime(spanEvent.Timestamp()).Format(time.RFC3339Nano))
+		spanEventEnvelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(span.SpanID())
 
 		data := contracts.NewData()
 
