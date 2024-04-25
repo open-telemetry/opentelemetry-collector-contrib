@@ -18,6 +18,14 @@ type Metric struct {
 	pmetric.Metric
 }
 
+func (m *Metric) Resource() pcommon.Resource {
+	return m.res
+}
+
+func (m *Metric) Scope() pcommon.InstrumentationScope {
+	return m.scope
+}
+
 func (m *Metric) Ident() Ident {
 	return identity.OfResourceMetric(m.res, m.scope, m.Metric)
 }
