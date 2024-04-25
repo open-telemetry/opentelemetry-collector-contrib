@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -172,6 +173,25 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
 	}
 	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
+
+	meter := set.MeterProvider.Meter("otelcol/fileconsumer")
+
+	openedFiles, err := meter.Int64UpDownCounter(
+		"fileconsumer"+"/"+"open_files",
+		metric.WithDescription("Number of open files"),
+		metric.WithUnit("1"),
+	)
+	if err != nil {
+		return nil, err
+	}
+	readingFiles, err := meter.Int64UpDownCounter(
+		"fileconsumer"+"/"+"reading_files",
+		metric.WithDescription("Number of open files that are being read"),
+		metric.WithUnit("1"),
+	)
+	if err != nil {
+		return nil, err
+	}
 	return &Manager{
 		set:           set,
 		readerFactory: readerFactory,
@@ -180,6 +200,8 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		maxBatchFiles: c.MaxConcurrentFiles / 2,
 		maxBatches:    c.MaxBatches,
 		tracker:       t,
+		openFiles:     openedFiles,
+		readingFiles:  readingFiles,
 	}, nil
 }
 
