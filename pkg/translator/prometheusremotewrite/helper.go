@@ -540,20 +540,15 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 	}
 
 	labels := createAttributes(resource, attributes, settings.ExternalLabels, identifyingAttrs, false, model.MetricNameLabel, name)
-	haveJob := false
-	haveInstance := false
+	haveIdentifier := false
 	for _, l := range labels {
-		if l.Name == model.JobLabel {
-			haveJob = true
-		} else if l.Name == model.InstanceLabel {
-			haveInstance = true
-		}
-		if haveJob && haveInstance {
+		if l.Name == model.JobLabel || l.Name == model.InstanceLabel {
+			haveIdentifier = true
 			break
 		}
 	}
 
-	if !haveJob && !haveInstance {
+	if !haveIdentifier {
 		// We need at least one identifying label to generate target_info.
 		return
 	}
