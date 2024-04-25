@@ -181,7 +181,7 @@ func TestTransformer(t *testing.T) {
 			cfg.Expression = tc.expression
 
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(&set)
+			op, err := cfg.Build(set)
 			require.NoError(t, err)
 
 			filtered := true
@@ -207,7 +207,7 @@ func TestFilterDropRatio(t *testing.T) {
 	cfg.Expression = `body.message == "test_message"`
 	cfg.DropRatio = 0.5
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 
 	processedEntries := 0

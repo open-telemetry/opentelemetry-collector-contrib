@@ -29,7 +29,7 @@ type InputConfig struct {
 }
 
 // Build will build a base producer.
-func (c InputConfig) Build(set *component.TelemetrySettings) (InputOperator, error) {
+func (c InputConfig) Build(set component.TelemetrySettings) (InputOperator, error) {
 	writerOperator, err := c.WriterConfig.Build(set)
 	if err != nil {
 		return InputOperator{}, errors.WithDetails(err, "operator_id", c.ID())

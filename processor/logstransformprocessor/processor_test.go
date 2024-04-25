@@ -225,7 +225,7 @@ type laggyOperatorConfig struct {
 	helper.WriterConfig
 }
 
-func (l *laggyOperatorConfig) Build(set *component.TelemetrySettings) (operator.Operator, error) {
+func (l *laggyOperatorConfig) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	wo, err := l.WriterConfig.Build(set)
 	if err != nil {
 		return nil, err

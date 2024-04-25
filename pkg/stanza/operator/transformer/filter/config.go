@@ -46,7 +46,7 @@ type Config struct {
 }
 
 // Build will build a filter operator from the supplied configuration
-func (c Config) Build(set *component.TelemetrySettings) (operator.Operator, error) {
+func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	transformer, err := c.TransformerConfig.Build(set)
 	if err != nil {
 		return nil, err

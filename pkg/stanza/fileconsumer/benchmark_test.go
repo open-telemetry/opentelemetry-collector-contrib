@@ -193,7 +193,7 @@ func BenchmarkFileInput(b *testing.B) {
 				return nil
 			}
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(&set, callback)
+			op, err := cfg.Build(set, callback)
 			require.NoError(b, err)
 
 			b.ResetTimer()

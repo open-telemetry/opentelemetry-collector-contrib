@@ -45,7 +45,7 @@ type Config struct {
 }
 
 // Build will build a regex parser operator.
-func (c Config) Build(set *component.TelemetrySettings) (operator.Operator, error) {
+func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	parserOperator, err := c.ParserConfig.Build(set)
 	if err != nil {
 		return nil, err

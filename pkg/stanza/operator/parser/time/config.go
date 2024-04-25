@@ -41,7 +41,7 @@ func (c *Config) Unmarshal(component *confmap.Conf) error {
 }
 
 // Build will build a time parser operator.
-func (c Config) Build(set *component.TelemetrySettings) (operator.Operator, error) {
+func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(set)
 	if err != nil {
 		return nil, err

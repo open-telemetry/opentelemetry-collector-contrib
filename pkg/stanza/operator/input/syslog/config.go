@@ -41,7 +41,7 @@ type Config struct {
 	UDP                *udp.BaseConfig `mapstructure:"udp"`
 }
 
-func (c Config) Build(set *component.TelemetrySettings) (operator.Operator, error) {
+func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	inputBase, err := c.InputConfig.Build(set)
 	if err != nil {
 		return nil, err
