@@ -149,7 +149,7 @@ func encode(pb proto.Message) ([]byte, error) {
 }
 
 func (l *lokiExporter) start(ctx context.Context, host component.Host) (err error) {
-	client, err := l.config.ClientConfig.ToClientContext(ctx, host, l.settings)
+	client, err := l.config.ClientConfig.ToClient(ctx, host, l.settings)
 	if err != nil {
 		return err
 	}
