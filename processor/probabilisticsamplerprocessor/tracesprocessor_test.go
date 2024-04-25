@@ -5,6 +5,7 @@ package probabilisticsamplerprocessor
 
 import (
 	"context"
+	"encoding/hex"
 	"math"
 	"math/rand"
 	"testing"
@@ -455,4 +456,156 @@ func assertSampledData(t *testing.T, sampled []ptrace.Traces, serviceName string
 		}
 	}
 	return
+}
+
+// mustParseTID generates TraceIDs from their hex encoding, for
+// testing probability sampling.
+func mustParseTID(in string) pcommon.TraceID {
+	b, err := hex.DecodeString(in)
+	if err != nil {
+		panic(err)
+	}
+	if len(b) != len(pcommon.TraceID{}) {
+		panic("incorrect size input")
+	}
+	return pcommon.TraceID(b)
+}
+
+// TestHashingFunction verifies 100 examples of the legacy hash-seed
+// based trace sampling decision.  This test is made prior to refactoring
+// the hash calculation to ensure legacy behavior does not change.
+func TestHashingFunction(t *testing.T) {
+	type expect50PctHashed struct {
+		seed    uint32
+		traceID string
+		sampled bool
+	}
+
+	var expect50PctData = []expect50PctHashed{
+		{653, "474a03c76d75951a4b4c537ced8f1122", true},
+		{563, "53a518291e91307e43cd8467bb06f986", true},
+		{142, "a56a02f843b9bc6ee0b13889249e90e6", true},
+		{904, "4e40762d3ee97a1c0932e4fa584f89a8", false},
+		{445, "5224507db93db513f0ea2a4b4e0578c8", true},
+		{38, "0c8717ced36216037af657e9d7f8b35b", true},
+		{561, "2a8aa76c18d08e1e8be935541f9318c7", false},
+		{757, "9e3d0f9481dc422cb613ea550897ae71", false},
+		{22, "66a66c516ac22054673e5da5e6492545", false},
+		{172, "84a1ce7bcea3e66194e72b4aa2694e31", true},
+		{552, "a811a7def34ca4b98d8e320afd115fad", false},
+		{546, "e3a345cc8dbb6f014bfa1edad3981820", true},
+		{315, "a71effb50e28d27cbdc9892f3765b8c2", false},
+		{510, "55ee665a3fa22f8ea1b744ce15a7339d", false},
+		{230, "7a5006be4d0ce7b542d59f83cd6f1c41", false},
+		{544, "825b8fb9cfd45867794f4cd8a5a699bd", false},
+		{790, "7629ecbea89398bfd9752a2f51c2c137", true},
+		{555, "de6cdfb44d69e211f886c57120d7bda0", true},
+		{147, "a8a5c3bb9205883fae17ead6675b2450", false},
+		{238, "937e6cb3332dbe87062fa3997f48f425", false},
+		{122, "5a357e150995e005847816c431ba502d", false},
+		{963, "20cb3dcebe2cf8abe6102f4a2e548245", false},
+		{141, "1b0afbd09abaaf7996cd26f8f6533795", false},
+		{666, "3ee60b013303bcfda06be89071b90bd1", true},
+		{305, "c90c7cf3471bbc3a804a8a831633705b", true},
+		{270, "18dda74dfca45a7b0261510f385fb4de", true},
+		{381, "600cf70c7bb4918e54aefd78c84f3996", true},
+		{35, "855f493c5b5b1e2fcbc9993f8061eac8", false},
+		{839, "89bc498feb21d969cf0eabf916aa621a", false},
+		{561, "0a0af00f63e098a39883705a423b0aa8", true},
+		{667, "0c38553d71f54dfc37155c22cc8bf243", false},
+		{603, "49493809d1a49ea879e6aba37afde958", true},
+		{92, "eb60d98b8f8fe22d8970f44f0e2b6bad", true},
+		{70, "19c386ee7a9f2d56ff9ab2e6374540af", false},
+		{567, "2a033c15405f1c7a311f653719ed47b7", false},
+		{936, "62dda24e4be24f5198e4d8dd4010c811", true},
+		{210, "bb134e26ee92e282e29cabdb1d00d333", true},
+		{835, "6c77db08bbded7bdd5c99c6e2fea41d2", false},
+		{864, "99f6a7e7b50845b4fb64b7c2ee49f53c", true},
+		{775, "e908cb91224bee8fd4b5f3632f65717f", true},
+		{687, "45a5ace7234d92d9983b4f3858bc0b8e", false},
+		{761, "8c8a25d232fd4d3a37a5f70ccb82d752", false},
+		{400, "54156d7434a894ef07f2a80dbf0f1138", true},
+		{741, "67e3bfb02b0526dbb79420468d7b83dd", false},
+		{871, "f6ea221283dcb42f89bfb15fa33398d2", false},
+		{244, "b663ca45004decf8123a19fb5d7f7115", true},
+		{885, "d0e299d54d6dc6469276fd4e48301d73", true},
+		{607, "03240c2748aa67a185909a9345d84aba", false},
+		{434, "b00de72ba67e6fe0ed661decac911f7e", true},
+		{889, "20fff68a7cc715b30e4e6d69d53e0f60", false},
+		{810, "6bf2bb105e594f6220803da5253551af", false},
+		{494, "54fbb1d3ebe3883b0a01bbf2c9a2bf3e", true},
+		{413, "a8a2ecba129d8537e360cf54de9d7460", false},
+		{215, "2df034262b775136f2a313fdcc09738a", true},
+		{557, "e3c1b943d9c1199d1108a69aa32a4587", false},
+		{662, "1975d5f5640bac1064d53c2c21e02aae", false},
+		{482, "6e4f16727dec3c09539b5f50d35d2c13", false},
+		{223, "63a088446ef0ed60a9cace4698ede026", false},
+		{261, "9b662cd6f67a4e3d1f904b4c5d4275b1", true},
+		{112, "a2db788dbadc402b8c466b93b8749a6c", true},
+		{6, "d6a68b47c66d1f94eed46b8ddc72faf4", false},
+		{575, "e8a83c42f4515568d0942ec4472c9d2c", true},
+		{568, "030e14c2954e3f08134b355f33414ba9", false},
+		{965, "022315846d42a38322d6fd26250444b3", true},
+		{512, "b3ba1ed226288dede87ac1f2ba88de2b", true},
+		{108, "c57d0dcf43d5b154ef04c7953c94cd12", true},
+		{248, "a835fe521d9cbfcfb724b603f87c7403", false},
+		{46, "eda867e6df95e74abefac336c7f4cd1a", false},
+		{879, "09e9e67a261ea3e00d817105b57ffd4e", false},
+		{853, "6a780cf250cb3d2b699394042e6723a8", false},
+		{639, "4c99d7f14c66b3123caf57980f8e2a31", false},
+		{111, "79dc8d7a54bc3e8ef513b9cd8d830564", true},
+		{135, "9c2e5d9d713e5219b0f9e5b884835e69", false},
+		{209, "3ccb300bf7b983229979e0c46db267b0", true},
+		{629, "0bb7b9da64da250c3934bb39130dc990", true},
+		{910, "b25713ca4cea377871eaa334bc2dd382", true},
+		{667, "69afc041003851cec60f41db97e005a9", true},
+		{449, "c844b5428abe0cf82eaf02566781870a", true},
+		{16, "2533c732bed8c1ba4721c25a1205f06c", false},
+		{936, "ecc770b4be885dfc8d6fa135bc2c93bb", true},
+		{595, "63b67cbb42de52e9916241ad94fcd5e8", true},
+		{83, "fc4998bc53ccd42a5b8e7c86a93d4c88", false},
+		{878, "59f0677dffe1a0a8c5895cb263e3a019", false},
+		{206, "eb897eff9e7c7363e063b340a0c6b315", true},
+		{710, "89e4c7e6af305be6cd139abcae953db5", true},
+		{650, "97563d45ee254231e1ace05fb746bcce", false},
+		{233, "3f580864f295ff13f179c3c907032ea9", true},
+		{836, "e9b78e03706265a6936bff2a41530104", false},
+		{568, "c458603ee921fa8711085c15b871b245", false},
+		{816, "4bbfffab5b5975c1b007ebc518bf416d", false},
+		{397, "61a1a65746287d78a431c6848ed1ffb3", false},
+		{847, "53eee02f4672a72e93369b2c2ecf36eb", false},
+		{354, "6ea23c3068a2c304488c8e67a072db97", false},
+		{961, "eed247645e510ded87bd9afcf1d3e237", false},
+		{799, "092af4ff2fdea5bb1c708b2169bdfd95", false},
+		{99, "497f02db51c898ac441aae18a8b7ced9", false},
+		{773, "988481445600bb91bbe23e3103034bcd", true},
+		{928, "f1813835ac0f456721ef3aac39c0269a", true},
+		{235, "1999920085682c007eb3a6984d2a7f05", true},
+		{460, "60c3b9a2dde734d71ba5cca7eb164bce", true},
+	}
+
+	// Note the test data above was created by essentially a
+	// one-off rewrite of the test body below, where instead of
+	// verifying it printed the expected results.
+	for _, tc := range expect50PctData {
+		sink := new(consumertest.TracesSink)
+		tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), &Config{
+			HashSeed:           tc.seed,
+			SamplingPercentage: 50,
+		}, sink)
+		if err != nil {
+			panic(err)
+		}
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetTraceID(mustParseTID(tc.traceID))
+		err = tsp.ConsumeTraces(context.Background(), traces)
+		if err != nil {
+			panic(err)
+		}
+
+		wasSampled := len(sink.AllTraces()) == 1
+
+		require.Equal(t, tc.sampled, wasSampled)
+	}
 }

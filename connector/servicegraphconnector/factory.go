@@ -30,21 +30,21 @@ var virtualNodeFeatureGate, legacyMetricNamesFeatureGate, legacyLatencyUnitMsFea
 func init() {
 	virtualNodeFeatureGate = featuregate.GlobalRegistry().MustRegister(
 		virtualNodeFeatureGateID,
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled, when the edge expires, processor checks if it has peer attributes(`db.name, net.sock.peer.addr, net.peer.name, rpc.service, http.url, http.target`), and then aggregate the metrics with virtual node."),
+		featuregate.StageBeta,
+		featuregate.WithRegisterDescription("When enabled and setting `virtual_node_peer_attributes` is not empty, the connector looks for the presence of these attributes in span to create virtual server nodes."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17196"),
 	)
 	// TODO: Remove this feature gate when the legacy metric names are removed.
 	legacyMetricNamesFeatureGate = featuregate.GlobalRegistry().MustRegister(
 		legacyLatencyMetricNamesFeatureGateID,
 		featuregate.StageAlpha, // Alpha because we want it disabled by default.
-		featuregate.WithRegisterDescription("When enabled, processor uses legacy latency metric names."),
+		featuregate.WithRegisterDescription("When enabled, connector uses legacy latency metric names."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18743,https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16578"),
 	)
 	legacyLatencyUnitMsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 		legacyLatencyUnitMs,
 		featuregate.StageAlpha, // Alpha because we want it disabled by default.
-		featuregate.WithRegisterDescription("When enabled, processor reports latency in milliseconds, instead of seconds."),
+		featuregate.WithRegisterDescription("When enabled, connector reports latency in milliseconds, instead of seconds."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27488"),
 	)
 }

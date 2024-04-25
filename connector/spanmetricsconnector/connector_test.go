@@ -1519,18 +1519,89 @@ func TestSpanMetrics_Events(t *testing.T) {
 		})
 	}
 }
-func TestExemplarsForSumMetrics(t *testing.T) {
-	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, cumulative, 0, []string{})
-	require.NoError(t, err)
-	traces := buildSampleTrace()
+func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
+	tests := []struct {
+		name            string
+		temporality     string
+		histogramConfig func() HistogramConfig
+	}{
+		{
+			name:            "cumulative explicit histogram",
+			temporality:     cumulative,
+			histogramConfig: explicitHistogramsConfig,
+		},
+		{
+			name:            "cumulative exponential histogram",
+			temporality:     cumulative,
+			histogramConfig: exponentialHistogramsConfig,
+		},
+		{
+			name:            "delta explicit histogram",
+			temporality:     delta,
+			histogramConfig: explicitHistogramsConfig,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, _, err := newConnectorImp(stringp("defaultNullValue"), tt.histogramConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{})
+			p.metricsConsumer = &consumertest.MetricsSink{}
+			require.NoError(t, err)
 
-	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+			traces := ptrace.NewTraces()
+			trace1ID := [16]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10}
+			initServiceSpans(
+				serviceSpans{
+					serviceName: "service-b",
+					spans: []span{
+						{
+							name:       "/ping",
+							kind:       ptrace.SpanKindServer,
+							statusCode: ptrace.StatusCodeError,
+							traceID:    trace1ID,
+							spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+						},
+					},
+				}, traces.ResourceSpans().AppendEmpty())
 
-	err = p.ConsumeTraces(ctx, traces)
-	require.NoError(t, err)
-	metrics := p.buildMetrics()
+			// Test
+			ctx := metadata.NewIncomingContext(context.Background(), nil)
 
+			// Verify exactly 1 exemplar is added to all data points when flushing
+			err = p.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+
+			p.exportMetrics(ctx)
+			m := p.metricsConsumer.(*consumertest.MetricsSink).AllMetrics()[0]
+			assertDataPointsHaveExactlyOneExemplarForTrace(t, m, trace1ID)
+
+			// Verify exemplars from previous batch's trace are replaced with exemplars for the new batch's trace
+			traces = ptrace.NewTraces()
+			trace2ID := [16]byte{0x00, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10}
+			initServiceSpans(
+				serviceSpans{
+					serviceName: "service-b",
+					spans: []span{
+						{
+							name:       "/ping",
+							kind:       ptrace.SpanKindServer,
+							statusCode: ptrace.StatusCodeError,
+							traceID:    trace2ID,
+							spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+						},
+					},
+				}, traces.ResourceSpans().AppendEmpty())
+
+			err = p.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+
+			p.exportMetrics(ctx)
+			m = p.metricsConsumer.(*consumertest.MetricsSink).AllMetrics()[1]
+			assertDataPointsHaveExactlyOneExemplarForTrace(t, m, trace2ID)
+		})
+	}
+}
+
+func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetric.Metrics, traceID pcommon.TraceID) {
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		ism := rm.ScopeMetrics()
@@ -1539,12 +1610,33 @@ func TestExemplarsForSumMetrics(t *testing.T) {
 			m := ism.At(ilmC).Metrics()
 			for mC := 0; mC < m.Len(); mC++ {
 				metric := m.At(mC)
-				if metric.Type() == pmetric.MetricTypeSum {
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
 					dps := metric.Sum().DataPoints()
+					assert.Greater(t, dps.Len(), 0)
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
-						assert.Greater(t, dp.Exemplars().Len(), 0)
+						assert.Equal(t, dp.Exemplars().Len(), 1)
+						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
 					}
+				case pmetric.MetricTypeHistogram:
+					dps := metric.Histogram().DataPoints()
+					assert.Greater(t, dps.Len(), 0)
+					for dpi := 0; dpi < dps.Len(); dpi++ {
+						dp := dps.At(dpi)
+						assert.Equal(t, dp.Exemplars().Len(), 1)
+						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					dps := metric.ExponentialHistogram().DataPoints()
+					assert.Greater(t, dps.Len(), 0)
+					for dpi := 0; dpi < dps.Len(); dpi++ {
+						dp := dps.At(dpi)
+						assert.Equal(t, dp.Exemplars().Len(), 1)
+						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
+					}
+				default:
+					t.Fatalf("Unexpected metric type %s", metric.Type())
 				}
 			}
 		}

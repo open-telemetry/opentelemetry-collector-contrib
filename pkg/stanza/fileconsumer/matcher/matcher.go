@@ -34,17 +34,21 @@ var mtimeSortTypeFeatureGate = featuregate.GlobalRegistry().MustRegister(
 )
 
 type Criteria struct {
-	Include          []string         `mapstructure:"include,omitempty"`
-	Exclude          []string         `mapstructure:"exclude,omitempty"`
+	Include []string `mapstructure:"include,omitempty"`
+	Exclude []string `mapstructure:"exclude,omitempty"`
+
+	// ExcludeOlderThan allows excluding files whose modification time is older
+	// than the specified age.
+	ExcludeOlderThan time.Duration    `mapstructure:"exclude_older_than"`
 	OrderingCriteria OrderingCriteria `mapstructure:"ordering_criteria,omitempty"`
+
+	RefreshInterval time.Duration `mapstructure:"refresh_interval,omitempty"`
 }
 
 type OrderingCriteria struct {
 	Regex  string `mapstructure:"regex,omitempty"`
 	TopN   int    `mapstructure:"top_n,omitempty"`
 	SortBy []Sort `mapstructure:"sort_by,omitempty"`
-
-	RefreshInterval time.Duration `mapstructure:"refresh_interval,omitempty"`
 }
 
 type Sort struct {
@@ -72,6 +76,25 @@ func New(c Criteria) (*Matcher, error) {
 		return nil, fmt.Errorf("exclude: %w", err)
 	}
 
+	if c.RefreshInterval.Seconds() == 0 {
+		c.RefreshInterval = time.Minute
+	}
+
+	m := &Matcher{
+		include:         c.Include,
+		exclude:         c.Exclude,
+		refreshInterval: c.RefreshInterval,
+		cache:           newCache(),
+	}
+
+	if c.ExcludeOlderThan != 0 {
+		m.filterOpts = append(m.filterOpts, filter.ExcludeOlderThan(c.ExcludeOlderThan))
+	}
+
+	if len(c.OrderingCriteria.SortBy) == 0 {
+		return m, nil
+	}
+
 	if c.OrderingCriteria.TopN < 0 {
 		return nil, fmt.Errorf("'top_n' must be a positive integer")
 	}
@@ -79,20 +102,7 @@ func New(c Criteria) (*Matcher, error) {
 	if c.OrderingCriteria.TopN == 0 {
 		c.OrderingCriteria.TopN = defaultOrderingCriteriaTopN
 	}
-
-	if c.OrderingCriteria.RefreshInterval.Seconds() == 0 {
-		c.OrderingCriteria.RefreshInterval = time.Minute
-	}
-
-	if len(c.OrderingCriteria.SortBy) == 0 {
-		return &Matcher{
-			include:         c.Include,
-			exclude:         c.Exclude,
-			refreshInterval: c.OrderingCriteria.RefreshInterval,
-			topN:            c.OrderingCriteria.TopN,
-			cache:           newCache(),
-		}, nil
-	}
+	m.topN = c.OrderingCriteria.TopN
 
 	var regex *regexp.Regexp
 	if orderingCriteriaNeedsRegex(c.OrderingCriteria.SortBy) {
@@ -105,10 +115,10 @@ func New(c Criteria) (*Matcher, error) {
 		if err != nil {
 			return nil, fmt.Errorf("compile regex: %w", err)
 		}
+
+		m.regex = regex
 	}
 
-	var maxAge time.Duration
-	var filterOpts []filter.Option
 	for _, sc := range c.OrderingCriteria.SortBy {
 		switch sc.SortType {
 		case sortTypeNumeric:
@@ -116,40 +126,31 @@ func New(c Criteria) (*Matcher, error) {
 			if err != nil {
 				return nil, fmt.Errorf("numeric sort: %w", err)
 			}
-			filterOpts = append(filterOpts, f)
+			m.filterOpts = append(m.filterOpts, f)
 		case sortTypeAlphabetical:
 			f, err := filter.SortAlphabetical(sc.RegexKey, sc.Ascending)
 			if err != nil {
 				return nil, fmt.Errorf("alphabetical sort: %w", err)
 			}
-			filterOpts = append(filterOpts, f)
+			m.filterOpts = append(m.filterOpts, f)
 		case sortTypeTimestamp:
 			f, err := filter.SortTemporal(sc.RegexKey, sc.Ascending, sc.Layout, sc.Location)
 			if err != nil {
 				return nil, fmt.Errorf("timestamp sort: %w", err)
 			}
-			filterOpts = append(filterOpts, f)
+			m.filterOpts = append(m.filterOpts, f)
 		case sortTypeMtime:
 			if !mtimeSortTypeFeatureGate.IsEnabled() {
 				return nil, fmt.Errorf("the %q feature gate must be enabled to use %q sort type", mtimeSortTypeFeatureGate.ID(), sortTypeMtime)
 			}
-			maxAge = sc.MaxTime
-			filterOpts = append(filterOpts, filter.SortMtime(sc.MaxTime))
+			m.maxAge = sc.MaxTime
+			m.filterOpts = append(m.filterOpts, filter.SortMtime(sc.MaxTime))
 		default:
 			return nil, fmt.Errorf("'sort_type' must be specified")
 		}
 	}
 
-	return &Matcher{
-		include:         c.Include,
-		exclude:         c.Exclude,
-		regex:           regex,
-		refreshInterval: c.OrderingCriteria.RefreshInterval,
-		maxAge:          maxAge,
-		topN:            c.OrderingCriteria.TopN,
-		filterOpts:      filterOpts,
-		cache:           newCache(),
-	}, nil
+	return m, nil
 }
 
 // orderingCriteriaNeedsRegex returns true if any of the sort options require a regex to be set.

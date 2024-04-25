@@ -27,7 +27,7 @@ const (
 
 var (
 	errNoNamespace   = errors.New("no Cloud Map namespace specified to resolve the backends")
-	errNoServiceName = errors.New("no Cloud Map serviceName specified to resolve the backends")
+	errNoServiceName = errors.New("no Cloud Map service_name specified to resolve the backends")
 
 	awsResolverMutator = tag.Upsert(tag.MustNewKey("resolver"), "aws")
 
@@ -115,10 +115,10 @@ func (r *cloudMapResolver) start(ctx context.Context) error {
 	go r.periodicallyResolve()
 
 	r.logger.Info("AWS CloudMap resolver started",
-		zap.Stringp("serviceName", r.serviceName),
+		zap.Stringp("service_name", r.serviceName),
 		zap.Stringp("namespaceName", r.namespaceName),
 		zap.Uint16p("port", r.port),
-		zap.String("healthStatus", string(*r.healthStatus)),
+		zap.String("health_status", string(*r.healthStatus)),
 		zap.Duration("interval", r.resInterval), zap.Duration("timeout", r.resTimeout))
 	return nil
 }
