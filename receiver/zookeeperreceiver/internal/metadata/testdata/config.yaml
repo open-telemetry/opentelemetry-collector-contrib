@@ -81,19 +81,19 @@ filter_set_include:
   resource_attributes:
     server.state:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     zk.version:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
     server.state:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "server.state-val"
     zk.version:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "zk.version-val"

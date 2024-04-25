@@ -82,6 +82,8 @@ all_set:
   resource_attributes:
     vcenter.cluster.name:
       enabled: true
+    vcenter.datacenter.name:
+      enabled: true
     vcenter.datastore.name:
       enabled: true
     vcenter.host.name:
@@ -177,6 +179,8 @@ none_set:
   resource_attributes:
     vcenter.cluster.name:
       enabled: false
+    vcenter.datacenter.name:
+      enabled: false
     vcenter.datastore.name:
       enabled: false
     vcenter.host.name:
@@ -193,59 +197,67 @@ filter_set_include:
   resource_attributes:
     vcenter.cluster.name:
       enabled: true
-      include:
+      metrics_include:
+        - regexp: ".*"
+    vcenter.datacenter.name:
+      enabled: true
+      metrics_include:
         - regexp: ".*"
     vcenter.datastore.name:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     vcenter.host.name:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     vcenter.resource_pool.inventory_path:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     vcenter.resource_pool.name:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     vcenter.vm.id:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     vcenter.vm.name:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
     vcenter.cluster.name:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "vcenter.cluster.name-val"
+    vcenter.datacenter.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.datacenter.name-val"
     vcenter.datastore.name:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "vcenter.datastore.name-val"
     vcenter.host.name:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "vcenter.host.name-val"
     vcenter.resource_pool.inventory_path:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "vcenter.resource_pool.inventory_path-val"
     vcenter.resource_pool.name:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "vcenter.resource_pool.name-val"
     vcenter.vm.id:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "vcenter.vm.id-val"
     vcenter.vm.name:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "vcenter.vm.name-val"

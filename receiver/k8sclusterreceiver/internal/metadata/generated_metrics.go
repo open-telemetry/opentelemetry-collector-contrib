@@ -2304,227 +2304,227 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:            make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:            make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.ContainerID.Include != nil {
-		mb.resourceAttributeIncludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.Include)
+	if mbc.ResourceAttributes.ContainerID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ContainerID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.Exclude)
+	if mbc.ResourceAttributes.ContainerID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ContainerImageName.Include != nil {
-		mb.resourceAttributeIncludeFilter["container.image.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageName.Include)
+	if mbc.ResourceAttributes.ContainerImageName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.image.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ContainerImageName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["container.image.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageName.Exclude)
+	if mbc.ResourceAttributes.ContainerImageName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.image.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ContainerImageTag.Include != nil {
-		mb.resourceAttributeIncludeFilter["container.image.tag"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageTag.Include)
+	if mbc.ResourceAttributes.ContainerImageTag.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.image.tag"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageTag.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ContainerImageTag.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["container.image.tag"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageTag.Exclude)
+	if mbc.ResourceAttributes.ContainerImageTag.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.image.tag"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageTag.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ContainerRuntime.Include != nil {
-		mb.resourceAttributeIncludeFilter["container.runtime"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntime.Include)
+	if mbc.ResourceAttributes.ContainerRuntime.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.runtime"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntime.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ContainerRuntime.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["container.runtime"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntime.Exclude)
+	if mbc.ResourceAttributes.ContainerRuntime.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.runtime"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntime.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ContainerRuntimeVersion.Include != nil {
-		mb.resourceAttributeIncludeFilter["container.runtime.version"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntimeVersion.Include)
+	if mbc.ResourceAttributes.ContainerRuntimeVersion.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.runtime.version"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntimeVersion.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ContainerRuntimeVersion.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["container.runtime.version"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntimeVersion.Exclude)
+	if mbc.ResourceAttributes.ContainerRuntimeVersion.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.runtime.version"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntimeVersion.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sContainerName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.Include)
+	if mbc.ResourceAttributes.K8sContainerName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sContainerName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.Exclude)
+	if mbc.ResourceAttributes.K8sContainerName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.container.status.last_terminated_reason"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.Include)
+	if mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.container.status.last_terminated_reason"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.container.status.last_terminated_reason"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.Exclude)
+	if mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.container.status.last_terminated_reason"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sCronjobName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.cronjob.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sCronjobName.Include)
+	if mbc.ResourceAttributes.K8sCronjobName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.cronjob.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sCronjobName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sCronjobName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.cronjob.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sCronjobName.Exclude)
+	if mbc.ResourceAttributes.K8sCronjobName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.cronjob.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sCronjobName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sCronjobUID.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.cronjob.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sCronjobUID.Include)
+	if mbc.ResourceAttributes.K8sCronjobUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.cronjob.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sCronjobUID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sCronjobUID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.cronjob.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sCronjobUID.Exclude)
+	if mbc.ResourceAttributes.K8sCronjobUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.cronjob.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sCronjobUID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sDaemonsetName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.daemonset.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDaemonsetName.Include)
+	if mbc.ResourceAttributes.K8sDaemonsetName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.daemonset.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDaemonsetName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sDaemonsetName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.daemonset.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDaemonsetName.Exclude)
+	if mbc.ResourceAttributes.K8sDaemonsetName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.daemonset.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDaemonsetName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sDaemonsetUID.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.daemonset.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDaemonsetUID.Include)
+	if mbc.ResourceAttributes.K8sDaemonsetUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.daemonset.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDaemonsetUID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sDaemonsetUID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.daemonset.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDaemonsetUID.Exclude)
+	if mbc.ResourceAttributes.K8sDaemonsetUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.daemonset.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDaemonsetUID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sDeploymentName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.deployment.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDeploymentName.Include)
+	if mbc.ResourceAttributes.K8sDeploymentName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.deployment.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDeploymentName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sDeploymentName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.deployment.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDeploymentName.Exclude)
+	if mbc.ResourceAttributes.K8sDeploymentName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.deployment.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDeploymentName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sDeploymentUID.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.deployment.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDeploymentUID.Include)
+	if mbc.ResourceAttributes.K8sDeploymentUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.deployment.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDeploymentUID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sDeploymentUID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.deployment.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDeploymentUID.Exclude)
+	if mbc.ResourceAttributes.K8sDeploymentUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.deployment.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sDeploymentUID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sHpaName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.hpa.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaName.Include)
+	if mbc.ResourceAttributes.K8sHpaName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.hpa.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sHpaName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.hpa.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaName.Exclude)
+	if mbc.ResourceAttributes.K8sHpaName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.hpa.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sHpaUID.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.hpa.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaUID.Include)
+	if mbc.ResourceAttributes.K8sHpaUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.hpa.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaUID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sHpaUID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.hpa.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaUID.Exclude)
+	if mbc.ResourceAttributes.K8sHpaUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.hpa.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sHpaUID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sJobName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.job.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sJobName.Include)
+	if mbc.ResourceAttributes.K8sJobName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.job.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sJobName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sJobName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.job.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sJobName.Exclude)
+	if mbc.ResourceAttributes.K8sJobName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.job.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sJobName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sJobUID.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.job.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sJobUID.Include)
+	if mbc.ResourceAttributes.K8sJobUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.job.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sJobUID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sJobUID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.job.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sJobUID.Exclude)
+	if mbc.ResourceAttributes.K8sJobUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.job.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sJobUID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sKubeletVersion.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.kubelet.version"] = filter.CreateFilter(mbc.ResourceAttributes.K8sKubeletVersion.Include)
+	if mbc.ResourceAttributes.K8sKubeletVersion.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.kubelet.version"] = filter.CreateFilter(mbc.ResourceAttributes.K8sKubeletVersion.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sKubeletVersion.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.kubelet.version"] = filter.CreateFilter(mbc.ResourceAttributes.K8sKubeletVersion.Exclude)
+	if mbc.ResourceAttributes.K8sKubeletVersion.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.kubelet.version"] = filter.CreateFilter(mbc.ResourceAttributes.K8sKubeletVersion.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sNamespaceName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.Include)
+	if mbc.ResourceAttributes.K8sNamespaceName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sNamespaceName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.Exclude)
+	if mbc.ResourceAttributes.K8sNamespaceName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sNamespaceUID.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.namespace.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceUID.Include)
+	if mbc.ResourceAttributes.K8sNamespaceUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.namespace.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceUID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sNamespaceUID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.namespace.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceUID.Exclude)
+	if mbc.ResourceAttributes.K8sNamespaceUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.namespace.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceUID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sNodeName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeName.Include)
+	if mbc.ResourceAttributes.K8sNodeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sNodeName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeName.Exclude)
+	if mbc.ResourceAttributes.K8sNodeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sNodeUID.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.node.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeUID.Include)
+	if mbc.ResourceAttributes.K8sNodeUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.node.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeUID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sNodeUID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.node.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeUID.Exclude)
+	if mbc.ResourceAttributes.K8sNodeUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.node.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeUID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sPodName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.Include)
+	if mbc.ResourceAttributes.K8sPodName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sPodName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.Exclude)
+	if mbc.ResourceAttributes.K8sPodName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sPodQosClass.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.pod.qos_class"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodQosClass.Include)
+	if mbc.ResourceAttributes.K8sPodQosClass.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.pod.qos_class"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodQosClass.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sPodQosClass.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.pod.qos_class"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodQosClass.Exclude)
+	if mbc.ResourceAttributes.K8sPodQosClass.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.pod.qos_class"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodQosClass.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sPodUID.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.Include)
+	if mbc.ResourceAttributes.K8sPodUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sPodUID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.Exclude)
+	if mbc.ResourceAttributes.K8sPodUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sReplicasetName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.replicaset.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicasetName.Include)
+	if mbc.ResourceAttributes.K8sReplicasetName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.replicaset.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicasetName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sReplicasetName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.replicaset.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicasetName.Exclude)
+	if mbc.ResourceAttributes.K8sReplicasetName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.replicaset.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicasetName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sReplicasetUID.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.replicaset.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicasetUID.Include)
+	if mbc.ResourceAttributes.K8sReplicasetUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.replicaset.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicasetUID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sReplicasetUID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.replicaset.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicasetUID.Exclude)
+	if mbc.ResourceAttributes.K8sReplicasetUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.replicaset.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicasetUID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sReplicationcontrollerName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.replicationcontroller.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicationcontrollerName.Include)
+	if mbc.ResourceAttributes.K8sReplicationcontrollerName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.replicationcontroller.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicationcontrollerName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sReplicationcontrollerName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.replicationcontroller.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicationcontrollerName.Exclude)
+	if mbc.ResourceAttributes.K8sReplicationcontrollerName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.replicationcontroller.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicationcontrollerName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sReplicationcontrollerUID.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.replicationcontroller.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicationcontrollerUID.Include)
+	if mbc.ResourceAttributes.K8sReplicationcontrollerUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.replicationcontroller.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicationcontrollerUID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sReplicationcontrollerUID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.replicationcontroller.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicationcontrollerUID.Exclude)
+	if mbc.ResourceAttributes.K8sReplicationcontrollerUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.replicationcontroller.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicationcontrollerUID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sResourcequotaName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.resourcequota.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sResourcequotaName.Include)
+	if mbc.ResourceAttributes.K8sResourcequotaName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.resourcequota.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sResourcequotaName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sResourcequotaName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.resourcequota.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sResourcequotaName.Exclude)
+	if mbc.ResourceAttributes.K8sResourcequotaName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.resourcequota.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sResourcequotaName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sResourcequotaUID.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.resourcequota.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sResourcequotaUID.Include)
+	if mbc.ResourceAttributes.K8sResourcequotaUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.resourcequota.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sResourcequotaUID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sResourcequotaUID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.resourcequota.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sResourcequotaUID.Exclude)
+	if mbc.ResourceAttributes.K8sResourcequotaUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.resourcequota.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sResourcequotaUID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sStatefulsetName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.statefulset.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sStatefulsetName.Include)
+	if mbc.ResourceAttributes.K8sStatefulsetName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.statefulset.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sStatefulsetName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sStatefulsetName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.statefulset.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sStatefulsetName.Exclude)
+	if mbc.ResourceAttributes.K8sStatefulsetName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.statefulset.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sStatefulsetName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sStatefulsetUID.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.statefulset.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sStatefulsetUID.Include)
+	if mbc.ResourceAttributes.K8sStatefulsetUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.statefulset.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sStatefulsetUID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sStatefulsetUID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.statefulset.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sStatefulsetUID.Exclude)
+	if mbc.ResourceAttributes.K8sStatefulsetUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.statefulset.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sStatefulsetUID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.OpenshiftClusterquotaName.Include != nil {
-		mb.resourceAttributeIncludeFilter["openshift.clusterquota.name"] = filter.CreateFilter(mbc.ResourceAttributes.OpenshiftClusterquotaName.Include)
+	if mbc.ResourceAttributes.OpenshiftClusterquotaName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["openshift.clusterquota.name"] = filter.CreateFilter(mbc.ResourceAttributes.OpenshiftClusterquotaName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.OpenshiftClusterquotaName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["openshift.clusterquota.name"] = filter.CreateFilter(mbc.ResourceAttributes.OpenshiftClusterquotaName.Exclude)
+	if mbc.ResourceAttributes.OpenshiftClusterquotaName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["openshift.clusterquota.name"] = filter.CreateFilter(mbc.ResourceAttributes.OpenshiftClusterquotaName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.OpenshiftClusterquotaUID.Include != nil {
-		mb.resourceAttributeIncludeFilter["openshift.clusterquota.uid"] = filter.CreateFilter(mbc.ResourceAttributes.OpenshiftClusterquotaUID.Include)
+	if mbc.ResourceAttributes.OpenshiftClusterquotaUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["openshift.clusterquota.uid"] = filter.CreateFilter(mbc.ResourceAttributes.OpenshiftClusterquotaUID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.OpenshiftClusterquotaUID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["openshift.clusterquota.uid"] = filter.CreateFilter(mbc.ResourceAttributes.OpenshiftClusterquotaUID.Exclude)
+	if mbc.ResourceAttributes.OpenshiftClusterquotaUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["openshift.clusterquota.uid"] = filter.CreateFilter(mbc.ResourceAttributes.OpenshiftClusterquotaUID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.OsDescription.Include != nil {
-		mb.resourceAttributeIncludeFilter["os.description"] = filter.CreateFilter(mbc.ResourceAttributes.OsDescription.Include)
+	if mbc.ResourceAttributes.OsDescription.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["os.description"] = filter.CreateFilter(mbc.ResourceAttributes.OsDescription.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.OsDescription.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["os.description"] = filter.CreateFilter(mbc.ResourceAttributes.OsDescription.Exclude)
+	if mbc.ResourceAttributes.OsDescription.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["os.description"] = filter.CreateFilter(mbc.ResourceAttributes.OsDescription.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.OsType.Include != nil {
-		mb.resourceAttributeIncludeFilter["os.type"] = filter.CreateFilter(mbc.ResourceAttributes.OsType.Include)
+	if mbc.ResourceAttributes.OsType.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["os.type"] = filter.CreateFilter(mbc.ResourceAttributes.OsType.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.OsType.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["os.type"] = filter.CreateFilter(mbc.ResourceAttributes.OsType.Exclude)
+	if mbc.ResourceAttributes.OsType.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["os.type"] = filter.CreateFilter(mbc.ResourceAttributes.OsType.MetricsExclude)
 	}
 
 	for _, op := range options {
