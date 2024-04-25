@@ -14,12 +14,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
-type eventHandler interface {
-	run(ctx context.Context, host component.Host) error
-	close(ctx context.Context) error
-	setDataConsumer(dataConsumer dataConsumer)
-}
-
 type hubWrapper interface {
 	GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error)
 	Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (listerHandleWrapper, error)
@@ -55,9 +49,6 @@ type eventhubHandler struct {
 	settings     receiver.CreateSettings
 	cancel       context.CancelFunc
 }
-
-// Implement eventHandler Interface
-var _ eventHandler = (*eventhubHandler)(nil)
 
 func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	ctx, h.cancel = context.WithCancel(ctx)

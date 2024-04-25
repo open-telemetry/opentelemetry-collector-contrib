@@ -611,6 +611,12 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			resource:  resourceWithOnlyServiceAttrs,
 			timestamp: testdata.TestMetricStartTimestamp,
 		},
+		{
+			// If there's no timestamp, target_info shouldn't be generated, since we don't know when the write is from.
+			desc:      "with resource, with service attributes, without timestamp",
+			resource:  resourceWithServiceAttrs,
+			timestamp: 0,
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			converter := newPrometheusConverter()
