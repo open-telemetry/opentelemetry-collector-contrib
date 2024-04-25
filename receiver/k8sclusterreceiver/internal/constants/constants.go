@@ -37,3 +37,8 @@ const (
 
 	K8sServicePrefix = "k8s.service."
 )
+
+// Middleware.io constants
+const (
+	MWK8sServiceName = "middleware.io/k8s.service.name"
+)

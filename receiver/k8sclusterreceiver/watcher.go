@@ -27,6 +27,7 @@ import (
 	netv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -36,6 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterrole"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterrolebinding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/deployment"
@@ -297,6 +299,36 @@ func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, informer c
 
 func (rw *resourceWatcher) onAdd(obj interface{}) {
 	rw.waitForInitialInformerSync()
+	switch obj := obj.(type) {
+	case *corev1.Pod:
+		svcList := rw.metadataStore.Get(gvk.Service).List()
+		for _, svcObj := range svcList {
+			svc := svcObj.(*corev1.Service)
+			if svc.Spec.Selector != nil && len(svc.Spec.Selector) > 0 {
+				if labels.Set(svc.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(obj.Labels)) {
+					// only seting the first match ?
+					if obj.ObjectMeta.Labels == nil {
+						obj.ObjectMeta.Labels = make(map[string]string)
+					}
+					obj.Labels[constants.MWK8sServiceName] = svc.Name
+					break
+				}
+			}
+		}
+	case *corev1.Service:
+		podList := rw.metadataStore.Get(gvk.Pod).List()
+		for _, podObj := range podList {
+			pod := podObj.(*corev1.Pod)
+			selector := obj.Spec.Selector
+			if labels.Set(selector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
+				if pod.ObjectMeta.Labels == nil {
+					pod.ObjectMeta.Labels = make(map[string]string)
+				}
+				//set the service name in the pod labels
+				pod.ObjectMeta.Labels[constants.MWK8sServiceName] = obj.Name
+			}
+		}
+	}
 
 	// Sync metadata only if there's at least one destination for it to sent.
 	if !rw.hasDestination() {
@@ -312,6 +344,66 @@ func (rw *resourceWatcher) hasDestination() bool {
 
 func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
 	rw.waitForInitialInformerSync()
+	switch obj := newObj.(type) {
+	case *corev1.Pod:
+		oldLabels := oldObj.(*corev1.Pod).Labels
+		newLabels := obj.Labels
+		if !labels.Equals(labels.Set(oldLabels), labels.Set(newLabels)) {
+			rw.logger.Info("labels changed for pod ", zap.String("name", obj.Name),
+				zap.String("namespace", obj.Namespace), zap.Any("oldLabels", oldLabels),
+				zap.Any("newLabels", newLabels))
+			// Get all the svc list and check if the pod labels match with any of the svc selectors
+			foundSvc := false
+			svcList := rw.metadataStore.Get(gvk.Service).List()
+			for _, svcObj := range svcList {
+				svc := svcObj.(*corev1.Service)
+				if svc.Spec.Selector != nil && len(svc.Spec.Selector) > 0 {
+					if labels.Set(svc.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(newLabels)) {
+						// only seting the first match ?
+						if obj.ObjectMeta.Labels == nil {
+							obj.ObjectMeta.Labels = make(map[string]string)
+						}
+						obj.ObjectMeta.Labels[constants.MWK8sServiceName] = svc.Name
+						foundSvc = true
+						break
+					}
+				}
+			}
+
+			if !foundSvc {
+				_, ok := obj.Labels[constants.MWK8sServiceName]
+				if ok {
+					delete(obj.Labels, constants.MWK8sServiceName)
+				}
+			}
+		}
+
+	case *corev1.Service:
+		oldSelector := oldObj.(*corev1.Service).Spec.Selector
+		newSelector := obj.Spec.Selector
+		if !labels.Equals(labels.Set(oldSelector), labels.Set(newSelector)) {
+			rw.logger.Info("selector changed for service ", zap.String("name", obj.Name),
+				zap.String("namespace", obj.Namespace), zap.Any("oldSelector", oldSelector),
+				zap.Any("newSelector", newSelector))
+			// Get all the pod list and check if the pod labels match with the new svc selectors
+			podList := rw.metadataStore.Get(gvk.Pod).List()
+			for _, podObj := range podList {
+				pod := podObj.(*corev1.Pod)
+				if labels.Set(newSelector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
+					if pod.ObjectMeta.Labels == nil {
+						pod.ObjectMeta.Labels = make(map[string]string)
+					}
+					//set the service name in the pod labes
+					pod.Labels[constants.MWK8sServiceName] = obj.Name
+				} else {
+					svcName, ok := obj.Labels[constants.MWK8sServiceName]
+					if ok && svcName == obj.Name {
+						delete(obj.Labels, constants.MWK8sServiceName)
+					}
+				}
+			}
+		}
+	}
 
 	// Sync metadata only if there's at least one destination for it to sent.
 	if !rw.hasDestination() {
