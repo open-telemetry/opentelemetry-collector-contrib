@@ -672,7 +672,7 @@ func TestTransformer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := context.Background()
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := tc.config.Build(&set)
+			op, err := tc.config.Build(set)
 			require.NoError(t, err)
 			require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
 			defer func() { require.NoError(t, op.Stop()) }()
@@ -702,7 +702,7 @@ func TestTransformer(t *testing.T) {
 		cfg.IsFirstEntry = MatchAll
 		cfg.OutputIDs = []string{"fake"}
 		set := componenttest.NewNopTelemetrySettings()
-		op, err := cfg.Build(&set)
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 		recombine := op.(*Transformer)
 
@@ -739,7 +739,7 @@ func BenchmarkRecombine(b *testing.B) {
 	cfg.OutputIDs = []string{"fake"}
 	cfg.SourceIdentifier = entry.NewAttributeField("file.path")
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(b, err)
 	recombine := op.(*Transformer)
 
@@ -783,7 +783,7 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 	cfg.MaxLogSize = 6
 	cfg.OutputIDs = []string{"fake"}
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(b, err)
 	recombine := op.(*Transformer)
 
@@ -826,7 +826,7 @@ func TestTimeout(t *testing.T) {
 	cfg.OutputIDs = []string{"fake"}
 	cfg.ForceFlushTimeout = 100 * time.Millisecond
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	recombine := op.(*Transformer)
 
@@ -870,7 +870,7 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 	cfg.OutputIDs = []string{"fake"}
 	cfg.ForceFlushTimeout = 100 * time.Millisecond
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	recombine := op.(*Transformer)
 
@@ -924,7 +924,7 @@ func TestSourceBatchDelete(t *testing.T) {
 	cfg.ForceFlushTimeout = 100 * time.Millisecond
 	cfg.MaxLogSize = 6
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	recombine := op.(*Transformer)
 

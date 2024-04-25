@@ -49,7 +49,7 @@ type Config struct {
 }
 
 // Build will build a json array parser operator.
-func (c Config) Build(set *component.TelemetrySettings) (operator.Operator, error) {
+func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	if !jsonArrayParserFeatureGate.IsEnabled() {
 		return nil, fmt.Errorf("%s operator disabled", operatorType)
 	}

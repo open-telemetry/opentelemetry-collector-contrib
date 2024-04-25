@@ -225,6 +225,8 @@ type ResourceAttributesConfig struct {
 	VcenterHostName                  ResourceAttributeConfig `mapstructure:"vcenter.host.name"`
 	VcenterResourcePoolInventoryPath ResourceAttributeConfig `mapstructure:"vcenter.resource_pool.inventory_path"`
 	VcenterResourcePoolName          ResourceAttributeConfig `mapstructure:"vcenter.resource_pool.name"`
+	VcenterVirtualAppInventoryPath   ResourceAttributeConfig `mapstructure:"vcenter.virtual_app.inventory_path"`
+	VcenterVirtualAppName            ResourceAttributeConfig `mapstructure:"vcenter.virtual_app.name"`
 	VcenterVMID                      ResourceAttributeConfig `mapstructure:"vcenter.vm.id"`
 	VcenterVMName                    ResourceAttributeConfig `mapstructure:"vcenter.vm.name"`
 }
@@ -248,6 +250,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		VcenterResourcePoolName: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		VcenterVirtualAppInventoryPath: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		VcenterVirtualAppName: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		VcenterVMID: ResourceAttributeConfig{
 			Enabled: true,

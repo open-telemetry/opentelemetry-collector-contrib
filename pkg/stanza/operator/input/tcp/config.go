@@ -80,7 +80,7 @@ func (c Config) defaultSplitFuncBuilder(enc encoding.Encoding) (bufio.SplitFunc,
 }
 
 // Build will build a tcp input operator.
-func (c Config) Build(set *component.TelemetrySettings) (operator.Operator, error) {
+func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(set)
 	if err != nil {
 		return nil, err
