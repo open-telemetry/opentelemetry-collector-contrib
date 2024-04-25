@@ -1,10 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package adapter
+package helper
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -95,4 +96,103 @@ func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
 	case <-timeoutChan:
 		require.FailNow(t, "Failed to receive log entry before timeout")
 	}
+}
+
+func complexEntries(count int) []*entry.Entry {
+	return complexEntriesForNDifferentHosts(count, 1)
+}
+
+func complexEntry() *entry.Entry {
+	e := entry.New()
+	e.Severity = entry.Error
+	e.Resource = map[string]any{
+		"bool":   true,
+		"int":    123,
+		"double": 12.34,
+		"string": "hello",
+		"object": map[string]any{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+		},
+	}
+	e.Attributes = map[string]any{
+		"bool":   true,
+		"int":    123,
+		"double": 12.34,
+		"string": "hello",
+		"object": map[string]any{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+		},
+	}
+	e.Body = map[string]any{
+		"bool":   true,
+		"int":    123,
+		"double": 12.34,
+		"string": "hello",
+		// "bytes":  []byte("asdf"),
+		"object": map[string]any{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+			// "bytes":  []byte("asdf"),
+			"object": map[string]any{
+				"bool": true,
+				"int":  123,
+				// "double": 12.34,
+				"string": "hello",
+				// "bytes":  []byte("asdf"),
+			},
+		},
+	}
+	return e
+}
+
+func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
+	ret := make([]*entry.Entry, count)
+	for i := 0; i < count; i++ {
+		e := entry.New()
+		e.Severity = entry.Error
+		e.Resource = map[string]any{
+			"host":   fmt.Sprintf("host-%d", i%n),
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+			"object": map[string]any{
+				"bool":   true,
+				"int":    123,
+				"double": 12.34,
+				"string": "hello",
+			},
+		}
+		e.Body = map[string]any{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+			"bytes":  []byte("asdf"),
+			"object": map[string]any{
+				"bool":   true,
+				"int":    123,
+				"double": 12.34,
+				"string": "hello",
+				"bytes":  []byte("asdf"),
+				"object": map[string]any{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+					"bytes":  []byte("asdf"),
+				},
+			},
+		}
+		ret[i] = e
+	}
+	return ret
 }

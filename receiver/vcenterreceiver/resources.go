@@ -11,12 +11,15 @@ import (
 )
 
 func (v *vcenterMetricScraper) createVMResourceBuilder(
+	dcName string,
 	vm mo.VirtualMachine,
 	hs mo.HostSystem,
 	compute *object.ComputeResource,
 	rp *object.ResourcePool,
+	vApp *object.VirtualApp,
 ) *metadata.ResourceBuilder {
 	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterDatacenterName(dcName)
 	rb.SetVcenterVMName(vm.Summary.Config.Name)
 	rb.SetVcenterVMID(vm.Config.InstanceUuid)
 	if compute.Reference().Type == "ClusterComputeResource" {
@@ -26,6 +29,10 @@ func (v *vcenterMetricScraper) createVMResourceBuilder(
 	if rp != nil && rp.Name() != "" {
 		rb.SetVcenterResourcePoolName(rp.Name())
 		rb.SetVcenterResourcePoolInventoryPath(rp.InventoryPath)
+	}
+	if vApp != nil && vApp.Name() != "" {
+		rb.SetVcenterVirtualAppName(vApp.Name())
+		rb.SetVcenterVirtualAppInventoryPath(vApp.InventoryPath)
 	}
 	return rb
 }
