@@ -48,7 +48,7 @@ func (h handler) OnUpdate(oldObj, newObj any) {
 	case *corev1.Endpoints:
 		epRemove := convertToEndpoints(oldEps)
 		oldEpRemoveMap :=map[string]bool{}
-                for _,ep:=range EpRemove {
+                for _,ep:=range epRemove {
                     oldEpRemoveMap[ep]=true
                 }
 		newEps, ok := newObj.(*corev1.Endpoints)
