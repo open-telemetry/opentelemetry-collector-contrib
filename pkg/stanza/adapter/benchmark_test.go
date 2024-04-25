@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -164,8 +163,8 @@ type BenchOpConfig struct {
 }
 
 // Build will build a noop operator.
-func (c BenchOpConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(logger)
+func (c BenchOpConfig) Build(set component.TelemetrySettings) (operator.Operator, error) {
+	inputOperator, err := c.InputConfig.Build(set)
 	if err != nil {
 		return nil, err
 	}

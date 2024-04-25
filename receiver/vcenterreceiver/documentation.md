@@ -466,9 +466,12 @@ The memory utilization of the VM.
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | vcenter.cluster.name | The name of the vCenter Cluster. | Any Str | true |
+| vcenter.datacenter.name | The name of the vCenter datacenter. | Any Str | false |
 | vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true |
 | vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true |
 | vcenter.resource_pool.inventory_path | The inventory path of the resource pool. | Any Str | true |
 | vcenter.resource_pool.name | The name of the resource pool. | Any Str | true |
+| vcenter.virtual_app.inventory_path | The inventory path of the vApp. | Any Str | false |
+| vcenter.virtual_app.name | The name of the vApp. | Any Str | false |
 | vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true |
 | vcenter.vm.name | The name of the virtual machine. | Any Str | true |

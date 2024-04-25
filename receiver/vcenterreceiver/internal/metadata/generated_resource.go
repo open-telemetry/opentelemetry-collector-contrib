@@ -28,6 +28,13 @@ func (rb *ResourceBuilder) SetVcenterClusterName(val string) {
 	}
 }
 
+// SetVcenterDatacenterName sets provided value as "vcenter.datacenter.name" attribute.
+func (rb *ResourceBuilder) SetVcenterDatacenterName(val string) {
+	if rb.config.VcenterDatacenterName.Enabled {
+		rb.res.Attributes().PutStr("vcenter.datacenter.name", val)
+	}
+}
+
 // SetVcenterDatastoreName sets provided value as "vcenter.datastore.name" attribute.
 func (rb *ResourceBuilder) SetVcenterDatastoreName(val string) {
 	if rb.config.VcenterDatastoreName.Enabled {
@@ -53,6 +60,20 @@ func (rb *ResourceBuilder) SetVcenterResourcePoolInventoryPath(val string) {
 func (rb *ResourceBuilder) SetVcenterResourcePoolName(val string) {
 	if rb.config.VcenterResourcePoolName.Enabled {
 		rb.res.Attributes().PutStr("vcenter.resource_pool.name", val)
+	}
+}
+
+// SetVcenterVirtualAppInventoryPath sets provided value as "vcenter.virtual_app.inventory_path" attribute.
+func (rb *ResourceBuilder) SetVcenterVirtualAppInventoryPath(val string) {
+	if rb.config.VcenterVirtualAppInventoryPath.Enabled {
+		rb.res.Attributes().PutStr("vcenter.virtual_app.inventory_path", val)
+	}
+}
+
+// SetVcenterVirtualAppName sets provided value as "vcenter.virtual_app.name" attribute.
+func (rb *ResourceBuilder) SetVcenterVirtualAppName(val string) {
+	if rb.config.VcenterVirtualAppName.Enabled {
+		rb.res.Attributes().PutStr("vcenter.virtual_app.name", val)
 	}
 }
 
