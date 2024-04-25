@@ -19,25 +19,53 @@ This receiver reads logs and trace data from [Azure Blob Storage](https://azure.
 
 The following settings are required:
 
-- `connection_string:` (no default): Azure Blob Storage connection key, which can be found in the Azure Blob Storage resource on the Azure Portal.
 - `event_hub:`
   `  endpoint:` (no default): Azure Event Hub endpoint triggering on the `Blob Create` event 
 
 The following settings can be optionally configured:
 
+- `auth` (default = connection_string): Specifies the used authentication method. Supported values are `connection_string`, `service_principal`.
+- `cloud` (default = "AzureCloud"): defines which Azure cloud to use when using the `service_principal` authentication method. Either `AzureCloud` or `AzureUSGovernment`
 - `logs:`
   `  container_name:` (default = "logs"): Name of the blob container with the logs
 - `traces:`
   `  container_name:` (default = "traces"): Name of the blob container with the traces
 
-Example:
+Authenticating using a connection string requires following additional settings:
+
+- `connection_string:` Azure Blob Storage connection key, which can be found in the Azure Blob Storage resource on the Azure Portal.
+
+Authenticating using service principal requires following additional settings:
+
+- `tenant_id`
+- `client_id`
+- `client_secret`
+
+### Example Configurations
+
+Using connection string for authentication:
 
 ```yaml
 receivers:
   azureblob:
     connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
     event_hub:
-      endpoint: Endpoint=sb://oteldata.servicebus.windows.net/;SharedAccessKeyName=otelhubbpollicy;SharedAccessKey=mPJVubIK5dJ6mLfZo1ucsdkLysLSQ6N7kddvsIcmoEs=;EntityPath=otellhub    
+      endpoint: Endpoint=sb://oteldata.servicebus.windows.net/;SharedAccessKeyName=otelhubbpollicy;SharedAccessKey=mPJVubIK5dJ6mLfZo1ucsdkLysLSQ6N7kddvsIcmoEs=;EntityPath=otellhub
+```
+
+Using Service Principal for authentication:
+
+```yaml
+receivers:
+  azureblob:
+    auth: service_principal
+    subscription_id: "${subscription_id}"
+    tenant_id: "${tenant_id}"
+    client_id: "${client_id}"
+    client_secret: "${env:CLIENT_SECRET}"
+    storage_account_url: https://accountName.blob.core.windows.net
+    event_hub:
+      endpoint: Endpoint=sb://oteldata.servicebus.windows.net/;SharedAccessKeyName=otelhubbpollicy;SharedAccessKey=mPJVubIK5dJ6mLfZo1ucsdkLysLSQ6N7kddvsIcmoEs=;EntityPath=otellhub
 ```
 
 The receiver subscribes [on the events](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-blob-event-overview) published by Azure Blob Storage and handled by Azure Event Hub. When it receives `Blob Create` event, it reads the logs or traces from a corresponding blob and deletes it after processing.
