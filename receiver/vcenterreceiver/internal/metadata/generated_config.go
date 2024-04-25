@@ -193,9 +193,14 @@ func DefaultMetricsConfig() MetricsConfig {
 
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
-	Enabled bool            `mapstructure:"enabled"`
-	Include []filter.Config `mapstructure:"include"`
-	Exclude []filter.Config `mapstructure:"exclude"`
+	Enabled bool `mapstructure:"enabled"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
 
 	enabledSetByUser bool
 }
@@ -215,6 +220,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 // ResourceAttributesConfig provides config for vcenter resource attributes.
 type ResourceAttributesConfig struct {
 	VcenterClusterName               ResourceAttributeConfig `mapstructure:"vcenter.cluster.name"`
+	VcenterDatacenterName            ResourceAttributeConfig `mapstructure:"vcenter.datacenter.name"`
 	VcenterDatastoreName             ResourceAttributeConfig `mapstructure:"vcenter.datastore.name"`
 	VcenterHostName                  ResourceAttributeConfig `mapstructure:"vcenter.host.name"`
 	VcenterResourcePoolInventoryPath ResourceAttributeConfig `mapstructure:"vcenter.resource_pool.inventory_path"`
@@ -227,6 +233,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		VcenterClusterName: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		VcenterDatacenterName: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		VcenterDatastoreName: ResourceAttributeConfig{
 			Enabled: true,

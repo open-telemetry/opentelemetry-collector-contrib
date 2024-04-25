@@ -361,11 +361,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.SSHEndpoint.Include != nil {
-		mb.resourceAttributeIncludeFilter["ssh.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.SSHEndpoint.Include)
+	if mbc.ResourceAttributes.SSHEndpoint.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["ssh.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.SSHEndpoint.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.SSHEndpoint.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["ssh.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.SSHEndpoint.Exclude)
+	if mbc.ResourceAttributes.SSHEndpoint.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["ssh.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.SSHEndpoint.MetricsExclude)
 	}
 
 	for _, op := range options {
