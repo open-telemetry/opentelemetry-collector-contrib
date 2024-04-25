@@ -478,7 +478,7 @@ The memory utilization of the VM.
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| vcenter.cluster.name | The name of the vCenter Cluster. | Any Str | true |
+| vcenter.cluster.name | The name of the vCenter cluster. | Any Str | true |
 | vcenter.datacenter.name | The name of the vCenter datacenter. | Any Str | false |
 | vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true |
 | vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true |

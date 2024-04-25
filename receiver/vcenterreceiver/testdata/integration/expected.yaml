@@ -464,47 +464,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: vcenter.cluster.name
-          value:
-            stringValue: DC0_C0
-        - key: vcenter.datastore.name
-          value:
-            stringValue: LocalDS_0
-    scopeMetrics:
-      - metrics:
-          - description: The amount of space in the datastore.
-            name: vcenter.datastore.disk.usage
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "42949672960"
-                  attributes:
-                    - key: disk_state
-                      value:
-                        stringValue: used
-                  startTimeUnixNano: "1707407684042820000"
-                  timeUnixNano: "1707407733803628000"
-                - asInt: "10952166604800"
-                  attributes:
-                    - key: disk_state
-                      value:
-                        stringValue: available
-                  startTimeUnixNano: "1707407684042820000"
-                  timeUnixNano: "1707407733803628000"
-            unit: By
-          - description: The utilization of the datastore.
-            gauge:
-              dataPoints:
-                - asDouble: 0.390625
-                  startTimeUnixNano: "1707407684042820000"
-                  timeUnixNano: "1707407733803628000"
-            name: vcenter.datastore.disk.utilization
-            unit: "%"
-        scope:
-          name: otelcol/vcenterreceiver
-          version: latest
-  - resource:
-      attributes:
         - key: vcenter.vm.name
           value:
             stringValue: DC0_C0_RP0_VM0

@@ -18,7 +18,7 @@ resource_attributes:
     warnings:
       if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
   vcenter.cluster.name:
-    description: The name of the vCenter Cluster.
+    description: The name of the vCenter cluster.
     enabled: true
     type: string
   vcenter.host.name:

@@ -94,47 +94,6 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: vcenter.cluster.name
-          value:
-            stringValue: Cluster
-        - key: vcenter.datastore.name
-          value:
-            stringValue: vsanDatastore
-    scopeMetrics:
-      - metrics:
-          - description: The amount of space in the datastore.
-            name: vcenter.datastore.disk.usage
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "51693551508648"
-                  attributes:
-                    - key: disk_state
-                      value:
-                        stringValue: available
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "5917763748696"
-                  attributes:
-                    - key: disk_state
-                      value:
-                        stringValue: used
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: By
-          - description: The utilization of the datastore.
-            gauge:
-              dataPoints:
-                - asDouble: 10.271877533539964
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: vcenter.datastore.disk.utilization
-            unit: '%'
-        scope:
-          name: otelcol/vcenterreceiver
-          version: latest
-  - resource:
-      attributes:
         - key: vcenter.datastore.name
           value:
             stringValue: vsanDatastore
