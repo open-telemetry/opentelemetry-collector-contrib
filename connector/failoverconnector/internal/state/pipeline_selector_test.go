@@ -4,6 +4,7 @@
 package state
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
@@ -53,8 +54,6 @@ func TestHandlePipelineError(t *testing.T) {
 }
 
 func TestCurrentPipelineWithRetry(t *testing.T) {
-	var wg sync.WaitGroup
-	done := make(chan struct{})
 	constants := PSConstants{
 		RetryInterval: 50 * time.Millisecond,
 		RetryGap:      10 * time.Millisecond,
@@ -62,17 +61,13 @@ func TestCurrentPipelineWithRetry(t *testing.T) {
 	}
 	pS := NewPipelineSelector(5, constants)
 
-	wg.Add(1)
-	go pS.ListenToChannels(done, &wg)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer func() {
-		close(done)
-		wg.Wait()
+		cancel()
 	}()
 
-	_, ch := pS.SelectedPipeline()
-	ch <- false
-
 	pS.TestSetStableIndex(2)
+	pS.TestRetryPipelines(ctx, constants.RetryInterval, constants.RetryGap)
 
 	require.Eventually(t, func() bool {
 		idx, _ := pS.SelectedPipeline()

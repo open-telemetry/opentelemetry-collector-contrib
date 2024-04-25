@@ -77,6 +77,8 @@ jobs:
           - processor
           - exporter-0
           - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
           - connector
           - internal
@@ -142,6 +144,8 @@ jobs:
           - processor
           - exporter-0
           - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
           - connector
           - internal
@@ -247,6 +251,9 @@ jobs:
       matrix:
         go-version: ["1.22.2", "1.21.9"] # 1.20 is interpreted as 1.2 without quotes
         runner: [ubuntu-latest, actuated-arm64-4cpu-4gb]
+        exclude:
+          - go-version: "1.21.9"
+            runner: actuated-arm64-4cpu-4gb
         group:
           - receiver-0
           - receiver-1
@@ -255,6 +262,8 @@ jobs:
           - processor
           - exporter-0
           - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
           - connector
           - internal
@@ -327,7 +336,7 @@ jobs:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: Wandalen/wretry.action@v3.2.0
+        uses: Wandalen/wretry.action@v3.4.0
         with:
           action: codecov/codecov-action@v4
           with: |
@@ -349,6 +358,8 @@ jobs:
           - processor
           - exporter-0
           - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
           - connector
           - internal

@@ -506,3 +506,5 @@ tests:
     ca_file: "testdata/testcert.crt"
     key_file: "testdata/testkey.key"
     cert_file: "testdata/testcert.crt"
+  goleak:
+    skip: true

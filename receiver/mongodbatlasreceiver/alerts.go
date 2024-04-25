@@ -89,7 +89,7 @@ func newAlertsReceiver(params rcvr.CreateSettings, baseConfig *Config, consumer 
 	if cfg.TLS != nil {
 		var err error
 
-		tlsConfig, err = cfg.TLS.LoadTLSConfigContext(context.Background())
+		tlsConfig, err = cfg.TLS.LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, err
 		}
