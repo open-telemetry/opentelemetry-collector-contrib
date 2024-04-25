@@ -589,11 +589,6 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			},
 		},
 		{
-			desc:      "with resource including unknown_service: java for service.name, and missing service.instance.id resource attribute",
-			resource:  resourceWithOnlyUnknownServiceName,
-			timestamp: testdata.TestMetricStartTimestamp,
-		},
-		{
 			desc:      "with valid resource, with namespace",
 			resource:  resourceWithOnlyServiceName,
 			timestamp: testdata.TestMetricStartTimestamp,

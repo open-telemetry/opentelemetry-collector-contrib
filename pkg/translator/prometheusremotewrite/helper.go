@@ -11,7 +11,6 @@ import (
 	"slices"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -106,10 +105,6 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	ignoreAttrs []string, logOnOverwrite bool, extras ...string) []prompb.Label {
 	resourceAttrs := resource.Attributes()
 	serviceName, haveServiceName := resourceAttrs.Get(conventions.AttributeServiceName)
-	// SDKs operate with a default service name prefixed with "unknown_service", we should treat such values as undefined.
-	if haveServiceName && strings.HasPrefix(serviceName.AsString(), "unknown_service") {
-		haveServiceName = false
-	}
 	instance, haveInstanceID := resourceAttrs.Get(conventions.AttributeServiceInstanceID)
 
 	// Calculate the maximum possible number of labels we could return so we can preallocate l
