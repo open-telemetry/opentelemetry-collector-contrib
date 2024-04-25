@@ -80,7 +80,7 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 		cfg.ListenAddress = ":0"
 
 		set := componenttest.NewNopTelemetrySettings()
-		op, err := cfg.Build(&set)
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
@@ -130,7 +130,7 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		cfg.AddAttributes = true
 
 		set := componenttest.NewNopTelemetrySettings()
-		op, err := cfg.Build(&set)
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
@@ -217,7 +217,7 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 		}
 
 		set := componenttest.NewNopTelemetrySettings()
-		op, err := cfg.Build(&set)
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
@@ -348,7 +348,7 @@ func TestBuild(t *testing.T) {
 			cfg.MaxLogSize = tc.inputBody.MaxLogSize
 			cfg.TLS = tc.inputBody.TLS
 			set := componenttest.NewNopTelemetrySettings()
-			_, err := cfg.Build(&set)
+			_, err := cfg.Build(set)
 			if tc.expectErr {
 				require.Error(t, err)
 				return
@@ -394,7 +394,7 @@ func TestFailToBind(t *testing.T) {
 		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = net.JoinHostPort(ip, strconv.Itoa(port))
 		set := componenttest.NewNopTelemetrySettings()
-		op, err := cfg.Build(&set)
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 		mockOutput := testutil.Operator{}
 		tcpInput := op.(*Input)
@@ -422,7 +422,7 @@ func BenchmarkTCPInput(b *testing.B) {
 	cfg.ListenAddress = ":0"
 
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(b, err)
 
 	fakeOutput := testutil.NewFakeOutput(b)

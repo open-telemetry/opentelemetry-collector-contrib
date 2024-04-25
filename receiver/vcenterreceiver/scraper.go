@@ -44,6 +44,7 @@ type vcenterMetricScraper struct {
 	// map of vm name => compute name
 	vmToComputeMap   map[string]string
 	vmToResourcePool map[string]*object.ResourcePool
+	vmToVirtualApp   map[string]*object.VirtualApp
 }
 
 func newVmwareVcenterScraper(
@@ -59,6 +60,7 @@ func newVmwareVcenterScraper(
 		mb:               metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 		vmToComputeMap:   make(map[string]string),
 		vmToResourcePool: make(map[string]*object.ResourcePool),
+		vmToVirtualApp:   make(map[string]*object.VirtualApp),
 	}
 }
 
@@ -89,6 +91,7 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 	// cleanup so any inventory moves are accounted for
 	v.vmToComputeMap = make(map[string]string)
 	v.vmToResourcePool = make(map[string]*object.ResourcePool)
+	v.vmToVirtualApp = make(map[string]*object.VirtualApp)
 
 	return v.mb.Emit(), err
 }
@@ -115,6 +118,7 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context, datacenter *
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	dcName := datacenter.Name()
+	v.collectVirtualApps(ctx, errs)
 	v.collectResourcePools(ctx, now, dcName, computes, errs)
 	for _, c := range computes {
 		v.collectHosts(ctx, now, dcName, c, errs)
@@ -329,6 +333,32 @@ func (v *vcenterMetricScraper) collectResourcePools(
 	}
 }
 
+func (v *vcenterMetricScraper) collectVirtualApps(
+	ctx context.Context,
+	errs *scrapererror.ScrapeErrors,
+) {
+	vApps, err := v.client.VirtualApps(ctx)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
+	for _, vApp := range vApps {
+		var moVApp mo.VirtualApp
+		err = vApp.Properties(ctx, vApp.Reference(), []string{
+			"name",
+			"vm",
+		}, &moVApp)
+		if err != nil {
+			errs.AddPartial(1, err)
+			continue
+		}
+
+		for _, vmRef := range moVApp.Vm {
+			v.vmToVirtualApp[vmRef.Value] = vApp
+		}
+	}
+}
+
 func (v *vcenterMetricScraper) collectVMs(
 	ctx context.Context,
 	colTime pcommon.Timestamp,
@@ -372,6 +402,9 @@ func (v *vcenterMetricScraper) collectVMs(
 		} else {
 			poweredOnVMs++
 		}
+
+		// vApp may not exist for a VM
+		vApp := v.vmToVirtualApp[vm.Reference().Value]
 
 		// vms are optional without a resource pool
 		rpRef := vm.ResourcePool
@@ -422,7 +455,7 @@ func (v *vcenterMetricScraper) collectVMs(
 
 		perfMetrics := vmPerfMetrics.resultsByMoRef[vm.Reference().Value]
 		v.buildVMMetrics(colTime, vm, hwSum, perfMetrics)
-		rb := v.createVMResourceBuilder(dcName, vm, hwSum, compute, rp)
+		rb := v.createVMResourceBuilder(dcName, vm, hwSum, compute, rp, vApp)
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 

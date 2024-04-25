@@ -131,7 +131,7 @@ func TestBuildAndProcess(t *testing.T) {
 			cfg.OnError = "drop"
 
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(&set)
+			op, err := cfg.Build(set)
 			if tc.expectErr && err != nil {
 				require.Error(t, err)
 				return

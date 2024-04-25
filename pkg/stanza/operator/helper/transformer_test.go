@@ -24,7 +24,7 @@ func TestTransformerConfigMissingBase(t *testing.T) {
 	cfg := NewTransformerConfig("test", "")
 	cfg.OutputIDs = []string{"test-output"}
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := cfg.Build(&set)
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing required `type` field.")
 }
@@ -32,7 +32,7 @@ func TestTransformerConfigMissingBase(t *testing.T) {
 func TestTransformerConfigMissingOutput(t *testing.T) {
 	cfg := NewTransformerConfig("test", "test")
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := cfg.Build(&set)
+	_, err := cfg.Build(set)
 	require.NoError(t, err)
 }
 
@@ -40,14 +40,14 @@ func TestTransformerConfigValid(t *testing.T) {
 	cfg := NewTransformerConfig("test", "test")
 	cfg.OutputIDs = []string{"test-output"}
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := cfg.Build(&set)
+	_, err := cfg.Build(set)
 	require.NoError(t, err)
 }
 
 func TestTransformerOnErrorDefault(t *testing.T) {
 	cfg := NewTransformerConfig("test-id", "test-type")
 	set := componenttest.NewNopTelemetrySettings()
-	transformer, err := cfg.Build(&set)
+	transformer, err := cfg.Build(set)
 	require.NoError(t, err)
 	require.Equal(t, SendOnError, transformer.OnError)
 }
@@ -56,7 +56,7 @@ func TestTransformerOnErrorInvalid(t *testing.T) {
 	cfg := NewTransformerConfig("test", "test")
 	cfg.OnError = "invalid"
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := cfg.Build(&set)
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "operator config has an invalid `on_error` field.")
 }
@@ -64,7 +64,7 @@ func TestTransformerOnErrorInvalid(t *testing.T) {
 func TestTransformerOperatorCanProcess(t *testing.T) {
 	cfg := NewTransformerConfig("test", "test")
 	set := componenttest.NewNopTelemetrySettings()
-	transformer, err := cfg.Build(&set)
+	transformer, err := cfg.Build(set)
 	require.NoError(t, err)
 	require.True(t, transformer.CanProcess())
 }
@@ -325,7 +325,7 @@ func TestTransformerIf(t *testing.T) {
 			cfg.IfExpr = tc.ifExpr
 
 			set := componenttest.NewNopTelemetrySettings()
-			transformer, err := cfg.Build(&set)
+			transformer, err := cfg.Build(set)
 			require.NoError(t, err)
 
 			fake := testutil.NewFakeOutput(t)
@@ -351,7 +351,7 @@ func TestTransformerIf(t *testing.T) {
 		cfg := NewTransformerConfig("test", "test")
 		cfg.IfExpr = "'nonbool'"
 		set := componenttest.NewNopTelemetrySettings()
-		_, err := cfg.Build(&set)
+		_, err := cfg.Build(set)
 		require.Error(t, err)
 	})
 }

@@ -289,7 +289,7 @@ func TestBuildAndProcess(t *testing.T) {
 			cfg.OutputIDs = []string{"fake"}
 			cfg.OnError = "drop"
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(&set)
+			op, err := cfg.Build(set)
 			require.NoError(t, err)
 
 			cp := op.(*Transformer)
