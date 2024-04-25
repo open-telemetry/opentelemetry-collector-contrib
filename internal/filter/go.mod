@@ -1,19 +1,19 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
 
-go 1.21
+go 1.21.0
 
 require (
-	github.com/expr-lang/expr v1.16.4
+	github.com/expr-lang/expr v1.16.5
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.98.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.98.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.98.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.99.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.99.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.99.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.98.1-0.20240416174005-d0f15e2463f8
-	go.opentelemetry.io/collector/confmap v0.98.1-0.20240416174005-d0f15e2463f8
-	go.opentelemetry.io/collector/featuregate v1.5.1-0.20240416174005-d0f15e2463f8
-	go.opentelemetry.io/collector/pdata v1.5.1-0.20240416174005-d0f15e2463f8
-	go.opentelemetry.io/collector/semconv v0.98.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/component v0.99.0
+	go.opentelemetry.io/collector/confmap v0.99.0
+	go.opentelemetry.io/collector/featuregate v1.6.0
+	go.opentelemetry.io/collector/pdata v1.6.0
+	go.opentelemetry.io/collector/semconv v0.99.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -44,7 +44,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.52.3 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.98.1-0.20240416174005-d0f15e2463f8 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.99.0 // indirect
 	go.opentelemetry.io/otel v1.25.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.47.0 // indirect
 	go.opentelemetry.io/otel/metric v1.25.0 // indirect

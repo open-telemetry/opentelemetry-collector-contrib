@@ -9,15 +9,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func newTestParser(t *testing.T) *Parser {
 	cfg := NewConfigWithID("test")
-	op, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	return op.(*Parser)
 }
@@ -31,7 +32,8 @@ func TestInit(t *testing.T) {
 func TestParserBuildFailure(t *testing.T) {
 	cfg := NewConfigWithID("test")
 	cfg.OnError = "invalid_on_error"
-	_, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
@@ -68,7 +70,8 @@ func TestProcess(t *testing.T) {
 			"default",
 			func() (operator.Operator, error) {
 				cfg := NewConfigWithID("test_id")
-				return cfg.Build(testutil.Logger(t))
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
 			},
 			&entry.Entry{
 				Body: "https://google.com:443/path?user=dev",
@@ -94,7 +97,8 @@ func TestProcess(t *testing.T) {
 				cfg := NewConfigWithID("test_id")
 				cfg.ParseFrom = entry.NewBodyField("url")
 				cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField("url2")}
-				return cfg.Build(testutil.Logger(t))
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
 			},
 			&entry.Entry{
 				Body: map[string]any{
@@ -123,7 +127,8 @@ func TestProcess(t *testing.T) {
 			func() (operator.Operator, error) {
 				cfg := NewConfigWithID("test_id")
 				cfg.ParseFrom = entry.NewBodyField("url")
-				return cfg.Build(testutil.Logger(t))
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
 			},
 			&entry.Entry{
 				Body: map[string]any{
@@ -490,7 +495,8 @@ func TestBuildParserURL(t *testing.T) {
 
 	t.Run("BasicConfig", func(t *testing.T) {
 		c := newBasicParser()
-		_, err := c.Build(testutil.Logger(t))
+		set := componenttest.NewNopTelemetrySettings()
+		_, err := c.Build(set)
 		require.NoError(t, err)
 	})
 }

@@ -1,18 +1,18 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/IBM/sarama v1.43.1
 	github.com/google/go-cmp v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.98.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.99.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.98.1-0.20240416174005-d0f15e2463f8
-	go.opentelemetry.io/collector/config/configtls v0.98.1-0.20240416174005-d0f15e2463f8
-	go.opentelemetry.io/collector/confmap v0.98.1-0.20240416174005-d0f15e2463f8
-	go.opentelemetry.io/collector/consumer v0.98.1-0.20240416174005-d0f15e2463f8
-	go.opentelemetry.io/collector/pdata v1.5.1-0.20240416174005-d0f15e2463f8
-	go.opentelemetry.io/collector/receiver v0.98.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/component v0.99.0
+	go.opentelemetry.io/collector/config/configtls v0.99.0
+	go.opentelemetry.io/collector/confmap v0.99.0
+	go.opentelemetry.io/collector/consumer v0.99.0
+	go.opentelemetry.io/collector/pdata v1.6.0
+	go.opentelemetry.io/collector/receiver v0.99.0
 	go.opentelemetry.io/otel/metric v1.25.0
 	go.opentelemetry.io/otel/trace v1.25.0
 	go.uber.org/goleak v1.3.0
@@ -21,7 +21,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.51.21 // indirect
+	github.com/aws/aws-sdk-go v1.51.27 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -64,9 +64,9 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector v0.98.1-0.20240416174005-d0f15e2463f8 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.5.1-0.20240416174005-d0f15e2463f8 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.98.1-0.20240416174005-d0f15e2463f8 // indirect
+	go.opentelemetry.io/collector v0.99.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.6.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.99.0 // indirect
 	go.opentelemetry.io/otel v1.25.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.47.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.25.0 // indirect

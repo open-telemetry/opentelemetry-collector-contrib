@@ -52,6 +52,7 @@ receivers:
   mongodb:
     hosts:
       - endpoint: localhost:27017
+        transport: tcp
     username: otel
     password: ${env:MONGODB_PASSWORD}
     collection_interval: 60s
