@@ -220,7 +220,7 @@ func copyProperties(category string, properties *any, attrs map[string]any) {
 			}
 		}
 		if otelKey, ok := resourceLogKeyToSemConvKey(k, category); ok {
-			attrs[otelKey] = v
+			attrs[otelKey] = normalizeValue(otelKey, v)
 		} else {
 			attrsProps[k] = v
 		}

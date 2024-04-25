@@ -50,7 +50,7 @@ var mappings = map[string]map[string]string{
 		"cacheStatus":         "",
 		"matchedRulesSetName": "",
 		"routeName":           "http.route",
-		"referrer":            "http.request.header.referer",
+		"referer":             "http.request.header.referer",
 		"timeToFirstByte":     "",
 		"errorInfo":           "error.type",
 		"originURL":           "",

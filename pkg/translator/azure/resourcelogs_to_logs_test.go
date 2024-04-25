@@ -466,3 +466,40 @@ func TestUnmarshalLogs(t *testing.T) {
 		})
 	}
 }
+
+func TestFrontDoorAccessLog(t *testing.T) {
+	sut := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	data, err := os.ReadFile(filepath.Join("testdata", "log-frontdooraccesslog.json"))
+	assert.NoError(t, err)
+	assert.NotNil(t, data)
+
+	logs, err := sut.UnmarshalLogs(data)
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "GET", record["http.request.method"])
+	assert.Equal(t, "1.1.0.0", record["network.protocol.version"])
+	assert.Equal(t, "TRACKING_REFERENCE", record["az.service_request_id"])
+	assert.Equal(t, "https://test.net/", record["url.full"])
+	assert.Equal(t, int64(1234), record["http.request.size"])
+	assert.Equal(t, int64(12345), record["http.response.size"])
+	assert.Equal(t, "Mozilla/5.0", record["user_agent.original"])
+	assert.Equal(t, "42.42.42.42", record["client.address"])
+	assert.Equal(t, "0", record["client.port"])
+	assert.Equal(t, "23.23.23.23", record["network.peer.address"])
+	assert.Equal(t, float64(0.23), record["http.server.request.duration"])
+	assert.Equal(t, "https", record["network.protocol.name"])
+	assert.Equal(t, "tls", record["tls.protocol.name"])
+	assert.Equal(t, "1.3", record["tls.protocol.version"])
+	assert.Equal(t, "TLS_AES_256_GCM_SHA384", record["tls.cipher"])
+	assert.Equal(t, "secp384r1", record["tls.curve"])
+	assert.Equal(t, int64(200), record["http.response.status_code"])
+	assert.Equal(t, "REFERER", record["http.request.header.referer"])
+	assert.Equal(t, "NoError", record["error.type"])
+}
