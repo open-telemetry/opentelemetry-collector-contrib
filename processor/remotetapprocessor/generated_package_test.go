@@ -4,8 +4,10 @@ package remotetapprocessor
 
 import (
 	"testing"
+
+	"go.uber.org/goleak"
 )
 
 func TestMain(m *testing.M) {
-	// skipping goleak test as per metadata.yml configuration
+	goleak.VerifyTestMain(m)
 }

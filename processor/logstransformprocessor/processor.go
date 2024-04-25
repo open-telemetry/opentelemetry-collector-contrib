@@ -36,9 +36,9 @@ type logsTransformProcessor struct {
 	shutdownFns   []component.ShutdownFunc
 }
 
-func newProcessor(config *Config, nextConsumer consumer.Logs, logger *zap.Logger) (*logsTransformProcessor, error) {
+func newProcessor(config *Config, nextConsumer consumer.Logs, set component.TelemetrySettings) (*logsTransformProcessor, error) {
 	p := &logsTransformProcessor{
-		logger:   logger,
+		logger:   set.Logger,
 		config:   config,
 		consumer: nextConsumer,
 	}
@@ -49,7 +49,7 @@ func newProcessor(config *Config, nextConsumer consumer.Logs, logger *zap.Logger
 	pipe, err := pipeline.Config{
 		Operators:     baseCfg.Operators,
 		DefaultOutput: p.emitter,
-	}.Build(p.logger.Sugar())
+	}.Build(set)
 	if err != nil {
 		return nil, err
 	}

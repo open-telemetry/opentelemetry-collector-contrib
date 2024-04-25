@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 const testScopeName = "my.logger"
@@ -92,7 +92,8 @@ func TestScopeNameParser(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			parser, err := tc.config.Build(testutil.Logger(t))
+			set := componenttest.NewNopTelemetrySettings()
+			parser, err := tc.config.Build(set)
 			require.NoError(t, err)
 
 			err = parser.Process(context.Background(), tc.input)

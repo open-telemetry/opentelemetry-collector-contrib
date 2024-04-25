@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/valyala/fastjson"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -49,12 +49,12 @@ type Config struct {
 }
 
 // Build will build a json array parser operator.
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	if !jsonArrayParserFeatureGate.IsEnabled() {
 		return nil, fmt.Errorf("%s operator disabled", operatorType)
 	}
 
-	parserOperator, err := c.ParserConfig.Build(logger)
+	parserOperator, err := c.ParserConfig.Build(set)
 	if err != nil {
 		return nil, err
 	}

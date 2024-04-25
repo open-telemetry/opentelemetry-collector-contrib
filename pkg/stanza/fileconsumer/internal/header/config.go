@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -39,7 +40,7 @@ func NewConfig(matchRegex string, metadataOperators []operator.Config, enc encod
 	p, err := pipeline.Config{
 		Operators:     metadataOperators,
 		DefaultOutput: newPipelineOutput(nopLogger),
-	}.Build(nopLogger)
+	}.Build(component.TelemetrySettings{Logger: nopLogger.Desugar()})
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to build pipelines: %w", err)

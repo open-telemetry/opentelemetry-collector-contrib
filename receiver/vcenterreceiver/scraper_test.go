@@ -30,7 +30,28 @@ func TestScrape(t *testing.T) {
 		Password:             mock.MockPassword,
 	}
 
-	testScrape(ctx, t, cfg)
+	testScrape(ctx, t, cfg, "expected.yaml")
+}
+
+func TestScrapeConfigsEnabled(t *testing.T) {
+	ctx := context.Background()
+	mockServer := mock.MockServer(t, false)
+	defer mockServer.Close()
+
+	optConfigs := metadata.DefaultMetricsBuilderConfig()
+	optConfigs.ResourceAttributes.VcenterDatacenterName.Enabled = true
+	optConfigs.ResourceAttributes.VcenterVirtualAppName.Enabled = true
+	optConfigs.ResourceAttributes.VcenterVirtualAppInventoryPath.Enabled = true
+	optConfigs.Metrics.VcenterVMMemoryUtilization.Enabled = true
+
+	cfg := &Config{
+		MetricsBuilderConfig: optConfigs,
+		Endpoint:             mockServer.URL,
+		Username:             mock.MockUsername,
+		Password:             mock.MockPassword,
+	}
+
+	testScrape(ctx, t, cfg, "expected-all-enabled.yaml")
 }
 
 func TestScrape_TLS(t *testing.T) {
@@ -48,17 +69,17 @@ func TestScrape_TLS(t *testing.T) {
 	cfg.Insecure = true
 	cfg.InsecureSkipVerify = true
 
-	testScrape(ctx, t, cfg)
+	testScrape(ctx, t, cfg, "expected.yaml")
 }
 
-func testScrape(ctx context.Context, t *testing.T, cfg *Config) {
+func testScrape(ctx context.Context, t *testing.T, cfg *Config, fileName string) {
 	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, receivertest.NewNopCreateSettings())
 
 	metrics, err := scraper.scrape(ctx)
 	require.NoError(t, err)
 	require.NotEqual(t, metrics.MetricCount(), 0)
 
-	goldenPath := filepath.Join("testdata", "metrics", "expected.yaml")
+	goldenPath := filepath.Join("testdata", "metrics", fileName)
 	expectedMetrics, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
 
