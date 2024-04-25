@@ -80,8 +80,8 @@ func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList,
 		Labels:                    getLabelsMap(labels),
 		PodsMetadata:              podsMetadata,
 		DetailedPVCResourceSetter: detailedPVCResourceSetter,
-		podResources:              make(map[string]resources, 0),
-		containerResources:        make(map[string]resources, 0),
+		podResources:              make(map[string]resources),
+		containerResources:        make(map[string]resources),
 	}
 
 	if podsMetadata != nil {

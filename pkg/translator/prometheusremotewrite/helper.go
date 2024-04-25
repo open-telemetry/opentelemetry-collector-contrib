@@ -512,7 +512,7 @@ func (c *prometheusConverter) addTimeSeriesIfNeeded(lbls []prompb.Label, startTi
 
 // addResourceTargetInfo converts the resource to the target info metric.
 func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp, converter *prometheusConverter) {
-	if settings.DisableTargetInfo {
+	if settings.DisableTargetInfo || timestamp == 0 {
 		return
 	}
 

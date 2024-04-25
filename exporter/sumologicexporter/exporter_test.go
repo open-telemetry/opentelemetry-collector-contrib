@@ -98,7 +98,7 @@ func TestAllFailed(t *testing.T) {
 	logs := logRecordsToLogs(exampleTwoLogs())
 
 	err := test.exp.pushLogsData(context.Background(), logs)
-	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
+	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 
 	var partial consumererror.Logs
 	require.True(t, errors.As(err, &partial))
@@ -131,7 +131,7 @@ func TestPartiallyFailed(t *testing.T) {
 	expected := logRecordsToLogs(records[:1])
 
 	err = test.exp.pushLogsData(context.Background(), logs)
-	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
+	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 
 	var partial consumererror.Logs
 	require.True(t, errors.As(err, &partial))
@@ -224,14 +224,14 @@ func TestPushFailedBatch(t *testing.T) {
 	}
 
 	err := test.exp.pushLogsData(context.Background(), logs)
-	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
+	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 }
 
 func TestAllMetricsSuccess(t *testing.T) {
 	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
 		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
-			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000
+			expected := `test.metric.data{test="test_value",test2="second_value"} 14500 1605534165000
 gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
 gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
 			assert.Equal(t, expected, body)
@@ -256,7 +256,7 @@ func TestAllMetricsFailed(t *testing.T) {
 			w.WriteHeader(500)
 
 			body := extractBody(t, req)
-			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000
+			expected := `test.metric.data{test="test_value",test2="second_value"} 14500 1605534165000
 gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
 gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
 			assert.Equal(t, expected, body)
@@ -272,7 +272,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 	})
 
 	err := test.exp.pushMetricsData(context.Background(), metrics)
-	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
+	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 
 	var partial consumererror.Metrics
 	require.True(t, errors.As(err, &partial))
@@ -285,7 +285,7 @@ func TestMetricsPartiallyFailed(t *testing.T) {
 			w.WriteHeader(500)
 
 			body := extractBody(t, req)
-			expected := `test_metric_data{test="test_value",test2="second_value"} 14500 1605534165000`
+			expected := `test.metric.data{test="test_value",test2="second_value"} 14500 1605534165000`
 			assert.Equal(t, expected, body)
 			assert.Equal(t, "application/vnd.sumologic.prometheus", req.Header.Get("Content-Type"))
 		},
@@ -309,7 +309,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 	expected := metricPairToMetrics(records[:1])
 
 	err := test.exp.pushMetricsData(context.Background(), metrics)
-	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
+	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 
 	var partial consumererror.Metrics
 	require.True(t, errors.As(err, &partial))
@@ -343,7 +343,7 @@ func TestMetricsDifferentMetadata(t *testing.T) {
 			w.WriteHeader(500)
 
 			body := extractBody(t, req)
-			expected := `test_metric_data{test="test_value",test2="second_value",key1="value1"} 14500 1605534165000`
+			expected := `test.metric.data{test="test_value",test2="second_value",key1="value1"} 14500 1605534165000`
 			assert.Equal(t, expected, body)
 			assert.Equal(t, "application/vnd.sumologic.prometheus", req.Header.Get("Content-Type"))
 		},
@@ -375,7 +375,7 @@ gauge_metric_name{foo="bar",key2="value2",remote_name="156955",url="http://anoth
 	expected := metricPairToMetrics(records[:1])
 
 	err = test.exp.pushMetricsData(context.Background(), metrics)
-	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
+	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 
 	var partial consumererror.Metrics
 	require.True(t, errors.As(err, &partial))
@@ -418,7 +418,7 @@ func TestPushMetricsFailedBatch(t *testing.T) {
 	}
 
 	err := test.exp.pushMetricsData(context.Background(), metrics)
-	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
+	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 }
 
 func TestGetSignalUrl(t *testing.T) {
