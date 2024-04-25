@@ -160,13 +160,15 @@ func (ddr *datadogReceiver) handleV2Traces(w http.ResponseWriter, req *http.Requ
 	obsCtx := ddr.tReceiver.StartTracesOp(req.Context())
 	tracs := tracerPayload.GetTracerPayloads()
 	if len(tracs) > 0 {
-		otelTraces := toTraces(tracerPayload.GetTracerPayloads()[0], req)
-		errs := ddr.nextConsumer.ConsumeTraces(obsCtx, otelTraces)
-		if errs != nil {
-			http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
-			ddr.params.Logger.Error("Trace consumer errored out")
-		} else {
-			_, _ = w.Write([]byte("OK"))
+		for _, trace := range tracs {
+			otelTraces := toTraces(trace, req)
+			errs := ddr.nextConsumer.ConsumeTraces(obsCtx, otelTraces)
+			if errs != nil {
+				http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
+				ddr.params.Logger.Error("Trace consumer errored out")
+			} else {
+				_, _ = w.Write([]byte("OK"))
+			}
 		}
 	} else {
 		_, _ = w.Write([]byte("OK"))

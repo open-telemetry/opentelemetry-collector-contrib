@@ -85,7 +85,7 @@ func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	// is added as a resource attribute in most systems
 	// now instead of being a span level attribute.
 	groupByService := make(map[string]ptrace.SpanSlice)
-
+	hostName := ""
 	for _, trace := range traces {
 		for _, span := range trace {
 			slice, exist := groupByService[span.Service]
@@ -100,7 +100,7 @@ func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 			newSpan.SetStartTimestamp(pcommon.Timestamp(span.Start))
 			newSpan.SetEndTimestamp(pcommon.Timestamp(span.Start + span.Duration))
 			newSpan.SetParentSpanID(uInt64ToSpanID(span.ParentID))
-			newSpan.SetName(span.Name)
+			newSpan.SetName(span.Resource)
 			newSpan.Status().SetCode(ptrace.StatusCodeOk)
 			newSpan.Attributes().PutStr("dd.span.Resource", span.Resource)
 
@@ -109,7 +109,14 @@ func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 			}
 			newSpan.Attributes().PutStr(attributeDatadogSpanID, strconv.FormatUint(span.SpanID, 10))
 			newSpan.Attributes().PutStr(attributeDatadogTraceID, strconv.FormatUint(span.TraceID, 10))
-			for k, v := range span.GetMeta() {
+			meta := span.GetMeta()
+			if _, ok := meta["db.system"]; ok {
+				newSpan.Attributes().PutStr("db.statement", span.Resource)
+			}
+			if value, ok := meta["_dd.tracer_hostname"]; ok {
+				hostName = value
+			}
+			for k, v := range meta {
 				if k = translateDataDogKeyToOtel(k); len(k) > 0 {
 					newSpan.Attributes().PutStr(k, v)
 				}
@@ -148,6 +155,7 @@ func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 		if mwAPIKey := req.Header.Get("dd-api-key"); mwAPIKey != "" {
 			rs.Resource().Attributes().PutStr("mw.account_key", mwAPIKey)
 		}
+		rs.Resource().Attributes().PutStr("host.name", hostName)
 		in := rs.ScopeSpans().AppendEmpty()
 		in.Scope().SetName("Datadog")
 		in.Scope().SetVersion(payload.TracerVersion)
