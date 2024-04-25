@@ -23,7 +23,7 @@ func TestInit(t *testing.T) {
 func TestDefaultParser(t *testing.T) {
 	traceParserConfig := NewConfig()
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := traceParserConfig.Build(&set)
+	_, err := traceParserConfig.Build(set)
 	require.NoError(t, err)
 }
 
@@ -85,7 +85,7 @@ func TestBuild(t *testing.T) {
 			cfg, err := tc.input()
 			require.NoError(t, err, "expected nil error when running test cases input func")
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(&set)
+			op, err := cfg.Build(set)
 			if tc.expectErr {
 				require.Error(t, err, "expected error while building trace_parser operator")
 				return
@@ -112,7 +112,7 @@ func TestProcess(t *testing.T) {
 			func() (operator.Operator, error) {
 				cfg := NewConfigWithID("test_id")
 				set := componenttest.NewNopTelemetrySettings()
-				return cfg.Build(&set)
+				return cfg.Build(set)
 			},
 			&entry.Entry{
 				Body: "https://google.com:443/path?user=dev",
@@ -132,7 +132,7 @@ func TestProcess(t *testing.T) {
 				cfg.TraceID.ParseFrom = &traceFrom
 				cfg.TraceFlags.ParseFrom = &flagsFrom
 				set := componenttest.NewNopTelemetrySettings()
-				return cfg.Build(&set)
+				return cfg.Build(set)
 			},
 			&entry.Entry{
 				Body: map[string]any{
@@ -263,7 +263,7 @@ func TestTraceParserParse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			traceParserConfig := NewConfigWithID("")
 			set := componenttest.NewNopTelemetrySettings()
-			_, _ = traceParserConfig.Build(&set)
+			_, _ = traceParserConfig.Build(set)
 			e := entry.New()
 			e.Body = tc.inputRecord
 			err := traceParserConfig.Parse(e)

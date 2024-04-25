@@ -5651,6 +5651,12 @@ resourceMetrics:
         - key: vcenter.host.name
           value:
             stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
+        - key: vcenter.virtual_app.name
+          value:
+            stringValue: v-app-1
+        - key: vcenter.virtual_app.inventory_path
+          value:
+            stringValue: /Datacenter/vm/v-app-1
         - key: vcenter.vm.id
           value:
             stringValue: 5000bbe0-993e-5813-c56a-198eaa62fb62

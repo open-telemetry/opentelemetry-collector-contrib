@@ -90,7 +90,7 @@ func TestBuildWithFeatureGate(t *testing.T) {
 			require.True(t, ok)
 
 			set := componenttest.NewNopTelemetrySettings()
-			_, err := buildFunc().Build(&set)
+			_, err := buildFunc().Build(set)
 			if err != nil {
 				require.Contains(t, err.Error(), c.onErr)
 			}

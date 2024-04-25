@@ -19,7 +19,7 @@ type Config struct {
 }
 
 // Build will build a pipeline from the config.
-func (c Config) Build(set *component.TelemetrySettings) (*DirectedPipeline, error) {
+func (c Config) Build(set component.TelemetrySettings) (*DirectedPipeline, error) {
 	if set.Logger == nil {
 		return nil, errors.NewError("logger must be provided", "")
 	}

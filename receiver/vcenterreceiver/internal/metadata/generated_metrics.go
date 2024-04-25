@@ -2219,6 +2219,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	if !mbc.ResourceAttributes.VcenterDatacenterName.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.name`: this attribute will be enabled by default starting in release v0.101.0")
 	}
+	if !mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.virtual_app.inventory_path`: this attribute will be enabled by default starting in release v0.101.0")
+	}
+	if !mbc.ResourceAttributes.VcenterVirtualAppName.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.virtual_app.name`: this attribute will be enabled by default starting in release v0.101.0")
+	}
 	mb := &MetricsBuilder{
 		config:                                mbc,
 		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
@@ -2301,6 +2307,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	}
 	if mbc.ResourceAttributes.VcenterResourcePoolName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["vcenter.resource_pool.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterResourcePoolName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.virtual_app.inventory_path"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.virtual_app.inventory_path"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.VcenterVirtualAppName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.virtual_app.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVirtualAppName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.VcenterVirtualAppName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.virtual_app.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVirtualAppName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.VcenterVMID.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["vcenter.vm.id"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMID.MetricsInclude)

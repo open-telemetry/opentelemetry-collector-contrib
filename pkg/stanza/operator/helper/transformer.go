@@ -31,7 +31,7 @@ type TransformerConfig struct {
 }
 
 // Build will build a transformer operator.
-func (c TransformerConfig) Build(set *component.TelemetrySettings) (TransformerOperator, error) {
+func (c TransformerConfig) Build(set component.TelemetrySettings) (TransformerOperator, error) {
 	writerOperator, err := c.WriterConfig.Build(set)
 	if err != nil {
 		return TransformerOperator{}, errors.WithDetails(err, "operator_id", c.ID())

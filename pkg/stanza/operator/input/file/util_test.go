@@ -36,7 +36,7 @@ func newTestFileOperator(t *testing.T, cfgMod func(*Config)) (*Input, chan *entr
 		cfgMod(cfg)
 	}
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 
 	err = op.SetOutputs([]operator.Operator{fakeOutput})

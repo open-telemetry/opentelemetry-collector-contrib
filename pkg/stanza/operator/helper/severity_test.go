@@ -513,7 +513,7 @@ func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 		}
 
 		set := componenttest.NewNopTelemetrySettings()
-		severityParser, err := cfg.Build(&set)
+		severityParser, err := cfg.Build(set)
 		if tc.buildErr {
 			require.Error(t, err, "expected error when configuring operator")
 			return
@@ -566,7 +566,7 @@ func TestBuildCustomMapping(t *testing.T) {
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	severityParser, err := cfg.Build(&set)
+	severityParser, err := cfg.Build(set)
 	require.NoError(t, err)
 
 	for k, v := range expected {

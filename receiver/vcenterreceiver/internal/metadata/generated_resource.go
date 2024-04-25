@@ -63,6 +63,20 @@ func (rb *ResourceBuilder) SetVcenterResourcePoolName(val string) {
 	}
 }
 
+// SetVcenterVirtualAppInventoryPath sets provided value as "vcenter.virtual_app.inventory_path" attribute.
+func (rb *ResourceBuilder) SetVcenterVirtualAppInventoryPath(val string) {
+	if rb.config.VcenterVirtualAppInventoryPath.Enabled {
+		rb.res.Attributes().PutStr("vcenter.virtual_app.inventory_path", val)
+	}
+}
+
+// SetVcenterVirtualAppName sets provided value as "vcenter.virtual_app.name" attribute.
+func (rb *ResourceBuilder) SetVcenterVirtualAppName(val string) {
+	if rb.config.VcenterVirtualAppName.Enabled {
+		rb.res.Attributes().PutStr("vcenter.virtual_app.name", val)
+	}
+}
+
 // SetVcenterVMID sets provided value as "vcenter.vm.id" attribute.
 func (rb *ResourceBuilder) SetVcenterVMID(val string) {
 	if rb.config.VcenterVMID.Enabled {
