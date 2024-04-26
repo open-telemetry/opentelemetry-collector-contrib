@@ -27,7 +27,7 @@ func TestBuildPipelineSuccess(t *testing.T) {
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	pipe, err := cfg.Build(&set)
+	pipe, err := cfg.Build(set)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(pipe.Operators()))
 }
@@ -43,7 +43,7 @@ func TestBuildPipelineNoLogger(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = nil
-	pipe, err := cfg.Build(&set)
+	pipe, err := cfg.Build(set)
 	require.EqualError(t, err, "logger must be provided")
 	require.Nil(t, pipe)
 }
@@ -52,7 +52,7 @@ func TestBuildPipelineNilOperators(t *testing.T) {
 	cfg := Config{}
 
 	set := componenttest.NewNopTelemetrySettings()
-	pipe, err := cfg.Build(&set)
+	pipe, err := cfg.Build(set)
 	require.EqualError(t, err, "operators must be specified")
 	require.Nil(t, pipe)
 }
@@ -63,7 +63,7 @@ func TestBuildPipelineEmptyOperators(t *testing.T) {
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	pipe, err := cfg.Build(&set)
+	pipe, err := cfg.Build(set)
 	require.EqualError(t, err, "empty pipeline not allowed")
 	require.Nil(t, pipe)
 }
@@ -82,7 +82,7 @@ func TestBuildAPipelineDefaultOperator(t *testing.T) {
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	pipe, err := cfg.Build(&set)
+	pipe, err := cfg.Build(set)
 	require.NoError(t, err)
 
 	ops := pipe.Operators()
@@ -367,7 +367,7 @@ func TestUpdateOutputIDs(t *testing.T) {
 			pipeline, err := Config{
 				Operators:     tc.ops(),
 				DefaultOutput: tc.defaultOut,
-			}.Build(&set)
+			}.Build(set)
 			require.NoError(t, err)
 			ops := pipeline.Operators()
 

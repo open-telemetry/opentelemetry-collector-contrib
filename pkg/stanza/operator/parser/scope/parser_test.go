@@ -93,7 +93,7 @@ func TestScopeNameParser(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			set := componenttest.NewNopTelemetrySettings()
-			parser, err := tc.config.Build(&set)
+			parser, err := tc.config.Build(set)
 			require.NoError(t, err)
 
 			err = parser.Process(context.Background(), tc.input)

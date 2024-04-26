@@ -21,7 +21,7 @@ func newTestParser(t *testing.T) *Parser {
 	cfg := NewConfigWithID("test")
 	cfg.Header = testHeader
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	return op.(*Parser)
 }
@@ -31,7 +31,7 @@ func newTestParserIgnoreQuotes(t *testing.T) *Parser {
 	cfg.Header = testHeader
 	cfg.IgnoreQuotes = true
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	return op.(*Parser)
 }
@@ -40,7 +40,7 @@ func TestParserBuildFailure(t *testing.T) {
 	cfg := NewConfigWithID("test")
 	cfg.OnError = "invalid_on_error"
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := cfg.Build(&set)
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
@@ -51,7 +51,7 @@ func TestParserBuildFailureLazyIgnoreQuotes(t *testing.T) {
 	cfg.LazyQuotes = true
 	cfg.IgnoreQuotes = true
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := cfg.Build(&set)
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "only one of 'ignore_quotes' or 'lazy_quotes' can be true")
 }
@@ -61,7 +61,7 @@ func TestParserBuildFailureInvalidDelimiter(t *testing.T) {
 	cfg.Header = testHeader
 	cfg.FieldDelimiter = ";;"
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := cfg.Build(&set)
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid 'delimiter': ';;'")
 }
@@ -71,7 +71,7 @@ func TestParserBuildFailureBadHeaderConfig(t *testing.T) {
 	cfg.Header = "testheader"
 	cfg.HeaderAttribute = "testheader"
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := cfg.Build(&set)
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "only one header parameter can be set: 'header' or 'header_attribute'")
 }
@@ -801,7 +801,7 @@ func TestParserCSV(t *testing.T) {
 			tc.configure(cfg)
 
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(&set)
+			op, err := cfg.Build(set)
 			if tc.expectBuildErr {
 				require.Error(t, err)
 				return
@@ -1046,7 +1046,7 @@ cc""",dddd,eeee`,
 			cfg.Header = "A,B,C,D,E"
 
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(&set)
+			op, err := cfg.Build(set)
 			require.NoError(t, err)
 
 			fake := testutil.NewFakeOutput(t)
@@ -1069,7 +1069,7 @@ func TestParserCSVInvalidJSONInput(t *testing.T) {
 		cfg.Header = testHeader
 
 		set := componenttest.NewNopTelemetrySettings()
-		op, err := cfg.Build(&set)
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 
 		fake := testutil.NewFakeOutput(t)
@@ -1095,7 +1095,7 @@ func TestBuildParserCSV(t *testing.T) {
 	t.Run("BasicConfig", func(t *testing.T) {
 		c := newBasicParser()
 		set := componenttest.NewNopTelemetrySettings()
-		_, err := c.Build(&set)
+		_, err := c.Build(set)
 		require.NoError(t, err)
 	})
 
@@ -1103,7 +1103,7 @@ func TestBuildParserCSV(t *testing.T) {
 		c := newBasicParser()
 		c.Header = ""
 		set := componenttest.NewNopTelemetrySettings()
-		_, err := c.Build(&set)
+		_, err := c.Build(set)
 		require.Error(t, err)
 	})
 
@@ -1111,7 +1111,7 @@ func TestBuildParserCSV(t *testing.T) {
 		c := newBasicParser()
 		c.Header = "name"
 		set := componenttest.NewNopTelemetrySettings()
-		_, err := c.Build(&set)
+		_, err := c.Build(set)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "missing field delimiter in header")
 	})
@@ -1120,7 +1120,7 @@ func TestBuildParserCSV(t *testing.T) {
 		c := newBasicParser()
 		c.Header = "name;position;number"
 		set := componenttest.NewNopTelemetrySettings()
-		_, err := c.Build(&set)
+		_, err := c.Build(set)
 		require.Error(t, err)
 	})
 
@@ -1129,7 +1129,7 @@ func TestBuildParserCSV(t *testing.T) {
 		c.Header = "name,position,number"
 		c.FieldDelimiter = ":"
 		set := componenttest.NewNopTelemetrySettings()
-		_, err := c.Build(&set)
+		_, err := c.Build(set)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "missing field delimiter in header")
 	})

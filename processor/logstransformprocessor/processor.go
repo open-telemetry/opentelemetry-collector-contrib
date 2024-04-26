@@ -36,7 +36,7 @@ type logsTransformProcessor struct {
 	shutdownFns   []component.ShutdownFunc
 }
 
-func newProcessor(config *Config, nextConsumer consumer.Logs, set *component.TelemetrySettings) (*logsTransformProcessor, error) {
+func newProcessor(config *Config, nextConsumer consumer.Logs, set component.TelemetrySettings) (*logsTransformProcessor, error) {
 	p := &logsTransformProcessor{
 		logger:   set.Logger,
 		config:   config,
