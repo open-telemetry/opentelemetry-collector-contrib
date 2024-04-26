@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter
 
-go 1.21.9
+go 1.21.0
 
 require (
 	github.com/IBM/sarama v1.43.1
