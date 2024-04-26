@@ -59,7 +59,6 @@ Using Service Principal for authentication:
 receivers:
   azureblob:
     auth: service_principal
-    subscription_id: "${subscription_id}"
     tenant_id: "${tenant_id}"
     client_id: "${client_id}"
     client_secret: "${env:CLIENT_SECRET}"
