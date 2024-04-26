@@ -467,17 +467,30 @@ func TestUnmarshalLogs(t *testing.T) {
 	}
 }
 
-func TestFrontDoorAccessLog(t *testing.T) {
+func loadJsonLogs(filename string) (plog.Logs, error) {
+	l := plog.NewLogs()
+
 	sut := &ResourceLogsUnmarshaler{
 		Version: testBuildInfo.Version,
 		Logger:  zap.NewNop(),
 	}
 
-	data, err := os.ReadFile(filepath.Join("testdata", "log-frontdooraccesslog.json"))
-	assert.NoError(t, err)
-	assert.NotNil(t, data)
+	data, err := os.ReadFile(filepath.Join("testdata", filename))
+	if err != nil {
+		return l, err
+	}
 
 	logs, err := sut.UnmarshalLogs(data)
+
+	if err != nil {
+		return l, err
+	}
+
+	return logs, nil
+}
+
+func TestFrontDoorAccessLog(t *testing.T) {
+	logs, err := loadJsonLogs("log-frontdooraccesslog.json")
 
 	assert.NoError(t, err)
 
@@ -502,4 +515,40 @@ func TestFrontDoorAccessLog(t *testing.T) {
 	assert.Equal(t, int64(200), record["http.response.status_code"])
 	assert.Equal(t, "REFERER", record["http.request.header.referer"])
 	assert.Equal(t, "NoError", record["error.type"])
+}
+
+func TestAppServiceAuditLog(t *testing.T) {
+	logs, err := loadJsonLogs("log-appserviceauditlogs.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "USER_ID", record["enduser.id"])
+	assert.Equal(t, "42.42.42.42", record["client.address"])
+	assert.Equal(t, "kudu", record["network.protocol.name"])
+}
+
+func TestAppServiceHTTPLog(t *testing.T) {
+	logs, err := loadJsonLogs("log-appservicehttplogs.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "test.com", record["url.domain"])
+	assert.Equal(t, "42.42.42.42", record["client.address"])
+	assert.Equal(t, int64(80), record["server.port"])
+	assert.Equal(t, "/api/test/", record["url.path"])
+	assert.Equal(t, "foo=42", record["url.query"])
+	assert.Equal(t, "GET", record["http.request.method"])
+	assert.Equal(t, 0.42, record["http.server.request.duration"])
+	assert.Equal(t, int64(200), record["http.response.status_code"])
+	assert.Equal(t, int64(4242), record["http.request.body.size"])
+	assert.Equal(t, int64(42), record["http.response.body.size"])
+	assert.Equal(t, "Mozilla/5.0", record["user_agent.original"])
+	assert.Equal(t, "REFERER", record["http.request.header.referer"])
+	assert.Equal(t, "COMPUTER_NAME", record["host.name"])
+	assert.Equal(t, "http", record["network.protocol.name"])
+	assert.Equal(t, "1.1", record["network.protocol.version"])
 }

@@ -11,11 +11,14 @@ const maxInt32 = int64(int32(^uint32(0) >> 1))
 type valueNormalizer func(any) any
 
 var normalizers = map[string]valueNormalizer{
+	"http.request.body.size":       toInt,
 	"http.request.size":            toInt,
+	"http.response.body.size":      toInt,
 	"http.response.size":           toInt,
+	"http.response.status_code":    toInt,
 	"http.server.request.duration": toFloat,
 	"network.protocol.name":        toLower,
-	"http.response.status_code":    toInt,
+	"server.port":                  toInt,
 }
 
 func normalizeValue(key string, val any) any {

@@ -13,6 +13,7 @@ var conversions = map[string]ComplexConversion{
 	"AzureCDNAccessLog:SecurityProtocol":               azureCDNAccessLogSecurityProtocol,
 	"FrontDoorAccessLog:securityProtocol":              azureCDNAccessLogSecurityProtocol,
 	"AppServiceHTTPLogs:Protocol":                      appServiceHTTPLogsProtocol,
+	"AppServiceHTTPLogs:TimeTaken":                     appServiceHTTPLogTimeTakenMilliseconds,
 	"FrontDoorHealthProbeLog:DNSLatencyMicroseconds":   frontDoorHealthProbeLogDNSLatencyMicroseconds,
 	"FrontDoorHealthProbeLog:totalLatencyMilliseconds": frontDoorHealthProbeLogTotalLatencyMilliseconds,
 }
@@ -60,6 +61,17 @@ func frontDoorHealthProbeLogTotalLatencyMilliseconds(key string, value any, attr
 	}
 	seconds := milliseconds / 1_000
 	attrs["http.client.request.duration"] = seconds
+	return true
+}
+
+// Converts Milliseconds value to Seconds and sets as "http.server.request.duration"
+func appServiceHTTPLogTimeTakenMilliseconds(key string, value any, attrs map[string]any) bool {
+	milliseconds, ok := tryParseFloat64(value)
+	if !ok {
+		return false
+	}
+	seconds := milliseconds / 1_000
+	attrs["http.server.request.duration"] = seconds
 	return true
 }
 
