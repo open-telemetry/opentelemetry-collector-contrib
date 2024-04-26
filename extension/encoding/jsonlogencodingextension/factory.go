@@ -26,5 +26,7 @@ func createExtension(_ context.Context, _ extension.CreateSettings, _ component.
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		RawLog: true,
+	}
 }
