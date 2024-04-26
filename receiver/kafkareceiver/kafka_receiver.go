@@ -5,6 +5,7 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -126,8 +127,8 @@ func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
 	return sarama.NewConsumerGroup(config.Brokers, config.GroupID, saramaConfig)
 }
 
-func (c *kafkaTracesConsumer) Start(_ context.Context, _ component.Host) error {
-	ctx, cancel := context.WithCancel(context.Background())
+func (c *kafkaTracesConsumer) Start(ctx context.Context, _ component.Host) error {
+	ctx, cancel := context.WithCancel(ctx)
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             c.settings.ID,
@@ -160,7 +161,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, _ component.Host) error {
 		}
 	}
 	go func() {
-		if err := c.consumeLoop(ctx, consumerGroup); err != nil {
+		if err := c.consumeLoop(ctx, consumerGroup); !errors.Is(err, context.Canceled) {
 			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
