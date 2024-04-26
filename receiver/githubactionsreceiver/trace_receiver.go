@@ -101,11 +101,13 @@ func (gar *githubActionsReceiver) Shutdown(ctx context.Context) error {
 func (gar *githubActionsReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	// Validate request path
 	if r.URL.Path != gar.config.Path {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
 
+	// Validate the payload using the configured secret
 	payload, err := github.ValidatePayload(r, []byte(gar.config.Secret))
 	if err != nil {
 		gar.logger.Debug("Payload validation failed", zap.Error(err))
@@ -113,16 +115,16 @@ func (gar *githubActionsReceiver) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	event, err := github.ParseWebHook(github.WebHookType(r), payload)
+	// Determine the type of GitHub webhook event and ensure it's one we handle
+	eventType := github.WebHookType(r)
+	event, err := github.ParseWebHook(eventType, payload)
 	if err != nil {
 		gar.logger.Debug("Webhook parsing failed", zap.Error(err))
 		http.Error(w, "Failed to parse webhook", http.StatusBadRequest)
 		return
 	}
 
-	gar.logger.Debug("Received GitHub event", zap.Any("event", event))
-
-	// Filter events based on the status
+	// Handle events based on specific types and completion status
 	switch e := event.(type) {
 	case *github.WorkflowJobEvent:
 		if e.GetWorkflowJob().GetStatus() != "completed" {
@@ -136,7 +138,13 @@ func (gar *githubActionsReceiver) ServeHTTP(w http.ResponseWriter, r *http.Reque
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
+	default:
+		gar.logger.Debug("Skipping unsupported event type", zap.String("event", eventType))
+		w.WriteHeader(http.StatusNoContent)
+		return
 	}
+
+	gar.logger.Debug("Received valid GitHub event", zap.String("type", eventType))
 
 	// Convert the GitHub event to OpenTelemetry traces
 	td, err := eventToTraces(event, gar.config, gar.logger)
@@ -146,10 +154,9 @@ func (gar *githubActionsReceiver) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Check if the traces data contains any ResourceSpans
-	if td.ResourceSpans().Len() > 0 {
-		spanCount := td.SpanCount()
-		gar.logger.Debug("Unmarshaled spans", zap.Int("#spans", spanCount))
+	// Process traces if any are present
+	if td.SpanCount() > 0 {
+		gar.logger.Debug("Unmarshaled spans", zap.Int("#spans", td.SpanCount()))
 
 		// Pass the traces to the nextConsumer
 		consumerErr := gar.nextConsumer.ConsumeTraces(ctx, td)
@@ -159,7 +166,7 @@ func (gar *githubActionsReceiver) ServeHTTP(w http.ResponseWriter, r *http.Reque
 			return
 		}
 	} else {
-		gar.logger.Debug("No spans to unmarshal or traces not initialized")
+		gar.logger.Debug("No spans to unmarshal or traces not initialised")
 	}
 
 	w.WriteHeader(http.StatusAccepted)
