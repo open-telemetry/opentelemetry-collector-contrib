@@ -41,6 +41,8 @@ Authenticating using service principal requires following additional settings:
 - `client_id`
 - `client_secret`
 
+The service principal requires the [Storage Blob Data Contributor](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/storage#storage-blob-data-contributor) role on the logs and traces containers.
+
 ### Example Configurations
 
 Using connection string for authentication:
