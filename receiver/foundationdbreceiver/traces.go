@@ -1,26 +1,18 @@
-// Copyright 2022 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package foundationdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/foundationdbreceiver"
 
 import (
 	"encoding/binary"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/vmihailenco/msgpack/v5"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 )
 
 type SpanContext struct {
@@ -327,14 +319,21 @@ func formatTag(v string) string {
 }
 
 func (t *Trace) getSpan(span *ptrace.Span) {
-	span.SetTraceID(pcommon.NewTraceID(t.TraceID))
-	span.SetSpanID(pcommon.NewSpanID(uint64ToBytes(t.SpanID)))
-	span.SetParentSpanID(pcommon.NewSpanID(uint64ToBytes(t.ParentSpanID)))
+	span.SetTraceID(t.TraceID)
+	span.SetSpanID(uint64ToBytes(t.SpanID))
+	span.SetParentSpanID(uint64ToBytes(t.ParentSpanID))
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(timestampFromFloat64(t.StartTimestamp)))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(timestampFromFloat64(t.EndTimestamp)))
 	span.SetKind(ptrace.SpanKindServer)
 	span.Status().SetCode(ptrace.StatusCodeOk)
-	span.SetName(t.OperationName)
+	// extract the service name from operation names which are in the form: SS:getKeyValues
+	p := strings.Index(t.OperationName, ":")
+	if p != -1 {
+		span.SetName(t.OperationName[p+1:])
+		span.Attributes().PutStr(semconv.AttributeServiceName, t.OperationName[:p])
+	} else {
+		span.SetName(t.OperationName)
+	}
 	span.SetDroppedEventsCount(0)
 	span.SetDroppedAttributesCount(0)
 	span.SetDroppedLinksCount(0)
@@ -343,14 +342,14 @@ func (t *Trace) getSpan(span *ptrace.Span) {
 	for k, v := range t.Attributes {
 		formattedKey := formatTag(k)
 		formattedValue := formatTag(v.(string))
-		attrs.InsertString(formattedKey, formattedValue)
+		attrs.PutStr(formattedKey, formattedValue)
 	}
 
 	links := span.Links()
 	for _, l := range t.Links {
 		link := links.AppendEmpty()
-		link.SetTraceID(pcommon.NewTraceID(l.TraceID))
-		link.SetSpanID(pcommon.NewSpanID(uint64ToBytes(l.SpanID)))
+		link.SetTraceID(l.TraceID)
+		link.SetSpanID(uint64ToBytes(l.SpanID))
 	}
 
 	events := span.Events()
@@ -360,7 +359,7 @@ func (t *Trace) getSpan(span *ptrace.Span) {
 		event.SetTimestamp(pcommon.NewTimestampFromTime(timestampFromFloat64(e.EventTime)))
 		attrs := event.Attributes()
 		for k, v := range e.Attributes {
-			attrs.InsertString(k, v.(string))
+			attrs.PutStr(k, v.(string))
 		}
 	}
 }
@@ -484,8 +483,8 @@ func (t *OpenTracing) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (t *OpenTracing) getSpan(span *ptrace.Span) {
-	span.SetTraceID(pcommon.NewTraceID(uint64ToOtelTraceId(t.TraceID)))
-	span.SetSpanID(pcommon.NewSpanID(uint64ToBytes(t.SpanID)))
+	span.SetTraceID(uint64ToOtelTraceId(t.TraceID))
+	span.SetSpanID(uint64ToBytes(t.SpanID))
 	endTime := timestampFromFloat64(t.StartTimestamp)
 	durSec, durNano := durationFromFloat64(t.Duration)
 	endTime = endTime.Add(time.Second * time.Duration(durSec))
@@ -500,13 +499,13 @@ func (t *OpenTracing) getSpan(span *ptrace.Span) {
 	span.SetDroppedLinksCount(0)
 	if len(t.ParentSpanIDs) > 0 {
 		pId := t.ParentSpanIDs[0].(uint64)
-		span.SetParentSpanID(pcommon.NewSpanID(uint64ToBytes(pId)))
+		span.SetParentSpanID(uint64ToBytes(pId))
 	}
 
 	attrs := span.Attributes()
-	attrs.InsertString("sourceIP", t.SourceIP)
+	attrs.PutStr("sourceIP", t.SourceIP)
 	for k, v := range t.Tags {
-		attrs.InsertString(k, v.(string))
+		attrs.PutStr(k, v.(string))
 	}
 }
 

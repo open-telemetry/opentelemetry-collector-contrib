@@ -1,16 +1,5 @@
-// Copyright 2022 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package foundationdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/foundationdbreceiver"
 
@@ -18,8 +7,6 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-
-	"go.opentelemetry.io/collector/config"
 )
 
 var maxPacketSizeErr = fmt.Errorf("max_packet_size must be between 1 and 65527")
@@ -33,11 +20,10 @@ const (
 )
 
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	Address                 string `mapstructure:"endpoint"`
-	MaxPacketSize           int    `mapstructure:"max_packet_size"`
-	SocketBufferSize        int    `mapstructure:"socket_buffer_size"`
-	Format                  string `mapstructure:"format"`
+	Address          string `mapstructure:"endpoint"`
+	MaxPacketSize    int    `mapstructure:"max_packet_size"`
+	SocketBufferSize int    `mapstructure:"socket_buffer_size"`
+	Format           string `mapstructure:"format"`
 }
 
 func (c *Config) validate() error {
