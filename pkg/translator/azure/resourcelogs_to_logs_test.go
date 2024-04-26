@@ -552,3 +552,14 @@ func TestAppServiceHTTPLog(t *testing.T) {
 	assert.Equal(t, "http", record["network.protocol.name"])
 	assert.Equal(t, "1.1", record["network.protocol.version"])
 }
+
+func TestAppServicePlatformLog(t *testing.T) {
+	logs, err := loadJsonLogs("log-appserviceplatformlogs.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "CONTAINER_ID", record["container.id"])
+	assert.Equal(t, "CONTAINER_NAME", record["container.name"])
+}
