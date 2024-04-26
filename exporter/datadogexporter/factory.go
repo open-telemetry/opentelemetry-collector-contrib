@@ -138,19 +138,6 @@ func (f *factory) StopReporter() {
 	})
 }
 
-func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
-	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, datadog.InitializeMetricClient(params.MeterProvider, datadog.ExporterSourceTag), attrsTranslator)
-	if err != nil {
-		return nil, err
-	}
-	f.wg.Add(1)
-	go func() {
-		defer f.wg.Done()
-		agnt.Run()
-	}()
-	return agnt, nil
-}
-
 func newFactoryWithRegistry(registry *featuregate.Registry) exporter.Factory {
 	f := &factory{registry: registry}
 	return exporter.NewFactory(
@@ -408,11 +395,16 @@ func (f *factory) createTracesExporter(
 		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
 	}
 
-	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider, attrsTranslator)
+	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, datadog.InitializeMetricClient(params.MeterProvider, datadog.ExporterSourceTag), attrsTranslator)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
 	}
+	f.wg.Add(1)
+	go func() {
+		defer f.wg.Done()
+		agnt.Run()
+	}()
 
 	pcfg := newMetadataConfigfromConfig(cfg)
 	metadataReporter, err := f.Reporter(set, pcfg)
