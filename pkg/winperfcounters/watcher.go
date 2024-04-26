@@ -123,7 +123,7 @@ func (pc *perfCounter) ScrapeData() ([]CounterValue, error) {
 		return nil, fmt.Errorf("failed to format data for performance counter '%s': %w", pc.path, err)
 	}
 
-	vals = removeTotalIfMultipleValues(vals)
+	vals = cleanupScrapedValues(vals)
 	return vals, nil
 }
 
@@ -132,24 +132,42 @@ func ExpandWildCardPath(counterPath string) ([]string, error) {
 	return win_perf_counters.ExpandWildCardPath(counterPath)
 }
 
-func removeTotalIfMultipleValues(vals []CounterValue) []CounterValue {
+// cleanupScrapedValues handles instance name collisions and standardizes names.
+// It cleans up the list in-place to avoid unnecessary copies.
+func cleanupScrapedValues(vals []CounterValue) []CounterValue {
 	if len(vals) == 0 {
 		return vals
 	}
 
-	if len(vals) == 1 {
-		// if there is only one item & the instance name is "_Total", clear the instance name
-		if vals[0].InstanceName == totalInstanceName {
-			vals[0].InstanceName = ""
-		}
+	// If there is only one "_Total" instance, clear the instance name.
+	if len(vals) == 1 && vals[0].InstanceName == totalInstanceName {
+		vals[0].InstanceName = ""
 		return vals
 	}
 
-	// if there is more than one item, remove an item that has the instance name "_Total"
-	for i, val := range vals {
-		if val.InstanceName == totalInstanceName {
-			return removeItemAt(vals, i)
+	occurences := map[string]int{}
+	totalIndex := -1
+
+	for i := range vals {
+		instanceName := vals[i].InstanceName
+
+		if instanceName == totalInstanceName {
+			// Remember if a "_Total" instance was present.
+			totalIndex = i
 		}
+
+		if n, ok := occurences[instanceName]; ok {
+			// Append indices to duplicate instance names.
+			occurences[instanceName]++
+			vals[i].InstanceName = fmt.Sprintf("%s_%d", instanceName, n)
+		} else {
+			occurences[instanceName] = 1
+		}
+	}
+
+	// Remove the "_Total" instance, as it can be computed with a sum aggregation.
+	if totalIndex >= 0 {
+		return removeItemAt(vals, totalIndex)
 	}
 
 	return vals
