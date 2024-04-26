@@ -46,20 +46,18 @@ func newPdataLogsMarshaler(marshaler plog.Marshaler, encoding string) LogsMarsha
 // for metrics messages
 type KeyableMetricsMarshaler interface {
 	MetricsMarshaler
-	Key(attributes []string)
+	Key()
 }
 
 type pdataMetricsMarshaler struct {
-	marshaler     pmetric.Marshaler
-	encoding      string
-	keyed         bool
-	keyAttributes []string
+	marshaler pmetric.Marshaler
+	encoding  string
+	keyed     bool
 }
 
 // Key configures the pdataMetricsMarshaler to set the message key on the kafka messages
-func (p *pdataMetricsMarshaler) Key(attributes []string) {
+func (p *pdataMetricsMarshaler) Key() {
 	p.keyed = true
-	p.keyAttributes = attributes
 }
 
 func (p pdataMetricsMarshaler) Marshal(ld pmetric.Metrics, topic string) ([]*sarama.ProducerMessage, error) {
@@ -69,12 +67,7 @@ func (p pdataMetricsMarshaler) Marshal(ld pmetric.Metrics, topic string) ([]*sar
 
 		for i := 0; i < metrics.Len(); i++ {
 			resourceMetrics := metrics.At(i)
-			var hash [16]byte
-			if len(p.keyAttributes) > 0 {
-				hash = pdatautil.MapHashSelectedKeys(resourceMetrics.Resource().Attributes(), p.keyAttributes)
-			} else {
-				hash = pdatautil.MapHash(resourceMetrics.Resource().Attributes())
-			}
+			var hash = pdatautil.MapHash(resourceMetrics.Resource().Attributes())
 
 			newMetrics := pmetric.NewMetrics()
 			resourceMetrics.MoveTo(newMetrics.ResourceMetrics().AppendEmpty())

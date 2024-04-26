@@ -76,46 +76,19 @@ func TestOTLPMetricsJsonMarshaling(t *testing.T) {
 	tests := []struct {
 		name                 string
 		keyEnabled           bool
-		attributes           []string
 		messagePartitionKeys []sarama.Encoder
 	}{
 		{
 			name:                 "partitioning_disabled",
 			keyEnabled:           false,
-			attributes:           []string{},
-			messagePartitionKeys: []sarama.Encoder{nil},
-		},
-		{
-			name:                 "partitioning_disabled_keys_are_not_empty",
-			keyEnabled:           false,
-			attributes:           []string{"service.name"},
 			messagePartitionKeys: []sarama.Encoder{nil},
 		},
 		{
 			name:       "partitioning_enabled",
 			keyEnabled: true,
-			attributes: []string{},
 			messagePartitionKeys: []sarama.Encoder{
 				sarama.ByteEncoder{0x62, 0x7f, 0x20, 0x34, 0x85, 0x49, 0x55, 0x2e, 0xfa, 0x93, 0xae, 0xd7, 0xde, 0x91, 0xd7, 0x16},
 				sarama.ByteEncoder{0x75, 0x6b, 0xb4, 0xd6, 0xff, 0xeb, 0x92, 0x22, 0xa, 0x68, 0x65, 0x48, 0xe0, 0xd3, 0x94, 0x44},
-			},
-		},
-		{
-			name:       "partitioning_enabled_with_keys",
-			keyEnabled: true,
-			attributes: []string{"service.instance.id"},
-			messagePartitionKeys: []sarama.Encoder{
-				sarama.ByteEncoder{0xf9, 0x1e, 0x59, 0x41, 0xb5, 0x16, 0xfa, 0xdf, 0xc1, 0x79, 0xa3, 0x54, 0x68, 0x1d, 0xb6, 0xc8},
-				sarama.ByteEncoder{0x47, 0xac, 0xe2, 0x30, 0xd, 0x72, 0xd1, 0x82, 0xa5, 0xd, 0xe3, 0xa4, 0x64, 0xd3, 0x6b, 0xb5},
-			},
-		},
-		{
-			name:       "partitioning_enabled_keys_do_not_exist",
-			keyEnabled: true,
-			attributes: []string{"non_existing_key"},
-			messagePartitionKeys: []sarama.Encoder{
-				sarama.ByteEncoder{0x99, 0xe9, 0xd8, 0x51, 0x37, 0xdb, 0x46, 0xef, 0xfe, 0x7c, 0x8e, 0x2d, 0x85, 0x35, 0xce, 0xeb},
-				sarama.ByteEncoder{0x99, 0xe9, 0xd8, 0x51, 0x37, 0xdb, 0x46, 0xef, 0xfe, 0x7c, 0x8e, 0x2d, 0x85, 0x35, 0xce, 0xeb},
 			},
 		},
 	}
@@ -147,7 +120,7 @@ func TestOTLPMetricsJsonMarshaling(t *testing.T) {
 			keyableMarshaler, ok := standardMarshaler.(KeyableMetricsMarshaler)
 			require.True(t, ok, "Must be a KeyableMetricsMarshaler")
 			if tt.keyEnabled {
-				keyableMarshaler.Key(tt.attributes)
+				keyableMarshaler.Key()
 			}
 
 			msgs, err := standardMarshaler.Marshal(metric, "KafkaTopicX")

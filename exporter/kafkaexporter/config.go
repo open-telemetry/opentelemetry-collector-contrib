@@ -48,7 +48,7 @@ type Config struct {
 	// trace ID as the message key by default.
 	PartitionTracesByID bool `mapstructure:"partition_traces_by_id"`
 
-	PartitionMetricsByResourceAttributes PartitionByResourceAttributes `mapstructure:"partition_metrics_by_resource_attributes"`
+	PartitionMetricsByResourceAttributes bool `mapstructure:"partition_metrics_by_resource_attributes"`
 
 	// Metadata is the namespace for metadata management properties used by the
 	// Client, and shared by the Producer/Consumer.
@@ -59,14 +59,6 @@ type Config struct {
 
 	// Authentication defines used authentication mechanism.
 	Authentication kafka.Authentication `mapstructure:"auth"`
-}
-
-// PartitionByResourceAttributes defines configuration for partitioning by resource attributes.
-type PartitionByResourceAttributes struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	// The list of resource attributes to use for partitioning, empty by default
-	Attributes []string `mapstructure:"attributes"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.

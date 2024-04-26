@@ -99,12 +99,9 @@ func createDefaultConfig() component.Config {
 		Brokers:         []string{defaultBroker},
 		ClientID:        defaultClientID,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
-		Topic:    "",
-		Encoding: defaultEncoding,
-		PartitionMetricsByResourceAttributes: PartitionByResourceAttributes{
-			Enabled:    defaultPartitionMetricsByResourceAttributesEnabled,
-			Attributes: []string{},
-		},
+		Topic:                                "",
+		Encoding:                             defaultEncoding,
+		PartitionMetricsByResourceAttributes: defaultPartitionMetricsByResourceAttributesEnabled,
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
 			Retry: MetadataRetry{

@@ -58,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 				Topic:                                "spans",
 				Encoding:                             "otlp_proto",
 				PartitionTracesByID:                  true,
-				PartitionMetricsByResourceAttributes: PartitionByResourceAttributes{Attributes: []string{"k1", "k2"}, Enabled: true},
+				PartitionMetricsByResourceAttributes: true,
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
 				Authentication: kafka.Authentication{
@@ -113,7 +113,7 @@ func TestLoadConfig(t *testing.T) {
 				Topic:                                "spans",
 				Encoding:                             "otlp_proto",
 				PartitionTracesByID:                  true,
-				PartitionMetricsByResourceAttributes: PartitionByResourceAttributes{Attributes: []string{"k1", "k2"}, Enabled: true},
+				PartitionMetricsByResourceAttributes: true,
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
 				Authentication: kafka.Authentication{
@@ -167,7 +167,7 @@ func TestLoadConfig(t *testing.T) {
 				Topic:                                "spans",
 				Encoding:                             "otlp_proto",
 				PartitionTracesByID:                  true,
-				PartitionMetricsByResourceAttributes: PartitionByResourceAttributes{Attributes: []string{"k1", "k2"}, Enabled: true},
+				PartitionMetricsByResourceAttributes: true,
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
 				ResolveCanonicalBootstrapServersOnly: true,

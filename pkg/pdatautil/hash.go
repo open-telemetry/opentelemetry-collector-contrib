@@ -63,26 +63,6 @@ func MapHash(m pcommon.Map) [16]byte {
 	return hw.hashSum128()
 }
 
-// MapHashSelectedKeys return a hash for the provided map, using values of only provided keys.
-// Order of hash calculation is determined by the order of keys.
-func MapHashSelectedKeys(m pcommon.Map, keys []string) [16]byte {
-	if m.Len() == 0 || len(keys) == 0 {
-		return emptyHash
-	}
-
-	hw := hashWriterPool.Get().(*hashWriter)
-	defer hashWriterPool.Put(hw)
-	hw.byteBuf = hw.byteBuf[:0]
-
-	for _, k := range keys {
-		if v, ok := m.Get(k); ok {
-			hw.writeValueHash(v)
-		}
-	}
-
-	return hw.hashSum128()
-}
-
 // ValueHash return a hash for the provided pcommon.Value.
 func ValueHash(v pcommon.Value) [16]byte {
 	hw := hashWriterPool.Get().(*hashWriter)
