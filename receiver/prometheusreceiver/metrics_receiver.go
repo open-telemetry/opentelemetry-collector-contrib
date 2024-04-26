@@ -12,9 +12,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"regexp"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/go-kit/log"
 	"github.com/mitchellh/hashstructure/v2"
@@ -54,6 +56,7 @@ type pReceiver struct {
 	httpClient        *http.Client
 	registerer        prometheus.Registerer
 	unregisterMetrics func()
+	skipOffsetting    bool // for testing only
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -299,13 +302,24 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		return err
 	}
 
-	scrapeManager, err := scrape.NewManager(&scrape.Options{
+	opts := &scrape.Options{
 		PassMetadataInContext: true,
 		ExtraMetrics:          r.cfg.ReportExtraScrapeMetrics,
 		HTTPClientOptions: []commonconfig.HTTPClientOption{
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},
-	}, logger, store, r.registerer)
+	}
+
+	// for testing only
+	if r.skipOffsetting {
+		optsValue := reflect.ValueOf(opts).Elem()
+		field := optsValue.FieldByName("skipOffsetting")
+		reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).
+			Elem().
+			Set(reflect.ValueOf(true))
+	}
+
+	scrapeManager, err := scrape.NewManager(opts, logger, store, r.registerer)
 	if err != nil {
 		return err
 	}

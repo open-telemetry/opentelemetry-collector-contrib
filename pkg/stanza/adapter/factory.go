@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
@@ -45,18 +46,18 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 
 		operators := append([]operator.Config{inputCfg}, baseCfg.Operators...)
 
-		emitterOpts := []emitterOption{}
+		emitterOpts := []helper.EmitterOption{}
 		if baseCfg.maxBatchSize > 0 {
-			emitterOpts = append(emitterOpts, withMaxBatchSize(baseCfg.maxBatchSize))
+			emitterOpts = append(emitterOpts, helper.WithMaxBatchSize(baseCfg.maxBatchSize))
 		}
 		if baseCfg.flushInterval > 0 {
-			emitterOpts = append(emitterOpts, withFlushInterval(baseCfg.flushInterval))
+			emitterOpts = append(emitterOpts, helper.WithFlushInterval(baseCfg.flushInterval))
 		}
-		emitter := NewLogEmitter(params.Logger.Sugar(), emitterOpts...)
+		emitter := helper.NewLogEmitter(params.Logger.Sugar(), emitterOpts...)
 		pipe, err := pipeline.Config{
 			Operators:     operators,
 			DefaultOutput: emitter,
-		}.Build(params.Logger.Sugar())
+		}.Build(params.TelemetrySettings)
 		if err != nil {
 			return nil, err
 		}

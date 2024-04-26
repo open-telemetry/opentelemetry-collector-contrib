@@ -14,10 +14,13 @@ func TestResourceBuilder(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, test)
 			rb := NewResourceBuilder(cfg)
 			rb.SetVcenterClusterName("vcenter.cluster.name-val")
+			rb.SetVcenterDatacenterName("vcenter.datacenter.name-val")
 			rb.SetVcenterDatastoreName("vcenter.datastore.name-val")
 			rb.SetVcenterHostName("vcenter.host.name-val")
 			rb.SetVcenterResourcePoolInventoryPath("vcenter.resource_pool.inventory_path-val")
 			rb.SetVcenterResourcePoolName("vcenter.resource_pool.name-val")
+			rb.SetVcenterVirtualAppInventoryPath("vcenter.virtual_app.inventory_path-val")
+			rb.SetVcenterVirtualAppName("vcenter.virtual_app.name-val")
 			rb.SetVcenterVMID("vcenter.vm.id-val")
 			rb.SetVcenterVMName("vcenter.vm.name-val")
 
@@ -28,7 +31,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 7, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 7, res.Attributes().Len())
+				assert.Equal(t, 10, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -40,6 +43,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "vcenter.cluster.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("vcenter.datacenter.name")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "vcenter.datacenter.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.datastore.name")
 			assert.True(t, ok)
@@ -60,6 +68,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "vcenter.resource_pool.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("vcenter.virtual_app.inventory_path")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "vcenter.virtual_app.inventory_path-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("vcenter.virtual_app.name")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "vcenter.virtual_app.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.vm.id")
 			assert.True(t, ok)

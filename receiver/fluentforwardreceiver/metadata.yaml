@@ -8,5 +8,11 @@ status:
   distributions: [contrib]
   codeowners:
     active: [dmitryax]
+
 tests:
   config:
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"

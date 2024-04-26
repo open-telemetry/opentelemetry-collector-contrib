@@ -7,6 +7,14 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.99.0
+
+### 💡 Enhancements 💡
+
+- `prometheusremotewrite`: Optimize the prometheusremotewrite.FromMetrics function, based around more performant metric identifier hashing. (#31385)
+- `pkg/pdatatest/plogtest`: Add an option to ignore log timestamp (#32540)
+- `filelogreceiver`: Add `exclude_older_than` configuration setting (#31053)
+
 ## v0.98.0
 
 ### 💡 Enhancements 💡
