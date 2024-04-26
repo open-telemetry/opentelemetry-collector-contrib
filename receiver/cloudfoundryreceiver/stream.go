@@ -28,7 +28,7 @@ func newEnvelopeStreamFactory(
 	httpConfig confighttp.ClientConfig,
 	host component.Host) (*EnvelopeStreamFactory, error) {
 
-	httpClient, err := httpConfig.ToClientContext(ctx, host, settings)
+	httpClient, err := httpConfig.ToClient(ctx, host, settings)
 	if err != nil {
 		return nil, fmt.Errorf("creating HTTP client for Cloud Foundry RLP Gateway: %w", err)
 	}

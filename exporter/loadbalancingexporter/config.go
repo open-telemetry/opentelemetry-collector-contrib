@@ -36,7 +36,7 @@ type ResolverSettings struct {
 	Static      *StaticResolver      `mapstructure:"static"`
 	DNS         *DNSResolver         `mapstructure:"dns"`
 	K8sSvc      *K8sSvcResolver      `mapstructure:"k8s"`
-	AWSCloudMap *AWSCloudMapResolver `mapstructure:"awsCloudMap"`
+	AWSCloudMap *AWSCloudMapResolver `mapstructure:"aws_cloud_map"`
 }
 
 // StaticResolver defines the configuration for the resolver providing a fixed list of backends
@@ -61,8 +61,8 @@ type K8sSvcResolver struct {
 
 type AWSCloudMapResolver struct {
 	NamespaceName string                   `mapstructure:"namespace"`
-	ServiceName   string                   `mapstructure:"serviceName"`
-	HealthStatus  types.HealthStatusFilter `mapstructure:"healthStatus"`
+	ServiceName   string                   `mapstructure:"service_name"`
+	HealthStatus  types.HealthStatusFilter `mapstructure:"health_status"`
 	Interval      time.Duration            `mapstructure:"interval"`
 	Timeout       time.Duration            `mapstructure:"timeout"`
 	Port          *uint16                  `mapstructure:"port"`
