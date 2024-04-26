@@ -22,11 +22,11 @@ var (
 )
 
 type jsonLogExtension struct {
-	config     *Config
+	config     component.Config
 }
 
 func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
-	if !e.config.RawLog {
+	if !e.config.(*Config).RawLog {
 		return e.LogProcessor(ld)
 	}
 	logRecord := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
