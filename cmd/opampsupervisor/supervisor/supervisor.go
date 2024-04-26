@@ -77,7 +77,7 @@ type Supervisor struct {
 	// Supervisor's own config.
 	config config.Supervisor
 
-	agentDescription *protobufs.AgentDescription
+	agentDescription *atomic.Value
 
 	// Agent's instance id.
 	instanceID ulid.ULID
@@ -139,6 +139,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		mergedConfig:                 &atomic.Value{},
 		connectedToOpAMPServer:       make(chan struct{}),
 		effectiveConfig:              &atomic.Value{},
+		agentDescription:             &atomic.Value{},
 	}
 	if err := s.createTemplates(); err != nil {
 		return nil, err
@@ -292,8 +293,8 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
 			if message.AgentDescription != nil {
 				instanceIDSeen := false
-				s.agentDescription = message.AgentDescription
-				identAttr := s.agentDescription.IdentifyingAttributes
+				s.agentDescription.Store(message.AgentDescription)
+				identAttr := message.AgentDescription.IdentifyingAttributes
 
 				for _, attr := range identAttr {
 					if attr.Key == semconv.AttributeServiceInstanceID {
@@ -445,7 +446,8 @@ func (s *Supervisor) startOpAMP() error {
 		},
 		Capabilities: s.Capabilities(),
 	}
-	if err = s.opampClient.SetAgentDescription(s.agentDescription); err != nil {
+	ad := s.agentDescription.Load().(*protobufs.AgentDescription)
+	if err = s.opampClient.SetAgentDescription(ad); err != nil {
 		return err
 	}
 
@@ -489,7 +491,7 @@ func (s *Supervisor) startOpAMPServer() error {
 		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
 			s.logger.Debug("Received message")
 			if message.AgentDescription != nil {
-				s.agentDescription = message.AgentDescription
+				s.agentDescription.Store(message.AgentDescription)
 			}
 			if message.EffectiveConfig != nil {
 				s.logger.Debug("Setting confmap")
@@ -606,10 +608,11 @@ func (s *Supervisor) createInstanceID() (ulid.ULID, error) {
 func (s *Supervisor) composeExtraLocalConfig() []byte {
 	var cfg bytes.Buffer
 	resourceAttrs := map[string]string{}
-	for _, attr := range s.agentDescription.IdentifyingAttributes {
+	ad := s.agentDescription.Load().(*protobufs.AgentDescription)
+	for _, attr := range ad.IdentifyingAttributes {
 		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
 	}
-	for _, attr := range s.agentDescription.NonIdentifyingAttributes {
+	for _, attr := range ad.NonIdentifyingAttributes {
 		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
 	}
 	tplVars := map[string]any{
@@ -965,7 +968,7 @@ func (s *Supervisor) runAgentProcess() {
 				continue
 			}
 
-			if s.shuttingDown {
+			if s.shuttingDown.Load() {
 				return
 			}
 
@@ -1137,7 +1140,8 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 			zap.String("old_id", s.instanceID.String()),
 			zap.String("new_id", newInstanceID.String()))
 		s.instanceID = newInstanceID
-		err = s.opampClient.SetAgentDescription(s.agentDescription)
+		ad := s.agentDescription.Load().(*protobufs.AgentDescription)
+		err = s.opampClient.SetAgentDescription(ad)
 		if err != nil {
 			s.logger.Error("Failed to send agent description to OpAMP server")
 		}
