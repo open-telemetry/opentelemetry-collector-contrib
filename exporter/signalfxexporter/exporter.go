@@ -72,7 +72,7 @@ func newSignalFxExporter(
 		return nil, errors.New("nil config")
 	}
 
-	metricTranslator, err := config.getMetricTranslator(createSettings.TelemetrySettings.Logger)
+	metricTranslator, err := config.getMetricTranslator(createSettings.TelemetrySettings.Logger, make(chan struct{}))
 	if err != nil {
 		return nil, err
 	}
