@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter
 
-go 1.21.0
+go 1.21.9
 
 require (
 	github.com/IBM/sarama v1.43.1
@@ -10,6 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.99.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.99.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.99.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.99.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.99.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.99.0
 	github.com/openzipkin/zipkin-go v0.4.2
