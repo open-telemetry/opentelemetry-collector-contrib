@@ -37,7 +37,6 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.99.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension v0.99.0
-    import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension v0.99.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension v0.99.0
