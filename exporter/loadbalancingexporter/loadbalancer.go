@@ -92,7 +92,7 @@ func newLoadBalancer(params exporter.CreateSettings, cfg component.Config, facto
 	}
 
 	if oCfg.Resolver.AWSCloudMap != nil {
-		awsCloudMapLogger := params.Logger.With(zap.String("resolver", "awsCloudMap"))
+		awsCloudMapLogger := params.Logger.With(zap.String("resolver", "aws_cloud_map"))
 		var err error
 		res, err = newCloudMapResolver(awsCloudMapLogger, &oCfg.Resolver.AWSCloudMap.NamespaceName, &oCfg.Resolver.AWSCloudMap.ServiceName, oCfg.Resolver.AWSCloudMap.Port, &oCfg.Resolver.AWSCloudMap.HealthStatus, oCfg.Resolver.AWSCloudMap.Interval, oCfg.Resolver.AWSCloudMap.Timeout)
 		if err != nil {

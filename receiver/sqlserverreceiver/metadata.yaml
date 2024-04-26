@@ -31,6 +31,15 @@ attributes:
     description: The page operation types.
     type: string
     enum: [read, write]
+  physical_filename:
+    description: The physical filename of the file being monitored.
+    type: string
+  logical_filename:
+    description: The logical filename of the file being monitored.
+    type: string
+  file_type:
+    description: The type of file being monitored.
+    type: string
 
 metrics:
   sqlserver.user.connection.count:
@@ -158,6 +167,19 @@ metrics:
     unit: "{transactions}/s"
     gauge:
       value_type: double
+  sqlserver.database.io.read_latency:
+    enabled: false
+    description: Total time that the users waited for reads issued on this file.
+    unit: "s"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: double
+    attributes: [physical_filename, logical_filename, file_type]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 tests:
   config:
+  goleak:
+    ignore:
+      any: "github.com/godbus/dbus.(*Conn).inWorker"

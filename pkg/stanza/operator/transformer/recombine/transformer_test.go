@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -496,12 +497,182 @@ func TestTransformer(t *testing.T) {
 				entryWithBodyAttr(t1, "content5\ncontent6\ncontent7\ncontent8\ncontent9", map[string]string{"file.path": "file1"}),
 			},
 		},
+		{
+			"EntriesNonMatchingForFirstEntryWithMaxUnmatchedBatchSize=0",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsFirstEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxUnmatchedBatchSize = 0
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2\ntest3\ntest4"),
+			},
+		},
+		{
+			"EntriesNonMatchingForFirstEntryWithMaxUnmatchedBatchSize=1",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsFirstEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxUnmatchedBatchSize = 1
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+			},
+		},
+		{
+			"TestMaxUnmatchedBatchSizeForFirstEntry",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsFirstEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxUnmatchedBatchSize = 2
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+				entryWithBody(t1, "test5"),
+				entryWithBody(t1, "test6"),
+				entryWithBody(t1, "test1"),
+				entryWithBody(t1, "test7"),
+				entryWithBody(t1, "test8"),
+				entryWithBody(t1, "test1"),
+				entryWithBody(t1, "test9"),
+				entryWithBody(t1, "test10"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2\ntest3"),
+				entryWithBody(t1, "test4\ntest5"),
+				entryWithBody(t1, "test6"),
+				entryWithBody(t1, "test1\ntest7\ntest8"),
+				entryWithBody(t1, "test1\ntest9\ntest10"),
+			},
+		},
+		{
+			"EntriesNonMatchingForLastEntryWithMaxUnmatchedBatchSize=0",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsLastEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxUnmatchedBatchSize = 0
+				cfg.ForceFlushTimeout = 10 * time.Millisecond
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2\ntest3\ntest4"),
+			},
+		},
+		{
+			"EntriesNonMatchingForLastEntryWithMaxUnmatchedBatchSize=1",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsLastEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxUnmatchedBatchSize = 1
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+			},
+		},
+		{
+			"EntriesMatchingForLastEntryMaxUnmatchedBatchSize=2",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsLastEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxUnmatchedBatchSize = 2
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+				entryWithBody(t1, "test5"),
+				entryWithBody(t1, "test1"),
+				entryWithBody(t1, "test6"),
+				entryWithBody(t1, "test7"),
+				entryWithBody(t1, "test1"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2\ntest3"),
+				entryWithBody(t1, "test4\ntest5"),
+				entryWithBody(t1, "test1"),
+				entryWithBody(t1, "test6\ntest7"),
+				entryWithBody(t1, "test1"),
+			},
+		},
+		{
+			"EntriesMatchingForLastEntryMaxUnmatchedBatchSize=3",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsLastEntry = "body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.MaxUnmatchedBatchSize = 3
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t1, "test3"),
+				entryWithBody(t1, "test4"),
+				entryWithBody(t1, "test5"),
+				entryWithBody(t1, "test1"),
+				entryWithBody(t1, "test6"),
+				entryWithBody(t1, "test7"),
+				entryWithBody(t1, "test1"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2\ntest3\ntest4"),
+				entryWithBody(t1, "test5\ntest1"),
+				entryWithBody(t1, "test6\ntest7\ntest1"),
+			},
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := context.Background()
-			op, err := tc.config.Build(testutil.Logger(t))
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := tc.config.Build(set)
 			require.NoError(t, err)
 			require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
 			defer func() { require.NoError(t, op.Stop()) }()
@@ -530,7 +701,8 @@ func TestTransformer(t *testing.T) {
 		cfg.CombineField = entry.NewBodyField()
 		cfg.IsFirstEntry = MatchAll
 		cfg.OutputIDs = []string{"fake"}
-		op, err := cfg.Build(testutil.Logger(t))
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 		recombine := op.(*Transformer)
 
@@ -566,7 +738,8 @@ func BenchmarkRecombine(b *testing.B) {
 	cfg.IsFirstEntry = "body startsWith 'log-0'"
 	cfg.OutputIDs = []string{"fake"}
 	cfg.SourceIdentifier = entry.NewAttributeField("file.path")
-	op, err := cfg.Build(testutil.Logger(b))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(b, err)
 	recombine := op.(*Transformer)
 
@@ -609,7 +782,8 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 	cfg.IsFirstEntry = "body == 'start'"
 	cfg.MaxLogSize = 6
 	cfg.OutputIDs = []string{"fake"}
-	op, err := cfg.Build(testutil.Logger(b))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(b, err)
 	recombine := op.(*Transformer)
 
@@ -651,7 +825,8 @@ func TestTimeout(t *testing.T) {
 	cfg.IsFirstEntry = MatchAll
 	cfg.OutputIDs = []string{"fake"}
 	cfg.ForceFlushTimeout = 100 * time.Millisecond
-	op, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	recombine := op.(*Transformer)
 
@@ -694,7 +869,8 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 	cfg.CombineWith = ""
 	cfg.OutputIDs = []string{"fake"}
 	cfg.ForceFlushTimeout = 100 * time.Millisecond
-	op, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	recombine := op.(*Transformer)
 
@@ -747,7 +923,8 @@ func TestSourceBatchDelete(t *testing.T) {
 	cfg.OutputIDs = []string{"fake"}
 	cfg.ForceFlushTimeout = 100 * time.Millisecond
 	cfg.MaxLogSize = 6
-	op, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	recombine := op.(*Transformer)
 

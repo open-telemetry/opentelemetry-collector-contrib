@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -40,9 +42,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 		GraphiteTemplate:   "%{_metric_}",
 
 		ClientConfig: confighttp.ClientConfig{
-			IdleConnTimeout: confighttp.NewDefaultClientConfig().IdleConnTimeout,
-			MaxIdleConns:    confighttp.NewDefaultClientConfig().MaxIdleConns,
-			Timeout:         5 * time.Second,
+			Auth: &configauth.Authentication{
+				AuthenticatorID: component.NewID(metadata.Type),
+			},
+			Timeout: 5 * time.Second,
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: qs,

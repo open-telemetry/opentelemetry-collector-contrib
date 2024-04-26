@@ -57,6 +57,7 @@ func newProcessor(cfg *Config, log *zap.Logger, meter metric.Meter, next consume
 	dps = telemetry.ObserveItems(dps, &tel.Metrics)
 
 	if cfg.MaxStale > 0 {
+		tel.WithStale(meter, cfg.MaxStale)
 		stale := maybe.Some(staleness.NewStaleness(cfg.MaxStale, dps))
 		proc.stale = stale
 		dps, _ = stale.Try()

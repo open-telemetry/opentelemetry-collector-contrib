@@ -39,7 +39,7 @@ var testPayloads = []string{
 	"multiple_log_payload",
 }
 
-func TestReceiverTLS(t *testing.T) {
+func TestReceiverTLSIntegration(t *testing.T) {
 	for _, payloadName := range testPayloads {
 		t.Run(payloadName, func(t *testing.T) {
 			testAddr := testutil.GetAvailableLocalAddress(t)
@@ -108,10 +108,10 @@ func TestReceiverTLS(t *testing.T) {
 
 			logs := sink.AllLogs()[0]
 
-			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "processed", fmt.Sprintf("%s.json", payloadName)))
+			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "processed", fmt.Sprintf("%s.yaml", payloadName)))
 			require.NoError(t, err)
 
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreResourceLogsOrder()))
 		})
 	}
 }

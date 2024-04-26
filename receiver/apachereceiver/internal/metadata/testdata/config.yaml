@@ -61,3 +61,23 @@ none_set:
       enabled: false
     apache.server.port:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    apache.server.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    apache.server.port:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    apache.server.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "apache.server.name-val"
+    apache.server.port:
+      enabled: true
+      metrics_exclude:
+        - strict: "apache.server.port-val"
