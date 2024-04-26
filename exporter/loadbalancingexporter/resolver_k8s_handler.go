@@ -47,13 +47,10 @@ func (h handler) OnUpdate(oldObj, newObj any) {
 	switch oldEps := oldObj.(type) {
 	case *corev1.Endpoints:
 		epRemove := convertToEndpoints(oldEps)
-		for _, ep := range epRemove {
-			h.endpoints.Delete(ep)
-		}
-		if len(epRemove) > 0 {
-			_, _ = h.callback(context.Background())
-		}
-
+		oldEpRemoveMap :=map[string]bool{}
+                for _,ep:=range epRemove {
+                    oldEpRemoveMap[ep]=true
+                }
 		newEps, ok := newObj.(*corev1.Endpoints)
 		if !ok {
 			h.logger.Warn("Got an unexpected Kubernetes data type during the update of the pods for a service", zap.Any("obj", newObj))
@@ -65,8 +62,18 @@ func (h handler) OnUpdate(oldObj, newObj any) {
 			if _, loaded := h.endpoints.LoadOrStore(ep, true); !loaded {
 				changed = true
 			}
+			if _,ok:=oldEpRemoveMap[ep];ok {
+                            oldEpRemoveMap[ep]=false
+                        }
 		}
-		if changed {
+		epDeleteNum:=0
+		for ep,status :=range oldEpRemoveMap{
+                    if status {
+                        epDeleteNum=epDeleteNum+1
+                        h.endpoints.Delete(ep)
+                    }
+                }
+		if ( changed ||  epDeleteNum > 0 ) {
 			_, _ = h.callback(context.Background())
 		}
 	default: // unsupported
