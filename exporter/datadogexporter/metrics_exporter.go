@@ -56,6 +56,7 @@ func translatorFromConfig(set component.TelemetrySettings, cfg *Config, attrsTra
 		otlpmetrics.WithDeltaTTL(cfg.Metrics.DeltaTTL),
 		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
 		otlpmetrics.WithRemapping(),
+		otlpmetrics.WithOriginProduct(otlpmetrics.OriginProductDatadogExporter),
 	}
 
 	if cfg.Metrics.HistConfig.SendAggregations {

@@ -130,6 +130,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"env:dev"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 					map[string]any{
 						"metric":    "otel.system.filesystem.utilization",
@@ -137,6 +142,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"env:dev"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 					map[string]any{
 						"metric":    "double.histogram.bucket",
@@ -144,6 +154,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"lower_bound:-inf", "upper_bound:0", "env:dev"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 					map[string]any{
 						"metric":    "double.histogram.bucket",
@@ -151,6 +166,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"lower_bound:0", "upper_bound:inf", "env:dev"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 					map[string]any{
 						"metric":    "system.disk.in_use",
@@ -158,6 +178,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"env:dev"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 					map[string]any{
 						"metric":    "otel.datadog_exporter.metrics.running",
@@ -165,6 +190,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"version:latest", "command:otelcol"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 				},
 			},
@@ -185,6 +215,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"env:dev"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 					map[string]any{
 						"metric":    "otel.system.filesystem.utilization",
@@ -192,6 +227,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"env:dev"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 					map[string]any{
 						"metric":    "system.disk.in_use",
@@ -199,6 +239,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"env:dev"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 					map[string]any{
 						"metric":    "otel.datadog_exporter.metrics.running",
@@ -206,6 +251,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"version:latest", "command:otelcol"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 				},
 			},
@@ -244,6 +294,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"env:dev", "key1:value1", "key2:value2"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 					map[string]any{
 						"metric":    "otel.system.filesystem.utilization",
@@ -251,6 +306,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"env:dev", "key1:value1", "key2:value2"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 					map[string]any{
 						"metric":    "double.histogram.bucket",
@@ -258,6 +318,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"lower_bound:-inf", "upper_bound:0", "env:dev", "key1:value1", "key2:value2"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 					map[string]any{
 						"metric":    "double.histogram.bucket",
@@ -265,6 +330,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"lower_bound:0", "upper_bound:inf", "env:dev", "key1:value1", "key2:value2"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 					map[string]any{
 						"metric":    "system.disk.in_use",
@@ -272,6 +342,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"env:dev", "key1:value1", "key2:value2"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 					map[string]any{
 						"metric":    "otel.datadog_exporter.metrics.running",
@@ -279,6 +354,11 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"version:latest", "command:otelcol", "key1:value1", "key2:value2"},
+						"metadata": map[string]any{"origin": map[string]any{
+							"origin_product":        float64(19),
+							"origin_sub_product":    float64(17),
+							"origin_product_detail": float64(0),
+						}},
 					},
 				},
 			},
