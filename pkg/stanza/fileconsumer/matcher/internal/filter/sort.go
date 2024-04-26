@@ -134,6 +134,7 @@ func SortTemporal(regexKey string, ascending bool, layout string, location strin
 
 type TopNOption int
 
+//nolint:unparam
 func (t TopNOption) apply(items []*item) ([]*item, error) {
 	if len(items) <= int(t) {
 		return items, nil
