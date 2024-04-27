@@ -10,8 +10,8 @@ import (
 	"runtime"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
@@ -89,11 +89,11 @@ type HeaderConfig struct {
 }
 
 // Deprecated [v0.97.0] Use Build and WithSplitFunc option instead
-func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
-	return c.Build(logger, emit, WithSplitFunc(splitFunc))
+func (c Config) BuildWithSplitFunc(set component.TelemetrySettings, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
+	return c.Build(set, emit, WithSplitFunc(splitFunc))
 }
 
-func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Option) (*Manager, error) {
+func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts ...Option) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 	}
 
 	readerFactory := reader.Factory{
-		SugaredLogger:     logger.With("component", "fileconsumer"),
+		SugaredLogger:     set.Logger.Sugar().With("component", "fileconsumer"),
 		FromBeginning:     startAtBeginning,
 		FingerprintSize:   int(c.FingerprintSize),
 		InitialBufferSize: scanner.DefaultBufferSize,
@@ -165,12 +165,12 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 
 	var t tracker.Tracker
 	if o.noTracking {
-		t = tracker.NewNoStateTracker(logger.With("component", "fileconsumer"), c.MaxConcurrentFiles/2)
+		t = tracker.NewNoStateTracker(set.Logger.Sugar().With("component", "fileconsumer"), c.MaxConcurrentFiles/2)
 	} else {
-		t = tracker.NewFileTracker(logger.With("component", "fileconsumer"), c.MaxConcurrentFiles/2)
+		t = tracker.NewFileTracker(set.Logger.Sugar().With("component", "fileconsumer"), c.MaxConcurrentFiles/2)
 	}
 	return &Manager{
-		SugaredLogger: logger.With("component", "fileconsumer"),
+		SugaredLogger: set.Logger.Sugar().With("component", "fileconsumer"),
 		readerFactory: readerFactory,
 		fileMatcher:   fileMatcher,
 		pollInterval:  c.PollInterval,

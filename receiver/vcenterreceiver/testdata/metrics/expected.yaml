@@ -5057,6 +5057,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.cluster.name
+          value:
+            stringValue: Cluster
         - key: vcenter.resource_pool.inventory_path
           value:
             stringValue: /Datacenter/host/Cluster/Resources
@@ -5106,6 +5109,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.host.name
+          value:
+            stringValue: esxi-111.europe-southeast1.gve.goog
         - key: vcenter.resource_pool.inventory_path
           value:
             stringValue: /Datacenter/host/StandaloneHost/Resources

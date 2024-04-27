@@ -114,7 +114,7 @@ func (r *otelArrowReceiver) startProtocolServers(host component.Host) error {
 		}
 	}
 
-	r.arrowReceiver = arrow.New(arrow.Consumers(r), r.settings, r.obsrepGRPC, r.cfg.GRPC, authServer, func() arrowRecord.ConsumerAPI {
+	r.arrowReceiver, err = arrow.New(arrow.Consumers(r), r.settings, r.obsrepGRPC, r.cfg.GRPC, authServer, func() arrowRecord.ConsumerAPI {
 		var opts []arrowRecord.Option
 		if r.cfg.Arrow.MemoryLimitMiB != 0 {
 			// in which case the default is selected in the arrowRecord package.
@@ -125,6 +125,10 @@ func (r *otelArrowReceiver) startProtocolServers(host component.Host) error {
 		}
 		return arrowRecord.NewConsumer(opts...)
 	}, r.netReporter)
+
+	if err != nil {
+		return err
+	}
 
 	if r.tracesReceiver != nil {
 		ptraceotlp.RegisterGRPCServer(r.serverGRPC, r.tracesReceiver)

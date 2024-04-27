@@ -26,13 +26,14 @@ import (
 func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	emitter := helper.NewLogEmitter(zap.NewNop().Sugar())
 
+	set := componenttest.NewNopTelemetrySettings()
 	pipe, err := pipeline.Config{
 		Operators: []operator.Config{
 			{
 				Builder: noop.NewConfig(),
 			},
 		},
-	}.Build(zap.NewNop().Sugar())
+	}.Build(set)
 	if err != nil {
 		return nil, err
 	}
