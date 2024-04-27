@@ -33,7 +33,7 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 				Builder: noop.NewConfig(),
 			},
 		},
-	}.Build(&set)
+	}.Build(set)
 	if err != nil {
 		return nil, err
 	}

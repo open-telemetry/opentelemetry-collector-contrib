@@ -35,7 +35,7 @@ func TestBasicConfigBuildWithoutID(t *testing.T) {
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := config.Build(&set)
+	_, err := config.Build(set)
 	require.NoError(t, err)
 }
 
@@ -45,7 +45,7 @@ func TestBasicConfigBuildWithoutType(t *testing.T) {
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := config.Build(&set)
+	_, err := config.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing required `type` field.")
 }
@@ -58,7 +58,7 @@ func TestBasicConfigBuildMissingLogger(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = nil
-	_, err := config.Build(&set)
+	_, err := config.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "operator build context is missing a logger.")
 }
@@ -70,7 +70,7 @@ func TestBasicConfigBuildValid(t *testing.T) {
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	operator, err := config.Build(&set)
+	operator, err := config.Build(set)
 	require.NoError(t, err)
 	require.Equal(t, "test-id", operator.OperatorID)
 	require.Equal(t, "test-type", operator.OperatorType)

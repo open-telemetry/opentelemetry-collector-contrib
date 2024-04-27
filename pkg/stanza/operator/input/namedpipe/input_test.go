@@ -42,7 +42,7 @@ func TestCreatePipe(t *testing.T) {
 	conf.Permissions = 0666
 
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := conf.Build(&set)
+	op, err := conf.Build(set)
 	require.NoError(t, err)
 
 	require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
@@ -71,7 +71,7 @@ func TestCreatePipeFailsWithFile(t *testing.T) {
 	}()
 
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := conf.Build(&set)
+	op, err := conf.Build(set)
 	require.NoError(t, err)
 
 	require.Error(t, op.Start(testutil.NewUnscopedMockPersister()))
@@ -86,7 +86,7 @@ func TestCreatePipeAlreadyExists(t *testing.T) {
 	require.NoError(t, unix.Mkfifo(conf.Path, conf.Permissions))
 
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := conf.Build(&set)
+	op, err := conf.Build(set)
 	require.NoError(t, err)
 
 	require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
@@ -103,7 +103,7 @@ func TestPipeWrites(t *testing.T) {
 	conf.OutputIDs = []string{fake.ID()}
 
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := conf.Build(&set)
+	op, err := conf.Build(set)
 	require.NoError(t, err)
 	ops := []operator.Operator{op, fake}
 

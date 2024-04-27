@@ -22,7 +22,7 @@ import (
 func udpInputTest(input []byte, expected []string, cfg *Config) func(t *testing.T) {
 	return func(t *testing.T) {
 		set := componenttest.NewNopTelemetrySettings()
-		op, err := cfg.Build(&set)
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
@@ -74,7 +74,7 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		cfg.AddAttributes = true
 
 		set := componenttest.NewNopTelemetrySettings()
-		op, err := cfg.Build(&set)
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
@@ -183,7 +183,7 @@ func TestFailToBind(t *testing.T) {
 		cfg.ListenAddress = net.JoinHostPort(ip, strconv.Itoa(port))
 
 		set := componenttest.NewNopTelemetrySettings()
-		op, err := cfg.Build(&set)
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
@@ -216,7 +216,7 @@ func BenchmarkUDPInput(b *testing.B) {
 	cfg.ListenAddress = ":0"
 
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(b, err)
 
 	fakeOutput := testutil.NewFakeOutput(b)

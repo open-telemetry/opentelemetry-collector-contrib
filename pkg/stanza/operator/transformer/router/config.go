@@ -45,7 +45,7 @@ type RouteConfig struct {
 }
 
 // Build will build a router operator from the supplied configuration
-func (c Config) Build(set *component.TelemetrySettings) (operator.Operator, error) {
+func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	basicOperator, err := c.BasicConfig.Build(set)
 	if err != nil {
 		return nil, err

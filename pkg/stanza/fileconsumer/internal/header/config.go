@@ -40,7 +40,7 @@ func NewConfig(matchRegex string, metadataOperators []operator.Config, enc encod
 	p, err := pipeline.Config{
 		Operators:     metadataOperators,
 		DefaultOutput: newPipelineOutput(nopLogger),
-	}.Build(&component.TelemetrySettings{Logger: nopLogger.Desugar()})
+	}.Build(component.TelemetrySettings{Logger: nopLogger.Desugar()})
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to build pipelines: %w", err)
