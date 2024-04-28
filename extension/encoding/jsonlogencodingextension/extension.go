@@ -22,11 +22,11 @@ var (
 )
 
 type jsonLogExtension struct {
-	config     component.Config
+	config component.Config
 }
 
 func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
-	if !e.config.(*Config).RawLog {
+	if e.config.(*Config).Mode == JSONEncodingModeBodyWithInlineAttributes {
 		return e.LogProcessor(ld)
 	}
 	logRecord := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
@@ -72,7 +72,7 @@ func (e *jsonLogExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (e *jsonLogExtension) LogProcessor(ld plog.Logs) ([]byte, error){
+func (e *jsonLogExtension) LogProcessor(ld plog.Logs) ([]byte, error) {
 	prettyLogs := []prettyLogBody{}
 
 	rls := ld.ResourceLogs()
@@ -87,8 +87,8 @@ func (e *jsonLogExtension) LogProcessor(ld plog.Logs) ([]byte, error){
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 				logEvent := prettyLogBody{
-					Body: log.Body().AsRaw(),
-					Resource: resourceAttrs,
+					Body:       log.Body().AsRaw(),
+					Resource:   resourceAttrs,
 					Attributes: attrsValue(log.Attributes()),
 				}
 				prettyLogs = append(prettyLogs, logEvent)
@@ -99,11 +99,10 @@ func (e *jsonLogExtension) LogProcessor(ld plog.Logs) ([]byte, error){
 	return jsoniter.Marshal(prettyLogs)
 }
 
-
 type prettyLogBody struct {
-	Body                   any             `json:"body,omitempty"`
-	Attributes             map[string]any  `json:"attributes,omitempty"`
-	Resource               map[string]any  `json:"resource,omitempty"`
+	Body       any            `json:"body,omitempty"`
+	Attributes map[string]any `json:"attributes,omitempty"`
+	Resource   map[string]any `json:"resource,omitempty"`
 }
 
 func attrsValue(attrs pcommon.Map) map[string]any {

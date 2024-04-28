@@ -14,7 +14,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 	t.Parallel()
 	e := &jsonLogExtension{
 		config: &Config{
-			RawLog: true,
+			Mode: JSONEncodingModeBody,
 		},
 	}
 	json := `{"example":"example valid json to test that the unmarshaler is correctly returning a plog value"}`
@@ -31,7 +31,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 func TestInvalidMarshal(t *testing.T) {
 	e := &jsonLogExtension{
 		config: &Config{
-			RawLog: true,
+			Mode: JSONEncodingModeBody,
 		},
 	}
 	p := plog.NewLogs()
@@ -43,7 +43,7 @@ func TestInvalidMarshal(t *testing.T) {
 func TestInvalidUnmarshal(t *testing.T) {
 	e := &jsonLogExtension{
 		config: &Config{
-			RawLog: true,
+			Mode: JSONEncodingModeBody,
 		},
 	}
 	_, err := e.UnmarshalLogs([]byte("NOT A JSON"))
@@ -51,7 +51,11 @@ func TestInvalidUnmarshal(t *testing.T) {
 }
 
 func TestPrettyLogProcessor(t *testing.T) {
-	j := &jsonLogExtension{}
+	j := &jsonLogExtension{
+		config: &Config{
+			Mode: JSONEncodingModeBodyWithInlineAttributes,
+		},
+	}
 	lp, err := j.LogProcessor(sampleLog())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
