@@ -824,17 +824,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.ApacheServerName.Include != nil {
-		mb.resourceAttributeIncludeFilter["apache.server.name"] = filter.CreateFilter(mbc.ResourceAttributes.ApacheServerName.Include)
+	if mbc.ResourceAttributes.ApacheServerName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["apache.server.name"] = filter.CreateFilter(mbc.ResourceAttributes.ApacheServerName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ApacheServerName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["apache.server.name"] = filter.CreateFilter(mbc.ResourceAttributes.ApacheServerName.Exclude)
+	if mbc.ResourceAttributes.ApacheServerName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["apache.server.name"] = filter.CreateFilter(mbc.ResourceAttributes.ApacheServerName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ApacheServerPort.Include != nil {
-		mb.resourceAttributeIncludeFilter["apache.server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ApacheServerPort.Include)
+	if mbc.ResourceAttributes.ApacheServerPort.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["apache.server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ApacheServerPort.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ApacheServerPort.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["apache.server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ApacheServerPort.Exclude)
+	if mbc.ResourceAttributes.ApacheServerPort.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["apache.server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ApacheServerPort.MetricsExclude)
 	}
 
 	for _, op := range options {

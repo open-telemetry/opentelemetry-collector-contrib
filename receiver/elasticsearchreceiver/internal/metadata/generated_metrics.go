@@ -5457,29 +5457,29 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:                                  make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                                  make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.ElasticsearchClusterName.Include != nil {
-		mb.resourceAttributeIncludeFilter["elasticsearch.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchClusterName.Include)
+	if mbc.ResourceAttributes.ElasticsearchClusterName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["elasticsearch.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchClusterName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ElasticsearchClusterName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["elasticsearch.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchClusterName.Exclude)
+	if mbc.ResourceAttributes.ElasticsearchClusterName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["elasticsearch.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchClusterName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ElasticsearchIndexName.Include != nil {
-		mb.resourceAttributeIncludeFilter["elasticsearch.index.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchIndexName.Include)
+	if mbc.ResourceAttributes.ElasticsearchIndexName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["elasticsearch.index.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchIndexName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ElasticsearchIndexName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["elasticsearch.index.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchIndexName.Exclude)
+	if mbc.ResourceAttributes.ElasticsearchIndexName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["elasticsearch.index.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchIndexName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ElasticsearchNodeName.Include != nil {
-		mb.resourceAttributeIncludeFilter["elasticsearch.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchNodeName.Include)
+	if mbc.ResourceAttributes.ElasticsearchNodeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["elasticsearch.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchNodeName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ElasticsearchNodeName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["elasticsearch.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchNodeName.Exclude)
+	if mbc.ResourceAttributes.ElasticsearchNodeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["elasticsearch.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchNodeName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ElasticsearchNodeVersion.Include != nil {
-		mb.resourceAttributeIncludeFilter["elasticsearch.node.version"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchNodeVersion.Include)
+	if mbc.ResourceAttributes.ElasticsearchNodeVersion.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["elasticsearch.node.version"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchNodeVersion.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ElasticsearchNodeVersion.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["elasticsearch.node.version"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchNodeVersion.Exclude)
+	if mbc.ResourceAttributes.ElasticsearchNodeVersion.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["elasticsearch.node.version"] = filter.CreateFilter(mbc.ResourceAttributes.ElasticsearchNodeVersion.MetricsExclude)
 	}
 
 	for _, op := range options {
