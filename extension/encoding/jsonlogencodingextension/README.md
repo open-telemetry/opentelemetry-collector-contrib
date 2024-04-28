@@ -33,7 +33,9 @@ The `body_with_inline_attributes` mode within the json encoding extension will g
 ```json
 [
   {
-    "body": "{\"log\": \"test\"}",
+    "body": {
+      "log": "test"
+    },
     "resourceAttributes": {
       "test": "logs-test"
     },

@@ -59,14 +59,14 @@ func TestPrettyLogProcessor(t *testing.T) {
 	lp, err := j.LogProcessor(sampleLog())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
-	assert.Equal(t, string(lp), `[{"body":"{\"log\": \"test\"}","logAttributes":{"foo":"bar"},"resourceAttributes":{"test":"logs-test"}},{"body":"log testing","resourceAttributes":{"test":"logs-test"}}]`)
+	assert.Equal(t, string(lp), `[{"body":{"log":"test"},"logAttributes":{"foo":"bar"},"resourceAttributes":{"test":"logs-test"}},{"body":"log testing","resourceAttributes":{"test":"logs-test"}}]`)
 }
 
 func sampleLog() plog.Logs {
 	l := plog.NewLogs()
 	rl := l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().PutStr("test", "logs-test")
-	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(`{"log": "test"}`)
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetEmptyMap().PutStr("log", "test")
 	rl.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo", "bar")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log testing")
 	return l
