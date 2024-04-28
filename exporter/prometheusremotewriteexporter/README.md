@@ -51,7 +51,6 @@ The following settings can be optionally configured:
 - `namespace`: prefix attached to each exported metric name.
 - `add_metric_suffixes`: If set to false, type and unit suffixes will not be added to metrics. Default: true.
 - `send_metadata`: If set to true, prometheus metadata will be generated and sent. Default: false.
-- `retry_on_http_429`: If set to true, 429 http responses will be retried. Default: false.
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
   - `enabled`: enable the sending queue (default: `true`)
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false` (default: `10000`)
