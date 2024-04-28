@@ -78,7 +78,7 @@ func (e *jsonLogExtension) LogProcessor(ld plog.Logs) ([]byte, error) {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
-		resourceAttrs := attrsValue(rl.Resource().Attributes())
+		resourceAttrs := rl.Resource().Attributes().AsRaw()
 
 		sls := rl.ScopeLogs()
 		for j := 0; j < sls.Len(); j++ {
@@ -87,9 +87,9 @@ func (e *jsonLogExtension) LogProcessor(ld plog.Logs) ([]byte, error) {
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 				logEvent := prettyLogBody{
-					Body:       log.Body().AsRaw(),
-					Resource:   resourceAttrs,
-					Attributes: attrsValue(log.Attributes()),
+					Body:               log.Body().AsRaw(),
+					ResourceAttributes: resourceAttrs,
+					LogAttributes:      log.Attributes().AsRaw(),
 				}
 				prettyLogs = append(prettyLogs, logEvent)
 			}
@@ -100,19 +100,7 @@ func (e *jsonLogExtension) LogProcessor(ld plog.Logs) ([]byte, error) {
 }
 
 type prettyLogBody struct {
-	Body       any            `json:"body,omitempty"`
-	Attributes map[string]any `json:"attributes,omitempty"`
-	Resource   map[string]any `json:"resource,omitempty"`
-}
-
-func attrsValue(attrs pcommon.Map) map[string]any {
-	if attrs.Len() == 0 {
-		return nil
-	}
-	out := make(map[string]any, attrs.Len())
-	attrs.Range(func(k string, v pcommon.Value) bool {
-		out[k] = v.AsRaw()
-		return true
-	})
-	return out
+	Body               any            `json:"body,omitempty"`
+	LogAttributes      map[string]any `json:"logAttributes,omitempty"`
+	ResourceAttributes map[string]any `json:"resourceAttributes,omitempty"`
 }

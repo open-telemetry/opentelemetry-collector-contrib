@@ -4,7 +4,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: json_log_encoding
+component: jsonlogencodingextension
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Adds a new encoding option for JSON log encoding exension to grab attributes and resources from a log and output that in JSON format."
