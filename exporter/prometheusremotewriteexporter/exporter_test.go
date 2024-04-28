@@ -112,7 +112,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
-			prwe, err := newPRWExporter(cfg, tt.set)
+			prwe, err := newPRWExporter(cfg, tt.set, false)
 
 			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
@@ -201,7 +201,7 @@ func Test_Start(t *testing.T) {
 			cfg.RemoteWriteQueue.NumConsumers = 1
 			cfg.ClientConfig = tt.clientSettings
 
-			prwe, err := newPRWExporter(cfg, tt.set)
+			prwe, err := newPRWExporter(cfg, tt.set, false)
 			assert.NoError(t, err)
 			assert.NotNil(t, prwe)
 
@@ -361,7 +361,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	set := exportertest.NewNopCreateSettings()
 	set.BuildInfo = buildInfo
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := newPRWExporter(cfg, set)
+	prwe, err := newPRWExporter(cfg, set, false)
 	if err != nil {
 		return err
 	}
@@ -748,7 +748,7 @@ func Test_PushMetrics(t *testing.T) {
 					set := exportertest.NewNopCreateSettings()
 					set.BuildInfo = buildInfo
 
-					prwe, nErr := newPRWExporter(cfg, set)
+					prwe, nErr := newPRWExporter(cfg, set, false)
 					prwe.telemetry = mockTelemetry
 
 					require.NoError(t, nErr)
@@ -931,7 +931,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		Version:     "1.0",
 	}
 
-	prwe, perr := newPRWExporter(cfg, set)
+	prwe, perr := newPRWExporter(cfg, set, false)
 	assert.NoError(t, perr)
 
 	nopHost := componenttest.NewNopHost()
@@ -1009,7 +1009,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	// 4. Finally, ensure that the bytes that were uploaded to the
 	// Prometheus Remote Write endpoint are exactly as were saved in the WAL.
 	// Read from that same WAL, export to the RWExporter server.
-	prwe2, err := newPRWExporter(cfg, set)
+	prwe2, err := newPRWExporter(cfg, set, false)
 	assert.NoError(t, err)
 	require.NoError(t, prwe2.Start(ctx, nopHost))
 	t.Cleanup(func() {

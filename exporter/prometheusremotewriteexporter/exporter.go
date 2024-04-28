@@ -96,7 +96,7 @@ func newPRWTelemetry(set exporter.CreateSettings) (prwTelemetry, error) {
 }
 
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
-func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, error) {
+func newPRWExporter(cfg *Config, set exporter.CreateSettings, retryOn429 bool) (*prwExporter, error) {
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg)
 	if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 			ExportCreatedMetric: cfg.CreatedMetric.Enabled,
 			AddMetricSuffixes:   cfg.AddMetricSuffixes,
 			SendMetadata:        cfg.SendMetadata,
-			RetryOnHTTP429:      cfg.RetryOnHTTP429,
+			RetryOnHTTP429:      retryOn429,
 		},
 		telemetry: prwTelemetry,
 	}

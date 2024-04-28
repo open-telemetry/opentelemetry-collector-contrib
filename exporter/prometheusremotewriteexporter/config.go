@@ -52,9 +52,6 @@ type Config struct {
 
 	// SendMetadata controls whether prometheus metadata will be generated and sent
 	SendMetadata bool `mapstructure:"send_metadata"`
-
-	// RetryOnHTTP429 controls whether requests receiving http status code 429 will be retried based on the configured retries
-	RetryOnHTTP429 bool `mapstructure:"retry_on_http_429"`
 }
 
 type CreatedMetric struct {

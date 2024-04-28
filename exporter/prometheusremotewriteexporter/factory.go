@@ -6,6 +6,7 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 import (
 	"context"
 	"errors"
+	"go.opentelemetry.io/collector/featuregate"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -17,6 +18,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
+)
+
+var metricsOriginFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewritexporter.metrics.RetryOn429",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.100.0"),
+	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will retry 429 http status code. Requires exporter.prometheusremotewritexporter.metrics.RetryOn429 to be enabled."),
 )
 
 // NewFactory creates a new Prometheus Remote Write exporter.
@@ -35,7 +43,11 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
 		return nil, errors.New("invalid configuration")
 	}
 
-	prwe, err := newPRWExporter(prwCfg, set)
+	retryOn429 := false
+	if metricsOriginFeatureGate.IsEnabled() {
+		retryOn429 = true
+	}
+	prwe, err := newPRWExporter(prwCfg, set, retryOn429)
 	if err != nil {
 		return nil, err
 	}
