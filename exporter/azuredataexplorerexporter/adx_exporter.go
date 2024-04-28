@@ -12,6 +12,7 @@ import (
 	"github.com/Azure/azure-kusto-go/kusto"
 	kustoerrors "github.com/Azure/azure-kusto-go/kusto/data/errors"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -213,15 +214,24 @@ func buildAdxClient(config *Config, version string) (*kusto.Client, error) {
 func createKcsb(config *Config, version string) *kusto.ConnectionStringBuilder {
 	var kcsb *kusto.ConnectionStringBuilder
 	isManagedIdentity := len(strings.TrimSpace(config.ManagedIdentityID)) > 0
+	isManagedIdentityResourceID := len(strings.TrimSpace(config.ManagedIdentityResourceID)) > 0
 	isSystemManagedIdentity := strings.EqualFold(strings.TrimSpace(config.ManagedIdentityID), "SYSTEM")
 	// If the user has managed identity done, use it. For System managed identity use the MI as system
 	switch {
-	case !isManagedIdentity:
+	case !isManagedIdentity && !isManagedIdentityResourceID:
 		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
 	case isManagedIdentity && isSystemManagedIdentity:
 		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithSystemManagedIdentity()
 	case isManagedIdentity && !isSystemManagedIdentity:
 		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithUserManagedIdentity(config.ManagedIdentityID)
+	case isManagedIdentityResourceID:
+		msiCred, err := azidentity.NewManagedIdentityCredential(&azidentity.ManagedIdentityCredentialOptions{
+			ID: azidentity.ResourceID(config.ManagedIdentityResourceID),
+		})
+		if err != nil {
+			return nil
+		}
+		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithTokenCredential(msiCred)
 	}
 	kcsb.SetConnectorDetails("OpenTelemetry", version, "", "", false, "", kusto.StringPair{Key: "isManagedIdentity", Value: strconv.FormatBool(isManagedIdentity)})
 	return kcsb

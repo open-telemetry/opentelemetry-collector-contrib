@@ -24,6 +24,7 @@ type Config struct {
 	ApplicationKey                 configopaque.String `mapstructure:"application_key"`
 	TenantID                       string              `mapstructure:"tenant_id"`
 	ManagedIdentityID              string              `mapstructure:"managed_identity_id"`
+	ManagedIdentityResourceID      string              `mapstructure:"managed_identity_resource_id"`
 	Database                       string              `mapstructure:"db_name"`
 	MetricTable                    string              `mapstructure:"metrics_table_name"`
 	LogTable                       string              `mapstructure:"logs_table_name"`
@@ -41,14 +42,15 @@ func (adxCfg *Config) Validate() error {
 	}
 	isAppAuthEmpty := isEmpty(adxCfg.ApplicationID) || isEmpty(string(adxCfg.ApplicationKey)) || isEmpty(adxCfg.TenantID)
 	isManagedAuthEmpty := isEmpty(adxCfg.ManagedIdentityID)
+	isResourceIDEmpty := isEmpty(adxCfg.ManagedIdentityResourceID)
 	isClusterURIEmpty := isEmpty(adxCfg.ClusterURI)
 	// Cluster URI is the target ADX cluster
 	if isClusterURIEmpty {
 		return errors.New(`clusterURI config is mandatory`)
 	}
 	// Parameters for AD App Auth or Managed Identity Auth are mandatory
-	if isAppAuthEmpty && isManagedAuthEmpty {
-		return errors.New(`either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] are needed for auth`)
+	if isAppAuthEmpty && isManagedAuthEmpty && isResourceIDEmpty {
+		return errors.New(`either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] or [managed_identity_resource_id] are needed for auth`)
 	}
 
 	if !(adxCfg.IngestionType == managedIngestType || adxCfg.IngestionType == queuedIngestTest || isEmpty(adxCfg.IngestionType)) {
