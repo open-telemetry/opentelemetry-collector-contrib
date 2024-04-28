@@ -238,7 +238,10 @@ jobs:
       - name: CodeGen
         run: |
           make -j2 generate
-          git diff --exit-code ':!*go.sum' || (echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.' && exit 1)
+          if [[ -n $(git status -s) ]]; then
+            echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.'
+            exit 1
+          fi
       - name: MultimodVerify
         run: make multimod-verify
       - name: Components dropdown in issue templates
