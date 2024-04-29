@@ -461,6 +461,8 @@ func TestLogsAgentExporter(t *testing.T) {
 			},
 		},
 	}
+	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.logsagentexporter", true)
+	assert.NoError(t, err)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			doneChannel := make(chan bool)
@@ -477,8 +479,6 @@ func TestLogsAgentExporter(t *testing.T) {
 				},
 			}
 			params := exportertest.NewNopCreateSettings()
-			err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.logsagentexporter", true)
-			assert.NoError(t, err)
 			f := NewFactory()
 			ctx := context.Background()
 			exp, err := f.CreateLogsExporter(ctx, params, cfg)

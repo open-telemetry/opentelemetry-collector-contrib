@@ -307,6 +307,7 @@ type LogsConfig struct {
 	confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	// DumpPayloads report whether payloads should be dumped when logging level is debug.
+	// Note: this config option does not apply when enabling the logsagentexporter feature flag.
 	DumpPayloads bool `mapstructure:"dump_payloads"`
 
 	// UseCompression enables the logs agent to compress logs before sending them.

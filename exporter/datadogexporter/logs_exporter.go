@@ -29,7 +29,7 @@ import (
 
 const (
 	// logSourceName specifies the Datadog source tag value to be added to logs sent from the Datadog exporter.
-	logSourceName = "OTLP log ingestion"
+	logSourceName = "otlp_log_ingestion"
 	// otelSource specifies a source to be added to all logs sent from the Datadog exporter. The tag has key `otel_source` and the value specified on this constant.
 	otelSource = "datadog_exporter"
 )
