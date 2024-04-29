@@ -37,7 +37,7 @@ func newAWSS3TraceReceiver(ctx context.Context, cfg *Config, traces consumer.Tra
 }
 
 func (r *awss3TraceReceiver) Start(ctx context.Context, _ component.Host) error {
-	ctx, r.cancel = context.WithCancel(ctx)
+	ctx, r.cancel = context.WithCancel(context.Background())
 	go func() {
 		_ = r.s3Reader.readAll(ctx, "traces", r.receiveBytes)
 	}()
