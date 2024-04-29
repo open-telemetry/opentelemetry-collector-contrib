@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/expr-lang/expr/vm"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -30,8 +31,8 @@ type TransformerConfig struct {
 }
 
 // Build will build a transformer operator.
-func (c TransformerConfig) Build(logger *zap.SugaredLogger) (TransformerOperator, error) {
-	writerOperator, err := c.WriterConfig.Build(logger)
+func (c TransformerConfig) Build(set component.TelemetrySettings) (TransformerOperator, error) {
+	writerOperator, err := c.WriterConfig.Build(set)
 	if err != nil {
 		return TransformerOperator{}, errors.WithDetails(err, "operator_id", c.ID())
 	}

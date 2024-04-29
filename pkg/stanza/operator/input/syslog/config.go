@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -41,8 +41,8 @@ type Config struct {
 	UDP                *udp.BaseConfig `mapstructure:"udp"`
 }
 
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	inputBase, err := c.InputConfig.Build(logger)
+func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
+	inputBase, err := c.InputConfig.Build(set)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	syslogParserCfg.BaseConfig = c.BaseConfig
 	syslogParserCfg.SetID(inputBase.ID() + "_internal_parser")
 	syslogParserCfg.OutputIDs = c.OutputIDs
-	syslogParser, err := syslogParserCfg.Build(logger)
+	syslogParser, err := syslogParserCfg.Build(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve syslog config: %w", err)
 	}
@@ -65,7 +65,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 			tcpInputCfg.SplitFuncBuilder = OctetSplitFuncBuilder
 		}
 
-		tcpInput, err := tcpInputCfg.Build(logger)
+		tcpInput, err := tcpInputCfg.Build(set)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve tcp config: %w", err)
 		}
@@ -93,7 +93,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 			return nil, errors.New("octet_counting and non_transparent_framing is not compatible with UDP")
 		}
 
-		udpInput, err := udpInputCfg.Build(logger)
+		udpInput, err := udpInputCfg.Build(set)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve udp config: %w", err)
 		}

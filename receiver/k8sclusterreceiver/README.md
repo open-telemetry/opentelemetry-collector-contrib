@@ -72,12 +72,12 @@ Example:
     auth_type: kubeConfig
     node_conditions_to_report: [Ready, MemoryPressure]
     allocatable_types_to_report: [cpu, memory]
-  metrics:
-    k8s.container.cpu_limit:
-      enabled: false
-  resource_attributes:
-    container.id:
-      enabled: false
+    metrics:
+      k8s.container.cpu_limit:
+        enabled: false
+    resource_attributes:
+      container.id:
+        enabled: false
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
