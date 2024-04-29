@@ -125,6 +125,7 @@ func (m *mySQLScraper) scrapeInnodbStatusStats(now pcommon.Timestamp, errs *scra
 	for k, v := range innodbStatusStats {
 		strVal := strconv.FormatInt(v, 10)
 		switch k {
+		//Semaphores --------------------------------------------------------------------------------------------------------//
 		case "Innodb_mutex_spin_waits":
 			addPartialIfError(errs, m.mb.RecordMysqlInnodbMutexSpinWaitsDataPoint(now, strVal))
 
@@ -157,6 +158,31 @@ func (m *mySQLScraper) scrapeInnodbStatusStats(now pcommon.Timestamp, errs *scra
 
 		case "Innodb_semaphore_wait_time":
 			m.mb.RecordMysqlInnodbSemaphoreWaitTimeDataPoint(now, v)
+
+		//Transactions -------------------------------------------------------------------------------------------------------//
+		case "Innodb_history_list_length":
+			m.mb.RecordMysqlInnodbHistoryListLengthDataPoint(now, v)
+
+		case "Innodb_current_transactions":
+			m.mb.RecordMysqlInnodbCurrentTransactionsDataPoint(now, v)
+
+		case "Innodb_active_transactions":
+			m.mb.RecordMysqlInnodbActiveTransactionsDataPoint(now, v)
+
+		case "Innodb_read_views":
+			m.mb.RecordMysqlInnodbReadViewsDataPoint(now, v)
+
+		case "Innodb_tables_in_use":
+			m.mb.RecordMysqlInnodbTablesInUseDataPoint(now, v)
+
+		case "Innodb_locked_tables":
+			m.mb.RecordMysqlInnodbLockedTablesDataPoint(now, v)
+
+		case "Innodb_lock_structs":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbLockStructsDataPoint(now, strVal))
+
+		case "Innodb_locked_transactions":
+			m.mb.RecordMysqlInnodbLockedTransactionsDataPoint(now, v)
 		}
 	}
 }
