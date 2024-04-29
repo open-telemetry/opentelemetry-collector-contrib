@@ -19,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/staleness"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/fatal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/maybe"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
@@ -32,7 +33,7 @@ type Processor struct {
 
 	log    *zap.Logger
 	ctx    context.Context
-	cancel context.CancelFunc
+	cancel context.CancelCauseFunc
 
 	sums Pipeline[data.Number]
 	expo Pipeline[data.ExpHistogram]
@@ -41,7 +42,7 @@ type Processor struct {
 }
 
 func newProcessor(cfg *Config, log *zap.Logger, meter metric.Meter, next consumer.Metrics) *Processor {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := fatal.Context(context.Background())
 
 	tel := telemetry.New(meter)
 
@@ -99,6 +100,8 @@ func (p *Processor) Start(_ context.Context, _ component.Host) error {
 	}
 
 	go func() {
+		fatal.Recover(p.ctx)
+
 		tick := time.NewTicker(time.Minute)
 		for {
 			select {
@@ -116,7 +119,7 @@ func (p *Processor) Start(_ context.Context, _ component.Host) error {
 }
 
 func (p *Processor) Shutdown(_ context.Context) error {
-	p.cancel()
+	p.cancel(errors.New("shutdown"))
 	return nil
 }
 
@@ -125,11 +128,15 @@ func (p *Processor) Capabilities() consumer.Capabilities {
 }
 
 func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	defer fatal.Recover(p.ctx)
+	if err := context.Cause(p.ctx); err != nil {
+		return err
+	}
+
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 
 	var errs error
-
 	metrics.Each(md, func(m metrics.Metric) {
 		switch m.Type() {
 		case pmetric.MetricTypeSum:
@@ -150,7 +157,6 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 			}
 		}
 	})
-
 	if errs != nil {
 		return errs
 	}
