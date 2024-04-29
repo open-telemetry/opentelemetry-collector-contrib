@@ -6,6 +6,7 @@ package datadogexporter
 import (
 	"context"
 	"encoding/json"
+	"go.opentelemetry.io/collector/featuregate"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -107,6 +108,62 @@ func TestCreateDefaultConfig(t *testing.T) {
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://http-intake.logs.datadoghq.com",
 			},
+		},
+
+		HostMetadata: HostMetadataConfig{
+			Enabled:        true,
+			HostnameSource: HostnameSourceConfigOrSystem,
+		},
+		OnlyMetadata: false,
+	}, cfg, "failed to create default config")
+
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+}
+
+// Test that the factory creates the default configuration
+func TestCreateDefaultConfigLogsAgent(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.logsagentexporter", true)
+	assert.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	assert.Equal(t, &Config{
+		ClientConfig:  defaultClientConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+
+		API: APIConfig{
+			Site: "datadoghq.com",
+		},
+
+		Metrics: MetricsConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: "https://api.datadoghq.com",
+			},
+			DeltaTTL: 3600,
+			HistConfig: HistogramConfig{
+				Mode:             "distributions",
+				SendAggregations: false,
+			},
+			SumConfig: SumConfig{
+				CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+				InitialCumulativeMonotonicMode: InitialValueModeAuto,
+			},
+			SummaryConfig: SummaryConfig{
+				Mode: SummaryModeGauges,
+			},
+		},
+
+		Traces: TracesConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: "https://trace.agent.datadoghq.com",
+			},
+			IgnoreResources: []string{},
+		},
+		Logs: LogsConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: "",
+			},
 			UseCompression:   true,
 			CompressionLevel: 6,
 			BatchWait:        5,
@@ -120,6 +177,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	err = featuregate.GlobalRegistry().Set("exporter.datadogexporter.logsagentexporter", false)
+	assert.NoError(t, err)
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -172,9 +231,6 @@ func TestLoadConfig(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.com",
 					},
-					UseCompression:   true,
-					CompressionLevel: 6,
-					BatchWait:        5,
 				},
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,
@@ -230,9 +286,6 @@ func TestLoadConfig(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.eu",
 					},
-					UseCompression:   true,
-					CompressionLevel: 6,
-					BatchWait:        5,
 				},
 				OnlyMetadata: false,
 				HostMetadata: HostMetadataConfig{
@@ -286,9 +339,6 @@ func TestLoadConfig(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.test",
 					},
-					UseCompression:   true,
-					CompressionLevel: 6,
-					BatchWait:        5,
 				},
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,
