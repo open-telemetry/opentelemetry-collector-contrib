@@ -38,9 +38,12 @@ type Config struct {
 	LogFormat LogFormatType `mapstructure:"log_format"`
 
 	// Metrics related configuration
-	// The format of metrics you will be sending, either graphite or carbon2 or prometheus (Default is prometheus)
-	// Possible values are `carbon2` and `prometheus`
+	// The format of metrics you will be sending, either otlp or prometheus (Default is otlp)
 	MetricFormat MetricFormatType `mapstructure:"metric_format"`
+
+	// Decompose OTLP Histograms into individual metrics, similar to how they're represented in Prometheus format
+	DecomposeOtlpHistograms bool `mapstructure:"decompose_otlp_histograms"`
+
 	// Graphite template.
 	// Placeholders `%{attr_name}` will be replaced with attribute value for attr_name.
 	GraphiteTemplate string `mapstructure:"graphite_template"`
@@ -92,12 +95,14 @@ const (
 	TextFormat LogFormatType = "text"
 	// JSONFormat represents log_format: json
 	JSONFormat LogFormatType = "json"
+	// RemovedGraphiteFormat represents the no longer supported graphite metric format
+	RemovedGraphiteFormat MetricFormatType = "graphite"
+	// RemovedCarbon2Format represents the no longer supported carbon2 metric format
+	RemovedCarbon2Format MetricFormatType = "carbon2"
 	// GraphiteFormat represents metric_format: text
-	GraphiteFormat MetricFormatType = "graphite"
-	// Carbon2Format represents metric_format: json
-	Carbon2Format MetricFormatType = "carbon2"
-	// PrometheusFormat represents metric_format: json
 	PrometheusFormat MetricFormatType = "prometheus"
+	// OTLPMetricFormat represents metric_format: otlp
+	OTLPMetricFormat MetricFormatType = "otlp"
 	// GZIPCompression represents compress_encoding: gzip
 	GZIPCompression CompressEncodingType = "gzip"
 	// DeflateCompression represents compress_encoding: deflate
@@ -141,9 +146,12 @@ func (cfg *Config) Validate() error {
 	}
 
 	switch cfg.MetricFormat {
-	case GraphiteFormat:
-	case Carbon2Format:
+	case RemovedGraphiteFormat:
+		fallthrough
+	case RemovedCarbon2Format:
+		return fmt.Errorf("%s metric format is no longer supported", cfg.MetricFormat)
 	case PrometheusFormat:
+	case OTLPMetricFormat:
 	default:
 		return fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
 	}
