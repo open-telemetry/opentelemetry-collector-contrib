@@ -71,7 +71,7 @@ func (p pdataMetricsMarshaler) Marshal(ld pmetric.Metrics, topic string) ([]*sar
 			var hash = pdatautil.MapHash(resourceMetrics.Resource().Attributes())
 
 			newMetrics := pmetric.NewMetrics()
-			resourceMetrics.MoveTo(newMetrics.ResourceMetrics().AppendEmpty())
+			resourceMetrics.CopyTo(newMetrics.ResourceMetrics().AppendEmpty())
 
 			bts, err := p.marshaler.MarshalMetrics(newMetrics)
 			if err != nil {
