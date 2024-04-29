@@ -11,8 +11,6 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline"
-	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl"
-	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
@@ -37,7 +35,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -81,13 +78,7 @@ func enableZorkianMetricExport() error {
 	return featuregate.GlobalRegistry().Set(metricExportNativeClientFeatureGate.ID(), false)
 }
 
-const (
-	metadataReporterPeriod = 30 * time.Minute
-	// logSourceName specifies the Datadog source tag value to be added to logs sent from the Datadog exporter.
-	logSourceName = "OTLP log ingestion"
-	// otelSource specifies a source to be added to all logs sent from the Datadog exporter. The tag has key `otel_source` and the value specified on this constant.
-	otelSource = "datadog_exporter"
-)
+const metadataReporterPeriod = 30 * time.Minute
 
 func consumeResource(metadataReporter *inframetadata.Reporter, res pcommon.Resource, logger *zap.Logger) {
 	if err := metadataReporter.ConsumeResource(res); err != nil {
@@ -548,36 +539,13 @@ func (f *factory) createLogsExporter(
 			return nil
 		}
 	case isLogsAgentExporterEnabled():
-		logComponent := newLogComponent(set.TelemetrySettings)
-		cfgComponent := newConfigComponent(set.TelemetrySettings, cfg)
-		logsAgentConfig := &logsagentexporter.Config{
-			OtelSource:    otelSource,
-			LogSourceName: logSourceName,
-		}
-		hostnameComponent, err := logs.NewHostnameService(ctx, hostProvider)
+		logsAgent, exp, err := newLogsAgentExporter(ctx, set, cfg, hostProvider)
 		if err != nil {
-			cancel()
-			return nil, fmt.Errorf("failed to initialize logs agent hostname service: %w", err)
-		}
-		f.logsAgent = logsagentpipelineimpl.NewLogsAgent(logsagentpipelineimpl.Dependencies{
-			Log:      logComponent,
-			Config:   cfgComponent,
-			Hostname: hostnameComponent,
-		})
-		err = f.logsAgent.Start(ctx)
-		if err != nil {
-			set.Logger.Error("failed to create logs agent", zap.Error(err))
 			cancel()
 			return nil, err
 		}
-		pipelineChan := f.logsAgent.GetPipelineProvider().NextPipelineChan()
-		logsAgentExporter, err := logsagentexporter.NewFactory(pipelineChan).CreateLogsExporter(ctx, set, logsAgentConfig)
-		if err != nil {
-			set.Logger.Error("failed to create logs agent exporter", zap.Error(err))
-			cancel()
-			return nil, err
-		}
-		pusher = logsAgentExporter.ConsumeLogs
+		f.logsAgent = logsAgent
+		pusher = exp.ConsumeLogs
 	default:
 		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, attributesTranslator, hostProvider, metadataReporter)
 		if err != nil {

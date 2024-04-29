@@ -8,6 +8,9 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline"
+	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl"
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
@@ -16,11 +19,19 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+)
+
+const (
+	// logSourceName specifies the Datadog source tag value to be added to logs sent from the Datadog exporter.
+	logSourceName = "OTLP log ingestion"
+	// otelSource specifies a source to be added to all logs sent from the Datadog exporter. The tag has key `otel_source` and the value specified on this constant.
+	otelSource = "datadog_exporter"
 )
 
 type logsExporter struct {
@@ -109,4 +120,40 @@ func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err err
 
 	payloads := exp.translator.MapLogs(ctx, ld)
 	return exp.sender.SubmitLogs(exp.ctx, payloads)
+}
+
+// newLogsAgentExporter creates new instances of the logs agent and the logs agent exporter
+func newLogsAgentExporter(
+	ctx context.Context,
+	params exporter.CreateSettings,
+	cfg *Config,
+	sourceProvider source.Provider,
+) (logsagentpipeline.LogsAgent, exporter.Logs, error) {
+	logComponent := newLogComponent(params.TelemetrySettings)
+	cfgComponent := newConfigComponent(params.TelemetrySettings, cfg)
+	logsAgentConfig := &logsagentexporter.Config{
+		OtelSource:    otelSource,
+		LogSourceName: logSourceName,
+	}
+	hostnameComponent, err := logs.NewHostnameService(ctx, sourceProvider)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to initialize logs agent hostname service: %w", err)
+	}
+	logsAgent := logsagentpipelineimpl.NewLogsAgent(logsagentpipelineimpl.Dependencies{
+		Log:      logComponent,
+		Config:   cfgComponent,
+		Hostname: hostnameComponent,
+	})
+	err = logsAgent.Start(ctx)
+	if err != nil {
+		params.Logger.Error("failed to create logs agent", zap.Error(err))
+		return nil, nil, err
+	}
+	pipelineChan := logsAgent.GetPipelineProvider().NextPipelineChan()
+	logsAgentExporter, err := logsagentexporter.NewFactory(pipelineChan).CreateLogsExporter(ctx, params, logsAgentConfig)
+	if err != nil {
+		params.Logger.Error("failed to create logs agent exporter", zap.Error(err))
+		return nil, nil, err
+	}
+	return logsAgent, logsAgentExporter, nil
 }
