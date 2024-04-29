@@ -66,7 +66,7 @@ func TestFrontDoorHealthProbeLogTotalLatencyMilliseconds(t *testing.T) {
 	attrs := map[string]any{}
 	ok = f("totalLatencyMilliseconds", 123, attrs)
 	assert.True(t, ok)
-	duration, ok := attrs["http.client.request.duration"].(float64)
+	duration, ok := attrs["http.request.duration"].(float64)
 	assert.True(t, ok)
 	assert.Equal(t, 0.123, duration)
 }

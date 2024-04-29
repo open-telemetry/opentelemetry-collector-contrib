@@ -10,8 +10,8 @@ type ComplexConversion func(string, any, map[string]any) bool
 type TypeConversion func(string, any, map[string]any, string) bool
 
 var conversions = map[string]ComplexConversion{
-	"AzureCDNAccessLog:SecurityProtocol":               azureCDNAccessLogSecurityProtocol,
-	"FrontDoorAccessLog:securityProtocol":              azureCDNAccessLogSecurityProtocol,
+	"AzureCdnAccessLog:SecurityProtocol":               azureCdnAccessLogSecurityProtocol,
+	"FrontDoorAccessLog:securityProtocol":              azureCdnAccessLogSecurityProtocol,
 	"AppServiceHTTPLogs:Protocol":                      appServiceHTTPLogsProtocol,
 	"AppServiceHTTPLogs:TimeTaken":                     appServiceHTTPLogTimeTakenMilliseconds,
 	"FrontDoorHealthProbeLog:DNSLatencyMicroseconds":   frontDoorHealthProbeLogDNSLatencyMicroseconds,
@@ -19,7 +19,7 @@ var conversions = map[string]ComplexConversion{
 }
 
 // Splits the "TLS 1.2" value into "TLS" and "1.2" and sets as "network.protocol.name" and "network.protocol.version"
-func azureCDNAccessLogSecurityProtocol(key string, value any, attrs map[string]any) bool {
+func azureCdnAccessLogSecurityProtocol(key string, value any, attrs map[string]any) bool {
 	if str, ok := value.(string); ok {
 		if parts := strings.SplitN(str, " ", 2); len(parts) == 2 {
 			attrs["tls.protocol.name"] = strings.ToLower(parts[0])
@@ -60,7 +60,7 @@ func frontDoorHealthProbeLogTotalLatencyMilliseconds(key string, value any, attr
 		return false
 	}
 	seconds := milliseconds / 1_000
-	attrs["http.client.request.duration"] = seconds
+	attrs["http.request.duration"] = seconds
 	return true
 }
 

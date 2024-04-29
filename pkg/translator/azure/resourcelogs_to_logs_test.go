@@ -517,6 +517,21 @@ func TestFrontDoorAccessLog(t *testing.T) {
 	assert.Equal(t, "NoError", record["error.type"])
 }
 
+func TestFrontDoorWAFLog(t *testing.T) {
+	logs, err := loadJsonLogs("log-frontdoorwaflog.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "TRACKING_REFERENCE", record["az.service_request_id"])
+	assert.Equal(t, "https://test.net/", record["url.full"])
+	assert.Equal(t, "test.net", record["server.address"])
+	assert.Equal(t, "42.42.42.42", record["client.address"])
+	assert.Equal(t, "0", record["client.port"])
+	assert.Equal(t, "23.23.23.23", record["network.peer.address"])
+}
+
 func TestAppServiceAuditLog(t *testing.T) {
 	logs, err := loadJsonLogs("log-appserviceauditlogs.json")
 
@@ -562,4 +577,41 @@ func TestAppServicePlatformLog(t *testing.T) {
 
 	assert.Equal(t, "CONTAINER_ID", record["container.id"])
 	assert.Equal(t, "CONTAINER_NAME", record["container.name"])
+}
+
+func TestAzureCdnAccessLog(t *testing.T) {
+	logs, err := loadJsonLogs("log-azurecdnaccesslog.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "GET", record["http.request.method"])
+	assert.Equal(t, "1.1.0.0", record["network.protocol.version"])
+	assert.Equal(t, "TRACKING_REFERENCE", record["az.service_request_id"])
+	assert.Equal(t, "https://test.net/", record["url.full"])
+	assert.Equal(t, int64(1234), record["http.request.size"])
+	assert.Equal(t, int64(12345), record["http.response.size"])
+	assert.Equal(t, "Mozilla/5.0", record["user_agent.original"])
+	assert.Equal(t, "42.42.42.42", record["client.address"])
+	assert.Equal(t, "0", record["client.port"])
+	assert.Equal(t, "tls", record["tls.protocol.name"])
+	assert.Equal(t, "1.3", record["tls.protocol.version"])
+	assert.Equal(t, int64(200), record["http.response.status_code"])
+	assert.Equal(t, "NoError", record["error.type"])
+}
+
+func TestFrontDoorHealthProbeLog(t *testing.T) {
+	logs, err := loadJsonLogs("log-frontdoorhealthprobelog.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "GET", record["http.request.method"])
+	assert.Equal(t, int64(200), record["http.response.status_code"])
+	assert.Equal(t, "https://probe.net/health", record["url.full"])
+	assert.Equal(t, "42.42.42.42", record["server.address"])
+	assert.Equal(t, 0.042, record["http.request.duration"])
+	assert.Equal(t, 0.00023, record["dns.lookup.duration"])
 }

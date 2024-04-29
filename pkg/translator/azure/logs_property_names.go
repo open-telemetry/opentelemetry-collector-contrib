@@ -66,8 +66,8 @@ var mappings = map[string]map[string]string{
 		"result":                        "",
 		"httpStatusCode":                "http.response.status_code",
 		"probeURL":                      "url.full",
-		"originName":                    "server.address",
-		"originIP":                      "",
+		"originName":                    "",
+		"originIP":                      "server.address",
 		"totalLatencyMilliseconds":      "", // handled by complex_conversions
 		"connectionLatencyMilliseconds": "",
 		"DNSLatencyMicroseconds":        "", // handled by complex_conversions
