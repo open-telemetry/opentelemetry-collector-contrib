@@ -35,7 +35,7 @@ Authenticating using a connection string requires configuration of the following
 
 - `connection_string:` Azure Blob Storage connection key, which can be found in the Azure Blob Storage resource on the Azure Portal.
 
-Authenticating using service principal requires following additional settings:
+Authenticating using service principal requires configuration of the following additional settings:
 
 - `tenant_id`
 - `client_id`
