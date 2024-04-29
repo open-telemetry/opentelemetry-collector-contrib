@@ -42,7 +42,7 @@ Authenticating using service principal requires following additional settings:
 - `client_secret`
 - `storage_account_url`
 
-The service principal requires the [Storage Blob Data Contributor](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/storage#storage-blob-data-contributor) role on the logs and traces containers.
+The service principal method also requires the [Storage Blob Data Contributor](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/storage#storage-blob-data-contributor) role on the logs and traces containers.
 
 ### Example Configurations
 
