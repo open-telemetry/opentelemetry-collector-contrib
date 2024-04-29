@@ -169,7 +169,7 @@ attributes:
 
 metrics:
   mysql.buffer_pool.pages:
-    enabled: true
+    enabled: false 
     description: The number of pages in the InnoDB buffer pool.
     unit: 1
     sum:
@@ -179,7 +179,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [buffer_pool_pages]
   mysql.buffer_pool.data_pages:
-    enabled: true
+    enabled: false 
     description: The number of data pages in the InnoDB buffer pool.
     unit: 1
     sum:
@@ -188,7 +188,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [buffer_pool_data]
   mysql.buffer_pool.page_flushes:
-    enabled: true
+    enabled: false 
     description: The number of requests to flush pages from the InnoDB buffer pool.
     unit: 1
     sum:
@@ -197,7 +197,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
   mysql.buffer_pool.operations:
-    enabled: true
+    enabled: false 
     description: The number of operations on the InnoDB buffer pool.
     unit: 1
     sum:
@@ -207,7 +207,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [buffer_pool_operations]
   mysql.buffer_pool.limit:
-    enabled: true
+    enabled: false 
     description: The configured size of the InnoDB buffer pool.
     unit: By
     sum:
@@ -216,7 +216,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
   mysql.buffer_pool.usage:
-    enabled: true
+    enabled: false 
     description: The number of bytes in the InnoDB buffer pool.
     unit: By
     sum:
@@ -225,7 +225,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [buffer_pool_data]
   mysql.prepared_statements:
-    enabled: true
+    enabled: false 
     description: The number of times each type of prepared statement command has been issued.
     unit: 1
     sum:
@@ -235,7 +235,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [prepared_statements_command]
   mysql.commands:
-    enabled: false
+    enabled: false 
     description: The number of times each type of command has been executed.
     unit: 1
     sum:
@@ -245,7 +245,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [command]
   mysql.handlers:
-    enabled: true
+    enabled: false 
     description: The number of requests to various MySQL handlers.
     unit: 1
     sum:
@@ -255,7 +255,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [handler]
   mysql.double_writes:
-    enabled: true
+    enabled: false 
     description: The number of writes to the InnoDB doublewrite buffer.
     unit: 1
     sum:
@@ -265,7 +265,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [double_writes]
   mysql.log_operations:
-    enabled: true
+    enabled: false 
     description: The number of InnoDB log operations.
     unit: 1
     sum:
@@ -275,7 +275,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [log_operations]
   mysql.operations:
-    enabled: true
+    enabled: false 
     description: The number of InnoDB operations.
     unit: 1
     sum:
@@ -285,7 +285,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [operations]
   mysql.page_operations:
-    enabled: true
+    enabled: false 
     description: The number of InnoDB page operations.
     unit: 1
     sum:
@@ -295,7 +295,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [page_operations]
   mysql.table.io.wait.count:
-    enabled: true
+    enabled: false 
     description: The total count of I/O wait events for a table.
     unit: 1
     sum:
@@ -304,7 +304,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [io_waits_operations, table_name, schema]
   mysql.table.io.wait.time:
-    enabled: true
+    enabled: false 
     description: The total time of I/O wait events for a table.
     unit: ns
     sum:
@@ -313,7 +313,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [io_waits_operations, table_name, schema]
   mysql.index.io.wait.count:
-    enabled: true
+    enabled: false 
     description: The total count of I/O wait events for an index.
     unit: 1
     sum:
@@ -322,7 +322,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [io_waits_operations, table_name, schema, index_name]
   mysql.index.io.wait.time:
-    enabled: true
+    enabled: false 
     description: The total time of I/O wait events for an index.
     unit: ns
     sum:
@@ -331,7 +331,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [io_waits_operations, table_name, schema, index_name]
   mysql.row_locks:
-    enabled: true
+    enabled: false 
     description: The number of InnoDB row locks.
     unit: 1
     sum:
@@ -341,7 +341,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [row_locks]
   mysql.row_operations:
-    enabled: true
+    enabled: false 
     description: The number of InnoDB row operations.
     unit: 1
     sum:
@@ -351,7 +351,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [row_operations]
   mysql.locks:
-    enabled: true
+    enabled: false 
     description: The number of MySQL locks.
     unit: 1
     sum:
@@ -361,7 +361,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [locks]
   mysql.sorts:
-    enabled: true
+    enabled: false 
     description: The number of MySQL sorts.
     unit: 1
     sum:
@@ -371,7 +371,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [sorts]
   mysql.threads:
-    enabled: true
+    enabled: false 
     description: The state of MySQL threads.
     unit: 1
     sum:
@@ -381,7 +381,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [threads]
   mysql.client.network.io:
-    enabled: false
+    enabled: false 
     description: The number of transmitted bytes between server and clients.
     unit: By
     sum:
@@ -391,7 +391,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [direction]
   mysql.opened_resources:
-    enabled: true
+    enabled: false 
     description: The number of opened resources.
     unit: 1
     sum:
@@ -401,7 +401,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [opened_resources]
   mysql.uptime:
-    enabled: true
+    enabled: false 
     description: The number of seconds that the server has been up.
     unit: s
     sum:
@@ -410,7 +410,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
   mysql.table.lock_wait.read.count:
-    enabled: false
+    enabled: false 
     description: The total table lock wait read events.
     unit: "1"
     sum:
@@ -419,7 +419,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [schema, table_name, read_lock_type]
   mysql.table.lock_wait.read.time:
-    enabled: false
+    enabled: false 
     description: The total table lock wait read events times.
     unit: ns
     sum:
@@ -428,7 +428,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [schema, table_name, read_lock_type]
   mysql.table.lock_wait.write.count:
-    enabled: false
+    enabled: false 
     description: The total table lock wait write events.
     unit: "1"
     sum:
@@ -437,7 +437,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [schema, table_name, write_lock_type]
   mysql.table.lock_wait.write.time:
-    enabled: false
+    enabled: false 
     description: The total table lock wait write events times.
     unit: ns
     sum:
@@ -446,7 +446,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [schema, table_name, write_lock_type]
   mysql.connection.count:
-    enabled: false
+    enabled: false 
     description: The number of connection attempts (successful or not) to the MySQL server.
     unit: 1
     sum:
@@ -455,7 +455,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
   mysql.connection.errors:
-    enabled: false
+    enabled: false 
     description: Errors that occur during the client connection process.
     unit: 1
     sum:
@@ -465,7 +465,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [connection_error]
   mysql.mysqlx_connections:
-    enabled: true
+    enabled: false 
     description: The number of mysqlx connections.
     extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
     unit: 1
@@ -476,7 +476,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [connection_status]
   mysql.joins:
-    enabled: false
+    enabled: false 
     description: The number of joins that perform table scans.
     unit: 1
     sum:
@@ -486,7 +486,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [join_kind]
   mysql.tmp_resources:
-    enabled: true
+    enabled: false 
     description: The number of created temporary resources.
     unit: 1
     sum:
@@ -496,7 +496,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [tmp_resource]
   mysql.replica.time_behind_source:
-    enabled: false
+    enabled: false 
     description: This field is an indication of how “late” the replica is.
     unit: s
     sum:
@@ -505,7 +505,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   mysql.replica.sql_delay:
-    enabled: false
+    enabled: false 
     description: The number of seconds that the replica must lag the source.
     unit: s
     sum:
@@ -514,7 +514,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   mysql.statement_event.count:
-    enabled: false
+    enabled: false 
     description: Summary of current and recent statement events.
     unit: 1
     sum:
@@ -523,7 +523,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [schema, digest, digest_text, event_state]
   mysql.statement_event.wait.time:
-    enabled: false
+    enabled: false 
     description: The total wait time of the summarized timed events.
     unit: ns
     sum:
@@ -532,7 +532,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [schema, digest, digest_text]
   mysql.mysqlx_worker_threads:
-    enabled: false
+    enabled: false 
     description: The number of worker threads available.
     unit: 1
     extended_documentation: This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
@@ -543,7 +543,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [mysqlx_threads]
   mysql.table_open_cache:
-    enabled: false
+    enabled: false 
     description: The number of hits, misses or overflows for open tables cache lookups.
     unit: 1
     sum:
@@ -553,7 +553,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [cache_status]
   mysql.query.client.count:
-    enabled: false
+    enabled: false 
     description: The number of statements executed by the server. This includes only statements sent to the server by clients.
     unit: 1
     sum:
@@ -562,7 +562,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
   mysql.query.count:
-    enabled: false
+    enabled: false 
     description: The number of statements executed by the server.
     unit: 1
     sum:
@@ -571,7 +571,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
   mysql.query.slow.count:
-    enabled: false
+    enabled: false 
     description: The number of slow queries.
     unit: 1
     sum:
@@ -579,3 +579,773 @@ metrics:
       input_type: string
       monotonic: true
       aggregation_temporality: cumulative
+
+  #New metrics
+  mysql.innodb.buffer_pool_pages_flushed:
+    enabled: true
+    description: Rate of pages being flushed from the InnoDB buffer pool.
+    unit: '{page}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.buffer_pool_read_requests:
+    enabled: true
+    description: Rate of read requests made to the InnoDB buffer pool.
+    unit: '{read}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.os_file_reads:
+    enabled: true
+    description: Rate at which files are read by InnoDB.
+    unit: '{operation}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.data_read:
+    enabled: true
+    description: Rate at which data is read from disk by InnoDB.
+    unit: By/s
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.dblwr_pages_written:
+    enabled: true
+    description: Rate of pages written to the doublewrite buffer to prevent partial
+      page writes.
+    unit: '{page}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.ibuf_merged_delete_marks:
+    enabled: true
+    description: Rate of delete marks merged from the insert buffer to the buffer pool.
+    unit: '{operation}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.ibuf_merged_deletes:
+    enabled: true
+    description: Rate of delete operations merged from the insert buffer.
+    unit: '{operation}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.os_log_written:
+    enabled: true
+    description: Total bytes written to the log by InnoDB.
+    unit: By/s
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.row_lock_waits:
+    enabled: true
+    description: Rate at which operations wait for row locks, indicative of contention
+      on row-level data.
+    unit: '{event}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.buffer_pool_reads:
+    enabled: true
+    description: Rate of read operations that required actual disk I/O in the InnoDB
+      buffer pool.
+    unit: '{read}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.dblwr_writes:
+    enabled: true
+    description: Rate of operations writing to the doublewrite buffer.
+    unit: By/s
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.s_lock_os_waits:
+    enabled: true
+    description: Rate at which OS waits for shared locks occur.
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.s_lock_spin_waits:
+    enabled: true
+    description: Rate at which spin waits for shared locks occur.
+    unit: '{wait}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.rows_deleted:
+    enabled: true
+    description: Rate at which rows are being deleted in InnoDB.
+    unit: '{row}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.mutex_os_waits:
+    enabled: true
+    description: Rate at which InnoDB operations need to wait for operating system level
+      mutexes.
+    unit: '{event}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.row_lock_time:
+    enabled: true
+    description: Total time spent waiting for row locks by operations in InnoDB.
+    unit: '{fraction}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.buffer_pool_wait_free:
+    enabled: true
+    description: Number of waits for a free page in the buffer pool.
+    unit: '{wait}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation_temporality: cumulative
+  mysql.innodb.data_fsyncs:
+    enabled: true
+    description: Rate of fsync operations by InnoDB to disk.
+    unit: '{operation}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.lsn_flushed:
+    enabled: true
+    description: Log sequence number of the last flushed log.
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.os_log_fsyncs:
+    enabled: true
+    description: Rate at which fsync() operations are issued to the InnoDB log file.
+    unit: '{write}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.rows_inserted:
+    enabled: true
+    description: Rate at which rows are being inserted in InnoDB.
+    unit: '{row}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.rows_read:
+    enabled: true
+    description: Rate at which rows are being read in InnoDB.
+    unit: '{row}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.x_lock_os_waits:
+    enabled: true
+    description: Rate at which OS waits for exclusive locks occur.
+    unit: '{wait}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.x_lock_spin_rounds:
+    enabled: true
+    description: Rate at which spin rounds for exclusive locks occur.
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.x_lock_spin_waits:
+    enabled: true
+    description: Rate at which spin waits for exclusive locks occur.
+    unit: '{wait}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.pages_created:
+    enabled: true
+    description: Rate at which pages are created by InnoDB.
+    unit: '{page}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.data_reads:
+    enabled: true
+    description: Rate of data read operations performed by InnoDB.
+    unit: '{read}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.ibuf_merged:
+    enabled: true
+    description: Rate at which records are merged from the insert buffer.
+    unit: '{operation}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.ibuf_merges:
+    enabled: true
+    description: Rate of operations merging data from the insert buffer to the buffer
+      pool.
+    unit: '{operation}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.log_writes:
+    enabled: true
+    description: Rate of actual log writes.
+    unit: '{write}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.os_file_fsyncs:
+    enabled: true
+    description: Rate at which InnoDB performs fsync() operations on files.
+    unit: '{operation}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.pages_read:
+    enabled: true
+    description: Rate at which pages are read by InnoDB.
+    unit: '{page}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.s_lock_spin_rounds:
+    enabled: true
+    description: Rate at which spin rounds for shared locks occur.
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.buffer_pool_write_requests:
+    enabled: true
+    description: Rate of write requests to the InnoDB buffer pool.
+    unit: '{write}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.lsn_current:
+    enabled: true
+    description: Current log sequence number.
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.data_writes:
+    enabled: true
+    description: Rate of data write operations performed by InnoDB.
+    unit: '{write}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.buffer_pool_read_ahead:
+    enabled: true
+    description: Rate of pages read into the buffer pool by read-ahead.
+    unit: '{page}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.data_written:
+    enabled: true
+    description: Rate at which data is written to disk by InnoDB.
+    unit: By/s
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.lsn_last_checkpoint:
+    enabled: true
+    description: Log sequence number of the last checkpoint.
+    unit: "1"
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.mutex_spin_waits:
+    enabled: true
+    description: Rate of mutex spin waits in InnoDB, indicating contention within internal
+      data structures.
+    unit: '{event}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.buffer_pool_read_ahead_evicted:
+    enabled: true
+    description: Rate of pages read by read-ahead and then evicted without being accessed.
+    unit: '{page}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.ibuf_merged_inserts:
+    enabled: true
+    description: Rate of insert operations merged from the insert buffer.
+    unit: '{operation}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.os_file_writes:
+    enabled: true
+    description: Rate at which files are written by InnoDB.
+    unit: '{operation}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.mutex_spin_rounds:
+    enabled: true
+    description: Rate of spin rounds per mutex spin in InnoDB, showing the effort needed
+      to acquire a mutex.
+    unit: '{event}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.log_write_requests:
+    enabled: true
+    description: Number of write requests made to the log.
+    unit: '{write}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.pages_written:
+    enabled: true
+    description: Rate at which pages are written by InnoDB.
+    unit: '{page}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.lock_structs:
+    enabled: true
+    description: Rate at which lock structures are being used or created.
+    unit: '{operation}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.log_waits:
+    enabled: true
+    description: Number of waits due to log buffer being too small.
+    unit: '{wait}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.rows_updated:
+    enabled: true
+    description: Rate at which rows are being updated in InnoDB.
+    unit: '{row}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+  mysql.innodb.mem_thread_hash:
+    enabled: true
+    description: Memory used by InnoDB for thread hash.
+    unit: By/s
+    gauge:
+      value_type: int
+  mysql.innodb.locked_transactions:
+    enabled: true
+    description: Number of transactions that have acquired locks.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.mem_file_system:
+    enabled: true
+    description: Memory used by InnoDB for file system data structures.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.buffer_pool_data:
+    enabled: true
+    description: Total number of bytes of data in the InnoDB buffer pool.
+    unit: By/s
+    gauge:
+      value_type: int
+  mysql.innodb.pending_ibuf_aio_reads:
+    enabled: true
+    description: Number of pending insert buffer asynchronous I/O reads.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.read_views:
+    enabled: true
+    description: Number of 'read view' structures currently active; these are used to
+      manage consistent read views.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.buffer_pool_pages_dirty:
+    enabled: true
+    description: Number of dirty pages in the InnoDB buffer pool.
+    unit: '{page}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.buffer_pool_total:
+    enabled: true
+    description: Total number of bytes within the InnoDB buffer pool.
+    unit: By/s
+    gauge:
+      value_type: int
+  mysql.innodb.active_transactions:
+    enabled: true
+    description: Current number of active transactions in InnoDB.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.data_pending_reads:
+    enabled: true
+    description: Current number of pending read operations in InnoDB.
+    unit: '{read}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.data_pending_writes:
+    enabled: true
+    description: Current number of pending write operations in InnoDB.
+    unit: '{write}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.pending_aio_sync_ios:
+    enabled: true
+    description: Number of pending asynchronous I/O operations that need synchronization.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.buffer_pool_free:
+    enabled: true
+    description: Number of bytes currently free within the InnoDB buffer pool.
+    unit: By/s
+    gauge:
+      value_type: int
+  mysql.innodb.os_log_pending_fsyncs:
+    enabled: true
+    description: Number of pending fsyncs for logs.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.pending_normal_aio_reads:
+    enabled: true
+    description: Number of pending normal asynchronous I/O read operations.
+    unit: '{read}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.row_lock_current_waits:
+    enabled: true
+    description: Current number of operations waiting for row locks in InnoDB.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.ibuf_size:
+    enabled: true
+    description: Total size of the insert buffer.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.mem_adaptive_hash:
+    enabled: true
+    description: Memory used by InnoDB for the adaptive hash index.
+    unit: By/s
+    gauge:
+      value_type: int
+  mysql.innodb.buffer_pool_dirty:
+    enabled: true
+    description: Current number of bytes held in dirty pages in the InnoDB buffer pool.
+    unit: By/s
+    gauge:
+      value_type: int
+  mysql.innodb.buffer_pool_used:
+    enabled: true
+    description: Number of bytes currently used within the InnoDB buffer pool.
+    unit: By/s
+    gauge:
+      value_type: int
+  mysql.innodb.locked_tables:
+    enabled: true
+    description: Number of tables currently locked by InnoDB.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.pending_aio_log_ios:
+    enabled: true
+    description: Number of pending asynchronous I/O operations on the log.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.pending_normal_aio_writes:
+    enabled: true
+    description: Number of pending normal asynchronous I/O write operations.
+    unit: '{write}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.mem_page_hash:
+    enabled: true
+    description: Memory used by InnoDB for page hash.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.mem_lock_system:
+    enabled: true
+    description: Memory used by InnoDB for lock system data structures.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.mem_total:
+    enabled: true
+    description: Total memory allocated to InnoDB.
+    unit: By/s
+    gauge:
+      value_type: int
+  mysql.innodb.queries_queued:
+    enabled: true
+    description: Number of queries waiting to be processed by InnoDB.
+    unit: '{query}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.semaphore_waits:
+    enabled: true
+    description: Number of semaphore waits.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.buffer_pool_pages_data:
+    enabled: true
+    description: Number of data pages in the InnoDB buffer pool.
+    unit: '{page}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.buffer_pool_utilization:
+    enabled: true
+    description: Percentage of the InnoDB buffer pool currently being utilized.
+    unit: '{fraction}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.hash_index_cells_total:
+    enabled: true
+    description: Total number of cells in the adaptive hash index.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.mem_additional_pool:
+    enabled: true
+    description: Memory allocated to InnoDB's additional pool.
+    unit: By/s
+    gauge:
+      value_type: int
+  mysql.innodb.mem_dictionary:
+    enabled: true
+    description: Memory used by InnoDB for dictionary information.
+    unit: By/s
+    gauge:
+      value_type: int
+  mysql.innodb.pending_log_writes:
+    enabled: true
+    description: Number of pending writes to the log file.
+    unit: '{write}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.queries_inside:
+    enabled: true
+    description: Number of queries currently being processed inside InnoDB.
+    unit: '{query}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.tables_in_use:
+    enabled: true
+    description: Number of tables currently in use by InnoDB.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.ibuf_segment_size:
+    enabled: true
+    description: Size of the segment available for the insert buffer.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.pending_checkpoint_writes:
+    enabled: true
+    description: Number of pending writes to establish a new checkpoint.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.buffer_pool_read_ahead_rnd:
+    enabled: true
+    description: Number of random read-aheads in the InnoDB buffer pool.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.current_row_locks:
+    enabled: true
+    description: Current number of row locks held by operations in InnoDB.
+    unit: '{lock}'
+    gauge:
+      value_type: int
+  mysql.innodb.data_pending_fsyncs:
+    enabled: true
+    description: Current number of pending fsync operations in InnoDB.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.pending_buffer_pool_flushes:
+    enabled: true
+    description: Number of pending buffer pool flush operations.
+    unit: '{flush}'
+    gauge:
+      value_type: int
+  mysql.innodb.current_transactions:
+    enabled: true
+    description: Current number of transactions happening in InnoDB.
+    unit: '{transaction}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.semaphore_wait_time:
+    enabled: true
+    description: Total wait time for semaphores.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.history_list_length:
+    enabled: true
+    description: Length of the history list, indicating the number of pages consumed
+      by transactions not yet flushed.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.ibuf_free_list:
+    enabled: true
+    description: Number of pages in the insert buffer free list.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.mem_recovery_system:
+    enabled: true
+    description: Memory used by InnoDB for transaction recovery.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.checkpoint_age:
+    enabled: true
+    description: Age of the last checkpoint in InnoDB.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.hash_index_cells_used:
+    enabled: true
+    description: Number of used cells in the adaptive hash index.
+    unit: "1"
+    gauge:
+      value_type: int
+  mysql.innodb.os_log_pending_writes:
+    enabled: true
+    description: Number of pending log writes.
+    unit: '{write}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.buffer_pool_pages_free:
+    enabled: true
+    description: Number of free pages in the InnoDB buffer pool.
+    unit: '{page}/s'
+    gauge:
+      value_type: int
+  mysql.innodb.pending_log_flushes:
+    enabled: true
+    description: Number of pending flush operations for the log buffer.
+    unit: '{flush}'
+    gauge:
+      value_type: int
+  mysql.innodb.buffer_pool_pages_total:
+    enabled: true
+    description: Total number of pages in the InnoDB buffer pool.
+    unit: '{page}/s'
+    gauge:
+      value_type: int

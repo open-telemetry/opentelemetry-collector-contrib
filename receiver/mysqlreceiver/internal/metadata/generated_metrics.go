@@ -1725,6 +1725,5102 @@ func newMetricMysqlIndexIoWaitTime(cfg MetricConfig) metricMysqlIndexIoWaitTime 
 	return m
 }
 
+type metricMysqlInnodbActiveTransactions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.active_transactions metric with initial data.
+func (m *metricMysqlInnodbActiveTransactions) init() {
+	m.data.SetName("mysql.innodb.active_transactions")
+	m.data.SetDescription("Current number of active transactions in InnoDB.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbActiveTransactions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbActiveTransactions) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbActiveTransactions) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbActiveTransactions(cfg MetricConfig) metricMysqlInnodbActiveTransactions {
+	m := metricMysqlInnodbActiveTransactions{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolData struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_data metric with initial data.
+func (m *metricMysqlInnodbBufferPoolData) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_data")
+	m.data.SetDescription("Total number of bytes of data in the InnoDB buffer pool.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbBufferPoolData) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolData) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolData) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolData(cfg MetricConfig) metricMysqlInnodbBufferPoolData {
+	m := metricMysqlInnodbBufferPoolData{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolDirty struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_dirty metric with initial data.
+func (m *metricMysqlInnodbBufferPoolDirty) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_dirty")
+	m.data.SetDescription("Current number of bytes held in dirty pages in the InnoDB buffer pool.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbBufferPoolDirty) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolDirty) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolDirty) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolDirty(cfg MetricConfig) metricMysqlInnodbBufferPoolDirty {
+	m := metricMysqlInnodbBufferPoolDirty{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolFree struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_free metric with initial data.
+func (m *metricMysqlInnodbBufferPoolFree) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_free")
+	m.data.SetDescription("Number of bytes currently free within the InnoDB buffer pool.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbBufferPoolFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolFree) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolFree) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolFree(cfg MetricConfig) metricMysqlInnodbBufferPoolFree {
+	m := metricMysqlInnodbBufferPoolFree{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolPagesData struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_pages_data metric with initial data.
+func (m *metricMysqlInnodbBufferPoolPagesData) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_pages_data")
+	m.data.SetDescription("Number of data pages in the InnoDB buffer pool.")
+	m.data.SetUnit("{page}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbBufferPoolPagesData) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolPagesData) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolPagesData) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolPagesData(cfg MetricConfig) metricMysqlInnodbBufferPoolPagesData {
+	m := metricMysqlInnodbBufferPoolPagesData{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolPagesDirty struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_pages_dirty metric with initial data.
+func (m *metricMysqlInnodbBufferPoolPagesDirty) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_pages_dirty")
+	m.data.SetDescription("Number of dirty pages in the InnoDB buffer pool.")
+	m.data.SetUnit("{page}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbBufferPoolPagesDirty) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolPagesDirty) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolPagesDirty) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolPagesDirty(cfg MetricConfig) metricMysqlInnodbBufferPoolPagesDirty {
+	m := metricMysqlInnodbBufferPoolPagesDirty{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolPagesFlushed struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_pages_flushed metric with initial data.
+func (m *metricMysqlInnodbBufferPoolPagesFlushed) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_pages_flushed")
+	m.data.SetDescription("Rate of pages being flushed from the InnoDB buffer pool.")
+	m.data.SetUnit("{page}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbBufferPoolPagesFlushed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolPagesFlushed) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolPagesFlushed) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolPagesFlushed(cfg MetricConfig) metricMysqlInnodbBufferPoolPagesFlushed {
+	m := metricMysqlInnodbBufferPoolPagesFlushed{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolPagesFree struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_pages_free metric with initial data.
+func (m *metricMysqlInnodbBufferPoolPagesFree) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_pages_free")
+	m.data.SetDescription("Number of free pages in the InnoDB buffer pool.")
+	m.data.SetUnit("{page}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbBufferPoolPagesFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolPagesFree) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolPagesFree) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolPagesFree(cfg MetricConfig) metricMysqlInnodbBufferPoolPagesFree {
+	m := metricMysqlInnodbBufferPoolPagesFree{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolPagesTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_pages_total metric with initial data.
+func (m *metricMysqlInnodbBufferPoolPagesTotal) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_pages_total")
+	m.data.SetDescription("Total number of pages in the InnoDB buffer pool.")
+	m.data.SetUnit("{page}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbBufferPoolPagesTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolPagesTotal) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolPagesTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolPagesTotal(cfg MetricConfig) metricMysqlInnodbBufferPoolPagesTotal {
+	m := metricMysqlInnodbBufferPoolPagesTotal{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolReadAhead struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_read_ahead metric with initial data.
+func (m *metricMysqlInnodbBufferPoolReadAhead) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_read_ahead")
+	m.data.SetDescription("Rate of pages read into the buffer pool by read-ahead.")
+	m.data.SetUnit("{page}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbBufferPoolReadAhead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolReadAhead) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolReadAhead) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolReadAhead(cfg MetricConfig) metricMysqlInnodbBufferPoolReadAhead {
+	m := metricMysqlInnodbBufferPoolReadAhead{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolReadAheadEvicted struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_read_ahead_evicted metric with initial data.
+func (m *metricMysqlInnodbBufferPoolReadAheadEvicted) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_read_ahead_evicted")
+	m.data.SetDescription("Rate of pages read by read-ahead and then evicted without being accessed.")
+	m.data.SetUnit("{page}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbBufferPoolReadAheadEvicted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolReadAheadEvicted) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolReadAheadEvicted) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolReadAheadEvicted(cfg MetricConfig) metricMysqlInnodbBufferPoolReadAheadEvicted {
+	m := metricMysqlInnodbBufferPoolReadAheadEvicted{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolReadAheadRnd struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_read_ahead_rnd metric with initial data.
+func (m *metricMysqlInnodbBufferPoolReadAheadRnd) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_read_ahead_rnd")
+	m.data.SetDescription("Number of random read-aheads in the InnoDB buffer pool.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbBufferPoolReadAheadRnd) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolReadAheadRnd) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolReadAheadRnd) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolReadAheadRnd(cfg MetricConfig) metricMysqlInnodbBufferPoolReadAheadRnd {
+	m := metricMysqlInnodbBufferPoolReadAheadRnd{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolReadRequests struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_read_requests metric with initial data.
+func (m *metricMysqlInnodbBufferPoolReadRequests) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_read_requests")
+	m.data.SetDescription("Rate of read requests made to the InnoDB buffer pool.")
+	m.data.SetUnit("{read}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbBufferPoolReadRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolReadRequests) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolReadRequests) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolReadRequests(cfg MetricConfig) metricMysqlInnodbBufferPoolReadRequests {
+	m := metricMysqlInnodbBufferPoolReadRequests{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolReads struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_reads metric with initial data.
+func (m *metricMysqlInnodbBufferPoolReads) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_reads")
+	m.data.SetDescription("Rate of read operations that required actual disk I/O in the InnoDB buffer pool.")
+	m.data.SetUnit("{read}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbBufferPoolReads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolReads) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolReads) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolReads(cfg MetricConfig) metricMysqlInnodbBufferPoolReads {
+	m := metricMysqlInnodbBufferPoolReads{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_total metric with initial data.
+func (m *metricMysqlInnodbBufferPoolTotal) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_total")
+	m.data.SetDescription("Total number of bytes within the InnoDB buffer pool.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbBufferPoolTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolTotal) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolTotal(cfg MetricConfig) metricMysqlInnodbBufferPoolTotal {
+	m := metricMysqlInnodbBufferPoolTotal{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolUsed struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_used metric with initial data.
+func (m *metricMysqlInnodbBufferPoolUsed) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_used")
+	m.data.SetDescription("Number of bytes currently used within the InnoDB buffer pool.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbBufferPoolUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolUsed) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolUsed) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolUsed(cfg MetricConfig) metricMysqlInnodbBufferPoolUsed {
+	m := metricMysqlInnodbBufferPoolUsed{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolUtilization struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_utilization metric with initial data.
+func (m *metricMysqlInnodbBufferPoolUtilization) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_utilization")
+	m.data.SetDescription("Percentage of the InnoDB buffer pool currently being utilized.")
+	m.data.SetUnit("{fraction}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbBufferPoolUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolUtilization(cfg MetricConfig) metricMysqlInnodbBufferPoolUtilization {
+	m := metricMysqlInnodbBufferPoolUtilization{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolWaitFree struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_wait_free metric with initial data.
+func (m *metricMysqlInnodbBufferPoolWaitFree) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_wait_free")
+	m.data.SetDescription("Number of waits for a free page in the buffer pool.")
+	m.data.SetUnit("{wait}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbBufferPoolWaitFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolWaitFree) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolWaitFree) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolWaitFree(cfg MetricConfig) metricMysqlInnodbBufferPoolWaitFree {
+	m := metricMysqlInnodbBufferPoolWaitFree{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbBufferPoolWriteRequests struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.buffer_pool_write_requests metric with initial data.
+func (m *metricMysqlInnodbBufferPoolWriteRequests) init() {
+	m.data.SetName("mysql.innodb.buffer_pool_write_requests")
+	m.data.SetDescription("Rate of write requests to the InnoDB buffer pool.")
+	m.data.SetUnit("{write}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbBufferPoolWriteRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbBufferPoolWriteRequests) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbBufferPoolWriteRequests) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbBufferPoolWriteRequests(cfg MetricConfig) metricMysqlInnodbBufferPoolWriteRequests {
+	m := metricMysqlInnodbBufferPoolWriteRequests{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbCheckpointAge struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.checkpoint_age metric with initial data.
+func (m *metricMysqlInnodbCheckpointAge) init() {
+	m.data.SetName("mysql.innodb.checkpoint_age")
+	m.data.SetDescription("Age of the last checkpoint in InnoDB.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbCheckpointAge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbCheckpointAge) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbCheckpointAge) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbCheckpointAge(cfg MetricConfig) metricMysqlInnodbCheckpointAge {
+	m := metricMysqlInnodbCheckpointAge{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbCurrentRowLocks struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.current_row_locks metric with initial data.
+func (m *metricMysqlInnodbCurrentRowLocks) init() {
+	m.data.SetName("mysql.innodb.current_row_locks")
+	m.data.SetDescription("Current number of row locks held by operations in InnoDB.")
+	m.data.SetUnit("{lock}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbCurrentRowLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbCurrentRowLocks) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbCurrentRowLocks) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbCurrentRowLocks(cfg MetricConfig) metricMysqlInnodbCurrentRowLocks {
+	m := metricMysqlInnodbCurrentRowLocks{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbCurrentTransactions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.current_transactions metric with initial data.
+func (m *metricMysqlInnodbCurrentTransactions) init() {
+	m.data.SetName("mysql.innodb.current_transactions")
+	m.data.SetDescription("Current number of transactions happening in InnoDB.")
+	m.data.SetUnit("{transaction}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbCurrentTransactions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbCurrentTransactions) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbCurrentTransactions) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbCurrentTransactions(cfg MetricConfig) metricMysqlInnodbCurrentTransactions {
+	m := metricMysqlInnodbCurrentTransactions{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbDataFsyncs struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.data_fsyncs metric with initial data.
+func (m *metricMysqlInnodbDataFsyncs) init() {
+	m.data.SetName("mysql.innodb.data_fsyncs")
+	m.data.SetDescription("Rate of fsync operations by InnoDB to disk.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbDataFsyncs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbDataFsyncs) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbDataFsyncs) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbDataFsyncs(cfg MetricConfig) metricMysqlInnodbDataFsyncs {
+	m := metricMysqlInnodbDataFsyncs{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbDataPendingFsyncs struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.data_pending_fsyncs metric with initial data.
+func (m *metricMysqlInnodbDataPendingFsyncs) init() {
+	m.data.SetName("mysql.innodb.data_pending_fsyncs")
+	m.data.SetDescription("Current number of pending fsync operations in InnoDB.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbDataPendingFsyncs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbDataPendingFsyncs) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbDataPendingFsyncs) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbDataPendingFsyncs(cfg MetricConfig) metricMysqlInnodbDataPendingFsyncs {
+	m := metricMysqlInnodbDataPendingFsyncs{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbDataPendingReads struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.data_pending_reads metric with initial data.
+func (m *metricMysqlInnodbDataPendingReads) init() {
+	m.data.SetName("mysql.innodb.data_pending_reads")
+	m.data.SetDescription("Current number of pending read operations in InnoDB.")
+	m.data.SetUnit("{read}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbDataPendingReads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbDataPendingReads) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbDataPendingReads) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbDataPendingReads(cfg MetricConfig) metricMysqlInnodbDataPendingReads {
+	m := metricMysqlInnodbDataPendingReads{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbDataPendingWrites struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.data_pending_writes metric with initial data.
+func (m *metricMysqlInnodbDataPendingWrites) init() {
+	m.data.SetName("mysql.innodb.data_pending_writes")
+	m.data.SetDescription("Current number of pending write operations in InnoDB.")
+	m.data.SetUnit("{write}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbDataPendingWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbDataPendingWrites) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbDataPendingWrites) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbDataPendingWrites(cfg MetricConfig) metricMysqlInnodbDataPendingWrites {
+	m := metricMysqlInnodbDataPendingWrites{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbDataRead struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.data_read metric with initial data.
+func (m *metricMysqlInnodbDataRead) init() {
+	m.data.SetName("mysql.innodb.data_read")
+	m.data.SetDescription("Rate at which data is read from disk by InnoDB.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbDataRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbDataRead) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbDataRead) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbDataRead(cfg MetricConfig) metricMysqlInnodbDataRead {
+	m := metricMysqlInnodbDataRead{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbDataReads struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.data_reads metric with initial data.
+func (m *metricMysqlInnodbDataReads) init() {
+	m.data.SetName("mysql.innodb.data_reads")
+	m.data.SetDescription("Rate of data read operations performed by InnoDB.")
+	m.data.SetUnit("{read}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbDataReads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbDataReads) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbDataReads) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbDataReads(cfg MetricConfig) metricMysqlInnodbDataReads {
+	m := metricMysqlInnodbDataReads{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbDataWrites struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.data_writes metric with initial data.
+func (m *metricMysqlInnodbDataWrites) init() {
+	m.data.SetName("mysql.innodb.data_writes")
+	m.data.SetDescription("Rate of data write operations performed by InnoDB.")
+	m.data.SetUnit("{write}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbDataWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbDataWrites) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbDataWrites) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbDataWrites(cfg MetricConfig) metricMysqlInnodbDataWrites {
+	m := metricMysqlInnodbDataWrites{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbDataWritten struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.data_written metric with initial data.
+func (m *metricMysqlInnodbDataWritten) init() {
+	m.data.SetName("mysql.innodb.data_written")
+	m.data.SetDescription("Rate at which data is written to disk by InnoDB.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbDataWritten) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbDataWritten) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbDataWritten) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbDataWritten(cfg MetricConfig) metricMysqlInnodbDataWritten {
+	m := metricMysqlInnodbDataWritten{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbDblwrPagesWritten struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.dblwr_pages_written metric with initial data.
+func (m *metricMysqlInnodbDblwrPagesWritten) init() {
+	m.data.SetName("mysql.innodb.dblwr_pages_written")
+	m.data.SetDescription("Rate of pages written to the doublewrite buffer to prevent partial page writes.")
+	m.data.SetUnit("{page}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbDblwrPagesWritten) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbDblwrPagesWritten) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbDblwrPagesWritten) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbDblwrPagesWritten(cfg MetricConfig) metricMysqlInnodbDblwrPagesWritten {
+	m := metricMysqlInnodbDblwrPagesWritten{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbDblwrWrites struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.dblwr_writes metric with initial data.
+func (m *metricMysqlInnodbDblwrWrites) init() {
+	m.data.SetName("mysql.innodb.dblwr_writes")
+	m.data.SetDescription("Rate of operations writing to the doublewrite buffer.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbDblwrWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbDblwrWrites) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbDblwrWrites) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbDblwrWrites(cfg MetricConfig) metricMysqlInnodbDblwrWrites {
+	m := metricMysqlInnodbDblwrWrites{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbHashIndexCellsTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.hash_index_cells_total metric with initial data.
+func (m *metricMysqlInnodbHashIndexCellsTotal) init() {
+	m.data.SetName("mysql.innodb.hash_index_cells_total")
+	m.data.SetDescription("Total number of cells in the adaptive hash index.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbHashIndexCellsTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbHashIndexCellsTotal) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbHashIndexCellsTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbHashIndexCellsTotal(cfg MetricConfig) metricMysqlInnodbHashIndexCellsTotal {
+	m := metricMysqlInnodbHashIndexCellsTotal{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbHashIndexCellsUsed struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.hash_index_cells_used metric with initial data.
+func (m *metricMysqlInnodbHashIndexCellsUsed) init() {
+	m.data.SetName("mysql.innodb.hash_index_cells_used")
+	m.data.SetDescription("Number of used cells in the adaptive hash index.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbHashIndexCellsUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbHashIndexCellsUsed) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbHashIndexCellsUsed) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbHashIndexCellsUsed(cfg MetricConfig) metricMysqlInnodbHashIndexCellsUsed {
+	m := metricMysqlInnodbHashIndexCellsUsed{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbHistoryListLength struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.history_list_length metric with initial data.
+func (m *metricMysqlInnodbHistoryListLength) init() {
+	m.data.SetName("mysql.innodb.history_list_length")
+	m.data.SetDescription("Length of the history list, indicating the number of pages consumed by transactions not yet flushed.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbHistoryListLength) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbHistoryListLength) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbHistoryListLength) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbHistoryListLength(cfg MetricConfig) metricMysqlInnodbHistoryListLength {
+	m := metricMysqlInnodbHistoryListLength{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbIbufFreeList struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.ibuf_free_list metric with initial data.
+func (m *metricMysqlInnodbIbufFreeList) init() {
+	m.data.SetName("mysql.innodb.ibuf_free_list")
+	m.data.SetDescription("Number of pages in the insert buffer free list.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbIbufFreeList) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbIbufFreeList) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbIbufFreeList) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbIbufFreeList(cfg MetricConfig) metricMysqlInnodbIbufFreeList {
+	m := metricMysqlInnodbIbufFreeList{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbIbufMerged struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.ibuf_merged metric with initial data.
+func (m *metricMysqlInnodbIbufMerged) init() {
+	m.data.SetName("mysql.innodb.ibuf_merged")
+	m.data.SetDescription("Rate at which records are merged from the insert buffer.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbIbufMerged) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbIbufMerged) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbIbufMerged) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbIbufMerged(cfg MetricConfig) metricMysqlInnodbIbufMerged {
+	m := metricMysqlInnodbIbufMerged{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbIbufMergedDeleteMarks struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.ibuf_merged_delete_marks metric with initial data.
+func (m *metricMysqlInnodbIbufMergedDeleteMarks) init() {
+	m.data.SetName("mysql.innodb.ibuf_merged_delete_marks")
+	m.data.SetDescription("Rate of delete marks merged from the insert buffer to the buffer pool.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbIbufMergedDeleteMarks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbIbufMergedDeleteMarks) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbIbufMergedDeleteMarks) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbIbufMergedDeleteMarks(cfg MetricConfig) metricMysqlInnodbIbufMergedDeleteMarks {
+	m := metricMysqlInnodbIbufMergedDeleteMarks{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbIbufMergedDeletes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.ibuf_merged_deletes metric with initial data.
+func (m *metricMysqlInnodbIbufMergedDeletes) init() {
+	m.data.SetName("mysql.innodb.ibuf_merged_deletes")
+	m.data.SetDescription("Rate of delete operations merged from the insert buffer.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbIbufMergedDeletes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbIbufMergedDeletes) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbIbufMergedDeletes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbIbufMergedDeletes(cfg MetricConfig) metricMysqlInnodbIbufMergedDeletes {
+	m := metricMysqlInnodbIbufMergedDeletes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbIbufMergedInserts struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.ibuf_merged_inserts metric with initial data.
+func (m *metricMysqlInnodbIbufMergedInserts) init() {
+	m.data.SetName("mysql.innodb.ibuf_merged_inserts")
+	m.data.SetDescription("Rate of insert operations merged from the insert buffer.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbIbufMergedInserts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbIbufMergedInserts) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbIbufMergedInserts) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbIbufMergedInserts(cfg MetricConfig) metricMysqlInnodbIbufMergedInserts {
+	m := metricMysqlInnodbIbufMergedInserts{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbIbufMerges struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.ibuf_merges metric with initial data.
+func (m *metricMysqlInnodbIbufMerges) init() {
+	m.data.SetName("mysql.innodb.ibuf_merges")
+	m.data.SetDescription("Rate of operations merging data from the insert buffer to the buffer pool.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbIbufMerges) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbIbufMerges) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbIbufMerges) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbIbufMerges(cfg MetricConfig) metricMysqlInnodbIbufMerges {
+	m := metricMysqlInnodbIbufMerges{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbIbufSegmentSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.ibuf_segment_size metric with initial data.
+func (m *metricMysqlInnodbIbufSegmentSize) init() {
+	m.data.SetName("mysql.innodb.ibuf_segment_size")
+	m.data.SetDescription("Size of the segment available for the insert buffer.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbIbufSegmentSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbIbufSegmentSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbIbufSegmentSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbIbufSegmentSize(cfg MetricConfig) metricMysqlInnodbIbufSegmentSize {
+	m := metricMysqlInnodbIbufSegmentSize{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbIbufSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.ibuf_size metric with initial data.
+func (m *metricMysqlInnodbIbufSize) init() {
+	m.data.SetName("mysql.innodb.ibuf_size")
+	m.data.SetDescription("Total size of the insert buffer.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbIbufSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbIbufSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbIbufSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbIbufSize(cfg MetricConfig) metricMysqlInnodbIbufSize {
+	m := metricMysqlInnodbIbufSize{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbLockStructs struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.lock_structs metric with initial data.
+func (m *metricMysqlInnodbLockStructs) init() {
+	m.data.SetName("mysql.innodb.lock_structs")
+	m.data.SetDescription("Rate at which lock structures are being used or created.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbLockStructs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbLockStructs) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbLockStructs) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbLockStructs(cfg MetricConfig) metricMysqlInnodbLockStructs {
+	m := metricMysqlInnodbLockStructs{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbLockedTables struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.locked_tables metric with initial data.
+func (m *metricMysqlInnodbLockedTables) init() {
+	m.data.SetName("mysql.innodb.locked_tables")
+	m.data.SetDescription("Number of tables currently locked by InnoDB.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbLockedTables) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbLockedTables) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbLockedTables) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbLockedTables(cfg MetricConfig) metricMysqlInnodbLockedTables {
+	m := metricMysqlInnodbLockedTables{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbLockedTransactions struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.locked_transactions metric with initial data.
+func (m *metricMysqlInnodbLockedTransactions) init() {
+	m.data.SetName("mysql.innodb.locked_transactions")
+	m.data.SetDescription("Number of transactions that have acquired locks.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbLockedTransactions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbLockedTransactions) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbLockedTransactions) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbLockedTransactions(cfg MetricConfig) metricMysqlInnodbLockedTransactions {
+	m := metricMysqlInnodbLockedTransactions{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbLogWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.log_waits metric with initial data.
+func (m *metricMysqlInnodbLogWaits) init() {
+	m.data.SetName("mysql.innodb.log_waits")
+	m.data.SetDescription("Number of waits due to log buffer being too small.")
+	m.data.SetUnit("{wait}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbLogWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbLogWaits) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbLogWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbLogWaits(cfg MetricConfig) metricMysqlInnodbLogWaits {
+	m := metricMysqlInnodbLogWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbLogWriteRequests struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.log_write_requests metric with initial data.
+func (m *metricMysqlInnodbLogWriteRequests) init() {
+	m.data.SetName("mysql.innodb.log_write_requests")
+	m.data.SetDescription("Number of write requests made to the log.")
+	m.data.SetUnit("{write}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbLogWriteRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbLogWriteRequests) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbLogWriteRequests) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbLogWriteRequests(cfg MetricConfig) metricMysqlInnodbLogWriteRequests {
+	m := metricMysqlInnodbLogWriteRequests{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbLogWrites struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.log_writes metric with initial data.
+func (m *metricMysqlInnodbLogWrites) init() {
+	m.data.SetName("mysql.innodb.log_writes")
+	m.data.SetDescription("Rate of actual log writes.")
+	m.data.SetUnit("{write}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbLogWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbLogWrites) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbLogWrites) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbLogWrites(cfg MetricConfig) metricMysqlInnodbLogWrites {
+	m := metricMysqlInnodbLogWrites{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbLsnCurrent struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.lsn_current metric with initial data.
+func (m *metricMysqlInnodbLsnCurrent) init() {
+	m.data.SetName("mysql.innodb.lsn_current")
+	m.data.SetDescription("Current log sequence number.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbLsnCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbLsnCurrent) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbLsnCurrent) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbLsnCurrent(cfg MetricConfig) metricMysqlInnodbLsnCurrent {
+	m := metricMysqlInnodbLsnCurrent{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbLsnFlushed struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.lsn_flushed metric with initial data.
+func (m *metricMysqlInnodbLsnFlushed) init() {
+	m.data.SetName("mysql.innodb.lsn_flushed")
+	m.data.SetDescription("Log sequence number of the last flushed log.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbLsnFlushed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbLsnFlushed) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbLsnFlushed) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbLsnFlushed(cfg MetricConfig) metricMysqlInnodbLsnFlushed {
+	m := metricMysqlInnodbLsnFlushed{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbLsnLastCheckpoint struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.lsn_last_checkpoint metric with initial data.
+func (m *metricMysqlInnodbLsnLastCheckpoint) init() {
+	m.data.SetName("mysql.innodb.lsn_last_checkpoint")
+	m.data.SetDescription("Log sequence number of the last checkpoint.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbLsnLastCheckpoint) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbLsnLastCheckpoint) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbLsnLastCheckpoint) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbLsnLastCheckpoint(cfg MetricConfig) metricMysqlInnodbLsnLastCheckpoint {
+	m := metricMysqlInnodbLsnLastCheckpoint{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbMemAdaptiveHash struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.mem_adaptive_hash metric with initial data.
+func (m *metricMysqlInnodbMemAdaptiveHash) init() {
+	m.data.SetName("mysql.innodb.mem_adaptive_hash")
+	m.data.SetDescription("Memory used by InnoDB for the adaptive hash index.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbMemAdaptiveHash) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbMemAdaptiveHash) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbMemAdaptiveHash) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbMemAdaptiveHash(cfg MetricConfig) metricMysqlInnodbMemAdaptiveHash {
+	m := metricMysqlInnodbMemAdaptiveHash{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbMemAdditionalPool struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.mem_additional_pool metric with initial data.
+func (m *metricMysqlInnodbMemAdditionalPool) init() {
+	m.data.SetName("mysql.innodb.mem_additional_pool")
+	m.data.SetDescription("Memory allocated to InnoDB's additional pool.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbMemAdditionalPool) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbMemAdditionalPool) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbMemAdditionalPool) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbMemAdditionalPool(cfg MetricConfig) metricMysqlInnodbMemAdditionalPool {
+	m := metricMysqlInnodbMemAdditionalPool{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbMemDictionary struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.mem_dictionary metric with initial data.
+func (m *metricMysqlInnodbMemDictionary) init() {
+	m.data.SetName("mysql.innodb.mem_dictionary")
+	m.data.SetDescription("Memory used by InnoDB for dictionary information.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbMemDictionary) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbMemDictionary) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbMemDictionary) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbMemDictionary(cfg MetricConfig) metricMysqlInnodbMemDictionary {
+	m := metricMysqlInnodbMemDictionary{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbMemFileSystem struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.mem_file_system metric with initial data.
+func (m *metricMysqlInnodbMemFileSystem) init() {
+	m.data.SetName("mysql.innodb.mem_file_system")
+	m.data.SetDescription("Memory used by InnoDB for file system data structures.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbMemFileSystem) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbMemFileSystem) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbMemFileSystem) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbMemFileSystem(cfg MetricConfig) metricMysqlInnodbMemFileSystem {
+	m := metricMysqlInnodbMemFileSystem{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbMemLockSystem struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.mem_lock_system metric with initial data.
+func (m *metricMysqlInnodbMemLockSystem) init() {
+	m.data.SetName("mysql.innodb.mem_lock_system")
+	m.data.SetDescription("Memory used by InnoDB for lock system data structures.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbMemLockSystem) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbMemLockSystem) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbMemLockSystem) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbMemLockSystem(cfg MetricConfig) metricMysqlInnodbMemLockSystem {
+	m := metricMysqlInnodbMemLockSystem{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbMemPageHash struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.mem_page_hash metric with initial data.
+func (m *metricMysqlInnodbMemPageHash) init() {
+	m.data.SetName("mysql.innodb.mem_page_hash")
+	m.data.SetDescription("Memory used by InnoDB for page hash.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbMemPageHash) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbMemPageHash) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbMemPageHash) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbMemPageHash(cfg MetricConfig) metricMysqlInnodbMemPageHash {
+	m := metricMysqlInnodbMemPageHash{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbMemRecoverySystem struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.mem_recovery_system metric with initial data.
+func (m *metricMysqlInnodbMemRecoverySystem) init() {
+	m.data.SetName("mysql.innodb.mem_recovery_system")
+	m.data.SetDescription("Memory used by InnoDB for transaction recovery.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbMemRecoverySystem) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbMemRecoverySystem) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbMemRecoverySystem) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbMemRecoverySystem(cfg MetricConfig) metricMysqlInnodbMemRecoverySystem {
+	m := metricMysqlInnodbMemRecoverySystem{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbMemThreadHash struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.mem_thread_hash metric with initial data.
+func (m *metricMysqlInnodbMemThreadHash) init() {
+	m.data.SetName("mysql.innodb.mem_thread_hash")
+	m.data.SetDescription("Memory used by InnoDB for thread hash.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbMemThreadHash) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbMemThreadHash) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbMemThreadHash) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbMemThreadHash(cfg MetricConfig) metricMysqlInnodbMemThreadHash {
+	m := metricMysqlInnodbMemThreadHash{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbMemTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.mem_total metric with initial data.
+func (m *metricMysqlInnodbMemTotal) init() {
+	m.data.SetName("mysql.innodb.mem_total")
+	m.data.SetDescription("Total memory allocated to InnoDB.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbMemTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbMemTotal) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbMemTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbMemTotal(cfg MetricConfig) metricMysqlInnodbMemTotal {
+	m := metricMysqlInnodbMemTotal{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbMutexOsWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.mutex_os_waits metric with initial data.
+func (m *metricMysqlInnodbMutexOsWaits) init() {
+	m.data.SetName("mysql.innodb.mutex_os_waits")
+	m.data.SetDescription("Rate at which InnoDB operations need to wait for operating system level mutexes.")
+	m.data.SetUnit("{event}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbMutexOsWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbMutexOsWaits) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbMutexOsWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbMutexOsWaits(cfg MetricConfig) metricMysqlInnodbMutexOsWaits {
+	m := metricMysqlInnodbMutexOsWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbMutexSpinRounds struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.mutex_spin_rounds metric with initial data.
+func (m *metricMysqlInnodbMutexSpinRounds) init() {
+	m.data.SetName("mysql.innodb.mutex_spin_rounds")
+	m.data.SetDescription("Rate of spin rounds per mutex spin in InnoDB, showing the effort needed to acquire a mutex.")
+	m.data.SetUnit("{event}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbMutexSpinRounds) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbMutexSpinRounds) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbMutexSpinRounds) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbMutexSpinRounds(cfg MetricConfig) metricMysqlInnodbMutexSpinRounds {
+	m := metricMysqlInnodbMutexSpinRounds{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbMutexSpinWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.mutex_spin_waits metric with initial data.
+func (m *metricMysqlInnodbMutexSpinWaits) init() {
+	m.data.SetName("mysql.innodb.mutex_spin_waits")
+	m.data.SetDescription("Rate of mutex spin waits in InnoDB, indicating contention within internal data structures.")
+	m.data.SetUnit("{event}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbMutexSpinWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbMutexSpinWaits) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbMutexSpinWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbMutexSpinWaits(cfg MetricConfig) metricMysqlInnodbMutexSpinWaits {
+	m := metricMysqlInnodbMutexSpinWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbOsFileFsyncs struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.os_file_fsyncs metric with initial data.
+func (m *metricMysqlInnodbOsFileFsyncs) init() {
+	m.data.SetName("mysql.innodb.os_file_fsyncs")
+	m.data.SetDescription("Rate at which InnoDB performs fsync() operations on files.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbOsFileFsyncs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbOsFileFsyncs) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbOsFileFsyncs) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbOsFileFsyncs(cfg MetricConfig) metricMysqlInnodbOsFileFsyncs {
+	m := metricMysqlInnodbOsFileFsyncs{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbOsFileReads struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.os_file_reads metric with initial data.
+func (m *metricMysqlInnodbOsFileReads) init() {
+	m.data.SetName("mysql.innodb.os_file_reads")
+	m.data.SetDescription("Rate at which files are read by InnoDB.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbOsFileReads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbOsFileReads) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbOsFileReads) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbOsFileReads(cfg MetricConfig) metricMysqlInnodbOsFileReads {
+	m := metricMysqlInnodbOsFileReads{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbOsFileWrites struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.os_file_writes metric with initial data.
+func (m *metricMysqlInnodbOsFileWrites) init() {
+	m.data.SetName("mysql.innodb.os_file_writes")
+	m.data.SetDescription("Rate at which files are written by InnoDB.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbOsFileWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbOsFileWrites) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbOsFileWrites) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbOsFileWrites(cfg MetricConfig) metricMysqlInnodbOsFileWrites {
+	m := metricMysqlInnodbOsFileWrites{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbOsLogFsyncs struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.os_log_fsyncs metric with initial data.
+func (m *metricMysqlInnodbOsLogFsyncs) init() {
+	m.data.SetName("mysql.innodb.os_log_fsyncs")
+	m.data.SetDescription("Rate at which fsync() operations are issued to the InnoDB log file.")
+	m.data.SetUnit("{write}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbOsLogFsyncs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbOsLogFsyncs) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbOsLogFsyncs) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbOsLogFsyncs(cfg MetricConfig) metricMysqlInnodbOsLogFsyncs {
+	m := metricMysqlInnodbOsLogFsyncs{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbOsLogPendingFsyncs struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.os_log_pending_fsyncs metric with initial data.
+func (m *metricMysqlInnodbOsLogPendingFsyncs) init() {
+	m.data.SetName("mysql.innodb.os_log_pending_fsyncs")
+	m.data.SetDescription("Number of pending fsyncs for logs.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbOsLogPendingFsyncs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbOsLogPendingFsyncs) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbOsLogPendingFsyncs) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbOsLogPendingFsyncs(cfg MetricConfig) metricMysqlInnodbOsLogPendingFsyncs {
+	m := metricMysqlInnodbOsLogPendingFsyncs{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbOsLogPendingWrites struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.os_log_pending_writes metric with initial data.
+func (m *metricMysqlInnodbOsLogPendingWrites) init() {
+	m.data.SetName("mysql.innodb.os_log_pending_writes")
+	m.data.SetDescription("Number of pending log writes.")
+	m.data.SetUnit("{write}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbOsLogPendingWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbOsLogPendingWrites) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbOsLogPendingWrites) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbOsLogPendingWrites(cfg MetricConfig) metricMysqlInnodbOsLogPendingWrites {
+	m := metricMysqlInnodbOsLogPendingWrites{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbOsLogWritten struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.os_log_written metric with initial data.
+func (m *metricMysqlInnodbOsLogWritten) init() {
+	m.data.SetName("mysql.innodb.os_log_written")
+	m.data.SetDescription("Total bytes written to the log by InnoDB.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbOsLogWritten) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbOsLogWritten) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbOsLogWritten) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbOsLogWritten(cfg MetricConfig) metricMysqlInnodbOsLogWritten {
+	m := metricMysqlInnodbOsLogWritten{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbPagesCreated struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.pages_created metric with initial data.
+func (m *metricMysqlInnodbPagesCreated) init() {
+	m.data.SetName("mysql.innodb.pages_created")
+	m.data.SetDescription("Rate at which pages are created by InnoDB.")
+	m.data.SetUnit("{page}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbPagesCreated) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbPagesCreated) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbPagesCreated) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbPagesCreated(cfg MetricConfig) metricMysqlInnodbPagesCreated {
+	m := metricMysqlInnodbPagesCreated{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbPagesRead struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.pages_read metric with initial data.
+func (m *metricMysqlInnodbPagesRead) init() {
+	m.data.SetName("mysql.innodb.pages_read")
+	m.data.SetDescription("Rate at which pages are read by InnoDB.")
+	m.data.SetUnit("{page}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbPagesRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbPagesRead) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbPagesRead) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbPagesRead(cfg MetricConfig) metricMysqlInnodbPagesRead {
+	m := metricMysqlInnodbPagesRead{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbPagesWritten struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.pages_written metric with initial data.
+func (m *metricMysqlInnodbPagesWritten) init() {
+	m.data.SetName("mysql.innodb.pages_written")
+	m.data.SetDescription("Rate at which pages are written by InnoDB.")
+	m.data.SetUnit("{page}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbPagesWritten) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbPagesWritten) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbPagesWritten) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbPagesWritten(cfg MetricConfig) metricMysqlInnodbPagesWritten {
+	m := metricMysqlInnodbPagesWritten{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbPendingAioLogIos struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.pending_aio_log_ios metric with initial data.
+func (m *metricMysqlInnodbPendingAioLogIos) init() {
+	m.data.SetName("mysql.innodb.pending_aio_log_ios")
+	m.data.SetDescription("Number of pending asynchronous I/O operations on the log.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbPendingAioLogIos) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbPendingAioLogIos) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbPendingAioLogIos) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbPendingAioLogIos(cfg MetricConfig) metricMysqlInnodbPendingAioLogIos {
+	m := metricMysqlInnodbPendingAioLogIos{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbPendingAioSyncIos struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.pending_aio_sync_ios metric with initial data.
+func (m *metricMysqlInnodbPendingAioSyncIos) init() {
+	m.data.SetName("mysql.innodb.pending_aio_sync_ios")
+	m.data.SetDescription("Number of pending asynchronous I/O operations that need synchronization.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbPendingAioSyncIos) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbPendingAioSyncIos) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbPendingAioSyncIos) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbPendingAioSyncIos(cfg MetricConfig) metricMysqlInnodbPendingAioSyncIos {
+	m := metricMysqlInnodbPendingAioSyncIos{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbPendingBufferPoolFlushes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.pending_buffer_pool_flushes metric with initial data.
+func (m *metricMysqlInnodbPendingBufferPoolFlushes) init() {
+	m.data.SetName("mysql.innodb.pending_buffer_pool_flushes")
+	m.data.SetDescription("Number of pending buffer pool flush operations.")
+	m.data.SetUnit("{flush}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbPendingBufferPoolFlushes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbPendingBufferPoolFlushes) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbPendingBufferPoolFlushes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbPendingBufferPoolFlushes(cfg MetricConfig) metricMysqlInnodbPendingBufferPoolFlushes {
+	m := metricMysqlInnodbPendingBufferPoolFlushes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbPendingCheckpointWrites struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.pending_checkpoint_writes metric with initial data.
+func (m *metricMysqlInnodbPendingCheckpointWrites) init() {
+	m.data.SetName("mysql.innodb.pending_checkpoint_writes")
+	m.data.SetDescription("Number of pending writes to establish a new checkpoint.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbPendingCheckpointWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbPendingCheckpointWrites) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbPendingCheckpointWrites) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbPendingCheckpointWrites(cfg MetricConfig) metricMysqlInnodbPendingCheckpointWrites {
+	m := metricMysqlInnodbPendingCheckpointWrites{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbPendingIbufAioReads struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.pending_ibuf_aio_reads metric with initial data.
+func (m *metricMysqlInnodbPendingIbufAioReads) init() {
+	m.data.SetName("mysql.innodb.pending_ibuf_aio_reads")
+	m.data.SetDescription("Number of pending insert buffer asynchronous I/O reads.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbPendingIbufAioReads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbPendingIbufAioReads) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbPendingIbufAioReads) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbPendingIbufAioReads(cfg MetricConfig) metricMysqlInnodbPendingIbufAioReads {
+	m := metricMysqlInnodbPendingIbufAioReads{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbPendingLogFlushes struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.pending_log_flushes metric with initial data.
+func (m *metricMysqlInnodbPendingLogFlushes) init() {
+	m.data.SetName("mysql.innodb.pending_log_flushes")
+	m.data.SetDescription("Number of pending flush operations for the log buffer.")
+	m.data.SetUnit("{flush}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbPendingLogFlushes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbPendingLogFlushes) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbPendingLogFlushes) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbPendingLogFlushes(cfg MetricConfig) metricMysqlInnodbPendingLogFlushes {
+	m := metricMysqlInnodbPendingLogFlushes{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbPendingLogWrites struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.pending_log_writes metric with initial data.
+func (m *metricMysqlInnodbPendingLogWrites) init() {
+	m.data.SetName("mysql.innodb.pending_log_writes")
+	m.data.SetDescription("Number of pending writes to the log file.")
+	m.data.SetUnit("{write}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbPendingLogWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbPendingLogWrites) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbPendingLogWrites) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbPendingLogWrites(cfg MetricConfig) metricMysqlInnodbPendingLogWrites {
+	m := metricMysqlInnodbPendingLogWrites{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbPendingNormalAioReads struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.pending_normal_aio_reads metric with initial data.
+func (m *metricMysqlInnodbPendingNormalAioReads) init() {
+	m.data.SetName("mysql.innodb.pending_normal_aio_reads")
+	m.data.SetDescription("Number of pending normal asynchronous I/O read operations.")
+	m.data.SetUnit("{read}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbPendingNormalAioReads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbPendingNormalAioReads) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbPendingNormalAioReads) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbPendingNormalAioReads(cfg MetricConfig) metricMysqlInnodbPendingNormalAioReads {
+	m := metricMysqlInnodbPendingNormalAioReads{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbPendingNormalAioWrites struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.pending_normal_aio_writes metric with initial data.
+func (m *metricMysqlInnodbPendingNormalAioWrites) init() {
+	m.data.SetName("mysql.innodb.pending_normal_aio_writes")
+	m.data.SetDescription("Number of pending normal asynchronous I/O write operations.")
+	m.data.SetUnit("{write}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbPendingNormalAioWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbPendingNormalAioWrites) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbPendingNormalAioWrites) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbPendingNormalAioWrites(cfg MetricConfig) metricMysqlInnodbPendingNormalAioWrites {
+	m := metricMysqlInnodbPendingNormalAioWrites{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbQueriesInside struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.queries_inside metric with initial data.
+func (m *metricMysqlInnodbQueriesInside) init() {
+	m.data.SetName("mysql.innodb.queries_inside")
+	m.data.SetDescription("Number of queries currently being processed inside InnoDB.")
+	m.data.SetUnit("{query}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbQueriesInside) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbQueriesInside) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbQueriesInside) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbQueriesInside(cfg MetricConfig) metricMysqlInnodbQueriesInside {
+	m := metricMysqlInnodbQueriesInside{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbQueriesQueued struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.queries_queued metric with initial data.
+func (m *metricMysqlInnodbQueriesQueued) init() {
+	m.data.SetName("mysql.innodb.queries_queued")
+	m.data.SetDescription("Number of queries waiting to be processed by InnoDB.")
+	m.data.SetUnit("{query}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbQueriesQueued) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbQueriesQueued) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbQueriesQueued) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbQueriesQueued(cfg MetricConfig) metricMysqlInnodbQueriesQueued {
+	m := metricMysqlInnodbQueriesQueued{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbReadViews struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.read_views metric with initial data.
+func (m *metricMysqlInnodbReadViews) init() {
+	m.data.SetName("mysql.innodb.read_views")
+	m.data.SetDescription("Number of 'read view' structures currently active; these are used to manage consistent read views.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbReadViews) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbReadViews) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbReadViews) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbReadViews(cfg MetricConfig) metricMysqlInnodbReadViews {
+	m := metricMysqlInnodbReadViews{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbRowLockCurrentWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.row_lock_current_waits metric with initial data.
+func (m *metricMysqlInnodbRowLockCurrentWaits) init() {
+	m.data.SetName("mysql.innodb.row_lock_current_waits")
+	m.data.SetDescription("Current number of operations waiting for row locks in InnoDB.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbRowLockCurrentWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbRowLockCurrentWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbRowLockCurrentWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbRowLockCurrentWaits(cfg MetricConfig) metricMysqlInnodbRowLockCurrentWaits {
+	m := metricMysqlInnodbRowLockCurrentWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbRowLockTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.row_lock_time metric with initial data.
+func (m *metricMysqlInnodbRowLockTime) init() {
+	m.data.SetName("mysql.innodb.row_lock_time")
+	m.data.SetDescription("Total time spent waiting for row locks by operations in InnoDB.")
+	m.data.SetUnit("{fraction}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbRowLockTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbRowLockTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbRowLockTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbRowLockTime(cfg MetricConfig) metricMysqlInnodbRowLockTime {
+	m := metricMysqlInnodbRowLockTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbRowLockWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.row_lock_waits metric with initial data.
+func (m *metricMysqlInnodbRowLockWaits) init() {
+	m.data.SetName("mysql.innodb.row_lock_waits")
+	m.data.SetDescription("Rate at which operations wait for row locks, indicative of contention on row-level data.")
+	m.data.SetUnit("{event}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbRowLockWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbRowLockWaits) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbRowLockWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbRowLockWaits(cfg MetricConfig) metricMysqlInnodbRowLockWaits {
+	m := metricMysqlInnodbRowLockWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbRowsDeleted struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.rows_deleted metric with initial data.
+func (m *metricMysqlInnodbRowsDeleted) init() {
+	m.data.SetName("mysql.innodb.rows_deleted")
+	m.data.SetDescription("Rate at which rows are being deleted in InnoDB.")
+	m.data.SetUnit("{row}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbRowsDeleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbRowsDeleted) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbRowsDeleted) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbRowsDeleted(cfg MetricConfig) metricMysqlInnodbRowsDeleted {
+	m := metricMysqlInnodbRowsDeleted{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbRowsInserted struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.rows_inserted metric with initial data.
+func (m *metricMysqlInnodbRowsInserted) init() {
+	m.data.SetName("mysql.innodb.rows_inserted")
+	m.data.SetDescription("Rate at which rows are being inserted in InnoDB.")
+	m.data.SetUnit("{row}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbRowsInserted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbRowsInserted) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbRowsInserted) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbRowsInserted(cfg MetricConfig) metricMysqlInnodbRowsInserted {
+	m := metricMysqlInnodbRowsInserted{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbRowsRead struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.rows_read metric with initial data.
+func (m *metricMysqlInnodbRowsRead) init() {
+	m.data.SetName("mysql.innodb.rows_read")
+	m.data.SetDescription("Rate at which rows are being read in InnoDB.")
+	m.data.SetUnit("{row}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbRowsRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbRowsRead) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbRowsRead) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbRowsRead(cfg MetricConfig) metricMysqlInnodbRowsRead {
+	m := metricMysqlInnodbRowsRead{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbRowsUpdated struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.rows_updated metric with initial data.
+func (m *metricMysqlInnodbRowsUpdated) init() {
+	m.data.SetName("mysql.innodb.rows_updated")
+	m.data.SetDescription("Rate at which rows are being updated in InnoDB.")
+	m.data.SetUnit("{row}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbRowsUpdated) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbRowsUpdated) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbRowsUpdated) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbRowsUpdated(cfg MetricConfig) metricMysqlInnodbRowsUpdated {
+	m := metricMysqlInnodbRowsUpdated{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbSLockOsWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.s_lock_os_waits metric with initial data.
+func (m *metricMysqlInnodbSLockOsWaits) init() {
+	m.data.SetName("mysql.innodb.s_lock_os_waits")
+	m.data.SetDescription("Rate at which OS waits for shared locks occur.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbSLockOsWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbSLockOsWaits) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbSLockOsWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbSLockOsWaits(cfg MetricConfig) metricMysqlInnodbSLockOsWaits {
+	m := metricMysqlInnodbSLockOsWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbSLockSpinRounds struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.s_lock_spin_rounds metric with initial data.
+func (m *metricMysqlInnodbSLockSpinRounds) init() {
+	m.data.SetName("mysql.innodb.s_lock_spin_rounds")
+	m.data.SetDescription("Rate at which spin rounds for shared locks occur.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbSLockSpinRounds) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbSLockSpinRounds) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbSLockSpinRounds) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbSLockSpinRounds(cfg MetricConfig) metricMysqlInnodbSLockSpinRounds {
+	m := metricMysqlInnodbSLockSpinRounds{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbSLockSpinWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.s_lock_spin_waits metric with initial data.
+func (m *metricMysqlInnodbSLockSpinWaits) init() {
+	m.data.SetName("mysql.innodb.s_lock_spin_waits")
+	m.data.SetDescription("Rate at which spin waits for shared locks occur.")
+	m.data.SetUnit("{wait}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbSLockSpinWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbSLockSpinWaits) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbSLockSpinWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbSLockSpinWaits(cfg MetricConfig) metricMysqlInnodbSLockSpinWaits {
+	m := metricMysqlInnodbSLockSpinWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbSemaphoreWaitTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.semaphore_wait_time metric with initial data.
+func (m *metricMysqlInnodbSemaphoreWaitTime) init() {
+	m.data.SetName("mysql.innodb.semaphore_wait_time")
+	m.data.SetDescription("Total wait time for semaphores.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbSemaphoreWaitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbSemaphoreWaitTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbSemaphoreWaitTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbSemaphoreWaitTime(cfg MetricConfig) metricMysqlInnodbSemaphoreWaitTime {
+	m := metricMysqlInnodbSemaphoreWaitTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbSemaphoreWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.semaphore_waits metric with initial data.
+func (m *metricMysqlInnodbSemaphoreWaits) init() {
+	m.data.SetName("mysql.innodb.semaphore_waits")
+	m.data.SetDescription("Number of semaphore waits.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbSemaphoreWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbSemaphoreWaits) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbSemaphoreWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbSemaphoreWaits(cfg MetricConfig) metricMysqlInnodbSemaphoreWaits {
+	m := metricMysqlInnodbSemaphoreWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbTablesInUse struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.tables_in_use metric with initial data.
+func (m *metricMysqlInnodbTablesInUse) init() {
+	m.data.SetName("mysql.innodb.tables_in_use")
+	m.data.SetDescription("Number of tables currently in use by InnoDB.")
+	m.data.SetUnit("{operation}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMysqlInnodbTablesInUse) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbTablesInUse) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbTablesInUse) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbTablesInUse(cfg MetricConfig) metricMysqlInnodbTablesInUse {
+	m := metricMysqlInnodbTablesInUse{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbXLockOsWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.x_lock_os_waits metric with initial data.
+func (m *metricMysqlInnodbXLockOsWaits) init() {
+	m.data.SetName("mysql.innodb.x_lock_os_waits")
+	m.data.SetDescription("Rate at which OS waits for exclusive locks occur.")
+	m.data.SetUnit("{wait}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbXLockOsWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbXLockOsWaits) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbXLockOsWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbXLockOsWaits(cfg MetricConfig) metricMysqlInnodbXLockOsWaits {
+	m := metricMysqlInnodbXLockOsWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbXLockSpinRounds struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.x_lock_spin_rounds metric with initial data.
+func (m *metricMysqlInnodbXLockSpinRounds) init() {
+	m.data.SetName("mysql.innodb.x_lock_spin_rounds")
+	m.data.SetDescription("Rate at which spin rounds for exclusive locks occur.")
+	m.data.SetUnit("1")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbXLockSpinRounds) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbXLockSpinRounds) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbXLockSpinRounds) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbXLockSpinRounds(cfg MetricConfig) metricMysqlInnodbXLockSpinRounds {
+	m := metricMysqlInnodbXLockSpinRounds{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlInnodbXLockSpinWaits struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.innodb.x_lock_spin_waits metric with initial data.
+func (m *metricMysqlInnodbXLockSpinWaits) init() {
+	m.data.SetName("mysql.innodb.x_lock_spin_waits")
+	m.data.SetDescription("Rate at which spin waits for exclusive locks occur.")
+	m.data.SetUnit("{wait}/s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlInnodbXLockSpinWaits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlInnodbXLockSpinWaits) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlInnodbXLockSpinWaits) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlInnodbXLockSpinWaits(cfg MetricConfig) metricMysqlInnodbXLockSpinWaits {
+	m := metricMysqlInnodbXLockSpinWaits{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlJoins struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -3270,54 +8366,156 @@ func newMetricMysqlUptime(cfg MetricConfig) metricMysqlUptime {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                             MetricsBuilderConfig // config of the metrics builder.
-	startTime                          pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                    int                  // maximum observed number of metrics per resource.
-	metricsBuffer                      pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                          component.BuildInfo  // contains version information.
-	metricMysqlBufferPoolDataPages     metricMysqlBufferPoolDataPages
-	metricMysqlBufferPoolLimit         metricMysqlBufferPoolLimit
-	metricMysqlBufferPoolOperations    metricMysqlBufferPoolOperations
-	metricMysqlBufferPoolPageFlushes   metricMysqlBufferPoolPageFlushes
-	metricMysqlBufferPoolPages         metricMysqlBufferPoolPages
-	metricMysqlBufferPoolUsage         metricMysqlBufferPoolUsage
-	metricMysqlClientNetworkIo         metricMysqlClientNetworkIo
-	metricMysqlCommands                metricMysqlCommands
-	metricMysqlConnectionCount         metricMysqlConnectionCount
-	metricMysqlConnectionErrors        metricMysqlConnectionErrors
-	metricMysqlDoubleWrites            metricMysqlDoubleWrites
-	metricMysqlHandlers                metricMysqlHandlers
-	metricMysqlIndexIoWaitCount        metricMysqlIndexIoWaitCount
-	metricMysqlIndexIoWaitTime         metricMysqlIndexIoWaitTime
-	metricMysqlJoins                   metricMysqlJoins
-	metricMysqlLocks                   metricMysqlLocks
-	metricMysqlLogOperations           metricMysqlLogOperations
-	metricMysqlMysqlxConnections       metricMysqlMysqlxConnections
-	metricMysqlMysqlxWorkerThreads     metricMysqlMysqlxWorkerThreads
-	metricMysqlOpenedResources         metricMysqlOpenedResources
-	metricMysqlOperations              metricMysqlOperations
-	metricMysqlPageOperations          metricMysqlPageOperations
-	metricMysqlPreparedStatements      metricMysqlPreparedStatements
-	metricMysqlQueryClientCount        metricMysqlQueryClientCount
-	metricMysqlQueryCount              metricMysqlQueryCount
-	metricMysqlQuerySlowCount          metricMysqlQuerySlowCount
-	metricMysqlReplicaSQLDelay         metricMysqlReplicaSQLDelay
-	metricMysqlReplicaTimeBehindSource metricMysqlReplicaTimeBehindSource
-	metricMysqlRowLocks                metricMysqlRowLocks
-	metricMysqlRowOperations           metricMysqlRowOperations
-	metricMysqlSorts                   metricMysqlSorts
-	metricMysqlStatementEventCount     metricMysqlStatementEventCount
-	metricMysqlStatementEventWaitTime  metricMysqlStatementEventWaitTime
-	metricMysqlTableIoWaitCount        metricMysqlTableIoWaitCount
-	metricMysqlTableIoWaitTime         metricMysqlTableIoWaitTime
-	metricMysqlTableLockWaitReadCount  metricMysqlTableLockWaitReadCount
-	metricMysqlTableLockWaitReadTime   metricMysqlTableLockWaitReadTime
-	metricMysqlTableLockWaitWriteCount metricMysqlTableLockWaitWriteCount
-	metricMysqlTableLockWaitWriteTime  metricMysqlTableLockWaitWriteTime
-	metricMysqlTableOpenCache          metricMysqlTableOpenCache
-	metricMysqlThreads                 metricMysqlThreads
-	metricMysqlTmpResources            metricMysqlTmpResources
-	metricMysqlUptime                  metricMysqlUptime
+	config                                      MetricsBuilderConfig // config of the metrics builder.
+	startTime                                   pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                             int                  // maximum observed number of metrics per resource.
+	metricsBuffer                               pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                   component.BuildInfo  // contains version information.
+	metricMysqlBufferPoolDataPages              metricMysqlBufferPoolDataPages
+	metricMysqlBufferPoolLimit                  metricMysqlBufferPoolLimit
+	metricMysqlBufferPoolOperations             metricMysqlBufferPoolOperations
+	metricMysqlBufferPoolPageFlushes            metricMysqlBufferPoolPageFlushes
+	metricMysqlBufferPoolPages                  metricMysqlBufferPoolPages
+	metricMysqlBufferPoolUsage                  metricMysqlBufferPoolUsage
+	metricMysqlClientNetworkIo                  metricMysqlClientNetworkIo
+	metricMysqlCommands                         metricMysqlCommands
+	metricMysqlConnectionCount                  metricMysqlConnectionCount
+	metricMysqlConnectionErrors                 metricMysqlConnectionErrors
+	metricMysqlDoubleWrites                     metricMysqlDoubleWrites
+	metricMysqlHandlers                         metricMysqlHandlers
+	metricMysqlIndexIoWaitCount                 metricMysqlIndexIoWaitCount
+	metricMysqlIndexIoWaitTime                  metricMysqlIndexIoWaitTime
+	metricMysqlInnodbActiveTransactions         metricMysqlInnodbActiveTransactions
+	metricMysqlInnodbBufferPoolData             metricMysqlInnodbBufferPoolData
+	metricMysqlInnodbBufferPoolDirty            metricMysqlInnodbBufferPoolDirty
+	metricMysqlInnodbBufferPoolFree             metricMysqlInnodbBufferPoolFree
+	metricMysqlInnodbBufferPoolPagesData        metricMysqlInnodbBufferPoolPagesData
+	metricMysqlInnodbBufferPoolPagesDirty       metricMysqlInnodbBufferPoolPagesDirty
+	metricMysqlInnodbBufferPoolPagesFlushed     metricMysqlInnodbBufferPoolPagesFlushed
+	metricMysqlInnodbBufferPoolPagesFree        metricMysqlInnodbBufferPoolPagesFree
+	metricMysqlInnodbBufferPoolPagesTotal       metricMysqlInnodbBufferPoolPagesTotal
+	metricMysqlInnodbBufferPoolReadAhead        metricMysqlInnodbBufferPoolReadAhead
+	metricMysqlInnodbBufferPoolReadAheadEvicted metricMysqlInnodbBufferPoolReadAheadEvicted
+	metricMysqlInnodbBufferPoolReadAheadRnd     metricMysqlInnodbBufferPoolReadAheadRnd
+	metricMysqlInnodbBufferPoolReadRequests     metricMysqlInnodbBufferPoolReadRequests
+	metricMysqlInnodbBufferPoolReads            metricMysqlInnodbBufferPoolReads
+	metricMysqlInnodbBufferPoolTotal            metricMysqlInnodbBufferPoolTotal
+	metricMysqlInnodbBufferPoolUsed             metricMysqlInnodbBufferPoolUsed
+	metricMysqlInnodbBufferPoolUtilization      metricMysqlInnodbBufferPoolUtilization
+	metricMysqlInnodbBufferPoolWaitFree         metricMysqlInnodbBufferPoolWaitFree
+	metricMysqlInnodbBufferPoolWriteRequests    metricMysqlInnodbBufferPoolWriteRequests
+	metricMysqlInnodbCheckpointAge              metricMysqlInnodbCheckpointAge
+	metricMysqlInnodbCurrentRowLocks            metricMysqlInnodbCurrentRowLocks
+	metricMysqlInnodbCurrentTransactions        metricMysqlInnodbCurrentTransactions
+	metricMysqlInnodbDataFsyncs                 metricMysqlInnodbDataFsyncs
+	metricMysqlInnodbDataPendingFsyncs          metricMysqlInnodbDataPendingFsyncs
+	metricMysqlInnodbDataPendingReads           metricMysqlInnodbDataPendingReads
+	metricMysqlInnodbDataPendingWrites          metricMysqlInnodbDataPendingWrites
+	metricMysqlInnodbDataRead                   metricMysqlInnodbDataRead
+	metricMysqlInnodbDataReads                  metricMysqlInnodbDataReads
+	metricMysqlInnodbDataWrites                 metricMysqlInnodbDataWrites
+	metricMysqlInnodbDataWritten                metricMysqlInnodbDataWritten
+	metricMysqlInnodbDblwrPagesWritten          metricMysqlInnodbDblwrPagesWritten
+	metricMysqlInnodbDblwrWrites                metricMysqlInnodbDblwrWrites
+	metricMysqlInnodbHashIndexCellsTotal        metricMysqlInnodbHashIndexCellsTotal
+	metricMysqlInnodbHashIndexCellsUsed         metricMysqlInnodbHashIndexCellsUsed
+	metricMysqlInnodbHistoryListLength          metricMysqlInnodbHistoryListLength
+	metricMysqlInnodbIbufFreeList               metricMysqlInnodbIbufFreeList
+	metricMysqlInnodbIbufMerged                 metricMysqlInnodbIbufMerged
+	metricMysqlInnodbIbufMergedDeleteMarks      metricMysqlInnodbIbufMergedDeleteMarks
+	metricMysqlInnodbIbufMergedDeletes          metricMysqlInnodbIbufMergedDeletes
+	metricMysqlInnodbIbufMergedInserts          metricMysqlInnodbIbufMergedInserts
+	metricMysqlInnodbIbufMerges                 metricMysqlInnodbIbufMerges
+	metricMysqlInnodbIbufSegmentSize            metricMysqlInnodbIbufSegmentSize
+	metricMysqlInnodbIbufSize                   metricMysqlInnodbIbufSize
+	metricMysqlInnodbLockStructs                metricMysqlInnodbLockStructs
+	metricMysqlInnodbLockedTables               metricMysqlInnodbLockedTables
+	metricMysqlInnodbLockedTransactions         metricMysqlInnodbLockedTransactions
+	metricMysqlInnodbLogWaits                   metricMysqlInnodbLogWaits
+	metricMysqlInnodbLogWriteRequests           metricMysqlInnodbLogWriteRequests
+	metricMysqlInnodbLogWrites                  metricMysqlInnodbLogWrites
+	metricMysqlInnodbLsnCurrent                 metricMysqlInnodbLsnCurrent
+	metricMysqlInnodbLsnFlushed                 metricMysqlInnodbLsnFlushed
+	metricMysqlInnodbLsnLastCheckpoint          metricMysqlInnodbLsnLastCheckpoint
+	metricMysqlInnodbMemAdaptiveHash            metricMysqlInnodbMemAdaptiveHash
+	metricMysqlInnodbMemAdditionalPool          metricMysqlInnodbMemAdditionalPool
+	metricMysqlInnodbMemDictionary              metricMysqlInnodbMemDictionary
+	metricMysqlInnodbMemFileSystem              metricMysqlInnodbMemFileSystem
+	metricMysqlInnodbMemLockSystem              metricMysqlInnodbMemLockSystem
+	metricMysqlInnodbMemPageHash                metricMysqlInnodbMemPageHash
+	metricMysqlInnodbMemRecoverySystem          metricMysqlInnodbMemRecoverySystem
+	metricMysqlInnodbMemThreadHash              metricMysqlInnodbMemThreadHash
+	metricMysqlInnodbMemTotal                   metricMysqlInnodbMemTotal
+	metricMysqlInnodbMutexOsWaits               metricMysqlInnodbMutexOsWaits
+	metricMysqlInnodbMutexSpinRounds            metricMysqlInnodbMutexSpinRounds
+	metricMysqlInnodbMutexSpinWaits             metricMysqlInnodbMutexSpinWaits
+	metricMysqlInnodbOsFileFsyncs               metricMysqlInnodbOsFileFsyncs
+	metricMysqlInnodbOsFileReads                metricMysqlInnodbOsFileReads
+	metricMysqlInnodbOsFileWrites               metricMysqlInnodbOsFileWrites
+	metricMysqlInnodbOsLogFsyncs                metricMysqlInnodbOsLogFsyncs
+	metricMysqlInnodbOsLogPendingFsyncs         metricMysqlInnodbOsLogPendingFsyncs
+	metricMysqlInnodbOsLogPendingWrites         metricMysqlInnodbOsLogPendingWrites
+	metricMysqlInnodbOsLogWritten               metricMysqlInnodbOsLogWritten
+	metricMysqlInnodbPagesCreated               metricMysqlInnodbPagesCreated
+	metricMysqlInnodbPagesRead                  metricMysqlInnodbPagesRead
+	metricMysqlInnodbPagesWritten               metricMysqlInnodbPagesWritten
+	metricMysqlInnodbPendingAioLogIos           metricMysqlInnodbPendingAioLogIos
+	metricMysqlInnodbPendingAioSyncIos          metricMysqlInnodbPendingAioSyncIos
+	metricMysqlInnodbPendingBufferPoolFlushes   metricMysqlInnodbPendingBufferPoolFlushes
+	metricMysqlInnodbPendingCheckpointWrites    metricMysqlInnodbPendingCheckpointWrites
+	metricMysqlInnodbPendingIbufAioReads        metricMysqlInnodbPendingIbufAioReads
+	metricMysqlInnodbPendingLogFlushes          metricMysqlInnodbPendingLogFlushes
+	metricMysqlInnodbPendingLogWrites           metricMysqlInnodbPendingLogWrites
+	metricMysqlInnodbPendingNormalAioReads      metricMysqlInnodbPendingNormalAioReads
+	metricMysqlInnodbPendingNormalAioWrites     metricMysqlInnodbPendingNormalAioWrites
+	metricMysqlInnodbQueriesInside              metricMysqlInnodbQueriesInside
+	metricMysqlInnodbQueriesQueued              metricMysqlInnodbQueriesQueued
+	metricMysqlInnodbReadViews                  metricMysqlInnodbReadViews
+	metricMysqlInnodbRowLockCurrentWaits        metricMysqlInnodbRowLockCurrentWaits
+	metricMysqlInnodbRowLockTime                metricMysqlInnodbRowLockTime
+	metricMysqlInnodbRowLockWaits               metricMysqlInnodbRowLockWaits
+	metricMysqlInnodbRowsDeleted                metricMysqlInnodbRowsDeleted
+	metricMysqlInnodbRowsInserted               metricMysqlInnodbRowsInserted
+	metricMysqlInnodbRowsRead                   metricMysqlInnodbRowsRead
+	metricMysqlInnodbRowsUpdated                metricMysqlInnodbRowsUpdated
+	metricMysqlInnodbSLockOsWaits               metricMysqlInnodbSLockOsWaits
+	metricMysqlInnodbSLockSpinRounds            metricMysqlInnodbSLockSpinRounds
+	metricMysqlInnodbSLockSpinWaits             metricMysqlInnodbSLockSpinWaits
+	metricMysqlInnodbSemaphoreWaitTime          metricMysqlInnodbSemaphoreWaitTime
+	metricMysqlInnodbSemaphoreWaits             metricMysqlInnodbSemaphoreWaits
+	metricMysqlInnodbTablesInUse                metricMysqlInnodbTablesInUse
+	metricMysqlInnodbXLockOsWaits               metricMysqlInnodbXLockOsWaits
+	metricMysqlInnodbXLockSpinRounds            metricMysqlInnodbXLockSpinRounds
+	metricMysqlInnodbXLockSpinWaits             metricMysqlInnodbXLockSpinWaits
+	metricMysqlJoins                            metricMysqlJoins
+	metricMysqlLocks                            metricMysqlLocks
+	metricMysqlLogOperations                    metricMysqlLogOperations
+	metricMysqlMysqlxConnections                metricMysqlMysqlxConnections
+	metricMysqlMysqlxWorkerThreads              metricMysqlMysqlxWorkerThreads
+	metricMysqlOpenedResources                  metricMysqlOpenedResources
+	metricMysqlOperations                       metricMysqlOperations
+	metricMysqlPageOperations                   metricMysqlPageOperations
+	metricMysqlPreparedStatements               metricMysqlPreparedStatements
+	metricMysqlQueryClientCount                 metricMysqlQueryClientCount
+	metricMysqlQueryCount                       metricMysqlQueryCount
+	metricMysqlQuerySlowCount                   metricMysqlQuerySlowCount
+	metricMysqlReplicaSQLDelay                  metricMysqlReplicaSQLDelay
+	metricMysqlReplicaTimeBehindSource          metricMysqlReplicaTimeBehindSource
+	metricMysqlRowLocks                         metricMysqlRowLocks
+	metricMysqlRowOperations                    metricMysqlRowOperations
+	metricMysqlSorts                            metricMysqlSorts
+	metricMysqlStatementEventCount              metricMysqlStatementEventCount
+	metricMysqlStatementEventWaitTime           metricMysqlStatementEventWaitTime
+	metricMysqlTableIoWaitCount                 metricMysqlTableIoWaitCount
+	metricMysqlTableIoWaitTime                  metricMysqlTableIoWaitTime
+	metricMysqlTableLockWaitReadCount           metricMysqlTableLockWaitReadCount
+	metricMysqlTableLockWaitReadTime            metricMysqlTableLockWaitReadTime
+	metricMysqlTableLockWaitWriteCount          metricMysqlTableLockWaitWriteCount
+	metricMysqlTableLockWaitWriteTime           metricMysqlTableLockWaitWriteTime
+	metricMysqlTableOpenCache                   metricMysqlTableOpenCache
+	metricMysqlThreads                          metricMysqlThreads
+	metricMysqlTmpResources                     metricMysqlTmpResources
+	metricMysqlUptime                           metricMysqlUptime
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -3332,53 +8530,155 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                             mbc,
-		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                      pmetric.NewMetrics(),
-		buildInfo:                          settings.BuildInfo,
-		metricMysqlBufferPoolDataPages:     newMetricMysqlBufferPoolDataPages(mbc.Metrics.MysqlBufferPoolDataPages),
-		metricMysqlBufferPoolLimit:         newMetricMysqlBufferPoolLimit(mbc.Metrics.MysqlBufferPoolLimit),
-		metricMysqlBufferPoolOperations:    newMetricMysqlBufferPoolOperations(mbc.Metrics.MysqlBufferPoolOperations),
-		metricMysqlBufferPoolPageFlushes:   newMetricMysqlBufferPoolPageFlushes(mbc.Metrics.MysqlBufferPoolPageFlushes),
-		metricMysqlBufferPoolPages:         newMetricMysqlBufferPoolPages(mbc.Metrics.MysqlBufferPoolPages),
-		metricMysqlBufferPoolUsage:         newMetricMysqlBufferPoolUsage(mbc.Metrics.MysqlBufferPoolUsage),
-		metricMysqlClientNetworkIo:         newMetricMysqlClientNetworkIo(mbc.Metrics.MysqlClientNetworkIo),
-		metricMysqlCommands:                newMetricMysqlCommands(mbc.Metrics.MysqlCommands),
-		metricMysqlConnectionCount:         newMetricMysqlConnectionCount(mbc.Metrics.MysqlConnectionCount),
-		metricMysqlConnectionErrors:        newMetricMysqlConnectionErrors(mbc.Metrics.MysqlConnectionErrors),
-		metricMysqlDoubleWrites:            newMetricMysqlDoubleWrites(mbc.Metrics.MysqlDoubleWrites),
-		metricMysqlHandlers:                newMetricMysqlHandlers(mbc.Metrics.MysqlHandlers),
-		metricMysqlIndexIoWaitCount:        newMetricMysqlIndexIoWaitCount(mbc.Metrics.MysqlIndexIoWaitCount),
-		metricMysqlIndexIoWaitTime:         newMetricMysqlIndexIoWaitTime(mbc.Metrics.MysqlIndexIoWaitTime),
-		metricMysqlJoins:                   newMetricMysqlJoins(mbc.Metrics.MysqlJoins),
-		metricMysqlLocks:                   newMetricMysqlLocks(mbc.Metrics.MysqlLocks),
-		metricMysqlLogOperations:           newMetricMysqlLogOperations(mbc.Metrics.MysqlLogOperations),
-		metricMysqlMysqlxConnections:       newMetricMysqlMysqlxConnections(mbc.Metrics.MysqlMysqlxConnections),
-		metricMysqlMysqlxWorkerThreads:     newMetricMysqlMysqlxWorkerThreads(mbc.Metrics.MysqlMysqlxWorkerThreads),
-		metricMysqlOpenedResources:         newMetricMysqlOpenedResources(mbc.Metrics.MysqlOpenedResources),
-		metricMysqlOperations:              newMetricMysqlOperations(mbc.Metrics.MysqlOperations),
-		metricMysqlPageOperations:          newMetricMysqlPageOperations(mbc.Metrics.MysqlPageOperations),
-		metricMysqlPreparedStatements:      newMetricMysqlPreparedStatements(mbc.Metrics.MysqlPreparedStatements),
-		metricMysqlQueryClientCount:        newMetricMysqlQueryClientCount(mbc.Metrics.MysqlQueryClientCount),
-		metricMysqlQueryCount:              newMetricMysqlQueryCount(mbc.Metrics.MysqlQueryCount),
-		metricMysqlQuerySlowCount:          newMetricMysqlQuerySlowCount(mbc.Metrics.MysqlQuerySlowCount),
-		metricMysqlReplicaSQLDelay:         newMetricMysqlReplicaSQLDelay(mbc.Metrics.MysqlReplicaSQLDelay),
-		metricMysqlReplicaTimeBehindSource: newMetricMysqlReplicaTimeBehindSource(mbc.Metrics.MysqlReplicaTimeBehindSource),
-		metricMysqlRowLocks:                newMetricMysqlRowLocks(mbc.Metrics.MysqlRowLocks),
-		metricMysqlRowOperations:           newMetricMysqlRowOperations(mbc.Metrics.MysqlRowOperations),
-		metricMysqlSorts:                   newMetricMysqlSorts(mbc.Metrics.MysqlSorts),
-		metricMysqlStatementEventCount:     newMetricMysqlStatementEventCount(mbc.Metrics.MysqlStatementEventCount),
-		metricMysqlStatementEventWaitTime:  newMetricMysqlStatementEventWaitTime(mbc.Metrics.MysqlStatementEventWaitTime),
-		metricMysqlTableIoWaitCount:        newMetricMysqlTableIoWaitCount(mbc.Metrics.MysqlTableIoWaitCount),
-		metricMysqlTableIoWaitTime:         newMetricMysqlTableIoWaitTime(mbc.Metrics.MysqlTableIoWaitTime),
-		metricMysqlTableLockWaitReadCount:  newMetricMysqlTableLockWaitReadCount(mbc.Metrics.MysqlTableLockWaitReadCount),
-		metricMysqlTableLockWaitReadTime:   newMetricMysqlTableLockWaitReadTime(mbc.Metrics.MysqlTableLockWaitReadTime),
-		metricMysqlTableLockWaitWriteCount: newMetricMysqlTableLockWaitWriteCount(mbc.Metrics.MysqlTableLockWaitWriteCount),
-		metricMysqlTableLockWaitWriteTime:  newMetricMysqlTableLockWaitWriteTime(mbc.Metrics.MysqlTableLockWaitWriteTime),
-		metricMysqlTableOpenCache:          newMetricMysqlTableOpenCache(mbc.Metrics.MysqlTableOpenCache),
-		metricMysqlThreads:                 newMetricMysqlThreads(mbc.Metrics.MysqlThreads),
-		metricMysqlTmpResources:            newMetricMysqlTmpResources(mbc.Metrics.MysqlTmpResources),
-		metricMysqlUptime:                  newMetricMysqlUptime(mbc.Metrics.MysqlUptime),
+		config:                                      mbc,
+		startTime:                                   pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                               pmetric.NewMetrics(),
+		buildInfo:                                   settings.BuildInfo,
+		metricMysqlBufferPoolDataPages:              newMetricMysqlBufferPoolDataPages(mbc.Metrics.MysqlBufferPoolDataPages),
+		metricMysqlBufferPoolLimit:                  newMetricMysqlBufferPoolLimit(mbc.Metrics.MysqlBufferPoolLimit),
+		metricMysqlBufferPoolOperations:             newMetricMysqlBufferPoolOperations(mbc.Metrics.MysqlBufferPoolOperations),
+		metricMysqlBufferPoolPageFlushes:            newMetricMysqlBufferPoolPageFlushes(mbc.Metrics.MysqlBufferPoolPageFlushes),
+		metricMysqlBufferPoolPages:                  newMetricMysqlBufferPoolPages(mbc.Metrics.MysqlBufferPoolPages),
+		metricMysqlBufferPoolUsage:                  newMetricMysqlBufferPoolUsage(mbc.Metrics.MysqlBufferPoolUsage),
+		metricMysqlClientNetworkIo:                  newMetricMysqlClientNetworkIo(mbc.Metrics.MysqlClientNetworkIo),
+		metricMysqlCommands:                         newMetricMysqlCommands(mbc.Metrics.MysqlCommands),
+		metricMysqlConnectionCount:                  newMetricMysqlConnectionCount(mbc.Metrics.MysqlConnectionCount),
+		metricMysqlConnectionErrors:                 newMetricMysqlConnectionErrors(mbc.Metrics.MysqlConnectionErrors),
+		metricMysqlDoubleWrites:                     newMetricMysqlDoubleWrites(mbc.Metrics.MysqlDoubleWrites),
+		metricMysqlHandlers:                         newMetricMysqlHandlers(mbc.Metrics.MysqlHandlers),
+		metricMysqlIndexIoWaitCount:                 newMetricMysqlIndexIoWaitCount(mbc.Metrics.MysqlIndexIoWaitCount),
+		metricMysqlIndexIoWaitTime:                  newMetricMysqlIndexIoWaitTime(mbc.Metrics.MysqlIndexIoWaitTime),
+		metricMysqlInnodbActiveTransactions:         newMetricMysqlInnodbActiveTransactions(mbc.Metrics.MysqlInnodbActiveTransactions),
+		metricMysqlInnodbBufferPoolData:             newMetricMysqlInnodbBufferPoolData(mbc.Metrics.MysqlInnodbBufferPoolData),
+		metricMysqlInnodbBufferPoolDirty:            newMetricMysqlInnodbBufferPoolDirty(mbc.Metrics.MysqlInnodbBufferPoolDirty),
+		metricMysqlInnodbBufferPoolFree:             newMetricMysqlInnodbBufferPoolFree(mbc.Metrics.MysqlInnodbBufferPoolFree),
+		metricMysqlInnodbBufferPoolPagesData:        newMetricMysqlInnodbBufferPoolPagesData(mbc.Metrics.MysqlInnodbBufferPoolPagesData),
+		metricMysqlInnodbBufferPoolPagesDirty:       newMetricMysqlInnodbBufferPoolPagesDirty(mbc.Metrics.MysqlInnodbBufferPoolPagesDirty),
+		metricMysqlInnodbBufferPoolPagesFlushed:     newMetricMysqlInnodbBufferPoolPagesFlushed(mbc.Metrics.MysqlInnodbBufferPoolPagesFlushed),
+		metricMysqlInnodbBufferPoolPagesFree:        newMetricMysqlInnodbBufferPoolPagesFree(mbc.Metrics.MysqlInnodbBufferPoolPagesFree),
+		metricMysqlInnodbBufferPoolPagesTotal:       newMetricMysqlInnodbBufferPoolPagesTotal(mbc.Metrics.MysqlInnodbBufferPoolPagesTotal),
+		metricMysqlInnodbBufferPoolReadAhead:        newMetricMysqlInnodbBufferPoolReadAhead(mbc.Metrics.MysqlInnodbBufferPoolReadAhead),
+		metricMysqlInnodbBufferPoolReadAheadEvicted: newMetricMysqlInnodbBufferPoolReadAheadEvicted(mbc.Metrics.MysqlInnodbBufferPoolReadAheadEvicted),
+		metricMysqlInnodbBufferPoolReadAheadRnd:     newMetricMysqlInnodbBufferPoolReadAheadRnd(mbc.Metrics.MysqlInnodbBufferPoolReadAheadRnd),
+		metricMysqlInnodbBufferPoolReadRequests:     newMetricMysqlInnodbBufferPoolReadRequests(mbc.Metrics.MysqlInnodbBufferPoolReadRequests),
+		metricMysqlInnodbBufferPoolReads:            newMetricMysqlInnodbBufferPoolReads(mbc.Metrics.MysqlInnodbBufferPoolReads),
+		metricMysqlInnodbBufferPoolTotal:            newMetricMysqlInnodbBufferPoolTotal(mbc.Metrics.MysqlInnodbBufferPoolTotal),
+		metricMysqlInnodbBufferPoolUsed:             newMetricMysqlInnodbBufferPoolUsed(mbc.Metrics.MysqlInnodbBufferPoolUsed),
+		metricMysqlInnodbBufferPoolUtilization:      newMetricMysqlInnodbBufferPoolUtilization(mbc.Metrics.MysqlInnodbBufferPoolUtilization),
+		metricMysqlInnodbBufferPoolWaitFree:         newMetricMysqlInnodbBufferPoolWaitFree(mbc.Metrics.MysqlInnodbBufferPoolWaitFree),
+		metricMysqlInnodbBufferPoolWriteRequests:    newMetricMysqlInnodbBufferPoolWriteRequests(mbc.Metrics.MysqlInnodbBufferPoolWriteRequests),
+		metricMysqlInnodbCheckpointAge:              newMetricMysqlInnodbCheckpointAge(mbc.Metrics.MysqlInnodbCheckpointAge),
+		metricMysqlInnodbCurrentRowLocks:            newMetricMysqlInnodbCurrentRowLocks(mbc.Metrics.MysqlInnodbCurrentRowLocks),
+		metricMysqlInnodbCurrentTransactions:        newMetricMysqlInnodbCurrentTransactions(mbc.Metrics.MysqlInnodbCurrentTransactions),
+		metricMysqlInnodbDataFsyncs:                 newMetricMysqlInnodbDataFsyncs(mbc.Metrics.MysqlInnodbDataFsyncs),
+		metricMysqlInnodbDataPendingFsyncs:          newMetricMysqlInnodbDataPendingFsyncs(mbc.Metrics.MysqlInnodbDataPendingFsyncs),
+		metricMysqlInnodbDataPendingReads:           newMetricMysqlInnodbDataPendingReads(mbc.Metrics.MysqlInnodbDataPendingReads),
+		metricMysqlInnodbDataPendingWrites:          newMetricMysqlInnodbDataPendingWrites(mbc.Metrics.MysqlInnodbDataPendingWrites),
+		metricMysqlInnodbDataRead:                   newMetricMysqlInnodbDataRead(mbc.Metrics.MysqlInnodbDataRead),
+		metricMysqlInnodbDataReads:                  newMetricMysqlInnodbDataReads(mbc.Metrics.MysqlInnodbDataReads),
+		metricMysqlInnodbDataWrites:                 newMetricMysqlInnodbDataWrites(mbc.Metrics.MysqlInnodbDataWrites),
+		metricMysqlInnodbDataWritten:                newMetricMysqlInnodbDataWritten(mbc.Metrics.MysqlInnodbDataWritten),
+		metricMysqlInnodbDblwrPagesWritten:          newMetricMysqlInnodbDblwrPagesWritten(mbc.Metrics.MysqlInnodbDblwrPagesWritten),
+		metricMysqlInnodbDblwrWrites:                newMetricMysqlInnodbDblwrWrites(mbc.Metrics.MysqlInnodbDblwrWrites),
+		metricMysqlInnodbHashIndexCellsTotal:        newMetricMysqlInnodbHashIndexCellsTotal(mbc.Metrics.MysqlInnodbHashIndexCellsTotal),
+		metricMysqlInnodbHashIndexCellsUsed:         newMetricMysqlInnodbHashIndexCellsUsed(mbc.Metrics.MysqlInnodbHashIndexCellsUsed),
+		metricMysqlInnodbHistoryListLength:          newMetricMysqlInnodbHistoryListLength(mbc.Metrics.MysqlInnodbHistoryListLength),
+		metricMysqlInnodbIbufFreeList:               newMetricMysqlInnodbIbufFreeList(mbc.Metrics.MysqlInnodbIbufFreeList),
+		metricMysqlInnodbIbufMerged:                 newMetricMysqlInnodbIbufMerged(mbc.Metrics.MysqlInnodbIbufMerged),
+		metricMysqlInnodbIbufMergedDeleteMarks:      newMetricMysqlInnodbIbufMergedDeleteMarks(mbc.Metrics.MysqlInnodbIbufMergedDeleteMarks),
+		metricMysqlInnodbIbufMergedDeletes:          newMetricMysqlInnodbIbufMergedDeletes(mbc.Metrics.MysqlInnodbIbufMergedDeletes),
+		metricMysqlInnodbIbufMergedInserts:          newMetricMysqlInnodbIbufMergedInserts(mbc.Metrics.MysqlInnodbIbufMergedInserts),
+		metricMysqlInnodbIbufMerges:                 newMetricMysqlInnodbIbufMerges(mbc.Metrics.MysqlInnodbIbufMerges),
+		metricMysqlInnodbIbufSegmentSize:            newMetricMysqlInnodbIbufSegmentSize(mbc.Metrics.MysqlInnodbIbufSegmentSize),
+		metricMysqlInnodbIbufSize:                   newMetricMysqlInnodbIbufSize(mbc.Metrics.MysqlInnodbIbufSize),
+		metricMysqlInnodbLockStructs:                newMetricMysqlInnodbLockStructs(mbc.Metrics.MysqlInnodbLockStructs),
+		metricMysqlInnodbLockedTables:               newMetricMysqlInnodbLockedTables(mbc.Metrics.MysqlInnodbLockedTables),
+		metricMysqlInnodbLockedTransactions:         newMetricMysqlInnodbLockedTransactions(mbc.Metrics.MysqlInnodbLockedTransactions),
+		metricMysqlInnodbLogWaits:                   newMetricMysqlInnodbLogWaits(mbc.Metrics.MysqlInnodbLogWaits),
+		metricMysqlInnodbLogWriteRequests:           newMetricMysqlInnodbLogWriteRequests(mbc.Metrics.MysqlInnodbLogWriteRequests),
+		metricMysqlInnodbLogWrites:                  newMetricMysqlInnodbLogWrites(mbc.Metrics.MysqlInnodbLogWrites),
+		metricMysqlInnodbLsnCurrent:                 newMetricMysqlInnodbLsnCurrent(mbc.Metrics.MysqlInnodbLsnCurrent),
+		metricMysqlInnodbLsnFlushed:                 newMetricMysqlInnodbLsnFlushed(mbc.Metrics.MysqlInnodbLsnFlushed),
+		metricMysqlInnodbLsnLastCheckpoint:          newMetricMysqlInnodbLsnLastCheckpoint(mbc.Metrics.MysqlInnodbLsnLastCheckpoint),
+		metricMysqlInnodbMemAdaptiveHash:            newMetricMysqlInnodbMemAdaptiveHash(mbc.Metrics.MysqlInnodbMemAdaptiveHash),
+		metricMysqlInnodbMemAdditionalPool:          newMetricMysqlInnodbMemAdditionalPool(mbc.Metrics.MysqlInnodbMemAdditionalPool),
+		metricMysqlInnodbMemDictionary:              newMetricMysqlInnodbMemDictionary(mbc.Metrics.MysqlInnodbMemDictionary),
+		metricMysqlInnodbMemFileSystem:              newMetricMysqlInnodbMemFileSystem(mbc.Metrics.MysqlInnodbMemFileSystem),
+		metricMysqlInnodbMemLockSystem:              newMetricMysqlInnodbMemLockSystem(mbc.Metrics.MysqlInnodbMemLockSystem),
+		metricMysqlInnodbMemPageHash:                newMetricMysqlInnodbMemPageHash(mbc.Metrics.MysqlInnodbMemPageHash),
+		metricMysqlInnodbMemRecoverySystem:          newMetricMysqlInnodbMemRecoverySystem(mbc.Metrics.MysqlInnodbMemRecoverySystem),
+		metricMysqlInnodbMemThreadHash:              newMetricMysqlInnodbMemThreadHash(mbc.Metrics.MysqlInnodbMemThreadHash),
+		metricMysqlInnodbMemTotal:                   newMetricMysqlInnodbMemTotal(mbc.Metrics.MysqlInnodbMemTotal),
+		metricMysqlInnodbMutexOsWaits:               newMetricMysqlInnodbMutexOsWaits(mbc.Metrics.MysqlInnodbMutexOsWaits),
+		metricMysqlInnodbMutexSpinRounds:            newMetricMysqlInnodbMutexSpinRounds(mbc.Metrics.MysqlInnodbMutexSpinRounds),
+		metricMysqlInnodbMutexSpinWaits:             newMetricMysqlInnodbMutexSpinWaits(mbc.Metrics.MysqlInnodbMutexSpinWaits),
+		metricMysqlInnodbOsFileFsyncs:               newMetricMysqlInnodbOsFileFsyncs(mbc.Metrics.MysqlInnodbOsFileFsyncs),
+		metricMysqlInnodbOsFileReads:                newMetricMysqlInnodbOsFileReads(mbc.Metrics.MysqlInnodbOsFileReads),
+		metricMysqlInnodbOsFileWrites:               newMetricMysqlInnodbOsFileWrites(mbc.Metrics.MysqlInnodbOsFileWrites),
+		metricMysqlInnodbOsLogFsyncs:                newMetricMysqlInnodbOsLogFsyncs(mbc.Metrics.MysqlInnodbOsLogFsyncs),
+		metricMysqlInnodbOsLogPendingFsyncs:         newMetricMysqlInnodbOsLogPendingFsyncs(mbc.Metrics.MysqlInnodbOsLogPendingFsyncs),
+		metricMysqlInnodbOsLogPendingWrites:         newMetricMysqlInnodbOsLogPendingWrites(mbc.Metrics.MysqlInnodbOsLogPendingWrites),
+		metricMysqlInnodbOsLogWritten:               newMetricMysqlInnodbOsLogWritten(mbc.Metrics.MysqlInnodbOsLogWritten),
+		metricMysqlInnodbPagesCreated:               newMetricMysqlInnodbPagesCreated(mbc.Metrics.MysqlInnodbPagesCreated),
+		metricMysqlInnodbPagesRead:                  newMetricMysqlInnodbPagesRead(mbc.Metrics.MysqlInnodbPagesRead),
+		metricMysqlInnodbPagesWritten:               newMetricMysqlInnodbPagesWritten(mbc.Metrics.MysqlInnodbPagesWritten),
+		metricMysqlInnodbPendingAioLogIos:           newMetricMysqlInnodbPendingAioLogIos(mbc.Metrics.MysqlInnodbPendingAioLogIos),
+		metricMysqlInnodbPendingAioSyncIos:          newMetricMysqlInnodbPendingAioSyncIos(mbc.Metrics.MysqlInnodbPendingAioSyncIos),
+		metricMysqlInnodbPendingBufferPoolFlushes:   newMetricMysqlInnodbPendingBufferPoolFlushes(mbc.Metrics.MysqlInnodbPendingBufferPoolFlushes),
+		metricMysqlInnodbPendingCheckpointWrites:    newMetricMysqlInnodbPendingCheckpointWrites(mbc.Metrics.MysqlInnodbPendingCheckpointWrites),
+		metricMysqlInnodbPendingIbufAioReads:        newMetricMysqlInnodbPendingIbufAioReads(mbc.Metrics.MysqlInnodbPendingIbufAioReads),
+		metricMysqlInnodbPendingLogFlushes:          newMetricMysqlInnodbPendingLogFlushes(mbc.Metrics.MysqlInnodbPendingLogFlushes),
+		metricMysqlInnodbPendingLogWrites:           newMetricMysqlInnodbPendingLogWrites(mbc.Metrics.MysqlInnodbPendingLogWrites),
+		metricMysqlInnodbPendingNormalAioReads:      newMetricMysqlInnodbPendingNormalAioReads(mbc.Metrics.MysqlInnodbPendingNormalAioReads),
+		metricMysqlInnodbPendingNormalAioWrites:     newMetricMysqlInnodbPendingNormalAioWrites(mbc.Metrics.MysqlInnodbPendingNormalAioWrites),
+		metricMysqlInnodbQueriesInside:              newMetricMysqlInnodbQueriesInside(mbc.Metrics.MysqlInnodbQueriesInside),
+		metricMysqlInnodbQueriesQueued:              newMetricMysqlInnodbQueriesQueued(mbc.Metrics.MysqlInnodbQueriesQueued),
+		metricMysqlInnodbReadViews:                  newMetricMysqlInnodbReadViews(mbc.Metrics.MysqlInnodbReadViews),
+		metricMysqlInnodbRowLockCurrentWaits:        newMetricMysqlInnodbRowLockCurrentWaits(mbc.Metrics.MysqlInnodbRowLockCurrentWaits),
+		metricMysqlInnodbRowLockTime:                newMetricMysqlInnodbRowLockTime(mbc.Metrics.MysqlInnodbRowLockTime),
+		metricMysqlInnodbRowLockWaits:               newMetricMysqlInnodbRowLockWaits(mbc.Metrics.MysqlInnodbRowLockWaits),
+		metricMysqlInnodbRowsDeleted:                newMetricMysqlInnodbRowsDeleted(mbc.Metrics.MysqlInnodbRowsDeleted),
+		metricMysqlInnodbRowsInserted:               newMetricMysqlInnodbRowsInserted(mbc.Metrics.MysqlInnodbRowsInserted),
+		metricMysqlInnodbRowsRead:                   newMetricMysqlInnodbRowsRead(mbc.Metrics.MysqlInnodbRowsRead),
+		metricMysqlInnodbRowsUpdated:                newMetricMysqlInnodbRowsUpdated(mbc.Metrics.MysqlInnodbRowsUpdated),
+		metricMysqlInnodbSLockOsWaits:               newMetricMysqlInnodbSLockOsWaits(mbc.Metrics.MysqlInnodbSLockOsWaits),
+		metricMysqlInnodbSLockSpinRounds:            newMetricMysqlInnodbSLockSpinRounds(mbc.Metrics.MysqlInnodbSLockSpinRounds),
+		metricMysqlInnodbSLockSpinWaits:             newMetricMysqlInnodbSLockSpinWaits(mbc.Metrics.MysqlInnodbSLockSpinWaits),
+		metricMysqlInnodbSemaphoreWaitTime:          newMetricMysqlInnodbSemaphoreWaitTime(mbc.Metrics.MysqlInnodbSemaphoreWaitTime),
+		metricMysqlInnodbSemaphoreWaits:             newMetricMysqlInnodbSemaphoreWaits(mbc.Metrics.MysqlInnodbSemaphoreWaits),
+		metricMysqlInnodbTablesInUse:                newMetricMysqlInnodbTablesInUse(mbc.Metrics.MysqlInnodbTablesInUse),
+		metricMysqlInnodbXLockOsWaits:               newMetricMysqlInnodbXLockOsWaits(mbc.Metrics.MysqlInnodbXLockOsWaits),
+		metricMysqlInnodbXLockSpinRounds:            newMetricMysqlInnodbXLockSpinRounds(mbc.Metrics.MysqlInnodbXLockSpinRounds),
+		metricMysqlInnodbXLockSpinWaits:             newMetricMysqlInnodbXLockSpinWaits(mbc.Metrics.MysqlInnodbXLockSpinWaits),
+		metricMysqlJoins:                            newMetricMysqlJoins(mbc.Metrics.MysqlJoins),
+		metricMysqlLocks:                            newMetricMysqlLocks(mbc.Metrics.MysqlLocks),
+		metricMysqlLogOperations:                    newMetricMysqlLogOperations(mbc.Metrics.MysqlLogOperations),
+		metricMysqlMysqlxConnections:                newMetricMysqlMysqlxConnections(mbc.Metrics.MysqlMysqlxConnections),
+		metricMysqlMysqlxWorkerThreads:              newMetricMysqlMysqlxWorkerThreads(mbc.Metrics.MysqlMysqlxWorkerThreads),
+		metricMysqlOpenedResources:                  newMetricMysqlOpenedResources(mbc.Metrics.MysqlOpenedResources),
+		metricMysqlOperations:                       newMetricMysqlOperations(mbc.Metrics.MysqlOperations),
+		metricMysqlPageOperations:                   newMetricMysqlPageOperations(mbc.Metrics.MysqlPageOperations),
+		metricMysqlPreparedStatements:               newMetricMysqlPreparedStatements(mbc.Metrics.MysqlPreparedStatements),
+		metricMysqlQueryClientCount:                 newMetricMysqlQueryClientCount(mbc.Metrics.MysqlQueryClientCount),
+		metricMysqlQueryCount:                       newMetricMysqlQueryCount(mbc.Metrics.MysqlQueryCount),
+		metricMysqlQuerySlowCount:                   newMetricMysqlQuerySlowCount(mbc.Metrics.MysqlQuerySlowCount),
+		metricMysqlReplicaSQLDelay:                  newMetricMysqlReplicaSQLDelay(mbc.Metrics.MysqlReplicaSQLDelay),
+		metricMysqlReplicaTimeBehindSource:          newMetricMysqlReplicaTimeBehindSource(mbc.Metrics.MysqlReplicaTimeBehindSource),
+		metricMysqlRowLocks:                         newMetricMysqlRowLocks(mbc.Metrics.MysqlRowLocks),
+		metricMysqlRowOperations:                    newMetricMysqlRowOperations(mbc.Metrics.MysqlRowOperations),
+		metricMysqlSorts:                            newMetricMysqlSorts(mbc.Metrics.MysqlSorts),
+		metricMysqlStatementEventCount:              newMetricMysqlStatementEventCount(mbc.Metrics.MysqlStatementEventCount),
+		metricMysqlStatementEventWaitTime:           newMetricMysqlStatementEventWaitTime(mbc.Metrics.MysqlStatementEventWaitTime),
+		metricMysqlTableIoWaitCount:                 newMetricMysqlTableIoWaitCount(mbc.Metrics.MysqlTableIoWaitCount),
+		metricMysqlTableIoWaitTime:                  newMetricMysqlTableIoWaitTime(mbc.Metrics.MysqlTableIoWaitTime),
+		metricMysqlTableLockWaitReadCount:           newMetricMysqlTableLockWaitReadCount(mbc.Metrics.MysqlTableLockWaitReadCount),
+		metricMysqlTableLockWaitReadTime:            newMetricMysqlTableLockWaitReadTime(mbc.Metrics.MysqlTableLockWaitReadTime),
+		metricMysqlTableLockWaitWriteCount:          newMetricMysqlTableLockWaitWriteCount(mbc.Metrics.MysqlTableLockWaitWriteCount),
+		metricMysqlTableLockWaitWriteTime:           newMetricMysqlTableLockWaitWriteTime(mbc.Metrics.MysqlTableLockWaitWriteTime),
+		metricMysqlTableOpenCache:                   newMetricMysqlTableOpenCache(mbc.Metrics.MysqlTableOpenCache),
+		metricMysqlThreads:                          newMetricMysqlThreads(mbc.Metrics.MysqlThreads),
+		metricMysqlTmpResources:                     newMetricMysqlTmpResources(mbc.Metrics.MysqlTmpResources),
+		metricMysqlUptime:                           newMetricMysqlUptime(mbc.Metrics.MysqlUptime),
 	}
 	for _, op := range options {
 		op(mb)
@@ -3454,6 +8754,108 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlHandlers.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitCount.emit(ils.Metrics())
 	mb.metricMysqlIndexIoWaitTime.emit(ils.Metrics())
+	mb.metricMysqlInnodbActiveTransactions.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolData.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolDirty.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolFree.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolPagesData.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolPagesDirty.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolPagesFlushed.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolPagesFree.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolPagesTotal.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolReadAhead.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolReadAheadEvicted.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolReadAheadRnd.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolReadRequests.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolReads.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolTotal.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolUsed.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolUtilization.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolWaitFree.emit(ils.Metrics())
+	mb.metricMysqlInnodbBufferPoolWriteRequests.emit(ils.Metrics())
+	mb.metricMysqlInnodbCheckpointAge.emit(ils.Metrics())
+	mb.metricMysqlInnodbCurrentRowLocks.emit(ils.Metrics())
+	mb.metricMysqlInnodbCurrentTransactions.emit(ils.Metrics())
+	mb.metricMysqlInnodbDataFsyncs.emit(ils.Metrics())
+	mb.metricMysqlInnodbDataPendingFsyncs.emit(ils.Metrics())
+	mb.metricMysqlInnodbDataPendingReads.emit(ils.Metrics())
+	mb.metricMysqlInnodbDataPendingWrites.emit(ils.Metrics())
+	mb.metricMysqlInnodbDataRead.emit(ils.Metrics())
+	mb.metricMysqlInnodbDataReads.emit(ils.Metrics())
+	mb.metricMysqlInnodbDataWrites.emit(ils.Metrics())
+	mb.metricMysqlInnodbDataWritten.emit(ils.Metrics())
+	mb.metricMysqlInnodbDblwrPagesWritten.emit(ils.Metrics())
+	mb.metricMysqlInnodbDblwrWrites.emit(ils.Metrics())
+	mb.metricMysqlInnodbHashIndexCellsTotal.emit(ils.Metrics())
+	mb.metricMysqlInnodbHashIndexCellsUsed.emit(ils.Metrics())
+	mb.metricMysqlInnodbHistoryListLength.emit(ils.Metrics())
+	mb.metricMysqlInnodbIbufFreeList.emit(ils.Metrics())
+	mb.metricMysqlInnodbIbufMerged.emit(ils.Metrics())
+	mb.metricMysqlInnodbIbufMergedDeleteMarks.emit(ils.Metrics())
+	mb.metricMysqlInnodbIbufMergedDeletes.emit(ils.Metrics())
+	mb.metricMysqlInnodbIbufMergedInserts.emit(ils.Metrics())
+	mb.metricMysqlInnodbIbufMerges.emit(ils.Metrics())
+	mb.metricMysqlInnodbIbufSegmentSize.emit(ils.Metrics())
+	mb.metricMysqlInnodbIbufSize.emit(ils.Metrics())
+	mb.metricMysqlInnodbLockStructs.emit(ils.Metrics())
+	mb.metricMysqlInnodbLockedTables.emit(ils.Metrics())
+	mb.metricMysqlInnodbLockedTransactions.emit(ils.Metrics())
+	mb.metricMysqlInnodbLogWaits.emit(ils.Metrics())
+	mb.metricMysqlInnodbLogWriteRequests.emit(ils.Metrics())
+	mb.metricMysqlInnodbLogWrites.emit(ils.Metrics())
+	mb.metricMysqlInnodbLsnCurrent.emit(ils.Metrics())
+	mb.metricMysqlInnodbLsnFlushed.emit(ils.Metrics())
+	mb.metricMysqlInnodbLsnLastCheckpoint.emit(ils.Metrics())
+	mb.metricMysqlInnodbMemAdaptiveHash.emit(ils.Metrics())
+	mb.metricMysqlInnodbMemAdditionalPool.emit(ils.Metrics())
+	mb.metricMysqlInnodbMemDictionary.emit(ils.Metrics())
+	mb.metricMysqlInnodbMemFileSystem.emit(ils.Metrics())
+	mb.metricMysqlInnodbMemLockSystem.emit(ils.Metrics())
+	mb.metricMysqlInnodbMemPageHash.emit(ils.Metrics())
+	mb.metricMysqlInnodbMemRecoverySystem.emit(ils.Metrics())
+	mb.metricMysqlInnodbMemThreadHash.emit(ils.Metrics())
+	mb.metricMysqlInnodbMemTotal.emit(ils.Metrics())
+	mb.metricMysqlInnodbMutexOsWaits.emit(ils.Metrics())
+	mb.metricMysqlInnodbMutexSpinRounds.emit(ils.Metrics())
+	mb.metricMysqlInnodbMutexSpinWaits.emit(ils.Metrics())
+	mb.metricMysqlInnodbOsFileFsyncs.emit(ils.Metrics())
+	mb.metricMysqlInnodbOsFileReads.emit(ils.Metrics())
+	mb.metricMysqlInnodbOsFileWrites.emit(ils.Metrics())
+	mb.metricMysqlInnodbOsLogFsyncs.emit(ils.Metrics())
+	mb.metricMysqlInnodbOsLogPendingFsyncs.emit(ils.Metrics())
+	mb.metricMysqlInnodbOsLogPendingWrites.emit(ils.Metrics())
+	mb.metricMysqlInnodbOsLogWritten.emit(ils.Metrics())
+	mb.metricMysqlInnodbPagesCreated.emit(ils.Metrics())
+	mb.metricMysqlInnodbPagesRead.emit(ils.Metrics())
+	mb.metricMysqlInnodbPagesWritten.emit(ils.Metrics())
+	mb.metricMysqlInnodbPendingAioLogIos.emit(ils.Metrics())
+	mb.metricMysqlInnodbPendingAioSyncIos.emit(ils.Metrics())
+	mb.metricMysqlInnodbPendingBufferPoolFlushes.emit(ils.Metrics())
+	mb.metricMysqlInnodbPendingCheckpointWrites.emit(ils.Metrics())
+	mb.metricMysqlInnodbPendingIbufAioReads.emit(ils.Metrics())
+	mb.metricMysqlInnodbPendingLogFlushes.emit(ils.Metrics())
+	mb.metricMysqlInnodbPendingLogWrites.emit(ils.Metrics())
+	mb.metricMysqlInnodbPendingNormalAioReads.emit(ils.Metrics())
+	mb.metricMysqlInnodbPendingNormalAioWrites.emit(ils.Metrics())
+	mb.metricMysqlInnodbQueriesInside.emit(ils.Metrics())
+	mb.metricMysqlInnodbQueriesQueued.emit(ils.Metrics())
+	mb.metricMysqlInnodbReadViews.emit(ils.Metrics())
+	mb.metricMysqlInnodbRowLockCurrentWaits.emit(ils.Metrics())
+	mb.metricMysqlInnodbRowLockTime.emit(ils.Metrics())
+	mb.metricMysqlInnodbRowLockWaits.emit(ils.Metrics())
+	mb.metricMysqlInnodbRowsDeleted.emit(ils.Metrics())
+	mb.metricMysqlInnodbRowsInserted.emit(ils.Metrics())
+	mb.metricMysqlInnodbRowsRead.emit(ils.Metrics())
+	mb.metricMysqlInnodbRowsUpdated.emit(ils.Metrics())
+	mb.metricMysqlInnodbSLockOsWaits.emit(ils.Metrics())
+	mb.metricMysqlInnodbSLockSpinRounds.emit(ils.Metrics())
+	mb.metricMysqlInnodbSLockSpinWaits.emit(ils.Metrics())
+	mb.metricMysqlInnodbSemaphoreWaitTime.emit(ils.Metrics())
+	mb.metricMysqlInnodbSemaphoreWaits.emit(ils.Metrics())
+	mb.metricMysqlInnodbTablesInUse.emit(ils.Metrics())
+	mb.metricMysqlInnodbXLockOsWaits.emit(ils.Metrics())
+	mb.metricMysqlInnodbXLockSpinRounds.emit(ils.Metrics())
+	mb.metricMysqlInnodbXLockSpinWaits.emit(ils.Metrics())
 	mb.metricMysqlJoins.emit(ils.Metrics())
 	mb.metricMysqlLocks.emit(ils.Metrics())
 	mb.metricMysqlLogOperations.emit(ils.Metrics())
@@ -3621,6 +9023,762 @@ func (mb *MetricsBuilder) RecordMysqlIndexIoWaitCountDataPoint(ts pcommon.Timest
 // RecordMysqlIndexIoWaitTimeDataPoint adds a data point to mysql.index.io.wait.time metric.
 func (mb *MetricsBuilder) RecordMysqlIndexIoWaitTimeDataPoint(ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue AttributeIoWaitsOperations, tableNameAttributeValue string, schemaAttributeValue string, indexNameAttributeValue string) {
 	mb.metricMysqlIndexIoWaitTime.recordDataPoint(mb.startTime, ts, val, ioWaitsOperationsAttributeValue.String(), tableNameAttributeValue, schemaAttributeValue, indexNameAttributeValue)
+}
+
+// RecordMysqlInnodbActiveTransactionsDataPoint adds a data point to mysql.innodb.active_transactions metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbActiveTransactionsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbActiveTransactions.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbBufferPoolDataDataPoint adds a data point to mysql.innodb.buffer_pool_data metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolDataDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbBufferPoolData.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbBufferPoolDirtyDataPoint adds a data point to mysql.innodb.buffer_pool_dirty metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolDirtyDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbBufferPoolDirty.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbBufferPoolFreeDataPoint adds a data point to mysql.innodb.buffer_pool_free metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolFreeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbBufferPoolFree.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbBufferPoolPagesDataDataPoint adds a data point to mysql.innodb.buffer_pool_pages_data metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolPagesDataDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbBufferPoolPagesData.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbBufferPoolPagesDirtyDataPoint adds a data point to mysql.innodb.buffer_pool_pages_dirty metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolPagesDirtyDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbBufferPoolPagesDirty.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbBufferPoolPagesFlushedDataPoint adds a data point to mysql.innodb.buffer_pool_pages_flushed metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolPagesFlushedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbBufferPoolPagesFlushed, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbBufferPoolPagesFlushed.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbBufferPoolPagesFreeDataPoint adds a data point to mysql.innodb.buffer_pool_pages_free metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolPagesFreeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbBufferPoolPagesFree.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbBufferPoolPagesTotalDataPoint adds a data point to mysql.innodb.buffer_pool_pages_total metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolPagesTotalDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbBufferPoolPagesTotal.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbBufferPoolReadAheadDataPoint adds a data point to mysql.innodb.buffer_pool_read_ahead metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolReadAheadDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbBufferPoolReadAhead, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbBufferPoolReadAhead.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbBufferPoolReadAheadEvictedDataPoint adds a data point to mysql.innodb.buffer_pool_read_ahead_evicted metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolReadAheadEvictedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbBufferPoolReadAheadEvicted, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbBufferPoolReadAheadEvicted.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbBufferPoolReadAheadRndDataPoint adds a data point to mysql.innodb.buffer_pool_read_ahead_rnd metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolReadAheadRndDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbBufferPoolReadAheadRnd.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbBufferPoolReadRequestsDataPoint adds a data point to mysql.innodb.buffer_pool_read_requests metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolReadRequestsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbBufferPoolReadRequests, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbBufferPoolReadRequests.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbBufferPoolReadsDataPoint adds a data point to mysql.innodb.buffer_pool_reads metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolReadsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbBufferPoolReads, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbBufferPoolReads.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbBufferPoolTotalDataPoint adds a data point to mysql.innodb.buffer_pool_total metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolTotalDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbBufferPoolTotal.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbBufferPoolUsedDataPoint adds a data point to mysql.innodb.buffer_pool_used metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolUsedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbBufferPoolUsed.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbBufferPoolUtilizationDataPoint adds a data point to mysql.innodb.buffer_pool_utilization metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolUtilizationDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbBufferPoolUtilization.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbBufferPoolWaitFreeDataPoint adds a data point to mysql.innodb.buffer_pool_wait_free metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolWaitFreeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbBufferPoolWaitFree, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbBufferPoolWaitFree.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbBufferPoolWriteRequestsDataPoint adds a data point to mysql.innodb.buffer_pool_write_requests metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbBufferPoolWriteRequestsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbBufferPoolWriteRequests, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbBufferPoolWriteRequests.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbCheckpointAgeDataPoint adds a data point to mysql.innodb.checkpoint_age metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbCheckpointAgeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbCheckpointAge.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbCurrentRowLocksDataPoint adds a data point to mysql.innodb.current_row_locks metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbCurrentRowLocksDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbCurrentRowLocks.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbCurrentTransactionsDataPoint adds a data point to mysql.innodb.current_transactions metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbCurrentTransactionsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbCurrentTransactions.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbDataFsyncsDataPoint adds a data point to mysql.innodb.data_fsyncs metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbDataFsyncsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbDataFsyncs, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbDataFsyncs.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbDataPendingFsyncsDataPoint adds a data point to mysql.innodb.data_pending_fsyncs metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbDataPendingFsyncsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbDataPendingFsyncs.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbDataPendingReadsDataPoint adds a data point to mysql.innodb.data_pending_reads metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbDataPendingReadsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbDataPendingReads.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbDataPendingWritesDataPoint adds a data point to mysql.innodb.data_pending_writes metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbDataPendingWritesDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbDataPendingWrites.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbDataReadDataPoint adds a data point to mysql.innodb.data_read metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbDataReadDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbDataRead, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbDataRead.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbDataReadsDataPoint adds a data point to mysql.innodb.data_reads metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbDataReadsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbDataReads, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbDataReads.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbDataWritesDataPoint adds a data point to mysql.innodb.data_writes metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbDataWritesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbDataWrites, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbDataWrites.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbDataWrittenDataPoint adds a data point to mysql.innodb.data_written metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbDataWrittenDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbDataWritten, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbDataWritten.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbDblwrPagesWrittenDataPoint adds a data point to mysql.innodb.dblwr_pages_written metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbDblwrPagesWrittenDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbDblwrPagesWritten, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbDblwrPagesWritten.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbDblwrWritesDataPoint adds a data point to mysql.innodb.dblwr_writes metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbDblwrWritesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbDblwrWrites, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbDblwrWrites.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbHashIndexCellsTotalDataPoint adds a data point to mysql.innodb.hash_index_cells_total metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbHashIndexCellsTotalDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbHashIndexCellsTotal.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbHashIndexCellsUsedDataPoint adds a data point to mysql.innodb.hash_index_cells_used metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbHashIndexCellsUsedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbHashIndexCellsUsed.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbHistoryListLengthDataPoint adds a data point to mysql.innodb.history_list_length metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbHistoryListLengthDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbHistoryListLength.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbIbufFreeListDataPoint adds a data point to mysql.innodb.ibuf_free_list metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbIbufFreeListDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbIbufFreeList.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbIbufMergedDataPoint adds a data point to mysql.innodb.ibuf_merged metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbIbufMergedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbIbufMerged, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbIbufMerged.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbIbufMergedDeleteMarksDataPoint adds a data point to mysql.innodb.ibuf_merged_delete_marks metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbIbufMergedDeleteMarksDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbIbufMergedDeleteMarks, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbIbufMergedDeleteMarks.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbIbufMergedDeletesDataPoint adds a data point to mysql.innodb.ibuf_merged_deletes metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbIbufMergedDeletesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbIbufMergedDeletes, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbIbufMergedDeletes.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbIbufMergedInsertsDataPoint adds a data point to mysql.innodb.ibuf_merged_inserts metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbIbufMergedInsertsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbIbufMergedInserts, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbIbufMergedInserts.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbIbufMergesDataPoint adds a data point to mysql.innodb.ibuf_merges metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbIbufMergesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbIbufMerges, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbIbufMerges.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbIbufSegmentSizeDataPoint adds a data point to mysql.innodb.ibuf_segment_size metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbIbufSegmentSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbIbufSegmentSize.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbIbufSizeDataPoint adds a data point to mysql.innodb.ibuf_size metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbIbufSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbIbufSize.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbLockStructsDataPoint adds a data point to mysql.innodb.lock_structs metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbLockStructsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbLockStructs, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbLockStructs.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbLockedTablesDataPoint adds a data point to mysql.innodb.locked_tables metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbLockedTablesDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbLockedTables.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbLockedTransactionsDataPoint adds a data point to mysql.innodb.locked_transactions metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbLockedTransactionsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbLockedTransactions.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbLogWaitsDataPoint adds a data point to mysql.innodb.log_waits metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbLogWaitsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbLogWaits, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbLogWaits.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbLogWriteRequestsDataPoint adds a data point to mysql.innodb.log_write_requests metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbLogWriteRequestsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbLogWriteRequests, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbLogWriteRequests.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbLogWritesDataPoint adds a data point to mysql.innodb.log_writes metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbLogWritesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	// val, err := strconv.Atoi(inputVal)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbLogWrites, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbLogWrites.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbLsnCurrentDataPoint adds a data point to mysql.innodb.lsn_current metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbLsnCurrentDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbLsnCurrent, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbLsnCurrent.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbLsnFlushedDataPoint adds a data point to mysql.innodb.lsn_flushed metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbLsnFlushedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbLsnFlushed, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbLsnFlushed.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbLsnLastCheckpointDataPoint adds a data point to mysql.innodb.lsn_last_checkpoint metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbLsnLastCheckpointDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbLsnLastCheckpoint, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbLsnLastCheckpoint.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbMemAdaptiveHashDataPoint adds a data point to mysql.innodb.mem_adaptive_hash metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbMemAdaptiveHashDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbMemAdaptiveHash.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbMemAdditionalPoolDataPoint adds a data point to mysql.innodb.mem_additional_pool metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbMemAdditionalPoolDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbMemAdditionalPool.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbMemDictionaryDataPoint adds a data point to mysql.innodb.mem_dictionary metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbMemDictionaryDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbMemDictionary.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbMemFileSystemDataPoint adds a data point to mysql.innodb.mem_file_system metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbMemFileSystemDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbMemFileSystem.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbMemLockSystemDataPoint adds a data point to mysql.innodb.mem_lock_system metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbMemLockSystemDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbMemLockSystem.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbMemPageHashDataPoint adds a data point to mysql.innodb.mem_page_hash metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbMemPageHashDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbMemPageHash.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbMemRecoverySystemDataPoint adds a data point to mysql.innodb.mem_recovery_system metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbMemRecoverySystemDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbMemRecoverySystem.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbMemThreadHashDataPoint adds a data point to mysql.innodb.mem_thread_hash metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbMemThreadHashDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbMemThreadHash.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbMemTotalDataPoint adds a data point to mysql.innodb.mem_total metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbMemTotalDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbMemTotal.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbMutexOsWaitsDataPoint adds a data point to mysql.innodb.mutex_os_waits metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbMutexOsWaitsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbMutexOsWaits, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbMutexOsWaits.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbMutexSpinRoundsDataPoint adds a data point to mysql.innodb.mutex_spin_rounds metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbMutexSpinRoundsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbMutexSpinRounds, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbMutexSpinRounds.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbMutexSpinWaitsDataPoint adds a data point to mysql.innodb.mutex_spin_waits metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbMutexSpinWaitsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbMutexSpinWaits, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbMutexSpinWaits.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbOsFileFsyncsDataPoint adds a data point to mysql.innodb.os_file_fsyncs metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbOsFileFsyncsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbOsFileFsyncs, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbOsFileFsyncs.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbOsFileReadsDataPoint adds a data point to mysql.innodb.os_file_reads metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbOsFileReadsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbOsFileReads, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbOsFileReads.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbOsFileWritesDataPoint adds a data point to mysql.innodb.os_file_writes metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbOsFileWritesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbOsFileWrites, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbOsFileWrites.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbOsLogFsyncsDataPoint adds a data point to mysql.innodb.os_log_fsyncs metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbOsLogFsyncsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbOsLogFsyncs, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbOsLogFsyncs.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbOsLogPendingFsyncsDataPoint adds a data point to mysql.innodb.os_log_pending_fsyncs metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbOsLogPendingFsyncsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbOsLogPendingFsyncs.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbOsLogPendingWritesDataPoint adds a data point to mysql.innodb.os_log_pending_writes metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbOsLogPendingWritesDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbOsLogPendingWrites.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbOsLogWrittenDataPoint adds a data point to mysql.innodb.os_log_written metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbOsLogWrittenDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbOsLogWritten, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbOsLogWritten.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbPagesCreatedDataPoint adds a data point to mysql.innodb.pages_created metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbPagesCreatedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbPagesCreated, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbPagesCreated.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbPagesReadDataPoint adds a data point to mysql.innodb.pages_read metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbPagesReadDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbPagesRead, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbPagesRead.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbPagesWrittenDataPoint adds a data point to mysql.innodb.pages_written metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbPagesWrittenDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbPagesWritten, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbPagesWritten.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbPendingAioLogIosDataPoint adds a data point to mysql.innodb.pending_aio_log_ios metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbPendingAioLogIosDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbPendingAioLogIos.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbPendingAioSyncIosDataPoint adds a data point to mysql.innodb.pending_aio_sync_ios metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbPendingAioSyncIosDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbPendingAioSyncIos.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbPendingBufferPoolFlushesDataPoint adds a data point to mysql.innodb.pending_buffer_pool_flushes metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbPendingBufferPoolFlushesDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbPendingBufferPoolFlushes.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbPendingCheckpointWritesDataPoint adds a data point to mysql.innodb.pending_checkpoint_writes metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbPendingCheckpointWritesDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbPendingCheckpointWrites.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbPendingIbufAioReadsDataPoint adds a data point to mysql.innodb.pending_ibuf_aio_reads metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbPendingIbufAioReadsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbPendingIbufAioReads.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbPendingLogFlushesDataPoint adds a data point to mysql.innodb.pending_log_flushes metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbPendingLogFlushesDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbPendingLogFlushes.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbPendingLogWritesDataPoint adds a data point to mysql.innodb.pending_log_writes metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbPendingLogWritesDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbPendingLogWrites.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbPendingNormalAioReadsDataPoint adds a data point to mysql.innodb.pending_normal_aio_reads metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbPendingNormalAioReadsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbPendingNormalAioReads.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbPendingNormalAioWritesDataPoint adds a data point to mysql.innodb.pending_normal_aio_writes metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbPendingNormalAioWritesDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbPendingNormalAioWrites.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbQueriesInsideDataPoint adds a data point to mysql.innodb.queries_inside metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbQueriesInsideDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbQueriesInside.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbQueriesQueuedDataPoint adds a data point to mysql.innodb.queries_queued metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbQueriesQueuedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbQueriesQueued.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbReadViewsDataPoint adds a data point to mysql.innodb.read_views metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbReadViewsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbReadViews.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbRowLockCurrentWaitsDataPoint adds a data point to mysql.innodb.row_lock_current_waits metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbRowLockCurrentWaitsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbRowLockCurrentWaits.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbRowLockTimeDataPoint adds a data point to mysql.innodb.row_lock_time metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbRowLockTimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbRowLockTime, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbRowLockTime.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbRowLockWaitsDataPoint adds a data point to mysql.innodb.row_lock_waits metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbRowLockWaitsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbRowLockWaits, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbRowLockWaits.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbRowsDeletedDataPoint adds a data point to mysql.innodb.rows_deleted metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbRowsDeletedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbRowsDeleted, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbRowsDeleted.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbRowsInsertedDataPoint adds a data point to mysql.innodb.rows_inserted metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbRowsInsertedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbRowsInserted, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbRowsInserted.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbRowsReadDataPoint adds a data point to mysql.innodb.rows_read metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbRowsReadDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbRowsRead, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbRowsRead.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbRowsUpdatedDataPoint adds a data point to mysql.innodb.rows_updated metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbRowsUpdatedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbRowsUpdated, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbRowsUpdated.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbSLockOsWaitsDataPoint adds a data point to mysql.innodb.s_lock_os_waits metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbSLockOsWaitsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbSLockOsWaits, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbSLockOsWaits.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbSLockSpinRoundsDataPoint adds a data point to mysql.innodb.s_lock_spin_rounds metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbSLockSpinRoundsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbSLockSpinRounds, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbSLockSpinRounds.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbSLockSpinWaitsDataPoint adds a data point to mysql.innodb.s_lock_spin_waits metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbSLockSpinWaitsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbSLockSpinWaits, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbSLockSpinWaits.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbSemaphoreWaitTimeDataPoint adds a data point to mysql.innodb.semaphore_wait_time metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbSemaphoreWaitTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbSemaphoreWaitTime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbSemaphoreWaitsDataPoint adds a data point to mysql.innodb.semaphore_waits metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbSemaphoreWaitsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbSemaphoreWaits.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbTablesInUseDataPoint adds a data point to mysql.innodb.tables_in_use metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbTablesInUseDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMysqlInnodbTablesInUse.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlInnodbXLockOsWaitsDataPoint adds a data point to mysql.innodb.x_lock_os_waits metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbXLockOsWaitsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbXLockOsWaits, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbXLockOsWaits.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbXLockSpinRoundsDataPoint adds a data point to mysql.innodb.x_lock_spin_rounds metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbXLockSpinRoundsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbXLockSpinRounds, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbXLockSpinRounds.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordMysqlInnodbXLockSpinWaitsDataPoint adds a data point to mysql.innodb.x_lock_spin_waits metric.
+func (mb *MetricsBuilder) RecordMysqlInnodbXLockSpinWaitsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for MysqlInnodbXLockSpinWaits, value was %s: %w", inputVal, err)
+	}
+	mb.metricMysqlInnodbXLockSpinWaits.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordMysqlJoinsDataPoint adds a data point to mysql.joins metric.

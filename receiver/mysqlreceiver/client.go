@@ -11,6 +11,8 @@ import (
 
 	// registers the mysql driver
 	"github.com/go-sql-driver/mysql"
+	parser "github.com/middleware-labs/innoParser/pkg/metricParser"
+	"github.com/middleware-labs/innoParser/pkg/sqlclient"
 )
 
 type client interface {
@@ -18,6 +20,7 @@ type client interface {
 	getVersion() (string, error)
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
+	getInnodbStatusStats() (map[string]int64, error)
 	getTableIoWaitsStats() ([]TableIoWaitsStats, error)
 	getIndexIoWaitsStats() ([]IndexIoWaitsStats, error)
 	getStatementEventsStats() ([]StatementEventStats, error)
@@ -180,6 +183,36 @@ func newMySQLClient(conf *Config) client {
 		statementEventsLimit:           conf.StatementEvents.Limit,
 		statementEventsTimeLimit:       conf.StatementEvents.TimeLimit,
 	}
+}
+
+func (c *mySQLClient) getInnodbStatusStats() (map[string]int64, error) {
+	parserClient := sqlclient.NewMySQLClient()
+	/*
+		TODO: the mySQLClient is a wrapper around an SQL engine, we can make the call here
+		only.
+	*/
+	innodbParser, err := parser.NewInnodbStatusParser(parserClient)
+	if err != nil {
+		err := fmt.Errorf("could not create parser for innodb stats, %s", err)
+		return nil, err
+	}
+	innodbParser.SetInnodbStatus()
+
+	metrics, errs := innodbParser.ParseStatus()
+
+	total_errs := 0
+	for key, val := range errs {
+		if errs[key][0] != nil {
+			fmt.Println(val)
+			total_errs += 1
+		}
+	}
+	if total_errs > 0 {
+		err := fmt.Errorf("%d errors in parsing metrics", total_errs)
+		return nil, err
+	}
+
+	return metrics, nil
 }
 
 func (c *mySQLClient) Connect() error {

@@ -6,6 +6,7 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -102,11 +103,62 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// colect replicas status metrics.
 	m.scrapeReplicaStatusStats(now)
 
+	m.scrapeInnodbStatusStats(now, errs)
+
 	rb := m.mb.NewResourceBuilder()
 	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
 	m.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	return m.mb.Emit(), errs.Combine()
+}
+
+func (m *mySQLScraper) scrapeInnodbStatusStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	innodbStatusStats, err := m.sqlclient.getInnodbStatusStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch innodb status stats", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+
+	fmt.Println(innodbStatusStats)
+
+	for k, v := range innodbStatusStats {
+		strVal := strconv.FormatInt(v, 10)
+		switch k {
+		case "Innodb_mutex_spin_waits":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbMutexSpinWaitsDataPoint(now, strVal))
+
+		case "Innodb_mutex_spin_rounds":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbMutexSpinRoundsDataPoint(now, strVal))
+
+		case "Innodb_mutex_os_waits":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbMutexOsWaitsDataPoint(now, strVal))
+
+		case "Innodb_s_lock_spin_waits":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbSLockSpinWaitsDataPoint(now, strVal))
+
+		case "Innodb_x_lock_spin_rounds":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbXLockSpinRoundsDataPoint(now, strVal))
+
+		case "Innodb_x_lock_spin_waits":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbXLockSpinWaitsDataPoint(now, strVal))
+
+		case "Innodb_s_lock_os_waits":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbSLockOsWaitsDataPoint(now, strVal))
+
+		case "Innodb_x_lock_os_waits":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbXLockOsWaitsDataPoint(now, strVal))
+
+		case "Innodb_s_lock_spin_rounds":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbSLockSpinRoundsDataPoint(now, strVal))
+
+		case "Innodb_semaphore_waits":
+			m.mb.RecordMysqlInnodbSemaphoreWaitsDataPoint(now, v)
+
+		case "Innodb_semaphore_wait_time":
+			m.mb.RecordMysqlInnodbSemaphoreWaitTimeDataPoint(now, v)
+		}
+	}
 }
 
 func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {

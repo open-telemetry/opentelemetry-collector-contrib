@@ -12,6 +12,832 @@ metrics:
     enabled: false
 ```
 
+### mysql.innodb.active_transactions
+
+Current number of active transactions in InnoDB.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+### mysql.innodb.buffer_pool_data
+
+Total number of bytes of data in the InnoDB buffer pool.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Int |
+
+### mysql.innodb.buffer_pool_dirty
+
+Current number of bytes held in dirty pages in the InnoDB buffer pool.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Int |
+
+### mysql.innodb.buffer_pool_free
+
+Number of bytes currently free within the InnoDB buffer pool.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Int |
+
+### mysql.innodb.buffer_pool_pages_data
+
+Number of data pages in the InnoDB buffer pool.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {page}/s | Gauge | Int |
+
+### mysql.innodb.buffer_pool_pages_dirty
+
+Number of dirty pages in the InnoDB buffer pool.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {page}/s | Gauge | Int |
+
+### mysql.innodb.buffer_pool_pages_flushed
+
+Rate of pages being flushed from the InnoDB buffer pool.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {page}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.buffer_pool_pages_free
+
+Number of free pages in the InnoDB buffer pool.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {page}/s | Gauge | Int |
+
+### mysql.innodb.buffer_pool_pages_total
+
+Total number of pages in the InnoDB buffer pool.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {page}/s | Gauge | Int |
+
+### mysql.innodb.buffer_pool_read_ahead
+
+Rate of pages read into the buffer pool by read-ahead.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {page}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.buffer_pool_read_ahead_evicted
+
+Rate of pages read by read-ahead and then evicted without being accessed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {page}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.buffer_pool_read_ahead_rnd
+
+Number of random read-aheads in the InnoDB buffer pool.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+### mysql.innodb.buffer_pool_read_requests
+
+Rate of read requests made to the InnoDB buffer pool.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {read}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.buffer_pool_reads
+
+Rate of read operations that required actual disk I/O in the InnoDB buffer pool.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {read}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.buffer_pool_total
+
+Total number of bytes within the InnoDB buffer pool.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Int |
+
+### mysql.innodb.buffer_pool_used
+
+Number of bytes currently used within the InnoDB buffer pool.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Int |
+
+### mysql.innodb.buffer_pool_utilization
+
+Percentage of the InnoDB buffer pool currently being utilized.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction}/s | Gauge | Int |
+
+### mysql.innodb.buffer_pool_wait_free
+
+Number of waits for a free page in the buffer pool.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {wait}/s | Sum | Int | Cumulative | true |
+
+### mysql.innodb.buffer_pool_write_requests
+
+Rate of write requests to the InnoDB buffer pool.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {write}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.checkpoint_age
+
+Age of the last checkpoint in InnoDB.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.current_row_locks
+
+Current number of row locks held by operations in InnoDB.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock} | Gauge | Int |
+
+### mysql.innodb.current_transactions
+
+Current number of transactions happening in InnoDB.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {transaction}/s | Gauge | Int |
+
+### mysql.innodb.data_fsyncs
+
+Rate of fsync operations by InnoDB to disk.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.data_pending_fsyncs
+
+Current number of pending fsync operations in InnoDB.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+### mysql.innodb.data_pending_reads
+
+Current number of pending read operations in InnoDB.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {read}/s | Gauge | Int |
+
+### mysql.innodb.data_pending_writes
+
+Current number of pending write operations in InnoDB.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {write}/s | Gauge | Int |
+
+### mysql.innodb.data_read
+
+Rate at which data is read from disk by InnoDB.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.data_reads
+
+Rate of data read operations performed by InnoDB.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {read}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.data_writes
+
+Rate of data write operations performed by InnoDB.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {write}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.data_written
+
+Rate at which data is written to disk by InnoDB.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.dblwr_pages_written
+
+Rate of pages written to the doublewrite buffer to prevent partial page writes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {page}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.dblwr_writes
+
+Rate of operations writing to the doublewrite buffer.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.hash_index_cells_total
+
+Total number of cells in the adaptive hash index.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.hash_index_cells_used
+
+Number of used cells in the adaptive hash index.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.history_list_length
+
+Length of the history list, indicating the number of pages consumed by transactions not yet flushed.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.ibuf_free_list
+
+Number of pages in the insert buffer free list.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.ibuf_merged
+
+Rate at which records are merged from the insert buffer.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.ibuf_merged_delete_marks
+
+Rate of delete marks merged from the insert buffer to the buffer pool.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.ibuf_merged_deletes
+
+Rate of delete operations merged from the insert buffer.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.ibuf_merged_inserts
+
+Rate of insert operations merged from the insert buffer.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.ibuf_merges
+
+Rate of operations merging data from the insert buffer to the buffer pool.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.ibuf_segment_size
+
+Size of the segment available for the insert buffer.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.ibuf_size
+
+Total size of the insert buffer.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.lock_structs
+
+Rate at which lock structures are being used or created.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.locked_tables
+
+Number of tables currently locked by InnoDB.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+### mysql.innodb.locked_transactions
+
+Number of transactions that have acquired locks.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+### mysql.innodb.log_waits
+
+Number of waits due to log buffer being too small.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {wait}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.log_write_requests
+
+Number of write requests made to the log.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {write}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.log_writes
+
+Rate of actual log writes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {write}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.lsn_current
+
+Current log sequence number.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+### mysql.innodb.lsn_flushed
+
+Log sequence number of the last flushed log.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+### mysql.innodb.lsn_last_checkpoint
+
+Log sequence number of the last checkpoint.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+### mysql.innodb.mem_adaptive_hash
+
+Memory used by InnoDB for the adaptive hash index.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Int |
+
+### mysql.innodb.mem_additional_pool
+
+Memory allocated to InnoDB's additional pool.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Int |
+
+### mysql.innodb.mem_dictionary
+
+Memory used by InnoDB for dictionary information.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Int |
+
+### mysql.innodb.mem_file_system
+
+Memory used by InnoDB for file system data structures.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.mem_lock_system
+
+Memory used by InnoDB for lock system data structures.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.mem_page_hash
+
+Memory used by InnoDB for page hash.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.mem_recovery_system
+
+Memory used by InnoDB for transaction recovery.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.mem_thread_hash
+
+Memory used by InnoDB for thread hash.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Int |
+
+### mysql.innodb.mem_total
+
+Total memory allocated to InnoDB.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Int |
+
+### mysql.innodb.mutex_os_waits
+
+Rate at which InnoDB operations need to wait for operating system level mutexes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {event}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.mutex_spin_rounds
+
+Rate of spin rounds per mutex spin in InnoDB, showing the effort needed to acquire a mutex.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {event}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.mutex_spin_waits
+
+Rate of mutex spin waits in InnoDB, indicating contention within internal data structures.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {event}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.os_file_fsyncs
+
+Rate at which InnoDB performs fsync() operations on files.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.os_file_reads
+
+Rate at which files are read by InnoDB.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.os_file_writes
+
+Rate at which files are written by InnoDB.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operation}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.os_log_fsyncs
+
+Rate at which fsync() operations are issued to the InnoDB log file.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {write}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.os_log_pending_fsyncs
+
+Number of pending fsyncs for logs.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+### mysql.innodb.os_log_pending_writes
+
+Number of pending log writes.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {write}/s | Gauge | Int |
+
+### mysql.innodb.os_log_written
+
+Total bytes written to the log by InnoDB.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.pages_created
+
+Rate at which pages are created by InnoDB.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {page}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.pages_read
+
+Rate at which pages are read by InnoDB.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {page}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.pages_written
+
+Rate at which pages are written by InnoDB.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {page}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.pending_aio_log_ios
+
+Number of pending asynchronous I/O operations on the log.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.pending_aio_sync_ios
+
+Number of pending asynchronous I/O operations that need synchronization.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.pending_buffer_pool_flushes
+
+Number of pending buffer pool flush operations.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {flush} | Gauge | Int |
+
+### mysql.innodb.pending_checkpoint_writes
+
+Number of pending writes to establish a new checkpoint.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.pending_ibuf_aio_reads
+
+Number of pending insert buffer asynchronous I/O reads.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.pending_log_flushes
+
+Number of pending flush operations for the log buffer.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {flush} | Gauge | Int |
+
+### mysql.innodb.pending_log_writes
+
+Number of pending writes to the log file.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {write}/s | Gauge | Int |
+
+### mysql.innodb.pending_normal_aio_reads
+
+Number of pending normal asynchronous I/O read operations.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {read}/s | Gauge | Int |
+
+### mysql.innodb.pending_normal_aio_writes
+
+Number of pending normal asynchronous I/O write operations.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {write}/s | Gauge | Int |
+
+### mysql.innodb.queries_inside
+
+Number of queries currently being processed inside InnoDB.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Int |
+
+### mysql.innodb.queries_queued
+
+Number of queries waiting to be processed by InnoDB.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Int |
+
+### mysql.innodb.read_views
+
+Number of 'read view' structures currently active; these are used to manage consistent read views.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.row_lock_current_waits
+
+Current number of operations waiting for row locks in InnoDB.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.row_lock_time
+
+Total time spent waiting for row locks by operations in InnoDB.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {fraction}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.row_lock_waits
+
+Rate at which operations wait for row locks, indicative of contention on row-level data.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {event}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.rows_deleted
+
+Rate at which rows are being deleted in InnoDB.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {row}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.rows_inserted
+
+Rate at which rows are being inserted in InnoDB.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {row}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.rows_read
+
+Rate at which rows are being read in InnoDB.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {row}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.rows_updated
+
+Rate at which rows are being updated in InnoDB.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {row}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.s_lock_os_waits
+
+Rate at which OS waits for shared locks occur.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+### mysql.innodb.s_lock_spin_rounds
+
+Rate at which spin rounds for shared locks occur.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+### mysql.innodb.s_lock_spin_waits
+
+Rate at which spin waits for shared locks occur.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {wait}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.semaphore_wait_time
+
+Total wait time for semaphores.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.semaphore_waits
+
+Number of semaphore waits.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+### mysql.innodb.tables_in_use
+
+Number of tables currently in use by InnoDB.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+### mysql.innodb.x_lock_os_waits
+
+Rate at which OS waits for exclusive locks occur.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {wait}/s | Sum | Int | Cumulative | false |
+
+### mysql.innodb.x_lock_spin_rounds
+
+Rate at which spin rounds for exclusive locks occur.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+### mysql.innodb.x_lock_spin_waits
+
+Rate at which spin waits for exclusive locks occur.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {wait}/s | Sum | Int | Cumulative | false |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
 ### mysql.buffer_pool.data_pages
 
 The number of data pages in the InnoDB buffer pool.
@@ -84,6 +910,56 @@ The number of bytes in the InnoDB buffer pool.
 | ---- | ----------- | ------ |
 | status | The status of buffer pool data. | Str: ``dirty``, ``clean`` |
 
+### mysql.client.network.io
+
+The number of transmitted bytes between server and clients.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| kind | The name of the transmission direction. | Str: ``received``, ``sent`` |
+
+### mysql.commands
+
+The number of times each type of command has been executed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| command | The command types. | Str: ``delete``, ``insert``, ``select``, ``update`` |
+
+### mysql.connection.count
+
+The number of connection attempts (successful or not) to the MySQL server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+### mysql.connection.errors
+
+Errors that occur during the client connection process.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` |
+
 ### mysql.double_writes
 
 The number of writes to the InnoDB doublewrite buffer.
@@ -146,6 +1022,20 @@ The total time of I/O wait events for an index.
 | schema | The schema of the object. | Any Str |
 | index | The name of the index. | Any Str |
 
+### mysql.joins
+
+The number of joins that perform table scans.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| kind | The kind of join. | Str: ``full``, ``full_range``, ``range``, ``range_check``, ``scan`` |
+
 ### mysql.locks
 
 The number of MySQL locks.
@@ -189,6 +1079,22 @@ This metric is specific for MySQL working as Document Store (X-Plugin). [more do
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | status | The connection status. | Str: ``accepted``, ``closed``, ``rejected`` |
+
+### mysql.mysqlx_worker_threads
+
+The number of worker threads available.
+
+This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| kind | The worker thread count kind. | Str: ``available``, ``active`` |
 
 ### mysql.opened_resources
 
@@ -246,6 +1152,46 @@ The number of times each type of prepared statement command has been issued.
 | ---- | ----------- | ------ |
 | command | The prepare statement command types. | Str: ``execute``, ``close``, ``fetch``, ``prepare``, ``reset``, ``send_long_data`` |
 
+### mysql.query.client.count
+
+The number of statements executed by the server. This includes only statements sent to the server by clients.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+### mysql.query.count
+
+The number of statements executed by the server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+### mysql.query.slow.count
+
+The number of slow queries.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+### mysql.replica.sql_delay
+
+The number of seconds that the replica must lag the source.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | false |
+
+### mysql.replica.time_behind_source
+
+This field is an indication of how “late” the replica is.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | false |
+
 ### mysql.row_locks
 
 The number of InnoDB row locks.
@@ -288,204 +1234,6 @@ The number of MySQL sorts.
 | ---- | ----------- | ------ |
 | kind | The sort count type. | Str: ``merge_passes``, ``range``, ``rows``, ``scan`` |
 
-### mysql.table.io.wait.count
-
-The total count of I/O wait events for a table.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` |
-| table | Table name for event or process. | Any Str |
-| schema | The schema of the object. | Any Str |
-
-### mysql.table.io.wait.time
-
-The total time of I/O wait events for a table.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ns | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` |
-| table | Table name for event or process. | Any Str |
-| schema | The schema of the object. | Any Str |
-
-### mysql.threads
-
-The state of MySQL threads.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| kind | The thread count type. | Str: ``cached``, ``connected``, ``created``, ``running`` |
-
-### mysql.tmp_resources
-
-The number of created temporary resources.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| resource | The kind of temporary resources. | Str: ``disk_tables``, ``files``, ``tables`` |
-
-### mysql.uptime
-
-The number of seconds that the server has been up.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | true |
-
-## Optional Metrics
-
-The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
-
-```yaml
-metrics:
-  <metric_name>:
-    enabled: true
-```
-
-### mysql.client.network.io
-
-The number of transmitted bytes between server and clients.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| kind | The name of the transmission direction. | Str: ``received``, ``sent`` |
-
-### mysql.commands
-
-The number of times each type of command has been executed.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| command | The command types. | Str: ``delete``, ``insert``, ``select``, ``update`` |
-
-### mysql.connection.count
-
-The number of connection attempts (successful or not) to the MySQL server.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-### mysql.connection.errors
-
-Errors that occur during the client connection process.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` |
-
-### mysql.joins
-
-The number of joins that perform table scans.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| kind | The kind of join. | Str: ``full``, ``full_range``, ``range``, ``range_check``, ``scan`` |
-
-### mysql.mysqlx_worker_threads
-
-The number of worker threads available.
-
-This metric is specific for MySQL working as Document Store (X-Plugin). [more docs](https://dev.mysql.com/doc/refman/8.0/en/document-store.html)
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| kind | The worker thread count kind. | Str: ``available``, ``active`` |
-
-### mysql.query.client.count
-
-The number of statements executed by the server. This includes only statements sent to the server by clients.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-### mysql.query.count
-
-The number of statements executed by the server.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-### mysql.query.slow.count
-
-The number of slow queries.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
-### mysql.replica.sql_delay
-
-The number of seconds that the replica must lag the source.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | false |
-
-### mysql.replica.time_behind_source
-
-This field is an indication of how “late” the replica is.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Int | Cumulative | false |
-
 ### mysql.statement_event.count
 
 Summary of current and recent statement events.
@@ -518,6 +1266,38 @@ The total wait time of the summarized timed events.
 | schema | The schema of the object. | Any Str |
 | digest | Digest. | Any Str |
 | digest_text | Text before digestion. | Any Str |
+
+### mysql.table.io.wait.count
+
+The total count of I/O wait events for a table.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` |
+| table | Table name for event or process. | Any Str |
+| schema | The schema of the object. | Any Str |
+
+### mysql.table.io.wait.time
+
+The total time of I/O wait events for a table.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ns | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| operation | The io_waits operation type. | Str: ``delete``, ``fetch``, ``insert``, ``update`` |
+| table | Table name for event or process. | Any Str |
+| schema | The schema of the object. | Any Str |
 
 ### mysql.table.lock_wait.read.count
 
@@ -596,6 +1376,42 @@ The number of hits, misses or overflows for open tables cache lookups.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | status | The status of cache access. | Str: ``hit``, ``miss``, ``overflow`` |
+
+### mysql.threads
+
+The state of MySQL threads.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| kind | The thread count type. | Str: ``cached``, ``connected``, ``created``, ``running`` |
+
+### mysql.tmp_resources
+
+The number of created temporary resources.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| resource | The kind of temporary resources. | Str: ``disk_tables``, ``files``, ``tables`` |
+
+### mysql.uptime
+
+The number of seconds that the server has been up.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Int | Cumulative | true |
 
 ## Resource Attributes
 

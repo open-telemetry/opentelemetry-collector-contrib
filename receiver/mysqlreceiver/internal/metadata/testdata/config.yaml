@@ -29,6 +29,210 @@ all_set:
       enabled: true
     mysql.index.io.wait.time:
       enabled: true
+    mysql.innodb.active_transactions:
+      enabled: true
+    mysql.innodb.buffer_pool_data:
+      enabled: true
+    mysql.innodb.buffer_pool_dirty:
+      enabled: true
+    mysql.innodb.buffer_pool_free:
+      enabled: true
+    mysql.innodb.buffer_pool_pages_data:
+      enabled: true
+    mysql.innodb.buffer_pool_pages_dirty:
+      enabled: true
+    mysql.innodb.buffer_pool_pages_flushed:
+      enabled: true
+    mysql.innodb.buffer_pool_pages_free:
+      enabled: true
+    mysql.innodb.buffer_pool_pages_total:
+      enabled: true
+    mysql.innodb.buffer_pool_read_ahead:
+      enabled: true
+    mysql.innodb.buffer_pool_read_ahead_evicted:
+      enabled: true
+    mysql.innodb.buffer_pool_read_ahead_rnd:
+      enabled: true
+    mysql.innodb.buffer_pool_read_requests:
+      enabled: true
+    mysql.innodb.buffer_pool_reads:
+      enabled: true
+    mysql.innodb.buffer_pool_total:
+      enabled: true
+    mysql.innodb.buffer_pool_used:
+      enabled: true
+    mysql.innodb.buffer_pool_utilization:
+      enabled: true
+    mysql.innodb.buffer_pool_wait_free:
+      enabled: true
+    mysql.innodb.buffer_pool_write_requests:
+      enabled: true
+    mysql.innodb.checkpoint_age:
+      enabled: true
+    mysql.innodb.current_row_locks:
+      enabled: true
+    mysql.innodb.current_transactions:
+      enabled: true
+    mysql.innodb.data_fsyncs:
+      enabled: true
+    mysql.innodb.data_pending_fsyncs:
+      enabled: true
+    mysql.innodb.data_pending_reads:
+      enabled: true
+    mysql.innodb.data_pending_writes:
+      enabled: true
+    mysql.innodb.data_read:
+      enabled: true
+    mysql.innodb.data_reads:
+      enabled: true
+    mysql.innodb.data_writes:
+      enabled: true
+    mysql.innodb.data_written:
+      enabled: true
+    mysql.innodb.dblwr_pages_written:
+      enabled: true
+    mysql.innodb.dblwr_writes:
+      enabled: true
+    mysql.innodb.hash_index_cells_total:
+      enabled: true
+    mysql.innodb.hash_index_cells_used:
+      enabled: true
+    mysql.innodb.history_list_length:
+      enabled: true
+    mysql.innodb.ibuf_free_list:
+      enabled: true
+    mysql.innodb.ibuf_merged:
+      enabled: true
+    mysql.innodb.ibuf_merged_delete_marks:
+      enabled: true
+    mysql.innodb.ibuf_merged_deletes:
+      enabled: true
+    mysql.innodb.ibuf_merged_inserts:
+      enabled: true
+    mysql.innodb.ibuf_merges:
+      enabled: true
+    mysql.innodb.ibuf_segment_size:
+      enabled: true
+    mysql.innodb.ibuf_size:
+      enabled: true
+    mysql.innodb.lock_structs:
+      enabled: true
+    mysql.innodb.locked_tables:
+      enabled: true
+    mysql.innodb.locked_transactions:
+      enabled: true
+    mysql.innodb.log_waits:
+      enabled: true
+    mysql.innodb.log_write_requests:
+      enabled: true
+    mysql.innodb.log_writes:
+      enabled: true
+    mysql.innodb.lsn_current:
+      enabled: true
+    mysql.innodb.lsn_flushed:
+      enabled: true
+    mysql.innodb.lsn_last_checkpoint:
+      enabled: true
+    mysql.innodb.mem_adaptive_hash:
+      enabled: true
+    mysql.innodb.mem_additional_pool:
+      enabled: true
+    mysql.innodb.mem_dictionary:
+      enabled: true
+    mysql.innodb.mem_file_system:
+      enabled: true
+    mysql.innodb.mem_lock_system:
+      enabled: true
+    mysql.innodb.mem_page_hash:
+      enabled: true
+    mysql.innodb.mem_recovery_system:
+      enabled: true
+    mysql.innodb.mem_thread_hash:
+      enabled: true
+    mysql.innodb.mem_total:
+      enabled: true
+    mysql.innodb.mutex_os_waits:
+      enabled: true
+    mysql.innodb.mutex_spin_rounds:
+      enabled: true
+    mysql.innodb.mutex_spin_waits:
+      enabled: true
+    mysql.innodb.os_file_fsyncs:
+      enabled: true
+    mysql.innodb.os_file_reads:
+      enabled: true
+    mysql.innodb.os_file_writes:
+      enabled: true
+    mysql.innodb.os_log_fsyncs:
+      enabled: true
+    mysql.innodb.os_log_pending_fsyncs:
+      enabled: true
+    mysql.innodb.os_log_pending_writes:
+      enabled: true
+    mysql.innodb.os_log_written:
+      enabled: true
+    mysql.innodb.pages_created:
+      enabled: true
+    mysql.innodb.pages_read:
+      enabled: true
+    mysql.innodb.pages_written:
+      enabled: true
+    mysql.innodb.pending_aio_log_ios:
+      enabled: true
+    mysql.innodb.pending_aio_sync_ios:
+      enabled: true
+    mysql.innodb.pending_buffer_pool_flushes:
+      enabled: true
+    mysql.innodb.pending_checkpoint_writes:
+      enabled: true
+    mysql.innodb.pending_ibuf_aio_reads:
+      enabled: true
+    mysql.innodb.pending_log_flushes:
+      enabled: true
+    mysql.innodb.pending_log_writes:
+      enabled: true
+    mysql.innodb.pending_normal_aio_reads:
+      enabled: true
+    mysql.innodb.pending_normal_aio_writes:
+      enabled: true
+    mysql.innodb.queries_inside:
+      enabled: true
+    mysql.innodb.queries_queued:
+      enabled: true
+    mysql.innodb.read_views:
+      enabled: true
+    mysql.innodb.row_lock_current_waits:
+      enabled: true
+    mysql.innodb.row_lock_time:
+      enabled: true
+    mysql.innodb.row_lock_waits:
+      enabled: true
+    mysql.innodb.rows_deleted:
+      enabled: true
+    mysql.innodb.rows_inserted:
+      enabled: true
+    mysql.innodb.rows_read:
+      enabled: true
+    mysql.innodb.rows_updated:
+      enabled: true
+    mysql.innodb.s_lock_os_waits:
+      enabled: true
+    mysql.innodb.s_lock_spin_rounds:
+      enabled: true
+    mysql.innodb.s_lock_spin_waits:
+      enabled: true
+    mysql.innodb.semaphore_wait_time:
+      enabled: true
+    mysql.innodb.semaphore_waits:
+      enabled: true
+    mysql.innodb.tables_in_use:
+      enabled: true
+    mysql.innodb.x_lock_os_waits:
+      enabled: true
+    mysql.innodb.x_lock_spin_rounds:
+      enabled: true
+    mysql.innodb.x_lock_spin_waits:
+      enabled: true
     mysql.joins:
       enabled: true
     mysql.locks:
@@ -119,6 +323,210 @@ none_set:
     mysql.index.io.wait.count:
       enabled: false
     mysql.index.io.wait.time:
+      enabled: false
+    mysql.innodb.active_transactions:
+      enabled: false
+    mysql.innodb.buffer_pool_data:
+      enabled: false
+    mysql.innodb.buffer_pool_dirty:
+      enabled: false
+    mysql.innodb.buffer_pool_free:
+      enabled: false
+    mysql.innodb.buffer_pool_pages_data:
+      enabled: false
+    mysql.innodb.buffer_pool_pages_dirty:
+      enabled: false
+    mysql.innodb.buffer_pool_pages_flushed:
+      enabled: false
+    mysql.innodb.buffer_pool_pages_free:
+      enabled: false
+    mysql.innodb.buffer_pool_pages_total:
+      enabled: false
+    mysql.innodb.buffer_pool_read_ahead:
+      enabled: false
+    mysql.innodb.buffer_pool_read_ahead_evicted:
+      enabled: false
+    mysql.innodb.buffer_pool_read_ahead_rnd:
+      enabled: false
+    mysql.innodb.buffer_pool_read_requests:
+      enabled: false
+    mysql.innodb.buffer_pool_reads:
+      enabled: false
+    mysql.innodb.buffer_pool_total:
+      enabled: false
+    mysql.innodb.buffer_pool_used:
+      enabled: false
+    mysql.innodb.buffer_pool_utilization:
+      enabled: false
+    mysql.innodb.buffer_pool_wait_free:
+      enabled: false
+    mysql.innodb.buffer_pool_write_requests:
+      enabled: false
+    mysql.innodb.checkpoint_age:
+      enabled: false
+    mysql.innodb.current_row_locks:
+      enabled: false
+    mysql.innodb.current_transactions:
+      enabled: false
+    mysql.innodb.data_fsyncs:
+      enabled: false
+    mysql.innodb.data_pending_fsyncs:
+      enabled: false
+    mysql.innodb.data_pending_reads:
+      enabled: false
+    mysql.innodb.data_pending_writes:
+      enabled: false
+    mysql.innodb.data_read:
+      enabled: false
+    mysql.innodb.data_reads:
+      enabled: false
+    mysql.innodb.data_writes:
+      enabled: false
+    mysql.innodb.data_written:
+      enabled: false
+    mysql.innodb.dblwr_pages_written:
+      enabled: false
+    mysql.innodb.dblwr_writes:
+      enabled: false
+    mysql.innodb.hash_index_cells_total:
+      enabled: false
+    mysql.innodb.hash_index_cells_used:
+      enabled: false
+    mysql.innodb.history_list_length:
+      enabled: false
+    mysql.innodb.ibuf_free_list:
+      enabled: false
+    mysql.innodb.ibuf_merged:
+      enabled: false
+    mysql.innodb.ibuf_merged_delete_marks:
+      enabled: false
+    mysql.innodb.ibuf_merged_deletes:
+      enabled: false
+    mysql.innodb.ibuf_merged_inserts:
+      enabled: false
+    mysql.innodb.ibuf_merges:
+      enabled: false
+    mysql.innodb.ibuf_segment_size:
+      enabled: false
+    mysql.innodb.ibuf_size:
+      enabled: false
+    mysql.innodb.lock_structs:
+      enabled: false
+    mysql.innodb.locked_tables:
+      enabled: false
+    mysql.innodb.locked_transactions:
+      enabled: false
+    mysql.innodb.log_waits:
+      enabled: false
+    mysql.innodb.log_write_requests:
+      enabled: false
+    mysql.innodb.log_writes:
+      enabled: false
+    mysql.innodb.lsn_current:
+      enabled: false
+    mysql.innodb.lsn_flushed:
+      enabled: false
+    mysql.innodb.lsn_last_checkpoint:
+      enabled: false
+    mysql.innodb.mem_adaptive_hash:
+      enabled: false
+    mysql.innodb.mem_additional_pool:
+      enabled: false
+    mysql.innodb.mem_dictionary:
+      enabled: false
+    mysql.innodb.mem_file_system:
+      enabled: false
+    mysql.innodb.mem_lock_system:
+      enabled: false
+    mysql.innodb.mem_page_hash:
+      enabled: false
+    mysql.innodb.mem_recovery_system:
+      enabled: false
+    mysql.innodb.mem_thread_hash:
+      enabled: false
+    mysql.innodb.mem_total:
+      enabled: false
+    mysql.innodb.mutex_os_waits:
+      enabled: false
+    mysql.innodb.mutex_spin_rounds:
+      enabled: false
+    mysql.innodb.mutex_spin_waits:
+      enabled: false
+    mysql.innodb.os_file_fsyncs:
+      enabled: false
+    mysql.innodb.os_file_reads:
+      enabled: false
+    mysql.innodb.os_file_writes:
+      enabled: false
+    mysql.innodb.os_log_fsyncs:
+      enabled: false
+    mysql.innodb.os_log_pending_fsyncs:
+      enabled: false
+    mysql.innodb.os_log_pending_writes:
+      enabled: false
+    mysql.innodb.os_log_written:
+      enabled: false
+    mysql.innodb.pages_created:
+      enabled: false
+    mysql.innodb.pages_read:
+      enabled: false
+    mysql.innodb.pages_written:
+      enabled: false
+    mysql.innodb.pending_aio_log_ios:
+      enabled: false
+    mysql.innodb.pending_aio_sync_ios:
+      enabled: false
+    mysql.innodb.pending_buffer_pool_flushes:
+      enabled: false
+    mysql.innodb.pending_checkpoint_writes:
+      enabled: false
+    mysql.innodb.pending_ibuf_aio_reads:
+      enabled: false
+    mysql.innodb.pending_log_flushes:
+      enabled: false
+    mysql.innodb.pending_log_writes:
+      enabled: false
+    mysql.innodb.pending_normal_aio_reads:
+      enabled: false
+    mysql.innodb.pending_normal_aio_writes:
+      enabled: false
+    mysql.innodb.queries_inside:
+      enabled: false
+    mysql.innodb.queries_queued:
+      enabled: false
+    mysql.innodb.read_views:
+      enabled: false
+    mysql.innodb.row_lock_current_waits:
+      enabled: false
+    mysql.innodb.row_lock_time:
+      enabled: false
+    mysql.innodb.row_lock_waits:
+      enabled: false
+    mysql.innodb.rows_deleted:
+      enabled: false
+    mysql.innodb.rows_inserted:
+      enabled: false
+    mysql.innodb.rows_read:
+      enabled: false
+    mysql.innodb.rows_updated:
+      enabled: false
+    mysql.innodb.s_lock_os_waits:
+      enabled: false
+    mysql.innodb.s_lock_spin_rounds:
+      enabled: false
+    mysql.innodb.s_lock_spin_waits:
+      enabled: false
+    mysql.innodb.semaphore_wait_time:
+      enabled: false
+    mysql.innodb.semaphore_waits:
+      enabled: false
+    mysql.innodb.tables_in_use:
+      enabled: false
+    mysql.innodb.x_lock_os_waits:
+      enabled: false
+    mysql.innodb.x_lock_spin_rounds:
+      enabled: false
+    mysql.innodb.x_lock_spin_waits:
       enabled: false
     mysql.joins:
       enabled: false
