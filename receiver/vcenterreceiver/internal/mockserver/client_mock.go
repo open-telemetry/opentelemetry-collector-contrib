@@ -114,6 +114,13 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 
 	switch {
 	case content == "group-d1" && contentType == "Folder":
+		for _, i := range propSetArray {
+			m, ok := i.(map[string]any)
+			require.True(t, ok)
+			if m["pathSet"] == "parentVApp" && m["type"] == "VirtualMachine" {
+				return loadResponse("datacenter-list.xml")
+			}
+		}
 		return loadResponse("datacenter.xml")
 
 	case content == "datacenter-3" && contentType == "Datacenter":
@@ -198,6 +205,9 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 			if innerPropSet["type"] == "VirtualMachine" {
 				return loadResponse("virtual-app-children.xml")
 			}
+		}
+		if _, ok := propSet["pathSet"].([]any); ok {
+			return loadResponse("virtual-app-properties.xml")
 		}
 		if ps, ok := propSet["pathSet"].(string); ok {
 			if ps == "owner" {

@@ -211,6 +211,12 @@ func newMetricsExporter(config Config, set exporter.CreateSettings, marshalers m
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
+	if config.PartitionMetricsByResourceAttributes {
+		if keyableMarshaler, ok := marshaler.(KeyableMetricsMarshaler); ok {
+			keyableMarshaler.Key()
+		}
+	}
+
 	return &kafkaMetricsProducer{
 		cfg:       config,
 		topic:     config.Topic,
