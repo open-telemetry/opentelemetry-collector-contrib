@@ -128,7 +128,7 @@ func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
 }
 
 func (c *kafkaTracesConsumer) Start(ctx context.Context, _ component.Host) error {
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             c.settings.ID,
