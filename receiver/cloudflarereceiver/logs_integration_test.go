@@ -111,7 +111,7 @@ func TestReceiverTLSIntegration(t *testing.T) {
 			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "processed", fmt.Sprintf("%s.yaml", payloadName)))
 			require.NoError(t, err)
 
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreResourceLogsOrder()))
 		})
 	}
 }

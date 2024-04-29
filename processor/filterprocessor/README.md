@@ -105,7 +105,7 @@ processors:
     error_mode: ignore
     metrics:
       datapoint:
-        - metric.name == "k8s.pod.phase" && value_int == 4
+        - metric.name == "k8s.pod.phase" and value_int == 4
 ```
 
 #### Dropping non-HTTP spans

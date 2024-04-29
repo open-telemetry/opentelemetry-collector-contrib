@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -137,7 +138,8 @@ func TestInput(t *testing.T) {
 }
 
 func InputTest(t *testing.T, tc syslog.Case, cfg *Config, rsrc map[string]any, attr map[string]any) {
-	op, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 
 	fake := testutil.NewFakeOutput(t)
@@ -211,7 +213,8 @@ func TestSyslogIDs(t *testing.T) {
 
 	t.Run("TCP", func(t *testing.T) {
 		cfg := NewConfigWithTCP(basicConfig())
-		op, err := cfg.Build(testutil.Logger(t))
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 		syslogInputOp := op.(*Input)
 		require.Equal(t, "test_syslog_internal_tcp", syslogInputOp.tcp.ID())
@@ -222,7 +225,8 @@ func TestSyslogIDs(t *testing.T) {
 	})
 	t.Run("UDP", func(t *testing.T) {
 		cfg := NewConfigWithUDP(basicConfig())
-		op, err := cfg.Build(testutil.Logger(t))
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 		syslogInputOp := op.(*Input)
 		require.Equal(t, "test_syslog_internal_udp", syslogInputOp.udp.ID())
