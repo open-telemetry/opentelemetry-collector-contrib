@@ -105,40 +105,16 @@ func TestPeerTags(t *testing.T) {
 		err                   string
 	}{
 		{
-			name: "both traces::peer_service_aggregation and traces::peer_tags_aggregation",
+			name: "traces::peer_tags_aggregation set to false",
 			cfgMap: confmap.NewFromStringMap(map[string]any{
 				"traces": map[string]any{
-					"peer_service_aggregation": true,
-					"peer_tags_aggregation":    true,
+					"peer_tags_aggregation": false,
 				},
 			}),
-			err: "\"traces::peer_service_aggregation\" and \"traces::peer_tags_aggregation\" can't be both set at the same time: use \"traces::peer_tags_aggregation\" only instead",
+			expectedPeerTagsValue: false,
 		},
 		{
-			name: "traces::peer_service_aggregation set to true",
-			cfgMap: confmap.NewFromStringMap(map[string]any{
-				"traces": map[string]any{
-					"peer_service_aggregation": true,
-				},
-			}),
-			expectedPeerTagsValue: true,
-			warnings: []string{
-				"\"traces::peer_service_aggregation\" has been deprecated in favor of \"traces::peer_tags_aggregation\"",
-			},
-		},
-		{
-			name: "traces::peer_service_aggregation set to false",
-			cfgMap: confmap.NewFromStringMap(map[string]any{
-				"traces": map[string]any{
-					"peer_service_aggregation": false,
-				},
-			}),
-			warnings: []string{
-				"\"traces::peer_service_aggregation\" has been deprecated in favor of \"traces::peer_tags_aggregation\"",
-			},
-		},
-		{
-			name:                  "traces::peer_service_aggregation and traces::peer_tags_aggregation unset",
+			name:                  "traces::peer_tags_aggregation unset",
 			cfgMap:                confmap.New(),
 			expectedPeerTagsValue: false,
 		},
