@@ -31,7 +31,7 @@ The following settings can be optionally configured:
 - `traces:`
   `  container_name:` (default = "traces"): Name of the blob container with the traces
 
-Authenticating using a connection string requires following additional settings:
+Authenticating using a connection string requires configuration of the following additional setting:
 
 - `connection_string:` Azure Blob Storage connection key, which can be found in the Azure Blob Storage resource on the Azure Portal.
 
