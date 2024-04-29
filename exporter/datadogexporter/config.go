@@ -309,10 +309,6 @@ type LogsConfig struct {
 	// DumpPayloads report whether payloads should be dumped when logging level is debug.
 	DumpPayloads bool `mapstructure:"dump_payloads"`
 
-	// LogsDDURL defines the endpoint and port for the logs agent to hit when using a proxy for logs.
-	// The logs are forwarded in TCP, therefore the proxy must be able to handle TCP connections.
-	LogsDDURL string `mapstructure:"logs_dd_url"`
-
 	// UseCompression enables the logs agent to compress logs before sending them.
 	UseCompression bool `mapstructure:"use_compression"`
 

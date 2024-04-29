@@ -195,6 +195,14 @@ func defaultClientConfig() confighttp.ClientConfig {
 	}
 }
 
+func defaultLogsEndpoint() string {
+	if isLogsAgentExporterEnabled() {
+		// logs agent sets this address by default to "https://agent-http-intake.logs.datadoghq.com"
+		return ""
+	}
+	return "https://http-intake.logs.datadoghq.com"
+}
+
 // createDefaultConfig creates the default exporter configuration
 func (f *factory) createDefaultConfig() component.Config {
 	return &Config{
@@ -237,7 +245,7 @@ func (f *factory) createDefaultConfig() component.Config {
 
 		Logs: LogsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: "https://http-intake.logs.datadoghq.com",
+				Endpoint: defaultLogsEndpoint(),
 			},
 			UseCompression:   true,
 			CompressionLevel: 6,

@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 )
 
 // JSONLogs is the type for the array of processed JSON log data from each request
@@ -31,19 +32,27 @@ func (jsonLogs *JSONLogs) HasDDTag(ddtags string) bool {
 type DatadogLogsServer struct {
 	*httptest.Server
 	// LogsData is the array of json requests sent to datadog backend
-	LogsData JSONLogs
+	LogsData             JSONLogs
+	connectivityCheck    sync.Once
+	logsAgentDoneChannel chan bool
 }
 
 // DatadogLogServerMock mocks a Datadog Logs Intake backend server
-func DatadogLogServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *DatadogLogsServer {
+func DatadogLogServerMock(logsAgentDoneChannel chan bool, overwriteHandlerFuncs ...OverwriteHandleFunc) *DatadogLogsServer {
 	mux := http.NewServeMux()
 
-	server := &DatadogLogsServer{}
+	server := &DatadogLogsServer{
+		logsAgentDoneChannel: logsAgentDoneChannel,
+	}
 	handlers := map[string]http.HandlerFunc{
 		// logs backend doesn't have validate endpoint
 		// but adding one here for ease of testing
 		"/api/v1/validate": validateAPIKeyEndpoint,
 		"/":                server.logsEndpoint,
+	}
+	if logsAgentDoneChannel != nil {
+		// "/api/v2/logs" overrides "/", so we only set this endpoint for logs agent tests
+		handlers["/api/v2/logs"] = server.logsAgentEndpoint
 	}
 	for _, f := range overwriteHandlerFuncs {
 		p, hf := f()
@@ -97,4 +106,46 @@ func handleError(w http.ResponseWriter, err error, statusCode int) {
 // MockLogsEndpoint returns the processed JSON log data for each endpoint call
 func MockLogsEndpoint(w http.ResponseWriter, r *http.Request) JSONLogs {
 	return processLogsRequest(w, r)
+}
+
+func (s *DatadogLogsServer) logsAgentEndpoint(w http.ResponseWriter, r *http.Request) {
+	connectivityCheck := false
+	s.connectivityCheck.Do(func() {
+		// The logs agent performs a connectivity check upon initialization.
+		// This function mocks a successful response for the first request received.
+		w.WriteHeader(http.StatusAccepted)
+		connectivityCheck = true
+	})
+	if !connectivityCheck {
+		jsonLogs := processLogsAgentRequest(w, r)
+		s.LogsData = append(s.LogsData, jsonLogs...)
+		s.logsAgentDoneChannel <- true
+	}
+}
+
+func processLogsAgentRequest(w http.ResponseWriter, r *http.Request) JSONLogs {
+	// we can reuse same response object for logs as well
+	req, err := gUnzipData(r.Body)
+	handleError(w, err, http.StatusBadRequest)
+	var jsonLogs JSONLogs
+	err = json.Unmarshal(req, &jsonLogs)
+	handleError(w, err, http.StatusBadRequest)
+
+	// unmarshal nested message JSON
+	for i := range jsonLogs {
+		messageJSON := jsonLogs[i]["message"].(string)
+		var message JSONLog
+		err = json.Unmarshal([]byte(messageJSON), &message)
+		handleError(w, err, http.StatusBadRequest)
+		jsonLogs[i]["message"] = message
+		// delete dynamic keys that can't be tested
+		delete(jsonLogs[i], "hostname")  // hostname of host running tests
+		delete(jsonLogs[i], "timestamp") // ingestion timestamp
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	_, err = w.Write([]byte(`{"status":"ok"}`))
+	handleError(w, err, 0)
+	return jsonLogs
 }

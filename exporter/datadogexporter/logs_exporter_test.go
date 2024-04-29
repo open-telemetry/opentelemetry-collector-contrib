@@ -212,7 +212,7 @@ func TestLogsExporter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := testutil.DatadogLogServerMock()
+			server := testutil.DatadogLogServerMock(nil)
 			defer server.Close()
 			cfg := &Config{
 				Metrics: MetricsConfig{
@@ -464,11 +464,13 @@ func TestLogsAgentExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			doneChannel := make(chan bool)
-			server := testutil.DatadogLogsAgentServerMock(doneChannel)
+			server := testutil.DatadogLogServerMock(doneChannel)
 			defer server.Close()
 			cfg := &Config{
 				Logs: LogsConfig{
-					LogsDDURL:        server.URL,
+					TCPAddrConfig: confignet.TCPAddrConfig{
+						Endpoint: server.URL,
+					},
 					UseCompression:   true,
 					CompressionLevel: 6,
 					BatchWait:        1,
@@ -488,7 +490,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			case <-doneChannel:
 				assert.Equal(t, tt.want, server.LogsData)
 			case <-time.After(10 * time.Second):
-				panic("timeout")
+				t.Fail()
 			}
 		})
 	}

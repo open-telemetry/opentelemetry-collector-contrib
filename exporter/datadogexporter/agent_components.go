@@ -28,7 +28,7 @@ func newConfigComponent(set component.TelemetrySettings, cfg *Config) coreconfig
 	pkgconfig.Set("api_key", string(cfg.API.Key), pkgconfigmodel.SourceFile)
 	pkgconfig.Set("site", cfg.API.Site, pkgconfigmodel.SourceFile)
 	pkgconfig.Set("logs_enabled", true, pkgconfigmodel.SourceFile)
-	pkgconfig.Set("logs_config.logs_dd_url", cfg.Logs.LogsDDURL, pkgconfigmodel.SourceFile)
+	pkgconfig.Set("logs_config.logs_dd_url", cfg.Logs.TCPAddrConfig.Endpoint, pkgconfigmodel.SourceFile)
 	pkgconfig.Set("logs_config.use_compression", cfg.Logs.UseCompression, pkgconfigmodel.SourceFile)
 	pkgconfig.Set("logs_config.compression_level", cfg.Logs.CompressionLevel, pkgconfigmodel.SourceFile)
 	pkgconfig.Set("logs_config.batch_wait", cfg.Logs.BatchWait, pkgconfigmodel.SourceFile)
