@@ -44,7 +44,7 @@ Authenticating using service principal requires configuration of the following a
 
 The service principal method also requires the [Storage Blob Data Contributor](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/storage#storage-blob-data-contributor) role on the logs and traces containers.
 
-### Example Configurations
+### Example configurations
 
 Using connection string for authentication:
 
