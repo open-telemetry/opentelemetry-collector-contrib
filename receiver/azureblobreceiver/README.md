@@ -56,7 +56,7 @@ receivers:
       endpoint: Endpoint=sb://oteldata.servicebus.windows.net/;SharedAccessKeyName=otelhubbpollicy;SharedAccessKey=mPJVubIK5dJ6mLfZo1ucsdkLysLSQ6N7kddvsIcmoEs=;EntityPath=otellhub
 ```
 
-Using Service Principal for authentication:
+Using service principal for authentication:
 
 ```yaml
 receivers:
