@@ -23,7 +23,7 @@ func TestInputGenerate(t *testing.T) {
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 
 	fake := testutil.NewFakeOutput(t)

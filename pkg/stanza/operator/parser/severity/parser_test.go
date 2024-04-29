@@ -224,7 +224,7 @@ func TestSeverityParser(t *testing.T) {
 func runSeverityParseTest(cfg *Config, ent *entry.Entry, buildErr bool, parseErr bool, expected entry.Severity) func(*testing.T) {
 	return func(t *testing.T) {
 		set := componenttest.NewNopTelemetrySettings()
-		op, err := cfg.Build(&set)
+		op, err := cfg.Build(set)
 		if buildErr {
 			require.Error(t, err, "expected error when configuring operator")
 			return

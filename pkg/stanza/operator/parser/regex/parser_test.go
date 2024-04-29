@@ -26,7 +26,7 @@ func newTestParser(t *testing.T, regex string, cacheSize uint16) *Parser {
 		cfg.Cache.Size = cacheSize
 	}
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	return op.(*Parser)
 }
@@ -35,7 +35,7 @@ func TestParserBuildFailure(t *testing.T) {
 	cfg := NewConfigWithID("test")
 	cfg.OnError = "invalid_on_error"
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := cfg.Build(&set)
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
@@ -139,7 +139,7 @@ func TestParserRegex(t *testing.T) {
 			tc.configure(cfg)
 
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(&set)
+			op, err := cfg.Build(set)
 			require.NoError(t, err)
 
 			defer func() {
@@ -172,7 +172,7 @@ func TestBuildParserRegex(t *testing.T) {
 	t.Run("BasicConfig", func(t *testing.T) {
 		c := newBasicParser()
 		set := componenttest.NewNopTelemetrySettings()
-		_, err := c.Build(&set)
+		_, err := c.Build(set)
 		require.NoError(t, err)
 	})
 
@@ -180,7 +180,7 @@ func TestBuildParserRegex(t *testing.T) {
 		c := newBasicParser()
 		c.Regex = ""
 		set := componenttest.NewNopTelemetrySettings()
-		_, err := c.Build(&set)
+		_, err := c.Build(set)
 		require.Error(t, err)
 	})
 
@@ -188,7 +188,7 @@ func TestBuildParserRegex(t *testing.T) {
 		c := newBasicParser()
 		c.Regex = "())()"
 		set := componenttest.NewNopTelemetrySettings()
-		_, err := c.Build(&set)
+		_, err := c.Build(set)
 		require.Error(t, err)
 	})
 
@@ -196,7 +196,7 @@ func TestBuildParserRegex(t *testing.T) {
 		c := newBasicParser()
 		c.Regex = ".*"
 		set := componenttest.NewNopTelemetrySettings()
-		_, err := c.Build(&set)
+		_, err := c.Build(set)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "no named capture groups")
 	})
@@ -205,7 +205,7 @@ func TestBuildParserRegex(t *testing.T) {
 		c := newBasicParser()
 		c.Regex = "(.*)"
 		set := componenttest.NewNopTelemetrySettings()
-		_, err := c.Build(&set)
+		_, err := c.Build(set)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "no named capture groups")
 	})
@@ -241,7 +241,7 @@ func newTestBenchParser(t *testing.T, cacheSize uint16) *Parser {
 	cfg.Cache.Size = cacheSize
 
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	return op.(*Parser)
 }

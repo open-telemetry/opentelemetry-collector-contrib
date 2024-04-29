@@ -92,6 +92,10 @@ all_set:
       enabled: true
     vcenter.resource_pool.name:
       enabled: true
+    vcenter.virtual_app.inventory_path:
+      enabled: true
+    vcenter.virtual_app.name:
+      enabled: true
     vcenter.vm.id:
       enabled: true
     vcenter.vm.name:
@@ -189,6 +193,10 @@ none_set:
       enabled: false
     vcenter.resource_pool.name:
       enabled: false
+    vcenter.virtual_app.inventory_path:
+      enabled: false
+    vcenter.virtual_app.name:
+      enabled: false
     vcenter.vm.id:
       enabled: false
     vcenter.vm.name:
@@ -216,6 +224,14 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     vcenter.resource_pool.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.virtual_app.inventory_path:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.virtual_app.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -253,6 +269,14 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "vcenter.resource_pool.name-val"
+    vcenter.virtual_app.inventory_path:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.virtual_app.inventory_path-val"
+    vcenter.virtual_app.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.virtual_app.name-val"
     vcenter.vm.id:
       enabled: true
       metrics_exclude:

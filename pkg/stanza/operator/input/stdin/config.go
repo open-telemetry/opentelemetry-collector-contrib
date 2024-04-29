@@ -31,7 +31,7 @@ type Config struct {
 }
 
 // Build will build a stdin input operator.
-func (c *Config) Build(set *component.TelemetrySettings) (operator.Operator, error) {
+func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(set)
 	if err != nil {
 		return nil, err

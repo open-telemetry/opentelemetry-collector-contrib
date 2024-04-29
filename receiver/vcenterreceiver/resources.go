@@ -16,6 +16,7 @@ func (v *vcenterMetricScraper) createVMResourceBuilder(
 	hs mo.HostSystem,
 	compute *object.ComputeResource,
 	rp *object.ResourcePool,
+	vApp *object.VirtualApp,
 ) *metadata.ResourceBuilder {
 	rb := v.mb.NewResourceBuilder()
 	rb.SetVcenterDatacenterName(dcName)
@@ -28,6 +29,10 @@ func (v *vcenterMetricScraper) createVMResourceBuilder(
 	if rp != nil && rp.Name() != "" {
 		rb.SetVcenterResourcePoolName(rp.Name())
 		rb.SetVcenterResourcePoolInventoryPath(rp.InventoryPath)
+	}
+	if vApp != nil && vApp.Name() != "" {
+		rb.SetVcenterVirtualAppName(vApp.Name())
+		rb.SetVcenterVirtualAppInventoryPath(vApp.InventoryPath)
 	}
 	return rb
 }
