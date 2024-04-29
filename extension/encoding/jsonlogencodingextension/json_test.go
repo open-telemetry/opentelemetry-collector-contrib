@@ -56,7 +56,7 @@ func TestPrettyLogProcessor(t *testing.T) {
 			Mode: JSONEncodingModeBodyWithInlineAttributes,
 		},
 	}
-	lp, err := j.LogProcessor(sampleLog())
+	lp, err := j.logProcessor(sampleLog())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
 	assert.Equal(t, string(lp), `[{"body":{"log":"test"},"logAttributes":{"foo":"bar"},"resourceAttributes":{"test":"logs-test"}},{"body":"log testing","resourceAttributes":{"test":"logs-test"}}]`)

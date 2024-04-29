@@ -27,7 +27,7 @@ type jsonLogExtension struct {
 
 func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	if e.config.(*Config).Mode == JSONEncodingModeBodyWithInlineAttributes {
-		return e.LogProcessor(ld)
+		return e.logProcessor(ld)
 	}
 	logRecord := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
 	var raw map[string]any
@@ -72,8 +72,8 @@ func (e *jsonLogExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (e *jsonLogExtension) LogProcessor(ld plog.Logs) ([]byte, error) {
-	prettyLogs := []prettyLogBody{}
+func (e *jsonLogExtension) logProcessor(ld plog.Logs) ([]byte, error) {
+	prettyLogs := make([]prettyLogBody, ld.ResourceLogs().Len() - 1)
 
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
