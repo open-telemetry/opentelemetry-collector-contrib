@@ -41,3 +41,31 @@ none_set:
       enabled: false
     rabbitmq.vhost.name:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    rabbitmq.node.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    rabbitmq.queue.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    rabbitmq.vhost.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    rabbitmq.node.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "rabbitmq.node.name-val"
+    rabbitmq.queue.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "rabbitmq.queue.name-val"
+    rabbitmq.vhost.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "rabbitmq.vhost.name-val"

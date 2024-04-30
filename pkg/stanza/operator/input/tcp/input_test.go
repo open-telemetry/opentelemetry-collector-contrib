@@ -14,6 +14,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -78,7 +79,8 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = ":0"
 
-		op, err := cfg.Build(testutil.Logger(t))
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
@@ -127,7 +129,8 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		cfg.ListenAddress = ":0"
 		cfg.AddAttributes = true
 
-		op, err := cfg.Build(testutil.Logger(t))
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
@@ -213,7 +216,8 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 			},
 		}
 
-		op, err := cfg.Build(testutil.Logger(t))
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
@@ -343,7 +347,8 @@ func TestBuild(t *testing.T) {
 			cfg.ListenAddress = tc.inputBody.ListenAddress
 			cfg.MaxLogSize = tc.inputBody.MaxLogSize
 			cfg.TLS = tc.inputBody.TLS
-			_, err := cfg.Build(testutil.Logger(t))
+			set := componenttest.NewNopTelemetrySettings()
+			_, err := cfg.Build(set)
 			if tc.expectErr {
 				require.Error(t, err)
 				return
@@ -388,7 +393,8 @@ func TestFailToBind(t *testing.T) {
 	var startTCP = func(int) (*Input, error) {
 		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = net.JoinHostPort(ip, strconv.Itoa(port))
-		op, err := cfg.Build(testutil.Logger(t))
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 		mockOutput := testutil.Operator{}
 		tcpInput := op.(*Input)
@@ -415,7 +421,8 @@ func BenchmarkTCPInput(b *testing.B) {
 	cfg := NewConfigWithID("test_id")
 	cfg.ListenAddress = ":0"
 
-	op, err := cfg.Build(testutil.Logger(b))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(b, err)
 
 	fakeOutput := testutil.NewFakeOutput(b)

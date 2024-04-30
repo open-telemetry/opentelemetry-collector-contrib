@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -75,6 +77,9 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
+
+	host.EnableBootTimeCache(true)
+	process.EnableBootTimeCache(true)
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ControllerConfig,

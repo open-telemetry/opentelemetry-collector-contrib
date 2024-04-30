@@ -6,14 +6,17 @@ package internal
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
+	"github.com/prometheus/prometheus/model/histogram"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/metadata"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/prometheus/prometheus/tsdb/tsdbutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -53,42 +56,89 @@ var (
 )
 
 func TestTransactionCommitWithoutAdding(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testTransactionCommitWithoutAdding(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testTransactionCommitWithoutAdding(t *testing.T, enableNativeHistograms bool) {
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 	assert.NoError(t, tr.Commit())
 }
 
 func TestTransactionRollbackDoesNothing(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testTransactionRollbackDoesNothing(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testTransactionRollbackDoesNothing(t *testing.T, enableNativeHistograms bool) {
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 	assert.NoError(t, tr.Rollback())
 }
 
 func TestTransactionUpdateMetadataDoesNothing(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testTransactionUpdateMetadataDoesNothing(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testTransactionUpdateMetadataDoesNothing(t *testing.T, enableNativeHistograms bool) {
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 	_, err := tr.UpdateMetadata(0, labels.New(), metadata.Metadata{})
 	assert.NoError(t, err)
 }
 
 func TestTransactionAppendNoTarget(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testTransactionAppendNoTarget(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testTransactionAppendNoTarget(t *testing.T, enableNativeHistograms bool) {
 	badLabels := labels.FromStrings(model.MetricNameLabel, "counter_test")
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 	_, err := tr.Append(0, badLabels, time.Now().Unix()*1000, 1.0)
 	assert.Error(t, err)
 }
 
 func TestTransactionAppendNoMetricName(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testTransactionAppendNoMetricName(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testTransactionAppendNoMetricName(t *testing.T, enableNativeHistograms bool) {
 	jobNotFoundLb := labels.FromMap(map[string]string{
 		model.InstanceLabel: "localhost:8080",
 		model.JobLabel:      "test2",
 	})
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 	_, err := tr.Append(0, jobNotFoundLb, time.Now().Unix()*1000, 1.0)
 	assert.ErrorIs(t, err, errMetricNameNotFound)
-
 	assert.ErrorIs(t, tr.Commit(), errNoDataToBuild)
 }
 
 func TestTransactionAppendEmptyMetricName(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testTransactionAppendEmptyMetricName(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testTransactionAppendEmptyMetricName(t *testing.T, enableNativeHistograms bool) {
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test2",
@@ -98,8 +148,16 @@ func TestTransactionAppendEmptyMetricName(t *testing.T) {
 }
 
 func TestTransactionAppendResource(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testTransactionAppendResource(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testTransactionAppendResource(t *testing.T, enableNativeHistograms bool) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
@@ -121,8 +179,16 @@ func TestTransactionAppendResource(t *testing.T) {
 }
 
 func TestReceiverVersionAndNameAreAttached(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testReceiverVersionAndNameAreAttached(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testReceiverVersionAndNameAreAttached(t *testing.T, enableNativeHistograms bool) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
@@ -143,6 +209,14 @@ func TestReceiverVersionAndNameAreAttached(t *testing.T) {
 }
 
 func TestTransactionCommitErrorWhenAdjusterError(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testTransactionCommitErrorWhenAdjusterError(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testTransactionCommitErrorWhenAdjusterError(t *testing.T, enableNativeHistograms bool) {
 	goodLabels := labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
@@ -150,7 +224,7 @@ func TestTransactionCommitErrorWhenAdjusterError(t *testing.T) {
 	})
 	sink := new(consumertest.MetricsSink)
 	adjusterErr := errors.New("adjuster error")
-	tr := newTransaction(scrapeCtx, &errorAdjuster{err: adjusterErr}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &errorAdjuster{err: adjusterErr}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 	_, err := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0)
 	assert.NoError(t, err)
 	assert.ErrorIs(t, tr.Commit(), adjusterErr)
@@ -158,8 +232,16 @@ func TestTransactionCommitErrorWhenAdjusterError(t *testing.T) {
 
 // Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
 func TestTransactionAppendDuplicateLabels(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testTransactionAppendDuplicateLabels(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testTransactionAppendDuplicateLabels(t *testing.T, enableNativeHistograms bool) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 
 	dupLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -176,6 +258,14 @@ func TestTransactionAppendDuplicateLabels(t *testing.T) {
 }
 
 func TestTransactionAppendHistogramNoLe(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testTransactionAppendHistogramNoLe(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testTransactionAppendHistogramNoLe(t *testing.T, enableNativeHistograms bool) {
 	sink := new(consumertest.MetricsSink)
 	receiverSettings := receivertest.NewNopCreateSettings()
 	core, observedLogs := observer.New(zap.InfoLevel)
@@ -188,6 +278,7 @@ func TestTransactionAppendHistogramNoLe(t *testing.T) {
 		receiverSettings,
 		nopObsRecv(t),
 		false,
+		enableNativeHistograms,
 	)
 
 	goodLabels := labels.FromStrings(
@@ -206,6 +297,14 @@ func TestTransactionAppendHistogramNoLe(t *testing.T) {
 }
 
 func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testTransactionAppendSummaryNoQuantile(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testTransactionAppendSummaryNoQuantile(t *testing.T, enableNativeHistograms bool) {
 	sink := new(consumertest.MetricsSink)
 	receiverSettings := receivertest.NewNopCreateSettings()
 	core, observedLogs := observer.New(zap.InfoLevel)
@@ -218,6 +317,7 @@ func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
 		receiverSettings,
 		nopObsRecv(t),
 		false,
+		enableNativeHistograms,
 	)
 
 	goodLabels := labels.FromStrings(
@@ -236,6 +336,14 @@ func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
 }
 
 func TestTransactionAppendValidAndInvalid(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testTransactionAppendValidAndInvalid(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testTransactionAppendValidAndInvalid(t *testing.T, enableNativeHistograms bool) {
 	sink := new(consumertest.MetricsSink)
 	receiverSettings := receivertest.NewNopCreateSettings()
 	core, observedLogs := observer.New(zap.InfoLevel)
@@ -248,6 +356,7 @@ func TestTransactionAppendValidAndInvalid(t *testing.T) {
 		receiverSettings,
 		nopObsRecv(t),
 		false,
+		enableNativeHistograms,
 	)
 
 	// a valid counter
@@ -281,8 +390,16 @@ func TestTransactionAppendValidAndInvalid(t *testing.T) {
 }
 
 func TestAppendExemplarWithNoMetricName(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testAppendExemplarWithNoMetricName(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testAppendExemplarWithNoMetricName(t *testing.T, enableNativeHistograms bool) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -294,8 +411,16 @@ func TestAppendExemplarWithNoMetricName(t *testing.T) {
 }
 
 func TestAppendExemplarWithEmptyMetricName(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testAppendExemplarWithEmptyMetricName(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testAppendExemplarWithEmptyMetricName(t *testing.T, enableNativeHistograms bool) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -307,8 +432,16 @@ func TestAppendExemplarWithEmptyMetricName(t *testing.T) {
 }
 
 func TestAppendExemplarWithDuplicateLabels(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testAppendExemplarWithDuplicateLabels(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testAppendExemplarWithDuplicateLabels(t *testing.T, enableNativeHistograms bool) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -323,8 +456,16 @@ func TestAppendExemplarWithDuplicateLabels(t *testing.T) {
 }
 
 func TestAppendExemplarWithoutAddingMetric(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testAppendExemplarWithoutAddingMetric(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testAppendExemplarWithoutAddingMetric(t *testing.T, enableNativeHistograms bool) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 
 	labels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -337,16 +478,32 @@ func TestAppendExemplarWithoutAddingMetric(t *testing.T) {
 }
 
 func TestAppendExemplarWithNoLabels(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testAppendExemplarWithNoLabels(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testAppendExemplarWithNoLabels(t *testing.T, enableNativeHistograms bool) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 
 	_, err := tr.AppendExemplar(0, labels.EmptyLabels(), exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errNoJobInstance, err)
 }
 
 func TestAppendExemplarWithEmptyLabelArray(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testAppendExemplarWithEmptyLabelArray(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testAppendExemplarWithEmptyLabelArray(t *testing.T, enableNativeHistograms bool) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 
 	_, err := tr.AppendExemplar(0, labels.FromStrings(), exemplar.Exemplar{Value: 0})
 	assert.Equal(t, errNoJobInstance, err)
@@ -575,9 +732,11 @@ func TestMetricBuilderCounters(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.run(t)
-		})
+		for _, enableNativeHistograms := range []bool{true, false} {
+			t.Run(fmt.Sprintf("%s/enableNativeHistograms=%v", tt.name, enableNativeHistograms), func(t *testing.T) {
+				tt.run(t, enableNativeHistograms)
+			})
+		}
 	}
 }
 
@@ -798,9 +957,11 @@ func TestMetricBuilderGauges(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.run(t)
-		})
+		for _, enableNativeHistograms := range []bool{true, false} {
+			t.Run(fmt.Sprintf("%s/enableNativeHistograms=%v", tt.name, enableNativeHistograms), func(t *testing.T) {
+				tt.run(t, enableNativeHistograms)
+			})
+		}
 	}
 }
 
@@ -894,9 +1055,11 @@ func TestMetricBuilderUntyped(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.run(t)
-		})
+		for _, enableNativeHistograms := range []bool{true, false} {
+			t.Run(fmt.Sprintf("%s/enableNativeHistograms=%v", tt.name, enableNativeHistograms), func(t *testing.T) {
+				tt.run(t, enableNativeHistograms)
+			})
+		}
 	}
 }
 
@@ -1312,9 +1475,12 @@ func TestMetricBuilderHistogram(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.run(t)
-		})
+		for _, enableNativeHistograms := range []bool{true, false} {
+			// None of the histograms above have native histogram versions, so enabling native hisotgrams has no effect.
+			t.Run(fmt.Sprintf("%s/enableNativeHistograms=%v", tt.name, enableNativeHistograms), func(t *testing.T) {
+				tt.run(t, enableNativeHistograms)
+			})
+		}
 	}
 }
 
@@ -1454,11 +1620,110 @@ func TestMetricBuilderSummary(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.run(t)
-		})
+		for _, enableNativeHistograms := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/enableNativeHistograms=%v", tt.name, enableNativeHistograms), func(t *testing.T) {
+				tt.run(t, enableNativeHistograms)
+			})
+		}
 	}
 
+}
+
+func TestMetricBuilderNativeHistogram(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{false, true} {
+		emptyH := &histogram.Histogram{
+			Schema:        1,
+			Count:         0,
+			Sum:           0,
+			ZeroThreshold: 0.001,
+			ZeroCount:     0,
+		}
+		h0 := tsdbutil.GenerateTestHistogram(0)
+
+		tests := []buildTestData{
+			{
+				name: "empty integer histogram",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createHistogramDataPoint("hist_test", emptyH, nil, nil, "foo", "bar"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					if !enableNativeHistograms {
+						return []pmetric.Metrics{md0}
+					}
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("hist_test")
+					m0.SetEmptyExponentialHistogram()
+					m0.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					pt0 := m0.ExponentialHistogram().DataPoints().AppendEmpty()
+					pt0.Attributes().PutStr("foo", "bar")
+					pt0.SetStartTimestamp(startTimestamp)
+					pt0.SetTimestamp(tsNanos)
+					pt0.SetCount(0)
+					pt0.SetSum(0)
+					pt0.SetZeroThreshold(0.001)
+					pt0.SetScale(1)
+
+					return []pmetric.Metrics{md0}
+				},
+			},
+			{
+				name: "integer histogram",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createHistogramDataPoint("hist_test", h0, nil, nil, "foo", "bar"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					if !enableNativeHistograms {
+						return []pmetric.Metrics{md0}
+					}
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("hist_test")
+					m0.SetEmptyExponentialHistogram()
+					m0.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					pt0 := m0.ExponentialHistogram().DataPoints().AppendEmpty()
+					pt0.Attributes().PutStr("foo", "bar")
+					pt0.SetStartTimestamp(startTimestamp)
+					pt0.SetTimestamp(tsNanos)
+					pt0.SetCount(12)
+					pt0.SetSum(18.4)
+					pt0.SetScale(1)
+					pt0.SetZeroThreshold(0.001)
+					pt0.SetZeroCount(2)
+					pt0.Positive().SetOffset(-1)
+					pt0.Positive().BucketCounts().Append(1)
+					pt0.Positive().BucketCounts().Append(2)
+					pt0.Positive().BucketCounts().Append(0)
+					pt0.Positive().BucketCounts().Append(1)
+					pt0.Positive().BucketCounts().Append(1)
+					pt0.Negative().SetOffset(-1)
+					pt0.Negative().BucketCounts().Append(1)
+					pt0.Negative().BucketCounts().Append(2)
+					pt0.Negative().BucketCounts().Append(0)
+					pt0.Negative().BucketCounts().Append(1)
+					pt0.Negative().BucketCounts().Append(1)
+
+					return []pmetric.Metrics{md0}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				tt.run(t, enableNativeHistograms)
+			})
+		}
+	}
 }
 
 type buildTestData struct {
@@ -1467,17 +1732,25 @@ type buildTestData struct {
 	wants  func() []pmetric.Metrics
 }
 
-func (tt buildTestData) run(t *testing.T) {
+func (tt buildTestData) run(t *testing.T, enableNativeHistograms bool) {
 	wants := tt.wants()
 	assert.EqualValues(t, len(wants), len(tt.inputs))
 	st := ts
 	for i, page := range tt.inputs {
 		sink := new(consumertest.MetricsSink)
-		tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+		tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopCreateSettings(), nopObsRecv(t), false, enableNativeHistograms)
 		for _, pt := range page.pts {
 			// set ts for testing
 			pt.t = st
-			_, err := tr.Append(0, pt.lb, pt.t, pt.v)
+			var err error
+			switch {
+			case pt.fh != nil:
+				_, err = tr.AppendHistogram(0, pt.lb, pt.t, nil, pt.fh)
+			case pt.h != nil:
+				_, err = tr.AppendHistogram(0, pt.lb, pt.t, pt.h, nil)
+			default:
+				_, err = tr.Append(0, pt.lb, pt.t, pt.v)
+			}
 			assert.NoError(t, err)
 
 			for _, e := range pt.exemplars {
@@ -1534,7 +1807,12 @@ func (s *startTimeAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).SetStartTimestamp(s.startTime)
 					}
-				case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram:
+				case pmetric.MetricTypeExponentialHistogram:
+					dps := metric.ExponentialHistogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dps.At(l).SetStartTimestamp(s.startTime)
+					}
+				case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge:
 				}
 			}
 		}
@@ -1546,6 +1824,8 @@ type testDataPoint struct {
 	lb        labels.Labels
 	t         int64
 	v         float64
+	h         *histogram.Histogram
+	fh        *histogram.FloatHistogram
 	exemplars []exemplar.Exemplar
 }
 
@@ -1566,6 +1846,13 @@ func createDataPoint(mname string, value float64, es []exemplar.Exemplar, tagPai
 		v:         value,
 		exemplars: es,
 	}
+}
+
+func createHistogramDataPoint(mname string, h *histogram.Histogram, fh *histogram.FloatHistogram, es []exemplar.Exemplar, tagPairs ...string) *testDataPoint {
+	dataPoint := createDataPoint(mname, 0, es, tagPairs...)
+	dataPoint.h = h
+	dataPoint.fh = fh
+	return dataPoint
 }
 
 func assertEquivalentMetrics(t *testing.T, want, got pmetric.Metrics) {

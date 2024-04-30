@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
@@ -31,7 +32,7 @@ func NewReader(logger *zap.SugaredLogger, cfg Config) (*Reader, error) {
 	r.pipeline, err = pipeline.Config{
 		Operators:     cfg.metadataOperators,
 		DefaultOutput: r.output,
-	}.Build(logger)
+	}.Build(component.TelemetrySettings{Logger: logger.Desugar()})
 	if err != nil {
 		return nil, fmt.Errorf("failed to build pipeline: %w", err)
 	}

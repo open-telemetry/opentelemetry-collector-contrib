@@ -36,9 +36,9 @@ func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
 	}
 }
 
-func (s *scraper) start(_ context.Context, host component.Host) error {
+func (s *scraper) start(ctx context.Context, host component.Host) error {
 	s.host = host
-	client, err := newClient(s.config, s.settings, s.host, s.settings.Logger)
+	client, err := newClient(ctx, s.config, s.settings, s.host, s.settings.Logger)
 	if err != nil {
 		return fmt.Errorf("unable to construct http client: %w", err)
 	}

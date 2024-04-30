@@ -2,7 +2,10 @@
 
 package metadata
 
-import "go.opentelemetry.io/collector/confmap"
+import (
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/filter"
+)
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
@@ -191,6 +194,13 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
 
 	enabledSetByUser bool
 }
@@ -210,10 +220,13 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 // ResourceAttributesConfig provides config for vcenter resource attributes.
 type ResourceAttributesConfig struct {
 	VcenterClusterName               ResourceAttributeConfig `mapstructure:"vcenter.cluster.name"`
+	VcenterDatacenterName            ResourceAttributeConfig `mapstructure:"vcenter.datacenter.name"`
 	VcenterDatastoreName             ResourceAttributeConfig `mapstructure:"vcenter.datastore.name"`
 	VcenterHostName                  ResourceAttributeConfig `mapstructure:"vcenter.host.name"`
 	VcenterResourcePoolInventoryPath ResourceAttributeConfig `mapstructure:"vcenter.resource_pool.inventory_path"`
 	VcenterResourcePoolName          ResourceAttributeConfig `mapstructure:"vcenter.resource_pool.name"`
+	VcenterVirtualAppInventoryPath   ResourceAttributeConfig `mapstructure:"vcenter.virtual_app.inventory_path"`
+	VcenterVirtualAppName            ResourceAttributeConfig `mapstructure:"vcenter.virtual_app.name"`
 	VcenterVMID                      ResourceAttributeConfig `mapstructure:"vcenter.vm.id"`
 	VcenterVMName                    ResourceAttributeConfig `mapstructure:"vcenter.vm.name"`
 }
@@ -222,6 +235,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		VcenterClusterName: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		VcenterDatacenterName: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		VcenterDatastoreName: ResourceAttributeConfig{
 			Enabled: true,
@@ -234,6 +250,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		VcenterResourcePoolName: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		VcenterVirtualAppInventoryPath: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		VcenterVirtualAppName: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		VcenterVMID: ResourceAttributeConfig{
 			Enabled: true,

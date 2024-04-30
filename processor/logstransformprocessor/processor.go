@@ -18,6 +18,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
@@ -29,26 +30,26 @@ type logsTransformProcessor struct {
 
 	pipe          *pipeline.DirectedPipeline
 	firstOperator operator.Operator
-	emitter       *adapter.LogEmitter
+	emitter       *helper.LogEmitter
 	converter     *adapter.Converter
 	fromConverter *adapter.FromPdataConverter
 	shutdownFns   []component.ShutdownFunc
 }
 
-func newProcessor(config *Config, nextConsumer consumer.Logs, logger *zap.Logger) (*logsTransformProcessor, error) {
+func newProcessor(config *Config, nextConsumer consumer.Logs, set component.TelemetrySettings) (*logsTransformProcessor, error) {
 	p := &logsTransformProcessor{
-		logger:   logger,
+		logger:   set.Logger,
 		config:   config,
 		consumer: nextConsumer,
 	}
 
 	baseCfg := p.config.BaseConfig
 
-	p.emitter = adapter.NewLogEmitter(p.logger.Sugar())
+	p.emitter = helper.NewLogEmitter(p.logger.Sugar())
 	pipe, err := pipeline.Config{
 		Operators:     baseCfg.Operators,
 		DefaultOutput: p.emitter,
-	}.Build(p.logger.Sugar())
+	}.Build(set)
 	if err != nil {
 		return nil, err
 	}

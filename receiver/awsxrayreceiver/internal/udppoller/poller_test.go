@@ -291,6 +291,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 	}
 
 	p.Start(context.Background())
+	defer func() { assert.NoError(t, p.Close()) }()
 
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
@@ -328,6 +329,7 @@ func TestSocketReadTimeOutNetError(t *testing.T) {
 	}
 
 	p.Start(context.Background())
+	defer func() { assert.NoError(t, p.Close()) }()
 
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
@@ -363,6 +365,7 @@ func TestSocketGenericReadError(t *testing.T) {
 	}
 
 	p.Start(context.Background())
+	defer func() { assert.NoError(t, p.Close()) }()
 
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
