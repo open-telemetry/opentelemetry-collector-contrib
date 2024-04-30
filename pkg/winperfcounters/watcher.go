@@ -145,7 +145,7 @@ func cleanupScrapedValues(vals []CounterValue) []CounterValue {
 		return vals
 	}
 
-	occurences := map[string]int{}
+	occurrences := map[string]int{}
 	totalIndex := -1
 
 	for i := range vals {
@@ -156,12 +156,12 @@ func cleanupScrapedValues(vals []CounterValue) []CounterValue {
 			totalIndex = i
 		}
 
-		if n, ok := occurences[instanceName]; ok {
+		if n, ok := occurrences[instanceName]; ok {
 			// Append indices to duplicate instance names.
-			occurences[instanceName]++
+			occurrences[instanceName]++
 			vals[i].InstanceName = fmt.Sprintf("%s_%d", instanceName, n)
 		} else {
-			occurences[instanceName] = 1
+			occurrences[instanceName] = 1
 		}
 	}
 
