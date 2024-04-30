@@ -73,7 +73,7 @@ func (e *jsonLogExtension) Shutdown(_ context.Context) error {
 }
 
 func (e *jsonLogExtension) logProcessor(ld plog.Logs) ([]byte, error) {
-	prettyLogs := make([]prettyLogBody, ld.ResourceLogs().Len() - 1)
+	prettyLogs := make([]prettyLogBody, ld.ResourceLogs().Len()-1)
 
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
