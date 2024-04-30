@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/datado
 go 1.21.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.54.0-devel.0.20240419195358-8549c987746f
-	github.com/DataDog/datadog-agent/pkg/trace v0.54.0-devel.0.20240419195358-8549c987746f
+	github.com/DataDog/datadog-agent/pkg/proto v0.54.0-rc.1
+	github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240430131901-e7cb1d49f8b5
 	github.com/DataDog/datadog-go/v5 v5.5.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.15.0
 	github.com/stretchr/testify v1.9.0
@@ -16,15 +16,16 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.54.0-devel.0.20240419195358-8549c987746f // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.54.0-devel.0.20240419195358-8549c987746f // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.54.0-devel.0.20240419195358-8549c987746f // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.54.0-devel.0.20240419195358-8549c987746f // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.54.0-devel.0.20240419195358-8549c987746f // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.54.0-devel.0.20240419195358-8549c987746f // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.54.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.54.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.54.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.54.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.54.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.54.0-rc.1 // indirect
 	github.com/DataDog/go-sqllexer v0.0.9 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
 	github.com/DataDog/sketches-go v1.4.4 // indirect
+	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -64,12 +65,12 @@ require (
 	github.com/prometheus/common v0.52.3 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.24.1 // indirect
+	github.com/shirou/gopsutil/v3 v3.24.2 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/tinylib/msgp v1.1.9 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
-	github.com/yusufpapurcu/wmi v1.2.3 // indirect
+	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.99.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.99.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.99.0 // indirect
