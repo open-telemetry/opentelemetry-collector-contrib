@@ -53,6 +53,7 @@ func newVmwareVcenterScraper(
 	settings receiver.CreateSettings,
 ) *vcenterMetricScraper {
 	client := newVcenterClient(config)
+	logger.Warn("[WARNING] `vcenter.cluster.name`: this attribute will be removed from the Datastore resource starting in release v0.101.0")
 	return &vcenterMetricScraper{
 		client:           client,
 		config:           config,
