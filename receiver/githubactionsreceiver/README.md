@@ -132,64 +132,35 @@ Below are example functions in a couple of langues for generating each ID, repli
 
 ```bash
 generate_trace_id() {
-  run_id=$1
-  run_attempt=$2
-  echo -n "${run_id}${run_attempt}t" | openssl dgst -sha256 | sed 's/^.* //'
+  local run_id=$1
+  local run_attempt=$2
+  echo -n "${run_id}${run_attempt}t" | openssl dgst -sha256 | sed 's/^.* //' | cut -c-32
 }
 
-generate_parent_span_id() {
-  job_id=$1
-  run_attempt=$2
-  echo -n "${job_id}${run_attempt}s" | openssl dgst -sha256 | sed 's/^.* //'
+generate_job_span_id() {
+  local run_id=$1
+  local run_attempt=$2
+  local job_name=$3
+  echo -n "${run_id}${run_attempt}${job_name}" | openssl dgst -sha256 | sed 's/^.* //' | cut -c-16
 }
 
-generate_span_id() {
-  job_id=$1
-  run_attempt=$2
-  step_name=$3
-  step_number=$4 # optional
-  input="${job_id}${run_attempt}${step_name}${step_number}"
-  echo -n "$input" | openssl dgst -sha256 | sed 's/^.* //'
+generate_step_span_id() {
+  local run_id=$1
+  local run_attempt=$2
+  local job_name=$3
+  local step_name=$4
+  input="${run_id}${run_attempt}${job_name}${step_name}"
+  echo -n "$input" | openssl dgst -sha256 | sed 's/^.* //' | cut -c-16
 }
 
-trace_id=$(generate_trace_id 12345 1)
-parent_span_id=$(generate_parent_span_id 12345 1)
-span_id=$(generate_span_id 12345 1 "step-name" 1)
+# https://docs.github.com/en/actions/learn-github-actions/variables
+trace_id=$(generate_trace_id ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT})
+job_span_id=$(generate_job_span_id ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${GITHUB_JOB})
+step_span_id=$(generate_step_span_id ${GITHUB_RUN_ID} ${GITHUB_RUN_ATTEMPT} ${GITHUB_JOB} "your-step-name")
 
-echo "Trace ID: ${trace_id:0:32}"
-echo "Parent Span ID: ${parent_span_id:0:16}"
-echo "Span ID: ${span_id:0:16}"
-```
-
-##### Generating IDs in `python`
-
-```python
-import hashlib
-import binascii
-
-def generate_trace_id(run_id, run_attempt):
-    input_str = f"{run_id}{run_attempt}t"
-    hashed = hashlib.sha256(input_str.encode()).digest()
-    return binascii.hexlify(hashed).decode()[:32]
-
-def generate_parent_span_id(job_id, run_attempt):
-    input_str = f"{job_id}{run_attempt}s"
-    hashed = hashlib.sha256(input_str.encode()).digest()
-    return binascii.hexlify(hashed).decode()[:16]
-
-def generate_span_id(job_id, run_attempt, step_name, step_number=None):
-    step_number_str = str(step_number) if step_number is not None else ""
-    input_str = f"{job_id}{run_attempt}{step_name}{step_number_str}"
-    hashed = hashlib.sha256(input_str.encode()).digest()
-    return binascii.hexlify(hashed).decode()[:16]
-
-trace_id = generate_trace_id(12345, 1)
-parent_span_id = generate_parent_span_id(12345, 1)
-span_id = generate_span_id(12345, 1, "step-name", 1)
-
-print("Trace ID:", trace_id)
-print("Parent Span ID:", parent_span_id)
-print("Span ID:", span_id)
+echo "Trace ID: ${trace_id}"
+echo "Job Span ID: ${parent_span_id}"
+echo "Step Span ID: ${span_id:0:16}"
 ```
 
 ##### Generating IDs in Other Languages
