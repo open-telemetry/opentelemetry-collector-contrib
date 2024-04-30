@@ -138,7 +138,7 @@ func (f *prometheusFormatter) sanitizeKeyBytes(s []byte) []byte {
 	return f.sanitNameRegex.ReplaceAll(s, []byte{'_'})
 }
 
-// sanitizeKey returns sanitized value string performing the following substitutions:
+// sanitizeValue returns sanitized value string performing the following substitutions:
 // `/` -> `//`
 // `"` -> `\"`
 // "\n" -> `\n`
