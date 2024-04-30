@@ -1179,7 +1179,7 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 `location` specifies a default time zone canonical ID to be used for date parsing in case it is not part of `format`.
 
 When loading `location` collector looks for the IANA Time Zone database in the following locations in order:
-- the directory or uncompressed zip file named by the ZONEINFO environment variable,
+- a directory or uncompressed zip file named by the ZONEINFO environment variable
 - on a Unix system, the system standard installation location,
 - $GOROOT/lib/time/zoneinfo.zip,
 - the `time/tzdata` package, if it was imported. 
