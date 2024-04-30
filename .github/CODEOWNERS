@@ -154,7 +154,7 @@ pkg/translator/prometheusremotewrite/                    @open-telemetry/collect
 pkg/translator/signalfx/                                 @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/translator/skywalking/                               @open-telemetry/collector-contrib-approvers @JaredTan95
 pkg/translator/zipkin/                                   @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
-pkg/winperfcounters/                                     @open-telemetry/collector-contrib-approvers @dashpole @Mrod1598 @BinaryFissionGames
+pkg/winperfcounters/                                     @open-telemetry/collector-contrib-approvers @dashpole @Mrod1598 @BinaryFissionGames @alxbl
 
 processor/attributesprocessor/                           @open-telemetry/collector-contrib-approvers @boostchicken
 processor/cumulativetodeltaprocessor/                    @open-telemetry/collector-contrib-approvers @TylerHelmuth
@@ -273,7 +273,7 @@ receiver/vcenterreceiver/                                @open-telemetry/collect
 receiver/wavefrontreceiver/                              @open-telemetry/collector-contrib-approvers @samiura
 receiver/webhookeventreceiver/                           @open-telemetry/collector-contrib-approvers @atoulme @shalper2
 receiver/windowseventlogreceiver/                        @open-telemetry/collector-contrib-approvers @djaglowski @armstrmi @pjanotti
-receiver/windowsperfcountersreceiver/                    @open-telemetry/collector-contrib-approvers @dashpole
+receiver/windowsperfcountersreceiver/                    @open-telemetry/collector-contrib-approvers @dashpole @alxbl
 receiver/zipkinreceiver/                                 @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
 receiver/zookeeperreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 
