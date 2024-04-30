@@ -5,8 +5,8 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"io"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
