@@ -437,7 +437,7 @@ See [metrics.go][metrics_go] for the full list metrics available for this compon
 
 ### Dropped Traces
 
-A circular buffer is used to ensure the number of traces in-memory doesn't exceed `num_traces`. When a new trace arrives, the oldest trace is removed. This can cause a trace to be dropped before its sampled. To reduce the chance of this happening, either increase `num_traces` or decrease `decision_wait`. Both of those options increase memory usage.
+A circular buffer is used to ensure the number of traces in-memory doesn't exceed `num_traces`. When a new trace arrives, the oldest trace is removed. This can cause a trace to be dropped before it's sampled. To reduce the chance of this happening, either increase `num_traces` or decrease `decision_wait`. Both of those options increase memory usage.
 
 **Number of Traces Dropped**
 ```
