@@ -463,7 +463,7 @@ This measures latency of sampling a batch of traces and passing sampled traces t
 
 It's therefore recommended to consume this component's output with components that trigger an asynchronous or fast export, like the `batch` processor.
 
-### Late Arriving Spans
+### Late-Arriving Spans
 
 A span's arrival is considered "late" if it arrives after its trace's sampling decision is made. Late spans can cause different sampling decisions for different parts of the trace.
 
