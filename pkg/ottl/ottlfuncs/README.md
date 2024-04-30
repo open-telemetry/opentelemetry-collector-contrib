@@ -1180,7 +1180,7 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 
 When loading `location` collector looks for the IANA Time Zone database in the following locations in order:
 - a directory or uncompressed zip file named by the ZONEINFO environment variable
-- on a Unix system, the system standard installation location,
+- on a Unix system, the system standard installation location
 - $GOROOT/lib/time/zoneinfo.zip,
 - the `time/tzdata` package, if it was imported. 
 
