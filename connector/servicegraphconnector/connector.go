@@ -30,6 +30,7 @@ const (
 	metricKeySeparator = string(byte(0))
 	clientKind         = "client"
 	serverKind         = "server"
+	virtualNodeLabel   = "virtual_node"
 )
 
 var (
@@ -371,11 +372,17 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 		e.ConnectionType = store.VirtualNode
 		if len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"
+			if p.config.VirtualNodeExtraLabel {
+				e.VirtualNodeLabel = store.ClientVirtualNode
+			}
 			p.onComplete(e)
 		}
 
 		if len(e.ServerService) == 0 {
 			e.ServerService = p.getPeerHost(p.config.VirtualNodePeerAttributes, e.Peer)
+			if p.config.VirtualNodeExtraLabel {
+				e.VirtualNodeLabel = store.ServerVirtualNode
+			}
 			p.onComplete(e)
 		}
 	}
