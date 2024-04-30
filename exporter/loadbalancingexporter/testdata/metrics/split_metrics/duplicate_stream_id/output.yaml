@@ -1,0 +1,94 @@
+stream/c7006b564eec22c9:
+  resourceMetrics:
+    - schemaUrl: https://test-res-schema.com/schema
+      resource:
+        attributes:
+          - key: resource_key
+            value:
+              stringValue: foo
+      scopeMetrics:
+        - schemaUrl: https://test-scope-schema.com/schema
+          scope:
+            name: MyTestInstrument
+            version: "1.2.3"
+            attributes:
+              - key: scope_key
+                value:
+                  stringValue: foo
+          metrics:
+            - name: cumulative.monotonic.sum
+              sum:
+                aggregationTemporality: 2
+                isMonotonic: true
+                dataPoints:
+                  - timeUnixNano: 50
+                    asDouble: 333
+                    attributes:
+                      - key: aaa
+                        value:
+                          stringValue: bbb
+                  - timeUnixNano: 60
+                    asDouble: 444
+                    attributes:
+                      - key: aaa
+                        value:
+                          stringValue: bbb
+                  - timeUnixNano: 70
+                    asDouble: 555
+                    attributes:
+                      - key: aaa
+                        value:
+                          stringValue: bbb
+                  - timeUnixNano: 80
+                    asDouble: 666
+                    attributes:
+                      - key: aaa
+                        value:
+                          stringValue: bbb
+stream/e2d32621d2dcda0f:
+  resourceMetrics:
+    - schemaUrl: https://test-res-schema.com/schema
+      resource:
+        attributes:
+          - key: resource_key
+            value:
+              stringValue: foo
+      scopeMetrics:
+        - schemaUrl: https://test-scope-schema.com/schema
+          scope:
+            name: MyTestInstrument
+            version: "1.2.3"
+            attributes:
+              - key: scope_key
+                value:
+                  stringValue: foo
+          metrics:
+            - name: cumulative.monotonic.sum
+              sum:
+                aggregationTemporality: 2
+                isMonotonic: true
+                dataPoints:
+                  - timeUnixNano: 80
+                    asDouble: 444
+                    attributes:
+                      - key: bbb
+                        value:
+                          stringValue: ccc
+                  - timeUnixNano: 90
+                    asDouble: 555
+                    attributes:
+                      - key: bbb
+                        value:
+                          stringValue: ccc
+                  - timeUnixNano: 100
+                    asDouble: 666
+                    attributes:
+                      - key: bbb
+                        value:
+                          stringValue: ccc
+                  - timeUnixNano: 110
+                    asDouble: 777
+                    attributes:
+                      - key: bbb
+                        value:
+                          stringValue: ccc

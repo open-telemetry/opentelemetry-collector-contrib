@@ -4,7 +4,6 @@
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -63,61 +62,4 @@ func mergeTraces(t1 ptrace.Traces, t2 ptrace.Traces) ptrace.Traces {
 	}
 
 	return mergedTraces
-}
-
-// mergeMetrics concatenates two pmetric.Metrics into a single pmetric.Metrics.
-func mergeMetrics(m1 pmetric.Metrics, m2 pmetric.Metrics) pmetric.Metrics {
-	mergedMetrics := pmetric.NewMetrics()
-
-	if m1.MetricCount() == 0 && m2.MetricCount() == 0 {
-		return mergedMetrics
-	}
-
-	// Iterate over the first metric and append metrics to the merged metrics
-	for i := 0; i < m1.ResourceMetrics().Len(); i++ {
-		rs := m1.ResourceMetrics().At(i)
-		newRS := mergedMetrics.ResourceMetrics().AppendEmpty()
-
-		rs.Resource().MoveTo(newRS.Resource())
-		newRS.SetSchemaUrl(rs.SchemaUrl())
-
-		for j := 0; j < rs.ScopeMetrics().Len(); j++ {
-			ils := rs.ScopeMetrics().At(j)
-
-			newILS := newRS.ScopeMetrics().AppendEmpty()
-			ils.Scope().MoveTo(newILS.Scope())
-			newILS.SetSchemaUrl(ils.SchemaUrl())
-
-			for k := 0; k < ils.Metrics().Len(); k++ {
-				metric := ils.Metrics().At(k)
-				newMetric := newILS.Metrics().AppendEmpty()
-				metric.MoveTo(newMetric)
-			}
-		}
-	}
-
-	// Iterate over the second metric and append metrics to the merged metrics
-	for i := 0; i < m2.ResourceMetrics().Len(); i++ {
-		rs := m2.ResourceMetrics().At(i)
-		newRS := mergedMetrics.ResourceMetrics().AppendEmpty()
-
-		rs.Resource().MoveTo(newRS.Resource())
-		newRS.SetSchemaUrl(rs.SchemaUrl())
-
-		for j := 0; j < rs.ScopeMetrics().Len(); j++ {
-			ils := rs.ScopeMetrics().At(j)
-
-			newILS := newRS.ScopeMetrics().AppendEmpty()
-			ils.Scope().MoveTo(newILS.Scope())
-			newILS.SetSchemaUrl(ils.SchemaUrl())
-
-			for k := 0; k < ils.Metrics().Len(); k++ {
-				metric := ils.Metrics().At(k)
-				newMetric := newILS.Metrics().AppendEmpty()
-				metric.MoveTo(newMetric)
-			}
-		}
-	}
-
-	return mergedMetrics
 }
