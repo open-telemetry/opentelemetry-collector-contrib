@@ -183,6 +183,36 @@ func (m *mySQLScraper) scrapeInnodbStatusStats(now pcommon.Timestamp, errs *scra
 
 		case "Innodb_locked_transactions":
 			m.mb.RecordMysqlInnodbLockedTransactionsDataPoint(now, v)
+
+		case "Innodb_os_file_reads":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbOsFileReadsDataPoint(now, strVal))
+
+		case "Innodb_os_file_writes":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbOsFileWritesDataPoint(now, strVal))
+
+		case "Innodb_os_file_fsyncs":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbOsFileFsyncsDataPoint(now, strVal))
+
+		case "Innodb_pending_normal_aio_reads":
+			m.mb.RecordMysqlInnodbPendingNormalAioReadsDataPoint(now, v)
+
+		case "Innodb_pending_normal_aio_writes":
+			m.mb.RecordMysqlInnodbPendingNormalAioWritesDataPoint(now, v)
+
+		case "Pending_normal_aio_reads":
+			m.mb.RecordMysqlInnodbPendingNormalAioReadsDataPoint(now, v)
+
+		case "Innodb_pending_aio_log_ios":
+			m.mb.RecordMysqlInnodbPendingAioLogIosDataPoint(now, v)
+
+		case "Innodb_pending_aio_sync_ios":
+			m.mb.RecordMysqlInnodbPendingAioSyncIosDataPoint(now, v)
+
+		case "Innodb_pending_buffer_pool_flushes":
+			m.mb.RecordMysqlInnodbPendingBufferPoolFlushesDataPoint(now, v)
+
+		case "Innodb_pending_log_flushes":
+			m.mb.RecordMysqlInnodbPendingLogFlushesDataPoint(now, v)
 		}
 	}
 }
