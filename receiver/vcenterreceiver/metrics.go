@@ -171,6 +171,8 @@ var vmPerfMetricList = []string{
 	"disk.maxTotalLatency.latest",
 	"virtualDisk.totalWriteLatency.average",
 	"virtualDisk.totalReadLatency.average",
+	"virtualDisk.read.average",
+	"virtualDisk.write.average",
 }
 
 func (v *vcenterMetricScraper) recordVMPerformanceMetrics(entityMetric *performance.EntityMetric) {
@@ -201,6 +203,10 @@ func (v *vcenterMetricScraper) recordVMPerformanceMetrics(entityMetric *performa
 				v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, metadata.AttributeDiskTypeVirtual, val.Instance)
 			case "disk.maxTotalLatency.latest":
 				v.mb.RecordVcenterVMDiskLatencyMaxDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, val.Instance)
+			case "virtualDisk.read.average":
+				v.mb.RecordVcenterVMDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead, val.Instance)
+			case "virtualDisk.write.average":
+				v.mb.RecordVcenterVMDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, val.Instance)
 			}
 		}
 	}

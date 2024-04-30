@@ -382,13 +382,12 @@ metrics:
     attributes: [object_name]
   vcenter.vm.disk.throughput:
     enabled: true
-    description: The throughput of the virtual machine's disk.
-    unit: By/sec
-    sum:
-      monotonic: false
+    description: Average number of kilobytes read from or written to the virtual disk each second.
+    unit: "{KiBy/s}"
+    gauge:
       value_type: int
-      aggregation_temporality: cumulative
-    attributes: [object_name]
+    attributes: [disk_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval. Requires Performance Level 2.
   vcenter.vm.network.throughput:
     enabled: true
     description: The amount of data that was transmitted or received over the network of the virtual machine.
