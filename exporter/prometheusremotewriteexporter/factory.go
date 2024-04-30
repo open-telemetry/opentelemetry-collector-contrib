@@ -43,11 +43,7 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
 		return nil, errors.New("invalid configuration")
 	}
 
-	retryOn429 := false
-	if metricsOriginFeatureGate.IsEnabled() {
-		retryOn429 = true
-	}
-	prwe, err := newPRWExporter(prwCfg, set, retryOn429)
+	prwe, err := newPRWExporter(prwCfg, set)
 	if err != nil {
 		return nil, err
 	}

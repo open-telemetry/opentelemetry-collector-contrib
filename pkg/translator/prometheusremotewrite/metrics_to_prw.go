@@ -24,7 +24,6 @@ type Settings struct {
 	ExportCreatedMetric bool
 	AddMetricSuffixes   bool
 	SendMetadata        bool
-	RetryOnHTTP429      bool
 }
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.

@@ -66,6 +66,7 @@ type prwExporter struct {
 	clientSettings    *confighttp.ClientConfig
 	settings          component.TelemetrySettings
 	retrySettings     configretry.BackOffConfig
+	retryOnHTTP429    bool
 	wal               *prweWAL
 	exporterSettings  prometheusremotewrite.Settings
 	telemetry         prwTelemetry
@@ -96,7 +97,7 @@ func newPRWTelemetry(set exporter.CreateSettings) (prwTelemetry, error) {
 }
 
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
-func newPRWExporter(cfg *Config, set exporter.CreateSettings, retryOn429 bool) (*prwExporter, error) {
+func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, error) {
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg)
 	if err != nil {
 		return nil, err
@@ -124,6 +125,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings, retryOn429 bool) (
 		clientSettings:    &cfg.ClientConfig,
 		settings:          set.TelemetrySettings,
 		retrySettings:     cfg.BackOffConfig,
+		retryOnHTTP429:    metricsOriginFeatureGate.IsEnabled(),
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
@@ -131,7 +133,6 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings, retryOn429 bool) (
 			ExportCreatedMetric: cfg.CreatedMetric.Enabled,
 			AddMetricSuffixes:   cfg.AddMetricSuffixes,
 			SendMetadata:        cfg.SendMetadata,
-			RetryOnHTTP429:      retryOn429,
 		},
 		telemetry: prwTelemetry,
 	}
@@ -333,7 +334,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 
 		// 429 errors are recoverable and the exporter should retry if RetryOnHTTP429 enabled
 		// Reference: https://github.com/prometheus/prometheus/pull/12677
-		if prwe.exporterSettings.RetryOnHTTP429 && resp.StatusCode == 429 {
+		if prwe.retryOnHTTP429 && resp.StatusCode == 429 {
 			return rerr
 		}
 
