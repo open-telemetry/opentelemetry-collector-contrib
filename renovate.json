@@ -88,6 +88,13 @@
         "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/collector"],
         "groupName": "All OpenTelemetry Collector packages",
         "matchUpdateTypes": ["major", "minor", "patch"]
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrls": [
+          "https://github.com/open-telemetry/opentelemetry-go-contrib"
+        ],
+        "groupName": "All opentelemetry-go-contrib packages"
       }
     ],
     "ignoreDeps": [
