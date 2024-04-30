@@ -8,7 +8,6 @@ on:
   pull_request:
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
-  GOPROXY: https://goproxy.cncf.actuated.dev,direct
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
@@ -274,6 +273,9 @@ jobs:
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     steps:
+      - if: startsWith( matrix.runner, 'actuated' )
+        run: |
+          echo "GOPROXY=https://goproxy1.cncf.selfactuated.dev,direct" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
@@ -578,42 +580,6 @@ jobs:
         with:
           name: collector-packages-${{ matrix.package_type }}
           path: ./dist/*
-  windows-msi:
-    if: false # skip. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10113
-    runs-on: windows-latest
-    needs: [cross-compile]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Download Binaries
-        uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          path: ./bin/
-          pattern: collector-binaries-*
-      - name: Cache Wix
-        id: wix-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            "C:\Program Files (x86)\WiX Toolset v3.11"
-          key: wix-3.11
-      - name: Install Wix Toolset
-        if: steps.wix-cache.outputs.cache-hit != 'true'
-        run: .\internal\buildscripts\packaging\msi\make.ps1 Install-Tools
-      - run: mkdir -p dist
-      - name: Build MSI
-        run: |
-          $Version = if ($env:GITHUB_REF -match '^refs/tags/(\d+\.\d+\.\d+)') { $Matches[1] } else { "0.0.1" }
-          .\internal\buildscripts\packaging\msi\make.ps1 New-MSI -Version $Version
-      - name: Validate MSI
-        run: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
-      - name: Upload MSI
-        uses: actions/upload-artifact@v4
-        with:
-          name: collector-packages-msi
-          path: ./dist/*.msi
 
   publish-check:
     runs-on: ubuntu-latest

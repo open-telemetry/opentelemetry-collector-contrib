@@ -348,6 +348,7 @@ func podWithOwnerReference(kind string) *corev1.Pod {
 }
 
 func TestTransform(t *testing.T) {
+	containerState := corev1.ContainerState{Running: &corev1.ContainerStateRunning{StartedAt: v1.Now()}}
 	originalPod := &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "my-pod",
@@ -429,7 +430,7 @@ func TestTransform(t *testing.T) {
 					ContainerID:  "abc12345",
 					RestartCount: 2,
 					Ready:        true,
-					State:        corev1.ContainerState{Running: &corev1.ContainerStateRunning{StartedAt: v1.Now()}},
+					State:        containerState,
 				},
 			},
 		},
@@ -470,6 +471,7 @@ func TestTransform(t *testing.T) {
 					ContainerID:  "abc12345",
 					RestartCount: 2,
 					Ready:        true,
+					State:        containerState,
 				},
 			},
 		},
