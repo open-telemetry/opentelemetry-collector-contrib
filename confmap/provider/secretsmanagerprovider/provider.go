@@ -20,7 +20,8 @@ type provider struct {
 	client *secretsmanager.Client
 }
 
-// New returns a new confmap.Provider that reads the configuration from the given AWS Secrets Manager Name or ARN.
+// NewFactory returns a new confmap.ProviderFactory that creates a confmap.Provider
+// which reads configuration the given AWS Secrets Manager Name or ARN.
 //
 // This Provider supports "secretsmanager" scheme, and can be called with a selector:
 // `secretsmanager:NAME_OR_ARN`
