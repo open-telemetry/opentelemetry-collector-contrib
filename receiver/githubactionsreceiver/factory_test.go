@@ -14,7 +14,7 @@ import (
 
 func TestFactoryCreate(t *testing.T) {
 	factory := NewFactory()
-	require.EqualValues(t, "githubactions", factory.Type())
+	require.EqualValues(t, "githubactions", factory.Type().String())
 }
 
 func TestDefaultConfig(t *testing.T) {

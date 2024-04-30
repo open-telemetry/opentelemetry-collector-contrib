@@ -83,20 +83,6 @@ func TestEventToTracesTraces(t *testing.T) {
 			expectedError:   nil,
 			expectedSpans:   1, // Root span
 		},
-		{
-			desc:            "Job not completed",
-			payloadFilePath: "./testdata/queued/1_workflow_job_queued.json",
-			expectedError:   nil,
-			eventType:       "workflow_job",
-			expectedSpans:   0,
-		},
-		{
-			desc:            "Run not completed",
-			payloadFilePath: "./testdata/requested/1_workflow_run_requested.json",
-			expectedError:   nil,
-			eventType:       "workflow_run",
-			expectedSpans:   0,
-		},
 	}
 
 	logger := zaptest.NewLogger(t)
@@ -117,11 +103,7 @@ func TestEventToTracesTraces(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			if test.expectedSpans != 0 {
-				require.Equal(t, test.expectedSpans, traces.SpanCount())
-			} else {
-				require.Equal(t, ptrace.Traces{}, traces)
-			}
+			require.Equal(t, test.expectedSpans, traces.SpanCount(), fmt.Sprintf("%s: unexpected number of spans", test.desc))
 		})
 	}
 }

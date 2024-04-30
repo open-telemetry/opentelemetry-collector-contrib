@@ -66,7 +66,13 @@ func createParentSpan(scopeSpans ptrace.ScopeSpans, steps []*github.TaskStep, jo
 	parentSpanID, _ := generateParentSpanID(job.GetRunID(), int(job.GetRunAttempt()))
 	span.SetParentSpanID(parentSpanID)
 
-	jobSpanID, _ := generateJobSpanID(job.GetID(), int(job.GetRunAttempt()), job.GetName())
+	jobSpanID, _ := generateJobSpanID(job.GetRunID(), int(job.GetRunAttempt()), job.GetName())
+	logger.Debug("Generated Job Span ID",
+		zap.Int64("RunID", job.GetRunID()),
+		zap.Int("RunAttempt", int(job.GetRunAttempt())),
+		zap.String("JobName", job.GetName()),
+		zap.String("SpanID", jobSpanID.String()),
+	)
 	span.SetSpanID(jobSpanID)
 
 	span.SetName(job.GetName())

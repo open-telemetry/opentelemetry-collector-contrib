@@ -5,6 +5,7 @@ package githubactionsreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -49,5 +50,8 @@ func createTracesReceiver(
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
 	rCfg := cfg.(*Config)
+	if nextConsumer == nil {
+		return nil, errors.New("no nextConsumer provided")
+	}
 	return newTracesReceiver(set, rCfg, nextConsumer)
 }
