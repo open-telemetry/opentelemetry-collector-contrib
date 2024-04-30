@@ -213,6 +213,119 @@ func (m *mySQLScraper) scrapeInnodbStatusStats(now pcommon.Timestamp, errs *scra
 
 		case "Innodb_pending_log_flushes":
 			m.mb.RecordMysqlInnodbPendingLogFlushesDataPoint(now, v)
+		// Insert buffer and adaptive hash index -----------------------------------------------------------------------------------//
+		case "Innodb_ibuf_size":
+			m.mb.RecordMysqlInnodbIbufSizeDataPoint(now, v)
+
+		case "Innodb_ibuf_free_list":
+			m.mb.RecordMysqlInnodbIbufFreeListDataPoint(now, v)
+
+		case "Innodb_ibuf_segment_size":
+			m.mb.RecordMysqlInnodbIbufSegmentSizeDataPoint(now, v)
+
+		case "Innodb_ibuf_merges":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbIbufMergesDataPoint(now, strVal))
+
+		case "Innodb_ibuf_merged_inserts":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbIbufMergedInsertsDataPoint(now, strVal))
+
+		case "Innodb_ibuf_merged_delete_marks":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbIbufMergedDeleteMarksDataPoint(now, strVal))
+
+		case "Innodb_ibuf_merged_deletes":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbIbufMergedDeletesDataPoint(now, strVal))
+
+		case "Innodb_ibuf_merged":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbIbufMergedDataPoint(now, strVal))
+
+		case "Innodb_hash_index_cells_total":
+			m.mb.RecordMysqlInnodbHashIndexCellsTotalDataPoint(now, v)
+
+		// Logs -------------------------------------------------------------------------------------------------------------------------//
+		case "Innodb_log_writes":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbLogWritesDataPoint(now, strVal))
+
+		case "Innodb_pending_log_writes":
+			m.mb.RecordMysqlInnodbPendingLogWritesDataPoint(now, v)
+
+		case "Innodb_pending_checkpoint_writes":
+			m.mb.RecordMysqlInnodbPendingCheckpointWritesDataPoint(now, v)
+
+		case "Innodb_lsn_current":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbLsnCurrentDataPoint(now, strVal))
+
+		case "Innodb_lsn_flushed":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbLsnFlushedDataPoint(now, strVal))
+
+		case "Innodb_lsn_last_checkpoint":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbLsnLastCheckpointDataPoint(now, strVal))
+
+		case "Innodb_mem_total":
+			m.mb.RecordMysqlInnodbMemTotalDataPoint(now, v)
+
+		case "Innodb_mem_additional_pool":
+			m.mb.RecordMysqlInnodbMemAdditionalPoolDataPoint(now, v)
+
+		case "Innodb_mem_adaptive_hash":
+			m.mb.RecordMysqlInnodbMemAdaptiveHashDataPoint(now, v)
+
+		case "Innodb_mem_page_hash":
+			m.mb.RecordMysqlInnodbMemPageHashDataPoint(now, v)
+
+		case "Innodb_mem_dictionary":
+			m.mb.RecordMysqlInnodbMemDictionaryDataPoint(now, v)
+
+		case "Innodb_mem_file_system":
+			m.mb.RecordMysqlInnodbMemFileSystemDataPoint(now, v)
+
+		case "Innodb_mem_lock_system":
+			m.mb.RecordMysqlInnodbMemLockSystemDataPoint(now, v)
+
+		case "Innodb_mem_recovery_system":
+			m.mb.RecordMysqlInnodbMemRecoverySystemDataPoint(now, v)
+
+		case "Innodb_mem_thread_hash":
+			m.mb.RecordMysqlInnodbMemThreadHashDataPoint(now, v)
+
+		case "Innodb_buffer_pool_pages_total":
+			m.mb.RecordMysqlInnodbBufferPoolPagesTotalDataPoint(now, v)
+
+		case "Innodb_buffer_pool_pages_free":
+			m.mb.RecordMysqlInnodbBufferPoolPagesFreeDataPoint(now, v)
+
+		//TODO: this requires an Attribute, Decide
+		// case "Innodb_buffer_pool_pages_data":
+		// addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, strVal))
+
+		case "Innodb_buffer_pool_pages_dirty":
+			m.mb.RecordMysqlInnodbBufferPoolPagesDirtyDataPoint(now, v)
+
+		case "Innodb_pages_read":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbPagesReadDataPoint(now, strVal))
+
+		case "Innodb_pages_created":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbPagesCreatedDataPoint(now, strVal))
+
+		case "Innodb_pages_written":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbPagesWrittenDataPoint(now, strVal))
+		//Row Operations ------------------------------------------------------------------------------------------------------------------------------------//
+		case "Innodb_rows_inserted":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbRowsInsertedDataPoint(now, strVal))
+
+		case "Innodb_rows_updated":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbRowsUpdatedDataPoint(now, strVal))
+
+		case "Innodb_rows_deleted":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbRowsDeletedDataPoint(now, strVal))
+
+		case "Innodb_rows_read":
+			addPartialIfError(errs, m.mb.RecordMysqlInnodbRowsReadDataPoint(now, strVal))
+
+		case "Innodb_queries_inside":
+			m.mb.RecordMysqlInnodbQueriesInsideDataPoint(now, v)
+
+		case "Innodb_queries_queued":
+			m.mb.RecordMysqlInnodbQueriesQueuedDataPoint(now, v)
 		}
 	}
 }
