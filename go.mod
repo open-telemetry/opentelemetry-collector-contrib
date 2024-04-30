@@ -508,6 +508,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.99.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.99.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.99.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.99.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.99.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.99.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.99.0 // indirect
