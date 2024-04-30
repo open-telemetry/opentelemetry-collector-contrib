@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver
+module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver
 
 go 1.20
 
