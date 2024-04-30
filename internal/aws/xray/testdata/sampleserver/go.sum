@@ -6,6 +6,8 @@ github.com/aws/aws-sdk-go v1.47.10 h1:cvufN7WkD1nlOgpRopsmxKQlFp5X1MfyAw4r7BBORQ
 github.com/aws/aws-sdk-go v1.47.10/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
 github.com/aws/aws-xray-sdk-go v1.8.3 h1:S8GdgVncBRhzbNnNUgTPwhEqhwt2alES/9rLASyhxjU=
 github.com/aws/aws-xray-sdk-go v1.8.3/go.mod h1:tv8uLMOSCABolrIF8YCcp3ghyswArsan8dfLCA1ZATk=
+github.com/aws/aws-xray-sdk-go v1.8.4 h1:5D631fWhs5hdBFW/8ALjWam+alm4tW42UGAuMJ1WAUI=
+github.com/aws/aws-xray-sdk-go v1.8.4/go.mod h1:mbN1uxWCue9WjS2Oj2FWg7TGIsLikxMOscD0qtEjFFY=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

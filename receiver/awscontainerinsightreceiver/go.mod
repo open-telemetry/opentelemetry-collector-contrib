@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.21.0
 
 require (
-	github.com/aws/aws-sdk-go v1.51.27
+	github.com/aws/aws-sdk-go v1.51.31
 	github.com/google/cadvisor v0.49.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.99.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.99.0

@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxra
 go 1.21.0
 
 require (
-	github.com/aws/aws-sdk-go v1.51.27
+	github.com/aws/aws-sdk-go v1.51.31
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.99.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.99.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.99.0
