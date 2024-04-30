@@ -4,8 +4,8 @@ github.com/DataDog/datadog-agent/pkg/proto v0.54.0-rc.1 h1:Qu6SrNhgT6Ch6+9BocWYE
 github.com/DataDog/datadog-agent/pkg/proto v0.54.0-rc.1/go.mod h1:gHkSUTn6H6UEZQHY3XWBIGNjfI3Tdi0IxlrxIFBWDwU=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.54.0-rc.1 h1:ewfSSARziP0LZcvukAXJJP5rj/b1sj8ipZlVqFMkoyY=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.54.0-rc.1/go.mod h1:3yFk56PJ57yS1GqI9HAsS4PSlAeGCC9RQA7jxKzYj6g=
-github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240430131901-e7cb1d49f8b5 h1:FDp4Q/WGbmjQJrALeecN8WSXiesjzKCY54uRzQHnd5E=
-github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240430131901-e7cb1d49f8b5/go.mod h1:Vr0cql1d/KOjB04eDNcuoy7e8m9gRCs8K1Ssk1+GSFk=
+github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240430175334-c06093ab9650 h1:4jMt2ZVWuebJdSj4UTpzvLH85qL50yYp3RlgJ8kh6+8=
+github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240430175334-c06093ab9650/go.mod h1:7Ra2LR6+sarBaJ+S4JuVEDyqmCFsodfIgA9EwEu/zHA=
 github.com/DataDog/datadog-agent/pkg/util/cgroups v0.54.0-rc.1 h1:mTQo3bXR/orfVJFdHvKEq00jx9lJxypv3qY7kGPLpC8=
 github.com/DataDog/datadog-agent/pkg/util/cgroups v0.54.0-rc.1/go.mod h1:Tk51+0/IoXeWhNRvAx7foK9QBn5XziiXl/2SJR3PBfk=
 github.com/DataDog/datadog-agent/pkg/util/log v0.54.0-rc.1 h1:svJ425scbrK10lrI/NeQzVUH1MJQsTDU9j2famTmcGA=
@@ -24,8 +24,6 @@ github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.15.0 h1:c8zHM
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.15.0/go.mod h1:dvIWN9pA2zWNTw5rhDWZgzZnhcfpH++d+8d1SWW6xkY=
 github.com/DataDog/sketches-go v1.4.4 h1:dF52vzXRFSPOj2IjXSWLvXq3jubL4CI69kwYjJ1w5Z8=
 github.com/DataDog/sketches-go v1.4.4/go.mod h1:XR0ns2RtEEF09mDKXiKZiQg+nfZStrq1ZuL1eezeZe0=
-github.com/DataDog/zstd v1.5.2 h1:vUG4lAyuPCXO0TLbXvPv7EB7cNK1QV/luu55UHLrrn8=
-github.com/DataDog/zstd v1.5.2/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=

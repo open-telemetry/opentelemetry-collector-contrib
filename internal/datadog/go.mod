@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.54.0-rc.1
-	github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240430131901-e7cb1d49f8b5
+	github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240430175334-c06093ab9650
 	github.com/DataDog/datadog-go/v5 v5.5.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.15.0
 	github.com/stretchr/testify v1.9.0
@@ -25,7 +25,6 @@ require (
 	github.com/DataDog/go-sqllexer v0.0.9 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
 	github.com/DataDog/sketches-go v1.4.4 // indirect
-	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect

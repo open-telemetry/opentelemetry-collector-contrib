@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.54.0-rc.1
-	github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240430131901-e7cb1d49f8b5
+	github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240430175334-c06093ab9650
 	github.com/DataDog/datadog-go/v5 v5.5.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.15.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.15.0
