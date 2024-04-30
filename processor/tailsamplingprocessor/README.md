@@ -500,7 +500,7 @@ sum (otelcol_processor_tail_sampling_count_traces_sampled{sampled="true"}) by (p
 sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy) 
 ```
 
-As a reminder, a policy voting to sample the trace does not guarantee sampling; An "inverted not" decision from another policy would still discard the trace.
+As a reminder, a policy voting to sample the trace does not guarantee sampling; an "inverted not" decision from another policy would still discard the trace.
 
 ### Policy Evaluation Errors
 
