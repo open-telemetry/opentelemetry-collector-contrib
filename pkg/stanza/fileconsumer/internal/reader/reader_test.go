@@ -193,7 +193,7 @@ func TestFlushPeriodEOF(t *testing.T) {
 	// Create a long enough initial token, so the scanner can't read the whole file at once
 	aContentLength := 2 * 16 * 1024
 	content := []byte(strings.Repeat("a", aContentLength))
-	content = append(content, '\n', 'b', '\n')
+	content = append(content, '\n', 'b')
 	_, err := temp.WriteString(string(content))
 	require.NoError(t, err)
 
