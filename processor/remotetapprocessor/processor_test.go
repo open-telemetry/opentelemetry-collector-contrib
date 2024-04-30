@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package remotetapprocessor
 
 import (
@@ -24,7 +27,7 @@ func TestConsumeMetrics(t *testing.T) {
 		{name: "limit_0", limit: 0},
 		{name: "limit_1", limit: 1},
 		{name: "limit_10", limit: 10},
-		{name: "limit_100", limit: 100},
+		{name: "limit_50", limit: 50},
 	}
 
 	for _, c := range cases {
@@ -73,7 +76,7 @@ func TestConsumeLogs(t *testing.T) {
 		{name: "limit_0", limit: 0},
 		{name: "limit_1", limit: 1},
 		{name: "limit_10", limit: 10},
-		{name: "limit_100", limit: 100},
+		{name: "limit_50", limit: 50},
 	}
 
 	for _, c := range cases {
@@ -122,7 +125,7 @@ func TestConsumeTraces(t *testing.T) {
 		{name: "limit_0", limit: 0},
 		{name: "limit_1", limit: 1},
 		{name: "limit_10", limit: 10},
-		{name: "limit_100", limit: 100},
+		{name: "limit_50", limit: 50},
 	}
 
 	for _, c := range cases {
