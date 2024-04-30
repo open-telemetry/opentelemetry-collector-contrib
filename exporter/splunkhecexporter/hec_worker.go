@@ -10,7 +10,6 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
