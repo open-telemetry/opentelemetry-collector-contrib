@@ -6,7 +6,6 @@ package reader
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -191,19 +190,10 @@ func TestFingerprintChangeSize(t *testing.T) {
 func TestFlushPeriodEOF(t *testing.T) {
 	tempDir := t.TempDir()
 	temp := filetest.OpenTemp(t, tempDir)
-
-	var lineBreak string
-	switch runtime.GOOS {
-	case "windows":
-		lineBreak = "\r\n"
-	default:
-		lineBreak = "\n"
-	}
 	// Create a long enough initial token, so the scanner can't read the whole file at once
 	aContentLength := 2 * 16 * 1024
 	content := []byte(strings.Repeat("a", aContentLength))
-	content = append(content, lineBreak...)
-	content = append(content, 'b')
+	content = append(content, '\n', 'b', '\n')
 	_, err := temp.WriteString(string(content))
 	require.NoError(t, err)
 
