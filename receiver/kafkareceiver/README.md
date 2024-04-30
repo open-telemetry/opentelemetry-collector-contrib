@@ -107,8 +107,8 @@ receivers:
         username: "user"
         password: "secret"
         mechanism: "SCRAM-SHA-512"
-    tls:
-      insecure: false
+      tls:
+        insecure: false
 ```
 Example of header extraction:
 
