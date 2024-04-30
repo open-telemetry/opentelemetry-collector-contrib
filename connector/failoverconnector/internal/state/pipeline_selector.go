@@ -36,12 +36,12 @@ func (p *PipelineSelector) handlePipelineError(idx int) {
 	ctx, cancel := context.WithCancel(context.Background())
 	p.RS.InvokeCancel()
 	p.RS.UpdateCancelFunc(cancel)
-	p.enableRetry(ctx)
+	p.enableRetry(ctx, p.constants.RetryInterval, p.constants.RetryGap)
 }
 
-func (p *PipelineSelector) enableRetry(ctx context.Context) {
+func (p *PipelineSelector) enableRetry(ctx context.Context, retryInterval time.Duration, retryGap time.Duration) {
 	go func() {
-		ticker := time.NewTicker(p.constants.RetryInterval)
+		ticker := time.NewTicker(retryInterval)
 		defer ticker.Stop()
 
 		var cancelFunc context.CancelFunc
@@ -51,7 +51,7 @@ func (p *PipelineSelector) enableRetry(ctx context.Context) {
 				if cancelFunc != nil {
 					cancelFunc()
 				}
-				cancelFunc = p.handleRetry(ctx)
+				cancelFunc = p.handleRetry(ctx, retryGap)
 			case <-ctx.Done():
 				return
 			}
@@ -61,9 +61,9 @@ func (p *PipelineSelector) enableRetry(ctx context.Context) {
 }
 
 // handleRetry is responsible for launching goroutine and returning cancelFunc
-func (p *PipelineSelector) handleRetry(parentCtx context.Context) context.CancelFunc {
+func (p *PipelineSelector) handleRetry(parentCtx context.Context, retryGap time.Duration) context.CancelFunc {
 	retryCtx, cancelFunc := context.WithCancel(parentCtx)
-	go p.retryHighPriorityPipelines(retryCtx, p.constants.RetryGap)
+	go p.retryHighPriorityPipelines(retryCtx, retryGap)
 	return cancelFunc
 }
 
@@ -108,7 +108,7 @@ func (p *PipelineSelector) retryHighPriorityPipelines(ctx context.Context, retry
 	}
 }
 
-// checkStopRetry checks if retry should be suspended if all higher priority levels have exceeded their max retries
+// checkContinueRetry checks if retry should be suspended if all higher priority levels have exceeded their max retries
 func (p *PipelineSelector) checkContinueRetry(index int) bool {
 	for i := 0; i < index; i++ {
 		if p.loadRetryCount(i) < p.constants.MaxRetries {
@@ -244,6 +244,10 @@ func (p *PipelineSelector) TestCurrentIndex() int {
 
 func (p *PipelineSelector) TestSetStableIndex(idx int32) {
 	p.stableIndex.Store(idx)
+}
+
+func (p *PipelineSelector) TestRetryPipelines(ctx context.Context, retryInterval time.Duration, retryGap time.Duration) {
+	p.enableRetry(ctx, retryInterval, retryGap)
 }
 
 func (p *PipelineSelector) SetRetryCountToMax(idx int) {

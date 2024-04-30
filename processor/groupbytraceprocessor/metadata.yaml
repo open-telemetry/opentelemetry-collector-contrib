@@ -11,3 +11,10 @@ status:
     active: [jpkrohling]
 tests:
   config:
+  goleak:
+    ignore:
+      # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+      top: go.opencensus.io/stats/view.(*worker).start
+      # TODO: Regarding doWithTimeout ignore: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32572
+      any: github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor.doWithTimeout.func1
+

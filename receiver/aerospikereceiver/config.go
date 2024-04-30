@@ -81,7 +81,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.TLS != nil {
-		_, err := c.TLS.LoadTLSConfigContext(context.Background())
+		_, err := c.TLS.LoadTLSConfig(context.Background())
 		if err != nil {
 			allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errFailedTLSLoad, err.Error()))
 		}

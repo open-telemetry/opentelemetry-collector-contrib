@@ -1,6 +1,9 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: vcenter.host.name
+          value:
+            stringValue: DC0_H0
         - key: vcenter.resource_pool.name
           value:
             stringValue: Resources
@@ -32,6 +35,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.cluster.name
+          value:
+            stringValue: DC0_C0
         - key: vcenter.resource_pool.name
           value:
             stringValue: Resources
@@ -64,9 +70,6 @@ resourceMetrics:
   - resource:
       attributes:
         - key: vcenter.host.name
-          value:
-            stringValue: DC0_H0
-        - key: vcenter.cluster.name
           value:
             stringValue: DC0_H0
     scopeMetrics:
