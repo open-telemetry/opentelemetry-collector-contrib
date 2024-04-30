@@ -15,7 +15,7 @@ import (
 )
 
 func TestDatadogLogsServer(t *testing.T) {
-	server := DatadogLogServerMock(nil)
+	server := DatadogLogServerMock(nil, false)
 	values := JSONLogs{
 		{
 			"company":   "datadog",

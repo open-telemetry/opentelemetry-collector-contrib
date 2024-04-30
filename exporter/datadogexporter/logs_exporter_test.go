@@ -212,7 +212,7 @@ func TestLogsExporter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := testutil.DatadogLogServerMock(nil)
+			server := testutil.DatadogLogServerMock(nil, false)
 			defer server.Close()
 			cfg := &Config{
 				Metrics: MetricsConfig{
@@ -245,7 +245,8 @@ func TestLogsAgentExporter(t *testing.T) {
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
 	type args struct {
-		ld plog.Logs
+		ld    plog.Logs
+		retry bool
 	}
 	tests := []struct {
 		name string
@@ -255,7 +256,8 @@ func TestLogsAgentExporter(t *testing.T) {
 		{
 			name: "message",
 			args: args{
-				ld: lr,
+				ld:    lr,
+				retry: false,
 			},
 			want: testutil.JSONLogs{
 				{
@@ -291,6 +293,7 @@ func TestLogsAgentExporter(t *testing.T) {
 					ldd.Attributes().PutStr("service.name", "service")
 					return lrr
 				}(),
+				retry: false,
 			},
 			want: testutil.JSONLogs{
 				{
@@ -328,6 +331,7 @@ func TestLogsAgentExporter(t *testing.T) {
 					ldd.Attributes().PutStr("ddtags", "tag1:true")
 					return lrr
 				}(),
+				retry: false,
 			},
 			want: testutil.JSONLogs{
 				{
@@ -364,6 +368,7 @@ func TestLogsAgentExporter(t *testing.T) {
 					ldd2.Attributes().PutStr("ddtags", "tag1:true")
 					return lrr
 				}(),
+				retry: false,
 			},
 
 			want: testutil.JSONLogs{
@@ -418,6 +423,7 @@ func TestLogsAgentExporter(t *testing.T) {
 					ldd2.Attributes().PutStr("ddtags", "tag2:true")
 					return lrr
 				}(),
+				retry: false,
 			},
 			want: testutil.JSONLogs{
 				{
@@ -460,13 +466,43 @@ func TestLogsAgentExporter(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "message with retry",
+			args: args{
+				ld:    lr,
+				retry: true,
+			},
+			want: testutil.JSONLogs{
+				{
+					"message": testutil.JSONLog{
+						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"app":                  "server",
+						"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
+						"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
+						"instance_num":         "1",
+						"message":              ld.Body().AsString(),
+						"otel.severity_number": "9",
+						"otel.severity_text":   "Info",
+						"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
+						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
+						"resource-attr":        "resource-attr-val-1",
+						"status":               "Info",
+					},
+					"ddsource": "otlp_log_ingestion",
+					"ddtags":   "otel_source:datadog_exporter",
+					"service":  "",
+					"status":   "Info",
+				},
+			},
+		},
 	}
 	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.logsagentexporter", true)
 	assert.NoError(t, err)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			doneChannel := make(chan bool)
-			server := testutil.DatadogLogServerMock(doneChannel)
+			server := testutil.DatadogLogServerMock(doneChannel, tt.args.retry)
 			defer server.Close()
 			cfg := &Config{
 				Logs: LogsConfig{
