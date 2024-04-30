@@ -2095,7 +2095,7 @@ func TestPushLogsRetryableFailureMultipleResources(t *testing.T) {
 	assert.Equal(t, logs, expectedErr.Data())
 }
 
-// validateCompressedEqual validates that GZipped `got` contains `expected` strings
+// validateCompressedContains validates that GZipped `got` contains `expected` strings
 func validateCompressedContains(t *testing.T, expected []string, got []byte) {
 	z, err := gzip.NewReader(bytes.NewReader(got))
 	require.NoError(t, err)

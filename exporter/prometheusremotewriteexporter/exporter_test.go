@@ -490,7 +490,7 @@ func Test_PushMetrics(t *testing.T) {
 			metrics:                    invalidTypeBatch,
 			httpResponseCode:           http.StatusAccepted,
 			reqTestFunc:                checkFunc,
-			expectedTimeSeries:         1, // the resource target metric.
+			expectedTimeSeries:         0,
 			expectedFailedTranslations: 1,
 		},
 		{
