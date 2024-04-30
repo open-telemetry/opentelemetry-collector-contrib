@@ -519,14 +519,14 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.deployment.uid | The UID of the Deployment. | Any Str | true |
 | k8s.hpa.name | The k8s hpa name. | Any Str | true |
 | k8s.hpa.uid | The k8s hpa uid. | Any Str | true |
-| k8s.ingress.annotations | Annotations of the Role. | Any Str | true |
-| k8s.ingress.labels | Labels of the Role. | Any Str | true |
-| k8s.ingress.name | The name of the Role. | Any Str | true |
-| k8s.ingress.namespace | The namespace of the Role. | Any Str | true |
-| k8s.ingress.rules | Rules of the Role. | Any Str | true |
-| k8s.ingress.start_time | The start time of the Role. | Any Str | true |
-| k8s.ingress.type | The type of the Role. | Any Str | true |
-| k8s.ingress.uid | The UID of the Role. | Any Str | true |
+| k8s.ingress.annotations | Annotations of the Ingress. | Any Str | true |
+| k8s.ingress.labels | Labels of the Ingress. | Any Str | true |
+| k8s.ingress.name | The name of the Ingress. | Any Str | true |
+| k8s.ingress.namespace | The namespace of the Ingress. | Any Str | true |
+| k8s.ingress.rules | Rules of the Ingress. | Any Str | true |
+| k8s.ingress.start_time | The start time of the Ingress. | Any Str | true |
+| k8s.ingress.type | The type of the Ingress. | Any Str | true |
+| k8s.ingress.uid | The UID of the Ingress. | Any Str | true |
 | k8s.job.name | The k8s pod name. | Any Str | true |
 | k8s.job.start_time | The start time of the Job. | Any Str | true |
 | k8s.job.uid | The k8s job uid. | Any Str | true |
