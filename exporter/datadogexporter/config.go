@@ -612,12 +612,12 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if !configMap.IsSet("traces::endpoint") {
 		c.Traces.TCPAddrConfig.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
 	}
-	if !configMap.IsSet("logs::endpoint") {
+	if !configMap.IsSet("logs::endpoint") && !isLogsAgentExporterEnabled() {
 		c.Logs.TCPAddrConfig.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
 	}
 
 	// Return an error if an endpoint is explicitly set to ""
-	if c.Metrics.TCPAddrConfig.Endpoint == "" || c.Traces.TCPAddrConfig.Endpoint == "" || c.Logs.TCPAddrConfig.Endpoint == "" {
+	if c.Metrics.TCPAddrConfig.Endpoint == "" || c.Traces.TCPAddrConfig.Endpoint == "" || (c.Logs.TCPAddrConfig.Endpoint == "" && !isLogsAgentExporterEnabled()) {
 		return errEmptyEndpoint
 	}
 
