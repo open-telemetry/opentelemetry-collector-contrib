@@ -93,3 +93,7 @@ func (s *Staleness[T]) Evict() identity.Stream {
 	s.items.Delete(id)
 	return id
 }
+
+func (s *Staleness[T]) Clear() {
+	s.items.Clear()
+}

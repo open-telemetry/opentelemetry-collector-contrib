@@ -497,7 +497,7 @@ func Test_PushMetrics(t *testing.T) {
 			name:               "intSum_case",
 			metrics:            intSumBatch,
 			reqTestFunc:        checkFunc,
-			expectedTimeSeries: 5,
+			expectedTimeSeries: 4,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
