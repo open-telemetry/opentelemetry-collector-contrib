@@ -52,8 +52,7 @@ func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.Spli
 		}
 
 		// We're seeing new data so postpone the next flush
-		//if len(data) > s.LastDataLength {
-		if !atEOF {
+		if len(data) > s.LastDataLength && !atEOF {
 			s.LastDataChange = time.Now()
 			s.LastDataLength = len(data)
 			return 0, nil, nil
