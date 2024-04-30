@@ -1,7 +1,13 @@
 default:
 all_set:
   metrics:
+    git.repository.branch.commit.aheadby_count:
+      enabled: true
+    git.repository.branch.commit.behindby_count:
+      enabled: true
     git.repository.branch.count:
+      enabled: true
+    git.repository.branch.time:
       enabled: true
     git.repository.contributor.count:
       enabled: true
@@ -22,7 +28,13 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    git.repository.branch.commit.aheadby_count:
+      enabled: false
+    git.repository.branch.commit.behindby_count:
+      enabled: false
     git.repository.branch.count:
+      enabled: false
+    git.repository.branch.time:
       enabled: false
     git.repository.contributor.count:
       enabled: false

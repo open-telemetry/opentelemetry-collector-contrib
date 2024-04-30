@@ -12,6 +12,36 @@ metrics:
     enabled: false
 ```
 
+### git.repository.branch.commit.aheadby_count
+
+Number of commits a branch is ahead of the default branch.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {branch} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a Git repository | Any Str |
+| branch.name | The name of a Git branch | Any Str |
+
+### git.repository.branch.commit.behindby_count
+
+Number of commits a branch is behing the default branch.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {branch} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a Git repository | Any Str |
+| branch.name | The name of a Git branch | Any Str |
+
 ### git.repository.branch.count
 
 Number of branches in a repository
@@ -25,6 +55,21 @@ Number of branches in a repository
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | repository.name | The name of a Git repository | Any Str |
+
+### git.repository.branch.time
+
+Time the branch has existed.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {branch} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a Git repository | Any Str |
+| branch.name | The name of a Git branch | Any Str |
 
 ### git.repository.count
 
