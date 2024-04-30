@@ -551,7 +551,6 @@ func (f *factory) createLogsExporter(
 		}
 		pusher = exp.consumeLogs
 	}
-
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,

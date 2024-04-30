@@ -33,7 +33,6 @@ func newConfigComponent(set component.TelemetrySettings, cfg *Config) coreconfig
 	pkgconfig.Set("logs_config.compression_level", cfg.Logs.CompressionLevel, pkgconfigmodel.SourceFile)
 	pkgconfig.Set("logs_config.batch_wait", cfg.Logs.BatchWait, pkgconfigmodel.SourceFile)
 	pkgconfig.Set("log_level", set.Logger.Level().String(), pkgconfigmodel.SourceFile)
-	pkgconfig.Set("forwarder_timeout", 10, pkgconfigmodel.SourceDefault)
 	pkgconfig.Set("apm_config.enabled", true, pkgconfigmodel.SourceFile)
 	pkgconfig.Set("apm_config.apm_non_local_traffic", true, pkgconfigmodel.SourceFile)
 
