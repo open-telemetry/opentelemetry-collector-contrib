@@ -1169,7 +1169,6 @@ func TestConsumeMetadata(t *testing.T) {
 			logger := zap.NewNop()
 
 			dimClient := dimensions.NewDimensionClient(
-				context.Background(),
 				dimensions.DimensionClientOptions{
 					Token:             "foo",
 					APIURL:            serverURL,
@@ -1180,7 +1179,7 @@ func TestConsumeMetadata(t *testing.T) {
 					MetricsConverter:  *converter,
 					ExcludeProperties: tt.excludeProperties,
 				})
-			dimClient.Start()
+			dimClient.Start(context.Background())
 
 			se := &signalfxExporter{
 				dimClient: dimClient,
@@ -1203,6 +1202,10 @@ func TestConsumeMetadata(t *testing.T) {
 			case <-c:
 			// wait 500ms longer than send delay
 			case <-time.After(tt.sendDelay + 500*time.Millisecond):
+				// If no updates are supposed to be sent, the server doesn't update dimensions, and
+				// doesn't call Done. This is correct behavior, so the test needs to account for it here,
+				// or a goroutine will be leaked.
+				defer wg.Done()
 				require.True(t, tt.shouldNotSendUpdate, "timeout waiting for response")
 			}
 
@@ -1331,6 +1334,7 @@ func TestTLSExporterInit(t *testing.T) {
 			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopCreateSettings())
 			assert.NoError(t, err)
 			err = sfx.start(context.Background(), componenttest.NewNopHost())
+			defer func() { require.NoError(t, sfx.shutdown(context.Background())) }()
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.wantErrMessage != "" {
@@ -1402,6 +1406,7 @@ func TestTLSIngestConnection(t *testing.T) {
 			assert.NoError(t, err)
 			err = sfx.start(context.Background(), componenttest.NewNopHost())
 			assert.NoError(t, err)
+			defer func() { assert.NoError(t, sfx.shutdown(context.Background())) }()
 
 			_, err = sfx.pushMetricsData(context.Background(), metricsPayload)
 			if tt.wantErr {
@@ -1526,10 +1531,7 @@ func TestTLSAPIConnection(t *testing.T) {
 			require.NoError(t, err)
 			serverURL, err := url.Parse(tt.config.APIURL)
 			assert.NoError(t, err)
-			cancellable, cancelFn := context.WithCancel(context.Background())
-			defer cancelFn()
 			dimClient := dimensions.NewDimensionClient(
-				cancellable,
 				dimensions.DimensionClientOptions{
 					Token:            "",
 					APIURL:           serverURL,
@@ -1540,7 +1542,8 @@ func TestTLSAPIConnection(t *testing.T) {
 					MetricsConverter: *converter,
 					APITLSConfig:     apiTLSCfg,
 				})
-			dimClient.Start()
+			dimClient.Start(context.Background())
+			defer func() { dimClient.Shutdown() }()
 
 			se := &signalfxExporter{
 				dimClient: dimClient,

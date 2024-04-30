@@ -102,14 +102,15 @@ func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Int32, context.Can
 		server.Close()
 	}()
 
-	client := NewDimensionClient(ctx, DimensionClientOptions{
-		APIURL:      serverURL,
-		LogUpdates:  true,
-		Logger:      zap.NewNop(),
-		SendDelay:   time.Second,
-		MaxBuffered: 10,
-	})
-	client.Start()
+	client := NewDimensionClient(
+		DimensionClientOptions{
+			APIURL:      serverURL,
+			LogUpdates:  true,
+			Logger:      zap.NewNop(),
+			SendDelay:   time.Second,
+			MaxBuffered: 10,
+		})
+	client.Start(ctx)
 
 	return client, dimCh, forcedResp, cancel
 }
@@ -117,6 +118,7 @@ func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Int32, context.Can
 func TestDimensionClient(t *testing.T) {
 	client, dimCh, forcedResp, cancel := setup(t)
 	defer cancel()
+	defer client.Shutdown()
 
 	t.Run("send dimension update with properties and tags", func(t *testing.T) {
 		require.NoError(t, client.acceptDimension(&DimensionUpdate{
@@ -310,6 +312,7 @@ func TestDimensionClient(t *testing.T) {
 func TestFlappyUpdates(t *testing.T) {
 	client, dimCh, _, cancel := setup(t)
 	defer cancel()
+	defer client.Shutdown()
 
 	// Do some flappy updates
 	for i := 0; i < 5; i++ {
@@ -348,6 +351,7 @@ func TestFlappyUpdates(t *testing.T) {
 func TestInvalidUpdatesNotSent(t *testing.T) {
 	client, dimCh, _, cancel := setup(t)
 	defer cancel()
+	defer client.Shutdown()
 	require.NoError(t, client.acceptDimension(&DimensionUpdate{
 		Name:  "host",
 		Value: "",

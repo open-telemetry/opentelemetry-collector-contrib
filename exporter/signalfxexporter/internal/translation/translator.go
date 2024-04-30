@@ -391,6 +391,12 @@ func getMetricNamesAsSlice(metricName string, metricNames map[string]bool) []str
 	return out
 }
 
+func (mp *MetricTranslator) Start() {
+	if mp.deltaTranslator != nil {
+		mp.deltaTranslator.start()
+	}
+}
+
 // TranslateDataPoints transforms datapoints to a format compatible with signalfx backend
 // sfxDataPoints represents one metric converted to signalfx protobuf datapoints
 func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoints []*sfxpb.DataPoint) []*sfxpb.DataPoint {
@@ -538,6 +544,12 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 	}
 
 	return processedDataPoints
+}
+
+func (mp *MetricTranslator) Shutdown() {
+	if mp.deltaTranslator != nil {
+		mp.deltaTranslator.shutdown()
+	}
 }
 
 func calcNewMetricInputPairs(processedDataPoints []*sfxpb.DataPoint, tr Rule) [][2]*sfxpb.DataPoint {
