@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -188,6 +189,12 @@ func pushDocuments(ctx context.Context, logger *zap.Logger, index string, docume
 	attempts := 1
 	body := bytes.NewReader(document)
 	item := esBulkIndexerItem{Action: createAction, Index: index, Body: body}
+	var expectedError error
+
+	// Wait for the bulk indexer to finish, to fetch potential errors
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
 	// Setup error handler. The handler handles the per item response status based on the
 	// selective ACKing in the bulk response.
 	item.OnFailure = func(ctx context.Context, item esBulkIndexerItem, resp esBulkIndexerResponseItem, err error) {
@@ -207,6 +214,7 @@ func pushDocuments(ctx context.Context, logger *zap.Logger, index string, docume
 			// Encoding error. We didn't even attempt to send the event
 			logger.Error("Drop docs: failed to add docs to the bulk request buffer.",
 				zap.NamedError("reason", err))
+			expectedError = err
 
 		case err != nil:
 			logger.Error("Drop docs: failed to index",
@@ -214,13 +222,28 @@ func pushDocuments(ctx context.Context, logger *zap.Logger, index string, docume
 				zap.Int("attempt", attempts),
 				zap.Int("status", resp.Status),
 				zap.NamedError("reason", err))
+			expectedError = err
 
 		default:
 			logger.Error(fmt.Sprintf("Drop docs: failed to index: %#v", resp.Error),
 				zap.Int("attempt", attempts),
 				zap.Int("status", resp.Status))
+			expectedError = err
 		}
+
+		wg.Done()
 	}
 
-	return bulkIndexer.Add(ctx, item)
+	// Unlock wait group when succeeding
+	item.OnSuccess = func(ctx context.Context, item esBulkIndexerItem, resp esBulkIndexerResponseItem) {
+		wg.Done()
+	}
+
+	if err := bulkIndexer.Add(ctx, item); err != nil {
+		return err
+	}
+
+	wg.Wait()
+
+	return expectedError
 }
