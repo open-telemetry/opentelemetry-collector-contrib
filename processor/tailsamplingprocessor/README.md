@@ -446,7 +446,7 @@ otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
 
 **Pre-emptively Preventing Dropped Traces**
 
-A trace will be dropped without sampling if it's removed from the circular buffer before `decision_wait`.
+A trace is dropped without sampling if it's removed from the circular buffer before `decision_wait`.
 
 To track how long traces remain in the buffer use:
 ```
