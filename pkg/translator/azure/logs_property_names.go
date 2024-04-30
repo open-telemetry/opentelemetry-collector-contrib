@@ -85,29 +85,29 @@ var mappings = map[string]map[string]string{
 		"policyMode":        "",
 	},
 	"AppServiceAppLogs": {
-		"_BilledSize":       "", //real	The record size in bytes
-		"Category":          "", //string	Log category name
-		"ContainerId":       "", //string	Application container id
-		"CustomLevel":       "", //string	Verbosity level of log
-		"ExceptionClass":    "", //string	Application class from where log message is emitted
-		"Host":              "", //string	Host where the application is running
-		"_IsBillable":       "", //string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
-		"Level":             "", //string	Verbosity level of log mapped to standard levels (Informational, Warning, Error, or Critical)
-		"Logger":            "", //string	Application logger used to emit log message
-		"Message":           "", //string	Log message
-		"Method":            "", //string	Application Method from where log message is emitted
-		"OperationName":     "", //string	The name of the operation represented by this event.
-		"_ResourceId":       "", //string	A unique identifier for the resource that the record is associated with
-		"ResultDescription": "", //string	Log message description
-		"Source":            "", //string	Application source from where log message is emitted
-		"SourceSystem":      "", //string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
-		"Stacktrace":        "", //string	Complete stack trace of the log message in case of exception
-		"StackTrace":        "", //string	Complete stack trace of the log message in case of exception
-		"_SubscriptionId":   "", //string	A unique identifier for the subscription that the record is associated with
-		"TenantId":          "", //string	The Log Analytics workspace ID
-		"TimeGenerated":     "", //datetime	Time when event is generated
-		"Type":              "", //string	The name of the table
-		"WebSiteInstanceId": "", //string	Instance ID of the application running
+		"_BilledSize":       "",                     //real	The record size in bytes
+		"Category":          "",                     //string	Log category name
+		"ContainerId":       "container.id",         //string	Application container id
+		"CustomLevel":       "",                     //string	Verbosity level of log
+		"ExceptionClass":    "exception.type",       //string	Application class from where log message is emitted
+		"Host":              "host.id",              //string	Host where the application is running
+		"_IsBillable":       "",                     //string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
+		"Level":             "",                     //string	Verbosity level of log mapped to standard levels (Informational, Warning, Error, or Critical)
+		"Logger":            "",                     //string	Application logger used to emit log message
+		"Message":           "",                     //string	Log message
+		"Method":            "code.function",        //string	Application Method from where log message is emitted
+		"OperationName":     "",                     //string	The name of the operation represented by this event.
+		"_ResourceId":       "",                     //string	A unique identifier for the resource that the record is associated with
+		"ResultDescription": "",                     //string	Log message description
+		"Source":            "code.filepath",        //string	Application source from where log message is emitted
+		"SourceSystem":      "",                     //string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
+		"Stacktrace":        "exception.stacktrace", //string	Complete stack trace of the log message in case of exception
+		"StackTrace":        "exception.stacktrace", //string	Complete stack trace of the log message in case of exception
+		"_SubscriptionId":   "",                     //string	A unique identifier for the subscription that the record is associated with
+		"TenantId":          "",                     //string	The Log Analytics workspace ID
+		"TimeGenerated":     "",                     //datetime	Time when event is generated
+		"Type":              "",                     //string	The name of the table
+		"WebSiteInstanceId": "",                     //string	Instance ID of the application running
 	},
 	"AppServiceAuditLogs": {
 		"_BilledSize":     "",                      //real	The record size in bytes
@@ -147,20 +147,20 @@ var mappings = map[string]map[string]string{
 		"Type":                 "",                          //string	The name of the table
 	},
 	"AppServiceConsoleLogs": {
-		"_BilledSize":       "", // real	The record size in bytes
-		"Category":          "", // string	Log category name
-		"ContainerId":       "", // string	Application container id
-		"Host":              "", // string	Host where the application is running
-		"_IsBillable":       "", // string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
-		"Level":             "", // string	Verbosity level of log
-		"OperationName":     "", // string	The name of the operation represented by this event.
-		"_ResourceId":       "", // string	A unique identifier for the resource that the record is associated with
-		"ResultDescription": "", // string	Log message description
-		"SourceSystem":      "", // string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
-		"_SubscriptionId":   "", // string	A unique identifier for the subscription that the record is associated with
-		"TenantId":          "", // string	The Log Analytics workspace ID
-		"TimeGenerated":     "", // datetime	Time when event is generated
-		"Type":              "", // string	The name of the table
+		"_BilledSize":       "",             // real	The record size in bytes
+		"Category":          "",             // string	Log category name
+		"ContainerId":       "container.id", // string	Application container id
+		"Host":              "host.id",      // string	Host where the application is running
+		"_IsBillable":       "",             // string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
+		"Level":             "",             // string	Verbosity level of log
+		"OperationName":     "",             // string	The name of the operation represented by this event.
+		"_ResourceId":       "",             // string	A unique identifier for the resource that the record is associated with
+		"ResultDescription": "",             // string	Log message description
+		"SourceSystem":      "",             // string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
+		"_SubscriptionId":   "",             // string	A unique identifier for the subscription that the record is associated with
+		"TenantId":          "",             // string	The Log Analytics workspace ID
+		"TimeGenerated":     "",             // datetime	Time when event is generated
+		"Type":              "",             // string	The name of the table
 	},
 	"AppServiceEnvironmentPlatformLogs": {
 		"_BilledSize":       "", // real	The record size in bytes
@@ -220,23 +220,23 @@ var mappings = map[string]map[string]string{
 		"UserAgent":       "user_agent.original",          //string	User agent on HTTP request
 	},
 	"AppServiceIPSecAuditLogs": {
-		"_BilledSize":     "",               // real	The record size in bytes
-		"CIp":             "client.address", // string	IP address of the client
-		"CsHost":          "url.domain",     // string	Host header of the HTTP request
-		"Details":         "",               // string	Additional information
-		"_IsBillable":     "",               // string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
-		"_ResourceId":     "",               // string	A unique identifier for the resource that the record is associated with
-		"Result":          "",               // string	The result whether the access is Allowed or Denied
-		"ServiceEndpoint": "",               // string	This indicates whether the access is via Virtual Network Service Endpoint communication
-		"SourceSystem":    "",               // string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
-		"_SubscriptionId": "",               // string	A unique identifier for the subscription that the record is associated with
-		"TenantId":        "",               // string	The Log Analytics workspace ID
-		"TimeGenerated":   "",               // datetime	Time of the Http Request
-		"Type":            "",               // string	The name of the table
-		"XAzureFDID":      "",               // string	X-Azure-FDID header (Azure Frontdoor ID) of the HTTP request
-		"XFDHealthProbe":  "",               // string	X-FD-HealthProbe (Azure Frontdoor Health Probe) of the HTTP request
-		"XForwardedFor":   "",               // string	X-Forwarded-For header of the HTTP request
-		"XForwardedHost":  "",               // string	X-Forwarded-Host header of the HTTP request
+		"_BilledSize":     "",                                     // real	The record size in bytes
+		"CIp":             "client.address",                       // string	IP address of the client
+		"CsHost":          "url.domain",                           // string	Host header of the HTTP request
+		"Details":         "",                                     // string	Additional information
+		"_IsBillable":     "",                                     // string	Specifies whether ingesting the data is billable. When _IsBillable is false ingestion isn't billed to your Azure account
+		"_ResourceId":     "",                                     // string	A unique identifier for the resource that the record is associated with
+		"Result":          "",                                     // string	The result whether the access is Allowed or Denied
+		"ServiceEndpoint": "",                                     // string	This indicates whether the access is via Virtual Network Service Endpoint communication
+		"SourceSystem":    "",                                     // string	The type of agent the event was collected by. For example, OpsManager for Windows agent, either direct connect or Operations Manager, Linux for all Linux agents, or Azure for Azure Diagnostics
+		"_SubscriptionId": "",                                     // string	A unique identifier for the subscription that the record is associated with
+		"TenantId":        "",                                     // string	The Log Analytics workspace ID
+		"TimeGenerated":   "",                                     // datetime	Time of the Http Request
+		"Type":            "",                                     // string	The name of the table
+		"XAzureFDID":      "http.request.header.x-azure-fdid",     // string	X-Azure-FDID header (Azure Frontdoor ID) of the HTTP request
+		"XFDHealthProbe":  "http.request.header.x-fd-healthprobe", // string	X-FD-HealthProbe (Azure Frontdoor Health Probe) of the HTTP request
+		"XForwardedFor":   "http.request.header.x-forwarded-for",  // string	X-Forwarded-For header of the HTTP request
+		"XForwardedHost":  "http.request.header.x-forwarded-host", // string	X-Forwarded-Host header of the HTTP request
 	},
 	"AppServicePlatformLogs": {
 		"ActivityId":      "",               // string	Activity ID to correlate events
