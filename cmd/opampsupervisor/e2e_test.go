@@ -418,51 +418,6 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 	}, 5*time.Second, 250*time.Millisecond)
 }
 
-func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
-	var connectedToNewServer atomic.Bool
-	initialServer := newOpAMPServer(
-		t,
-		defaultConnectingHandler,
-		server.ConnectionCallbacksStruct{})
-
-	s := newSupervisor(t, "accepts_conn", map[string]string{"url": initialServer.addr})
-	defer s.Shutdown()
-
-	waitForSupervisorConnection(initialServer.supervisorConnected, true)
-
-	newServer := newOpAMPServer(
-		t,
-		defaultConnectingHandler,
-		server.ConnectionCallbacksStruct{
-			OnConnectedFunc: func(_ context.Context, _ types.Connection) {
-				connectedToNewServer.Store(true)
-			},
-			OnMessageFunc: func(_ context.Context, _ types.Connection, _ *protobufs.AgentToServer) *protobufs.ServerToAgent {
-				return &protobufs.ServerToAgent{}
-			},
-		})
-
-	initialServer.sendToSupervisor(&protobufs.ServerToAgent{
-		ConnectionSettings: &protobufs.ConnectionSettingsOffers{
-			Opamp: &protobufs.OpAMPConnectionSettings{
-				DestinationEndpoint: "ws://" + newServer.addr + "/v1/opamp",
-				Headers: &protobufs.Headers{
-					Headers: []*protobufs.Header{
-						{
-							Key:   "x-foo",
-							Value: "bar",
-						},
-					},
-				},
-			},
-		},
-	})
-
-	require.Eventually(t, func() bool {
-		return connectedToNewServer.Load() == true
-	}, 10*time.Second, 500*time.Millisecond, "Collector did not connect to new OpAMP server")
-}
-
 func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 	var agentConfig atomic.Value
 	server := newOpAMPServer(
@@ -702,7 +657,7 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 			OnConnectedFunc: func(_ context.Context, _ types.Connection) {
 				connectedToNewServer.Store(true)
 			},
-			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessageFunc: func(_ context.Context, _ types.Connection, _ *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				return &protobufs.ServerToAgent{}
 			},
 		})
