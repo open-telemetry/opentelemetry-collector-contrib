@@ -16,6 +16,7 @@ type Map[T any] interface {
 	Delete(identity.Stream)
 	Items() func(yield func(identity.Stream, T) bool) bool
 	Len() int
+	Clear()
 }
 
 var _ Map[any] = HashMap[any](nil)
@@ -49,6 +50,10 @@ func (m HashMap[T]) Items() func(yield func(identity.Stream, T) bool) bool {
 
 func (m HashMap[T]) Len() int {
 	return len((map[identity.Stream]T)(m))
+}
+
+func (m HashMap[T]) Clear() {
+	clear(m)
 }
 
 // Evictors remove the "least important" stream based on some strategy such as
