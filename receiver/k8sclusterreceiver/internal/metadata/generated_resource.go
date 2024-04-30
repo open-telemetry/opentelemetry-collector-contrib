@@ -70,6 +70,13 @@ func (rb *ResourceBuilder) SetK8sContainerStatusLastTerminatedReason(val string)
 	}
 }
 
+// SetK8sContainerStatusWaitingReason sets provided value as "k8s.container.status.waiting_reason" attribute.
+func (rb *ResourceBuilder) SetK8sContainerStatusWaitingReason(val string) {
+	if rb.config.K8sContainerStatusWaitingReason.Enabled {
+		rb.res.Attributes().PutStr("k8s.container.status.waiting_reason", val)
+	}
+}
+
 // SetK8sCronjobName sets provided value as "k8s.cronjob.name" attribute.
 func (rb *ResourceBuilder) SetK8sCronjobName(val string) {
 	if rb.config.K8sCronjobName.Enabled {

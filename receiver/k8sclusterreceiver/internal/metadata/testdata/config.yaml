@@ -104,6 +104,8 @@ all_set:
       enabled: true
     k8s.container.status.last_terminated_reason:
       enabled: true
+    k8s.container.status.waiting_reason:
+      enabled: true
     k8s.cronjob.name:
       enabled: true
     k8s.cronjob.uid:
@@ -269,6 +271,8 @@ none_set:
       enabled: false
     k8s.container.status.last_terminated_reason:
       enabled: false
+    k8s.container.status.waiting_reason:
+      enabled: false
     k8s.cronjob.name:
       enabled: false
     k8s.cronjob.uid:
@@ -356,6 +360,10 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     k8s.container.status.last_terminated_reason:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.container.status.waiting_reason:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -509,6 +517,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.container.status.last_terminated_reason-val"
+    k8s.container.status.waiting_reason:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.container.status.waiting_reason-val"
     k8s.cronjob.name:
       enabled: true
       metrics_exclude:

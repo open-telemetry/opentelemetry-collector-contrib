@@ -288,6 +288,28 @@ func NewEvictedTerminatedPodStatusWithContainer(containerName, containerID strin
 		},
 	}
 }
+
+func NewWaitingPodStatusWithContainer(containerName, containerID string) *corev1.PodStatus {
+	return &corev1.PodStatus{
+		Phase:    corev1.PodFailed,
+		QOSClass: corev1.PodQOSBestEffort,
+		Reason:   "Evicted",
+		ContainerStatuses: []corev1.ContainerStatus{
+			{
+				Name:         containerName,
+				Ready:        true,
+				RestartCount: 3,
+				Image:        "container-image-name",
+				ContainerID:  containerID,
+				State: corev1.ContainerState{
+					Waiting: &corev1.ContainerStateWaiting{
+						Reason: "UnexpectedAdmissionError",
+					},
+				},
+			},
+		},
+	}
+}
 func WithOwnerReferences(or []v1.OwnerReference, obj any) any {
 	switch o := obj.(type) {
 	case *corev1.Pod:

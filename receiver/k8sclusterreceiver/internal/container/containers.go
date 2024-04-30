@@ -73,6 +73,9 @@ func RecordSpecMetrics(logger *zap.Logger, mb *imetadata.MetricsBuilder, c corev
 			if cs.LastTerminationState.Terminated != nil {
 				rb.SetK8sContainerStatusLastTerminatedReason(cs.LastTerminationState.Terminated.Reason)
 			}
+			if cs.State.Waiting != nil {
+				rb.SetK8sContainerStatusWaitingReason(cs.State.Waiting.Reason)
+			}
 			break
 		}
 	}

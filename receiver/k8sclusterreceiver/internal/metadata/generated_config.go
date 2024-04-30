@@ -246,6 +246,7 @@ type ResourceAttributesConfig struct {
 	ContainerRuntimeVersion                ResourceAttributeConfig `mapstructure:"container.runtime.version"`
 	K8sContainerName                       ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sContainerStatusLastTerminatedReason ResourceAttributeConfig `mapstructure:"k8s.container.status.last_terminated_reason"`
+	K8sContainerStatusWaitingReason        ResourceAttributeConfig `mapstructure:"k8s.container.status.waiting_reason"`
 	K8sCronjobName                         ResourceAttributeConfig `mapstructure:"k8s.cronjob.name"`
 	K8sCronjobUID                          ResourceAttributeConfig `mapstructure:"k8s.cronjob.uid"`
 	K8sDaemonsetName                       ResourceAttributeConfig `mapstructure:"k8s.daemonset.name"`
@@ -299,6 +300,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sContainerStatusLastTerminatedReason: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sContainerStatusWaitingReason: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		K8sCronjobName: ResourceAttributeConfig{

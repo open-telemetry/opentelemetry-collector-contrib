@@ -2346,6 +2346,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	if mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.container.status.last_terminated_reason"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.K8sContainerStatusWaitingReason.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.container.status.waiting_reason"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerStatusWaitingReason.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sContainerStatusWaitingReason.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.container.status.waiting_reason"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerStatusWaitingReason.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.K8sCronjobName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.cronjob.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sCronjobName.MetricsInclude)
 	}

@@ -198,6 +198,11 @@ resource_attributes:
     type: string
     enabled: false
 
+  k8s.container.status.waiting_reason:
+    description: Waiting reason of a container.
+    type: string
+    enabled: false
+
 attributes:
   k8s.namespace.name:
     description: The k8s namespace name.
