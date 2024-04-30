@@ -14,7 +14,7 @@ import (
 type TimeArguments[K any] struct {
 	Time     ottl.StringGetter[K]
 	Format   string
-	Location ottl.Optional[string]
+	Location ottl.Optional[ottl.StringGetter[K]]
 }
 
 func NewTimeFactory[K any]() ottl.Factory[K] {
@@ -30,22 +30,29 @@ func createTimeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 	return Time(args.Time, args.Format, args.Location)
 }
 
-func Time[K any](inputTime ottl.StringGetter[K], format string, location ottl.Optional[string]) (ottl.ExprFunc[K], error) {
+func Time[K any](inputTime ottl.StringGetter[K], format string, location ottl.Optional[ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
 	if format == "" {
 		return nil, fmt.Errorf("format cannot be nil")
 	}
-	var defaultLocation *string
-	if !location.IsEmpty() {
-		l := location.Get()
-		defaultLocation = &l
-	}
-
-	loc, err := timeutils.GetLocation(defaultLocation, &format)
-	if err != nil {
-		return nil, err
-	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
+
+		var defaultLocation *string
+		if !location.IsEmpty() {
+			if locGetter := location.Get(); locGetter != nil {
+				l, err := locGetter.Get(ctx, tCtx)
+				if err != nil {
+					return nil, err
+				}
+				defaultLocation = &l
+			}
+		}
+
+		loc, err := timeutils.GetLocation(defaultLocation, &format)
+		if err != nil {
+			return nil, err
+		}
+
 		t, err := inputTime.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

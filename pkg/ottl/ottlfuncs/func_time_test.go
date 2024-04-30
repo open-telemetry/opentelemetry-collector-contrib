@@ -191,9 +191,14 @@ func Test_Time(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var locOptional ottl.Optional[string]
+			var locOptional ottl.Optional[ottl.StringGetter[any]]
 			if tt.location != "" {
-				locOptional = ottl.NewTestingOptional(tt.location)
+				getter := ottl.StandardStringGetter[any]{
+					Getter: func(_ context.Context, _ any) (any, error) {
+						return tt.location, nil
+					},
+				}
+				locOptional = ottl.NewTestingOptional[ottl.StringGetter[any]](getter)
 			}
 			exprFunc, err := Time(tt.time, tt.format, locOptional)
 			assert.NoError(t, err)
@@ -232,26 +237,6 @@ func Test_TimeError(t *testing.T) {
 			format:        "%Y-%m-%dT%H:%M:%S",
 			expectedError: "time cannot be nil",
 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var locOptional ottl.Optional[string]
-			exprFunc, err := Time[any](tt.time, tt.format, locOptional)
-			require.NoError(t, err)
-			_, err = exprFunc(context.Background(), nil)
-			assert.ErrorContains(t, err, tt.expectedError)
-		})
-	}
-}
-
-func Test_TimeZoneError(t *testing.T) {
-	tests := []struct {
-		name          string
-		time          ottl.StringGetter[any]
-		format        string
-		expectedError string
-		location      string
-	}{
 		{
 			name: "with unknown location",
 			time: &ottl.StandardStringGetter[any]{
@@ -266,12 +251,18 @@ func Test_TimeZoneError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var locOptional ottl.Optional[string]
+			var locOptional ottl.Optional[ottl.StringGetter[any]]
 			if tt.location != "" {
-				locOptional = ottl.NewTestingOptional(tt.location)
+				getter := ottl.StandardStringGetter[any]{
+					Getter: func(_ context.Context, _ any) (any, error) {
+						return tt.location, nil
+					},
+				}
+				locOptional = ottl.NewTestingOptional[ottl.StringGetter[any]](getter)
 			}
-
-			_, err := Time[any](tt.time, tt.format, locOptional)
+			exprFunc, err := Time[any](tt.time, tt.format, locOptional)
+			require.NoError(t, err)
+			_, err = exprFunc(context.Background(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
@@ -297,7 +288,7 @@ func Test_TimeFormatError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var locOptional ottl.Optional[string]
+			locOptional := ottl.NewTestingOptional[ottl.StringGetter[any]](nil)
 			_, err := Time[any](tt.time, tt.format, locOptional)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
