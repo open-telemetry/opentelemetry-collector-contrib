@@ -80,6 +80,7 @@ func (c *Commander) Start(ctx context.Context) error {
 	}
 
 	c.cmd = exec.CommandContext(ctx, c.cfg.Executable, c.args...) // #nosec G204
+	c.cmd.Env = os.Environ()  // The agent inherits the environment from the supervisor
 
 	// Capture standard output and standard error.
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21072
