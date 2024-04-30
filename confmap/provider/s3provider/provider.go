@@ -33,7 +33,8 @@ type provider struct {
 	client s3Client
 }
 
-// New returns a new confmap.Provider that reads the configuration from a file.
+// NewFactory returns a new confmap.ProviderFactory that creates a confmap.Provider
+// which reads configuration from a file obtained from an s3 bucket.
 //
 // This Provider supports "s3" scheme, and can be called with a "uri" that follows:
 //
