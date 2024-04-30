@@ -73,7 +73,7 @@ func (e *jsonLogExtension) Shutdown(_ context.Context) error {
 }
 
 func (e *jsonLogExtension) logProcessor(ld plog.Logs) ([]byte, error) {
-	prettyLogs := make([]prettyLogBody, ld.ResourceLogs().Len()-1)
+	logs := make([]logBody, ld.ResourceLogs().Len()-1)
 
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -83,23 +83,23 @@ func (e *jsonLogExtension) logProcessor(ld plog.Logs) ([]byte, error) {
 		sls := rl.ScopeLogs()
 		for j := 0; j < sls.Len(); j++ {
 			sl := sls.At(j)
-			logs := sl.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
-				log := logs.At(k)
-				logEvent := prettyLogBody{
+			logSlice := sl.LogRecords()
+			for k := 0; k < logSlice.Len(); k++ {
+				log := logSlice.At(k)
+				logEvent := logBody{
 					Body:               log.Body().AsRaw(),
 					ResourceAttributes: resourceAttrs,
 					LogAttributes:      log.Attributes().AsRaw(),
 				}
-				prettyLogs = append(prettyLogs, logEvent)
+				logs = append(logs, logEvent)
 			}
 		}
 	}
 
-	return jsoniter.Marshal(prettyLogs)
+	return jsoniter.Marshal(logs)
 }
 
-type prettyLogBody struct {
+type logBody struct {
 	Body               any            `json:"body,omitempty"`
 	LogAttributes      map[string]any `json:"logAttributes,omitempty"`
 	ResourceAttributes map[string]any `json:"resourceAttributes,omitempty"`

@@ -15,7 +15,7 @@
 
 | Name                     | Description                                        | Default                                      |
 | ------------------------ | -------------------------------------------------- | -------------------------------------------- |
-| mode                     | What mode of the JSON Encoding Extension you want  | body                                         |
+| mode                     | What mode of the JSON encoding extension you want  | body                                         |
 
 
 
@@ -23,12 +23,12 @@
 
 #### body Mode
 
-The `body` mode of the json encoding extension is used to marshal/unmarshal JSON log body, ignoring other log fields.
+The `body` mode of the JSON encoding extension is used to marshal or unmarshal the JSON log body, ignoring other log fields.
 
 
 #### body_with_inline_attributes
 
-The `body_with_inline_attributes` mode within the json encoding extension will grab resource and attributes and add them as key value pairs to the json body iterating through all the logs and create a json array looking along the lines of:
+The `body_with_inline_attributes` mode within the JSON encoding extension grabs the resource and attributes and adds them as key value pairs to the JSON body. It iterates through all the logs and creates a JSON array like the following example:
 
 ```json
 [
